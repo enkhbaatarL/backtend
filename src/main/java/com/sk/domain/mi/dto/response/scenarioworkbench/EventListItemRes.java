@@ -67,7 +67,7 @@ public record EventListItemRes(
             signalType.getLabel(),
             Boolean.TRUE.equals(row.isScenarioSuggested()),
             row.scenarioSuggestReason(),
-            row.indexImpacts().stream().map(EventImpactIndexRes::from).toList()
+            row.indexImpacts().stream().map(EventImpactIndexRes::fromRow).toList()
         );
     }
 

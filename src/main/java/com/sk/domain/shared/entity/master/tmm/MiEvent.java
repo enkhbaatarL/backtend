@@ -52,10 +52,6 @@ public class MiEvent extends BaseEntity {
     @Comment("이벤트 상세 분석 본문")
     private String detailAnalysis;
 
-    @Column(name = "market_and_institution_view", columnDefinition = "longtext")
-    @Comment("시장 반응 및 기관 전망")
-    private String marketAndInstitutionView;
-
     @Column(name = "tags_json", columnDefinition = "json")
     @Comment("이벤트 태그 목록 JSON")
     private String tagsJson;
@@ -102,7 +98,7 @@ public class MiEvent extends BaseEntity {
 
     @Builder
     public MiEvent(Long miEventId, String eventTitle, String oneLineSummary, String keyBulletsJson,
-                   String detailAnalysis, String marketAndInstitutionView, String tagsJson,
+                   String detailAnalysis, String tagsJson,
                    MiEventTypeL2 eventTypeL2, String estimatedImpactId,
                    LocalDateTime occurredAt,
                    Boolean isSignal, BigDecimal signalConfidence, String signalReason,
@@ -112,7 +108,6 @@ public class MiEvent extends BaseEntity {
         this.oneLineSummary = oneLineSummary;
         this.keyBulletsJson = keyBulletsJson;
         this.detailAnalysis = detailAnalysis;
-        this.marketAndInstitutionView = marketAndInstitutionView;
         this.tagsJson = tagsJson;
         this.eventTypeL2 = eventTypeL2;
         this.estimatedImpactId = estimatedImpactId;

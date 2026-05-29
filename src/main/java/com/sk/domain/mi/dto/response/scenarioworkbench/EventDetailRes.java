@@ -76,8 +76,7 @@ public record EventDetailRes(
     private static List<EventDriverTreeIndexRes> buildDriverTreeScoreboard(List<DriverTagScoreboardRow> driverTags) {
         Map<String, List<DriverTreeScoreboardRes>> grouped = new LinkedHashMap<>();
         for (DriverTagScoreboardRow tag : driverTags) {
-            grouped.computeIfAbsent(tag.targetId(), k -> new ArrayList<>())
-                .add(DriverTreeScoreboardRes.from(tag));
+            grouped.computeIfAbsent(tag.targetId(), k -> new ArrayList<>()).add(DriverTreeScoreboardRes.from(tag));
         }
         return grouped.entrySet().stream()
             .map(e -> new EventDriverTreeIndexRes(e.getKey(), e.getValue()))

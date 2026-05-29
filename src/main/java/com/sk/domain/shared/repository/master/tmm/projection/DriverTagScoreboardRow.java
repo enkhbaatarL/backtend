@@ -1,6 +1,7 @@
 package com.sk.domain.shared.repository.master.tmm.projection;
 
 import com.querydsl.core.annotations.QueryProjection;
+import com.sk.domain.shared.enums.scenarioworkbench.ImpactGrade;
 
 public record DriverTagScoreboardRow(
     String targetId,
@@ -10,8 +11,9 @@ public record DriverTagScoreboardRow(
     String lv2Label,
     String lv3Id,
     String lv3Label,
-    String magnitudeLevel,
-    String direction,
+    ImpactGrade impactShort,
+    ImpactGrade impactMid,
+    ImpactGrade impactLong,
     String driverReason
 ) {
 

@@ -1,9 +1,18 @@
 package com.sk.domain.shared.repository.master.tmm.projection;
 
-import java.time.LocalDateTime;
+import com.querydsl.core.annotations.QueryProjection;
+import java.time.LocalDate;
 
-public interface EventOutlookRow {
-    LocalDateTime getPublishedAt();
-    String getInstitutionName();
-    String getOutlookSummary();
+public record EventOutlookRow(
+
+    LocalDate viewDate,
+    String institutionName,
+    String outlookSummary
+
+) {
+
+    @QueryProjection
+    public EventOutlookRow {
+    }
+
 }

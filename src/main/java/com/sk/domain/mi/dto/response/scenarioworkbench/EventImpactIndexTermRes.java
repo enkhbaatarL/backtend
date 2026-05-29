@@ -1,9 +1,9 @@
 package com.sk.domain.mi.dto.response.scenarioworkbench;
 
+import com.sk.domain.shared.enums.scenarioworkbench.ImpactGrade;
 import com.sk.domain.shared.enums.scenarioworkbench.MarketDirection;
 import com.sk.domain.shared.enums.scenarioworkbench.MarketImpactLevel;
 import io.swagger.v3.oas.annotations.media.Schema;
-import java.util.Optional;
 
 public record EventImpactIndexTermRes(
 
@@ -21,15 +21,18 @@ public record EventImpactIndexTermRes(
 
 ) {
 
-    public static EventImpactIndexTermRes of(String magnitudeLevel, String directionCode) {
-        MarketImpactLevel level = MarketImpactLevel.fromCode(magnitudeLevel);
-        MarketDirection dir = MarketDirection.fromCode(directionCode);
-
+    // ImpactGrade(상승_상 등) → {방향, 강도}로 분해. grade가 null이면 해당 시점 미산출.
+    public static EventImpactIndexTermRes of(ImpactGrade grade) {
+        if (grade == null) {
+            return null;
+        }
+        MarketImpactLevel level = grade.getLevel();
+        MarketDirection direction = grade.getDirection();
         return new EventImpactIndexTermRes(
             level,
-            Optional.ofNullable(level).map(MarketImpactLevel::getLabel).orElse(null),
-            dir,
-            Optional.ofNullable(dir).map(MarketDirection::getLabel).orElse(null)
+            level == null ? null : level.getLabel(),
+            direction,
+            direction == null ? null : direction.getLabel()
         );
     }
 
