@@ -215,10 +215,8 @@ public record MiCompanyDetailRes(
                 .filter(Objects::nonNull)
                 .toList();
 
-            // 하위 메뉴가 모두 제외된 메뉴 그룹/상위 메뉴는 빈 껍데기만 남지 않도록 제거한다.
-            if (screenElementType != ScreenElementType.MENU_ITEM
-                && screenElementType.isMenu()
-                && children.isEmpty()) {
+            // 하위 메뉴가 모두 제외된 메뉴 그룹은 빈 껍데기만 남지 않도록 제거한다.(MENU_TOP은 자식이 없어도 단독 메뉴로 노출될 수 있음)
+            if (screenElementType == ScreenElementType.MENU_GROUP && children.isEmpty()) {
                 return null;
             }
 
