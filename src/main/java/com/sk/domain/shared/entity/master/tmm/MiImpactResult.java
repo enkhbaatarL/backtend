@@ -8,8 +8,6 @@ import org.hibernate.annotations.Comment;
 import com.sk.common.converter.BooleanToYNAttributeConverter;
 import com.sk.domain.shared.entity.base.BaseEntity;
 
-import jakarta.persistence.AttributeOverride;
-import jakarta.persistence.AttributeOverrides;
 import jakarta.persistence.Column;
 import jakarta.persistence.Convert;
 import jakarta.persistence.Entity;
@@ -25,44 +23,56 @@ import lombok.NoArgsConstructor;
 
 @Getter
 @Entity
-@Comment("TMM_ImpactResult")
-@Table(name = "tmm_impactresultm")
+@Comment("Impact Result 마스터")
+@Table(name = "tmm_mi_impact_result_m")
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
-@AttributeOverrides({
-        @AttributeOverride(name = "createUserId", column = @Column(name = "crt_user_id", length = 50, nullable = false)),
-        @AttributeOverride(name = "modifyUserId", column = @Column(name = "mod_user_id", length = 50, nullable = false))
-})
-public class ImpactResult extends BaseEntity {
+public class MiImpactResult extends BaseEntity {
 
     @Id
     @Column(name = "impact_result_id", length = 64, nullable = false)
-    @Comment("Impact Result ID")
+    @Comment("Impact Result ID PK")
     private String impactResultId;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "impact_id", nullable = false)
     @Comment("Impact ID FK")
-    private Impact impact;
+    private MiImpact impact;
 
     @Column(name = "target_type", length = 20, nullable = false)
     @Comment("대상 유형 price|spread")
     private String targetType;
 
     @Column(name = "target_id", length = 20, nullable = false)
-    @Comment("대상 ID JKM|TTF|HH|JKM-HH")
+    @Comment("대상 ID JKM/TTF/HH")
     private String targetId;
 
-    @Column(name = "direction", length = 20)
-    @Comment("방향 bullish|bearish|negligible")
-    private String direction;
+    @Column(name = "impact_short", nullable = false)
+    @Comment("단기 영향 (0~1M) {방향_강도}")
+    private String impactShort;
+
+    @Column(name = "impact_mid")
+    @Comment("중기 영향 (6M). Base Case 없으면 NULL")
+    private String impactMid;
+
+    @Column(name = "impact_long")
+    @Comment("장기 영향 (1Y+). Base Case 없으면 NULL")
+    private String impactLong;
 
     @Column(name = "confidence", precision = 5, scale = 4)
     @Comment("신뢰도 0~1")
     private BigDecimal confidence;
 
-    @Column(name = "impact_assessment_reason", columnDefinition = "text")
-    @Comment("임팩트 평가 사유")
-    private String impactAssessmentReason;
+    @Column(name = "rationale_base_case", columnDefinition = "text")
+    @Comment("사용한 Base Case 가정")
+    private String rationaleBaseCase;
+
+    @Column(name = "rationale_driver_map", columnDefinition = "text")
+    @Comment("Step 1 driver 영향 요약")
+    private String rationaleDriverMap;
+
+    @Column(name = "rationale_synthesis", columnDefinition = "text")
+    @Comment("종합 판단 logic")
+    private String rationaleSynthesis;
 
     @Column(name = "completed", nullable = false, length = 1, columnDefinition = "char(1)")
     @Comment("분석 완료 여부 Y/N")
@@ -74,16 +84,21 @@ public class ImpactResult extends BaseEntity {
     private LocalDateTime analysisTime;
 
     @Builder
-    public ImpactResult(String impactResultId, Impact impact, String targetType, String targetId,
-            String direction, BigDecimal confidence, String impactAssessmentReason,
-            Boolean completed, LocalDateTime analysisTime) {
+    public MiImpactResult(String impactResultId, MiImpact impact, String targetType, String targetId,
+                          String impactShort, String impactMid, String impactLong, BigDecimal confidence,
+                          String rationaleBaseCase, String rationaleDriverMap, String rationaleSynthesis,
+                          Boolean completed, LocalDateTime analysisTime) {
         this.impactResultId = impactResultId;
         this.impact = impact;
         this.targetType = targetType;
         this.targetId = targetId;
-        this.direction = direction;
+        this.impactShort = impactShort;
+        this.impactMid = impactMid;
+        this.impactLong = impactLong;
         this.confidence = confidence;
-        this.impactAssessmentReason = impactAssessmentReason;
+        this.rationaleBaseCase = rationaleBaseCase;
+        this.rationaleDriverMap = rationaleDriverMap;
+        this.rationaleSynthesis = rationaleSynthesis;
         this.completed = completed;
         this.analysisTime = analysisTime;
     }

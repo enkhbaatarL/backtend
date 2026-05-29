@@ -6,8 +6,6 @@ import org.hibernate.annotations.Comment;
 
 import com.sk.domain.shared.entity.base.BaseEntity;
 
-import jakarta.persistence.AttributeOverride;
-import jakarta.persistence.AttributeOverrides;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.FetchType;
@@ -22,24 +20,20 @@ import lombok.NoArgsConstructor;
 
 @Getter
 @Entity
-@Comment("TMM_DriverTag")
-@Table(name = "tmm_drivertagm")
+@Comment("Driver Tag 마스터")
+@Table(name = "tmm_mi_impact_driver_m")
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
-@AttributeOverrides({
-        @AttributeOverride(name = "createUserId", column = @Column(name = "crt_user_id", length = 50, nullable = false)),
-        @AttributeOverride(name = "modifyUserId", column = @Column(name = "mod_user_id", length = 50, nullable = false))
-})
-public class DriverTag extends BaseEntity {
+public class MiImpactDriver extends BaseEntity {
 
     @Id
     @Column(name = "driver_id", length = 64, nullable = false)
-    @Comment("Driver Tag ID")
+    @Comment("Driver Tag ID PK")
     private String driverId;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "impact_result_id", nullable = false)
     @Comment("Impact Result ID FK")
-    private ImpactResult impactResult;
+    private MiImpactResult impactResult;
 
     @Column(name = "lv1_id", length = 50, nullable = false)
     @Comment("Driver Tree 1단계 코드")
@@ -69,32 +63,36 @@ public class DriverTag extends BaseEntity {
     @Comment("방향 힌트 bullish_if_up/bearish_if_up/contextual")
     private String directionHint;
 
-    @Column(name = "direction", length = 20)
-    @Comment("실제 영향 방향 bullish/bearish/negligible")
-    private String direction;
-
     @Column(name = "match_score", precision = 5, scale = 4)
     @Comment("Event-Driver 매핑 신뢰도 점수 0~1")
     private BigDecimal matchScore;
-
-    @Column(name = "driver_magnitude", length = 20)
-    @Comment("Driver 영향 강도 low/medium/high/extreme")
-    private String driverMagnitude;
-
-    @Column(name = "driver_reason", columnDefinition = "text")
-    @Comment("Driver 영향 발생 사유")
-    private String driverReason;
 
     @Column(name = "matched_keywords", columnDefinition = "json")
     @Comment("매칭된 키워드 목록")
     private String matchedKeywords;
 
+    @Column(name = "driver_reason", columnDefinition = "text")
+    @Comment("Driver 영향 발생 사유")
+    private String driverReason;
+
+    @Column(name = "impact_short", nullable = false)
+    @Comment("driver의 단기 영향 {방향_강도}")
+    private String impactShort;
+
+    @Column(name = "impact_mid")
+    @Comment("driver의 중기 영향")
+    private String impactMid;
+
+    @Column(name = "impact_long")
+    @Comment("driver의 장기 영향")
+    private String impactLong;
+
     @Builder
-    public DriverTag(String driverId, ImpactResult impactResult,
-            String lv1Id, String lv1Label, String lv2Id, String lv2Label,
-            String lv3Id, String lv3Label, String directionHint, String direction,
-            BigDecimal matchScore, String driverMagnitude, String driverReason,
-            String matchedKeywords) {
+    public MiImpactDriver(String driverId, MiImpactResult impactResult,
+                          String lv1Id, String lv1Label, String lv2Id, String lv2Label,
+                          String lv3Id, String lv3Label, String directionHint, BigDecimal matchScore,
+                          String matchedKeywords, String driverReason,
+                          String impactShort, String impactMid, String impactLong) {
         this.driverId = driverId;
         this.impactResult = impactResult;
         this.lv1Id = lv1Id;
@@ -104,11 +102,12 @@ public class DriverTag extends BaseEntity {
         this.lv3Id = lv3Id;
         this.lv3Label = lv3Label;
         this.directionHint = directionHint;
-        this.direction = direction;
         this.matchScore = matchScore;
-        this.driverMagnitude = driverMagnitude;
-        this.driverReason = driverReason;
         this.matchedKeywords = matchedKeywords;
+        this.driverReason = driverReason;
+        this.impactShort = impactShort;
+        this.impactMid = impactMid;
+        this.impactLong = impactLong;
     }
 
 }
