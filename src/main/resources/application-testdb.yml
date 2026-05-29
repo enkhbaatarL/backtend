@@ -165,11 +165,11 @@ api:
 mail:
   except-company-no: 2020
   smtp:
-    host: smtp.worksmobile.com
+    host: email-smtp.ap-northeast-2.amazonaws.com
     port: 465
-    username: ${SKT_MI_NO_REPLY_MAIL_ADDR:no-reply@ai-market-insights.co.kr}
-    password: ${SKT_MI_NO_REPLY_MAIL_PW:Godqhr0630}
-    from: ${SKT_MI_NO_REPLY_MAIL_ADDR:no-reply@ai-market-insights.co.kr}
+    username: ${SKT_MI_NO_REPLY_MAIL_USERNAME:AKIASF4YAEJSVKP3P3O3}
+    password: ${SKT_MI_NO_REPLY_MAIL_PW:BMsw5q2ZzLMToeeyFFFg6RW/R6Unf0hrGRzOwWVnNc1G}
+    from: ${SKT_MI_NO_REPLY_MAIL_ADDR:no-reply@marketforesight.ai}
     properties:
       transport-protocol: smtp
       auth: true
