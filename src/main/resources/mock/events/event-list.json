@@ -1,4 +1,4 @@
-﻿{
+{
     "events":  [
                    {
                        "eventId":  1,
@@ -12,7 +12,7 @@
                        "indexImpacts":  [
                                             {
                                                 "indexName":  "JKM",
-                                                "marketImpactLevel":  "extreme",
+                                                "marketImpactLevel":  "high",
                                                 "marketImpactLevelLabel":  "매우높음",
                                                 "direction":  "bullish",
                                                 "directionLabel":  "상승",
@@ -687,7 +687,7 @@
                        "indexImpacts":  [
                                             {
                                                 "indexName":  "JKM",
-                                                "marketImpactLevel":  "extreme",
+                                                "marketImpactLevel":  "high",
                                                 "marketImpactLevelLabel":  "매우높음",
                                                 "direction":  "bullish",
                                                 "directionLabel":  "상승",
@@ -696,7 +696,7 @@
                                             },
                                             {
                                                 "indexName":  "TTF",
-                                                "marketImpactLevel":  "extreme",
+                                                "marketImpactLevel":  "high",
                                                 "marketImpactLevelLabel":  "매우높음",
                                                 "direction":  "bullish",
                                                 "directionLabel":  "상승",
@@ -1407,7 +1407,7 @@
                        "indexImpacts":  [
                                             {
                                                 "indexName":  "JKM",
-                                                "marketImpactLevel":  "extreme",
+                                                "marketImpactLevel":  "high",
                                                 "marketImpactLevelLabel":  "매우높음",
                                                 "direction":  "bullish",
                                                 "directionLabel":  "상승",
@@ -2037,7 +2037,7 @@
                        "indexImpacts":  [
                                             {
                                                 "indexName":  "JKM",
-                                                "marketImpactLevel":  "extreme",
+                                                "marketImpactLevel":  "high",
                                                 "marketImpactLevelLabel":  "매우높음",
                                                 "direction":  "bullish",
                                                 "directionLabel":  "상승",
@@ -2046,7 +2046,7 @@
                                             },
                                             {
                                                 "indexName":  "TTF",
-                                                "marketImpactLevel":  "extreme",
+                                                "marketImpactLevel":  "high",
                                                 "marketImpactLevelLabel":  "매우높음",
                                                 "direction":  "bullish",
                                                 "directionLabel":  "상승",
@@ -2082,7 +2082,7 @@
                        "indexImpacts":  [
                                             {
                                                 "indexName":  "JKM",
-                                                "marketImpactLevel":  "extreme",
+                                                "marketImpactLevel":  "high",
                                                 "marketImpactLevelLabel":  "매우높음",
                                                 "direction":  "bullish",
                                                 "directionLabel":  "상승",
@@ -2712,7 +2712,7 @@
                        "indexImpacts":  [
                                             {
                                                 "indexName":  "JKM",
-                                                "marketImpactLevel":  "extreme",
+                                                "marketImpactLevel":  "high",
                                                 "marketImpactLevelLabel":  "매우높음",
                                                 "direction":  "bullish",
                                                 "directionLabel":  "상승",
@@ -2721,7 +2721,7 @@
                                             },
                                             {
                                                 "indexName":  "TTF",
-                                                "marketImpactLevel":  "extreme",
+                                                "marketImpactLevel":  "high",
                                                 "marketImpactLevelLabel":  "매우높음",
                                                 "direction":  "bullish",
                                                 "directionLabel":  "상승",
@@ -2757,7 +2757,7 @@
                        "indexImpacts":  [
                                             {
                                                 "indexName":  "JKM",
-                                                "marketImpactLevel":  "extreme",
+                                                "marketImpactLevel":  "high",
                                                 "marketImpactLevelLabel":  "매우높음",
                                                 "direction":  "bullish",
                                                 "directionLabel":  "상승",
@@ -3387,7 +3387,7 @@
                        "indexImpacts":  [
                                             {
                                                 "indexName":  "JKM",
-                                                "marketImpactLevel":  "extreme",
+                                                "marketImpactLevel":  "high",
                                                 "marketImpactLevelLabel":  "매우높음",
                                                 "direction":  "bullish",
                                                 "directionLabel":  "상승",
@@ -3396,7 +3396,7 @@
                                             },
                                             {
                                                 "indexName":  "TTF",
-                                                "marketImpactLevel":  "extreme",
+                                                "marketImpactLevel":  "high",
                                                 "marketImpactLevelLabel":  "매우높음",
                                                 "direction":  "bullish",
                                                 "directionLabel":  "상승",
@@ -3477,7 +3477,7 @@
                        "indexImpacts":  [
                                             {
                                                 "indexName":  "JKM",
-                                                "marketImpactLevel":  "extreme",
+                                                "marketImpactLevel":  "high",
                                                 "marketImpactLevelLabel":  "매우높음",
                                                 "direction":  "bullish",
                                                 "directionLabel":  "상승",
@@ -4062,7 +4062,7 @@
                        "indexImpacts":  [
                                             {
                                                 "indexName":  "JKM",
-                                                "marketImpactLevel":  "extreme",
+                                                "marketImpactLevel":  "high",
                                                 "marketImpactLevelLabel":  "매우높음",
                                                 "direction":  "bullish",
                                                 "directionLabel":  "상승",
@@ -4071,7 +4071,7 @@
                                             },
                                             {
                                                 "indexName":  "TTF",
-                                                "marketImpactLevel":  "extreme",
+                                                "marketImpactLevel":  "high",
                                                 "marketImpactLevelLabel":  "매우높음",
                                                 "direction":  "bullish",
                                                 "directionLabel":  "상승",
@@ -4107,7 +4107,7 @@
                        "indexImpacts":  [
                                             {
                                                 "indexName":  "JKM",
-                                                "marketImpactLevel":  "extreme",
+                                                "marketImpactLevel":  "high",
                                                 "marketImpactLevelLabel":  "매우높음",
                                                 "direction":  "bullish",
                                                 "directionLabel":  "상승",
@@ -5412,7 +5412,7 @@
                        "indexImpacts":  [
                                             {
                                                 "indexName":  "JKM",
-                                                "marketImpactLevel":  "extreme",
+                                                "marketImpactLevel":  "high",
                                                 "marketImpactLevelLabel":  "매우높음",
                                                 "direction":  "bullish",
                                                 "directionLabel":  "상승",
@@ -5637,7 +5637,7 @@
                        "indexImpacts":  [
                                             {
                                                 "indexName":  "JKM",
-                                                "marketImpactLevel":  "extreme",
+                                                "marketImpactLevel":  "high",
                                                 "marketImpactLevelLabel":  "매우높음",
                                                 "direction":  "bullish",
                                                 "directionLabel":  "상승",
@@ -5646,7 +5646,7 @@
                                             },
                                             {
                                                 "indexName":  "TTF",
-                                                "marketImpactLevel":  "extreme",
+                                                "marketImpactLevel":  "high",
                                                 "marketImpactLevelLabel":  "매우높음",
                                                 "direction":  "bullish",
                                                 "directionLabel":  "상승",
