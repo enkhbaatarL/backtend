@@ -179,6 +179,39 @@ public class EventController {
 
     @ApiOrder(4)
     @Operation(
+        summary = "Event 기관 전망 조회 API (with pagination)",
+        description = """
+            Event 관련 기관별 시장 전망 정보를 페이징 조회합니다. <br>
+
+            <br><br>
+            ### 사용 가능한 파라미터
+             - eventId: 이벤트 ID (Path) / example - 1
+             - page: 기본값 1 / 1-based
+             - size: 기본값 10
+
+            <br><br>
+            ### content 항목 필드
+            - `viewDate`: 전망 일자 (yyyy-MM-dd)
+            - `institutionName`: 기관명
+            - `outlookSummary`: 전망 요약
+            """
+    )
+    @ApiResponse(responseCode = "200", description = "조회 성공")
+    @GetMapping("/{eventId}/outlooks")
+    @RequiredPermissionRules(rules = {
+        @PermissionRule(role = Role.USER, conditions = {PermissionCondition.SKGAS_COMPANY_USER_ONLY}),
+        @PermissionRule(role = Role.ADMIN, conditions = {PermissionCondition.THIRD_PARTY_ADMIN_ONLY})
+    })
+    public BaseResponse<PaginationRes<EventInstitutionOutlookRes>> getEventOutlooks(
+        @Parameter(description = "이벤트 ID", example = "1") @PathVariable Long eventId,
+        @Parameter(description = "페이지 번호", example = "1") @RequestParam(defaultValue = "1") @Min(1) int page,
+        @Parameter(description = "페이지당 항목 수", example = "10") @RequestParam(defaultValue = "10") @Min(1) int size
+    ) {
+        return BaseResponseFactory.create(eventService.getEventOutlooks(eventId, page, size));
+    }
+
+    @ApiOrder(5)
+    @Operation(
         summary = "Event Records 조회 API (with pagination)",
         description = """
             Event에 매핑된 Record(뉴스/리포트) 목록을 페이징 조회합니다. <br>
@@ -210,39 +243,6 @@ public class EventController {
         @Parameter(description = "페이지당 항목 수", example = "10") @RequestParam(defaultValue = "10") @Min(1) int size
     ) {
         return BaseResponseFactory.create(eventService.getEventRecords(eventId, page, size));
-    }
-
-    @ApiOrder(5)
-    @Operation(
-        summary = "Event 기관 전망 조회 API (with pagination)",
-        description = """
-            Event 관련 기관별 시장 전망 정보를 페이징 조회합니다. <br>
-
-            <br><br>
-            ### 사용 가능한 파라미터
-             - eventId: 이벤트 ID (Path) / example - 1
-             - page: 기본값 1 / 1-based
-             - size: 기본값 10
-
-            <br><br>
-            ### content 항목 필드
-            - `publishedAt`: 전망 발행 일시
-            - `institutionName`: 기관명 (Goldman Sachs, IEA, Wood Mackenzie 등)
-            - `outlookSummary`: 전망 요약 (1~2줄)
-            """
-    )
-    @ApiResponse(responseCode = "200", description = "조회 성공")
-    @GetMapping("/{eventId}/outlooks")
-    @RequiredPermissionRules(rules = {
-        @PermissionRule(role = Role.USER, conditions = {PermissionCondition.SKGAS_COMPANY_USER_ONLY}),
-        @PermissionRule(role = Role.ADMIN, conditions = {PermissionCondition.THIRD_PARTY_ADMIN_ONLY})
-    })
-    public BaseResponse<PaginationRes<EventInstitutionOutlookRes>> getEventOutlooks(
-        @Parameter(description = "이벤트 ID", example = "1") @PathVariable Long eventId,
-        @Parameter(description = "페이지 번호", example = "1") @RequestParam(defaultValue = "1") @Min(1) int page,
-        @Parameter(description = "페이지당 항목 수", example = "10") @RequestParam(defaultValue = "10") @Min(1) int size
-    ) {
-        return BaseResponseFactory.create(eventService.getEventOutlooks(eventId, page, size));
     }
 
 }

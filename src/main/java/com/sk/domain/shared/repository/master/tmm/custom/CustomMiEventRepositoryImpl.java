@@ -13,6 +13,7 @@ import static com.sk.domain.shared.entity.master.tmm.QMiEvent.miEvent;
 import static com.sk.domain.shared.entity.master.tmm.QMiEventRecordMap.miEventRecordMap;
 import static com.sk.domain.shared.entity.master.tmm.QMiEventTypeL1.miEventTypeL1;
 import static com.sk.domain.shared.entity.master.tmm.QMiEventTypeL2.miEventTypeL2;
+import static com.sk.domain.shared.entity.master.tmm.QMiInstitutionView.miInstitutionView;
 import static com.sk.domain.shared.entity.master.tmm.QQualitativeImpact.qualitativeImpact;
 
 import com.querydsl.core.BooleanBuilder;
@@ -237,6 +238,38 @@ public class CustomMiEventRepositoryImpl implements CustomMiEventRepository {
             sources,
             driverTags
         ));
+    }
+
+    @Override
+    public Page<EventOutlookRow> findEventOutlooks(Long eventId, int page, int size) {
+
+        Pageable pageable = PageRequest.of(page - 1, size);
+
+        List<EventOutlookRow> rows = queryFactory
+            .select(new QEventOutlookRow(
+                miInstitutionView.viewDate,
+                miInstitutionView.institutionName,
+                miInstitutionView.viewSummary
+            ))
+            .from(miInstitutionView)
+            .where(
+                miInstitutionView.miEventId.eq(eventId),
+                miInstitutionView.isDeleted.isFalse()
+            )
+            .orderBy(miInstitutionView.viewDate.desc(), miInstitutionView.institutionViewId.desc())
+            .offset(pageable.getOffset())
+            .limit(pageable.getPageSize())
+            .fetch();
+
+        JPQLQuery<Long> countQuery = queryFactory
+            .select(miInstitutionView.count())
+            .from(miInstitutionView)
+            .where(
+                miInstitutionView.miEventId.eq(eventId),
+                miInstitutionView.isDeleted.isFalse()
+            );
+
+        return PageableExecutionUtils.getPage(rows, pageable, countQuery::fetchOne);
     }
 
     // todo: 스키마 최신버전 오면 수정필요함.

@@ -55,16 +55,16 @@ public class EventServiceImpl implements EventService {
     }
 
     @Override
-    public PaginationRes<EventRelatedRecordRes> getEventRecords(Long eventId, int page, int size) {
+    public PaginationRes<EventInstitutionOutlookRes> getEventOutlooks(Long eventId, int page, int size) {
         return PaginationRes.toRes(
-            miEventRepository.findEventRecords(eventId, PageRequest.of(page - 1, size)).map(EventRelatedRecordRes::from)
+            miEventRepository.findEventOutlooks(eventId, page, size).map(EventInstitutionOutlookRes::from)
         );
     }
 
     @Override
-    public PaginationRes<EventInstitutionOutlookRes> getEventOutlooks(Long eventId, int page, int size) {
+    public PaginationRes<EventRelatedRecordRes> getEventRecords(Long eventId, int page, int size) {
         return PaginationRes.toRes(
-            miEventRepository.findEventOutlooks(eventId, PageRequest.of(page - 1, size)).map(EventInstitutionOutlookRes::from)
+            miEventRepository.findEventRecords(eventId, PageRequest.of(page - 1, size)).map(EventRelatedRecordRes::from)
         );
     }
 
