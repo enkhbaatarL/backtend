@@ -6,7 +6,7 @@ import java.time.LocalDateTime;
 
 public record FundamentalModelRunStatusRes(
 
-    @Schema(description = "실행 추적 ID", example = "3f7e44c4-2bb5-4b09-b577-920f83ad2a6d")
+    @Schema(description = "yyyymmdd_hhmmss_XXXX 형식 실행 추적 ID", example = "20260521_143500_A1B2")
     String runId,
 
     @Schema(description = "실행 상태", implementation = FundamentalModelRunStatus.class, example = "RUNNING")

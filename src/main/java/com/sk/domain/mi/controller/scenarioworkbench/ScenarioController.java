@@ -1,7 +1,8 @@
 package com.sk.domain.mi.controller.scenarioworkbench;
 
 import com.sk.common.annotation.ApiOrder;
-import com.sk.common.annotation.RequiredPermission;
+import com.sk.common.annotation.PermissionRule;
+import com.sk.common.annotation.RequiredPermissionRules;
 import com.sk.common.model.BaseResponse;
 import com.sk.common.model.BaseResponseFactory;
 import com.sk.domain.mi.dto.request.scenarioworkbench.ScenarioListReq;
@@ -18,11 +19,13 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springdoc.core.annotations.ParameterObject;
+import org.springframework.context.annotation.Profile;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+@Profile("!dedicated")
 @Tag(name = "3. Scenario Workbench Scenario API", description = "Scenario Workbench Scenario API입니다.")
 @Slf4j
 @RestController
@@ -75,10 +78,10 @@ public class ScenarioController {
     @Parameter(name = "size", description = "페이지당 항목 수. 기본값 20")
     @ApiResponse(responseCode = "200", description = "조회 성공")
     @GetMapping
-    @RequiredPermission(
-        roles = {Role.ADMIN, Role.USER},
-        condition = PermissionCondition.THIRD_PARTY_ADMIN_ONLY
-    )
+    @RequiredPermissionRules(rules = {
+        @PermissionRule(role = Role.USER, conditions = {PermissionCondition.SKGAS_COMPANY_USER_ONLY}),
+        @PermissionRule(role = Role.ADMIN, conditions = {PermissionCondition.THIRD_PARTY_ADMIN_ONLY})
+    })
     public BaseResponse<ScenarioListRes> getScenarios(@Valid @ParameterObject ScenarioListReq request) {
         return BaseResponseFactory.create(scenarioService.getScenarios(request));
     }
@@ -111,10 +114,10 @@ public class ScenarioController {
     )
     @ApiResponse(responseCode = "200", description = "조회 성공")
     @GetMapping("/{scenarioId}")
-    @RequiredPermission(
-        roles = {Role.ADMIN, Role.USER},
-        condition = PermissionCondition.THIRD_PARTY_ADMIN_ONLY
-    )
+    @RequiredPermissionRules(rules = {
+        @PermissionRule(role = Role.USER, conditions = {PermissionCondition.SKGAS_COMPANY_USER_ONLY}),
+        @PermissionRule(role = Role.ADMIN, conditions = {PermissionCondition.THIRD_PARTY_ADMIN_ONLY})
+    })
     public BaseResponse<ScenarioDetailRes> getScenarioDetail(
         @Parameter(description = "시나리오 ID", example = "1") @PathVariable Long scenarioId
     ) {

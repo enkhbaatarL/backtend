@@ -42,6 +42,17 @@ import org.springframework.stereotype.Component;
 @RequiredArgsConstructor
 public class DesignMockService {
 
+    private static final Map<String, Long> EVENT_TYPE_CODE_TO_ID = Map.of(
+        "geopolitical_risk", 1L,
+        "weather_climate", 2L,
+        "infrastructure_facility", 3L,
+        "supply_demand_balance", 4L,
+        "logistics_shipping", 5L,
+        "energy_mix_transition", 6L,
+        "macroeconomy_policy", 7L,
+        "market_trading_structure", 8L
+    );
+
     private static final long AUTO_COMPLETE_DELAY_SECONDS = 5;
     private static final String SCENARIO_TEMPLATE_KEY = "template";
 
@@ -144,7 +155,7 @@ public class DesignMockService {
 
         List<DesignEventItemRes> filtered = eventList.stream()
             .filter(e -> request.eventStatus() == ContentStatus.ALL || e.status() == request.eventStatus())
-            .filter(e -> request.eventCategoryLv1().isEmpty() || request.eventCategoryLv1().contains(e.eventCategoryLv1()))
+            .filter(e -> matchesEventTypeFilter(e.eventTypeLv1(), request.eventTypeL1Id()))
             .filter(e -> startDateTime == null || !e.updatedAt().isBefore(startDateTime))
             .filter(e -> endDateTime == null || e.updatedAt().isBefore(endDateTime))
             .filter(e -> request.keyword().isEmpty() || e.eventName().contains(request.keyword()))
@@ -216,7 +227,7 @@ public class DesignMockService {
             .map(e -> e.eventId().equals(eventId)
                 ? new DesignEventItemRes(
                     e.eventId(), e.eventName(), e.status(), e.statusLabel(),
-                    e.eventCategoryLv1(), e.eventCategoryLv1Label(),
+                    e.eventTypeLv1(), e.eventTypeLv1Label(),
                     e.createdAt(), e.updatedAt(), e.scenarioRecommended(), e.recommendationReason(), e.indexImpacts(),
                     status, status.getLabel(), startedAt, requestId)
                 : e)
@@ -249,6 +260,14 @@ public class DesignMockService {
             .filter(r -> r != null)
             .map(r -> new ScenarioGenStatusRes(r.requestId(), r.eventId(), r.status(), r.status().getLabel(), r.requestedAt()))
             .toList();
+    }
+
+    private boolean matchesEventTypeFilter(String eventTypeCode, List<Long> filterIds) {
+        if (filterIds == null || filterIds.isEmpty()) {
+            return true;
+        }
+        Long id = EVENT_TYPE_CODE_TO_ID.get(eventTypeCode);
+        return id != null && filterIds.contains(id);
     }
 
     private record MockGenRequest(Long requestId, Long eventId, ScenarioGenStatus status, LocalDateTime requestedAt) {}

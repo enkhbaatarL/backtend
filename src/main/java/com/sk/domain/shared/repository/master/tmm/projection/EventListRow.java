@@ -5,8 +5,13 @@ import java.util.List;
 
 public record EventListRow(
     Long miEventId,
-    String eventTitleKo,
+    String eventTitle,
     String level1Code,
+    String level1Label,
+    Boolean isSignal,
+    Boolean isNew,
+    Boolean isScenarioSuggested,
+    String scenarioSuggestReason,
     LocalDateTime createDt,
     LocalDateTime modifyDt,
     List<EventIndexImpactRow> indexImpacts

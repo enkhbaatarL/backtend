@@ -3,13 +3,15 @@ package com.sk.domain.mi.service.fundamentalmodel;
 import com.sk.domain.mi.dto.request.fundamentalmodel.FundamentalModelCaseListReq;
 import com.sk.domain.mi.dto.request.fundamentalmodel.FundamentalModelCaseUpdateReq;
 import com.sk.domain.mi.dto.request.fundamentalmodel.FundamentalModelRunCallbackReq;
-import com.sk.domain.mi.dto.request.fundamentalmodel.FundamentalModelRunReq;
+import com.sk.domain.mi.dto.request.fundamentalmodel.FundamentalModelVolumesReq;
 import com.sk.domain.mi.dto.response.fundamentalmodel.FundamentalModelCaseCreateRes;
 import com.sk.domain.mi.dto.response.fundamentalmodel.FundamentalModelCaseDetailRes;
 import com.sk.domain.mi.dto.response.fundamentalmodel.FundamentalModelCaseListRes;
 import com.sk.domain.mi.dto.response.fundamentalmodel.FundamentalModelCaseStatusRes;
+import com.sk.domain.mi.dto.response.fundamentalmodel.FundamentalModelPriceRes;
 import com.sk.domain.mi.dto.response.fundamentalmodel.FundamentalModelRunAcceptRes;
 import com.sk.domain.mi.dto.response.fundamentalmodel.FundamentalModelRunCallbackRes;
+import com.sk.domain.mi.dto.response.fundamentalmodel.FundamentalModelVolumesRes;
 import java.util.List;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -29,9 +31,13 @@ public interface FundamentalModelCaseService {
 
     void deleteCase(Long caseId);
 
-    FundamentalModelRunAcceptRes runCase(Long caseId, FundamentalModelRunReq request);
+    FundamentalModelRunAcceptRes runCase(Long caseId);
 
     FundamentalModelCaseStatusRes getCaseStatus(Long caseId);
+
+    FundamentalModelVolumesRes getVolumes(Long caseId, FundamentalModelVolumesReq request);
+
+    FundamentalModelPriceRes getPrice(Long caseId);
 
     FundamentalModelRunCallbackRes handleCallback(String runId, FundamentalModelRunCallbackReq request);
 

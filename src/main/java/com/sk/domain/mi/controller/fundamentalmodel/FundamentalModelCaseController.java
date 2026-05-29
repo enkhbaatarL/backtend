@@ -1,23 +1,29 @@
 package com.sk.domain.mi.controller.fundamentalmodel;
 
 import com.sk.common.annotation.ApiOrder;
-import com.sk.common.annotation.RequiredPermission;
+import com.sk.common.annotation.PermissionRule;
+import com.sk.common.annotation.RequiredPermissionRules;
 import com.sk.common.enums.ResultCode;
 import com.sk.common.model.BaseResponse;
 import com.sk.common.model.BaseResponseFactory;
 import com.sk.domain.mi.config.FundamentalModelMockProperties;
 import com.sk.domain.mi.dto.request.fundamentalmodel.FundamentalModelCaseListReq;
 import com.sk.domain.mi.dto.request.fundamentalmodel.FundamentalModelCaseUpdateReq;
-import com.sk.domain.mi.dto.request.fundamentalmodel.FundamentalModelRunReq;
+import com.sk.domain.mi.dto.request.fundamentalmodel.FundamentalModelVolumesReq;
 import com.sk.domain.mi.dto.response.fundamentalmodel.FundamentalModelCaseCreateRes;
 import com.sk.domain.mi.dto.response.fundamentalmodel.FundamentalModelCaseDetailRes;
 import com.sk.domain.mi.dto.response.fundamentalmodel.FundamentalModelCaseListRes;
 import com.sk.domain.mi.dto.response.fundamentalmodel.FundamentalModelCaseStatusRes;
-import com.sk.domain.mi.dto.response.fundamentalmodel.FundamentalModelRunAcceptRes;
+import com.sk.domain.mi.dto.response.fundamentalmodel.FundamentalModelPriceRes;
+import com.sk.domain.mi.dto.response.fundamentalmodel.FundamentalModelVolumesRes;
 import com.sk.domain.mi.service.fundamentalmodel.FundamentalModelCaseService;
 import com.sk.domain.shared.enums.PermissionCondition;
 import com.sk.domain.shared.enums.Role;
 import com.sk.domain.shared.enums.fundamentalmodel.FundamentalModelCaseSearchType;
+import com.sk.domain.shared.enums.fundamentalmodel.FundamentalModelDataType;
+import com.sk.domain.shared.enums.fundamentalmodel.FundamentalModelGranularity;
+import com.sk.domain.shared.enums.fundamentalmodel.FundamentalModelRegion;
+import com.sk.domain.shared.enums.fundamentalmodel.FundamentalModelSegment;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
@@ -26,6 +32,7 @@ import jakarta.validation.Valid;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.context.annotation.Profile;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
@@ -41,6 +48,7 @@ import org.springframework.web.bind.annotation.RequestPart;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
 
+@Profile("!dedicated")
 @Tag(name = "6. MI Fundamental Model Case API", description = "MI Fundamental Model Scenario Case mock API입니다.")
 @Slf4j
 @RestController
@@ -58,10 +66,10 @@ public class FundamentalModelCaseController {
     )
     @ApiResponse(responseCode = "200", description = "조회 성공")
     @GetMapping
-    @RequiredPermission(
-        roles = {Role.ADMIN, Role.USER},
-        condition = PermissionCondition.THIRD_PARTY_ADMIN_ONLY
-    )
+    @RequiredPermissionRules(rules = {
+        @PermissionRule(role = Role.USER, conditions = {PermissionCondition.SKGAS_COMPANY_USER_ONLY}),
+        @PermissionRule(role = Role.ADMIN, conditions = {PermissionCondition.THIRD_PARTY_ADMIN_ONLY})
+    })
     public BaseResponse<FundamentalModelCaseListRes> listCases(
         @Parameter(description = "검색 대상 필드", example = "TITLE") @RequestParam(required = false) FundamentalModelCaseSearchType searchType,
         @Parameter(description = "검색 키워드", example = "JKM") @RequestParam(required = false) String keyword
@@ -80,14 +88,14 @@ public class FundamentalModelCaseController {
     )
     @ApiResponse(responseCode = "201", description = "생성 성공")
     @PostMapping(consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
-    @RequiredPermission(
-        roles = {Role.ADMIN, Role.USER},
-        condition = PermissionCondition.THIRD_PARTY_ADMIN_ONLY
-    )
+    @RequiredPermissionRules(rules = {
+        @PermissionRule(role = Role.USER, conditions = {PermissionCondition.SKGAS_COMPANY_USER_ONLY}),
+        @PermissionRule(role = Role.ADMIN, conditions = {PermissionCondition.THIRD_PARTY_ADMIN_ONLY})
+    })
     public ResponseEntity<BaseResponse<FundamentalModelCaseCreateRes>> createCase(
-        @Parameter(description = "Scenario Case 제목", example = "JKM price upside case") @RequestPart("title") String title,
+        @Parameter(description = "Scenario Case 제목", example = "JKM price upside case") @RequestParam("title") String title,
         @Parameter(description = "Scenario Case 설명", example = "May demand shock scenario case")
-        @RequestPart(value = "description", required = false) String description,
+        @RequestParam(value = "description", required = false) String description,
         @Parameter(description = "모델 실행 입력 파일 3개") @RequestPart("files") List<MultipartFile> files
     ) {
         FundamentalModelCaseCreateRes response = fundamentalModelCaseService.createCase(
@@ -105,10 +113,10 @@ public class FundamentalModelCaseController {
     )
     @ApiResponse(responseCode = "200", description = "조회 성공")
     @GetMapping("/{caseId}")
-    @RequiredPermission(
-        roles = {Role.ADMIN, Role.USER},
-        condition = PermissionCondition.THIRD_PARTY_ADMIN_ONLY
-    )
+    @RequiredPermissionRules(rules = {
+        @PermissionRule(role = Role.USER, conditions = {PermissionCondition.SKGAS_COMPANY_USER_ONLY}),
+        @PermissionRule(role = Role.ADMIN, conditions = {PermissionCondition.THIRD_PARTY_ADMIN_ONLY})
+    })
     public BaseResponse<FundamentalModelCaseDetailRes> getCaseDetail(
         @Parameter(description = "Scenario Case ID", example = "101") @PathVariable Long caseId
     ) {
@@ -122,10 +130,10 @@ public class FundamentalModelCaseController {
     )
     @ApiResponse(responseCode = "200", description = "수정 성공")
     @PatchMapping("/{caseId}")
-    @RequiredPermission(
-        roles = {Role.ADMIN, Role.USER},
-        condition = PermissionCondition.THIRD_PARTY_ADMIN_ONLY
-    )
+    @RequiredPermissionRules(rules = {
+        @PermissionRule(role = Role.USER, conditions = {PermissionCondition.SKGAS_COMPANY_USER_ONLY}),
+        @PermissionRule(role = Role.ADMIN, conditions = {PermissionCondition.THIRD_PARTY_ADMIN_ONLY})
+    })
     public BaseResponse<FundamentalModelCaseDetailRes> updateCase(
         @Parameter(description = "Scenario Case ID", example = "101") @PathVariable Long caseId,
         @Valid @RequestBody FundamentalModelCaseUpdateReq request
@@ -140,34 +148,15 @@ public class FundamentalModelCaseController {
     )
     @ApiResponse(responseCode = "200", description = "삭제 성공")
     @DeleteMapping("/{caseId}")
-    @RequiredPermission(
-        roles = {Role.ADMIN, Role.USER},
-        condition = PermissionCondition.THIRD_PARTY_ADMIN_ONLY
-    )
+    @RequiredPermissionRules(rules = {
+        @PermissionRule(role = Role.USER, conditions = {PermissionCondition.SKGAS_COMPANY_USER_ONLY}),
+        @PermissionRule(role = Role.ADMIN, conditions = {PermissionCondition.THIRD_PARTY_ADMIN_ONLY})
+    })
     public BaseResponse<Void> deleteCase(
         @Parameter(description = "Scenario Case ID", example = "101") @PathVariable Long caseId
     ) {
         fundamentalModelCaseService.deleteCase(caseId);
         return BaseResponseFactory.create(ResultCode.Success.OK);
-    }
-
-    @ApiOrder(6)
-    @Operation(
-        summary = "MI Fundamental Model Scenario Case 실행 요청 API",
-        description = "PENDING/COMPLETED/FAILED 상태의 case를 RUNNING 상태로 전이하고 runId를 발급합니다."
-    )
-    @ApiResponse(responseCode = "202", description = "비동기 실행 접수 성공")
-    @PostMapping("/{caseId}/runs")
-    @RequiredPermission(
-        roles = {Role.ADMIN, Role.USER},
-        condition = PermissionCondition.THIRD_PARTY_ADMIN_ONLY
-    )
-    public ResponseEntity<BaseResponse<FundamentalModelRunAcceptRes>> runCase(
-        @Parameter(description = "Scenario Case ID", example = "101") @PathVariable Long caseId,
-        @Valid @RequestBody(required = false) FundamentalModelRunReq request
-    ) {
-        FundamentalModelRunAcceptRes response = fundamentalModelCaseService.runCase(caseId, request);
-        return ResponseEntity.status(HttpStatus.ACCEPTED).body(BaseResponseFactory.create(response));
     }
 
     @ApiOrder(7)
@@ -177,10 +166,10 @@ public class FundamentalModelCaseController {
     )
     @ApiResponse(responseCode = "200", description = "조회 성공")
     @GetMapping("/{caseId}/status")
-    @RequiredPermission(
-        roles = {Role.ADMIN, Role.USER},
-        condition = PermissionCondition.THIRD_PARTY_ADMIN_ONLY
-    )
+    @RequiredPermissionRules(rules = {
+        @PermissionRule(role = Role.USER, conditions = {PermissionCondition.SKGAS_COMPANY_USER_ONLY}),
+        @PermissionRule(role = Role.ADMIN, conditions = {PermissionCondition.THIRD_PARTY_ADMIN_ONLY})
+    })
     public BaseResponse<FundamentalModelCaseStatusRes> getCaseStatus(
         @Parameter(description = "Scenario Case ID", example = "101") @PathVariable Long caseId
     ) {
@@ -189,15 +178,59 @@ public class FundamentalModelCaseController {
 
     @ApiOrder(8)
     @Operation(
+        summary = "MI Fundamental Model Volumes 데이터 조회 API",
+        description = "COMPLETED 상태의 case에 대해 segment/type/region/granularity 필터가 적용된 Volumes mock 데이터를 조회합니다."
+    )
+    @ApiResponse(responseCode = "200", description = "조회 성공")
+    @GetMapping("/{caseId}/volumes")
+    @RequiredPermissionRules(rules = {
+        @PermissionRule(role = Role.USER, conditions = {PermissionCondition.SKGAS_COMPANY_USER_ONLY}),
+        @PermissionRule(role = Role.ADMIN, conditions = {PermissionCondition.THIRD_PARTY_ADMIN_ONLY})
+    })
+    public BaseResponse<FundamentalModelVolumesRes> getVolumes(
+        @Parameter(description = "Scenario Case ID", example = "106") @PathVariable Long caseId,
+        @Parameter(description = "조회 segment", required = true, example = "GLOBAL") @RequestParam FundamentalModelSegment segment,
+        @Parameter(description = "데이터 타입 필터. 미전달 시 전체입니다.", example = "DEMAND,PRODUCTION")
+        @RequestParam(required = false) List<FundamentalModelDataType> types,
+        @Parameter(description = "지역 필터. 미전달 시 전체입니다.", example = "ASIA,EUROPE")
+        @RequestParam(required = false) List<FundamentalModelRegion> regions,
+        @Parameter(description = "시간 단위. 미전달 시 MONTHLY입니다.", example = "MONTHLY")
+        @RequestParam(required = false) FundamentalModelGranularity granularity
+    ) {
+        return BaseResponseFactory.create(fundamentalModelCaseService.getVolumes(
+            caseId,
+            new FundamentalModelVolumesReq(segment, types, regions, granularity)
+        ));
+    }
+
+    @ApiOrder(9)
+    @Operation(
+        summary = "MI Fundamental Model Price 데이터 조회 API",
+        description = "COMPLETED 상태의 case에 대해 Price chart, annualTable, monthlyTable mock 데이터를 조회합니다."
+    )
+    @ApiResponse(responseCode = "200", description = "조회 성공")
+    @GetMapping("/{caseId}/price")
+    @RequiredPermissionRules(rules = {
+        @PermissionRule(role = Role.USER, conditions = {PermissionCondition.SKGAS_COMPANY_USER_ONLY}),
+        @PermissionRule(role = Role.ADMIN, conditions = {PermissionCondition.THIRD_PARTY_ADMIN_ONLY})
+    })
+    public BaseResponse<FundamentalModelPriceRes> getPrice(
+        @Parameter(description = "Scenario Case ID", example = "106") @PathVariable Long caseId
+    ) {
+        return BaseResponseFactory.create(fundamentalModelCaseService.getPrice(caseId));
+    }
+
+    @ApiOrder(10)
+    @Operation(
         summary = "[mockapi 전용] MI Fundamental Model Scenario Case 데이터 초기화 API",
         description = "설정 flag가 활성화된 경우 mock case/run 데이터를 초기화합니다."
     )
     @ApiResponse(responseCode = "200", description = "초기화 성공")
     @PostMapping("/reset")
-    @RequiredPermission(
-        roles = {Role.ADMIN, Role.USER},
-        condition = PermissionCondition.THIRD_PARTY_ADMIN_ONLY
-    )
+    @RequiredPermissionRules(rules = {
+        @PermissionRule(role = Role.USER, conditions = {PermissionCondition.SKGAS_COMPANY_USER_ONLY}),
+        @PermissionRule(role = Role.ADMIN, conditions = {PermissionCondition.THIRD_PARTY_ADMIN_ONLY})
+    })
     public ResponseEntity<BaseResponse<Void>> reset() {
         if (!mockProperties.getFundamentalModelCases().getApi().isReset()) {
             return ResponseEntity.status(HttpStatus.NOT_FOUND)

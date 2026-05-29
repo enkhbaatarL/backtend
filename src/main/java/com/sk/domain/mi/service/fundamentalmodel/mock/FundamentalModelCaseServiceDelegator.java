@@ -4,13 +4,15 @@ import com.sk.domain.mi.config.FundamentalModelMockProperties;
 import com.sk.domain.mi.dto.request.fundamentalmodel.FundamentalModelCaseListReq;
 import com.sk.domain.mi.dto.request.fundamentalmodel.FundamentalModelCaseUpdateReq;
 import com.sk.domain.mi.dto.request.fundamentalmodel.FundamentalModelRunCallbackReq;
-import com.sk.domain.mi.dto.request.fundamentalmodel.FundamentalModelRunReq;
+import com.sk.domain.mi.dto.request.fundamentalmodel.FundamentalModelVolumesReq;
 import com.sk.domain.mi.dto.response.fundamentalmodel.FundamentalModelCaseCreateRes;
 import com.sk.domain.mi.dto.response.fundamentalmodel.FundamentalModelCaseDetailRes;
 import com.sk.domain.mi.dto.response.fundamentalmodel.FundamentalModelCaseListRes;
 import com.sk.domain.mi.dto.response.fundamentalmodel.FundamentalModelCaseStatusRes;
+import com.sk.domain.mi.dto.response.fundamentalmodel.FundamentalModelPriceRes;
 import com.sk.domain.mi.dto.response.fundamentalmodel.FundamentalModelRunAcceptRes;
 import com.sk.domain.mi.dto.response.fundamentalmodel.FundamentalModelRunCallbackRes;
+import com.sk.domain.mi.dto.response.fundamentalmodel.FundamentalModelVolumesRes;
 import com.sk.domain.mi.service.fundamentalmodel.FundamentalModelCaseService;
 import com.sk.domain.mi.service.fundamentalmodel.FundamentalModelCaseServiceImpl;
 import java.util.List;
@@ -70,10 +72,10 @@ public class FundamentalModelCaseServiceDelegator implements FundamentalModelCas
     }
 
     @Override
-    public FundamentalModelRunAcceptRes runCase(Long caseId, FundamentalModelRunReq request) {
+    public FundamentalModelRunAcceptRes runCase(Long caseId) {
         return mockProps.getFundamentalModelCases().getApi().isRun()
-            ? mockService.runCase(caseId, request)
-            : realService.runCase(caseId, request);
+            ? mockService.runCase(caseId)
+            : realService.runCase(caseId);
     }
 
     @Override
@@ -81,6 +83,20 @@ public class FundamentalModelCaseServiceDelegator implements FundamentalModelCas
         return mockProps.getFundamentalModelCases().getApi().isGetStatus()
             ? mockService.getCaseStatus(caseId)
             : realService.getCaseStatus(caseId);
+    }
+
+    @Override
+    public FundamentalModelVolumesRes getVolumes(Long caseId, FundamentalModelVolumesReq request) {
+        return mockProps.getFundamentalModelCases().getApi().isGetVolumes()
+            ? mockService.getVolumes(caseId, request)
+            : realService.getVolumes(caseId, request);
+    }
+
+    @Override
+    public FundamentalModelPriceRes getPrice(Long caseId) {
+        return mockProps.getFundamentalModelCases().getApi().isGetPrice()
+            ? mockService.getPrice(caseId)
+            : realService.getPrice(caseId);
     }
 
     @Override

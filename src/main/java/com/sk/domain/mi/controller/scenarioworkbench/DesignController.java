@@ -1,7 +1,8 @@
 package com.sk.domain.mi.controller.scenarioworkbench;
 
 import com.sk.common.annotation.ApiOrder;
-import com.sk.common.annotation.RequiredPermission;
+import com.sk.common.annotation.PermissionRule;
+import com.sk.common.annotation.RequiredPermissionRules;
 import com.sk.common.enums.ResultCode;
 import com.sk.common.model.BaseResponse;
 import com.sk.common.model.BaseResponseFactory;
@@ -24,6 +25,7 @@ import java.util.List;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springdoc.core.annotations.ParameterObject;
+import org.springframework.context.annotation.Profile;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -32,6 +34,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
+@Profile("!dedicated")
 @Tag(name = "5. Scenario Workbench Design API", description = "Scenario Workbench Design API입니다.")
 @Slf4j
 @RestController
@@ -61,7 +64,7 @@ public class DesignController {
             """
     )
     @Parameter(name = "eventStatus", description = "이벤트 상태 (ALL / NEW / UPDATED). 기본값 ALL")
-    @Parameter(name = "eventCategoryLv1", description = "이벤트 유형 Lv1. 복수 선택 가능")
+    @Parameter(name = "eventTypeL1Id", description = "이벤트 유형 Lv1 ID. 복수 선택 가능")
     @Parameter(name = "period", description = "조회 기간. 기본값 SIX_MONTHS")
     @Parameter(name = "startDate", description = "커스텀 조회 시작일. period=CUSTOM 시 사용")
     @Parameter(name = "endDate", description = "커스텀 조회 종료일. period=CUSTOM 시 사용")
@@ -73,10 +76,10 @@ public class DesignController {
     @Parameter(name = "size", description = "페이지당 항목 수. 기본값 20")
     @ApiResponse(responseCode = "200", description = "조회 성공")
     @GetMapping("/events")
-    @RequiredPermission(
-        roles = {Role.ADMIN, Role.USER},
-        condition = PermissionCondition.THIRD_PARTY_ADMIN_ONLY
-    )
+    @RequiredPermissionRules(rules = {
+        @PermissionRule(role = Role.USER, conditions = {PermissionCondition.SKGAS_COMPANY_USER_ONLY}),
+        @PermissionRule(role = Role.ADMIN, conditions = {PermissionCondition.THIRD_PARTY_ADMIN_ONLY})
+    })
     public BaseResponse<DesignEventListRes> getDesignEvents(@Valid @ParameterObject DesignEventListReq request) {
         return BaseResponseFactory.create(designService.getDesignEvents(request));
     }
@@ -98,10 +101,10 @@ public class DesignController {
     )
     @ApiResponse(responseCode = "200", description = "생성 요청 접수 성공")
     @PostMapping("/generate")
-    @RequiredPermission(
-        roles = {Role.ADMIN, Role.USER},
-        condition = PermissionCondition.THIRD_PARTY_ADMIN_ONLY
-    )
+    @RequiredPermissionRules(rules = {
+        @PermissionRule(role = Role.USER, conditions = {PermissionCondition.SKGAS_COMPANY_USER_ONLY}),
+        @PermissionRule(role = Role.ADMIN, conditions = {PermissionCondition.THIRD_PARTY_ADMIN_ONLY})
+    })
     public BaseResponse<ScenarioGenAcceptRes> generateScenarios(
         @Valid @RequestBody ScenarioGenReq request
     ) {
@@ -119,7 +122,13 @@ public class DesignController {
     )
     @ApiResponse(responseCode = "200", description = "콜백 처리 성공")
     @PostMapping("/callback")
-    @RequiredPermission(roles = {Role.SYSTEM})
+    @RequiredPermissionRules(rules = {
+        @PermissionRule(role = Role.SYSTEM),
+        @PermissionRule(role = Role.API_SUB_ADMIN),
+        @PermissionRule(role = Role.API_PLUS_OPERATOR),
+        @PermissionRule(role = Role.USER, conditions = {PermissionCondition.SKGAS_COMPANY_USER_ONLY}),
+        @PermissionRule(role = Role.ADMIN, conditions = {PermissionCondition.THIRD_PARTY_ADMIN_ONLY})
+    })
     public BaseResponse<Void> handleCallback(@Valid @RequestBody ScenarioGenCallbackReq request) {
         designService.handleCallback(request);
         return BaseResponseFactory.create(ResultCode.Success.OK);
@@ -136,10 +145,10 @@ public class DesignController {
     )
     @ApiResponse(responseCode = "200", description = "조회 성공")
     @GetMapping("/generate/{requestId}/scenarios")
-    @RequiredPermission(
-        roles = {Role.ADMIN, Role.USER},
-        condition = PermissionCondition.THIRD_PARTY_ADMIN_ONLY
-    )
+    @RequiredPermissionRules(rules = {
+        @PermissionRule(role = Role.USER, conditions = {PermissionCondition.SKGAS_COMPANY_USER_ONLY}),
+        @PermissionRule(role = Role.ADMIN, conditions = {PermissionCondition.THIRD_PARTY_ADMIN_ONLY})
+    })
     public BaseResponse<List<GeneratedScenarioRes>> getGeneratedScenarios(
         @Parameter(description = "생성 요청 ID", example = "1") @PathVariable Long requestId
     ) {
@@ -162,10 +171,10 @@ public class DesignController {
     )
     @ApiResponse(responseCode = "200", description = "조회 성공")
     @GetMapping("/generate/status")
-    @RequiredPermission(
-        roles = {Role.ADMIN, Role.USER},
-        condition = PermissionCondition.THIRD_PARTY_ADMIN_ONLY
-    )
+    @RequiredPermissionRules(rules = {
+        @PermissionRule(role = Role.USER, conditions = {PermissionCondition.SKGAS_COMPANY_USER_ONLY}),
+        @PermissionRule(role = Role.ADMIN, conditions = {PermissionCondition.THIRD_PARTY_ADMIN_ONLY})
+    })
     public BaseResponse<List<ScenarioGenStatusRes>> getGenerateStatuses(
         @Parameter(description = "생성 요청 ID 목록", example = "1,2,3")
         @RequestParam List<Long> requestIds
@@ -183,10 +192,10 @@ public class DesignController {
     )
     @ApiResponse(responseCode = "200", description = "초기화 성공")
     @PostMapping("/reset")
-    @RequiredPermission(
-        roles = {Role.ADMIN, Role.USER},
-        condition = PermissionCondition.THIRD_PARTY_ADMIN_ONLY
-    )
+    @RequiredPermissionRules(rules = {
+        @PermissionRule(role = Role.USER, conditions = {PermissionCondition.SKGAS_COMPANY_USER_ONLY}),
+        @PermissionRule(role = Role.ADMIN, conditions = {PermissionCondition.THIRD_PARTY_ADMIN_ONLY})
+    })
     public BaseResponse<Void> reset() {
         designService.reset();
         return BaseResponseFactory.create(ResultCode.Success.OK);

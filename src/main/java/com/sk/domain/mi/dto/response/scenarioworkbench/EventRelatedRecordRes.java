@@ -6,10 +6,10 @@ import java.time.LocalDateTime;
 
 public record EventRelatedRecordRes(
 
-    @Schema(description = "Record 생성일시")
+    @Schema(description = "Record 발행/생성 일시")
     LocalDateTime publishedAt,
 
-    @Schema(description = "Record 유형", example = "NEWS")
+    @Schema(description = "Record 종류 (NEWS, REPORT 등)", example = "NEWS")
     String recordType,
 
     @Schema(description = "제목")
@@ -18,11 +18,8 @@ public record EventRelatedRecordRes(
     @Schema(description = "요약")
     String summary,
 
-    @Schema(description = "상품번호")
-    Integer goodsNo,
-
-    @Schema(description = "파일명")
-    String fileName
+    @Schema(description = "원본 소스 ID (source_obj_id)", example = "12345")
+    Long sourceObjId
 
 ) {
 
@@ -32,8 +29,7 @@ public record EventRelatedRecordRes(
             row.getRecordType(),
             row.getTitle(),
             row.getSummary(),
-            row.getGoodsNo(),
-            row.getFileName()
+            row.getSourceObjId()
         );
     }
 }

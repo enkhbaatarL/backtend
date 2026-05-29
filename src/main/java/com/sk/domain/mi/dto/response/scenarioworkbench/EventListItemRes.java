@@ -1,13 +1,11 @@
 package com.sk.domain.mi.dto.response.scenarioworkbench;
 
 import com.sk.domain.shared.enums.scenarioworkbench.ContentStatus;
-import com.sk.domain.shared.enums.scenarioworkbench.EventCategoryLv1;
 import com.sk.domain.shared.enums.scenarioworkbench.EventSignalType;
 import com.sk.domain.shared.repository.master.tmm.projection.EventListRow;
 import io.swagger.v3.oas.annotations.media.Schema;
 import java.time.LocalDateTime;
 import java.util.List;
-import java.util.Optional;
 
 public record EventListItemRes(
 
@@ -17,17 +15,17 @@ public record EventListItemRes(
     @Schema(description = "이벤트명", example = "호르무즈 해협 긴장 재확대")
     String eventName,
 
-    @Schema(description = "상태 (NEW / UPDATED)", example = "NEW")
+    @Schema(description = "상태 (new / updated)", example = "new")
     ContentStatus status,
 
     @Schema(description = "상태 라벨", example = "신규")
     String statusLabel,
 
     @Schema(description = "이벤트 유형 Lv1", example = "geopolitical_risk")
-    EventCategoryLv1 eventCategoryLv1,
+    String eventTypeLv1,
 
     @Schema(description = "이벤트 유형 Lv1 라벨", example = "지정학적 리스크")
-    String eventCategoryLv1Label,
+    String eventTypeLv1Label,
 
     @Schema(description = "생성일시")
     LocalDateTime createdAt,
@@ -41,26 +39,34 @@ public record EventListItemRes(
     @Schema(description = "신호/소음 라벨", example = "신호")
     String signalTypeLabel,
 
+    @Schema(description = "시나리오화 추천 여부", example = "true")
+    Boolean isScenarioSuggested,
+
+    @Schema(description = "시나리오화 추천 근거", example = "글로벌 공급 차질 가능성으로 시나리오화 검토 필요")
+    String scenarioSuggestReason,
+
     @Schema(description = "인덱스별 영향도 (JKM, TTF, HH)")
     List<EventImpactIndexRes> indexImpacts
 
 ) {
 
     public static EventListItemRes from(EventListRow row) {
-        EventCategoryLv1 categoryLv1 = EventCategoryLv1.fromCode(row.level1Code());
-        ContentStatus status = row.createDt().equals(row.modifyDt()) ? ContentStatus.NEW : ContentStatus.UPDATED;
+        ContentStatus status = Boolean.TRUE.equals(row.isNew()) ? ContentStatus.NEW : ContentStatus.UPDATED;
+        EventSignalType signalType = Boolean.TRUE.equals(row.isSignal()) ? EventSignalType.SIGNAL : EventSignalType.NOISE;
 
         return new EventListItemRes(
             row.miEventId(),
-            row.eventTitleKo(),
+            row.eventTitle(),
             status,
             status.getLabel(),
-            categoryLv1,
-            Optional.ofNullable(categoryLv1).map(EventCategoryLv1::getLabel).orElse(null),
+            row.level1Code(),
+            row.level1Label(),
             row.createDt(),
             row.modifyDt(),
-            null,
-            null,
+            signalType,
+            signalType.getLabel(),
+            Boolean.TRUE.equals(row.isScenarioSuggested()),
+            row.scenarioSuggestReason(),
             row.indexImpacts().stream().map(EventImpactIndexRes::from).toList()
         );
     }

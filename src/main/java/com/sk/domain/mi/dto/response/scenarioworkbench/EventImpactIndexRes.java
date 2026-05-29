@@ -1,5 +1,6 @@
 package com.sk.domain.mi.dto.response.scenarioworkbench;
 
+import com.sk.domain.shared.enums.scenarioworkbench.ImpactTerm;
 import com.sk.domain.shared.enums.scenarioworkbench.MarketDirection;
 import com.sk.domain.shared.enums.scenarioworkbench.MarketImpactLevel;
 import com.sk.domain.shared.repository.master.tmm.projection.EventIndexImpactRow;
@@ -21,7 +22,13 @@ public record EventImpactIndexRes(
     MarketDirection direction,
 
     @Schema(description = "가격 방향 라벨", example = "상승")
-    String directionLabel
+    String directionLabel,
+
+    @Schema(description = "영향 시점 구분 (short=단기 / mid_long=중장기)", example = "short")
+    ImpactTerm impactTerm,
+
+    @Schema(description = "영향 시점 라벨", example = "단기")
+    String impactTermLabel
 
 ) {
 
@@ -34,7 +41,9 @@ public record EventImpactIndexRes(
             marketImpactLevel,
             Optional.ofNullable(marketImpactLevel).map(MarketImpactLevel::getLabel).orElse(null),
             direction,
-            Optional.ofNullable(direction).map(MarketDirection::getLabel).orElse(null)
+            Optional.ofNullable(direction).map(MarketDirection::getLabel).orElse(null),
+            null,
+            null
         );
     }
 

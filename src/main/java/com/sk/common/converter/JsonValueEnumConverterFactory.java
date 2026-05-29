@@ -8,6 +8,11 @@ import org.springframework.core.convert.converter.Converter;
 import org.springframework.core.convert.converter.ConverterFactory;
 import org.springframework.stereotype.Component;
 
+/**
+ * {@code @JsonValue}가 선언된 Enum의 code 값 또는 name을 대소문자 구분 없이 변환하는 ConverterFactory.
+ *
+ * Spring MVC의 {@code @RequestParam}, {@code @PathVariable}, {@code @ModelAttribute}, {@code @ParameterObject} 등 쿼리 파라미터 / 경로 변수 바인딩에만 적용됩니다.
+ */
 @Component
 public class JsonValueEnumConverterFactory implements ConverterFactory<String, Enum<?>> {
 

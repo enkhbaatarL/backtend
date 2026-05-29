@@ -6,6 +6,9 @@ import com.sk.domain.mi.dto.response.scenarioworkbench.EventDetailRes;
 import com.sk.domain.mi.dto.response.scenarioworkbench.EventInstitutionOutlookRes;
 import com.sk.domain.mi.dto.response.scenarioworkbench.EventListRes;
 import com.sk.domain.mi.dto.response.scenarioworkbench.EventRelatedRecordRes;
+import com.sk.domain.mi.dto.response.scenarioworkbench.EventTypeL1Res;
+
+import java.util.List;
 
 public interface EventService {
 
@@ -16,5 +19,7 @@ public interface EventService {
     PaginationRes<EventRelatedRecordRes> getEventRecords(Long eventId, int page, int size);
 
     PaginationRes<EventInstitutionOutlookRes> getEventOutlooks(Long eventId, int page, int size);
+
+    List<EventTypeL1Res> getEventTypesL1();
 
 }

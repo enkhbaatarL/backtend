@@ -1,52 +1,42 @@
 package com.sk.domain.mi.dto.response.scenarioworkbench;
 
-import com.sk.domain.shared.enums.scenarioworkbench.MarketDirection;
-import com.sk.domain.shared.enums.scenarioworkbench.MarketImpactLevel;
 import com.sk.domain.shared.repository.master.tmm.projection.DriverTagScoreboardRow;
 import io.swagger.v3.oas.annotations.media.Schema;
-import java.util.Optional;
 
+// 이벤트 상세 — Driver Tree Scoreboard
 public record DriverTreeScoreboardRes(
 
-    @Schema(description = "Driver Tree 1단계 코드", example = "supply")
+    @Schema(description = "Driver Tree 1단계 코드", example = "country_lng_supply")
     String lv1Id,
 
-    @Schema(description = "Driver Tree 1단계 명칭", example = "공급")
+    @Schema(description = "Driver Tree 1단계 명칭", example = "국가별 LNG 공급량")
     String lv1Label,
 
-    @Schema(description = "Driver Tree 2단계 코드", example = "gas_field_capacity")
+    @Schema(description = "Driver Tree 2단계 코드", example = "existing_infra_supply")
     String lv2Id,
 
-    @Schema(description = "Driver Tree 2단계 명칭", example = "가스전 Capa/가동률")
+    @Schema(description = "Driver Tree 2단계 명칭", example = "기존 인프라 공급량")
     String lv2Label,
 
-    @Schema(description = "Driver Tree 3단계 코드", example = "ras_laffan")
+    @Schema(description = "Driver Tree 3단계 코드", example = "supply_liquefaction_rate")
     String lv3Id,
 
-    @Schema(description = "Driver Tree 3단계 명칭", example = "Ras Laffan")
+    @Schema(description = "Driver Tree 3단계 명칭", example = "Liquefaction rate")
     String lv3Label,
 
-    @Schema(description = "시장 영향도 수준", example = "high")
-    MarketImpactLevel marketImpactLevel,
+    @Schema(description = "단기 영향")
+    EventImpactIndexTermRes shortTerm,
 
-    @Schema(description = "시장 영향도 수준 라벨", example = "높음")
-    String marketImpactLevelLabel,
-
-    @Schema(description = "가격 방향", example = "bullish")
-    MarketDirection direction,
-
-    @Schema(description = "가격 방향 라벨", example = "상승")
-    String directionLabel,
+    @Schema(description = "중장기 영향")
+    EventImpactIndexTermRes midLongTerm,
 
     @Schema(description = "근거")
     String reason
 
 ) {
 
+    // 실 쿼리: tmm_drivertagm에는 시점 분류가 없으므로 양 슬롯 모두 null.
     public static DriverTreeScoreboardRes from(DriverTagScoreboardRow row) {
-        MarketImpactLevel marketImpactLevel = MarketImpactLevel.fromCode(row.magnitudeLevel());
-        MarketDirection direction = MarketDirection.fromCode(row.direction());
-
         return new DriverTreeScoreboardRes(
             row.lv1Id(),
             row.lv1Label(),
@@ -54,10 +44,8 @@ public record DriverTreeScoreboardRes(
             row.lv2Label(),
             row.lv3Id(),
             row.lv3Label(),
-            marketImpactLevel,
-            Optional.ofNullable(marketImpactLevel).map(MarketImpactLevel::getLabel).orElse(null),
-            direction,
-            Optional.ofNullable(direction).map(MarketDirection::getLabel).orElse(null),
+            null,
+            null,
             row.driverReason()
         );
     }

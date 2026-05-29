@@ -14,8 +14,11 @@ import com.sk.domain.mi.dto.response.scenarioworkbench.EventInstitutionOutlookRe
 import com.sk.domain.mi.dto.response.scenarioworkbench.EventListItemRes;
 import com.sk.domain.mi.dto.response.scenarioworkbench.EventListRes;
 import com.sk.domain.mi.dto.response.scenarioworkbench.EventRelatedRecordRes;
+import com.sk.domain.mi.dto.response.scenarioworkbench.EventTypeL1Res;
 import com.sk.domain.shared.repository.master.tmm.MiEventRepository;
+import com.sk.domain.shared.repository.master.tmm.MiEventTypeL1Repository;
 
+import java.util.List;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
@@ -26,6 +29,15 @@ import lombok.extern.slf4j.Slf4j;
 public class EventServiceImpl implements EventService {
 
     private final MiEventRepository miEventRepository;
+    private final MiEventTypeL1Repository miEventTypeL1Repository;
+
+    @Override
+    public List<EventTypeL1Res> getEventTypesL1() {
+        return miEventTypeL1Repository.findAllByIsDeletedFalseOrderByEventTypeL1IdAsc()
+            .stream()
+            .map(EventTypeL1Res::from)
+            .toList();
+    }
 
     @Override
     public EventListRes getEvents(EventListReq request) {
@@ -39,7 +51,7 @@ public class EventServiceImpl implements EventService {
     public EventDetailRes getEventDetail(Long eventId) {
         return miEventRepository.findEventDetail(eventId)
             .map(EventDetailRes::from)
-            .orElseThrow(() -> AppErrorException.of(ResultCode.Error.RSC_NOT_FOUND, String.format("event id: %d", eventId)));
+            .orElseThrow(() -> AppErrorException.of(ResultCode.Error.RSC_NOT_FOUND, String.format("Event not found: %d", eventId)));
     }
 
     @Override

@@ -58,7 +58,7 @@ public class AdminProviderDedicatedController {
 
     private static final List<String> ALLOWED_EXTENSIONS_UNSTRUCTURED = Arrays.asList(
             "txt", "csv", "pdf", "doc", "docx", "xls", "xlsb", "xlsm", "xlsx", "ppt", "pbix", "pbit",
-            "xltx", "pptx", "eml");
+            "xltx", "pptx", "eml", "md", "jpeg", "jpg", "png");
 
 
     @ApiOrder(14)

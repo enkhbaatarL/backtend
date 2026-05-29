@@ -1,0 +1,44 @@
+{
+  "GLOBAL": {
+    "columns": [
+      { "year": 2026, "month": 1, "periodLabel": "2026-1" },
+      { "year": 2026, "month": 2, "periodLabel": "2026-2" },
+      { "year": 2027, "month": 1, "periodLabel": "2027-1" }
+    ],
+    "rows": [
+      { "type": "DEMAND", "region": "ASIA", "country": "China", "rowKind": "COUNTRY", "values": [15.1, 15.4, 16.2] },
+      { "type": "DEMAND", "region": "ASIA", "country": "Japan", "rowKind": "COUNTRY", "values": [4.2, 4.3, 4.5] },
+      { "type": "DEMAND", "region": "ASIA", "country": null, "rowKind": "REGION_SUBTOTAL", "values": [19.3, 19.7, 20.7] },
+      { "type": "DEMAND", "region": "EUROPE", "country": "Germany", "rowKind": "COUNTRY", "values": [8.0, 8.1, 8.4] },
+      { "type": "DEMAND", "region": "EUROPE", "country": null, "rowKind": "REGION_SUBTOTAL", "values": [8.0, 8.1, 8.4] },
+      { "type": "DEMAND", "region": null, "country": null, "rowKind": "TYPE_TOTAL", "values": [27.3, 27.8, 29.1] },
+      { "type": "PRODUCTION", "region": "ASIA", "country": "China", "rowKind": "COUNTRY", "values": [10.0, 10.2, 10.8] },
+      { "type": "PRODUCTION", "region": "ASIA", "country": null, "rowKind": "REGION_SUBTOTAL", "values": [10.0, 10.2, 10.8] },
+      { "type": "PRODUCTION", "region": null, "country": null, "rowKind": "TYPE_TOTAL", "values": [10.0, 10.2, 10.8] }
+    ]
+  },
+  "LNG": {
+    "columns": [
+      { "year": 2026, "month": 1, "periodLabel": "2026-1" },
+      { "year": 2026, "month": 2, "periodLabel": "2026-2" },
+      { "year": 2027, "month": 1, "periodLabel": "2027-1" }
+    ],
+    "rows": [
+      { "type": "LNG_IMPORTS", "region": "ASIA", "country": "Japan", "rowKind": "COUNTRY", "values": [6.1, 6.0, 6.4] },
+      { "type": "LNG_IMPORTS", "region": "ASIA", "country": null, "rowKind": "REGION_SUBTOTAL", "values": [6.1, 6.0, 6.4] },
+      { "type": "LNG_IMPORTS", "region": null, "country": null, "rowKind": "TYPE_TOTAL", "values": [6.1, 6.0, 6.4] }
+    ]
+  },
+  "TRADE": {
+    "columns": [
+      { "year": 2026, "month": 1, "periodLabel": "2026-1" },
+      { "year": 2026, "month": 2, "periodLabel": "2026-2" },
+      { "year": 2027, "month": 1, "periodLabel": "2027-1" }
+    ],
+    "rows": [
+      { "type": "PIPELINE_IMPORTS", "region": "EUROPE", "country": "Germany", "rowKind": "COUNTRY", "values": [3.2, 3.3, 3.5] },
+      { "type": "PIPELINE_IMPORTS", "region": "EUROPE", "country": null, "rowKind": "REGION_SUBTOTAL", "values": [3.2, 3.3, 3.5] },
+      { "type": "PIPELINE_IMPORTS", "region": null, "country": null, "rowKind": "TYPE_TOTAL", "values": [3.2, 3.3, 3.5] }
+    ]
+  }
+}

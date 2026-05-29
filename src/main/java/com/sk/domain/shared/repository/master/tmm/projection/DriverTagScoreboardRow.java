@@ -3,6 +3,7 @@ package com.sk.domain.shared.repository.master.tmm.projection;
 import com.querydsl.core.annotations.QueryProjection;
 
 public record DriverTagScoreboardRow(
+    String targetId,
     String lv1Id,
     String lv1Label,
     String lv2Id,

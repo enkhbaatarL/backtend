@@ -16,6 +16,7 @@ import com.sk.domain.mi.dto.response.scenarioworkbench.ModelExecutionStatusRes;
 import com.sk.domain.mi.dto.response.scenarioworkbench.ScenarioDetailRes;
 import com.sk.domain.shared.enums.scenarioworkbench.ModelExecutionStatus;
 import jakarta.annotation.PostConstruct;
+import jakarta.annotation.PreDestroy;
 import java.io.IOException;
 import java.io.InputStream;
 import java.time.Duration;
@@ -26,6 +27,9 @@ import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.core.io.ClassPathResource;
@@ -43,6 +47,7 @@ public class ScenarioModelExecutionMockService {
     private final ScenarioWorkbenchMockProperties mockProperties;
     private final ScenarioMockService scenarioMockService;
     private final ConcurrentMap<String, StoredExecution> executionStore = new ConcurrentHashMap<>();
+    private final ScheduledExecutorService scheduler = Executors.newSingleThreadScheduledExecutor();
     private Map<String, List<ModelExecutionParameterTableRes>> parameterTablesByScenario;
 
     @PostConstruct
@@ -55,6 +60,16 @@ public class ScenarioModelExecutionMockService {
             log.error("[Mock] Failed to load scenario model execution mock data", e);
             parameterTablesByScenario = Collections.emptyMap();
         }
+    }
+
+    @PreDestroy
+    void destroy() {
+        scheduler.shutdownNow();
+    }
+
+    public void reset() {
+        executionStore.clear();
+        log.info("[Mock] Model execution mock data reset to initial state");
     }
 
     public ModelExecutionParameterRes getModelExecutionParameters(Long scenarioId) {
@@ -209,6 +224,30 @@ public class ScenarioModelExecutionMockService {
             queuedExecution.tablesSnapshotJson()
         );
         executionStore.put(queuedExecution.executionId(), runningExecution);
+        scheduleAutoComplete(runningExecution);
+    }
+
+    private void scheduleAutoComplete(StoredExecution runningExecution) {
+        long delaySeconds = mockProperties.getModelExecutions().getWorkflow().getAutoCompleteSeconds();
+        scheduler.schedule(() -> {
+            StoredExecution current = executionStore.get(runningExecution.executionId());
+            if (current != null && current.status() == ModelExecutionStatus.RUNNING) {
+                StoredExecution completed = new StoredExecution(
+                    current.executionId(),
+                    current.scenarioId(),
+                    current.externalRunId(),
+                    ModelExecutionStatus.SUCCEEDED,
+                    current.requestedAt(),
+                    current.startedAt(),
+                    LocalDateTime.now(),
+                    null,
+                    current.tablesSnapshotJson()
+                );
+                executionStore.put(current.executionId(), completed);
+                log.info("[Mock] Auto-completed model execution: executionId={}, scenarioId={}",
+                    current.executionId(), current.scenarioId());
+            }
+        }, delaySeconds, TimeUnit.SECONDS);
     }
 
     private StoredExecution applyTimeoutIfNeeded(StoredExecution execution) {

@@ -1,7 +1,9 @@
 package com.sk.domain.mi.controller.scenarioworkbench;
 
 import com.sk.common.annotation.ApiOrder;
-import com.sk.common.annotation.RequiredPermission;
+import com.sk.common.annotation.PermissionRule;
+import com.sk.common.annotation.RequiredPermissionRules;
+import com.sk.common.enums.ResultCode;
 import com.sk.common.model.BaseResponse;
 import com.sk.common.model.BaseResponseFactory;
 import com.sk.domain.mi.dto.request.scenarioworkbench.ModelExecutionCallbackReq;
@@ -10,6 +12,7 @@ import com.sk.domain.mi.dto.response.scenarioworkbench.ModelExecutionAcceptRes;
 import com.sk.domain.mi.dto.response.scenarioworkbench.ModelExecutionParameterRes;
 import com.sk.domain.mi.dto.response.scenarioworkbench.ModelExecutionStatusRes;
 import com.sk.domain.mi.service.scenarioworkbench.ScenarioModelExecutionService;
+import com.sk.domain.mi.service.scenarioworkbench.mock.ScenarioModelExecutionMockService;
 import com.sk.domain.shared.enums.PermissionCondition;
 import com.sk.domain.shared.enums.Role;
 import io.swagger.v3.oas.annotations.Operation;
@@ -19,6 +22,7 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.context.annotation.Profile;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -28,6 +32,7 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+@Profile("!dedicated")
 @Tag(name = "2-1. Scenario Workbench Model Execution API", description = "Scenario Workbench MI 수급모델 실행 API입니다.")
 @Slf4j
 @RestController
@@ -36,6 +41,7 @@ import org.springframework.web.bind.annotation.RestController;
 public class ScenarioModelExecutionController {
 
     private final ScenarioModelExecutionService scenarioModelExecutionService;
+    private final ScenarioModelExecutionMockService scenarioModelExecutionMockService;
 
     @ApiOrder(3)
     @Operation(
@@ -44,10 +50,10 @@ public class ScenarioModelExecutionController {
     )
     @ApiResponse(responseCode = "200", description = "조회 성공")
     @GetMapping("/model-execution-parameters")
-    @RequiredPermission(
-        roles = {Role.ADMIN, Role.USER},
-        condition = PermissionCondition.THIRD_PARTY_ADMIN_ONLY
-    )
+    @RequiredPermissionRules(rules = {
+        @PermissionRule(role = Role.USER, conditions = {PermissionCondition.SKGAS_COMPANY_USER_ONLY}),
+        @PermissionRule(role = Role.ADMIN, conditions = {PermissionCondition.THIRD_PARTY_ADMIN_ONLY})
+    })
     public BaseResponse<ModelExecutionParameterRes> getModelExecutionParameters(
         @Parameter(description = "시나리오 ID", example = "1") @PathVariable Long scenarioId
     ) {
@@ -63,10 +69,10 @@ public class ScenarioModelExecutionController {
     )
     @ApiResponse(responseCode = "202", description = "비동기 실행 접수 성공")
     @PostMapping("/model-executions")
-    @RequiredPermission(
-        roles = {Role.ADMIN, Role.USER},
-        condition = PermissionCondition.THIRD_PARTY_ADMIN_ONLY
-    )
+    @RequiredPermissionRules(rules = {
+        @PermissionRule(role = Role.USER, conditions = {PermissionCondition.SKGAS_COMPANY_USER_ONLY}),
+        @PermissionRule(role = Role.ADMIN, conditions = {PermissionCondition.THIRD_PARTY_ADMIN_ONLY})
+    })
     public ResponseEntity<BaseResponse<ModelExecutionAcceptRes>> submitModelExecution(
         @Parameter(description = "시나리오 ID", example = "1") @PathVariable Long scenarioId,
         @Valid @RequestBody ModelExecutionSubmitReq request
@@ -83,10 +89,10 @@ public class ScenarioModelExecutionController {
     )
     @ApiResponse(responseCode = "200", description = "조회 성공")
     @GetMapping("/model-executions/{executionId}")
-    @RequiredPermission(
-        roles = {Role.ADMIN, Role.USER},
-        condition = PermissionCondition.THIRD_PARTY_ADMIN_ONLY
-    )
+    @RequiredPermissionRules(rules = {
+        @PermissionRule(role = Role.USER, conditions = {PermissionCondition.SKGAS_COMPANY_USER_ONLY}),
+        @PermissionRule(role = Role.ADMIN, conditions = {PermissionCondition.THIRD_PARTY_ADMIN_ONLY})
+    })
     public BaseResponse<ModelExecutionStatusRes> getModelExecutionStatus(
         @Parameter(description = "시나리오 ID", example = "1") @PathVariable Long scenarioId,
         @Parameter(description = "실행 리소스 ID", example = "exec_a1b2c3d4e5f6") @PathVariable String executionId
@@ -103,7 +109,13 @@ public class ScenarioModelExecutionController {
     )
     @ApiResponse(responseCode = "200", description = "콜백 처리 성공")
     @PostMapping("/model-executions/{executionId}/callback")
-    @RequiredPermission(roles = {Role.SYSTEM})
+    @RequiredPermissionRules(rules = {
+        @PermissionRule(role = Role.SYSTEM),
+        @PermissionRule(role = Role.API_SUB_ADMIN),
+        @PermissionRule(role = Role.API_PLUS_OPERATOR),
+        @PermissionRule(role = Role.USER, conditions = {PermissionCondition.SKGAS_COMPANY_USER_ONLY}),
+        @PermissionRule(role = Role.ADMIN, conditions = {PermissionCondition.THIRD_PARTY_ADMIN_ONLY})
+    })
     public BaseResponse<ModelExecutionStatusRes> callbackModelExecution(
         @Parameter(description = "시나리오 ID", example = "1") @PathVariable Long scenarioId,
         @Parameter(description = "실행 리소스 ID", example = "exec_a1b2c3d4e5f6") @PathVariable String executionId,
@@ -112,5 +124,26 @@ public class ScenarioModelExecutionController {
         return BaseResponseFactory.create(
             scenarioModelExecutionService.updateModelExecutionFromCallback(scenarioId, executionId, request)
         );
+    }
+
+    @ApiOrder(7)
+    @Operation(
+        summary = "[mockapi 전용] 수급모델 실행 데이터 초기화 API",
+        description = """
+            Mock 수급모델 실행 데이터를 초기 상태로 리셋합니다. <br>
+            테스트/데모 반복 시 사용합니다.
+            """
+    )
+    @ApiResponse(responseCode = "200", description = "초기화 성공")
+    @PostMapping("/model-executions/reset")
+    @RequiredPermissionRules(rules = {
+        @PermissionRule(role = Role.USER, conditions = {PermissionCondition.SKGAS_COMPANY_USER_ONLY}),
+        @PermissionRule(role = Role.ADMIN, conditions = {PermissionCondition.THIRD_PARTY_ADMIN_ONLY})
+    })
+    public BaseResponse<Void> resetModelExecutions(
+        @Parameter(description = "시나리오 ID", example = "1") @PathVariable Long scenarioId
+    ) {
+        scenarioModelExecutionMockService.reset();
+        return BaseResponseFactory.create(ResultCode.Success.OK);
     }
 }

@@ -2,11 +2,15 @@ package com.sk.domain.mi.dto.response.scenarioworkbench;
 
 import com.sk.domain.shared.enums.scenarioworkbench.ContentStatus;
 import com.sk.domain.shared.enums.scenarioworkbench.EventSignalType;
+import com.sk.domain.shared.repository.master.tmm.projection.DriverTagScoreboardRow;
 import com.sk.domain.shared.repository.master.tmm.projection.EventDetailRow;
 import io.swagger.v3.oas.annotations.media.Schema;
 
 import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 
 public record EventDetailRes(
 
@@ -16,7 +20,7 @@ public record EventDetailRes(
     @Schema(description = "이벤트명")
     String eventName,
 
-    @Schema(description = "상태 (NEW / UPDATED)", example = "NEW")
+    @Schema(description = "상태 (new / updated)", example = "new")
     ContentStatus status,
 
     @Schema(description = "상태 라벨", example = "신규")
@@ -34,52 +38,50 @@ public record EventDetailRes(
     @Schema(description = "신호/소음 라벨", example = "신호")
     String signalTypeLabel,
 
-    @Schema(description = "영향도 분석")
-    EventImpactAnalysisRes impactAnalysis,
-
     @Schema(description = "AI Insights")
     EventAiInsightsRes aiInsights,
 
-    @Schema(description = "Fundamental Deep-dive (테이블 미준비 상태이므로 현재는 null)")
-    EventFundamentalRes fundamentalDeepdive,
+    @Schema(description = "영향도 분석")
+    EventImpactAnalysisRes impactAnalysis,
 
-    @Schema(description = "Driver Tree Scoreboard")
-    List<DriverTreeScoreboardRes> driverTreeScoreboard,
+    @Schema(description = "Driver Tree Scoreboard — 인덱스(JKM/TTF/HH)별 그룹")
+    List<EventDriverTreeIndexRes> driverTreeScoreboard,
 
-    @Schema(description = "관련 이벤트 및 시나리오")
+    @Schema(description = "관련 이벤트 및 시나리오 (관련 테이블 미준비 상태로 현재 항상 null)", nullable = true)
     RelatedEventScenarioRes relatedEventScenario
 
 ) {
 
     public static EventDetailRes from(EventDetailRow row) {
-        ContentStatus status = row.createDt().equals(row.modifyDt()) ? ContentStatus.NEW : ContentStatus.UPDATED;
+        ContentStatus status = Boolean.TRUE.equals(row.isNew()) ? ContentStatus.NEW : ContentStatus.UPDATED;
+        EventSignalType signalType = Boolean.TRUE.equals(row.isSignal()) ? EventSignalType.SIGNAL : EventSignalType.NOISE;
         EventImpactAnalysisRes impactAnalysis = EventImpactAnalysisRes.from(row);
-
-        RelatedEventRes selfEvent = new RelatedEventRes(
-            row.miEventId(),
-            row.eventTitleKo(),
-            row.createDt(),
-            row.modifyDt(),
-            impactAnalysis.eventCategoryLv1(),
-            impactAnalysis.eventCategoryLv1Label(),
-            impactAnalysis.indexImpacts()
-        );
 
         return new EventDetailRes(
             row.miEventId(),
-            row.eventTitleKo(),
+            row.eventTitle(),
             status,
             status.getLabel(),
             row.createDt(),
             row.modifyDt(),
-            null,
-            null,
-            impactAnalysis,
+            signalType,
+            signalType.getLabel(),
             EventAiInsightsRes.from(row),
-            null,
-            row.driverTags().stream().map(DriverTreeScoreboardRes::from).toList(),
-            new RelatedEventScenarioRes(selfEvent, List.of())
+            impactAnalysis,
+            buildDriverTreeScoreboard(row.driverTags()),
+            null
         );
+    }
+
+    private static List<EventDriverTreeIndexRes> buildDriverTreeScoreboard(List<DriverTagScoreboardRow> driverTags) {
+        Map<String, List<DriverTreeScoreboardRes>> grouped = new LinkedHashMap<>();
+        for (DriverTagScoreboardRow tag : driverTags) {
+            grouped.computeIfAbsent(tag.targetId(), k -> new ArrayList<>())
+                .add(DriverTreeScoreboardRes.from(tag));
+        }
+        return grouped.entrySet().stream()
+            .map(e -> new EventDriverTreeIndexRes(e.getKey(), e.getValue()))
+            .toList();
     }
 
 }

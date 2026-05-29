@@ -99,6 +99,14 @@ public class ScenarioMockService {
         return new ScenarioListRes(ScenarioAppliedFilterRes.from(request), pagination);
     }
 
+    public List<ScenarioListItemRes> getScenarioListItems() {
+        return scenarioList;
+    }
+
+    public Map<Long, ScenarioDetailRes> getAllScenarioDetails() {
+        return scenarioDetailMap;
+    }
+
     public ScenarioDetailRes getScenarioDetail(Long scenarioId) {
         ScenarioDetailRes detail = scenarioDetailMap.get(scenarioId);
         if (detail == null) {

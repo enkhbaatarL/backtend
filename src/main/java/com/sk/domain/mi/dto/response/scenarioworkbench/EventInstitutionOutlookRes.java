@@ -9,10 +9,10 @@ public record EventInstitutionOutlookRes(
     @Schema(description = "게시일시")
     LocalDateTime publishedAt,
 
-    @Schema(description = "기관명", example = "Uniper")
+    @Schema(description = "기관명 (Goldman Sachs, IEA, Wood Mackenzie 등)", example = "Goldman Sachs")
     String institutionName,
 
-    @Schema(description = "전망 요약")
+    @Schema(description = "전망 요약 (1~2줄)", example = "[북미 액화설비] Plaquemines 증강·CP2 확장 → 중기 공급 완화")
     String outlookSummary
 
 ) {
