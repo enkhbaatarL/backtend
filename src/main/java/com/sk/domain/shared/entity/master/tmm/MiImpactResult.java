@@ -7,6 +7,8 @@ import org.hibernate.annotations.Comment;
 
 import com.sk.common.converter.BooleanToYNAttributeConverter;
 import com.sk.domain.shared.entity.base.BaseEntity;
+import com.sk.domain.shared.enums.scenarioworkbench.ImpactGrade;
+import com.sk.domain.shared.converter.ImpactGradeConverter;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Convert;
@@ -46,17 +48,20 @@ public class MiImpactResult extends BaseEntity {
     @Comment("대상 ID JKM/TTF/HH")
     private String targetId;
 
-    @Column(name = "impact_short", nullable = false)
+    @Convert(converter = ImpactGradeConverter.class)
+    @Column(name = "impact_short", nullable = false, columnDefinition = "enum('상승_상','상승_중','상승_하','영향없음','하락_하','하락_중','하락_상')")
     @Comment("단기 영향 (0~1M) {방향_강도}")
-    private String impactShort;
+    private ImpactGrade impactShort;
 
-    @Column(name = "impact_mid")
+    @Convert(converter = ImpactGradeConverter.class)
+    @Column(name = "impact_mid", columnDefinition = "enum('상승_상','상승_중','상승_하','영향없음','하락_하','하락_중','하락_상')")
     @Comment("중기 영향 (6M). Base Case 없으면 NULL")
-    private String impactMid;
+    private ImpactGrade impactMid;
 
-    @Column(name = "impact_long")
+    @Convert(converter = ImpactGradeConverter.class)
+    @Column(name = "impact_long", columnDefinition = "enum('상승_상','상승_중','상승_하','영향없음','하락_하','하락_중','하락_상')")
     @Comment("장기 영향 (1Y+). Base Case 없으면 NULL")
-    private String impactLong;
+    private ImpactGrade impactLong;
 
     @Column(name = "confidence", precision = 5, scale = 4)
     @Comment("신뢰도 0~1")
@@ -85,7 +90,7 @@ public class MiImpactResult extends BaseEntity {
 
     @Builder
     public MiImpactResult(String impactResultId, MiImpact impact, String targetType, String targetId,
-                          String impactShort, String impactMid, String impactLong, BigDecimal confidence,
+                          ImpactGrade impactShort, ImpactGrade impactMid, ImpactGrade impactLong, BigDecimal confidence,
                           String rationaleBaseCase, String rationaleDriverMap, String rationaleSynthesis,
                           Boolean completed, LocalDateTime analysisTime) {
         this.impactResultId = impactResultId;

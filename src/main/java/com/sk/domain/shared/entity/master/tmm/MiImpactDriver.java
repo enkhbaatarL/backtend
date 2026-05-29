@@ -5,8 +5,11 @@ import java.math.BigDecimal;
 import org.hibernate.annotations.Comment;
 
 import com.sk.domain.shared.entity.base.BaseEntity;
+import com.sk.domain.shared.enums.scenarioworkbench.ImpactGrade;
+import com.sk.domain.shared.converter.ImpactGradeConverter;
 
 import jakarta.persistence.Column;
+import jakarta.persistence.Convert;
 import jakarta.persistence.Entity;
 import jakarta.persistence.FetchType;
 import jakarta.persistence.Id;
@@ -75,24 +78,27 @@ public class MiImpactDriver extends BaseEntity {
     @Comment("Driver 영향 발생 사유")
     private String driverReason;
 
-    @Column(name = "impact_short", nullable = false)
+    @Convert(converter = ImpactGradeConverter.class)
+    @Column(name = "impact_short", nullable = false, columnDefinition = "enum('상승_상','상승_중','상승_하','영향없음','하락_하','하락_중','하락_상')")
     @Comment("driver의 단기 영향 {방향_강도}")
-    private String impactShort;
+    private ImpactGrade impactShort;
 
-    @Column(name = "impact_mid")
+    @Convert(converter = ImpactGradeConverter.class)
+    @Column(name = "impact_mid", columnDefinition = "enum('상승_상','상승_중','상승_하','영향없음','하락_하','하락_중','하락_상')")
     @Comment("driver의 중기 영향")
-    private String impactMid;
+    private ImpactGrade impactMid;
 
-    @Column(name = "impact_long")
+    @Convert(converter = ImpactGradeConverter.class)
+    @Column(name = "impact_long", columnDefinition = "enum('상승_상','상승_중','상승_하','영향없음','하락_하','하락_중','하락_상')")
     @Comment("driver의 장기 영향")
-    private String impactLong;
+    private ImpactGrade impactLong;
 
     @Builder
     public MiImpactDriver(String driverId, MiImpactResult impactResult,
                           String lv1Id, String lv1Label, String lv2Id, String lv2Label,
                           String lv3Id, String lv3Label, String directionHint, BigDecimal matchScore,
                           String matchedKeywords, String driverReason,
-                          String impactShort, String impactMid, String impactLong) {
+                          ImpactGrade impactShort, ImpactGrade impactMid, ImpactGrade impactLong) {
         this.driverId = driverId;
         this.impactResult = impactResult;
         this.lv1Id = lv1Id;

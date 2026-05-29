@@ -65,10 +65,10 @@ mi:
     mock:
       events:
         api:
-          get-list: true
-          get-detail: true
-          get-records: true
-          get-outlooks: true
+          get-list: false
+          get-detail: false
+          get-records: false
+          get-outlooks: false
       scenarios:
         api:
           get-list: true
