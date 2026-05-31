@@ -2,7 +2,6 @@ package com.sk.domain.shared.repository.master.tmm.projection;
 
 import java.time.LocalDateTime;
 import java.util.List;
-import java.util.Map;
 
 // note: 이벤트 상세 화면 — 영향도 분석 + AI Insights 영역에 필요한 모든 데이터를 Repository에서 조립
 public record EventDetailRow(
@@ -17,7 +16,7 @@ public record EventDetailRow(
     Boolean isSignal,
     Boolean isNew,
     String detailAnalysis,
-    Map<String, String> indexAnalysisTexts,
+    String impactSummary,
     List<EventIndexImpactRow> indexImpacts,
     List<String> keyBullets,
     List<String> sources,

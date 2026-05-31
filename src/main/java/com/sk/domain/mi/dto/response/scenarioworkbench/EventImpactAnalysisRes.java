@@ -4,18 +4,14 @@ import com.sk.domain.shared.repository.master.tmm.projection.EventDetailRow;
 import com.sk.domain.shared.repository.master.tmm.projection.EventIndexImpactRow;
 import io.swagger.v3.oas.annotations.media.ArraySchema;
 import io.swagger.v3.oas.annotations.media.Schema;
-import java.util.LinkedHashSet;
 import java.util.List;
-import java.util.Map;
-import java.util.Set;
 
 public record EventImpactAnalysisRes(
 
-    @Schema(description = "인덱스별 영향도 (JKM, TTF, HH) — 인덱스마다 단기·중장기(shortTerm/midLongTerm) 슬롯과 인덱스별 분석 본문(analysisText) 포함")
+    @Schema(description = "인덱스별 영향도 (JKM, TTF, HH)")
     List<EventDetailImpactIndexRes> indexImpacts,
 
-    @Schema(description = "전체 영향도 종합 텍스트. **mock 응답 전용** — 실 쿼리는 인덱스별 본문만 제공하므로 항상 null.",
-        nullable = true)
+    @Schema(description = "전체 영향도 종합 텍스트", nullable = true)
     String analysisText,
 
     @Schema(description = "이벤트 유형 Lv1", example = "geopolitical_risk")
@@ -40,8 +36,8 @@ public record EventImpactAnalysisRes(
 
     public static EventImpactAnalysisRes from(EventDetailRow row) {
         return new EventImpactAnalysisRes(
-            buildIndexImpacts(row.indexImpacts(), row.indexAnalysisTexts()),
-            null,
+            buildIndexImpacts(row.indexImpacts()),
+            row.impactSummary(),
             row.level1Code(),
             row.level1Label(),
             row.level2Code(),
@@ -50,23 +46,9 @@ public record EventImpactAnalysisRes(
         );
     }
 
-    private static List<EventDetailImpactIndexRes> buildIndexImpacts(
-        List<EventIndexImpactRow> rows,
-        Map<String, String> indexAnalysisTexts
-    ) {
-        Set<String> orderedIndexes = new LinkedHashSet<>();
-        rows.forEach(r -> orderedIndexes.add(r.targetId()));
-        if (indexAnalysisTexts != null) {
-            orderedIndexes.addAll(indexAnalysisTexts.keySet());
-        }
-
-        return orderedIndexes.stream()
-            .map(indexName -> new EventDetailImpactIndexRes(
-                indexName,
-                null,
-                null,
-                indexAnalysisTexts == null ? null : indexAnalysisTexts.get(indexName)
-            ))
+    private static List<EventDetailImpactIndexRes> buildIndexImpacts(List<EventIndexImpactRow> rows) {
+        return rows.stream()
+            .map(EventDetailImpactIndexRes::from)
             .toList();
     }
 

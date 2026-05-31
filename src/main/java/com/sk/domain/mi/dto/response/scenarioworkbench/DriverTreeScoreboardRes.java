@@ -1,5 +1,6 @@
 package com.sk.domain.mi.dto.response.scenarioworkbench;
 
+import com.sk.domain.shared.enums.scenarioworkbench.ImpactGrade;
 import com.sk.domain.shared.repository.master.tmm.projection.DriverTagScoreboardRow;
 import io.swagger.v3.oas.annotations.media.Schema;
 
@@ -35,8 +36,9 @@ public record DriverTreeScoreboardRes(
 
 ) {
 
-    // 실 쿼리: tmm_drivertagm에는 시점 분류가 없으므로 양 슬롯 모두 null.
     public static DriverTreeScoreboardRes from(DriverTagScoreboardRow row) {
+        ImpactGrade shortGrade = row.impactShort();
+        ImpactGrade midLongGrade = ImpactGrade.mergeMidLong(row.impactMid(), row.impactLong());
         return new DriverTreeScoreboardRes(
             row.lv1Id(),
             row.lv1Label(),
@@ -44,8 +46,8 @@ public record DriverTreeScoreboardRes(
             row.lv2Label(),
             row.lv3Id(),
             row.lv3Label(),
-            null,
-            null,
+            EventImpactIndexTermRes.of(shortGrade),
+            EventImpactIndexTermRes.of(midLongGrade),
             row.driverReason()
         );
     }

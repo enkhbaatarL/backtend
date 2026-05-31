@@ -1,4 +1,4 @@
-﻿{
+{
     "1":  {
               "eventId":  1,
               "eventName":  "카타르 LNG 핵심 설비 공격, 공급 프리미엄 급등",
@@ -11,7 +11,7 @@
                                                           {
                                                               "indexName":  "JKM",
                                                               "shortTerm":  {
-                                                                                "marketImpactLevel":  "extreme",
+                                                                                "marketImpactLevel":  "high",
                                                                                 "marketImpactLevelLabel":  "매우높음",
                                                                                 "direction":  "bullish",
                                                                                 "directionLabel":  "상승"
@@ -87,7 +87,7 @@
                                                                    "lv3Id":  "supply_liquefaction_rate",
                                                                    "lv3Label":  "Liquefaction rate",
                                                                    "shortTerm":  {
-                                                                                     "marketImpactLevel":  "extreme",
+                                                                                     "marketImpactLevel":  "high",
                                                                                      "marketImpactLevelLabel":  "매우높음",
                                                                                      "direction":  "bullish",
                                                                                      "directionLabel":  "상승"
@@ -2223,7 +2223,7 @@
                                                            {
                                                                "indexName":  "JKM",
                                                                "shortTerm":  {
-                                                                                 "marketImpactLevel":  "extreme",
+                                                                                 "marketImpactLevel":  "high",
                                                                                  "marketImpactLevelLabel":  "매우높음",
                                                                                  "direction":  "bullish",
                                                                                  "directionLabel":  "상승"
@@ -2239,7 +2239,7 @@
                                                            {
                                                                "indexName":  "TTF",
                                                                "shortTerm":  {
-                                                                                 "marketImpactLevel":  "extreme",
+                                                                                 "marketImpactLevel":  "high",
                                                                                  "marketImpactLevelLabel":  "매우높음",
                                                                                  "direction":  "bullish",
                                                                                  "directionLabel":  "상승"
@@ -2299,7 +2299,7 @@
                                                                     "lv3Id":  "supply_liquefaction_rate",
                                                                     "lv3Label":  "Liquefaction rate",
                                                                     "shortTerm":  {
-                                                                                      "marketImpactLevel":  "extreme",
+                                                                                      "marketImpactLevel":  "high",
                                                                                       "marketImpactLevelLabel":  "매우높음",
                                                                                       "direction":  "bullish",
                                                                                       "directionLabel":  "상승"
@@ -2325,7 +2325,7 @@
                                                                     "lv3Id":  "market_emergency_procurement",
                                                                     "lv3Label":  "긴급 조달 거래 발생 여부",
                                                                     "shortTerm":  {
-                                                                                      "marketImpactLevel":  "extreme",
+                                                                                      "marketImpactLevel":  "high",
                                                                                       "marketImpactLevelLabel":  "매우높음",
                                                                                       "direction":  "bullish",
                                                                                       "directionLabel":  "상승"
@@ -4436,7 +4436,7 @@
                                                            {
                                                                "indexName":  "JKM",
                                                                "shortTerm":  {
-                                                                                 "marketImpactLevel":  "extreme",
+                                                                                 "marketImpactLevel":  "high",
                                                                                  "marketImpactLevelLabel":  "매우높음",
                                                                                  "direction":  "bullish",
                                                                                  "directionLabel":  "상승"
@@ -4512,7 +4512,7 @@
                                                                     "lv3Id":  "transport_route_distance_time",
                                                                     "lv3Label":  "항로 거리/운하 소요시간",
                                                                     "shortTerm":  {
-                                                                                      "marketImpactLevel":  "extreme",
+                                                                                      "marketImpactLevel":  "high",
                                                                                       "marketImpactLevelLabel":  "매우높음",
                                                                                       "direction":  "bullish",
                                                                                       "directionLabel":  "상승"
@@ -4559,7 +4559,7 @@
                                                                     "lv3Id":  "transport_shipping_cost",
                                                                     "lv3Label":  "운임/용선료",
                                                                     "shortTerm":  {
-                                                                                      "marketImpactLevel":  "extreme",
+                                                                                      "marketImpactLevel":  "high",
                                                                                       "marketImpactLevelLabel":  "매우높음",
                                                                                       "direction":  "bullish",
                                                                                       "directionLabel":  "상승"
@@ -4580,7 +4580,7 @@
                                                                     "lv3Id":  "market_emergency_procurement",
                                                                     "lv3Label":  "긴급 조달 거래 발생 여부",
                                                                     "shortTerm":  {
-                                                                                      "marketImpactLevel":  "extreme",
+                                                                                      "marketImpactLevel":  "high",
                                                                                       "marketImpactLevelLabel":  "매우높음",
                                                                                       "direction":  "bullish",
                                                                                       "directionLabel":  "상승"
@@ -4627,7 +4627,7 @@
                                                                     "lv3Id":  "market_expectation_narrative_shift",
                                                                     "lv3Label":  "시장 내 Bull/Bear 내러티브 변화",
                                                                     "shortTerm":  {
-                                                                                      "marketImpactLevel":  "extreme",
+                                                                                      "marketImpactLevel":  "high",
                                                                                       "marketImpactLevelLabel":  "매우높음",
                                                                                       "direction":  "bullish",
                                                                                       "directionLabel":  "상승"
@@ -6646,7 +6646,7 @@
                                                            {
                                                                "indexName":  "JKM",
                                                                "shortTerm":  {
-                                                                                 "marketImpactLevel":  "extreme",
+                                                                                 "marketImpactLevel":  "high",
                                                                                  "marketImpactLevelLabel":  "매우높음",
                                                                                  "direction":  "bullish",
                                                                                  "directionLabel":  "상승"
@@ -6662,7 +6662,7 @@
                                                            {
                                                                "indexName":  "TTF",
                                                                "shortTerm":  {
-                                                                                 "marketImpactLevel":  "extreme",
+                                                                                 "marketImpactLevel":  "high",
                                                                                  "marketImpactLevelLabel":  "매우높음",
                                                                                  "direction":  "bullish",
                                                                                  "directionLabel":  "상승"
@@ -6722,7 +6722,7 @@
                                                                     "lv3Id":  "supply_liquefaction_rate",
                                                                     "lv3Label":  "Liquefaction rate",
                                                                     "shortTerm":  {
-                                                                                      "marketImpactLevel":  "extreme",
+                                                                                      "marketImpactLevel":  "high",
                                                                                       "marketImpactLevelLabel":  "매우높음",
                                                                                       "direction":  "bullish",
                                                                                       "directionLabel":  "상승"
@@ -6743,7 +6743,7 @@
                                                                     "lv3Id":  "market_emergency_procurement",
                                                                     "lv3Label":  "긴급 조달 거래 발생 여부",
                                                                     "shortTerm":  {
-                                                                                      "marketImpactLevel":  "extreme",
+                                                                                      "marketImpactLevel":  "high",
                                                                                       "marketImpactLevelLabel":  "매우높음",
                                                                                       "direction":  "bullish",
                                                                                       "directionLabel":  "상승"
@@ -6848,7 +6848,7 @@
                                                            {
                                                                "indexName":  "JKM",
                                                                "shortTerm":  {
-                                                                                 "marketImpactLevel":  "extreme",
+                                                                                 "marketImpactLevel":  "high",
                                                                                  "marketImpactLevelLabel":  "매우높음",
                                                                                  "direction":  "bullish",
                                                                                  "directionLabel":  "상승"
@@ -6924,7 +6924,7 @@
                                                                     "lv3Id":  "transport_route_distance_time",
                                                                     "lv3Label":  "항로 거리/운하 소요시간",
                                                                     "shortTerm":  {
-                                                                                      "marketImpactLevel":  "extreme",
+                                                                                      "marketImpactLevel":  "high",
                                                                                       "marketImpactLevelLabel":  "매우높음",
                                                                                       "direction":  "bullish",
                                                                                       "directionLabel":  "상승"
@@ -8814,7 +8814,7 @@
                                                            {
                                                                "indexName":  "JKM",
                                                                "shortTerm":  {
-                                                                                 "marketImpactLevel":  "extreme",
+                                                                                 "marketImpactLevel":  "high",
                                                                                  "marketImpactLevelLabel":  "매우높음",
                                                                                  "direction":  "bullish",
                                                                                  "directionLabel":  "상승"
@@ -8830,7 +8830,7 @@
                                                            {
                                                                "indexName":  "TTF",
                                                                "shortTerm":  {
-                                                                                 "marketImpactLevel":  "extreme",
+                                                                                 "marketImpactLevel":  "high",
                                                                                  "marketImpactLevelLabel":  "매우높음",
                                                                                  "direction":  "bullish",
                                                                                  "directionLabel":  "상승"
@@ -8890,7 +8890,7 @@
                                                                     "lv3Id":  "supply_liquefaction_rate",
                                                                     "lv3Label":  "Liquefaction rate",
                                                                     "shortTerm":  {
-                                                                                      "marketImpactLevel":  "extreme",
+                                                                                      "marketImpactLevel":  "high",
                                                                                       "marketImpactLevelLabel":  "매우높음",
                                                                                       "direction":  "bullish",
                                                                                       "directionLabel":  "상승"
@@ -8937,7 +8937,7 @@
                                                                     "lv3Id":  "market_emergency_procurement",
                                                                     "lv3Label":  "긴급 조달 거래 발생 여부",
                                                                     "shortTerm":  {
-                                                                                      "marketImpactLevel":  "extreme",
+                                                                                      "marketImpactLevel":  "high",
                                                                                       "marketImpactLevelLabel":  "매우높음",
                                                                                       "direction":  "bullish",
                                                                                       "directionLabel":  "상승"
@@ -8995,7 +8995,7 @@
                                                            {
                                                                "indexName":  "JKM",
                                                                "shortTerm":  {
-                                                                                 "marketImpactLevel":  "extreme",
+                                                                                 "marketImpactLevel":  "high",
                                                                                  "marketImpactLevelLabel":  "매우높음",
                                                                                  "direction":  "bullish",
                                                                                  "directionLabel":  "상승"
@@ -9071,7 +9071,7 @@
                                                                     "lv3Id":  "supply_liquefaction_rate",
                                                                     "lv3Label":  "Liquefaction rate",
                                                                     "shortTerm":  {
-                                                                                      "marketImpactLevel":  "extreme",
+                                                                                      "marketImpactLevel":  "high",
                                                                                       "marketImpactLevelLabel":  "매우높음",
                                                                                       "direction":  "bullish",
                                                                                       "directionLabel":  "상승"
@@ -10889,7 +10889,7 @@
                                                            {
                                                                "indexName":  "JKM",
                                                                "shortTerm":  {
-                                                                                 "marketImpactLevel":  "extreme",
+                                                                                 "marketImpactLevel":  "high",
                                                                                  "marketImpactLevelLabel":  "매우높음",
                                                                                  "direction":  "bullish",
                                                                                  "directionLabel":  "상승"
@@ -10905,7 +10905,7 @@
                                                            {
                                                                "indexName":  "TTF",
                                                                "shortTerm":  {
-                                                                                 "marketImpactLevel":  "extreme",
+                                                                                 "marketImpactLevel":  "high",
                                                                                  "marketImpactLevelLabel":  "매우높음",
                                                                                  "direction":  "bullish",
                                                                                  "directionLabel":  "상승"
@@ -10966,7 +10966,7 @@
                                                                     "lv3Id":  "supply_liquefaction_rate",
                                                                     "lv3Label":  "Liquefaction rate",
                                                                     "shortTerm":  {
-                                                                                      "marketImpactLevel":  "extreme",
+                                                                                      "marketImpactLevel":  "high",
                                                                                       "marketImpactLevelLabel":  "매우높음",
                                                                                       "direction":  "bullish",
                                                                                       "directionLabel":  "상승"
@@ -11253,7 +11253,7 @@
                                                            {
                                                                "indexName":  "JKM",
                                                                "shortTerm":  {
-                                                                                 "marketImpactLevel":  "extreme",
+                                                                                 "marketImpactLevel":  "high",
                                                                                  "marketImpactLevelLabel":  "매우높음",
                                                                                  "direction":  "bullish",
                                                                                  "directionLabel":  "상승"
@@ -11330,7 +11330,7 @@
                                                                     "lv3Id":  "transport_route_distance_time",
                                                                     "lv3Label":  "항로 거리/운하 소요시간",
                                                                     "shortTerm":  {
-                                                                                      "marketImpactLevel":  "extreme",
+                                                                                      "marketImpactLevel":  "high",
                                                                                       "marketImpactLevelLabel":  "매우높음",
                                                                                       "direction":  "bullish",
                                                                                       "directionLabel":  "상승"
@@ -13222,7 +13222,7 @@
                                                            {
                                                                "indexName":  "JKM",
                                                                "shortTerm":  {
-                                                                                 "marketImpactLevel":  "extreme",
+                                                                                 "marketImpactLevel":  "high",
                                                                                  "marketImpactLevelLabel":  "매우높음",
                                                                                  "direction":  "bullish",
                                                                                  "directionLabel":  "상승"
@@ -13238,7 +13238,7 @@
                                                            {
                                                                "indexName":  "TTF",
                                                                "shortTerm":  {
-                                                                                 "marketImpactLevel":  "extreme",
+                                                                                 "marketImpactLevel":  "high",
                                                                                  "marketImpactLevelLabel":  "매우높음",
                                                                                  "direction":  "bullish",
                                                                                  "directionLabel":  "상승"
@@ -13298,7 +13298,7 @@
                                                                     "lv3Id":  "supply_liquefaction_rate",
                                                                     "lv3Label":  "Liquefaction rate",
                                                                     "shortTerm":  {
-                                                                                      "marketImpactLevel":  "extreme",
+                                                                                      "marketImpactLevel":  "high",
                                                                                       "marketImpactLevelLabel":  "매우높음",
                                                                                       "direction":  "bullish",
                                                                                       "directionLabel":  "상승"
@@ -13403,7 +13403,7 @@
                                                            {
                                                                "indexName":  "JKM",
                                                                "shortTerm":  {
-                                                                                 "marketImpactLevel":  "extreme",
+                                                                                 "marketImpactLevel":  "high",
                                                                                  "marketImpactLevelLabel":  "매우높음",
                                                                                  "direction":  "bullish",
                                                                                  "directionLabel":  "상승"
@@ -13480,7 +13480,7 @@
                                                                     "lv3Id":  "transport_route_distance_time",
                                                                     "lv3Label":  "항로 거리/운하 소요시간",
                                                                     "shortTerm":  {
-                                                                                      "marketImpactLevel":  "extreme",
+                                                                                      "marketImpactLevel":  "high",
                                                                                       "marketImpactLevelLabel":  "매우높음",
                                                                                       "direction":  "bullish",
                                                                                       "directionLabel":  "상승"
@@ -18210,7 +18210,7 @@
                                                             {
                                                                 "indexName":  "JKM",
                                                                 "shortTerm":  {
-                                                                                  "marketImpactLevel":  "extreme",
+                                                                                  "marketImpactLevel":  "high",
                                                                                   "marketImpactLevelLabel":  "매우높음",
                                                                                   "direction":  "bullish",
                                                                                   "directionLabel":  "상승"
@@ -18286,7 +18286,7 @@
                                                                      "lv3Id":  "transport_route_distance_time",
                                                                      "lv3Label":  "항로 거리/운하 소요시간",
                                                                      "shortTerm":  {
-                                                                                       "marketImpactLevel":  "extreme",
+                                                                                       "marketImpactLevel":  "high",
                                                                                        "marketImpactLevelLabel":  "매우높음",
                                                                                        "direction":  "bullish",
                                                                                        "directionLabel":  "상승"
@@ -19158,7 +19158,7 @@
                                                             {
                                                                 "indexName":  "JKM",
                                                                 "shortTerm":  {
-                                                                                  "marketImpactLevel":  "extreme",
+                                                                                  "marketImpactLevel":  "high",
                                                                                   "marketImpactLevelLabel":  "매우높음",
                                                                                   "direction":  "bullish",
                                                                                   "directionLabel":  "상승"
@@ -19174,7 +19174,7 @@
                                                             {
                                                                 "indexName":  "TTF",
                                                                 "shortTerm":  {
-                                                                                  "marketImpactLevel":  "extreme",
+                                                                                  "marketImpactLevel":  "high",
                                                                                   "marketImpactLevelLabel":  "매우높음",
                                                                                   "direction":  "bullish",
                                                                                   "directionLabel":  "상승"
@@ -19235,7 +19235,7 @@
                                                                      "lv3Id":  "supply_gasfield_capa",
                                                                      "lv3Label":  "가스전 생산 Capa",
                                                                      "shortTerm":  {
-                                                                                       "marketImpactLevel":  "extreme",
+                                                                                       "marketImpactLevel":  "high",
                                                                                        "marketImpactLevelLabel":  "매우높음",
                                                                                        "direction":  "bullish",
                                                                                        "directionLabel":  "상승"
@@ -19282,7 +19282,7 @@
                                                                      "lv3Id":  "supply_liquefaction_rate",
                                                                      "lv3Label":  "Liquefaction rate",
                                                                      "shortTerm":  {
-                                                                                       "marketImpactLevel":  "extreme",
+                                                                                       "marketImpactLevel":  "high",
                                                                                        "marketImpactLevelLabel":  "매우높음",
                                                                                        "direction":  "bullish",
                                                                                        "directionLabel":  "상승"

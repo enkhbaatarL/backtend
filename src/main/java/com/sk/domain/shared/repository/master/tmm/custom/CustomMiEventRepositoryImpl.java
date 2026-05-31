@@ -6,19 +6,20 @@ import static com.sk.domain.shared.entity.master.tmd.QGoodsDataFileSummary.goods
 import static com.sk.domain.shared.entity.master.tmd.QMiRecord.miRecord;
 import static com.sk.domain.shared.entity.master.tmd.QNewsSummary.newsSummary;
 import static com.sk.domain.shared.entity.master.tmd.QProvider.provider;
-import static com.sk.domain.shared.entity.master.tmm.QDriverTag.driverTag;
-import static com.sk.domain.shared.entity.master.tmm.QImpact.impact;
-import static com.sk.domain.shared.entity.master.tmm.QImpactResult.impactResult;
 import static com.sk.domain.shared.entity.master.tmm.QMiEvent.miEvent;
 import static com.sk.domain.shared.entity.master.tmm.QMiEventRecordMap.miEventRecordMap;
 import static com.sk.domain.shared.entity.master.tmm.QMiEventTypeL1.miEventTypeL1;
 import static com.sk.domain.shared.entity.master.tmm.QMiEventTypeL2.miEventTypeL2;
-import static com.sk.domain.shared.entity.master.tmm.QQualitativeImpact.qualitativeImpact;
+import static com.sk.domain.shared.entity.master.tmm.QMiImpact.miImpact;
+import static com.sk.domain.shared.entity.master.tmm.QMiImpactDriver.miImpactDriver;
+import static com.sk.domain.shared.entity.master.tmm.QMiImpactResult.miImpactResult;
+import static com.sk.domain.shared.entity.master.tmm.QMiInstitutionView.miInstitutionView;
 
 import com.querydsl.core.BooleanBuilder;
-import com.querydsl.core.Tuple;
 import com.querydsl.core.types.OrderSpecifier;
 import com.querydsl.core.types.dsl.BooleanExpression;
+import com.querydsl.core.types.dsl.CaseBuilder;
+import com.querydsl.core.types.dsl.NumberExpression;
 import com.querydsl.jpa.JPQLQuery;
 import com.querydsl.jpa.impl.JPAQueryFactory;
 import com.sk.common.utils.JsonUtil;
@@ -30,7 +31,7 @@ import com.sk.domain.shared.repository.master.tmm.projection.*;
 
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.LinkedHashMap;
+import java.util.Comparator;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
@@ -185,11 +186,18 @@ public class CustomMiEventRepositoryImpl implements CustomMiEventRepository {
 
         EventDetailBaseRow base = queryFactory
             .select(new QEventDetailBaseRow(
-                miEvent.miEventId, miEvent.eventTitle,
-                miEvent.createDt, miEvent.modifyDt,
-                miEventTypeL1.level1Code, miEventTypeL1.level1Label,
-                miEventTypeL2.level2Code, miEventTypeL2.level2Label,
-                miEvent.isSignal, miEvent.isNew, miEvent.detailAnalysis, miEvent.keyBulletsJson
+                miEvent.miEventId,
+                miEvent.eventTitle,
+                miEvent.createDt,
+                miEvent.modifyDt,
+                miEventTypeL1.level1Code,
+                miEventTypeL1.level1Label,
+                miEventTypeL2.level2Code,
+                miEventTypeL2.level2Label,
+                miEvent.isSignal,
+                miEvent.isNew,
+                miEvent.detailAnalysis,
+                miEvent.keyBulletsJson
             ))
             .from(miEvent)
             .innerJoin(miEvent.eventTypeL2, miEventTypeL2).on(miEventTypeL2.isDeleted.isFalse())
@@ -208,8 +216,8 @@ public class CustomMiEventRepositoryImpl implements CustomMiEventRepository {
         // 핵심요약 조회 (JSON 컬럼 {"bullets":[...]} 에서 파싱)
         List<String> keyBullets = JsonUtil.parseWrappedStringList(base.keyBulletsJson(), "bullets");
 
-        // 영향도 분석 조회 (인덱스별 본문 Map)
-        Map<String, String> indexAnalysisTexts = fetchIndexAnalysisTexts(base.miEventId());
+        // 전체 영향도 종합 요약
+        String impactSummary = fetchImpactSummary(base.miEventId());
 
         // 출처 조회
         List<String> sources = fetchEventProviderNames(base.miEventId());
@@ -231,7 +239,7 @@ public class CustomMiEventRepositoryImpl implements CustomMiEventRepository {
             base.isSignal(),
             base.isNew(),
             base.detailAnalysis(),
-            indexAnalysisTexts,
+            impactSummary,
             indexImpacts,
             keyBullets,
             sources,
@@ -239,27 +247,49 @@ public class CustomMiEventRepositoryImpl implements CustomMiEventRepository {
         ));
     }
 
-    // todo: 스키마 최신버전 오면 수정필요함.
-    private Map<String, String> fetchIndexAnalysisTexts(Long eventId) {
-        List<Tuple> tuples = queryFactory
-            .select(impactResult.targetId, impactResult.impactAssessmentReason)
-            .from(impact)
-            .innerJoin(impactResult).on(impactResult.impact.eq(impact)
-                .and(impactResult.isDeleted.isFalse()))
+    // note: 이벤트 전체 영향도 종합 요약 (tmm_mi_impact_m.impact_summary). 이벤트당 1건.
+    private String fetchImpactSummary(Long eventId) {
+        return queryFactory
+            .select(miImpact.impactSummary)
+            .from(miImpact)
             .where(
-                impact.isDeleted.isFalse(),
-                impact.miEvent.miEventId.eq(eventId),
-                impactResult.targetType.eq(TargetType.PRICE.getCode()),
-                impactResult.targetId.in(SUPPORTED_INDEX_CODES),
-                impactResult.impactAssessmentReason.isNotNull()
+                miImpact.miEvent.miEventId.eq(eventId),
+                miImpact.isDeleted.isFalse()
             )
+            .orderBy(miImpact.modifyDt.desc())
+            .fetchFirst();
+    }
+
+    @Override
+    public Page<EventOutlookRow> findEventOutlooks(Long eventId, int page, int size) {
+
+        Pageable pageable = PageRequest.of(page - 1, size);
+
+        List<EventOutlookRow> rows = queryFactory
+            .select(new QEventOutlookRow(
+                miInstitutionView.viewDate,
+                miInstitutionView.institutionName,
+                miInstitutionView.viewSummary
+            ))
+            .from(miInstitutionView)
+            .where(
+                miInstitutionView.miEventId.eq(eventId),
+                miInstitutionView.isDeleted.isFalse()
+            )
+            .orderBy(miInstitutionView.viewDate.desc(), miInstitutionView.institutionViewId.desc())
+            .offset(pageable.getOffset())
+            .limit(pageable.getPageSize())
             .fetch();
 
-        Map<String, String> result = new LinkedHashMap<>();
-        for (Tuple t : tuples) {
-            result.put(t.get(impactResult.targetId), t.get(impactResult.impactAssessmentReason));
-        }
-        return result;
+        JPQLQuery<Long> countQuery = queryFactory
+            .select(miInstitutionView.count())
+            .from(miInstitutionView)
+            .where(
+                miInstitutionView.miEventId.eq(eventId),
+                miInstitutionView.isDeleted.isFalse()
+            );
+
+        return PageableExecutionUtils.getPage(rows, pageable, countQuery::fetchOne);
     }
 
     // note: 이벤트의 출처(provider name) - record_type 분기 따라 두 경로
@@ -319,57 +349,68 @@ public class CustomMiEventRepositoryImpl implements CustomMiEventRepository {
             .fetch();
     }
 
-    // note: Event -> Impact -> ImpactResult -> DriverTag 경로로 Driver Tree Scoreboard 데이터 조회
+    // note: Event -> MiImpact -> MiImpactResult -> MiImpactDriver 경로로 Driver Tree Scoreboard 데이터 조회
     private List<DriverTagScoreboardRow> fetchDriverTags(Long eventId) {
+        // 인덱스 순서(JKM → TTF → HH) 정렬용 rank
+        NumberExpression<Integer> targetRank = new CaseBuilder()
+            .when(miImpactResult.targetId.eq(IndexName.JKM.getCode())).then(0)
+            .when(miImpactResult.targetId.eq(IndexName.TTF.getCode())).then(1)
+            .when(miImpactResult.targetId.eq(IndexName.HH.getCode())).then(2)
+            .otherwise(Integer.MAX_VALUE);
+
         return queryFactory
             .select(new QDriverTagScoreboardRow(
-                impactResult.targetId,
-                driverTag.lv1Id,
-                driverTag.lv1Label,
-                driverTag.lv2Id,
-                driverTag.lv2Label,
-                driverTag.lv3Id,
-                driverTag.lv3Label,
-                driverTag.driverMagnitude,
-                driverTag.direction,
-                driverTag.driverReason
+                miImpactResult.targetId,
+                miImpactDriver.lv1Id,
+                miImpactDriver.lv1Label,
+                miImpactDriver.lv2Id,
+                miImpactDriver.lv2Label,
+                miImpactDriver.lv3Id,
+                miImpactDriver.lv3Label,
+                miImpactDriver.impactShort,
+                miImpactDriver.impactMid,
+                miImpactDriver.impactLong,
+                miImpactDriver.driverReason
             ))
-            .from(driverTag)
-            .innerJoin(driverTag.impactResult, impactResult).on(impactResult.isDeleted.isFalse())
-            .innerJoin(impactResult.impact, impact).on(impact.isDeleted.isFalse())
+            .from(miImpactDriver)
+            .innerJoin(miImpactDriver.impactResult, miImpactResult).on(miImpactResult.isDeleted.isFalse())
+            .innerJoin(miImpactResult.impact, miImpact).on(miImpact.isDeleted.isFalse())
             .where(
-                driverTag.isDeleted.isFalse(),
-                impact.miEvent.miEventId.eq(eventId),
-                impactResult.targetType.eq(TargetType.PRICE.getCode()),
-                impactResult.targetId.in(SUPPORTED_INDEX_CODES)
+                miImpactDriver.isDeleted.isFalse(),
+                miImpact.miEvent.miEventId.eq(eventId),
+                miImpactResult.targetType.eq(TargetType.PRICE.getCode()),
+                miImpactResult.targetId.in(SUPPORTED_INDEX_CODES)
             )
+            .orderBy(targetRank.asc(), miImpactDriver.matchScore.desc())
             .fetch();
     }
 
+    // note: Event -> MiImpact -> MiImpactResult 경로. 인덱스별 단기/중기/장기 영향도(완료된 분석) 조회.
     private Map<Long, List<EventIndexImpactRow>> fetchIndexImpactsGroupedByEventId(List<Long> eventIds) {
 
         List<EventIndexImpactRow> rows = queryFactory
             .select(new QEventIndexImpactRow(
-                impact.miEvent.miEventId,
-                impactResult.targetId,
-                qualitativeImpact.magnitudeLevel,
-                qualitativeImpact.direction
+                miImpact.miEvent.miEventId,
+                miImpactResult.targetId,
+                miImpactResult.impactShort,
+                miImpactResult.impactMid,
+                miImpactResult.impactLong
             ))
-            .from(impact)
-            .innerJoin(impactResult).on(impactResult.impact.eq(impact)
-                .and(impactResult.isDeleted.isFalse()))
-            .leftJoin(qualitativeImpact)
-                .on(qualitativeImpact.impactResultId.eq(impactResult.impactResultId)
-                    .and(qualitativeImpact.isDeleted.isFalse()))
+            .from(miImpactResult)
+            .innerJoin(miImpactResult.impact, miImpact).on(miImpact.isDeleted.isFalse())
             .where(
-                impact.isDeleted.isFalse(),
-                impact.miEvent.miEventId.in(eventIds),
-                impactResult.targetType.eq(TargetType.PRICE.getCode()),
-                impactResult.targetId.in(SUPPORTED_INDEX_CODES)
+                miImpactResult.isDeleted.isFalse(),
+                miImpactResult.completed.isTrue(), // note: 참조쿼리 참고
+                miImpact.miEvent.miEventId.in(eventIds),
+                miImpactResult.targetType.eq(TargetType.PRICE.getCode()),
+                miImpactResult.targetId.in(SUPPORTED_INDEX_CODES)
             )
             .fetch();
 
-        return rows.stream().collect(Collectors.groupingBy(EventIndexImpactRow::miEventId));
+        // 인덱스 영향도 JKM -> TTF -> HH (IndexName 순서)로 정렬해 그룹화
+        return rows.stream()
+            .sorted(Comparator.comparingInt(row -> SUPPORTED_INDEX_CODES.indexOf(row.targetId())))
+            .collect(Collectors.groupingBy(EventIndexImpactRow::miEventId));
     }
 
 }
