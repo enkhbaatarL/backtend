@@ -33,10 +33,10 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 @Profile("!dedicated")
-@Tag(name = "2. Scenario Workbench Event API", description = "Scenario Workbench Event API입니다.")
+@Tag(name = "2. Next Gen MI Event API", description = "Next Gen MI Event API입니다.")
 @Slf4j
 @RestController
-@RequestMapping("/api/v1/mi/scenario-workbench/events")
+@RequestMapping("/api/v1/mi/next-gen/events")
 @RequiredArgsConstructor
 public class EventController {
 
@@ -70,7 +70,7 @@ public class EventController {
     @Operation(
         summary = "Event 목록 조회 API (with pagination)",
         description = """
-            Scenario Workbench의 Event 목록을 필터, 정렬, 페이징 조건으로 조회합니다. <br>
+            Next Gen MI의 Event 목록을 필터, 정렬, 페이징 조건으로 조회합니다. <br>
 
             <br><br>
             ### 사용 가능한 파라미터

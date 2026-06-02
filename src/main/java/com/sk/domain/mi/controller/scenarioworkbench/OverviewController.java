@@ -29,10 +29,10 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 @Profile("!dedicated")
-@Tag(name = "1. Scenario Workbench Overview API", description = "Scenario Workbench Overview API입니다.")
+@Tag(name = "1. Next Gen MI Overview API", description = "Next Gen MI Overview API입니다.")
 @Slf4j
 @RestController
-@RequestMapping("/api/v1/mi/scenario-workbench/overview")
+@RequestMapping("/api/v1/mi/next-gen/overview")
 @RequiredArgsConstructor
 public class OverviewController {
 

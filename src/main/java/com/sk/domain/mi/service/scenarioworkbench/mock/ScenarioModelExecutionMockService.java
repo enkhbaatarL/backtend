@@ -330,7 +330,7 @@ public class ScenarioModelExecutionMockService {
     }
 
     private String buildStatusEndpoint(Long scenarioId, String executionId) {
-        return "/api/v1/mi/scenario-workbench/scenarios/" + scenarioId + "/model-executions/" + executionId;
+        return "/api/v1/mi/next-gen/scenarios/" + scenarioId + "/model-executions/" + executionId;
     }
 
     private record StoredExecution(

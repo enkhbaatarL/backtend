@@ -26,10 +26,10 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 @Profile("!dedicated")
-@Tag(name = "3. Scenario Workbench Scenario API", description = "Scenario Workbench Scenario API입니다.")
+@Tag(name = "3. Next Gen MI Scenario API", description = "Next Gen MI Scenario API입니다.")
 @Slf4j
 @RestController
-@RequestMapping("/api/v1/mi/scenario-workbench/scenarios")
+@RequestMapping("/api/v1/mi/next-gen/scenarios")
 @RequiredArgsConstructor
 public class ScenarioController {
 
@@ -39,7 +39,7 @@ public class ScenarioController {
     @Operation(
         summary = "Scenario 목록 조회 API (with pagination)",
         description = """
-            Scenario Workbench의 Scenario 목록을 필터, 정렬, 페이징 조건으로 조회합니다. <br>
+            Next Gen MI의 Scenario 목록을 필터, 정렬, 페이징 조건으로 조회합니다. <br>
 
             <br><br>
             ### 사용 가능한 파라미터

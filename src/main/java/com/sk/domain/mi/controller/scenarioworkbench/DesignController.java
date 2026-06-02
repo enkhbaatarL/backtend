@@ -35,10 +35,10 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 @Profile("!dedicated")
-@Tag(name = "5. Scenario Workbench Design API", description = "Scenario Workbench Design API입니다.")
+@Tag(name = "5. Next Gen MI Design API", description = "Next Gen MI Design API입니다.")
 @Slf4j
 @RestController
-@RequestMapping("/api/v1/mi/scenario-workbench/design")
+@RequestMapping("/api/v1/mi/next-gen/design")
 @RequiredArgsConstructor
 public class DesignController {
 

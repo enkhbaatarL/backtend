@@ -21,7 +21,7 @@ public record ModelExecutionAcceptRes(
     @Schema(description = "실행 접수 시각")
     LocalDateTime requestedAt,
 
-    @Schema(description = "상태 polling endpoint", example = "/api/v1/mi/scenario-workbench/scenarios/1/model-executions/exec_a1b2c3d4e5f6")
+    @Schema(description = "상태 polling endpoint", example = "/api/v1/mi/next-gen/scenarios/1/model-executions/exec_a1b2c3d4e5f6")
     String statusEndpoint
 
 ) {

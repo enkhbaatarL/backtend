@@ -51,7 +51,7 @@ public class SwaggerConfig {
             .group("MI API")
             .displayName("MI 서비스 API")
             .pathsToMatch("/api/v1/mi/**")
-            .pathsToExclude("/api/v1/mi/scenario-workbench/**", "/api/v1/mi/fundamental-model/**")
+            .pathsToExclude("/api/v1/mi/next-gen/**", "/api/v1/mi/fundamental-model/**")
             .addOpenApiCustomizer(sortPathsOpenApiCustomizer)
             .addOperationCustomizer(apiOrderOperationCustomizer)
             .build();
@@ -271,11 +271,11 @@ public class SwaggerConfig {
         return GroupedOpenApi.builder()
             .group("SK Gas API")
             .displayName("SK Gas API")
-            .pathsToMatch("/api/v1/mi/scenario-workbench/**", "/api/v1/mi/fundamental-model/**")
+            .pathsToMatch("/api/v1/mi/next-gen/**", "/api/v1/mi/fundamental-model/**")
             .addOpenApiCustomizer(sortPathsOpenApiCustomizer)
             .addOpenApiCustomizer(openApi -> openApi.info(
                 new Info()
-                    .title("SK Gas - Scenario Workbench & Fundamental Model API")
+                    .title("SK Gas - Next Gen MI & Fundamental Model API")
                     .description(description)
                     .version(SW_VERSION_BASE)
             ))
