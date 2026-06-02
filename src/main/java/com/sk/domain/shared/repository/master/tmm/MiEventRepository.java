@@ -14,9 +14,9 @@ public interface MiEventRepository extends JpaRepository<MiEvent, Long>, CustomM
 
     @Query(
         value = """
-            SELECT t.first_created AS firstCreated, t.record_type AS recordType, t.title AS title, t.smry AS summary, t.gds_no AS goodsNo, t.file_name AS fileName, t.source_obj_id AS sourceObjId
+            SELECT t.first_created AS firstCreated, t.record_type AS recordType, t.title AS title, t.smry AS summary, t.gds_no AS goodsNo, t.gds_data_no AS goodsDataNo, t.file_name AS fileName, t.source_obj_id AS sourceObjId
             FROM (
-                SELECT r.first_created, r.record_type, d.title, s.smry, g.gds_no, NULL AS file_name, r.source_obj_id AS source_obj_id
+                SELECT r.first_created, r.record_type, d.title, s.smry, g.gds_no, NULL AS gds_data_no, NULL AS file_name, r.source_obj_id AS source_obj_id
                 FROM tmm_mi_mievent_record_map AS sm
                 JOIN tmd_mi_record AS r ON r.mi_record_id = sm.mi_record_id
                     AND r.record_type = 'NEWS'
@@ -32,7 +32,7 @@ public interface MiEventRepository extends JpaRepository<MiEvent, Long>, CustomM
 
                 UNION
 
-                SELECT r.first_created, r.record_type, m.gds_data_nm, s.file_rcrd, m.gds_no, f.org_file_nm, r.source_obj_id AS source_obj_id
+                SELECT r.first_created, r.record_type, m.gds_data_nm, s.file_rcrd, m.gds_no, m.gds_data_no, f.org_file_nm, r.source_obj_id AS source_obj_id
                 FROM tmm_mi_mievent_record_map AS sm
                 JOIN tmd_mi_record AS r ON r.mi_record_id = sm.mi_record_id
                     AND r.record_type <> 'NEWS'
@@ -50,7 +50,7 @@ public interface MiEventRepository extends JpaRepository<MiEvent, Long>, CustomM
         countQuery = """
             SELECT COUNT(*)
             FROM (
-                SELECT r.first_created, r.record_type, d.title, s.smry, g.gds_no, NULL AS file_name, r.source_obj_id AS source_obj_id
+                SELECT r.first_created, r.record_type, d.title, s.smry, g.gds_no, NULL AS gds_data_no, NULL AS file_name, r.source_obj_id AS source_obj_id
                 FROM tmm_mi_mievent_record_map AS sm
                 JOIN tmd_mi_record AS r ON r.mi_record_id = sm.mi_record_id
                     AND r.record_type = 'NEWS'
@@ -66,7 +66,7 @@ public interface MiEventRepository extends JpaRepository<MiEvent, Long>, CustomM
 
                 UNION
 
-                SELECT r.first_created, r.record_type, m.gds_data_nm, s.file_rcrd, m.gds_no, f.org_file_nm, r.source_obj_id AS source_obj_id
+                SELECT r.first_created, r.record_type, m.gds_data_nm, s.file_rcrd, m.gds_no, m.gds_data_no, f.org_file_nm, r.source_obj_id AS source_obj_id
                 FROM tmm_mi_mievent_record_map AS sm
                 JOIN tmd_mi_record AS r ON r.mi_record_id = sm.mi_record_id
                     AND r.record_type <> 'NEWS'
