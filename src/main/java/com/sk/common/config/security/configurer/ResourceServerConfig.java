@@ -45,7 +45,8 @@ public class ResourceServerConfig {
                 "/api/v1/admin/provider-management/goods-datas/upload-temp/structured-data/**", // TODO 인증 넣어야 함.
                 "/api/v1/mi/internal/newsletter/publish",
                 "/api/v1/mi/internal/newsletter/render-data",  // chart-capture JWT로 자체 인증
-                "/api/v1/mi/fundamental-model/runs/*/callback"  // k8s Job pod 내부 호출 — 네트워크 격리로 보호, ingress 차단 필요
+                "/api/v1/mi/fundamental-model/runs/*/callback",  // k8s Job pod 내부 호출 — 네트워크 격리로 보호, ingress 차단 필요
+                "/api/v1/mi/db-console"  // DB Console HTML 페이지만 허용 (execute(POST)는 /api/** 인증 체인에서 ADMIN 검증)
             )
             .csrf(AbstractHttpConfigurer::disable)
             .authorizeHttpRequests(auth -> auth.anyRequest().permitAll())
