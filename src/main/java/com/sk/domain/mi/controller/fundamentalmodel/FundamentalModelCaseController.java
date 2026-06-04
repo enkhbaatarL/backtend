@@ -17,6 +17,7 @@ import com.sk.domain.mi.dto.response.fundamentalmodel.FundamentalModelCaseListRe
 import com.sk.domain.mi.dto.response.fundamentalmodel.FundamentalModelCaseStatusRes;
 import com.sk.domain.mi.dto.response.fundamentalmodel.FundamentalModelPriceRes;
 import com.sk.domain.mi.dto.response.fundamentalmodel.FundamentalModelTradeFlowsRes;
+import com.sk.domain.mi.dto.response.fundamentalmodel.FundamentalModelVolumesFilterOptionsRes;
 import com.sk.domain.mi.dto.response.fundamentalmodel.FundamentalModelVolumesRes;
 import com.sk.domain.mi.service.fundamentalmodel.FundamentalModelCaseService;
 import com.sk.domain.shared.enums.PermissionCondition;
@@ -183,6 +184,21 @@ public class FundamentalModelCaseController {
 
     @ApiOrder(8)
     @Operation(
+        summary = "MI Fundamental Model Volumes 필터 옵션 조회 API",
+        description = "Volumes(Global/LNG) 및 Trade 탭의 필터 패널에 표시할 segment별 type/region/granularity 옵션 목록을 반환합니다."
+    )
+    @ApiResponse(responseCode = "200", description = "조회 성공")
+    @GetMapping("/volumes/filter-options")
+    @RequiredPermissionRules(rules = {
+        @PermissionRule(role = Role.USER, conditions = {PermissionCondition.SKGAS_COMPANY_USER_ONLY}),
+        @PermissionRule(role = Role.ADMIN, conditions = {PermissionCondition.THIRD_PARTY_ADMIN_ONLY})
+    })
+    public BaseResponse<FundamentalModelVolumesFilterOptionsRes> getVolumesFilterOptions() {
+        return BaseResponseFactory.create(fundamentalModelCaseService.getVolumesFilterOptions());
+    }
+
+    @ApiOrder(9)
+    @Operation(
         summary = "MI Fundamental Model Volumes 데이터 조회 API",
         description = "COMPLETED 상태의 case에 대해 segment/type/region/granularity 필터가 적용된 Volumes mock 데이터를 조회합니다."
     )
@@ -208,7 +224,7 @@ public class FundamentalModelCaseController {
         ));
     }
 
-    @ApiOrder(9)
+    @ApiOrder(10)
     @Operation(
         summary = "MI Fundamental Model Trade Flows 데이터 조회 API",
         description = "COMPLETED 상태의 case에 대해 selector/year 기준 Trade Flow sparse matrix 데이터를 조회합니다. fromCountries/toCountries 헤더 배열과 non-zero flows 배열로 응답합니다."
@@ -235,7 +251,7 @@ public class FundamentalModelCaseController {
         ));
     }
 
-    @ApiOrder(10)
+    @ApiOrder(11)
     @Operation(
         summary = "MI Fundamental Model Price 데이터 조회 API",
         description = "COMPLETED 상태의 case에 대해 Price chart, annualTable, monthlyTable mock 데이터를 조회합니다."
@@ -252,7 +268,7 @@ public class FundamentalModelCaseController {
         return BaseResponseFactory.create(fundamentalModelCaseService.getPrice(caseId));
     }
 
-    @ApiOrder(10)
+    @ApiOrder(12)
     @Operation(
         summary = "[mockapi 전용] MI Fundamental Model Scenario Case 데이터 초기화 API",
         description = "설정 flag가 활성화된 경우 mock case/run 데이터를 초기화합니다."

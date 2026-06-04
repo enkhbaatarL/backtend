@@ -139,6 +139,7 @@ MI Fundamental Model의 1차 mock API는 MI Fundamental Model 화면에서 사�
 | Scenario Case 삭제 | `DELETE` | `/api/v1/mi/fundamental-model/cases/{caseId}` | `200 OK` | `Void` |
 | Scenario Case 실행 요청 | `POST` | `/api/v1/mi/fundamental-model/cases/{caseId}/runs` | `202 Accepted` | `FundamentalModelRunAcceptRes` |
 | Scenario Case 상태 조회 | `GET` | `/api/v1/mi/fundamental-model/cases/{caseId}/status` | `200 OK` | `FundamentalModelCaseStatusRes` |
+| Volumes 필터 옵션 조회 | `GET` | `/api/v1/mi/fundamental-model/cases/volumes/filter-options` | `200 OK` | `FundamentalModelVolumesFilterOptionsRes` |
 | Volumes 데이터 조회 (Global/LNG) | `GET` | `/api/v1/mi/fundamental-model/cases/{caseId}/volumes` | `200 OK` | `FundamentalModelVolumesRes` |
 | Trade Flows 데이터 조회 | `GET` | `/api/v1/mi/fundamental-model/cases/{caseId}/volumes/trade` | `200 OK` | `FundamentalModelTradeFlowsRes` |
 | Price 데이터 조회 | `GET` | `/api/v1/mi/fundamental-model/cases/{caseId}/price` | `200 OK` | `FundamentalModelPriceRes` |
@@ -442,7 +443,23 @@ Reset API 포함 판단:
 - callback은 실행 상태를 terminal 상태로 전이하는 용도이며, 결과 payload 또는 결과 pointer/reference를 저장하지 않는다.
 - 후속으로 결과 조회/download가 필요해지면 별도 API 계약과 persistence 검토에서 result pointer/reference를 다시 설계한다.
 
-### 3.10 Volumes 데이터 조회 (Global / LNG)
+### 3.10 Volumes 필터 옵션 조회
+
+- Method: `GET`
+- Path: `/api/v1/mi/fundamental-model/cases/volumes/filter-options`
+- Path variables: 없음
+- Query parameters: 없음
+
+규칙:
+
+- case 독립 정적 endpoint다. caseId 없이 호출한다.
+- segment별로 허용되는 type 목록, region 목록, granularity 목록을 `{ value, label }` 쌍으로 반환한다.
+- TRADE segment의 `types`는 `TradeFlowDirection` 값(`TO_COUNTRY`, `FROM_COUNTRY`)이며, `granularities`는 빈 배열이다.
+- GLOBAL/LNG segment의 `types`는 `FundamentalModelDataType` 값이며, `granularities`는 `MONTHLY`, `YEARLY`를 반환한다.
+- 항상 GLOBAL → LNG → TRADE 순서로 반환한다.
+- mock/real 구분 없이 enum 기반 정적 응답이다.
+
+### 3.11 Volumes 데이터 조회 (Global / LNG)
 
 - Method: `GET`
 - Path variables:
@@ -472,7 +489,7 @@ Reset API 포함 판단:
 - `granularity=MONTHLY`이면 columns의 `month` 필드는 1~12 정수다.
 - 1차 mock에서는 json seed 파일 기반 고정 데이터를 반환한다. 필터는 mock 데이터 내에서 적용한다.
 
-### 3.11 Price 데이터 조회
+### 3.12 Price 데이터 조회
 
 - Method: `GET`
 - Path variables:
@@ -492,7 +509,7 @@ Reset API 포함 판단:
 - 1차 mock에서는 json seed 파일 기반 고정 데이터를 반환한다.
 
 
-### 3.12 Trade Flows 데이터 조회
+### 3.13 Trade Flows 데이터 조회
 
 - Method: `GET`
 - Path variables:
@@ -827,7 +844,82 @@ FE는 `latestRun.startedAt`과 `latestRun.finishedAt`으로 소요시간을 계�
 **`FundamentalModelGranularity` enum:**
 `MONTHLY`, `YEARLY`
 
-### 4.12 `FundamentalModelPriceRes`
+### 4.12 `FundamentalModelVolumesFilterOptionsRes`
+
+```json
+{
+  "segments": [
+    {
+      "segment": "GLOBAL",
+      "types": [
+        { "value": "DEMAND",           "label": "Demand" },
+        { "value": "PRODUCTION",       "label": "Production" },
+        { "value": "LNG_IMPORTS",      "label": "LNG Imports" },
+        { "value": "LNG_EXPORTS",      "label": "LNG Exports" },
+        { "value": "PIPELINE_IMPORTS", "label": "Pipeline Imports" },
+        { "value": "PIPELINE_EXPORTS", "label": "Pipeline Exports" }
+      ],
+      "regions": [
+        { "value": "ASIA",          "label": "Asia" },
+        { "value": "EUROPE",        "label": "Europe" },
+        { "value": "NORTH_AMERICA", "label": "North America" },
+        { "value": "MIDDLE_EAST",   "label": "Middle East" },
+        { "value": "AUSTRALIA",     "label": "Australia" },
+        { "value": "RUSSIA",        "label": "Russia" },
+        { "value": "AFRICA",        "label": "Africa" },
+        { "value": "SOUTH_AMERICA", "label": "South America" }
+      ],
+      "granularities": [
+        { "value": "MONTHLY", "label": "Monthly" },
+        { "value": "YEARLY",  "label": "Yearly" }
+      ]
+    },
+    {
+      "segment": "LNG",
+      "types": [
+        { "value": "LNG_IMPORTS", "label": "LNG Imports" },
+        { "value": "LNG_EXPORTS", "label": "LNG Exports" }
+      ],
+      "regions": [ "/* 동일 */" ],
+      "granularities": [
+        { "value": "MONTHLY", "label": "Monthly" },
+        { "value": "YEARLY",  "label": "Yearly" }
+      ]
+    },
+    {
+      "segment": "TRADE",
+      "types": [
+        { "value": "TO_COUNTRY",   "label": "To country" },
+        { "value": "FROM_COUNTRY", "label": "From country" }
+      ],
+      "regions": [ "/* 동일 */" ],
+      "granularities": []
+    }
+  ]
+}
+```
+
+| 필드 | 타입 | 설명 |
+|---|---|---|
+| `segments` | `List<VolumesSegmentFilterOptions>` | segment별 필터 옵션 목록. 항상 GLOBAL → LNG → TRADE 순서 |
+
+**`VolumesSegmentFilterOptions`:**
+
+| 필드 | 타입 | 설명 |
+|---|---|---|
+| `segment` | `FundamentalModelSegment` | 탭 구분자 |
+| `types` | `List<FilterOption>` | 해당 segment에서 선택 가능한 type 목록. TRADE는 `TradeFlowDirection` 값 |
+| `regions` | `List<FilterOption>` | 선택 가능한 region 목록. 모든 segment 동일 |
+| `granularities` | `List<FilterOption>` | 선택 가능한 granularity 목록. TRADE는 빈 배열 |
+
+**`FilterOption`:**
+
+| 필드 | 타입 | 설명 |
+|---|---|---|
+| `value` | `String` | API 파라미터 전송값 (예: `LNG_IMPORTS`) |
+| `label` | `String` | 화면 표시명 (예: `LNG Imports`) |
+
+### 4.13 `FundamentalModelPriceRes`
 
 ```json
 {
@@ -927,7 +1019,7 @@ FE는 `latestRun.startedAt`과 `latestRun.finishedAt`으로 소요시간을 계�
 | `values` | `List<Double>` | `columns` 순서와 1:1 대응하는 수치 목록 |
 
 
-### 4.13 `FundamentalModelTradeFlowsRes`
+### 4.14 `FundamentalModelTradeFlowsRes`
 
 ```json
 {
@@ -1098,6 +1190,7 @@ Endpoint summary 권장:
 | `FundamentalModelCaseController` | delete | `MI Fundamental Model Scenario Case 삭제 API` |
 | `FundamentalModelCaseController` | run | `MI Fundamental Model Scenario Case 실행 요청 API` |
 | `FundamentalModelCaseController` | status | `MI Fundamental Model Scenario Case 상태 조회 API` |
+| `FundamentalModelCaseController` | volumes-filter-options | `MI Fundamental Model Volumes 필터 옵션 조회 API` |
 | `FundamentalModelCaseController` | volumes | `MI Fundamental Model Volumes 데이터 조회 API` |
 | `FundamentalModelCaseController` | trade-flows | `MI Fundamental Model Trade Flows 데이터 조회 API` |
 | `FundamentalModelCaseController` | price | `MI Fundamental Model Price 데이터 조회 API` |

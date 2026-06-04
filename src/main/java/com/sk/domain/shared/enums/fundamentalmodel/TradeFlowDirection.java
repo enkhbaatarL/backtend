@@ -10,11 +10,12 @@ import lombok.RequiredArgsConstructor;
 @RequiredArgsConstructor
 public enum TradeFlowDirection {
 
-    TO_COUNTRY("TO_COUNTRY"),
-    FROM_COUNTRY("FROM_COUNTRY");
+    TO_COUNTRY("TO_COUNTRY", "To country"),
+    FROM_COUNTRY("FROM_COUNTRY", "From country");
 
     @JsonValue
     private final String code;
+    private final String label;
 
     @JsonCreator
     public static TradeFlowDirection from(String value) {

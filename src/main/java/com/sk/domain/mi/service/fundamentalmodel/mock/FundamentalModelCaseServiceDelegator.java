@@ -14,6 +14,7 @@ import com.sk.domain.mi.dto.response.fundamentalmodel.FundamentalModelPriceRes;
 import com.sk.domain.mi.dto.response.fundamentalmodel.FundamentalModelRunAcceptRes;
 import com.sk.domain.mi.dto.response.fundamentalmodel.FundamentalModelRunCallbackRes;
 import com.sk.domain.mi.dto.response.fundamentalmodel.FundamentalModelTradeFlowsRes;
+import com.sk.domain.mi.dto.response.fundamentalmodel.FundamentalModelVolumesFilterOptionsRes;
 import com.sk.domain.mi.dto.response.fundamentalmodel.FundamentalModelVolumesRes;
 import com.sk.domain.mi.service.fundamentalmodel.FundamentalModelCaseService;
 import com.sk.domain.mi.service.fundamentalmodel.FundamentalModelCaseServiceImpl;
@@ -85,6 +86,11 @@ public class FundamentalModelCaseServiceDelegator implements FundamentalModelCas
         return mockProps.getFundamentalModelCases().getApi().isGetStatus()
             ? mockService.getCaseStatus(caseId)
             : realService.getCaseStatus(caseId);
+    }
+
+    @Override
+    public FundamentalModelVolumesFilterOptionsRes getVolumesFilterOptions() {
+        return realService.getVolumesFilterOptions();
     }
 
     @Override
