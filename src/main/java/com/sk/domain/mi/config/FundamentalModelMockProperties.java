@@ -30,6 +30,7 @@ public class FundamentalModelMockProperties {
             private boolean run = true;
             private boolean getStatus = true;
             private boolean getVolumes = true;
+            private boolean getTradeFlows = true;
             private boolean getPrice = true;
             private boolean reset = true;
         }

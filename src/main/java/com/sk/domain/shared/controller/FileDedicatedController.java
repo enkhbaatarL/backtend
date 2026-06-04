@@ -90,7 +90,7 @@ public class FileDedicatedController {
     @Operation(summary = "1개 파일 다운로드", description = "1개의 파일을 다운로드합니다.")
     @ApiResponse(responseCode = "200", description = "HTTP Status Code is 200")
     @PostMapping("/download/file")
-    @RequiredPermission(roles = {Role.ADMIN, Role.OPERATOR, Role.USER, Role.API_PLUS_OPERATOR})
+    @RequiredPermission(roles = {Role.ADMIN, Role.OPERATOR, Role.USER, Role.API_PLUS_OPERATOR, Role.API_SUB_ADMIN})
     public ResponseEntity<byte[]> downloadFile(
             @RequestBody @Valid FileDownloadReq body) throws UnsupportedEncodingException {
 

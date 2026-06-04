@@ -8,6 +8,7 @@ import com.sk.domain.shared.entity.master.tmd.GoodsDataExtension;
 import com.sk.domain.shared.repository.master.tmd.GoodsDataExtensionRepository;
 import com.sk.domain.shared.repository.master.tcm.UploadedFileRepository;
 import java.io.IOException;
+import java.time.LocalDate;
 import java.util.*;
 
 import com.sk.common.properties.ProviderDefaultProperties;
@@ -334,6 +335,29 @@ public class AdminGoodsDataService {
      * @param providerNo 프로바이더 번호
      * @param dto 데이터 등록 요청 정보
      */
+    private LocalDate resolvePublishedDate(GoodsDataCreateReq dto) {
+        return resolvePublishedDate(dto.publishedDate(), dto.unstructuredDataList());
+    }
+
+    private LocalDate resolvePublishedDate(String publishedDate, List<UnstructuredDataReq> unstructuredDataList) {
+        if (StringUtils.hasText(publishedDate)) {
+            return DateUtil.fromYmdHyphen(publishedDate);
+        }
+        return resolveLatestCriteriaDt(unstructuredDataList);
+    }
+
+    private LocalDate resolveLatestCriteriaDt(List<UnstructuredDataReq> unstructuredDataList) {
+        if (unstructuredDataList == null || unstructuredDataList.isEmpty()) {
+            return null;
+        }
+        return unstructuredDataList.stream()
+                .map(UnstructuredDataReq::criteriaDt)
+                .filter(StringUtils::hasText)
+                .max(String::compareTo)
+                .map(DateUtil::fromYmd)
+                .orElse(null);
+    }
+
     private void internalCreateGoodsData(Goods goods, CustomerCompany customerCompany, int providerNo, GoodsDataCreateReq dto) {
         List<GoodsData> goodsDatas = goodsDataRepository.findByGoodsDataNmAndGodsDataExpnAndGoodsDataSummaryCntt(
                 goods,
@@ -466,7 +490,7 @@ public class AdminGoodsDataService {
             // gds_data_dstg_id는 LSEG의 식별 ID로 사용하려고 만는 컬럼이라서 무시하셔도 됩니다.
             GoodsData savedGoodsData = goodsDataRepository
                     .save(GoodsData.of(goods, customerCompany, dto.goodsDataNm(), dto.goodsDataExpn(), dto.goodsDataSummaryCntt(),
-                            dto.dataContributorNm(), false, true, DateUtil.fromYmdHyphen(dto.publishedDate()), dto.authors()));
+                            dto.dataContributorNm(), false, true, resolvePublishedDate(dto), dto.authors()));
 
             updateGoodsDataExtension(savedGoodsData, dto);
 
@@ -833,6 +857,13 @@ public class AdminGoodsDataService {
                                 }
                             }
                         });
+            }
+
+            if (!StringUtils.hasText(dto.publishedDate())) {
+                LocalDate resolvedPublishedDate = resolveLatestCriteriaDt(dto.unstructuredDataList());
+                if (resolvedPublishedDate != null) {
+                    goodsData.update(null, null, null, resolvedPublishedDate, null);
+                }
             }
 
             goodsData.updateMetaDataUploadStatus(false);

@@ -10,6 +10,7 @@ import com.sk.domain.mi.dto.request.fundamentalmodel.FundamentalModelCaseListReq
 import com.sk.domain.mi.dto.request.fundamentalmodel.FundamentalModelCaseUpdateReq;
 import com.sk.domain.mi.dto.request.fundamentalmodel.FundamentalModelJobArgs;
 import com.sk.domain.mi.dto.request.fundamentalmodel.FundamentalModelRunCallbackReq;
+import com.sk.domain.mi.dto.request.fundamentalmodel.FundamentalModelTradeFlowsReq;
 import com.sk.domain.mi.dto.request.fundamentalmodel.FundamentalModelVolumesReq;
 import com.sk.domain.mi.dto.response.fundamentalmodel.FundamentalModelCaseCreateRes;
 import com.sk.domain.mi.dto.response.fundamentalmodel.FundamentalModelCaseDetailRes;
@@ -21,6 +22,7 @@ import com.sk.domain.mi.dto.response.fundamentalmodel.FundamentalModelPriceRes;
 import com.sk.domain.mi.dto.response.fundamentalmodel.FundamentalModelRunAcceptRes;
 import com.sk.domain.mi.dto.response.fundamentalmodel.FundamentalModelRunCallbackRes;
 import com.sk.domain.mi.dto.response.fundamentalmodel.FundamentalModelRunStatusRes;
+import com.sk.domain.mi.dto.response.fundamentalmodel.FundamentalModelTradeFlowsRes;
 import com.sk.domain.mi.dto.response.fundamentalmodel.FundamentalModelVolumesRes;
 import com.sk.domain.mi.service.fundamentalmodel.KubernetesJobService;
 import com.sk.domain.shared.enums.fundamentalmodel.FundamentalModelCaseSearchType;
@@ -30,6 +32,11 @@ import com.sk.domain.shared.enums.fundamentalmodel.FundamentalModelGranularity;
 import com.sk.domain.shared.enums.fundamentalmodel.FundamentalModelRegion;
 import com.sk.domain.shared.enums.fundamentalmodel.FundamentalModelRunStatus;
 import com.sk.domain.shared.enums.fundamentalmodel.FundamentalModelSegment;
+import com.sk.domain.shared.enums.fundamentalmodel.TradeCountryHeaderKind;
+import com.sk.domain.shared.enums.fundamentalmodel.TradeFlowDirection;
+import com.sk.domain.shared.enums.fundamentalmodel.TradeFlowSelector;
+import com.sk.domain.shared.enums.fundamentalmodel.TradeFlowUnit;
+import com.sk.domain.shared.enums.fundamentalmodel.VolumesRowKind;
 import jakarta.annotation.PostConstruct;
 import java.io.IOException;
 import java.io.InputStream;
@@ -40,11 +47,14 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.EnumMap;
+import java.util.HashMap;
+import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
@@ -63,7 +73,10 @@ public class FundamentalModelCaseMockService {
 
     private static final String MOCK_DATA_RESOURCE = "mock/fundamental-model/fundamental-model-cases.json";
     private static final String VOLUMES_DATA_RESOURCE = "mock/fundamental-model/fundamental-model-volumes-data.json";
+    private static final String TRADE_FLOWS_DATA_RESOURCE = "mock/fundamental-model/fundamental-model-trade-flows-data.json";
     private static final String PRICE_DATA_RESOURCE = "mock/fundamental-model/fundamental-model-price-data.json";
+    private static final int TRADE_FLOW_YEAR_MIN = 2023;
+    private static final int TRADE_FLOW_YEAR_MAX = 2030;
     private static final int REQUIRED_FILE_COUNT = 3;
     private static final int TITLE_MAX_LENGTH = 200;
     private static final DateTimeFormatter RUN_ID_TIMESTAMP_FORMATTER = DateTimeFormatter.ofPattern("yyyyMMdd_HHmmss");
@@ -80,6 +93,7 @@ public class FundamentalModelCaseMockService {
     @Value("${server.domain:http://localhost:8080}")
     private String serverDomain = "http://localhost:8080";
     private Map<FundamentalModelSegment, FundamentalModelVolumesSeed> volumesSeedStore = emptyVolumesSeedStore();
+    private Map<TradeFlowSelector, Map<Integer, FundamentalModelTradeFlowsSeed>> tradeFlowsSeedStore = new EnumMap<>(TradeFlowSelector.class);
     private FundamentalModelPriceSeed priceSeed = emptyPriceSeed();
 
     public FundamentalModelCaseMockService() {
@@ -230,14 +244,11 @@ public class FundamentalModelCaseMockService {
         FundamentalModelGranularity granularity = request == null || request.granularity() == null
             ? FundamentalModelGranularity.MONTHLY
             : request.granularity();
-        List<FundamentalModelDataType> appliedTypes = normalizeTypes(request == null ? null : request.types());
+        List<FundamentalModelDataType> appliedTypes = normalizeTypes(segment, request == null ? null : request.types());
         List<FundamentalModelRegion> appliedRegions = normalizeRegions(request == null ? null : request.regions());
 
         FundamentalModelVolumesSeed seed = volumesSeedStore.getOrDefault(segment, emptyVolumesSeed());
-        boolean allRegionsApplied = appliedRegions.size() == FundamentalModelRegion.values().length;
-        List<FundamentalModelVolumesRes.VolumesRow> filteredRows = seed.rows().stream()
-            .filter(row -> matchesVolumesFilters(row, appliedTypes, appliedRegions, allRegionsApplied))
-            .toList();
+        List<FundamentalModelVolumesRes.VolumesRow> filteredRows = filterVolumesRows(seed.rows(), appliedTypes, appliedRegions);
 
         List<FundamentalModelVolumesRes.VolumesColumn> columns = seed.columns();
         List<FundamentalModelVolumesRes.VolumesRow> rows = filteredRows;
@@ -254,6 +265,45 @@ public class FundamentalModelCaseMockService {
             new FundamentalModelVolumesRes.VolumesAppliedFilters(appliedTypes, appliedRegions),
             columns,
             rows
+        );
+    }
+
+    public synchronized FundamentalModelTradeFlowsRes getTradeFlows(Long caseId, FundamentalModelTradeFlowsReq request) {
+        FundamentalModelCaseMockRecord caseRecord = getResultReadyCaseRecord(caseId);
+
+        if (request == null || request.selector() == null) {
+            throw AppErrorException.of(ResultCode.Error.REQ_INVALID_PARAMETER, "selector는 필수입니다.");
+        }
+        if (request.year() == null) {
+            throw AppErrorException.of(ResultCode.Error.REQ_INVALID_PARAMETER, "year는 필수입니다.");
+        }
+        if (request.year() < TRADE_FLOW_YEAR_MIN || request.year() > TRADE_FLOW_YEAR_MAX) {
+            throw AppErrorException.of(ResultCode.Error.REQ_INVALID_PARAMETER,
+                "year는 %d~%d 범위여야 합니다.".formatted(TRADE_FLOW_YEAR_MIN, TRADE_FLOW_YEAR_MAX));
+        }
+
+        TradeFlowUnit unit = request.unit() != null ? request.unit() : TradeFlowUnit.MTPA;
+        List<TradeFlowDirection> appliedTypes = normalizeTradeFlowTypes(request.types());
+        List<FundamentalModelRegion> appliedRegions = normalizeRegions(request.regions());
+
+        FundamentalModelTradeFlowsSeed seed = findTradeFlowsSeed(request.selector(), request.year());
+
+        List<FundamentalModelTradeFlowsRes.TradeCountryHeader> filteredFrom =
+            filterFromCountries(seed.fromCountries(), appliedTypes, appliedRegions);
+        List<FundamentalModelTradeFlowsRes.TradeCountryHeader> filteredTo =
+            filterToCountries(seed.toCountries(), appliedTypes, appliedRegions);
+        List<FundamentalModelTradeFlowsRes.TradeFlowItem> filteredFlows =
+            filterTradeFlows(seed.flows(), filteredFrom, filteredTo);
+
+        return new FundamentalModelTradeFlowsRes(
+            caseRecord.caseId(),
+            request.selector(),
+            request.year(),
+            unit,
+            new FundamentalModelTradeFlowsRes.TradeFlowsAppliedFilters(appliedTypes, appliedRegions),
+            filteredFrom,
+            filteredTo,
+            filteredFlows
         );
     }
 
@@ -358,9 +408,200 @@ public class FundamentalModelCaseMockService {
 
     private void loadResultSeedData() {
         volumesSeedStore = loadVolumesSeedData();
+        tradeFlowsSeedStore = loadTradeFlowsSeedData();
         priceSeed = loadPriceSeedData();
-        log.info("[Mock] Fundamental model result mock data loaded: volumeSegments={}, priceSeriesSets={}",
-            volumesSeedStore.size(), priceSeed.chart().seriesSets().size());
+        log.info("[Mock] Fundamental model result mock data loaded: volumeSegments={}, tradeFlowsSelectors={}, priceSeriesSets={}",
+            volumesSeedStore.size(), tradeFlowsSeedStore.size(), priceSeed.chart().seriesSets().size());
+    }
+
+    private Map<TradeFlowSelector, Map<Integer, FundamentalModelTradeFlowsSeed>> loadTradeFlowsSeedData() {
+        ClassPathResource resource = new ClassPathResource(TRADE_FLOWS_DATA_RESOURCE);
+        if (!resource.exists()) {
+            return new EnumMap<>(TradeFlowSelector.class);
+        }
+
+        try (InputStream is = resource.getInputStream()) {
+            JsonNode root = objectMapper.readTree(is);
+            Map<TradeFlowSelector, Map<Integer, FundamentalModelTradeFlowsSeed>> store = new EnumMap<>(TradeFlowSelector.class);
+            for (TradeFlowSelector selector : TradeFlowSelector.values()) {
+                JsonNode selectorNode = root.path(selector.getCode());
+                if (selectorNode.isMissingNode() || selectorNode.isNull()) {
+                    continue;
+                }
+                Map<Integer, FundamentalModelTradeFlowsSeed> yearMap = new HashMap<>();
+                selectorNode.fields().forEachRemaining(entry -> {
+                    int year = Integer.parseInt(entry.getKey());
+                    yearMap.put(year, readTradeFlowsSeed(entry.getValue()));
+                });
+                store.put(selector, yearMap);
+            }
+            return store;
+        } catch (IOException | IllegalArgumentException e) {
+            log.error("[Mock] Failed to load fundamental model trade flows data", e);
+            return new EnumMap<>(TradeFlowSelector.class);
+        }
+    }
+
+    private FundamentalModelTradeFlowsSeed readTradeFlowsSeed(JsonNode node) {
+        List<FundamentalModelTradeFlowsRes.TradeCountryHeader> fromCountries = objectMapper.convertValue(
+            node.path("fromCountries"), new TypeReference<>() {});
+        List<FundamentalModelTradeFlowsRes.TradeCountryHeader> toCountries = objectMapper.convertValue(
+            node.path("toCountries"), new TypeReference<>() {});
+        List<FundamentalModelTradeFlowsRes.TradeFlowItem> flows = objectMapper.convertValue(
+            node.path("flows"), new TypeReference<>() {});
+        return new FundamentalModelTradeFlowsSeed(
+            fromCountries == null ? Collections.emptyList() : enrichTradeCountryHeaders(fromCountries),
+            toCountries == null ? Collections.emptyList() : enrichTradeCountryHeaders(toCountries),
+            flows == null ? Collections.emptyList() : enrichTradeFlowItems(flows)
+        );
+    }
+
+    private FundamentalModelTradeFlowsSeed findTradeFlowsSeed(TradeFlowSelector selector, int year) {
+        Map<Integer, FundamentalModelTradeFlowsSeed> yearMap = tradeFlowsSeedStore.get(selector);
+        if (yearMap == null) {
+            return emptyTradeFlowsSeed();
+        }
+        return yearMap.getOrDefault(year, emptyTradeFlowsSeed());
+    }
+
+    private FundamentalModelTradeFlowsSeed emptyTradeFlowsSeed() {
+        return new FundamentalModelTradeFlowsSeed(
+            Collections.emptyList(), Collections.emptyList(), Collections.emptyList());
+    }
+
+    private List<TradeFlowDirection> normalizeTradeFlowTypes(List<TradeFlowDirection> types) {
+        if (types == null || types.isEmpty()) {
+            return List.of(TradeFlowDirection.values());
+        }
+        return List.copyOf(types);
+    }
+
+    private List<FundamentalModelTradeFlowsRes.TradeCountryHeader> filterFromCountries(
+        List<FundamentalModelTradeFlowsRes.TradeCountryHeader> fromCountries,
+        List<TradeFlowDirection> types,
+        List<FundamentalModelRegion> regions
+    ) {
+        if (!types.contains(TradeFlowDirection.FROM_COUNTRY)) {
+            return fromCountries;
+        }
+        boolean allRegions = regions.size() == FundamentalModelRegion.values().length;
+        if (allRegions) {
+            return fromCountries;
+        }
+        return fromCountries.stream()
+            .filter(h -> h.region() != null && regions.contains(h.region()))
+            .toList();
+    }
+
+    private List<FundamentalModelTradeFlowsRes.TradeCountryHeader> filterToCountries(
+        List<FundamentalModelTradeFlowsRes.TradeCountryHeader> toCountries,
+        List<TradeFlowDirection> types,
+        List<FundamentalModelRegion> regions
+    ) {
+        if (!types.contains(TradeFlowDirection.TO_COUNTRY)) {
+            return toCountries;
+        }
+        boolean allRegions = regions.size() == FundamentalModelRegion.values().length;
+        if (allRegions) {
+            return toCountries;
+        }
+        return toCountries.stream()
+            .filter(h -> h.region() == null || regions.contains(h.region()))
+            .toList();
+    }
+
+    private List<FundamentalModelTradeFlowsRes.TradeFlowItem> filterTradeFlows(
+        List<FundamentalModelTradeFlowsRes.TradeFlowItem> flows,
+        List<FundamentalModelTradeFlowsRes.TradeCountryHeader> fromCountries,
+        List<FundamentalModelTradeFlowsRes.TradeCountryHeader> toCountries
+    ) {
+        Set<String> validFrom = new HashSet<>();
+        for (FundamentalModelTradeFlowsRes.TradeCountryHeader h : fromCountries) {
+            validFrom.add(headerKey(h.region(), h.country()));
+        }
+        Set<String> validTo = new HashSet<>();
+        for (FundamentalModelTradeFlowsRes.TradeCountryHeader h : toCountries) {
+            validTo.add(headerKey(h.region(), h.country()));
+        }
+        return flows.stream()
+            .filter(f -> validFrom.contains(headerKey(f.fromRegion(), f.fromCountry()))
+                && validTo.contains(headerKey(f.toRegion(), f.toCountry())))
+            .toList();
+    }
+
+    private String headerKey(FundamentalModelRegion region, String country) {
+        return (region != null ? region.name() : "NULL") + ":" + (country != null ? country : "NULL");
+    }
+
+    private List<FundamentalModelTradeFlowsRes.TradeCountryHeader> enrichTradeCountryHeaders(
+        List<FundamentalModelTradeFlowsRes.TradeCountryHeader> headers
+    ) {
+        return headers.stream()
+            .map(header -> new FundamentalModelTradeFlowsRes.TradeCountryHeader(
+                tradeCountryKey(header.region(), header.country()),
+                tradeCountryLabel(header.region(), header.country()),
+                tradeCountryHeaderKind(header.region(), header.country()),
+                header.region(),
+                header.country()
+            ))
+            .toList();
+    }
+
+    private List<FundamentalModelTradeFlowsRes.TradeFlowItem> enrichTradeFlowItems(
+        List<FundamentalModelTradeFlowsRes.TradeFlowItem> flows
+    ) {
+        return flows.stream()
+            .map(flow -> new FundamentalModelTradeFlowsRes.TradeFlowItem(
+                tradeCountryKey(flow.fromRegion(), flow.fromCountry()),
+                tradeCountryKey(flow.toRegion(), flow.toCountry()),
+                flow.fromRegion(),
+                flow.fromCountry(),
+                flow.toRegion(),
+                flow.toCountry(),
+                flow.value()
+            ))
+            .toList();
+    }
+
+    private TradeCountryHeaderKind tradeCountryHeaderKind(FundamentalModelRegion region, String country) {
+        if (isTradeCountryGrandTotal(region, country)) {
+            return TradeCountryHeaderKind.GRAND_TOTAL;
+        }
+        if (country == null) {
+            return TradeCountryHeaderKind.REGION_TOTAL;
+        }
+        return TradeCountryHeaderKind.COUNTRY;
+    }
+
+    private String tradeCountryLabel(FundamentalModelRegion region, String country) {
+        if (country != null) {
+            return country;
+        }
+        if (region != null) {
+            return switch (region) {
+                case NORTH_AMERICA -> "America N";
+                case SOUTH_AMERICA -> "America S";
+                default -> region.getLabel();
+            };
+        }
+        return "Total";
+    }
+
+    private String tradeCountryKey(FundamentalModelRegion region, String country) {
+        if (isTradeCountryGrandTotal(region, country)) {
+            return "TOTAL";
+        }
+        if (region != null && country == null) {
+            return "REGION:" + region.getCode();
+        }
+        if (region != null) {
+            return "COUNTRY:" + region.getCode() + ":" + country;
+        }
+        return "COUNTRY:NULL:" + country;
+    }
+
+    private boolean isTradeCountryGrandTotal(FundamentalModelRegion region, String country) {
+        return region == null && "Total".equals(country);
     }
 
     private Map<FundamentalModelSegment, FundamentalModelVolumesSeed> loadVolumesSeedData() {
@@ -593,14 +834,42 @@ public class FundamentalModelCaseMockService {
         if (request == null || request.segment() == null) {
             throw AppErrorException.of(ResultCode.Error.REQ_INVALID_PARAMETER, "segment는 필수입니다.");
         }
+        if (request.segment() == FundamentalModelSegment.TRADE) {
+            throw AppErrorException.of(ResultCode.Error.REQ_INVALID_PARAMETER,
+                "segment=TRADE는 허용하지 않습니다. Trade Flows 조회는 GET /{caseId}/volumes/trade를 사용하세요.");
+        }
         return request.segment();
     }
 
-    private List<FundamentalModelDataType> normalizeTypes(List<FundamentalModelDataType> types) {
+    private List<FundamentalModelDataType> normalizeTypes(
+        FundamentalModelSegment segment,
+        List<FundamentalModelDataType> types
+    ) {
+        List<FundamentalModelDataType> allowedTypes = allowedTypesFor(segment);
         if (types == null || types.isEmpty()) {
-            return List.of(FundamentalModelDataType.values());
+            return allowedTypes;
         }
-        return List.copyOf(types);
+        List<FundamentalModelDataType> requestedTypes = List.copyOf(types);
+        List<FundamentalModelDataType> invalidTypes = requestedTypes.stream()
+            .filter(type -> !allowedTypes.contains(type))
+            .toList();
+        if (!invalidTypes.isEmpty()) {
+            throw AppErrorException.of(
+                ResultCode.Error.REQ_INVALID_PARAMETER,
+                "segment=" + segment.getCode() + "에서 허용하지 않는 types입니다: " + invalidTypes
+            );
+        }
+        return requestedTypes;
+    }
+
+    private List<FundamentalModelDataType> allowedTypesFor(FundamentalModelSegment segment) {
+        if (segment == FundamentalModelSegment.LNG) {
+            return List.of(
+                FundamentalModelDataType.LNG_IMPORTS,
+                FundamentalModelDataType.LNG_EXPORTS
+            );
+        }
+        return List.of(FundamentalModelDataType.values());
     }
 
     private List<FundamentalModelRegion> normalizeRegions(List<FundamentalModelRegion> regions) {
@@ -610,22 +879,65 @@ public class FundamentalModelCaseMockService {
         return List.copyOf(regions);
     }
 
-    private boolean matchesVolumesFilters(
-        FundamentalModelVolumesRes.VolumesRow row,
+    private List<FundamentalModelVolumesRes.VolumesRow> filterVolumesRows(
+        List<FundamentalModelVolumesRes.VolumesRow> seedRows,
         List<FundamentalModelDataType> appliedTypes,
-        List<FundamentalModelRegion> appliedRegions,
-        boolean allRegionsApplied
+        List<FundamentalModelRegion> appliedRegions
     ) {
-        if (row.type() != null && !appliedTypes.contains(row.type())) {
-            return false;
+        List<FundamentalModelVolumesRes.VolumesRow> filteredRows = new ArrayList<>();
+        for (FundamentalModelDataType type : appliedTypes) {
+            List<FundamentalModelVolumesRes.VolumesRow> typeRows = seedRows.stream()
+                .filter(row -> row.type() == type)
+                .filter(row -> row.region() != null && appliedRegions.contains(row.region()))
+                .filter(row -> row.rowKind() != VolumesRowKind.TYPE_TOTAL)
+                .toList();
+            filteredRows.addAll(typeRows);
+
+            List<FundamentalModelVolumesRes.VolumesRow> totalBaseRows = typeRows.stream()
+                .filter(row -> row.rowKind() == VolumesRowKind.REGION_SUBTOTAL)
+                .toList();
+            if (totalBaseRows.isEmpty()) {
+                totalBaseRows = typeRows.stream()
+                    .filter(row -> row.rowKind() == VolumesRowKind.COUNTRY)
+                    .toList();
+            }
+            if (!totalBaseRows.isEmpty()) {
+                filteredRows.add(toTypeTotalRow(type, totalBaseRows));
+            }
         }
-        if (row.type() == null && appliedTypes.size() != FundamentalModelDataType.values().length) {
-            return false;
+        return filteredRows;
+    }
+
+    private FundamentalModelVolumesRes.VolumesRow toTypeTotalRow(
+        FundamentalModelDataType type,
+        List<FundamentalModelVolumesRes.VolumesRow> rows
+    ) {
+        int maxValueCount = rows.stream()
+            .map(FundamentalModelVolumesRes.VolumesRow::values)
+            .filter(Objects::nonNull)
+            .mapToInt(List::size)
+            .max()
+            .orElse(0);
+        List<Double> values = new ArrayList<>();
+        for (int index = 0; index < maxValueCount; index++) {
+            values.add(sumValueAt(rows, index));
         }
-        if (row.region() == null) {
-            return allRegionsApplied;
-        }
-        return appliedRegions.contains(row.region());
+        return new FundamentalModelVolumesRes.VolumesRow(
+            type,
+            null,
+            null,
+            VolumesRowKind.TYPE_TOTAL,
+            values
+        );
+    }
+
+    private Double sumValueAt(List<FundamentalModelVolumesRes.VolumesRow> rows, int index) {
+        return rows.stream()
+            .map(FundamentalModelVolumesRes.VolumesRow::values)
+            .map(values -> valueAt(values, index))
+            .filter(Objects::nonNull)
+            .mapToDouble(Double::doubleValue)
+            .sum();
     }
 
     private YearlyVolumes aggregateYearly(
@@ -905,6 +1217,13 @@ public class FundamentalModelCaseMockService {
     private record FundamentalModelVolumesSeed(
         List<FundamentalModelVolumesRes.VolumesColumn> columns,
         List<FundamentalModelVolumesRes.VolumesRow> rows
+    ) {
+    }
+
+    private record FundamentalModelTradeFlowsSeed(
+        List<FundamentalModelTradeFlowsRes.TradeCountryHeader> fromCountries,
+        List<FundamentalModelTradeFlowsRes.TradeCountryHeader> toCountries,
+        List<FundamentalModelTradeFlowsRes.TradeFlowItem> flows
     ) {
     }
 
