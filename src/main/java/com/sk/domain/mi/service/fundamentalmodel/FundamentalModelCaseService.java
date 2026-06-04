@@ -13,6 +13,7 @@ import com.sk.domain.mi.dto.response.fundamentalmodel.FundamentalModelPriceRes;
 import com.sk.domain.mi.dto.response.fundamentalmodel.FundamentalModelRunAcceptRes;
 import com.sk.domain.mi.dto.response.fundamentalmodel.FundamentalModelRunCallbackRes;
 import com.sk.domain.mi.dto.response.fundamentalmodel.FundamentalModelTradeFlowsRes;
+import com.sk.domain.mi.dto.response.fundamentalmodel.FundamentalModelVolumesFilterOptionsRes;
 import com.sk.domain.mi.dto.response.fundamentalmodel.FundamentalModelVolumesRes;
 import java.util.List;
 import org.springframework.web.multipart.MultipartFile;
@@ -36,6 +37,8 @@ public interface FundamentalModelCaseService {
     FundamentalModelRunAcceptRes runCase(Long caseId);
 
     FundamentalModelCaseStatusRes getCaseStatus(Long caseId);
+
+    FundamentalModelVolumesFilterOptionsRes getVolumesFilterOptions();
 
     FundamentalModelVolumesRes getVolumes(Long caseId, FundamentalModelVolumesReq request);
 

@@ -5,6 +5,7 @@ import com.sk.domain.mi.dto.request.fundamentalmodel.FundamentalModelCaseUpdateR
 import com.sk.domain.mi.dto.request.fundamentalmodel.FundamentalModelRunCallbackReq;
 import com.sk.domain.mi.dto.request.fundamentalmodel.FundamentalModelTradeFlowsReq;
 import com.sk.domain.mi.dto.request.fundamentalmodel.FundamentalModelVolumesReq;
+import com.sk.domain.mi.dto.response.fundamentalmodel.FilterOption;
 import com.sk.domain.mi.dto.response.fundamentalmodel.FundamentalModelCaseCreateRes;
 import com.sk.domain.mi.dto.response.fundamentalmodel.FundamentalModelCaseDetailRes;
 import com.sk.domain.mi.dto.response.fundamentalmodel.FundamentalModelCaseListRes;
@@ -13,7 +14,15 @@ import com.sk.domain.mi.dto.response.fundamentalmodel.FundamentalModelPriceRes;
 import com.sk.domain.mi.dto.response.fundamentalmodel.FundamentalModelRunAcceptRes;
 import com.sk.domain.mi.dto.response.fundamentalmodel.FundamentalModelRunCallbackRes;
 import com.sk.domain.mi.dto.response.fundamentalmodel.FundamentalModelTradeFlowsRes;
+import com.sk.domain.mi.dto.response.fundamentalmodel.FundamentalModelVolumesFilterOptionsRes;
 import com.sk.domain.mi.dto.response.fundamentalmodel.FundamentalModelVolumesRes;
+import com.sk.domain.mi.dto.response.fundamentalmodel.VolumesSegmentFilterOptions;
+import com.sk.domain.shared.enums.fundamentalmodel.FundamentalModelDataType;
+import com.sk.domain.shared.enums.fundamentalmodel.FundamentalModelGranularity;
+import com.sk.domain.shared.enums.fundamentalmodel.FundamentalModelRegion;
+import com.sk.domain.shared.enums.fundamentalmodel.FundamentalModelSegment;
+import com.sk.domain.shared.enums.fundamentalmodel.TradeFlowDirection;
+import java.util.Arrays;
 import java.util.List;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
@@ -58,6 +67,44 @@ public class FundamentalModelCaseServiceImpl implements FundamentalModelCaseServ
     @Override
     public FundamentalModelCaseStatusRes getCaseStatus(Long caseId) {
         throw new UnsupportedOperationException("Fundamental model case status DB implementation is not ready.");
+    }
+
+    @Override
+    public FundamentalModelVolumesFilterOptionsRes getVolumesFilterOptions() {
+        List<FilterOption> allRegions = Arrays.stream(FundamentalModelRegion.values())
+            .map(r -> new FilterOption(r.getCode(), r.getLabel()))
+            .toList();
+        List<FilterOption> granularities = Arrays.stream(FundamentalModelGranularity.values())
+            .map(g -> new FilterOption(g.getCode(), g.getLabel()))
+            .toList();
+
+        VolumesSegmentFilterOptions global = new VolumesSegmentFilterOptions(
+            FundamentalModelSegment.GLOBAL,
+            Arrays.stream(FundamentalModelDataType.values())
+                .map(t -> new FilterOption(t.getCode(), t.getLabel()))
+                .toList(),
+            allRegions,
+            granularities
+        );
+        VolumesSegmentFilterOptions lng = new VolumesSegmentFilterOptions(
+            FundamentalModelSegment.LNG,
+            List.of(
+                new FilterOption(FundamentalModelDataType.LNG_IMPORTS.getCode(), FundamentalModelDataType.LNG_IMPORTS.getLabel()),
+                new FilterOption(FundamentalModelDataType.LNG_EXPORTS.getCode(), FundamentalModelDataType.LNG_EXPORTS.getLabel())
+            ),
+            allRegions,
+            granularities
+        );
+        VolumesSegmentFilterOptions trade = new VolumesSegmentFilterOptions(
+            FundamentalModelSegment.TRADE,
+            Arrays.stream(TradeFlowDirection.values())
+                .map(d -> new FilterOption(d.getCode(), d.getLabel()))
+                .toList(),
+            allRegions,
+            List.of()
+        );
+
+        return new FundamentalModelVolumesFilterOptionsRes(List.of(global, lng, trade));
     }
 
     @Override
