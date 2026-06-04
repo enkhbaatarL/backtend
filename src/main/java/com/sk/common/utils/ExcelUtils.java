@@ -11,6 +11,7 @@ import org.apache.poi.xssf.streaming.SXSSFWorkbook;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.regex.Pattern;
 import java.util.stream.IntStream;
@@ -55,6 +56,44 @@ public class ExcelUtils {
             throw SystemErrorException.of(ResultCode.Error.SYS_INTERNAL_ERROR, "excel download fail.");
         }
 
+    }
+
+    /**
+     * 다중 시트 엑셀 생성. key = 시트명, value = 해당 시트의 표(headers + rows).
+     * 셀 값이 null 이면 빈 칸으로 둔다. (기존 단일 시트 toExcel 과 독립된 메서드)
+     */
+    public static ByteArrayInputStream toExcel(LinkedHashMap<String, TableRes> sheets) {
+
+        try (SXSSFWorkbook workbook = new SXSSFWorkbook(100); ByteArrayOutputStream out = new ByteArrayOutputStream()) {
+
+            sheets.forEach((name, table) -> {
+                Sheet sheet = workbook.createSheet(sanitizeSheetName(name));
+
+                List<TableRes.Column> columns = table.headers();
+                Row headerRow = sheet.createRow(0);
+                for (int col = 0; col < columns.size(); col++) {
+                    headerRow.createCell(col).setCellValue(columns.get(col).name());
+                }
+
+                List<TableRes.Row> rows = table.rows();
+                IntStream.range(0, rows.size()).forEach(rowIdx -> {
+                    List<String> cells = rows.get(rowIdx).cells();
+                    Row row = sheet.createRow(rowIdx + 1);
+                    IntStream.range(0, cells.size()).forEach(cellIdx -> {
+                        String value = cells.get(cellIdx);
+                        if (value != null) {
+                            row.createCell(cellIdx).setCellValue(value);
+                        }
+                    });
+                });
+            });
+
+            workbook.write(out);
+            return new ByteArrayInputStream(out.toByteArray());
+        } catch (Exception e) {
+            log.error("Excel download failed: {}", e.getMessage(), e);
+            throw SystemErrorException.of(ResultCode.Error.SYS_INTERNAL_ERROR, "excel download fail.");
+        }
     }
 
     private static String sanitizeSheetName(String name) {

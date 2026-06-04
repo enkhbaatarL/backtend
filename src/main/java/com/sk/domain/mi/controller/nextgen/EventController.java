@@ -33,7 +33,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 @Profile("!dedicated")
-@Tag(name = "2. Next Gen MI Event API", description = "Next Gen MI Event API입니다.")
+@Tag(name = "01. Next Gen MI Event API", description = "Next Gen MI Event API입니다.")
 @Slf4j
 @RestController
 @RequestMapping("/api/v1/mi/next-gen/events")

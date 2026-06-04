@@ -1,0 +1,26 @@
+package com.sk.domain.mi.dto.response.nextgen;
+
+import io.swagger.v3.oas.annotations.media.Schema;
+import java.util.List;
+
+/**
+ * 시나리오 그룹 표 뷰의 한 행 (그룹에 속한 개별 시나리오).
+ */
+public record ScenarioRowRes(
+
+    @Schema(description = "시나리오 ID", example = "11")
+    Long scenarioId,
+
+    @Schema(description = "시나리오명", example = "단기 외교 해결")
+    String scenarioName,
+
+    @Schema(description = "BC(Base Case) 여부", example = "false")
+    boolean baseCase,
+
+    @Schema(description = "차원값 목록 (dimensionColumns 순서와 매칭)")
+    List<ScenarioDimensionRes> dimensions,
+
+    @Schema(description = "시나리오 발생 확률 (0~100)", example = "30")
+    Integer probability
+
+) {}
