@@ -1,6 +1,6 @@
 package com.sk.domain.shared.converter;
 
-import com.sk.domain.shared.enums.scenarioworkbench.ImpactGrade;
+import com.sk.domain.shared.enums.nextgen.ImpactGrade;
 import jakarta.persistence.AttributeConverter;
 import jakarta.persistence.Converter;
 

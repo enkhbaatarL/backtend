@@ -23,10 +23,10 @@ import com.querydsl.core.types.dsl.NumberExpression;
 import com.querydsl.jpa.JPQLQuery;
 import com.querydsl.jpa.impl.JPAQueryFactory;
 import com.sk.common.utils.JsonUtil;
-import com.sk.domain.mi.dto.request.scenarioworkbench.EventListReq;
-import com.sk.domain.shared.enums.scenarioworkbench.ContentStatus;
-import com.sk.domain.shared.enums.scenarioworkbench.IndexName;
-import com.sk.domain.shared.enums.scenarioworkbench.TargetType;
+import com.sk.domain.mi.dto.request.nextgen.EventListReq;
+import com.sk.domain.shared.enums.nextgen.ContentStatus;
+import com.sk.domain.shared.enums.nextgen.IndexName;
+import com.sk.domain.shared.enums.nextgen.TargetType;
 import com.sk.domain.shared.repository.master.tmm.projection.*;
 
 import java.util.ArrayList;

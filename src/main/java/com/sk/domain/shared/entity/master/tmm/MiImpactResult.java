@@ -7,7 +7,7 @@ import org.hibernate.annotations.Comment;
 
 import com.sk.common.converter.BooleanToYNAttributeConverter;
 import com.sk.domain.shared.entity.base.BaseEntity;
-import com.sk.domain.shared.enums.scenarioworkbench.ImpactGrade;
+import com.sk.domain.shared.enums.nextgen.ImpactGrade;
 import com.sk.domain.shared.converter.ImpactGradeConverter;
 
 import jakarta.persistence.Column;

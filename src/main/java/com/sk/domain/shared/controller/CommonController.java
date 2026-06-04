@@ -116,7 +116,7 @@ public class CommonController {
 
             <br><br>
             ### 요청 필드
-             - feedbackPageNm: 피드백 대상 페이지명 (선택) / example - "Scenario Workbench"
+             - feedbackPageNm: 피드백 대상 페이지명 (선택) / example - "Next Gen"
              - feedbackSectionNm: 피드백 대상 섹션명 (선택) / example - "Overview", "Design"
              - feedbackTypeCd: 피드백 유형 코드 (필수)
              - feedbackContent: 피드백 내용 (선택, 최대 2000자)

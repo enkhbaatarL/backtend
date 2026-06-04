@@ -29,7 +29,7 @@ Work note와 외부 문서가 이 feature spec 또는 canonical design draft와 
 
 MI Fundamental Model의 1차 mock API는 MI Fundamental Model 화면에서 사용자가 Scenario Case를 업로드하고, 특정 case 실행을 요청한 뒤, 실행 상태를 확인하고, 외부 모델 완료 callback 형태로 mock 실행을 terminal 상태로 전이할 수 있게 하는 backend 계약이다.
 
-`Scenario Case`는 현업에서 사용하는 업무 용어이므로 유지한다. 다만 API hierarchy에서 MI Scenario Workbench의 `Scenario` 하위 resource라는 의미는 아니다. MI Fundamental Model은 MI Scenario Workbench와 동급 메뉴이며, 이 문서의 canonical API는 Scenario Workbench path family를 사용하지 않는다.
+`Scenario Case`는 현업에서 사용하는 업무 용어이므로 유지한다. 다만 API hierarchy에서 MI Next Gen의 `Scenario` 하위 resource라는 의미는 아니다. MI Fundamental Model은 MI Next Gen와 동급 메뉴이며, 이 문서의 canonical API는 Next Gen path family를 사용하지 않는다.
 
 이번 문서는 구현자가 바로 controller/service/DTO/mock store를 만들 수 있는 API feature spec을 제공한다. 단, 이 문서는 Java 구현을 포함하지 않으며 DB rollout 가능한 DDL도 확정하지 않는다.
 
@@ -97,7 +97,7 @@ MI Fundamental Model의 1차 mock API는 MI Fundamental Model 화면에서 사�
 
 ### Boundary Against Existing ScenarioModelExecution API
 
-기존 `ScenarioModelExecution` API는 Scenario Workbench의 parameter 기반 MI 수급모델 실행 리소스를 다룬다. 이 spec의 `FundamentalModelCase`는 파일 3개 업로드를 기준으로 생성되는 Scenario Case aggregate이며, 기존 `model-executions` resource와 별개 기능으로 구현한다.
+기존 `ScenarioModelExecution` API는 Next Gen의 parameter 기반 MI 수급모델 실행 리소스를 다룬다. 이 spec의 `FundamentalModelCase`는 파일 3개 업로드를 기준으로 생성되는 Scenario Case aggregate이며, 기존 `model-executions` resource와 별개 기능으로 구현한다.
 
 구현 시 controller/DTO/service 명명도 다음처럼 분리한다.
 
@@ -120,11 +120,11 @@ MI Fundamental Model의 1차 mock API는 MI Fundamental Model 화면에서 사�
 
 계약 원칙:
 
-- MI Fundamental Model은 MI Scenario Workbench와 동급 메뉴다.
+- MI Fundamental Model은 MI Next Gen와 동급 메뉴다.
 - `Scenario Case` 명칭은 현업 용어로 유지하지만, API parent가 `Scenario`라는 뜻은 아니다.
 - `scenarioId`는 MI Fundamental Model 1차 mock API의 path variable, query parameter, multipart part, response DTO에서 사용하지 않는다.
 - canonical endpoint는 `/api/v1/mi/fundamental-model/**` path family만 사용한다.
-- 기존 `/api/v1/mi/scenario-workbench/**/fundamental-*` 및 `/api/v1/mi/scenario-workbench/scenarios/{scenarioId}/fundamental-model-cases/**` 형태는 superseded contract다. 구현자는 이 경로를 신규 controller 계약으로 사용하지 않는다.
+- 기존 `/api/v1/mi/next-gen/**/fundamental-*` 및 `/api/v1/mi/next-gen/scenarios/{scenarioId}/fundamental-model-cases/**` 형태는 superseded contract다. 구현자는 이 경로를 신규 controller 계약으로 사용하지 않는다.
 
 ### Phase 1 Implemented Endpoint Summary
 
@@ -653,7 +653,7 @@ Reset API 포함 판단:
 |---|---|---|
 | `caseId` | `Long` | mock store가 생성한 case ID. future DB는 `tmd_scncasem.case_id` 후보 |
 | `title` | `String` | 제목 |
-| `description` | `String` | 설명. 입력 없으면 `null`. 기존 ScenarioWorkbench mock의 optional 문자열 필드 패턴과 동일. 향후 DB 전환 시 `tmd_scncasem.case_expn TEXT NULL` 과 자연스럽게 매핑됨 |
+| `description` | `String` | 설명. 입력 없으면 `null`. 기존 NextGen mock의 optional 문자열 필드 패턴과 동일. 향후 DB 전환 시 `tmd_scncasem.case_expn TEXT NULL` 과 자연스럽게 매핑됨 |
 | `status` | `FundamentalModelCaseStatus` | 생성 직후 `PENDING` |
 | `files` | `List<FundamentalModelCaseFileRes>` | 업로드 파일 3개 metadata |
 | `createdAt` | `LocalDateTime` | case 생성 시각 |
@@ -1174,9 +1174,9 @@ Controller tag 권장:
 
 태그 번호 판단 근거:
 
-- SK Gas API Swagger 그룹(`/api/v1/mi/scenario-workbench/**`) 내 ScenarioWorkbench 컨트롤러는 `1` ~ `5` 단독 숫자 체계를 사용한다. (`1` Overview, `2` Event, `2-1` Model Execution, `3` Scenario, `5` Design)
-- MI Fundamental Model은 ScenarioWorkbench와 동급의 독립 메뉴 단위이므로 ScenarioWorkbench 번호 범위(`1`~`5`) 안에 넣지 않는다.
-- `6.` 부터 새 번호 범위를 시작해 ScenarioWorkbench 블록과 명확히 분리한다.
+- SK Gas API Swagger 그룹(`/api/v1/mi/next-gen/**`) 내 NextGen 컨트롤러는 `1` ~ `5` 단독 숫자 체계를 사용한다. (`1` Overview, `2` Event, `2-1` Model Execution, `3` Scenario, `5` Design)
+- MI Fundamental Model은 NextGen와 동급의 독립 메뉴 단위이므로 NextGen 번호 범위(`1`~`5`) 안에 넣지 않는다.
+- `6.` 부터 새 번호 범위를 시작해 NextGen 블록과 명확히 분리한다.
 - callback 전용 `FundamentalModelRunController`는 `6-1.`을 사용한다. 이후 Fundamental Model 하위 컨트롤러가 추가될 경우 `6-2.`, `6-3.` 형태로 확장한다.
 
 Endpoint summary 권장:
@@ -1217,7 +1217,7 @@ Swagger 문서에는 다음을 명시한다.
 
 ### 7.1 1st Mock Implementation
 
-1차 구현은 DB schema 변경 없이 `src/main/resources/mock/fundamental-model/fundamental-model-cases.json` seed 파일을 읽어 in-memory store로 동작한다. `Scenario Workbench` mock API와 동일하게 기능/메뉴별 mock resource 폴더를 두되, `Fundamental Model`은 `fundamental-model` 폴더를 canonical 위치로 사용한다.
+1차 구현은 DB schema 변경 없이 `src/main/resources/mock/fundamental-model/fundamental-model-cases.json` seed 파일을 읽어 in-memory store로 동작한다. `Next Gen` mock API와 동일하게 기능/메뉴별 mock resource 폴더를 두되, `Fundamental Model`은 `fundamental-model` 폴더를 canonical 위치로 사용한다.
 
 seed 파일은 다음 최상위 구조를 가진다.
 
@@ -1396,10 +1396,10 @@ Trade Flows의 fromCountries/toCountries country 목록은 base 버전/기준 �
 - DB 접근 없음.
 - `src/main/resources/mock/fundamental-model/fundamental-model-cases.json` 를 classpath resource로 읽어 Service 내부 in-memory mock store를 초기화한다.
 - 업로드/실행/callback/update/delete로 발생하는 변경은 런타임 메모리 store에만 반영한다. json 파일 자체를 API 호출 중 수정하지 않는다.
-- 기존 Scenario Workbench mock service/delegator 구조를 참고하되, 기존 `ScenarioModelExecutionMockService` 와 store 를 공유하지 않는다.
-- mock 활성화 방식은 신규 [`FundamentalModelMockProperties`](src/main/java/com/sk/domain/mi/config/FundamentalModelMockProperties.java) 의 per-API boolean flag 와 `@Primary` Delegator 패턴을 따른다. `ScenarioWorkbenchMockProperties` 와 별개 클래스이며 prefix 는 `mi.fundamental-model.mock` 이다. `@Profile("mock")` 같은 전체 프로필 분기는 사용하지 않는다.
+- 기존 Next Gen mock service/delegator 구조를 참고하되, 기존 `ScenarioModelExecutionMockService` 와 store 를 공유하지 않는다.
+- mock 활성화 방식은 신규 [`FundamentalModelMockProperties`](src/main/java/com/sk/domain/mi/config/FundamentalModelMockProperties.java) 의 per-API boolean flag 와 `@Primary` Delegator 패턴을 따른다. `NextGenMockProperties` 와 별개 클래스이며 prefix 는 `mi.fundamental-model.mock` 이다. `@Profile("mock")` 같은 전체 프로필 분기는 사용하지 않는다.
 - 업로드/상세/수정/삭제/실행/상태/callback API 의 flag 는 `FundamentalModelCaseServiceDelegator` 내부에서 확인한다 (`mi.fundamental-model.mock.fundamental-model-cases.api.*`). Delegator 가 각 호출마다 real 또는 mock 구현체를 선택한다. 1차에서는 real 구현이 없으므로 flag 기본값은 모두 `true` 로 두되, real 구현이 추가되는 시점부터 개별 flag 를 `false` 로 전환해 점진적으로 real 구현으로 옮길 수 있다.
-- `reset` flag 는 Delegator 가 아닌 **controller** 에서 직접 확인한다. 기존 `ScenarioWorkbench` 의 Delegator 패턴과 의도적으로 분리한다. flag 가 `false` 이면 controller 가 `404 Not Found` 를 반환하고 mock service 는 호출되지 않는다.
+- `reset` flag 는 Delegator 가 아닌 **controller** 에서 직접 확인한다. 기존 `NextGen` 의 Delegator 패턴과 의도적으로 분리한다. flag 가 `false` 이면 controller 가 `404 Not Found` 를 반환하고 mock service 는 호출되지 않는다.
 
 DB 전환 시 권장:
 
@@ -1421,13 +1421,13 @@ DB 전환 시 권장:
 | Real service (placeholder) | `FundamentalModelCaseServiceImpl` (1차에는 미구현, Delegator 가 mock 으로 라우팅) |
 | Mock service | `FundamentalModelCaseMockService` |
 | Delegator | `FundamentalModelCaseServiceDelegator` (`@Service @Primary`, real/mock 구현체 주입 + `FundamentalModelMockProperties` 로 메서드별 분기) |
-| Mock 설정 properties | 신규 `com.sk.domain.mi.config.FundamentalModelMockProperties` 생성 (`mi.fundamental-model.mock` prefix, `ScenarioWorkbenchMockProperties` 와 별개) |
+| Mock 설정 properties | 신규 `com.sk.domain.mi.config.FundamentalModelMockProperties` 생성 (`mi.fundamental-model.mock` prefix, `NextGenMockProperties` 와 별개) |
 | Request DTO | `FundamentalModelCaseListReq`, `FundamentalModelCaseUpdateReq`, `FundamentalModelVolumesReq`, `FundamentalModelTradeFlowsReq` |
 | Callback DTO | `FundamentalModelRunCallbackReq` |
 | Response DTO | `FundamentalModelCaseListRes`, `FundamentalModelCaseListItemRes`, `FundamentalModelCaseDetailRes`, `FundamentalModelCaseCreateRes`, `FundamentalModelCaseFileRes`, `FundamentalModelRunAcceptRes`, `FundamentalModelCaseStatusRes`, `FundamentalModelRunStatusRes`, `FundamentalModelRunCallbackRes`, `FundamentalModelVolumesRes`, `FundamentalModelTradeFlowsRes`, `FundamentalModelPriceRes` |
 | Enum | `FundamentalModelCaseStatus`, `FundamentalModelRunStatus`, `FundamentalModelCaseSearchType`, `FundamentalModelSegment`, `FundamentalModelDataType`, `FundamentalModelRegion`, `FundamentalModelGranularity`, `VolumesRowKind`, `PriceSeriesType`, `TradeFlowSelector`, `TradeFlowUnit`, `TradeFlowDirection`, `TradeCountryHeaderKind` |
 
-package는 이번 feature spec 수정에서 확정하지 않는다. MI Fundamental Model이 Scenario Workbench와 동급 메뉴로 정리되었으므로 implementation follow-up에서 기존 `scenarioworkbench` package 후보를 `fundamentalmodel` package로 옮길지 검토해야 한다.
+package는 이번 feature spec 수정에서 확정하지 않는다. MI Fundamental Model이 Next Gen와 동급 메뉴로 정리되었으므로 implementation follow-up에서 기존 `nextgen` package 후보를 `fundamentalmodel` package로 옮길지 검토해야 한다.
 
 service method signature는 canonical contract에 맞게 `scenarioId`를 받지 않는다. 예: `listCases(searchType, keyword)`, `createCase(title, description, files)`, `getCaseDetail(caseId)`, `updateCase(caseId, request)`, `deleteCase(caseId)`, `runCase(caseId)`, `getStatus(caseId)`, `getVolumes(caseId, request)`, `getPrice(caseId)`, `reset()`, `handleCallback(runId, request)` 형태를 기준으로 구현한다.
 
@@ -1700,7 +1700,7 @@ phase 1 mock 시연 동선:
 
 - 이 feature spec과 `scenario-case-execution-workflow-design-draft.md`의 용어/path/model 정합성 확인. 특히 `scenario_id` 상태 진술이 §7.2 Future DB Mapping Notes와 일치하는지 확인
 - Notion 공유 문서가 canonical 계약처럼 읽히지 않는지 확인
-- 기존 `ScenarioModelExecution` API와 naming/path/scope가 혼동되지 않는지 확인. MI Fundamental Model은 Scenario Workbench 하위 API가 아니다
+- 기존 `ScenarioModelExecution` API와 naming/path/scope가 혼동되지 않는지 확인. MI Fundamental Model은 Next Gen 하위 API가 아니다
 - 결과 조회/download 제외 범위와 edit/delete phase-1 soft-delete 범위가 feature spec과 design doc에서 일관되는지 확인
 - callback path가 Design callback의 canonical-id 중심 구조와 일관되는지 확인
 
@@ -1727,4 +1727,4 @@ phase 1 mock 시연 동선:
 - Status enum: `FundamentalModelCaseStatus` = `PENDING`, `RUNNING`, `COMPLETED`, `FAILED`. `FundamentalModelRunStatus` = `RUNNING`, `COMPLETED`, `FAILED` (분리 enum). `FundamentalModelCaseSearchType` = `TITLE`, `ASSIGNEE_NAME`
 - Failure reason candidates: `TIMEOUT`, `EXTERNAL_ERROR`, `UNKNOWN`
 - Base response: `BaseResponse<T>` via `BaseResponseFactory`
-- Permissions: existing Scenario Workbench `USER/SKGAS_COMPANY_USER_ONLY` and `ADMIN/THIRD_PARTY_ADMIN_ONLY` pattern
+- Permissions: existing Next Gen `USER/SKGAS_COMPANY_USER_ONLY` and `ADMIN/THIRD_PARTY_ADMIN_ONLY` pattern

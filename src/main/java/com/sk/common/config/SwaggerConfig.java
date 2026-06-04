@@ -2,7 +2,7 @@ package com.sk.common.config;
 
 import com.sk.common.annotation.ApiOrder;
 import com.sk.domain.mi.config.FundamentalModelMockProperties;
-import com.sk.domain.mi.config.ScenarioWorkbenchMockProperties;
+import com.sk.domain.mi.config.NextGenMockProperties;
 import io.swagger.v3.oas.models.*;
 import io.swagger.v3.oas.models.info.Info;
 import io.swagger.v3.oas.models.security.SecurityRequirement;
@@ -86,9 +86,9 @@ public class SwaggerConfig {
     private static final DateTimeFormatter SW_DEPLOY_DATE_FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
 
     @Bean
-    public GroupedOpenApi scenarioWorkbenchApi(@Qualifier("sortPathsOpenApiCustomizer") OpenApiCustomizer sortPathsOpenApiCustomizer,
+    public GroupedOpenApi nextGenApi(@Qualifier("sortPathsOpenApiCustomizer") OpenApiCustomizer sortPathsOpenApiCustomizer,
                                                @Qualifier("apiOrderOperationCustomizer") OperationCustomizer apiOrderOperationCustomizer,
-                                               ScenarioWorkbenchMockProperties mockProps,
+                                               NextGenMockProperties mockProps,
                                                FundamentalModelMockProperties fundamentalModelMockProps) {
 
         String swDeployDate = LocalDateTime.now().format(SW_DEPLOY_DATE_FORMATTER);

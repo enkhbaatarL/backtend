@@ -4,7 +4,7 @@ import java.util.Optional;
 
 import org.springframework.data.domain.Page;
 
-import com.sk.domain.mi.dto.request.scenarioworkbench.EventListReq;
+import com.sk.domain.mi.dto.request.nextgen.EventListReq;
 import com.sk.domain.shared.repository.master.tmm.projection.EventDetailRow;
 import com.sk.domain.shared.repository.master.tmm.projection.EventListRow;
 import com.sk.domain.shared.repository.master.tmm.projection.EventOutlookRow;
