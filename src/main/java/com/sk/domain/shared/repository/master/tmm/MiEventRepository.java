@@ -32,7 +32,7 @@ public interface MiEventRepository extends JpaRepository<MiEvent, Long>, CustomM
 
                 UNION
 
-                SELECT r.first_created, r.record_type, m.gds_data_nm, s.file_smry, m.gds_no, m.gds_data_no, f.org_file_nm, r.source_obj_id AS source_obj_id
+                SELECT r.first_created, r.record_type, m.gds_data_nm, s.file_smry_shrt, m.gds_no, m.gds_data_no, f.org_file_nm, r.source_obj_id AS source_obj_id
                 FROM tmm_mi_mievent_record_map AS sm
                 JOIN tmd_mi_record AS r ON r.mi_record_id = sm.mi_record_id
                     AND r.record_type <> 'NEWS'
@@ -66,7 +66,7 @@ public interface MiEventRepository extends JpaRepository<MiEvent, Long>, CustomM
 
                 UNION
 
-                SELECT r.first_created, r.record_type, m.gds_data_nm, s.file_smry, m.gds_no, m.gds_data_no, f.org_file_nm, r.source_obj_id AS source_obj_id
+                SELECT r.first_created, r.record_type, m.gds_data_nm, s.file_smry_shrt, m.gds_no, m.gds_data_no, f.org_file_nm, r.source_obj_id AS source_obj_id
                 FROM tmm_mi_mievent_record_map AS sm
                 JOIN tmd_mi_record AS r ON r.mi_record_id = sm.mi_record_id
                     AND r.record_type <> 'NEWS'
