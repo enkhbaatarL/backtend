@@ -295,15 +295,20 @@ public class FundamentalModelCaseMockService {
         List<FundamentalModelTradeFlowsRes.TradeFlowItem> filteredFlows =
             filterTradeFlows(seed.flows(), filteredFrom, filteredTo);
 
+        List<FundamentalModelTradeFlowsRes.TradeCountryHeader> fromWithTotal =
+            appendFromTotalHeader(filteredFrom);
+        List<FundamentalModelTradeFlowsRes.TradeFlowItem> flowsWithTotal =
+            appendFromTotalFlows(filteredTo, filteredFlows);
+
         return new FundamentalModelTradeFlowsRes(
             caseRecord.caseId(),
             request.selector(),
             request.year(),
             unit,
             new FundamentalModelTradeFlowsRes.TradeFlowsAppliedFilters(appliedTypes, appliedRegions),
-            filteredFrom,
+            fromWithTotal,
             filteredTo,
-            filteredFlows
+            flowsWithTotal
         );
     }
 
@@ -531,6 +536,41 @@ public class FundamentalModelCaseMockService {
 
     private String headerKey(FundamentalModelRegion region, String country) {
         return (region != null ? region.name() : "NULL") + ":" + (country != null ? country : "NULL");
+    }
+
+    private List<FundamentalModelTradeFlowsRes.TradeCountryHeader> appendFromTotalHeader(
+        List<FundamentalModelTradeFlowsRes.TradeCountryHeader> fromCountries
+    ) {
+        List<FundamentalModelTradeFlowsRes.TradeCountryHeader> result = new ArrayList<>(fromCountries);
+        result.add(new FundamentalModelTradeFlowsRes.TradeCountryHeader(
+            "TOTAL", "Total", TradeCountryHeaderKind.GRAND_TOTAL, null, "Total"
+        ));
+        return List.copyOf(result);
+    }
+
+    private List<FundamentalModelTradeFlowsRes.TradeFlowItem> appendFromTotalFlows(
+        List<FundamentalModelTradeFlowsRes.TradeCountryHeader> toCountries,
+        List<FundamentalModelTradeFlowsRes.TradeFlowItem> flows
+    ) {
+        List<FundamentalModelTradeFlowsRes.TradeFlowItem> totalFlows = new ArrayList<>(flows);
+        for (FundamentalModelTradeFlowsRes.TradeCountryHeader toHeader : toCountries) {
+            double rowTotal = flows.stream()
+                .filter(f -> toHeader.key().equals(f.toKey()))
+                .mapToDouble(f -> f.value() != null ? f.value() : 0.0)
+                .sum();
+            if (rowTotal != 0) {
+                totalFlows.add(new FundamentalModelTradeFlowsRes.TradeFlowItem(
+                    "TOTAL",
+                    toHeader.key(),
+                    null,
+                    "Total",
+                    toHeader.region(),
+                    toHeader.country(),
+                    rowTotal
+                ));
+            }
+        }
+        return List.copyOf(totalFlows);
     }
 
     private List<FundamentalModelTradeFlowsRes.TradeCountryHeader> enrichTradeCountryHeaders(
