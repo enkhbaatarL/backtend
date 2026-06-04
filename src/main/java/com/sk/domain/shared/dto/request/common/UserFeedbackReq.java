@@ -8,7 +8,7 @@ import jakarta.validation.constraints.Size;
 @Schema(description = "사용자 피드백 등록 요청")
 public record UserFeedbackReq(
 
-    @Schema(description = "피드백 대상 페이지명", example = "Scenario Workbench", maxLength = 50)
+    @Schema(description = "피드백 대상 페이지명", example = "Next Gen", maxLength = 50)
     @Size(max = 50, message = "피드백 페이지명은 50자 이하여야 합니다.")
     String feedbackPageNm,
 

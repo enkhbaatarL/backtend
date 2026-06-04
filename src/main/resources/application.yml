@@ -61,7 +61,7 @@ security:
   enabled: true
 
 mi:
-  scenario-workbench:
+  next-gen:
     mock:
       events:
         api:

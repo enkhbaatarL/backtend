@@ -8,6 +8,7 @@ public interface EventRecordRow {
     String getTitle();
     String getSummary();
     Integer getGoodsNo();
+    Integer getGoodsDataNo();
     String getFileName();
     Long getSourceObjId();
 }

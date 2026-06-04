@@ -2,7 +2,7 @@ package com.sk.common.config;
 
 import com.sk.common.annotation.ApiOrder;
 import com.sk.domain.mi.config.FundamentalModelMockProperties;
-import com.sk.domain.mi.config.ScenarioWorkbenchMockProperties;
+import com.sk.domain.mi.config.NextGenMockProperties;
 import io.swagger.v3.oas.models.*;
 import io.swagger.v3.oas.models.info.Info;
 import io.swagger.v3.oas.models.security.SecurityRequirement;
@@ -51,7 +51,7 @@ public class SwaggerConfig {
             .group("MI API")
             .displayName("MI 서비스 API")
             .pathsToMatch("/api/v1/mi/**")
-            .pathsToExclude("/api/v1/mi/scenario-workbench/**", "/api/v1/mi/fundamental-model/**")
+            .pathsToExclude("/api/v1/mi/next-gen/**", "/api/v1/mi/fundamental-model/**")
             .addOpenApiCustomizer(sortPathsOpenApiCustomizer)
             .addOperationCustomizer(apiOrderOperationCustomizer)
             .build();
@@ -86,9 +86,9 @@ public class SwaggerConfig {
     private static final DateTimeFormatter SW_DEPLOY_DATE_FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
 
     @Bean
-    public GroupedOpenApi scenarioWorkbenchApi(@Qualifier("sortPathsOpenApiCustomizer") OpenApiCustomizer sortPathsOpenApiCustomizer,
+    public GroupedOpenApi nextGenApi(@Qualifier("sortPathsOpenApiCustomizer") OpenApiCustomizer sortPathsOpenApiCustomizer,
                                                @Qualifier("apiOrderOperationCustomizer") OperationCustomizer apiOrderOperationCustomizer,
-                                               ScenarioWorkbenchMockProperties mockProps,
+                                               NextGenMockProperties mockProps,
                                                FundamentalModelMockProperties fundamentalModelMockProps) {
 
         String swDeployDate = LocalDateTime.now().format(SW_DEPLOY_DATE_FORMATTER);
@@ -271,11 +271,11 @@ public class SwaggerConfig {
         return GroupedOpenApi.builder()
             .group("SK Gas API")
             .displayName("SK Gas API")
-            .pathsToMatch("/api/v1/mi/scenario-workbench/**", "/api/v1/mi/fundamental-model/**")
+            .pathsToMatch("/api/v1/mi/next-gen/**", "/api/v1/mi/fundamental-model/**")
             .addOpenApiCustomizer(sortPathsOpenApiCustomizer)
             .addOpenApiCustomizer(openApi -> openApi.info(
                 new Info()
-                    .title("SK Gas - Scenario Workbench & Fundamental Model API")
+                    .title("SK Gas - Next Gen MI & Fundamental Model API")
                     .description(description)
                     .version(SW_VERSION_BASE)
             ))
