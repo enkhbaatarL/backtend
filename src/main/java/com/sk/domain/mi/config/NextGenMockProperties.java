@@ -13,6 +13,7 @@ public class NextGenMockProperties {
 
     private Events events = new Events();
     private Scenarios scenarios = new Scenarios();
+    private ScenarioGroups scenarioGroups = new ScenarioGroups();
     private Overview overview = new Overview();
     private ModelExecutions modelExecutions = new ModelExecutions();
     private Design design = new Design();
@@ -42,6 +43,24 @@ public class NextGenMockProperties {
         public static class Api {
             private boolean getList = false;
             private boolean getDetail = false;
+        }
+    }
+
+    @Getter
+    @Setter
+    public static class ScenarioGroups {
+        private Api api = new Api();
+
+        @Getter
+        @Setter
+        public static class Api {
+            private boolean getList = false;
+            private boolean getScenarios = false;
+            private boolean getGraph = false;
+            private boolean getGraphExport = false;
+            private boolean getDetail = false;
+            private boolean getScenarioDetail = false;
+            private boolean updateScenarioStatus = false;
         }
     }
 

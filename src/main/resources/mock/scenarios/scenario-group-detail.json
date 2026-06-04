@@ -1,0 +1,233 @@
+{
+  "1": {
+    "scenarioGroupId": 1,
+    "groupName": "미-이란 충돌 및 호르무즈 해협 봉쇄",
+    "createdAt": "2026-03-01T11:01:00",
+    "scenarioCount": 6,
+    "baseEvent": {
+      "eventId": 1,
+      "eventName": "카타르 Ras Laffan 피해 (전쟁)",
+      "eventTypeLv1": "geopolitical_risk",
+      "eventTypeLv1Label": "지정학적 리스크",
+      "updatedAt": "2026-03-24T23:22:00"
+    },
+    "summary": "미-이란 충돌의 지속 기간과 호르무즈 해협 봉쇄 강도, 지정학적 리스크 프리미엄, 주요 산유국의 공급 대응 방식에 따라 단기 일시 상승부터 장기 초강세까지 가격 경로가 갈린다. 부분 봉쇄·단기 충돌·구두 개입 조합에서는 상승이 제한되지만, 전면 봉쇄·장기화·실질적 공급 대응 부재가 겹치면 JKM/TTF가 급등한다. 반면 여러 Train의 동시 정지, 저장·선적 인프라 손상, 추가 군사 긴장이 함께 확인될 경우 카타르 LNG의 공급 신뢰도와 장기계약 이행 가능성이 재평가될 수 있다.",
+    "dimensionColumns": [
+      { "key": "conflict_duration", "label": "충돌 기간" },
+      { "key": "strait_shipping_impact", "label": "해협 영향" },
+      { "key": "risk_premium", "label": "리스크 프리미엄" },
+      { "key": "supply_response", "label": "공급 대응" }
+    ],
+    "scenarios": [
+      {
+        "scenarioId": 11,
+        "scenarioName": "단기 봉쇄와 제한적 공급 대응, 시장 불안은 크지만 급등은 제한",
+        "baseCase": true,
+        "dimensions": [
+          { "key": "conflict_duration", "label": "충돌 기간", "value":"1_3M", "valueLabel": "1~3개월" },
+          { "key": "strait_shipping_impact", "label": "해협 영향", "value":"partial_blockade", "valueLabel": "부분 봉쇄" },
+          { "key": "risk_premium", "label": "리스크 프리미엄", "value":"mid", "valueLabel": "중간" },
+          { "key": "supply_response", "label": "공급 대응", "value":"jawboning", "valueLabel": "구두 개입" }
+        ],
+        "probability": 30,
+        "status": "realized", "statusLabel": "실현"
+      },
+      {
+        "scenarioId": 12,
+        "scenarioName": "장기 전면 봉쇄와 전면 비축유 방출, 극심한 가격 급등",
+        "baseCase": false,
+        "dimensions": [
+          { "key": "conflict_duration", "label": "충돌 기간", "value":"6_12M", "valueLabel": "6~12개월" },
+          { "key": "strait_shipping_impact", "label": "해협 영향", "value":"full_blockade", "valueLabel": "전면 봉쇄" },
+          { "key": "risk_premium", "label": "리스크 프리미엄", "value":"high", "valueLabel": "높음" },
+          { "key": "supply_response", "label": "공급 대응", "value":"spr_full", "valueLabel": "SPR 전면 방출" }
+        ],
+        "probability": 12,
+        "status": "pending", "statusLabel": "대기"
+      },
+      {
+        "scenarioId": 13,
+        "scenarioName": "수개월간 해협 장기 폐쇄, 부분적 비축유 방출에도 극단적 불안",
+        "baseCase": false,
+        "dimensions": [
+          { "key": "conflict_duration", "label": "충돌 기간", "value":"3_6M", "valueLabel": "3~6개월" },
+          { "key": "strait_shipping_impact", "label": "해협 영향", "value":"prolonged_closure", "valueLabel": "장기 폐쇄" },
+          { "key": "risk_premium", "label": "리스크 프리미엄", "value":"extreme", "valueLabel": "극단적" },
+          { "key": "supply_response", "label": "공급 대응", "value":"spr_partial", "valueLabel": "SPR 부분 방출" }
+        ],
+        "probability": 10,
+        "status": "pending", "statusLabel": "대기"
+      },
+      {
+        "scenarioId": 14,
+        "scenarioName": "1년 이상 부분 봉쇄 지속, 부분적 비축유 방출로 고점 유지",
+        "baseCase": false,
+        "dimensions": [
+          { "key": "conflict_duration", "label": "충돌 기간", "value":"1Y_plus", "valueLabel": "1년 이상" },
+          { "key": "strait_shipping_impact", "label": "해협 영향", "value":"partial_blockade", "valueLabel": "부분 봉쇄" },
+          { "key": "risk_premium", "label": "리스크 프리미엄", "value":"high", "valueLabel": "높음" },
+          { "key": "supply_response", "label": "공급 대응", "value":"spr_partial", "valueLabel": "SPR 부분 방출" }
+        ],
+        "probability": 28,
+        "status": "pending", "statusLabel": "대기"
+      },
+      {
+        "scenarioId": 15,
+        "scenarioName": "1년 이상 전면 봉쇄, 실질적 공급 대응 부재로 초강세 지속",
+        "baseCase": false,
+        "dimensions": [
+          { "key": "conflict_duration", "label": "충돌 기간", "value":"1Y_plus", "valueLabel": "1년 이상" },
+          { "key": "strait_shipping_impact", "label": "해협 영향", "value":"full_blockade", "valueLabel": "전면 봉쇄" },
+          { "key": "risk_premium", "label": "리스크 프리미엄", "value":"extreme", "valueLabel": "극단적" },
+          { "key": "supply_response", "label": "공급 대응", "value":"jawboning", "valueLabel": "구두 개입" }
+        ],
+        "probability": 5,
+        "status": "discarded", "statusLabel": "폐기"
+      },
+      {
+        "scenarioId": 16,
+        "scenarioName": "1년 이상 장기 폐쇄, 전면 비축유 방출로 급등세 일부 완화",
+        "baseCase": false,
+        "dimensions": [
+          { "key": "conflict_duration", "label": "충돌 기간", "value":"1Y_plus", "valueLabel": "1년 이상" },
+          { "key": "strait_shipping_impact", "label": "해협 영향", "value":"prolonged_closure", "valueLabel": "장기 폐쇄" },
+          { "key": "risk_premium", "label": "리스크 프리미엄", "value":"mid", "valueLabel": "중간" },
+          { "key": "supply_response", "label": "공급 대응", "value":"spr_full", "valueLabel": "SPR 전면 방출" }
+        ],
+        "probability": 15,
+        "status": "pending", "statusLabel": "대기"
+      }
+    ]
+  },
+  "2": {
+    "scenarioGroupId": 2,
+    "groupName": "유럽 저장 재고 재주입 압력",
+    "createdAt": "2026-03-01T11:02:00",
+    "scenarioCount": 4,
+    "baseEvent": {
+      "eventId": 2,
+      "eventName": "유럽 LNG 저장 재고 급감",
+      "eventTypeLv1": "supply_demand_imbalance",
+      "eventTypeLv1Label": "수급 불균형",
+      "updatedAt": "2026-03-20T10:00:00"
+    },
+    "summary": "중동산 LNG 공급 차질로 유럽의 저장 재주입 수요가 맞물릴 경우, 유럽 주요 LNG 수입 터미널의 가동률이 빠르게 상승할 수 있다. 재고 수준과 동절기 기온, 산업 수요 회복 속도에 따라 TTF 가격의 경로가 갈린다.",
+    "dimensionColumns": [
+      { "key": "storage_level", "label": "재고 수준" },
+      { "key": "weather", "label": "동절기 기온" },
+      { "key": "demand", "label": "산업 수요" },
+      { "key": "price_path", "label": "가격 경로" }
+    ],
+    "scenarios": [
+      {
+        "scenarioId": 21,
+        "scenarioName": "완만한 재주입 + 평년 기온",
+        "baseCase": true,
+        "dimensions": [
+          { "key": "storage_level", "label": "재고 수준", "value":"normal", "valueLabel": "55% (평년 수준)" },
+          { "key": "weather", "label": "동절기 기온", "value":"normal", "valueLabel": "평년" },
+          { "key": "demand", "label": "산업 수요", "value":"moderate", "valueLabel": "완만 회복" },
+          { "key": "price_path", "label": "가격 경로", "value":"stable", "valueLabel": "안정 횡보" }
+        ],
+        "probability": 45,
+        "status": "pending", "statusLabel": "대기"
+      },
+      {
+        "scenarioId": 22,
+        "scenarioName": "재고 부족 + 한파",
+        "baseCase": false,
+        "dimensions": [
+          { "key": "storage_level", "label": "재고 수준", "value":"low", "valueLabel": "40% (저수준)" },
+          { "key": "weather", "label": "동절기 기온", "value":"cold", "valueLabel": "한파" },
+          { "key": "demand", "label": "산업 수요", "value":"surge", "valueLabel": "급증" },
+          { "key": "price_path", "label": "가격 경로", "value":"spike", "valueLabel": "급등" }
+        ],
+        "probability": 22,
+        "status": "pending", "statusLabel": "대기"
+      },
+      {
+        "scenarioId": 23,
+        "scenarioName": "재고 과잉 + 온난",
+        "baseCase": false,
+        "dimensions": [
+          { "key": "storage_level", "label": "재고 수준", "value":"high", "valueLabel": "70% (과잉)" },
+          { "key": "weather", "label": "동절기 기온", "value":"warm", "valueLabel": "온난" },
+          { "key": "demand", "label": "산업 수요", "value":"flat", "valueLabel": "정체" },
+          { "key": "price_path", "label": "가격 경로", "value":"decline", "valueLabel": "하락" }
+        ],
+        "probability": 20,
+        "status": "pending", "statusLabel": "대기"
+      },
+      {
+        "scenarioId": 24,
+        "scenarioName": "공급 충격 + 재고 급감",
+        "baseCase": false,
+        "dimensions": [
+          { "key": "storage_level", "label": "재고 수준", "value":"critical", "valueLabel": "30% (위기)" },
+          { "key": "weather", "label": "동절기 기온", "value":"severe_cold", "valueLabel": "강한 한파" },
+          { "key": "demand", "label": "산업 수요", "value":"surge", "valueLabel": "급증" },
+          { "key": "price_path", "label": "가격 경로", "value":"super_spike", "valueLabel": "초급등" }
+        ],
+        "probability": 13,
+        "status": "pending", "statusLabel": "대기"
+      }
+    ]
+  },
+  "3": {
+    "scenarioGroupId": 3,
+    "groupName": "JKM-TTF Spread 급변",
+    "createdAt": "2026-02-28T10:50:00",
+    "scenarioCount": 3,
+    "baseEvent": {
+      "eventId": 3,
+      "eventName": "아시아-유럽 LNG 확보 경쟁 심화",
+      "eventTypeLv1": "market_competition",
+      "eventTypeLv1Label": "시장 경쟁",
+      "updatedAt": "2026-03-18T09:30:00"
+    },
+    "summary": "아시아와 유럽의 LNG 확보 경쟁이 동시에 강화되면 JKM과 TTF 간 가격 Spread가 큰 폭으로 흔들릴 수 있다. 아시아 구매자의 spot 확보 강도와 유럽의 재주입 수요 강도에 따라 spread 방향이 갈린다.",
+    "dimensionColumns": [
+      { "key": "asia_demand", "label": "아시아 수요" },
+      { "key": "europe_demand", "label": "유럽 수요" },
+      { "key": "spread_direction", "label": "Spread 방향" }
+    ],
+    "scenarios": [
+      {
+        "scenarioId": 31,
+        "scenarioName": "아시아 우위 Spread 확대",
+        "baseCase": true,
+        "dimensions": [
+          { "key": "asia_demand", "label": "아시아 수요", "value":"strong", "valueLabel": "강함" },
+          { "key": "europe_demand", "label": "유럽 수요", "value":"moderate", "valueLabel": "보통" },
+          { "key": "spread_direction", "label": "Spread 방향", "value":"jkm_premium", "valueLabel": "JKM 프리미엄 확대" }
+        ],
+        "probability": 50,
+        "status": "pending", "statusLabel": "대기"
+      },
+      {
+        "scenarioId": 32,
+        "scenarioName": "유럽 우위 Spread 축소",
+        "baseCase": false,
+        "dimensions": [
+          { "key": "asia_demand", "label": "아시아 수요", "value":"moderate", "valueLabel": "보통" },
+          { "key": "europe_demand", "label": "유럽 수요", "value":"strong", "valueLabel": "강함" },
+          { "key": "spread_direction", "label": "Spread 방향", "value":"ttf_premium", "valueLabel": "TTF 프리미엄" }
+        ],
+        "probability": 30,
+        "status": "pending", "statusLabel": "대기"
+      },
+      {
+        "scenarioId": 33,
+        "scenarioName": "동반 급등 Spread 횡보",
+        "baseCase": false,
+        "dimensions": [
+          { "key": "asia_demand", "label": "아시아 수요", "value":"strong", "valueLabel": "강함" },
+          { "key": "europe_demand", "label": "유럽 수요", "value":"strong", "valueLabel": "강함" },
+          { "key": "spread_direction", "label": "Spread 방향", "value":"parallel", "valueLabel": "동반 상승 / 횡보" }
+        ],
+        "probability": 20,
+        "status": "pending", "statusLabel": "대기"
+      }
+    ]
+  }
+}

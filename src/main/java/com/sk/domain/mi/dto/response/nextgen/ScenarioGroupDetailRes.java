@@ -1,0 +1,37 @@
+package com.sk.domain.mi.dto.response.nextgen;
+
+import io.swagger.v3.oas.annotations.media.Schema;
+import java.time.LocalDateTime;
+import java.util.List;
+
+/**
+ * 시나리오 그룹 상세. 요약(Base Event + 그룹 설명) + 가정·실행가능성(시나리오 표).
+ * 가격 전망 탭은 별도 graph API, 개별 시나리오 상세는 scenario detail API 사용.
+ */
+public record ScenarioGroupDetailRes(
+
+    @Schema(description = "시나리오 그룹 ID", example = "1")
+    Long scenarioGroupId,
+
+    @Schema(description = "시나리오 그룹명", example = "미-이란 충돌 및 호르무즈 해협 봉쇄")
+    String groupName,
+
+    @Schema(description = "생성일시")
+    LocalDateTime createdAt,
+
+    @Schema(description = "기반 이벤트 (Base Event)")
+    ScenarioBaseEventRes baseEvent,
+
+    @Schema(description = "시나리오 그룹 설명")
+    String summary,
+
+    @Schema(description = "시나리오 수", example = "6")
+    int scenarioCount,
+
+    @Schema(description = "동적 표 헤더 정의 (그룹별 차원 칼럼)")
+    List<ScenarioDimensionColumnRes> dimensionColumns,
+
+    @Schema(description = "그룹 내 시나리오 (가정 및 실행 가능성 표 + 시나리오 상세 사이드바)")
+    List<ScenarioGroupDetailRowRes> scenarios
+
+) {}

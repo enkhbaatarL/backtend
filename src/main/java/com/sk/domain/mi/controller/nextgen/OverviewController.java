@@ -28,8 +28,9 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
+@Deprecated
 @Profile("!dedicated")
-@Tag(name = "1. Next Gen MI Overview API", description = "Next Gen MI Overview API입니다.")
+@Tag(name = "97. Next Gen MI Overview API", description = "Next Gen MI Overview API입니다. (Deprecated 예정)")
 @Slf4j
 @RestController
 @RequestMapping("/api/v1/mi/next-gen/overview")
