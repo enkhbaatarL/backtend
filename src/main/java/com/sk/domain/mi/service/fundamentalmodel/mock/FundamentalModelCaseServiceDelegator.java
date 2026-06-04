@@ -4,6 +4,7 @@ import com.sk.domain.mi.config.FundamentalModelMockProperties;
 import com.sk.domain.mi.dto.request.fundamentalmodel.FundamentalModelCaseListReq;
 import com.sk.domain.mi.dto.request.fundamentalmodel.FundamentalModelCaseUpdateReq;
 import com.sk.domain.mi.dto.request.fundamentalmodel.FundamentalModelRunCallbackReq;
+import com.sk.domain.mi.dto.request.fundamentalmodel.FundamentalModelTradeFlowsReq;
 import com.sk.domain.mi.dto.request.fundamentalmodel.FundamentalModelVolumesReq;
 import com.sk.domain.mi.dto.response.fundamentalmodel.FundamentalModelCaseCreateRes;
 import com.sk.domain.mi.dto.response.fundamentalmodel.FundamentalModelCaseDetailRes;
@@ -12,6 +13,7 @@ import com.sk.domain.mi.dto.response.fundamentalmodel.FundamentalModelCaseStatus
 import com.sk.domain.mi.dto.response.fundamentalmodel.FundamentalModelPriceRes;
 import com.sk.domain.mi.dto.response.fundamentalmodel.FundamentalModelRunAcceptRes;
 import com.sk.domain.mi.dto.response.fundamentalmodel.FundamentalModelRunCallbackRes;
+import com.sk.domain.mi.dto.response.fundamentalmodel.FundamentalModelTradeFlowsRes;
 import com.sk.domain.mi.dto.response.fundamentalmodel.FundamentalModelVolumesRes;
 import com.sk.domain.mi.service.fundamentalmodel.FundamentalModelCaseService;
 import com.sk.domain.mi.service.fundamentalmodel.FundamentalModelCaseServiceImpl;
@@ -90,6 +92,13 @@ public class FundamentalModelCaseServiceDelegator implements FundamentalModelCas
         return mockProps.getFundamentalModelCases().getApi().isGetVolumes()
             ? mockService.getVolumes(caseId, request)
             : realService.getVolumes(caseId, request);
+    }
+
+    @Override
+    public FundamentalModelTradeFlowsRes getTradeFlows(Long caseId, FundamentalModelTradeFlowsReq request) {
+        return mockProps.getFundamentalModelCases().getApi().isGetTradeFlows()
+            ? mockService.getTradeFlows(caseId, request)
+            : realService.getTradeFlows(caseId, request);
     }
 
     @Override

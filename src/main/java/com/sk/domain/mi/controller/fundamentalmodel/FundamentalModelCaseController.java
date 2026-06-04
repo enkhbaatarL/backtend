@@ -9,12 +9,14 @@ import com.sk.common.model.BaseResponseFactory;
 import com.sk.domain.mi.config.FundamentalModelMockProperties;
 import com.sk.domain.mi.dto.request.fundamentalmodel.FundamentalModelCaseListReq;
 import com.sk.domain.mi.dto.request.fundamentalmodel.FundamentalModelCaseUpdateReq;
+import com.sk.domain.mi.dto.request.fundamentalmodel.FundamentalModelTradeFlowsReq;
 import com.sk.domain.mi.dto.request.fundamentalmodel.FundamentalModelVolumesReq;
 import com.sk.domain.mi.dto.response.fundamentalmodel.FundamentalModelCaseCreateRes;
 import com.sk.domain.mi.dto.response.fundamentalmodel.FundamentalModelCaseDetailRes;
 import com.sk.domain.mi.dto.response.fundamentalmodel.FundamentalModelCaseListRes;
 import com.sk.domain.mi.dto.response.fundamentalmodel.FundamentalModelCaseStatusRes;
 import com.sk.domain.mi.dto.response.fundamentalmodel.FundamentalModelPriceRes;
+import com.sk.domain.mi.dto.response.fundamentalmodel.FundamentalModelTradeFlowsRes;
 import com.sk.domain.mi.dto.response.fundamentalmodel.FundamentalModelVolumesRes;
 import com.sk.domain.mi.service.fundamentalmodel.FundamentalModelCaseService;
 import com.sk.domain.shared.enums.PermissionCondition;
@@ -24,6 +26,9 @@ import com.sk.domain.shared.enums.fundamentalmodel.FundamentalModelDataType;
 import com.sk.domain.shared.enums.fundamentalmodel.FundamentalModelGranularity;
 import com.sk.domain.shared.enums.fundamentalmodel.FundamentalModelRegion;
 import com.sk.domain.shared.enums.fundamentalmodel.FundamentalModelSegment;
+import com.sk.domain.shared.enums.fundamentalmodel.TradeFlowDirection;
+import com.sk.domain.shared.enums.fundamentalmodel.TradeFlowSelector;
+import com.sk.domain.shared.enums.fundamentalmodel.TradeFlowUnit;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
@@ -204,6 +209,33 @@ public class FundamentalModelCaseController {
     }
 
     @ApiOrder(9)
+    @Operation(
+        summary = "MI Fundamental Model Trade Flows 데이터 조회 API",
+        description = "COMPLETED 상태의 case에 대해 selector/year 기준 Trade Flow sparse matrix 데이터를 조회합니다. fromCountries/toCountries 헤더 배열과 non-zero flows 배열로 응답합니다."
+    )
+    @ApiResponse(responseCode = "200", description = "조회 성공")
+    @GetMapping("/{caseId}/volumes/trade")
+    @RequiredPermissionRules(rules = {
+        @PermissionRule(role = Role.USER, conditions = {PermissionCondition.SKGAS_COMPANY_USER_ONLY}),
+        @PermissionRule(role = Role.ADMIN, conditions = {PermissionCondition.THIRD_PARTY_ADMIN_ONLY})
+    })
+    public BaseResponse<FundamentalModelTradeFlowsRes> getTradeFlows(
+        @Parameter(description = "Scenario Case ID", example = "106") @PathVariable Long caseId,
+        @Parameter(description = "Trade 유형", required = true, example = "LNG") @RequestParam TradeFlowSelector selector,
+        @Parameter(description = "조회 연도 (2023~2030)", required = true, example = "2026") @RequestParam Integer year,
+        @Parameter(description = "수치 단위. 미전달 시 MTPA", example = "MTPA") @RequestParam(required = false) TradeFlowUnit unit,
+        @Parameter(description = "필터 방향. 미전달 시 전체", example = "TO_COUNTRY,FROM_COUNTRY")
+        @RequestParam(required = false) List<TradeFlowDirection> types,
+        @Parameter(description = "지역 필터. 미전달 시 전체", example = "ASIA,EUROPE")
+        @RequestParam(required = false) List<FundamentalModelRegion> regions
+    ) {
+        return BaseResponseFactory.create(fundamentalModelCaseService.getTradeFlows(
+            caseId,
+            new FundamentalModelTradeFlowsReq(selector, year, unit, types, regions)
+        ));
+    }
+
+    @ApiOrder(10)
     @Operation(
         summary = "MI Fundamental Model Price 데이터 조회 API",
         description = "COMPLETED 상태의 case에 대해 Price chart, annualTable, monthlyTable mock 데이터를 조회합니다."
