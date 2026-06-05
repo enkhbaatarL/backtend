@@ -49,6 +49,9 @@ public record FundamentalModelVolumesRes(
 
     public record VolumesColumn(
 
+        @Schema(description = "안정적인 기간 key. MONTHLY이면 yyyy-MM 형식, YEARLY이면 yyyy 형식입니다.", example = "2026-01")
+        String key,
+
         @Schema(description = "표시 라벨. MONTHLY이면 26-01 형식, YEARLY이면 2026 형식입니다.", example = "26-01")
         String label,
 
@@ -81,7 +84,7 @@ public record FundamentalModelVolumesRes(
         @Schema(description = "행 화면 표시명. REGION_SUBTOTAL은 지역명, COUNTRY는 국가명, TYPE_TOTAL은 Total입니다.", example = "China")
         String rowLabel,
 
-        @Schema(description = "column label별 수치 map. key는 columns[].label과 동일합니다.", example = "{\"26-01\":15.1,\"26-02\":0.3}")
+        @Schema(description = "column key별 수치 map. key는 columns[].key와 동일합니다.", example = "{\"2026-01\":15.1,\"2026-02\":0.3}")
         Map<String, Double> values
 
     ) {
