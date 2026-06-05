@@ -32,6 +32,7 @@ import com.sk.domain.shared.enums.fundamentalmodel.FundamentalModelGranularity;
 import com.sk.domain.shared.enums.fundamentalmodel.FundamentalModelRegion;
 import com.sk.domain.shared.enums.fundamentalmodel.FundamentalModelRunStatus;
 import com.sk.domain.shared.enums.fundamentalmodel.FundamentalModelSegment;
+import com.sk.domain.shared.enums.fundamentalmodel.FundamentalModelVolumeUnit;
 import com.sk.domain.shared.enums.fundamentalmodel.TradeCountryHeaderKind;
 import com.sk.domain.shared.enums.fundamentalmodel.TradeFlowDirection;
 import com.sk.domain.shared.enums.fundamentalmodel.TradeFlowSelector;
@@ -248,20 +249,25 @@ public class FundamentalModelCaseMockService {
         List<FundamentalModelRegion> appliedRegions = normalizeRegions(request == null ? null : request.regions());
 
         FundamentalModelVolumesSeed seed = volumesSeedStore.getOrDefault(segment, emptyVolumesSeed());
-        List<FundamentalModelVolumesRes.VolumesRow> filteredRows = filterVolumesRows(seed.rows(), appliedTypes, appliedRegions);
 
-        List<FundamentalModelVolumesRes.VolumesColumn> columns = seed.columns();
-        List<FundamentalModelVolumesRes.VolumesRow> rows = filteredRows;
+        List<FundamentalModelVolumesRes.VolumesColumn> columns = seed.monthlyColumns();
+        List<FundamentalModelVolumesRes.VolumesRow> rows = filterVolumesRows(seed.monthlyRows(), appliedTypes, appliedRegions);
         if (granularity == FundamentalModelGranularity.YEARLY) {
-            YearlyVolumes yearlyVolumes = aggregateYearly(columns, filteredRows);
-            columns = yearlyVolumes.columns();
-            rows = yearlyVolumes.rows();
+            if (!seed.yearlyColumns().isEmpty() && !seed.yearlyRows().isEmpty()) {
+                columns = seed.yearlyColumns();
+                rows = filterVolumesRows(seed.yearlyRows(), appliedTypes, appliedRegions);
+            } else {
+                YearlyVolumes yearlyVolumes = aggregateYearly(columns, rows);
+                columns = yearlyVolumes.columns();
+                rows = yearlyVolumes.rows();
+            }
         }
 
         return new FundamentalModelVolumesRes(
             caseRecord.caseId(),
             segment,
             granularity,
+            FundamentalModelVolumeUnit.MTPA,
             new FundamentalModelVolumesRes.VolumesAppliedFilters(appliedTypes, appliedRegions),
             columns,
             rows
@@ -667,19 +673,36 @@ public class FundamentalModelCaseMockService {
     }
 
     private FundamentalModelVolumesSeed readVolumesSeed(JsonNode segmentNode) {
-        List<FundamentalModelVolumesRes.VolumesColumn> columns = objectMapper.convertValue(
-            segmentNode.path("columns"),
+        JsonNode monthlyNode = segmentNode.path("monthly");
+        JsonNode yearlyNode = segmentNode.path("yearly");
+        JsonNode monthlyColumnsNode = monthlyNode.isMissingNode() ? segmentNode.path("columns") : monthlyNode.path("columns");
+        JsonNode monthlyRowsNode = monthlyNode.isMissingNode() ? segmentNode.path("rows") : monthlyNode.path("rows");
+
+        List<FundamentalModelVolumesRes.VolumesColumn> monthlyColumns = objectMapper.convertValue(
+            monthlyColumnsNode,
             new TypeReference<>() {
             }
         );
-        List<FundamentalModelVolumesRes.VolumesRow> rows = objectMapper.convertValue(
-            segmentNode.path("rows"),
+        List<FundamentalModelVolumesRes.VolumesRow> monthlyRows = objectMapper.convertValue(
+            monthlyRowsNode,
+            new TypeReference<>() {
+            }
+        );
+        List<FundamentalModelVolumesRes.VolumesColumn> yearlyColumns = objectMapper.convertValue(
+            yearlyNode.path("columns"),
+            new TypeReference<>() {
+            }
+        );
+        List<FundamentalModelVolumesRes.VolumesRow> yearlyRows = objectMapper.convertValue(
+            yearlyNode.path("rows"),
             new TypeReference<>() {
             }
         );
         return new FundamentalModelVolumesSeed(
-            columns == null ? Collections.emptyList() : List.copyOf(columns),
-            rows == null ? Collections.emptyList() : List.copyOf(rows)
+            monthlyColumns == null ? Collections.emptyList() : List.copyOf(monthlyColumns),
+            monthlyRows == null ? Collections.emptyList() : List.copyOf(monthlyRows),
+            yearlyColumns == null ? Collections.emptyList() : List.copyOf(yearlyColumns),
+            yearlyRows == null ? Collections.emptyList() : List.copyOf(yearlyRows)
         );
     }
 
@@ -722,7 +745,12 @@ public class FundamentalModelCaseMockService {
     }
 
     private FundamentalModelVolumesSeed emptyVolumesSeed() {
-        return new FundamentalModelVolumesSeed(Collections.emptyList(), Collections.emptyList());
+        return new FundamentalModelVolumesSeed(
+            Collections.emptyList(),
+            Collections.emptyList(),
+            Collections.emptyList(),
+            Collections.emptyList()
+        );
     }
 
     private FundamentalModelPriceSeed emptyPriceSeed() {
@@ -931,13 +959,16 @@ public class FundamentalModelCaseMockService {
                 .filter(row -> row.region() != null && appliedRegions.contains(row.region()))
                 .filter(row -> row.rowKind() != VolumesRowKind.TYPE_TOTAL)
                 .toList();
-            filteredRows.addAll(typeRows);
+            List<FundamentalModelVolumesRes.VolumesRow> orderedTypeRows = orderTypeRowsByRegion(typeRows, appliedRegions);
+            filteredRows.addAll(orderedTypeRows.stream()
+                .map(this::toDisplayVolumesRow)
+                .toList());
 
-            List<FundamentalModelVolumesRes.VolumesRow> totalBaseRows = typeRows.stream()
+            List<FundamentalModelVolumesRes.VolumesRow> totalBaseRows = orderedTypeRows.stream()
                 .filter(row -> row.rowKind() == VolumesRowKind.REGION_SUBTOTAL)
                 .toList();
             if (totalBaseRows.isEmpty()) {
-                totalBaseRows = typeRows.stream()
+                totalBaseRows = orderedTypeRows.stream()
                     .filter(row -> row.rowKind() == VolumesRowKind.COUNTRY)
                     .toList();
             }
@@ -948,81 +979,132 @@ public class FundamentalModelCaseMockService {
         return filteredRows;
     }
 
+    private List<FundamentalModelVolumesRes.VolumesRow> orderTypeRowsByRegion(
+        List<FundamentalModelVolumesRes.VolumesRow> typeRows,
+        List<FundamentalModelRegion> appliedRegions
+    ) {
+        List<FundamentalModelVolumesRes.VolumesRow> orderedRows = new ArrayList<>();
+        for (FundamentalModelRegion region : appliedRegions) {
+            typeRows.stream()
+                .filter(row -> row.region() == region)
+                .filter(row -> row.rowKind() == VolumesRowKind.REGION_SUBTOTAL)
+                .forEach(orderedRows::add);
+            typeRows.stream()
+                .filter(row -> row.region() == region)
+                .filter(row -> row.rowKind() == VolumesRowKind.COUNTRY)
+                .forEach(orderedRows::add);
+        }
+        return orderedRows;
+    }
+
     private FundamentalModelVolumesRes.VolumesRow toTypeTotalRow(
         FundamentalModelDataType type,
         List<FundamentalModelVolumesRes.VolumesRow> rows
     ) {
-        int maxValueCount = rows.stream()
-            .map(FundamentalModelVolumesRes.VolumesRow::values)
-            .filter(Objects::nonNull)
-            .mapToInt(List::size)
-            .max()
-            .orElse(0);
-        List<Double> values = new ArrayList<>();
-        for (int index = 0; index < maxValueCount; index++) {
-            values.add(sumValueAt(rows, index));
-        }
         return new FundamentalModelVolumesRes.VolumesRow(
             type,
+            labelOf(type),
             null,
             null,
             VolumesRowKind.TYPE_TOTAL,
-            values
+            "Total",
+            sumValuesByPeriod(rows)
         );
     }
 
-    private Double sumValueAt(List<FundamentalModelVolumesRes.VolumesRow> rows, int index) {
-        return rows.stream()
-            .map(FundamentalModelVolumesRes.VolumesRow::values)
-            .map(values -> valueAt(values, index))
-            .filter(Objects::nonNull)
-            .mapToDouble(Double::doubleValue)
-            .sum();
+    private FundamentalModelVolumesRes.VolumesRow toDisplayVolumesRow(
+        FundamentalModelVolumesRes.VolumesRow row
+    ) {
+        return new FundamentalModelVolumesRes.VolumesRow(
+            row.type(),
+            labelOf(row.type()),
+            row.region(),
+            row.country(),
+            row.rowKind(),
+            rowLabelOf(row),
+            row.values()
+        );
+    }
+
+    private String labelOf(FundamentalModelDataType type) {
+        return type == null ? null : type.getLabel();
+    }
+
+    private String rowLabelOf(FundamentalModelVolumesRes.VolumesRow row) {
+        if (row.rowKind() == VolumesRowKind.TYPE_TOTAL) {
+            return "Total";
+        }
+        if (row.rowKind() == VolumesRowKind.REGION_SUBTOTAL) {
+            return row.region() == null ? null : row.region().getLabel();
+        }
+        return row.country();
+    }
+
+    private Map<String, Double> sumValuesByPeriod(List<FundamentalModelVolumesRes.VolumesRow> rows) {
+        Map<String, Double> values = new LinkedHashMap<>();
+        for (FundamentalModelVolumesRes.VolumesRow row : rows) {
+            if (row.values() == null) {
+                continue;
+            }
+            row.values().forEach((label, value) -> {
+                if (value != null) {
+                    values.merge(label, value, Double::sum);
+                } else {
+                    values.putIfAbsent(label, null);
+                }
+            });
+        }
+        return values;
     }
 
     private YearlyVolumes aggregateYearly(
         List<FundamentalModelVolumesRes.VolumesColumn> monthlyColumns,
         List<FundamentalModelVolumesRes.VolumesRow> monthlyRows
     ) {
-        Map<Integer, List<Integer>> indexesByYear = new LinkedHashMap<>();
-        for (int index = 0; index < monthlyColumns.size(); index++) {
-            Integer year = monthlyColumns.get(index).year();
+        Map<Integer, List<String>> labelsByYear = new LinkedHashMap<>();
+        for (FundamentalModelVolumesRes.VolumesColumn column : monthlyColumns) {
+            Integer year = column.year();
             if (year != null) {
-                indexesByYear.computeIfAbsent(year, ignored -> new ArrayList<>()).add(index);
+                labelsByYear.computeIfAbsent(year, ignored -> new ArrayList<>()).add(column.label());
             }
         }
 
-        List<FundamentalModelVolumesRes.VolumesColumn> yearlyColumns = indexesByYear.keySet().stream()
-            .map(year -> new FundamentalModelVolumesRes.VolumesColumn(year, null, String.valueOf(year)))
+        List<FundamentalModelVolumesRes.VolumesColumn> yearlyColumns = labelsByYear.keySet().stream()
+            .map(year -> new FundamentalModelVolumesRes.VolumesColumn(String.valueOf(year), year, null))
             .toList();
         List<FundamentalModelVolumesRes.VolumesRow> yearlyRows = monthlyRows.stream()
             .map(row -> new FundamentalModelVolumesRes.VolumesRow(
                 row.type(),
+                row.typeLabel(),
                 row.region(),
                 row.country(),
                 row.rowKind(),
-                aggregateValuesByYear(row.values(), indexesByYear)
+                row.rowLabel(),
+                aggregateValuesByYear(row.values(), labelsByYear)
             ))
             .toList();
 
         return new YearlyVolumes(yearlyColumns, yearlyRows);
     }
 
-    private List<Double> aggregateValuesByYear(List<Double> values, Map<Integer, List<Integer>> indexesByYear) {
-        return indexesByYear.values().stream()
-            .map(indexes -> indexes.stream()
-                .map(index -> valueAt(values, index))
+    private Map<String, Double> aggregateValuesByYear(
+        Map<String, Double> values,
+        Map<Integer, List<String>> labelsByYear
+    ) {
+        Map<String, Double> yearlyValues = new LinkedHashMap<>();
+        for (Map.Entry<Integer, List<String>> entry : labelsByYear.entrySet()) {
+            double sum = entry.getValue().stream()
+                .map(label -> valueAt(values, label))
                 .filter(Objects::nonNull)
                 .mapToDouble(Double::doubleValue)
-                .sum())
-            .toList();
+                .sum();
+            yearlyValues.put(String.valueOf(entry.getKey()), sum);
+        }
+        return yearlyValues;
     }
 
-    private Double valueAt(List<Double> values, int index) {
-        if (values == null || index >= values.size()) {
-            return null;
-        }
-        return values.get(index);
+    private Double valueAt(Map<String, Double> values, String label) {
+        return values == null ? null : values.get(label);
     }
 
     private FundamentalModelRunCallbackRes handleTerminalCallbackReplay(
@@ -1255,8 +1337,10 @@ public class FundamentalModelCaseMockService {
     }
 
     private record FundamentalModelVolumesSeed(
-        List<FundamentalModelVolumesRes.VolumesColumn> columns,
-        List<FundamentalModelVolumesRes.VolumesRow> rows
+        List<FundamentalModelVolumesRes.VolumesColumn> monthlyColumns,
+        List<FundamentalModelVolumesRes.VolumesRow> monthlyRows,
+        List<FundamentalModelVolumesRes.VolumesColumn> yearlyColumns,
+        List<FundamentalModelVolumesRes.VolumesRow> yearlyRows
     ) {
     }
 
