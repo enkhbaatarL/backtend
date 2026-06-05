@@ -787,8 +787,8 @@ FE는 `latestRun.startedAt`과 `latestRun.finishedAt`으로 소요시간을 계�
     "regions": ["ASIA", "EUROPE"]
   },
   "columns": [
-    { "label": "26-01", "year": 2026, "month": 1 },
-    { "label": "26-02", "year": 2026, "month": 2 }
+    { "key": "2026-01", "label": "26-01", "year": 2026, "month": 1 },
+    { "key": "2026-02", "label": "26-02", "year": 2026, "month": 2 }
   ],
   "rows": [
     {
@@ -798,7 +798,7 @@ FE는 `latestRun.startedAt`과 `latestRun.finishedAt`으로 소요시간을 계�
       "country": null,
       "rowKind": "REGION_SUBTOTAL",
       "rowLabel": "Asia",
-      "values": { "26-01": 0.3, "26-02": 0.3 }
+      "values": { "2026-01": 0.3, "2026-02": 0.3 }
     },
     {
       "type": "DEMAND",
@@ -807,7 +807,7 @@ FE는 `latestRun.startedAt`과 `latestRun.finishedAt`으로 소요시간을 계�
       "country": "China",
       "rowKind": "COUNTRY",
       "rowLabel": "China",
-      "values": { "26-01": 15.1, "26-02": 0.3 }
+      "values": { "2026-01": 15.1, "2026-02": 0.3 }
     },
     {
       "type": "DEMAND",
@@ -816,7 +816,7 @@ FE는 `latestRun.startedAt`과 `latestRun.finishedAt`으로 소요시간을 계�
       "country": "Japan",
       "rowKind": "COUNTRY",
       "rowLabel": "Japan",
-      "values": { "26-01": 0.2, "26-02": 0.2 }
+      "values": { "2026-01": 0.2, "2026-02": 0.2 }
     },
     {
       "type": "DEMAND",
@@ -825,7 +825,7 @@ FE는 `latestRun.startedAt`과 `latestRun.finishedAt`으로 소요시간을 계�
       "country": null,
       "rowKind": "TYPE_TOTAL",
       "rowLabel": "Total",
-      "values": { "26-01": 344.8, "26-02": 344.8 }
+      "values": { "2026-01": 344.8, "2026-02": 344.8 }
     }
   ]
 }
@@ -845,6 +845,7 @@ FE는 `latestRun.startedAt`과 `latestRun.finishedAt`으로 소요시간을 계�
 
 | 필드 | 타입 | 설명 |
 |---|---|---|
+| `key` | `String` | 안정적인 기간 식별자. `MONTHLY`이면 `"2026-01"` 형식, `YEARLY`이면 `"2026"` 형식 |
 | `label` | `String` | 표시 라벨. `MONTHLY`이면 `"26-01"` 형식, `YEARLY`이면 `"2026"` 형식 |
 | `year` | `Integer` | 연도 |
 | `month` | `Integer` | 월(1~12). `YEARLY`이면 `null` |
@@ -859,11 +860,11 @@ FE는 `latestRun.startedAt`과 `latestRun.finishedAt`으로 소요시간을 계�
 | `country` | `String` | 국가명. `rowKind=REGION_SUBTOTAL` 또는 `TYPE_TOTAL`이면 `null` |
 | `rowKind` | `VolumesRowKind` | `COUNTRY` \| `REGION_SUBTOTAL` \| `TYPE_TOTAL` |
 | `rowLabel` | `String` | 행 화면 표시명. `REGION_SUBTOTAL`이면 지역 label, `COUNTRY`이면 국가명, `TYPE_TOTAL`이면 `Total` |
-| `values` | `Map<String, Double>` | column label별 수치 map. key는 `columns[].label`과 동일하며 FE는 `row.values[column.label]`로 조회한다 |
+| `values` | `Map<String, Double>` | column key별 수치 map. key는 `columns[].key`와 동일하며 FE는 `row.values[column.key]`로 조회한다 |
 
 표시용 text는 `typeLabel`, `rowLabel`을 사용한다. `type`, `region`, `country`, `rowKind`는 필터/집계/스타일 분기용 canonical code 필드로 유지한다. Rowspan은 응답 순서에서 연속된 동일 `type` 구간을 기준으로 FE가 계산한다.
 
-테이블 상단 헤더는 `columns[].label`을 순서대로 표시한다. `MONTHLY`이면 `"26-01"` 형식, `YEARLY`이면 `"2026"` 형식이다. 각 row의 `values` object key는 반환된 `columns[].label` 집합과 동일해야 한다.
+테이블 상단 헤더는 `columns[].label`을 순서대로 표시한다. `MONTHLY`이면 `"26-01"` 형식, `YEARLY`이면 `"2026"` 형식이다. 각 row의 `values` object key는 반환된 `columns[].key` 집합과 동일해야 한다.
 
 `rows` 배열은 FE가 응답 순서 그대로 렌더링할 수 있도록 정렬된다. 정렬 순서는 선택된 `types` 순서대로 Type section을 만들고, 각 Type section 안에서는 선택된 `regions` 순서대로 `REGION_SUBTOTAL` 행을 먼저 반환한 뒤 해당 Region의 `COUNTRY` 행들을 반환한다. 각 Type section의 마지막 행은 `TYPE_TOTAL`이다.
 
@@ -1315,23 +1316,23 @@ src/main/resources/mock/fundamental-model/fundamental-model-price-data.json
 {
   "GLOBAL": {
     "columns": [
-      { "label": "26-01", "year": 2026, "month": 1 }
+      { "key": "2026-01", "label": "26-01", "year": 2026, "month": 1 }
     ],
     "rows": [
-      { "type": "DEMAND", "region": "ASIA", "country": null,    "rowKind": "REGION_SUBTOTAL", "values": { "26-01": 0.3 } },
-      { "type": "DEMAND", "region": "ASIA", "country": "China", "rowKind": "COUNTRY",         "values": { "26-01": 0.3 } },
-      { "type": "DEMAND", "region": null,   "country": null,    "rowKind": "TYPE_TOTAL",      "values": { "26-01": 344.8 } }
+      { "type": "DEMAND", "region": "ASIA", "country": null,    "rowKind": "REGION_SUBTOTAL", "values": { "2026-01": 0.3 } },
+      { "type": "DEMAND", "region": "ASIA", "country": "China", "rowKind": "COUNTRY",         "values": { "2026-01": 0.3 } },
+      { "type": "DEMAND", "region": null,   "country": null,    "rowKind": "TYPE_TOTAL",      "values": { "2026-01": 344.8 } }
     ]
   },
   "LNG": {
     "monthly": {
-      "columns": [{ "label": "26-01", "year": 2026, "month": 1 }],
+      "columns": [{ "key": "2026-01", "label": "26-01", "year": 2026, "month": 1 }],
       "rows": [
-        { "type": "LNG_IMPORTS", "region": "ASIA", "country": null, "rowKind": "REGION_SUBTOTAL", "values": { "26-01": 6.3 } }
+        { "type": "LNG_IMPORTS", "region": "ASIA", "country": null, "rowKind": "REGION_SUBTOTAL", "values": { "2026-01": 6.3 } }
       ]
     },
     "yearly": {
-      "columns": [{ "label": "2026", "year": 2026, "month": null }],
+      "columns": [{ "key": "2026", "label": "2026", "year": 2026, "month": null }],
       "rows": [
         { "type": "LNG_IMPORTS", "region": "ASIA", "country": null, "rowKind": "REGION_SUBTOTAL", "values": { "2026": 77.1 } }
       ]
@@ -1347,7 +1348,7 @@ src/main/resources/mock/fundamental-model/fundamental-model-price-data.json
 - `rows`의 `type`, `region`, `rowKind`는 §4.11 enum 값과 동일해야 한다.
 - `REGION_SUBTOTAL`은 Region별 subtotal 원천값이다.
 - `TYPE_TOTAL`은 전체 Region 선택 시 사용할 Type total 원천값이다. Region 필터가 일부만 선택되면 mock service가 선택된 Region의 `REGION_SUBTOTAL` 값을 합산해 재계산한다.
-- 각 table(`columns` + `rows`)의 `values` object key 집합은 해당 table의 `columns[].label` 집합과 동일해야 한다.
+- 각 table(`columns` + `rows`)의 `values` object key 집합은 해당 table의 `columns[].key` 집합과 동일해야 한다.
 
 **`fundamental-model-trade-flows-data.json` 최상위 구조:**
 

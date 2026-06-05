@@ -698,12 +698,54 @@ public class FundamentalModelCaseMockService {
             new TypeReference<>() {
             }
         );
+        List<FundamentalModelVolumesRes.VolumesRow> normalizedMonthlyRows =
+            normalizeRowValuesByColumnKey(monthlyColumns, monthlyRows);
+        List<FundamentalModelVolumesRes.VolumesRow> normalizedYearlyRows =
+            normalizeRowValuesByColumnKey(yearlyColumns, yearlyRows);
         return new FundamentalModelVolumesSeed(
             monthlyColumns == null ? Collections.emptyList() : List.copyOf(monthlyColumns),
-            monthlyRows == null ? Collections.emptyList() : List.copyOf(monthlyRows),
+            normalizedMonthlyRows == null ? Collections.emptyList() : List.copyOf(normalizedMonthlyRows),
             yearlyColumns == null ? Collections.emptyList() : List.copyOf(yearlyColumns),
-            yearlyRows == null ? Collections.emptyList() : List.copyOf(yearlyRows)
+            normalizedYearlyRows == null ? Collections.emptyList() : List.copyOf(normalizedYearlyRows)
         );
+    }
+
+    private List<FundamentalModelVolumesRes.VolumesRow> normalizeRowValuesByColumnKey(
+        List<FundamentalModelVolumesRes.VolumesColumn> columns,
+        List<FundamentalModelVolumesRes.VolumesRow> rows
+    ) {
+        if (columns == null || columns.isEmpty() || rows == null || rows.isEmpty()) {
+            return rows;
+        }
+
+        List<FundamentalModelVolumesRes.VolumesRow> normalizedRows = new ArrayList<>(rows.size());
+        for (FundamentalModelVolumesRes.VolumesRow row : rows) {
+            if (row == null || row.values() == null || row.values().isEmpty()) {
+                normalizedRows.add(row);
+                continue;
+            }
+
+            Map<String, Double> normalizedValues = new LinkedHashMap<>();
+            for (FundamentalModelVolumesRes.VolumesColumn column : columns) {
+                String columnKey = columnKeyOf(column);
+                Double value = valueAt(row.values(), columnKey);
+                if (value == null && column != null && column.label() != null) {
+                    value = valueAt(row.values(), column.label());
+                }
+                normalizedValues.put(columnKey, value);
+            }
+
+            normalizedRows.add(new FundamentalModelVolumesRes.VolumesRow(
+                row.type(),
+                row.typeLabel(),
+                row.region(),
+                row.country(),
+                row.rowKind(),
+                row.rowLabel(),
+                normalizedValues
+            ));
+        }
+        return normalizedRows;
     }
 
     private FundamentalModelPriceSeed loadPriceSeedData() {
@@ -1046,11 +1088,11 @@ public class FundamentalModelCaseMockService {
             if (row.values() == null) {
                 continue;
             }
-            row.values().forEach((label, value) -> {
+            row.values().forEach((columnKey, value) -> {
                 if (value != null) {
-                    values.merge(label, value, Double::sum);
+                    values.merge(columnKey, value, Double::sum);
                 } else {
-                    values.putIfAbsent(label, null);
+                    values.putIfAbsent(columnKey, null);
                 }
             });
         }
@@ -1061,16 +1103,16 @@ public class FundamentalModelCaseMockService {
         List<FundamentalModelVolumesRes.VolumesColumn> monthlyColumns,
         List<FundamentalModelVolumesRes.VolumesRow> monthlyRows
     ) {
-        Map<Integer, List<String>> labelsByYear = new LinkedHashMap<>();
+        Map<Integer, List<String>> keysByYear = new LinkedHashMap<>();
         for (FundamentalModelVolumesRes.VolumesColumn column : monthlyColumns) {
             Integer year = column.year();
             if (year != null) {
-                labelsByYear.computeIfAbsent(year, ignored -> new ArrayList<>()).add(column.label());
+                keysByYear.computeIfAbsent(year, ignored -> new ArrayList<>()).add(columnKeyOf(column));
             }
         }
 
-        List<FundamentalModelVolumesRes.VolumesColumn> yearlyColumns = labelsByYear.keySet().stream()
-            .map(year -> new FundamentalModelVolumesRes.VolumesColumn(String.valueOf(year), year, null))
+        List<FundamentalModelVolumesRes.VolumesColumn> yearlyColumns = keysByYear.keySet().stream()
+            .map(year -> new FundamentalModelVolumesRes.VolumesColumn(String.valueOf(year), String.valueOf(year), year, null))
             .toList();
         List<FundamentalModelVolumesRes.VolumesRow> yearlyRows = monthlyRows.stream()
             .map(row -> new FundamentalModelVolumesRes.VolumesRow(
@@ -1080,7 +1122,7 @@ public class FundamentalModelCaseMockService {
                 row.country(),
                 row.rowKind(),
                 row.rowLabel(),
-                aggregateValuesByYear(row.values(), labelsByYear)
+                aggregateValuesByYear(row.values(), keysByYear)
             ))
             .toList();
 
@@ -1089,12 +1131,12 @@ public class FundamentalModelCaseMockService {
 
     private Map<String, Double> aggregateValuesByYear(
         Map<String, Double> values,
-        Map<Integer, List<String>> labelsByYear
+        Map<Integer, List<String>> keysByYear
     ) {
         Map<String, Double> yearlyValues = new LinkedHashMap<>();
-        for (Map.Entry<Integer, List<String>> entry : labelsByYear.entrySet()) {
+        for (Map.Entry<Integer, List<String>> entry : keysByYear.entrySet()) {
             double sum = entry.getValue().stream()
-                .map(label -> valueAt(values, label))
+                .map(columnKey -> valueAt(values, columnKey))
                 .filter(Objects::nonNull)
                 .mapToDouble(Double::doubleValue)
                 .sum();
@@ -1103,8 +1145,15 @@ public class FundamentalModelCaseMockService {
         return yearlyValues;
     }
 
-    private Double valueAt(Map<String, Double> values, String label) {
-        return values == null ? null : values.get(label);
+    private Double valueAt(Map<String, Double> values, String columnKey) {
+        return values == null ? null : values.get(columnKey);
+    }
+
+    private String columnKeyOf(FundamentalModelVolumesRes.VolumesColumn column) {
+        if (column == null) {
+            return null;
+        }
+        return column.key() != null ? column.key() : column.label();
     }
 
     private FundamentalModelRunCallbackRes handleTerminalCallbackReplay(
