@@ -82,7 +82,7 @@ public class SwaggerConfig {
     }
 
     // note: 안정화 후 투머치 문서 모두 삭제예정
-    private static final String SW_VERSION_BASE = "v1.0.0";
+    private static final String SW_VERSION_BASE = "v1.1.0";
     private static final DateTimeFormatter SW_DEPLOY_DATE_FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
 
     @Bean
@@ -114,19 +114,14 @@ public class SwaggerConfig {
   | 이벤트 상세 | %s |
   | 이벤트 관련 레코드 | %s |
   | 이벤트 기관전망 | %s |
-  | **시나리오** | |
-  | 시나리오 목록 | %s |
+  | **시나리오 그룹** | |
+  | 시나리오 그룹 목록 | %s |
+  | 시나리오 개별 목록 | %s |
+  | 시나리오 그룹 가격전망 그래프 | %s |
+  | 시나리오 그룹 그래프 엑셀 다운로드 | %s |
+  | 시나리오 그룹 상세 | %s |
   | 시나리오 상세 | %s |
-  | **Overview** | |
-  | Overview Event First | %s |
-  | Overview Scenario First | %s |
-  | Overview Price Forecasts | %s |
-  | **Design** | |
-  | Design 이벤트 목록 | %s |
-  | Design 시나리오 생성 요청 | %s |
-  | Design 콜백 수신 | %s |
-  | Design 생성된 시나리오 조회 | %s |
-  | Design 생성 상태 폴링 | %s |
+  | 시나리오 상태 변경 | %s |
   | **Model Execution** | |
   | 수급모델 파라미터 조회 | %s |
   | 수급모델 실행 요청 | %s |
@@ -149,6 +144,20 @@ public class SwaggerConfig {
   ## 수정사항
 
   <details open>
+  <summary><strong>v1.1.0 (2026-06-04)</strong></summary>
+
+  - [Scenario Group — 신규 도메인]
+    - 시나리오 그룹 목록(그룹 모드) / 개별 시나리오 목록(개별 모드) API 추가
+    - 그룹 가격전망 그래프(단일 인덱스, `indexName`) / 그래프 엑셀 다운로드(전 인덱스 시트) API 추가
+    - 시나리오 그룹 상세(요약 + 가정·실행가능성 표) / 개별 시나리오 상세(내러티브 · 주요 가정 · Signpost) API 추가
+    - 시나리오 판정 상태 변경 API 추가 (대기 `pending` / 실현 `realized` / 폐기 `discarded`, PATCH)
+    - [Mock 전용] 시나리오 상태 변경 초기화 API 추가 (`POST .../scenario-status/reset` — 변경분을 초기 설정값으로 복원)
+  - [Deprecated]
+    - Overview / Scenario / Design API deprecated 처리 (Scenario Group 도메인으로 대체)
+
+  </details>
+
+  <details>
   <summary><strong>v1.0.0 (2026-05-28)</strong></summary>
 
   - [이벤트 목록]
@@ -243,16 +252,13 @@ public class SwaggerConfig {
             label(mockProps.getEvents().getApi().isGetDetail()),
             label(mockProps.getEvents().getApi().isGetRecords()),
             label(mockProps.getEvents().getApi().isGetOutlooks()),
-            label(mockProps.getScenarios().getApi().isGetList()),
-            label(mockProps.getScenarios().getApi().isGetDetail()),
-            label(mockProps.getOverview().getApi().isGetEvents()),
-            label(mockProps.getOverview().getApi().isGetScenarios()),
-            label(mockProps.getOverview().getApi().isGetPriceForecasts()),
-            label(mockProps.getDesign().getApi().isGetEvents()),
-            label(mockProps.getDesign().getApi().isPostGenerate()),
-            label(mockProps.getDesign().getApi().isPostCallback()),
-            label(mockProps.getDesign().getApi().isGetGeneratedScenarios()),
-            label(mockProps.getDesign().getApi().isGetStatuses()),
+            label(mockProps.getScenarioGroups().getApi().isGetList()),
+            label(mockProps.getScenarioGroups().getApi().isGetScenarios()),
+            label(mockProps.getScenarioGroups().getApi().isGetGraph()),
+            label(mockProps.getScenarioGroups().getApi().isGetGraphExport()),
+            label(mockProps.getScenarioGroups().getApi().isGetDetail()),
+            label(mockProps.getScenarioGroups().getApi().isGetScenarioDetail()),
+            label(mockProps.getScenarioGroups().getApi().isUpdateScenarioStatus()),
             label(mockProps.getModelExecutions().getApi().isGetParameters()),
             label(mockProps.getModelExecutions().getApi().isSubmit()),
             label(mockProps.getModelExecutions().getApi().isGetStatus()),

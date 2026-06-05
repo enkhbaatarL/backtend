@@ -73,6 +73,15 @@ mi:
         api:
           get-list: true
           get-detail: true
+      scenario-groups:
+        api:
+          get-list: true
+          get-scenarios: true
+          get-graph: true
+          get-graph-export: true
+          get-detail: true
+          get-scenario-detail: true
+          update-scenario-status: true
       model-executions:
         api:
           get-parameters: true
