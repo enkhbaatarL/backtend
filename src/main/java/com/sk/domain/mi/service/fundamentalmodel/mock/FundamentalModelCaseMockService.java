@@ -840,7 +840,7 @@ public class FundamentalModelCaseMockService {
         List<FundamentalModelFileMockRecord> records = new ArrayList<>();
         for (JsonNode fileNode : filesNode) {
             records.add(new FundamentalModelFileMockRecord(
-                fileNode.path("mockFileId").asText(),
+                readMockFileNo(fileNode),
                 fileNode.path("fileIndex").asInt(),
                 fileNode.path("originalFileName").asText(null),
                 fileNode.path("contentType").asText(null),
@@ -1266,7 +1266,7 @@ public class FundamentalModelCaseMockService {
             MultipartFile file = files.get(index);
             int fileIndex = index + 1;
             records.add(new FundamentalModelFileMockRecord(
-                "mock_file_%d_%d".formatted(caseId, fileIndex),
+                buildMockFileNo(caseId, fileIndex),
                 fileIndex,
                 file.getOriginalFilename(),
                 file.getContentType(),
@@ -1337,12 +1337,37 @@ public class FundamentalModelCaseMockService {
 
     private FundamentalModelCaseFileRes toFileResponse(FundamentalModelFileMockRecord record) {
         return new FundamentalModelCaseFileRes(
+            record.fileNo(),
             record.fileIndex(),
             record.originalFileName(),
             record.contentType(),
-            record.size(),
-            record.mockFileId()
+            record.size()
         );
+    }
+
+    private long buildMockFileNo(Long caseId, int fileIndex) {
+        return caseId * 10 + fileIndex;
+    }
+
+    private long readMockFileNo(JsonNode fileNode) {
+        JsonNode fileNoNode = fileNode.path("fileNo");
+        if (fileNoNode.canConvertToLong()) {
+            return fileNoNode.asLong();
+        }
+
+        String legacyMockFileId = fileNode.path("mockFileId").asText("");
+        if (!legacyMockFileId.isBlank()) {
+            String[] tokens = legacyMockFileId.split("_");
+            if (tokens.length >= 4) {
+                try {
+                    return buildMockFileNo(Long.parseLong(tokens[2]), Integer.parseInt(tokens[3]));
+                } catch (NumberFormatException ignored) {
+                    // Fall through to deterministic fallback.
+                }
+            }
+        }
+
+        return 0L;
     }
 
     private FundamentalModelCaseStatus toCaseStatus(FundamentalModelRunStatus status) {
@@ -1370,7 +1395,7 @@ public class FundamentalModelCaseMockService {
             .filter(f -> f.originalFileName() != null
                 && f.originalFileName().toUpperCase(Locale.ROOT).contains(keyword))
             .findFirst()
-            .map(f -> "mock-storage://" + f.mockFileId())
+            .map(f -> "mock-storage://" + f.fileNo())
             .orElse(null);
     }
 
@@ -1518,7 +1543,7 @@ public class FundamentalModelCaseMockService {
     }
 
     private record FundamentalModelFileMockRecord(
-        String mockFileId,
+        Long fileNo,
         Integer fileIndex,
         String originalFileName,
         String contentType,

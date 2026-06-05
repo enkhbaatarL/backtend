@@ -593,11 +593,11 @@ Reset API 포함 판단:
   "assigneeName": "홍길동",
   "files": [
     {
+      "fileNo": 1011,
       "fileIndex": 1,
       "originalFileName": "input_1.xlsx",
       "contentType": "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-      "size": 12345,
-      "mockFileId": "mock_file_101_1"
+      "size": 12345
     }
   ],
   "latestRun": {
@@ -638,11 +638,11 @@ Reset API 포함 판단:
   "status": "PENDING",
   "files": [
     {
+      "fileNo": 1011,
       "fileIndex": 1,
       "originalFileName": "input_1.xlsx",
       "contentType": "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-      "size": 12345,
-      "mockFileId": "mock_file_101_1"
+      "size": 12345
     }
   ],
   "createdAt": "2026-05-19T14:30:00",
@@ -664,11 +664,11 @@ Reset API 포함 판단:
 
 | 필드 | 타입 | 설명 |
 |---|---|---|
+| `fileNo` | `Long` | 파일 식별자. canonical contract는 DB-backed 기준 `tcm_filel.file_no`를 사용한다. mock 구현도 같은 필드명으로 응답한다 |
 | `fileIndex` | `Integer` | 1부터 시작하는 업로드 순서 |
 | `originalFileName` | `String` | 원본 파일명 |
 | `contentType` | `String` | multipart content type |
 | `size` | `Long` | 파일 크기 byte |
-| `mockFileId` | `String` | mock store 내부 식별자. future DB에서는 `tcm_filel.file_no` 또는 파일 PK로 대체 후보 |
 
 ### 4.6 `FundamentalModelRunAcceptRes`
 
@@ -1287,7 +1287,7 @@ seed 파일은 다음 최상위 구조를 가진다.
 |---|---|
 | `FundamentalModelCaseMockRecord` | `caseId`, title, description, status, `assigneeName`, `files: List<FundamentalModelFileMockRecord>`, latestRunId, delYn, timestamps |
 | `FundamentalModelRunMockRecord` | `runId`, `caseId`, status, requestedAt, startedAt, finishedAt, failureReason, errorMessage |
-| `FundamentalModelFileMockRecord` | mockFileId, fileIndex, originalFileName, contentType, size |
+| `FundamentalModelFileMockRecord` | fileNo, fileIndex, originalFileName, contentType, size |
 
 `FundamentalModelCaseMockRecord.assigneeName`은 case 업로드 시점의 사용자 이름을 표현한다. mock에서는 업로드 요청에 업로더 이름을 받지 않으므로 고정값(예: `"홍길동"`)으로 설정한다. 향후 DB 전환 시 `tmd_scncasem.usr_no = tmd_usrm.usr_no`로 JOIN하고, 작성자명 표시는 `tmd_usrm.usr_nm`을 사용한다.
 

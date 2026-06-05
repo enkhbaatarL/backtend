@@ -1,5 +1,8 @@
 package com.sk.domain.mi.service.fundamentalmodel;
 
+import com.sk.common.enums.ResultCode;
+import com.sk.common.exception.AppErrorException;
+import com.sk.domain.admin.dto.response.file.FileUploadRes;
 import com.sk.domain.mi.dto.request.fundamentalmodel.FundamentalModelCaseListReq;
 import com.sk.domain.mi.dto.request.fundamentalmodel.FundamentalModelCaseUpdateReq;
 import com.sk.domain.mi.dto.request.fundamentalmodel.FundamentalModelRunCallbackReq;
@@ -8,6 +11,7 @@ import com.sk.domain.mi.dto.request.fundamentalmodel.FundamentalModelVolumesReq;
 import com.sk.domain.mi.dto.response.fundamentalmodel.FilterOption;
 import com.sk.domain.mi.dto.response.fundamentalmodel.FundamentalModelCaseCreateRes;
 import com.sk.domain.mi.dto.response.fundamentalmodel.FundamentalModelCaseDetailRes;
+import com.sk.domain.mi.dto.response.fundamentalmodel.FundamentalModelCaseFileRes;
 import com.sk.domain.mi.dto.response.fundamentalmodel.FundamentalModelCaseListRes;
 import com.sk.domain.mi.dto.response.fundamentalmodel.FundamentalModelCaseStatusRes;
 import com.sk.domain.mi.dto.response.fundamentalmodel.FundamentalModelPriceRes;
@@ -17,18 +21,37 @@ import com.sk.domain.mi.dto.response.fundamentalmodel.FundamentalModelTradeFlows
 import com.sk.domain.mi.dto.response.fundamentalmodel.FundamentalModelVolumesFilterOptionsRes;
 import com.sk.domain.mi.dto.response.fundamentalmodel.FundamentalModelVolumesRes;
 import com.sk.domain.mi.dto.response.fundamentalmodel.VolumesSegmentFilterOptions;
+import com.sk.domain.shared.entity.master.tmd.ScenarioCase;
+import com.sk.domain.shared.enums.Role;
 import com.sk.domain.shared.enums.fundamentalmodel.FundamentalModelDataType;
 import com.sk.domain.shared.enums.fundamentalmodel.FundamentalModelGranularity;
 import com.sk.domain.shared.enums.fundamentalmodel.FundamentalModelRegion;
 import com.sk.domain.shared.enums.fundamentalmodel.FundamentalModelSegment;
 import com.sk.domain.shared.enums.fundamentalmodel.TradeFlowDirection;
+import com.sk.domain.shared.repository.master.tmd.ScenarioCaseRepository;
+import com.sk.domain.shared.service.FileService;
+import com.sk.domain.shared.service.permissions.AuthorizationService;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
+@Slf4j
 @Service
+@RequiredArgsConstructor
 public class FundamentalModelCaseServiceImpl implements FundamentalModelCaseService {
+
+    private static final int REQUIRED_FILE_COUNT = 3;
+    private static final int TITLE_MAX_LENGTH = 200;
+    private static final String FILE_RELATION_SCENARIO_CASE = "SCNCASE";
+
+    private final ScenarioCaseRepository scenarioCaseRepository;
+    private final FileService fileService;
+    private final AuthorizationService authorizationService;
 
     @Override
     public FundamentalModelCaseListRes listCases(FundamentalModelCaseListReq request) {
@@ -36,12 +59,47 @@ public class FundamentalModelCaseServiceImpl implements FundamentalModelCaseServ
     }
 
     @Override
+    @Transactional
     public FundamentalModelCaseCreateRes createCase(
         String title,
         String description,
         List<MultipartFile> files
     ) {
-        throw new UnsupportedOperationException("Fundamental model case create DB implementation is not ready.");
+        String normalizedTitle = validateAndNormalizeTitle(title);
+        validateFiles(files);
+
+        Integer actorUserNo = authorizationService.getUserNo();
+        String actorLoginId = authorizationService.getSubject();
+        String companyCd = authorizationService.getCompanyCd();
+        Role role = authorizationService.getCurrentRole();
+
+        ScenarioCase savedCase = scenarioCaseRepository.saveAndFlush(
+            ScenarioCase.createPending(actorUserNo, normalizedTitle, description, actorLoginId)
+        );
+
+        List<Long> uploadedFileNos = new ArrayList<>();
+        try {
+            List<FundamentalModelCaseFileRes> uploadedFiles = uploadCaseFiles(
+                companyCd,
+                role,
+                savedCase.getCaseId(),
+                files,
+                uploadedFileNos
+            );
+
+            return new FundamentalModelCaseCreateRes(
+                savedCase.getCaseId(),
+                savedCase.getTitle(),
+                savedCase.getDescription(),
+                savedCase.getStatus(),
+                uploadedFiles,
+                savedCase.getCreateDt(),
+                buildStatusEndpoint(savedCase.getCaseId())
+            );
+        } catch (RuntimeException e) {
+            compensateUploadedFiles(uploadedFileNos);
+            throw e;
+        }
     }
 
     @Override
@@ -130,5 +188,76 @@ public class FundamentalModelCaseServiceImpl implements FundamentalModelCaseServ
     @Override
     public void reset() {
         throw new UnsupportedOperationException("Fundamental model case reset DB implementation is not ready.");
+    }
+
+    private String validateAndNormalizeTitle(String title) {
+        if (title == null || title.trim().isEmpty()) {
+            throw AppErrorException.of(ResultCode.Error.REQ_INVALID_PARAMETER, "title은 필수입니다.");
+        }
+        String normalized = title.trim();
+        if (normalized.length() > TITLE_MAX_LENGTH) {
+            throw AppErrorException.of(ResultCode.Error.REQ_INVALID_PARAMETER, "title은 200자를 초과할 수 없습니다.");
+        }
+        return normalized;
+    }
+
+    private void validateFiles(List<MultipartFile> files) {
+        if (files == null || files.size() != REQUIRED_FILE_COUNT) {
+            throw AppErrorException.of(
+                ResultCode.Error.REQ_INVALID_PARAMETER,
+                "files는 정확히 3개여야 합니다."
+            );
+        }
+        boolean hasEmptyFile = files.stream().anyMatch(file -> file == null || file.isEmpty());
+        if (hasEmptyFile) {
+            throw AppErrorException.of(ResultCode.Error.FILE_INVALID, "빈 파일은 업로드할 수 없습니다.");
+        }
+    }
+
+    private List<FundamentalModelCaseFileRes> uploadCaseFiles(
+        String companyCd,
+        Role role,
+        Long caseId,
+        List<MultipartFile> files,
+        List<Long> uploadedFileNos
+    ) {
+        Integer fileRelationshipObjectDistinguishNo = Math.toIntExact(caseId);
+        List<FundamentalModelCaseFileRes> uploadedFiles = new ArrayList<>();
+
+        for (int index = 0; index < files.size(); index++) {
+            MultipartFile file = files.get(index);
+            FileUploadRes uploadedFile = fileService.uploadFileToRelationship(
+                companyCd,
+                role,
+                file,
+                false,
+                fileRelationshipObjectDistinguishNo,
+                FILE_RELATION_SCENARIO_CASE
+            );
+            uploadedFileNos.add(uploadedFile.fileNo());
+            uploadedFiles.add(new FundamentalModelCaseFileRes(
+                uploadedFile.fileNo(),
+                index + 1,
+                uploadedFile.fileNm(),
+                file.getContentType(),
+                uploadedFile.fileSize()
+            ));
+        }
+
+        return uploadedFiles;
+    }
+
+    private void compensateUploadedFiles(List<Long> uploadedFileNos) {
+        for (Long fileNo : uploadedFileNos) {
+            try {
+                fileService.deleteFile(fileNo);
+            } catch (RuntimeException compensationException) {
+                log.warn("Failed to compensate scenario case uploaded file. fileNo={}", fileNo, compensationException);
+            }
+        }
+    }
+
+    private String buildStatusEndpoint(Long caseId) {
+        return "/api/v1/mi/fundamental-model/cases/%d/status".formatted(caseId);
     }
 }
