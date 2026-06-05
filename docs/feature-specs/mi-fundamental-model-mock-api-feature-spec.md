@@ -485,6 +485,7 @@ Reset API 포함 판단:
 - `segment=LNG`에서 `DEMAND`, `PRODUCTION`, `PIPELINE_IMPORTS`, `PIPELINE_EXPORTS`가 `types`로 전달되면 `400 REQ_INVALID_PARAMETER`로 응답한다.
 - `REGION_SUBTOTAL` 행은 선택된 Region별 subtotal을 나타낸다.
 - `TYPE_TOTAL` 행은 선택된 Region들의 `REGION_SUBTOTAL` 값을 합산한 Type별 total을 나타낸다. 모든 Region이 선택되면 전체 Region 기준 Type total과 같다.
+- FE는 `rows`를 응답 순서 그대로 렌더링할 수 있다. 서버는 각 Type 안에서 Region별로 `REGION_SUBTOTAL` 행을 먼저 반환하고, 이어서 해당 Region의 `COUNTRY` 행들을 반환한다. Type의 마지막 행은 `TYPE_TOTAL`이다.
 - `granularity=YEARLY`이면 월별 데이터를 연간으로 집계해 반환한다. columns의 `month` 필드는 `null`이 된다.
 - `granularity=MONTHLY`이면 columns의 `month` 필드는 1~12 정수다.
 - 1차 mock에서는 json seed 파일 기반 고정 데이터를 반환한다. 필터는 mock 데이터 내에서 적용한다.
@@ -780,19 +781,52 @@ FE는 `latestRun.startedAt`과 `latestRun.finishedAt`으로 소요시간을 계�
   "caseId": 101,
   "segment": "GLOBAL",
   "granularity": "MONTHLY",
+  "unit": "MTPA",
   "appliedFilters": {
     "types": ["DEMAND", "PRODUCTION"],
     "regions": ["ASIA", "EUROPE"]
   },
   "columns": [
-    { "year": 2023, "month": 1, "periodLabel": "2026-1" },
-    { "year": 2023, "month": 2, "periodLabel": "2026-2" }
+    { "label": "26-01", "year": 2026, "month": 1 },
+    { "label": "26-02", "year": 2026, "month": 2 }
   ],
   "rows": [
-    { "type": "DEMAND", "region": "ASIA",   "country": "China", "rowKind": "COUNTRY",        "values": [15.1, 0.3]   },
-    { "type": "DEMAND", "region": "ASIA",   "country": "Japan", "rowKind": "COUNTRY",        "values": [0.2, 0.2]    },
-    { "type": "DEMAND", "region": "ASIA",   "country": null,    "rowKind": "REGION_SUBTOTAL", "values": [0.3, 0.3]   },
-    { "type": "DEMAND", "region": null,     "country": null,    "rowKind": "TYPE_TOTAL",      "values": [344.8, 344.8] }
+    {
+      "type": "DEMAND",
+      "typeLabel": "Demand",
+      "region": "ASIA",
+      "country": null,
+      "rowKind": "REGION_SUBTOTAL",
+      "rowLabel": "Asia",
+      "values": { "26-01": 0.3, "26-02": 0.3 }
+    },
+    {
+      "type": "DEMAND",
+      "typeLabel": "Demand",
+      "region": "ASIA",
+      "country": "China",
+      "rowKind": "COUNTRY",
+      "rowLabel": "China",
+      "values": { "26-01": 15.1, "26-02": 0.3 }
+    },
+    {
+      "type": "DEMAND",
+      "typeLabel": "Demand",
+      "region": "ASIA",
+      "country": "Japan",
+      "rowKind": "COUNTRY",
+      "rowLabel": "Japan",
+      "values": { "26-01": 0.2, "26-02": 0.2 }
+    },
+    {
+      "type": "DEMAND",
+      "typeLabel": "Demand",
+      "region": null,
+      "country": null,
+      "rowKind": "TYPE_TOTAL",
+      "rowLabel": "Total",
+      "values": { "26-01": 344.8, "26-02": 344.8 }
+    }
   ]
 }
 ```
@@ -802,6 +836,7 @@ FE는 `latestRun.startedAt`과 `latestRun.finishedAt`으로 소요시간을 계�
 | `caseId` | `Long` | case ID |
 | `segment` | `FundamentalModelSegment` | 조회한 segment |
 | `granularity` | `FundamentalModelGranularity` | 조회한 시간 단위 |
+| `unit` | `FundamentalModelVolumeUnit` | 수치 단위. phase 1에서는 `MTPA` 고정 |
 | `appliedFilters` | `VolumesAppliedFilters` | 실제 적용된 필터. 미전달 시 전체 enum 목록 |
 | `columns` | `List<VolumesColumn>` | 시간 축 메타데이터 목록 |
 | `rows` | `List<VolumesRow>` | 데이터 행 목록 |
@@ -810,19 +845,27 @@ FE는 `latestRun.startedAt`과 `latestRun.finishedAt`으로 소요시간을 계�
 
 | 필드 | 타입 | 설명 |
 |---|---|---|
+| `label` | `String` | 표시 라벨. `MONTHLY`이면 `"26-01"` 형식, `YEARLY`이면 `"2026"` 형식 |
 | `year` | `Integer` | 연도 |
 | `month` | `Integer` | 월(1~12). `YEARLY`이면 `null` |
-| `periodLabel` | `String` | 표시 라벨. `MONTHLY`이면 `"2026-1"` 형식, `YEARLY`이면 `"2023"` 형식 |
 
 **`VolumesRow`:**
 
 | 필드 | 타입 | 설명 |
 |---|---|---|
 | `type` | `FundamentalModelDataType` | 데이터 타입. `COUNTRY`, `REGION_SUBTOTAL`, `TYPE_TOTAL` 모두 해당 Type 값을 가진다 |
+| `typeLabel` | `String` | Type section 화면 표시명. 예: `Demand`, `Production`, `LNG Imports` |
 | `region` | `FundamentalModelRegion` | 지역. `rowKind=TYPE_TOTAL`이면 `null` |
 | `country` | `String` | 국가명. `rowKind=REGION_SUBTOTAL` 또는 `TYPE_TOTAL`이면 `null` |
 | `rowKind` | `VolumesRowKind` | `COUNTRY` \| `REGION_SUBTOTAL` \| `TYPE_TOTAL` |
-| `values` | `List<Double>` | `columns` 순서와 1:1 대응하는 수치 목록 |
+| `rowLabel` | `String` | 행 화면 표시명. `REGION_SUBTOTAL`이면 지역 label, `COUNTRY`이면 국가명, `TYPE_TOTAL`이면 `Total` |
+| `values` | `Map<String, Double>` | column label별 수치 map. key는 `columns[].label`과 동일하며 FE는 `row.values[column.label]`로 조회한다 |
+
+표시용 text는 `typeLabel`, `rowLabel`을 사용한다. `type`, `region`, `country`, `rowKind`는 필터/집계/스타일 분기용 canonical code 필드로 유지한다. Rowspan은 응답 순서에서 연속된 동일 `type` 구간을 기준으로 FE가 계산한다.
+
+테이블 상단 헤더는 `columns[].label`을 순서대로 표시한다. `MONTHLY`이면 `"26-01"` 형식, `YEARLY`이면 `"2026"` 형식이다. 각 row의 `values` object key는 반환된 `columns[].label` 집합과 동일해야 한다.
+
+`rows` 배열은 FE가 응답 순서 그대로 렌더링할 수 있도록 정렬된다. 정렬 순서는 선택된 `types` 순서대로 Type section을 만들고, 각 Type section 안에서는 선택된 `regions` 순서대로 `REGION_SUBTOTAL` 행을 먼저 반환한 뒤 해당 Region의 `COUNTRY` 행들을 반환한다. 각 Type section의 마지막 행은 `TYPE_TOTAL`이다.
 
 **`VolumesRowKind` enum:**
 
@@ -843,6 +886,9 @@ FE는 `latestRun.startedAt`과 `latestRun.finishedAt`으로 소요시간을 계�
 
 **`FundamentalModelGranularity` enum:**
 `MONTHLY`, `YEARLY`
+
+**`FundamentalModelVolumeUnit` enum:**
+`MTPA` — phase 1에서는 Volumes 응답의 `unit`이 항상 `MTPA`다. 후속 unit 변환 기능은 별도 request contract로 정의한다.
 
 ### 4.12 `FundamentalModelVolumesFilterOptionsRes`
 
@@ -1269,24 +1315,39 @@ src/main/resources/mock/fundamental-model/fundamental-model-price-data.json
 {
   "GLOBAL": {
     "columns": [
-      { "year": 2023, "month": 1, "periodLabel": "2026-1" }
+      { "label": "26-01", "year": 2026, "month": 1 }
     ],
     "rows": [
-      { "type": "DEMAND", "region": "ASIA", "country": "China", "rowKind": "COUNTRY", "values": [0.3] },
-      { "type": "DEMAND", "region": "ASIA", "country": null,    "rowKind": "REGION_SUBTOTAL", "values": [0.3] },
-      { "type": "DEMAND", "region": null,   "country": null,    "rowKind": "TYPE_TOTAL",      "values": [344.8] }
+      { "type": "DEMAND", "region": "ASIA", "country": null,    "rowKind": "REGION_SUBTOTAL", "values": { "26-01": 0.3 } },
+      { "type": "DEMAND", "region": "ASIA", "country": "China", "rowKind": "COUNTRY",         "values": { "26-01": 0.3 } },
+      { "type": "DEMAND", "region": null,   "country": null,    "rowKind": "TYPE_TOTAL",      "values": { "26-01": 344.8 } }
     ]
   },
-  "LNG": { "columns": [], "rows": [] }
+  "LNG": {
+    "monthly": {
+      "columns": [{ "label": "26-01", "year": 2026, "month": 1 }],
+      "rows": [
+        { "type": "LNG_IMPORTS", "region": "ASIA", "country": null, "rowKind": "REGION_SUBTOTAL", "values": { "26-01": 6.3 } }
+      ]
+    },
+    "yearly": {
+      "columns": [{ "label": "2026", "year": 2026, "month": null }],
+      "rows": [
+        { "type": "LNG_IMPORTS", "region": "ASIA", "country": null, "rowKind": "REGION_SUBTOTAL", "values": { "2026": 77.1 } }
+      ]
+    }
+  }
 }
 ```
 
 - segment(`GLOBAL`, `LNG`)를 최상위 key로 가진다. `TRADE` key는 포함하지 않는다.
-- `columns`는 Monthly 기준 전체 기간을 담는다. `granularity=YEARLY` 요청 시 mock 서비스가 `month`별 값을 연간 합산해 반환한다.
+- 기본 seed 형식은 `columns` + `rows`이며, 이는 Monthly 원천 데이터로 해석된다.
+- 필요 시 segment별로 `monthly` / `yearly` 하위 객체를 함께 둘 수 있다. `yearly`가 존재하면 `granularity=YEARLY` 요청 시 mock 서비스가 direct yearly seed를 우선 사용한다.
+- `yearly`가 없으면 `granularity=YEARLY` 요청 시 mock 서비스가 `monthly`의 `month`별 값을 연간 합산해 반환한다.
 - `rows`의 `type`, `region`, `rowKind`는 §4.11 enum 값과 동일해야 한다.
 - `REGION_SUBTOTAL`은 Region별 subtotal 원천값이다.
 - `TYPE_TOTAL`은 전체 Region 선택 시 사용할 Type total 원천값이다. Region 필터가 일부만 선택되면 mock service가 선택된 Region의 `REGION_SUBTOTAL` 값을 합산해 재계산한다.
-- `values` 배열 길이는 `columns` 길이와 동일해야 한다.
+- 각 table(`columns` + `rows`)의 `values` object key 집합은 해당 table의 `columns[].label` 집합과 동일해야 한다.
 
 **`fundamental-model-trade-flows-data.json` 최상위 구조:**
 
@@ -1593,12 +1654,14 @@ phase 1 mock 시연 동선:
 5. `types`에 segment에서 허용하지 않는 값이 포함되면 `400 REQ_INVALID_PARAMETER`로 응답한다.
 6. `regions`가 미전달이면 전체 `FundamentalModelRegion` 목록을 필터로 사용한다.
 7. `granularity`가 미전달이면 `MONTHLY`를 기본값으로 사용한다.
-8. `granularity=MONTHLY`이면 `columns`의 `month`는 1~12 정수이고, `periodLabel`은 `"2026-1"` 형식이다.
-9. `granularity=YEARLY`이면 `columns`의 `month`는 `null`이고, `periodLabel`은 연도 문자열이다.
-10. `rows`는 필터를 적용한 뒤 `type → region → country` 계층 순서로 정렬하며, 지역 소계(`REGION_SUBTOTAL`)와 타입 합계(`TYPE_TOTAL`) 행을 포함한다.
-11. `TYPE_TOTAL`은 선택된 Region들의 `REGION_SUBTOTAL` 값을 합산해 반환한다. 예: `regions=ASIA,EUROPE`이면 해당 Type의 Asia subtotal + Europe subtotal이 Type total이다.
-12. 응답의 `appliedFilters`에는 실제 적용된 `types`와 `regions` 목록을 반환한다.
-13. 1차 mock에서는 json seed 파일 기반 고정 데이터를 반환하며, 필터는 해당 데이터 범위 내에서 적용한다.
+8. `granularity=MONTHLY`이면 `columns`의 `label`은 `"26-01"` 형식이고, `year`/`month`는 각각 4자리 연도와 1~12 정수이다.
+9. `granularity=YEARLY`이면 `columns`의 `label`은 연도 문자열이고, `year`는 4자리 연도, `month`는 `null`이다.
+10. 응답의 `unit`은 phase 1에서 `MTPA` 고정이다. 후속 unit 변환 기능은 별도 request contract로 정의한다.
+11. `rows`는 필터를 적용한 뒤 FE가 응답 순서 그대로 렌더링할 수 있게 정렬한다. 선택된 `types` 순서대로 Type section을 만들고, 각 Type section 안에서는 선택된 `regions` 순서대로 `REGION_SUBTOTAL` 행을 먼저 반환한 뒤 해당 Region의 `COUNTRY` 행들을 반환한다. 각 Type section의 마지막 행은 `TYPE_TOTAL`이다.
+12. `typeLabel`은 `type` enum label을 반환한다. `rowLabel`은 `REGION_SUBTOTAL`이면 region enum label, `COUNTRY`이면 country, `TYPE_TOTAL`이면 `Total`을 반환한다.
+13. `TYPE_TOTAL`은 선택된 Region들의 `REGION_SUBTOTAL` 값을 합산해 반환한다. 예: `regions=ASIA,EUROPE`이면 해당 Type의 Asia subtotal + Europe subtotal이 Type total이다.
+14. 응답의 `appliedFilters`에는 실제 적용된 `types`와 `regions` 목록을 반환한다.
+15. 1차 mock에서는 json seed 파일 기반 고정 데이터를 반환하며, 필터는 해당 데이터 범위 내에서 적용한다. seed의 표시 label은 서버가 응답 조립 시 파생한다.
 
 ### Trade Flows Data Query
 
@@ -1723,7 +1786,7 @@ phase 1 mock 시연 동선:
 - Mock 활성화: 신규 `FundamentalModelCaseServiceDelegator` (`@Service @Primary`) + `FundamentalModelMockProperties` 의 per-API flag (`get-volumes`, `get-trade-flows`, `get-price` flag 추가). 1차에는 모든 flag `true` 기본값, real 구현 추가 시 개별 flag `false` 로 전환. `reset` flag 는 Delegator 가 아닌 controller 에서 확인
 - Active-resource rule: `delYn = Y` case는 list에서 제외하고 detail/status/run/update/delete/volumes/price에서 `RSC_NOT_FOUND` 처리
 - Data state rule: volumes/price는 `COMPLETED` case만 허용. `PENDING`/`RUNNING`이면 `409 BIZ_RULE_VIOLATION`, `FAILED`이면 `404 RSC_NOT_FOUND`
-- 신규 enum: `FundamentalModelSegment` (`GLOBAL`, `LNG`, `TRADE` — `TRADE`는 `/volumes`에서 불허), `FundamentalModelDataType` (`DEMAND`, `PRODUCTION`, `LNG_IMPORTS`, `LNG_EXPORTS`, `PIPELINE_IMPORTS`, `PIPELINE_EXPORTS`), `FundamentalModelRegion` (`ASIA`, `EUROPE`, `NORTH_AMERICA`, `MIDDLE_EAST`, `AUSTRALIA`, `RUSSIA`, `AFRICA`, `SOUTH_AMERICA`), `FundamentalModelGranularity` (`MONTHLY`, `YEARLY`), `VolumesRowKind` (`COUNTRY`, `REGION_SUBTOTAL`, `TYPE_TOTAL`), `PriceSeriesType` (`BASE_CASE`, `LAST_ADJUSTED`), `TradeFlowSelector` (`LNG`, `PNG`), `TradeFlowUnit` (`MTPA`, `BCM`), `TradeFlowDirection` (`TO_COUNTRY`, `FROM_COUNTRY`), `TradeCountryHeaderKind` (`REGION_TOTAL`, `COUNTRY`, `GRAND_TOTAL`)
+- 신규 enum: `FundamentalModelSegment` (`GLOBAL`, `LNG`, `TRADE` — `TRADE`는 `/volumes`에서 불허), `FundamentalModelDataType` (`DEMAND`, `PRODUCTION`, `LNG_IMPORTS`, `LNG_EXPORTS`, `PIPELINE_IMPORTS`, `PIPELINE_EXPORTS`), `FundamentalModelRegion` (`ASIA`, `EUROPE`, `NORTH_AMERICA`, `MIDDLE_EAST`, `AUSTRALIA`, `RUSSIA`, `AFRICA`, `SOUTH_AMERICA`), `FundamentalModelGranularity` (`MONTHLY`, `YEARLY`), `FundamentalModelVolumeUnit` (`MTPA`), `VolumesRowKind` (`COUNTRY`, `REGION_SUBTOTAL`, `TYPE_TOTAL`), `PriceSeriesType` (`BASE_CASE`, `LAST_ADJUSTED`), `TradeFlowSelector` (`LNG`, `PNG`), `TradeFlowUnit` (`MTPA`, `BCM`), `TradeFlowDirection` (`TO_COUNTRY`, `FROM_COUNTRY`), `TradeCountryHeaderKind` (`REGION_TOTAL`, `COUNTRY`, `GRAND_TOTAL`)
 - Status enum: `FundamentalModelCaseStatus` = `PENDING`, `RUNNING`, `COMPLETED`, `FAILED`. `FundamentalModelRunStatus` = `RUNNING`, `COMPLETED`, `FAILED` (분리 enum). `FundamentalModelCaseSearchType` = `TITLE`, `ASSIGNEE_NAME`
 - Failure reason candidates: `TIMEOUT`, `EXTERNAL_ERROR`, `UNKNOWN`
 - Base response: `BaseResponse<T>` via `BaseResponseFactory`
