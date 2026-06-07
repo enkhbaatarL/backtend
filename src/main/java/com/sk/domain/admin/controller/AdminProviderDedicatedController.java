@@ -69,7 +69,9 @@ public class AdminProviderDedicatedController {
         @Parameter(name = "sortDirection", description = "데이터 정렬 방향"),
         @Parameter(name = "sortProperty", description = "데이타 정렬 조건"),
         @Parameter(name = "providerNo", description = "데이타 프로바이더 번호"),
-        @Parameter(name = "goodsNo", description = "상품번호")
+        @Parameter(name = "goodsNo", description = "상품번호"),
+        @Parameter(name = "startDate", description = "조회 시작일 (yyyy-MM-dd)"),
+        @Parameter(name = "endDate", description = "조회 종료일 (yyyy-MM-dd)")
     })
     @Operation(summary = "데이타 목록 조회 - withpagination", description = "데이터 목록을 조회합니다.")
     @ApiResponse(responseCode = "200", description = "HTTP Status Code is 200")
@@ -82,13 +84,15 @@ public class AdminProviderDedicatedController {
         @RequestParam(value = "sortDirection", required = false) String sortDirection,
         @RequestParam(value = "sortProperty", required = false) String sortProperty,
         @PathVariable(value = "providerNo") @Min(value = 1) Integer providerNo,
-        @PathVariable(value = "goodsNo") @Min(value = 1) Integer goodsNo) {
+        @PathVariable(value = "goodsNo") @Min(value = 1) Integer goodsNo,
+        @RequestParam(value = "startDate", required = false) String startDate,
+        @RequestParam(value = "endDate", required = false) String endDate) {
 
         int companyNo = authorizationService.getCompanyNo();
         Role role = authorizationService.getCurrentRole();
 
         return BaseResponseFactory.create(goodsDataService.getAllGoodsData(companyNo, role, page, size,
-            keyword, sortDirection, sortProperty, providerNo, goodsNo));
+            keyword, sortDirection, sortProperty, providerNo, goodsNo, startDate, endDate));
     }
 
 
