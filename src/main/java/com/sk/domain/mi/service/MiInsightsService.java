@@ -14,11 +14,13 @@ import com.sk.domain.mi.dto.response.insights.InsightsDataRes;
 import com.sk.domain.mi.dto.response.insights.ProviderCategoryRes;
 import com.sk.domain.mi.dto.response.marketData.RecentViewedRes;
 import com.sk.domain.shared.entity.master.tmd.GoodsDataCategory;
+import com.sk.domain.shared.entity.master.tmd.GoodsDataFileSummary;
 import com.sk.domain.shared.entity.master.tmd.User;
 import com.sk.domain.shared.enums.insights.InsightsPeriodType;
 import com.sk.domain.shared.enums.insights.InsightsSortType;
 import com.sk.domain.shared.repository.master.tcm.CommonCodeDetailRepository;
 import com.sk.domain.shared.repository.master.tmd.GoodsDataCategoryRepository;
+import com.sk.domain.shared.repository.master.tmd.GoodsDataFileSummaryRepository;
 import com.sk.domain.shared.repository.master.tmd.GoodsDataRepository;
 import com.sk.domain.shared.repository.master.tmd.UserRepository;
 import com.sk.domain.shared.service.permissions.AuthorizationService;
@@ -61,6 +63,7 @@ public class MiInsightsService {
 
     private final MiGoodsDataInquiryUserService miGoodsDataInquiryUserService;
     private final UserRepository userRepository;
+    private final GoodsDataFileSummaryRepository goodsDataFileSummaryRepository;
 
     @Value("#{'${server.insight.latest.except-provider-no}'.split(',')}")
     private List<Integer> exceptProviderNoList;
@@ -393,18 +396,29 @@ public class MiInsightsService {
         PermissionRes permissionRes = authorizationService.getPermissions();
 
         List<InsightsDataRes> content = rows.stream()
-                .map(row -> new InsightsDataRes(
+                .map(row -> {
+                    Integer goodsDataNo = (Integer) row[4];
+                    String summary = (String) row[7];
+
+                    if (summary == null || summary.isBlank()) {
+                        summary = goodsDataFileSummaryRepository.findFirstByGoodsDataGoodsDataNoAndIsDeletedFalseOrderByCreateDtDesc(goodsDataNo)
+                            .map(GoodsDataFileSummary::getFileSummaryShort)
+                            .orElse(null);
+                    }
+
+                    return new InsightsDataRes(
                         (Integer) row[0], // providerNo
                         (String) row[1], // providerNm
                         (Integer) row[2], // goodsNo
                         (String) row[3], // goodsNm
-                        (Integer) row[4], // goodsDataNo
+                        goodsDataNo, // goodsDataNo
                         (String) row[5], // goodsDataNm
                         (String) row[6], // goodsDataExpn
-                        (String) row[7], // goodsDataSummaryCntt
-                        getGoodsDataCategory((Integer) row[4]), // goodsDataCategory
+                        summary, // goodsDataSummaryCntt
+                        getGoodsDataCategory(goodsDataNo), // goodsDataCategory
                         convertToDateTime((String)row[8]), // modifyDt
-                        permissionRes.getGoodsViewableMap(companyNo).getOrDefault((Integer) row[2], Boolean.FALSE))) // viewable
+                        permissionRes.getGoodsViewableMap(companyNo).getOrDefault((Integer) row[2], Boolean.FALSE));
+                })
                 .collect(Collectors.toList());
         long total = ((Number) countQuery.getSingleResult()).longValue();
 

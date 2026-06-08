@@ -33,6 +33,7 @@ import com.sk.domain.shared.mapper.dto.SchemaMetadata;
 import com.sk.domain.shared.repository.master.tcm.PersonalizedChartSettingRepository;
 import com.sk.domain.shared.repository.master.tcm.UploadedFileRepository;
 import com.sk.domain.shared.repository.master.tmd.GoodsDataCategoryRepository;
+import com.sk.domain.shared.repository.master.tmd.GoodsDataFileSummaryRepository;
 import com.sk.domain.shared.repository.master.tmd.GoodsDataRepository;
 import com.sk.domain.shared.repository.master.tmd.GoodsDataSourceDetailRepository;
 import com.sk.domain.shared.service.permissions.AuthorizationService;
@@ -63,6 +64,7 @@ public class MiDataDetailService {
     private final GoodsDataRepository goodsDataRepository;
     private final UploadedFileRepository uploadedFileRepository;
     private final GoodsDataCategoryRepository goodsDataCategoryRepository;
+    private final GoodsDataFileSummaryRepository goodsDataFileSummaryRepository;
     private final GoodsDataSourceDetailRepository goodsDataSourceDetailRepository;
     private final PersonalizedChartSettingRepository personalizedChartSettingRepository;
 
@@ -133,7 +135,39 @@ public class MiDataDetailService {
             recent = Stream.of(recent, pubDate).max(LocalDate::compareTo).get();
         }
 
-        return GoodsDataRes.of(goodsNo, goodsData, categoryProjections, permissionRes, authorizationService.getCompanyNoWithPriority(), recent);
+        GoodsDataRes res = GoodsDataRes.of(goodsNo, goodsData, categoryProjections, permissionRes, authorizationService.getCompanyNoWithPriority(), recent);
+
+        // 파일 요약 정보 추가
+        List<GoodsDataFileSummary> fileSummaries = goodsDataFileSummaryRepository.findByGoodsDataAndIsDeletedFalse(goodsData);
+        if (ObjectUtils.isNotEmpty(fileSummaries)) {
+            StringBuilder sb = new StringBuilder(StringUtils.defaultString(res.goodsDataExpn()));
+            boolean hasValidSummary = false;
+            for (GoodsDataFileSummary summary : fileSummaries) {
+                if (StringUtils.isNotEmpty(summary.getFileSummary())) {
+                    if (!hasValidSummary) {
+                        sb.append("\n\n## 요약");
+                        hasValidSummary = true;
+                    }
+                    sb.append("\n### ").append(summary.getFile().getOriginalFileNm());
+                    sb.append("\n").append(summary.getFileSummary()).append("\n");
+                }
+            }
+
+            if (hasValidSummary) {
+                return GoodsDataRes.builder()
+                    .goodsDataNm(res.goodsDataNm())
+                    .goodsDataExpn(sb.toString())
+                    .goodsDataSummaryCntt(res.goodsDataSummaryCntt())
+                    .providerNm(res.providerNm())
+                    .categories(res.categories())
+                    .isViewable(res.isViewable())
+                    .isDownloadable(res.isDownloadable())
+                    .auditInfo(res.auditInfo())
+                    .build();
+            }
+        }
+
+        return res;
     }
 
     /**
