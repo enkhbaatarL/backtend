@@ -66,7 +66,8 @@ public class CustomMiEventRepositoryImpl implements CustomMiEventRepository {
         List<EventListBaseRow> baseRows = queryFactory
             .select(new QEventListBaseRow(
                 miEvent.miEventId,
-                miEvent.eventTitle,
+                // note: 이벤트명은 event_title 대신 one_line_summary 표기 (요청 2026-06-08)
+                miEvent.oneLineSummary,
                 miEventTypeL1.level1Code,
                 miEventTypeL1.level1Label,
                 miEvent.isSignal,
@@ -174,7 +175,8 @@ public class CustomMiEventRepositoryImpl implements CustomMiEventRepository {
         if (keyword == null || keyword.isBlank()) {
             return;
         }
-        where.and(miEvent.eventTitle.contains(keyword.trim()));
+        // note: 이벤트명 표기를 one_line_summary 로 바꿨으므로 검색 기준도 동기화 (요청 2026-06-08)
+        where.and(miEvent.oneLineSummary.contains(keyword.trim()));
     }
 
     private OrderSpecifier<?> buildEventOrder(EventListReq request) {
@@ -187,7 +189,8 @@ public class CustomMiEventRepositoryImpl implements CustomMiEventRepository {
         EventDetailBaseRow base = queryFactory
             .select(new QEventDetailBaseRow(
                 miEvent.miEventId,
-                miEvent.eventTitle,
+                // note: 이벤트명은 event_title 대신 one_line_summary 표기 (요청 2026-06-08)
+                miEvent.oneLineSummary,
                 miEvent.createDt,
                 miEvent.modifyDt,
                 miEventTypeL1.level1Code,
