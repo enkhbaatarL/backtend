@@ -28,6 +28,7 @@ import com.sk.domain.shared.entity.master.tmd.ScenarioCase;
 import com.sk.domain.shared.entity.master.tmd.ScenarioCaseRunHistory;
 import com.sk.domain.shared.enums.Role;
 import com.sk.domain.shared.enums.fundamentalmodel.FundamentalModelCaseSearchType;
+import com.sk.domain.shared.enums.fundamentalmodel.FundamentalModelCaseStatus;
 import com.sk.domain.shared.enums.fundamentalmodel.FundamentalModelDataType;
 import com.sk.domain.shared.enums.fundamentalmodel.FundamentalModelGranularity;
 import com.sk.domain.shared.enums.fundamentalmodel.FundamentalModelRegion;
@@ -157,13 +158,27 @@ public class FundamentalModelCaseServiceImpl implements FundamentalModelCaseServ
     }
 
     @Override
+    @Transactional
     public FundamentalModelCaseDetailRes updateCase(Long caseId, FundamentalModelCaseUpdateReq request) {
-        throw new UnsupportedOperationException("Fundamental model case update DB implementation is not ready.");
+        String normalizedTitle = validateAndNormalizeTitle(request == null ? null : request.title());
+        String description = request == null ? null : request.description();
+        ScenarioCase scenarioCase = findActiveOwnedCase(caseId);
+
+        scenarioCase.updateMetadata(
+            normalizedTitle,
+            description,
+            authorizationService.getSubject()
+        );
+        scenarioCaseRepository.flush();
+
+        return getCaseDetail(caseId);
     }
 
     @Override
+    @Transactional
     public void deleteCase(Long caseId) {
-        throw new UnsupportedOperationException("Fundamental model case delete DB implementation is not ready.");
+        ScenarioCase scenarioCase = findActiveOwnedCase(caseId);
+        scenarioCase.softDelete(authorizationService.getSubject());
     }
 
     @Override
@@ -172,8 +187,21 @@ public class FundamentalModelCaseServiceImpl implements FundamentalModelCaseServ
     }
 
     @Override
+    @Transactional(readOnly = true)
     public FundamentalModelCaseStatusRes getCaseStatus(Long caseId) {
-        throw new UnsupportedOperationException("Fundamental model case status DB implementation is not ready.");
+        ScenarioCase scenarioCase = findActiveCase(caseId);
+        FundamentalModelRunStatusRes latestRun = scenarioCase.getStatus() == FundamentalModelCaseStatus.PENDING
+            ? null
+            : findLatestRun(scenarioCase.getLastRunId());
+
+        return new FundamentalModelCaseStatusRes(
+            scenarioCase.getCaseId(),
+            scenarioCase.getTitle(),
+            scenarioCase.getStatus(),
+            latestRun,
+            scenarioCase.getCreateDt(),
+            scenarioCase.getModifyDt()
+        );
     }
 
     @Override
@@ -255,6 +283,26 @@ public class FundamentalModelCaseServiceImpl implements FundamentalModelCaseServ
             return null;
         }
         return keyword.trim();
+    }
+
+    private ScenarioCase findActiveCase(Long caseId) {
+        return scenarioCaseRepository.findByCaseIdAndIsDeletedFalse(caseId)
+            .orElseThrow(() -> AppErrorException.of(
+                ResultCode.Error.RSC_NOT_FOUND,
+                "fundamental model case not found. caseId: %d".formatted(caseId)
+            ));
+    }
+
+    private ScenarioCase findActiveOwnedCase(Long caseId) {
+        ScenarioCase scenarioCase = findActiveCase(caseId);
+        Integer actorUserNo = authorizationService.getUserNo();
+        if (!scenarioCase.getUserNo().equals(actorUserNo)) {
+            throw AppErrorException.of(
+                ResultCode.Error.RSC_NOT_FOUND,
+                "fundamental model case not found. caseId: %d".formatted(caseId)
+            );
+        }
+        return scenarioCase;
     }
 
     private void validateFiles(List<MultipartFile> files) {

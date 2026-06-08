@@ -3,7 +3,7 @@
 - domain: gas
 - status: draft for 1st mock implementation
 - owner: platform BE
-- updated at: 2026-06-01 (Trade Flows API 분리 반영)
+- updated at: 2026-06-08 (run/callback DB-backed readiness sync)
 - canonical design input: [scenario-case-execution-workflow-design-draft.md](../design-docs/gas/scenario-case-execution-workflow-design-draft.md)
 - reference only:
   - Notion `MI Fundamental Model 실행` (`350263ff004c8035b20ef02683447f4b`)
@@ -432,7 +432,6 @@ Reset API 포함 판단:
 
 | 필드 | 타입 | 필수 | 설명 |
 |---|---|---|---|
-| `runId` | `String` | Y | path `runId`와 같은 `yyyymmdd_hhmmss_XXXX` 값이어야 한다. callback 재전송/감사 검증용 |
 | `status` | `String` | Y | `COMPLETED | FAILED` 만 허용 |
 | `finishedAt` | `LocalDateTime` | Y | 외부 모델 기준 실행 완료/실패 시각 |
 | `failureReason` | `String` | N | `FAILED`일 때 권장. `EXTERNAL_ERROR | UNKNOWN` 후보. `TIMEOUT`은 scheduler가 설정하는 전용 값으로 callback payload에서는 허용하지 않는다 |
@@ -1182,7 +1181,6 @@ FE는 `latestRun.startedAt`과 `latestRun.finishedAt`으로 소요시간을 계�
 | 인증 없음 | `401` | `AUTH_REQUIRED` 또는 `AUTH_TOKEN_INVALID` | 기존 security handler 따름 |
 | 권한 없음 | `403` | `AUTH_INSUFFICIENT_PERMISSIONS` 또는 `AUTH_ACCESS_DENIED` | `@RequiredPermissionRules` 결과 따름 |
 | mock store 내부 오류 | `500` | `SYS_INTERNAL_ERROR` | 예외 로그 포함 |
-| callback path `runId`와 body `runId` 불일치 | `400` | `REQ_INVALID_PARAMETER` | callback 식별자 mismatch |
 | callback 대상 `runId` 없음 | `404` | `RSC_NOT_FOUND` | 존재하지 않는 실행 |
 | callback `status`가 `COMPLETED | FAILED` 외 값 | `400` | `REQ_INVALID_PARAMETER` | terminal 상태만 허용 |
 | 이미 terminal 상태인데 동일 payload 재전송 | `200` | `SUC-000` | idempotent no-op |
@@ -1449,8 +1447,9 @@ src/main/resources/mock/fundamental-model/fundamental-model-price-data.json
 | `failureReason` | `tmd_scncaseh.fail_rsn_cd` | `TIMEOUT`, `EXTERNAL_ERROR`, `UNKNOWN` |
 | `errorMessage` | `tmd_scncaseh.err_msg_cntt` | 최대 길이 후속 확정 |
 | upload files | `tcm_filel` | `file_rel_obj_spt_cd = 'SCNCASE'`, `file_rel_obj_dstg_no = case_id` |
+| output files | `tcm_filel` | `file_rel_obj_spt_cd = 'SCNCASEH'`, `file_rel_obj_dstg_no = run_seq` |
 
-`SCNCASE`는 공통코드 등록이 필요하다. `tcm_filel.file_rel_obj_dstg_no`와 `tmd_scncasem.case_id`의 타입 호환성은 `erd-change-review`에서 재확인한다.
+`SCNCASE`/`SCNCASEH` 공통코드는 등록 완료된 것으로 implementation input을 둔다. `tcm_filel.file_rel_obj_dstg_no`와 `tmd_scncasem.case_id`/`tmd_scncaseh.run_seq`의 타입 호환성은 `erd-change-review`에서 재확인한다.
 
 Trade Flows의 fromCountries/toCountries country 목록은 base 버전/기준 정보에 따라 변동될 수 있다. region 고유값은 고정이지만 region 내 country 목록이 달라지는 구조이므로, DB-backed 전환 시 header metadata는 [mi-fundamental-model-output-result-persistence-design.md](../design-docs/gas/mi-fundamental-model-output-result-persistence-design.md)의 `tmd_scncaseh_trd_hdr_l` row table에 저장한다.
 
@@ -1633,18 +1632,17 @@ phase 1 mock 시연 동선:
 ### External Callback Handling
 
 1. path `runId`로 run record를 찾는다.
-2. body `runId`가 path `runId`와 다르면 거절한다.
-3. run이 없으면 `RSC_NOT_FOUND`.
-4. run이 `RUNNING`이면 terminal 상태로 전이한다.
-5. `status = COMPLETED`이면 run 상태와 case 최신 상태를 `COMPLETED`로 변경하고 `finishedAt`을 반영한다.
-6. `status = FAILED`이면 run 상태와 case 최신 상태를 `FAILED`로 변경하고 `failureReason`, `errorMessage`, `finishedAt`을 반영한다.
-7. 이미 terminal 상태인 run에 동일 terminal payload가 재전송되면 상태를 바꾸지 않고 `200 OK` no-op으로 응답한다. 이때 `FundamentalModelRunCallbackRes.idempotentReplay = true` 로 설정한다.
-8. 이미 terminal 상태인 run에 상이 payload가 들어오면 상태를 바꾸지 않는다. 동일 retry로 볼 수 없으면 `409 + BIZ_RULE_VIOLATION` 후보로 처리한다.
+2. run이 없으면 `RSC_NOT_FOUND`.
+3. run이 `RUNNING`이면 terminal 상태로 전이한다.
+4. `status = COMPLETED`이면 run 상태와 case 최신 상태를 `COMPLETED`로 변경하고 `finishedAt`을 반영한다.
+5. `status = FAILED`이면 run 상태와 case 최신 상태를 `FAILED`로 변경하고 `failureReason`, `errorMessage`, `finishedAt`을 반영한다.
+6. 이미 terminal 상태인 run에 동일 terminal payload가 재전송되면 상태를 바꾸지 않고 `200 OK` no-op으로 응답한다. 이때 `FundamentalModelRunCallbackRes.idempotentReplay = true` 로 설정한다.
+7. 이미 terminal 상태인 run에 상이 payload가 들어오면 상태를 바꾸지 않는다. 동일 retry로 볼 수 없으면 `409 + BIZ_RULE_VIOLATION` 후보로 처리한다.
    - 비교 키는 `status`, `failureReason`, `errorMessage` 세 필드만 사용한다. 세 필드가 모두 같으면 "동일 payload"로 간주한다.
    - `finishedAt` 은 외부 모델 retry마다 다르게 들어올 수 있으므로 비교 대상에서 제외한다.
-   - `runId` 는 path/body 일치 검증에서 이미 확인되므로 비교 키에 포함하지 않는다.
-9. timeout 등으로 이미 `FAILED` 처리된 run에 늦은 `COMPLETED` callback이 오면 상태를 되돌리지 않는다. 외부 모델 재시도 폭주를 막기 위해 `200 OK` no-op과 late callback 로그를 권장한다.
-10. callback 처리 안에서는 결과 payload materialization이나 파일 다운로드 처리를 수행하지 않는다.
+   - `runId` 는 path 식별자이므로 payload 비교 키에 포함하지 않는다.
+8. timeout 등으로 이미 `FAILED` 처리된 run에 늦은 `COMPLETED` callback이 오면 상태를 되돌리지 않는다. 외부 모델 재시도 폭주를 막기 위해 `200 OK` no-op과 late callback 로그를 권장한다.
+9. callback 처리 안에서는 결과 payload materialization이나 파일 다운로드 처리를 수행하지 않는다.
 
 ### Volumes Data Query
 
@@ -1707,7 +1705,7 @@ phase 1 mock 시연 동선:
 - Volumes 필터의 Save 토글(사용자별 필터 저장)은 1차 scope에서 제외한다. 후속 구현 시 user preference 테이블 설계가 필요하다.
 - 삭제는 phase-1에서 case active-resource 제외를 위한 soft delete만 구현한다. 보존 기간, audit 조회, 복구 정책은 후속 정책 범위다.
 - timeout은 설계 문서에서 5분 가정이 있으나 1차 mock에서는 scheduler를 구현하지 않는다.
-- 파일 3개의 의미와 파일별 역할 이름이 아직 없다. 현재 계약은 순서 기반 `files[0..2]`만 보장한다. 파일별 semantic role이 필요하면 part name을 분리해야 한다.
+- 운영 입력 파일명에는 `DEMAND`/`SUPPLY`/`TRADE` 키워드가 포함되는 것으로 확정한다. DB-backed run dispatch 전환 시 backend는 `SCNCASE + caseId` 파일 목록에서 파일명 키워드로 입력 파일 역할을 매핑한다.
 - mock store의 런타임 변경분은 서버 재시작 또는 reset 시 유실되고 seed json 기준으로 복원된다. 개발/시연 전용으로만 사용한다.
 - `caseId`를 path에 노출하므로 후속 DB 전환 시 case ownership과 권한 검증이 필수다.
 - DB-backed update/delete 전환 시 predicate는 `case_id + usr_no ownership + del_yn = 'N'`을 포함해야 한다.
@@ -1741,7 +1739,7 @@ phase 1 mock 시연 동선:
 
 아직 안정적이지 않은 항목:
 
-- 실제 Kubernetes Job 연동
+- 실제 Kubernetes Job 연동 (run/callback DB 상태 전이 slice에서는 제외)
 - callback 운영 인증/서명/재시도 세부 정책
 - 결과 파일 다운로드
 - Volumes/Trade Flows/Price DB persistence implementation (canonical table/key/partition/index design은 `mi-fundamental-model-output-result-persistence-design.md`에 확정됨)
@@ -1752,7 +1750,7 @@ phase 1 mock 시연 동선:
 
 - `tmd_scncasem`, `tmd_scncaseh`, `tcm_filel` 매핑 초안의 타입/인덱스/제약 검증
 - `tcm_filel.file_rel_obj_dstg_no`와 `case_id` 타입 호환성 검증
-- `SCNCASE` 공통코드 등록 방식 검증
+- `SCNCASE`/`SCNCASEH` 공통코드는 등록 완료된 것으로 implementation input을 둔다. DDL review에서는 환경별 코드 반영 여부와 `tcm_filel.file_rel_obj_dstg_no` 타입 호환성만 확인한다
 - `case_stat_cd`와 `exec_stat_cd` 이중 상태 저장 정합성 검증
 - `RUNNING` 중복 실행 방지를 위한 transaction/lock/index 전략 검토 (workflow draft §5 conditional master update 기준)
 - `run_id` unique 제약과 조회 인덱스 검토

@@ -96,4 +96,17 @@ public class ScenarioCase extends BaseEntity {
             .status(FundamentalModelCaseStatus.PENDING)
             .build();
     }
+
+    public void updateMetadata(String title, String description, String actorLoginId) {
+        this.title = title;
+        this.description = description;
+        this.modifyUserId = actorLoginId;
+        this.modifyDt = LocalDateTime.now();
+    }
+
+    public void softDelete(String actorLoginId) {
+        super.softDelete();
+        this.modifyUserId = actorLoginId;
+        this.modifyDt = LocalDateTime.now();
+    }
 }
