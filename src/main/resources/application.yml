@@ -108,9 +108,9 @@ mi:
     mock:
       fundamental-model-cases:
         api:
-          list-cases: true
-          create-case: true
-          get-detail: true
+          list-cases: false
+          create-case: false
+          get-detail: false
           update: true
           delete: true
           run: true

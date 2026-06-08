@@ -81,6 +81,7 @@ public class FundamentalModelCaseMockService {
     private static final int REQUIRED_FILE_COUNT = 3;
     private static final int TITLE_MAX_LENGTH = 200;
     private static final DateTimeFormatter RUN_ID_TIMESTAMP_FORMATTER = DateTimeFormatter.ofPattern("yyyyMMdd_HHmmss");
+    private static final int MOCK_ASSIGNEE_USER_NO = 1;
     private static final String MOCK_ASSIGNEE_NAME = "홍길동";
     private static final String DELETE_YN_Y = "Y";
     private static final String DELETE_YN_N = "N";
@@ -143,6 +144,7 @@ public class FundamentalModelCaseMockService {
             description,
             FundamentalModelCaseStatus.PENDING,
             MOCK_ASSIGNEE_NAME,
+            MOCK_ASSIGNEE_USER_NO,
             fileRecords,
             null,
             DELETE_YN_N,
@@ -820,6 +822,7 @@ public class FundamentalModelCaseMockService {
                 caseNode.path("description").asText(null),
                 FundamentalModelCaseStatus.from(caseNode.path("status").asText()),
                 caseNode.path("assigneeName").asText(MOCK_ASSIGNEE_NAME),
+                caseNode.path("assigneeUserNo").asInt(MOCK_ASSIGNEE_USER_NO),
                 readFiles(caseNode.path("files")),
                 caseNode.path("latestRunId").isMissingNode() || caseNode.path("latestRunId").isNull()
                     ? null
@@ -1313,6 +1316,7 @@ public class FundamentalModelCaseMockService {
             record.description(),
             record.status(),
             record.assigneeName(),
+            record.assigneeUserNo(),
             record.files().stream().map(this::toFileResponse).toList(),
             latestRun,
             record.createdAt(),
@@ -1444,6 +1448,7 @@ public class FundamentalModelCaseMockService {
         String description,
         FundamentalModelCaseStatus status,
         String assigneeName,
+        Integer assigneeUserNo,
         List<FundamentalModelFileMockRecord> files,
         String latestRunId,
         String delYn,
@@ -1458,6 +1463,7 @@ public class FundamentalModelCaseMockService {
                 description,
                 status,
                 assigneeName,
+                assigneeUserNo,
                 files,
                 latestRunId,
                 delYn,
@@ -1473,6 +1479,7 @@ public class FundamentalModelCaseMockService {
                 description,
                 status,
                 assigneeName,
+                assigneeUserNo,
                 files,
                 latestRunId,
                 DELETE_YN_Y,
@@ -1488,6 +1495,7 @@ public class FundamentalModelCaseMockService {
                 description,
                 FundamentalModelCaseStatus.RUNNING,
                 assigneeName,
+                assigneeUserNo,
                 files,
                 runId,
                 delYn,
@@ -1503,6 +1511,7 @@ public class FundamentalModelCaseMockService {
                 description,
                 terminalStatus,
                 assigneeName,
+                assigneeUserNo,
                 files,
                 latestRunId,
                 delYn,

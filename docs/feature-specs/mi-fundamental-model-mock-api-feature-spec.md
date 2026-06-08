@@ -20,6 +20,7 @@
 | 이 feature spec | API 구현 계약 | endpoint path, method, DTO field, response shape, error/status mapping, phase 1 mock behavior |
 | [scenario-case-execution-workflow-design-draft.md](../design-docs/gas/scenario-case-execution-workflow-design-draft.md) | workflow/domain design | Scenario Case aggregate, state transition, callback/timeout semantics, future persistence rationale |
 | [scenario-case-execution-erd-ddl-draft.md](../design-docs/gas/scenario-case-execution-erd-ddl-draft.md) | DBA rollout 계약 | physical table/column DDL, index, common-code registration, pre-check/apply/rollback/verify SQL (현재 template 상태) |
+| [mi-fundamental-model-output-result-persistence-design.md](../design-docs/gas/mi-fundamental-model-output-result-persistence-design.md) | output result persistence 설계 | Volumes / Trade Flows / Price parsed result table, key, index, partition-ready strategy, mock→real 전환 경계 |
 | `docs/work-notes/**` | 실행 이력 | changed files, verification, accepted decisions, superseded decisions, residual risks |
 | Notion / Slack / Figma | external evidence/share artifact | repo 문서로 정규화되기 전까지 canonical contract가 아니다 |
 
@@ -155,7 +156,7 @@ MI Fundamental Model의 1차 mock API는 MI Fundamental Model 화면에서 사�
 | 결과 파일 다운로드 | phase 1 제외 | result/download API feature spec + result/file ERD review |
 | 운영 Kubernetes Job dispatch | phase 1 제외 | external model interface spec + workflow design |
 | callback 인증/서명/재시도 | mock 구현 밖의 운영 정책 | security/integration design + feature spec update |
-| DB persistence / DDL (volumes/price 포함) | phase 1 제외. mock은 json seed | canonical DDL/ERD artifact. `scenario_id` 상태는 §7.2 Future DB Mapping Notes의 superseded note를 기준으로 해석한다 |
+| DB persistence / DDL (volumes/trade flows/price 포함) | phase 1 제외. mock은 json seed | case/run DDL은 `scenario-case-execution-erd-ddl-draft.md`, output result data persistence는 `mi-fundamental-model-output-result-persistence-design.md` |
 | Ownership scope | DB-backed 확정 사항 | `usr_no` only로 확정. 조직/부서/tenant 정책 키는 본 모델에 추가하지 않는다 |
 | `ASSIGNEE_NAME` DB 검색 경계 | DB-backed 확정 사항 + 검증 필요 | `tmd_scncasem.usr_no = tmd_usrm.usr_no` JOIN, 표시값 `tmd_usrm.usr_nm` 사용. rollout 전 JOIN 양측 인덱스 EXPLAIN 검증 필요 |
 | timeout scheduler | phase 1 제외 | DB-backed scheduler design + query/EXPLAIN verification |
@@ -591,6 +592,7 @@ Reset API 포함 판단:
   "description": "May demand shock scenario case",
   "status": "RUNNING",
   "assigneeName": "홍길동",
+  "assigneeUserNo": 1,
   "files": [
     {
       "fileNo": 1011,
@@ -621,6 +623,7 @@ Reset API 포함 판단:
 | `description` | `String` | case 설명 |
 | `status` | `FundamentalModelCaseStatus` | case 최신 상태 |
 | `assigneeName` | `String` | case를 업로드한 사용자 이름. mock에서는 고정값 사용 |
+| `assigneeUserNo` | `Integer` | case를 업로드한 사용자 번호. DB-backed 구현에서는 `tmd_scncasem.usr_no` |
 | `files` | `List<FundamentalModelCaseFileRes>` | 업로드 파일 metadata |
 | `latestRun` | `FundamentalModelRunStatusRes` | 최신 실행 정보. `PENDING`이면 `null` |
 | `createdAt` | `LocalDateTime` | case 생성 시각 |
@@ -1285,7 +1288,7 @@ seed 파일은 다음 최상위 구조를 가진다.
 
 | Store 객체 | 역할 |
 |---|---|
-| `FundamentalModelCaseMockRecord` | `caseId`, title, description, status, `assigneeName`, `files: List<FundamentalModelFileMockRecord>`, latestRunId, delYn, timestamps |
+| `FundamentalModelCaseMockRecord` | `caseId`, title, description, status, `assigneeName`, `assigneeUserNo`, `files: List<FundamentalModelFileMockRecord>`, latestRunId, delYn, timestamps |
 | `FundamentalModelRunMockRecord` | `runId`, `caseId`, status, requestedAt, startedAt, finishedAt, failureReason, errorMessage |
 | `FundamentalModelFileMockRecord` | fileNo, fileIndex, originalFileName, contentType, size |
 
@@ -1298,9 +1301,9 @@ seed 파일은 다음 최상위 구조를 가진다.
 - `ConcurrentHashMap<Long, FundamentalModelCaseMockRecord>`와 `ConcurrentHashMap<String, FundamentalModelRunMockRecord>` 또는 synchronized service method를 사용한다.
 - run 요청의 `RUNNING` 중복 차단은 check-and-set이 한 critical section 안에서 수행되어야 한다.
 
-#### Volumes/Price 결과 데이터 mock seed
+#### Volumes/Trade Flows/Price 결과 데이터 mock seed
 
-Volumes/Price 결과 데이터는 별도 json seed 파일로 관리한다. figma 화면 데이터를 기반으로 직접 작성한다.
+Volumes/Trade Flows/Price 결과 데이터는 별도 json seed 파일로 관리한다. figma 화면 데이터를 기반으로 직접 작성한다.
 
 **파일 경로:**
 
@@ -1378,7 +1381,7 @@ src/main/resources/mock/fundamental-model/fundamental-model-price-data.json
 - `country=null`은 해당 지역의 집계 행/열을 나타낸다.
 - `flows`는 0이 아닌 값만 포함한다. `toRegion=null`인 flows는 Total 행에 대응한다.
 - `fromCountries`와 `toCountries`는 base 버전/기준 정보에 따라 country 목록이 달라질 수 있다. region 고유값은 `FundamentalModelRegion` enum으로 고정된다.
-- DB 전환 시 country 목록의 동적 변동 특성을 고려한 컬럼 메타데이터 저장 전략이 필요하다 (§7.2 참고).
+- DB 전환 시 country 목록의 동적 변동 특성은 [mi-fundamental-model-output-result-persistence-design.md](../design-docs/gas/mi-fundamental-model-output-result-persistence-design.md)의 `tmd_scncaseh_trd_hdr_l` header row table 설계를 따른다.
 
 **`fundamental-model-price-data.json` 최상위 구조:**
 
@@ -1436,6 +1439,8 @@ src/main/resources/mock/fundamental-model/fundamental-model-price-data.json
 | `description` | `tmd_scncasem.case_expn` | nullable |
 | `delYn` | `tmd_scncasem.del_yn` | soft delete flag. active resource 조회 조건은 `del_yn = 'N'` |
 | `status` | `tmd_scncasem.case_stat_cd` | 최신 상태 cache 역할 |
+| `assigneeUserNo` | `tmd_scncasem.usr_no` | 상세 응답에서 업로더 사용자 번호로 반환 |
+| `assigneeName` | `tmd_usrm.usr_nm` | `tmd_scncasem.usr_no = tmd_usrm.usr_no` JOIN 표시값 |
 | `latestRunId` | `tmd_scncasem.last_run_id` | `VARCHAR(20) NULL`. `tmd_scncaseh.run_id` 에 대한 application-validated 논리 참조이며 물리 FK 없음. `case_stat_cd` 와 invariant 동기화 |
 | `runId` | `tmd_scncaseh.run_id` | `VARCHAR(20)` + unique. backend-generated `yyyymmdd_hhmmss_XXXX` |
 | run status | `tmd_scncaseh.exec_stat_cd` | execution 관점 상태 |
@@ -1447,7 +1452,7 @@ src/main/resources/mock/fundamental-model/fundamental-model-price-data.json
 
 `SCNCASE`는 공통코드 등록이 필요하다. `tcm_filel.file_rel_obj_dstg_no`와 `tmd_scncasem.case_id`의 타입 호환성은 `erd-change-review`에서 재확인한다.
 
-Trade Flows의 fromCountries/toCountries country 목록은 base 버전/기준 정보에 따라 변동될 수 있다. region 고유값은 고정이지만 region 내 country 목록이 달라지는 구조이므로, DB 전환 시 country 목록을 별도 메타데이터 테이블로 관리하거나 JSON 컬럼으로 저장하는 전략을 ERD review에서 검토한다.
+Trade Flows의 fromCountries/toCountries country 목록은 base 버전/기준 정보에 따라 변동될 수 있다. region 고유값은 고정이지만 region 내 country 목록이 달라지는 구조이므로, DB-backed 전환 시 header metadata는 [mi-fundamental-model-output-result-persistence-design.md](../design-docs/gas/mi-fundamental-model-output-result-persistence-design.md)의 `tmd_scncaseh_trd_hdr_l` row table에 저장한다.
 
 결과 payload/pointer 컬럼은 phase 1 scope에서 제외하기로 결정되었다 (workflow draft Closed Decisions 참고). callback 처리 안에서 결과 데이터를 저장하지 않으며, 결과 조회/download 가 별도 spec으로 확정되면 그 시점에 컬럼 또는 별도 테이블을 재검토한다.
 
@@ -1697,7 +1702,7 @@ phase 1 mock 시연 동선:
 - 외부 모델 완료 동기화는 callback 방식으로 확정한다. phase 1 mock은 callback endpoint를 구현한다. 남은 항목은 실제 Kubernetes Job 연동용 인증 방식, header/signature 규격, retry 정책이다.
 - `run_id` 생성 주체는 backend로 확정한다. 생성 포맷은 `yyyymmdd_hhmmss_XXXX` 이다. Kubernetes Job 연동 계약에서는 backend가 Job/pod에 전달한 `run_id` 를 완료/실패 callback path에 그대로 사용하는지만 확인한다.
 - 결과 payload와 결과 파일은 model pod가 S3/object storage에 저장/관리하며 backend 소관이 아니다. 1차 범위에서는 backend가 result pointer/reference도 저장하지 않는다.
-- Volumes/Price 결과 데이터는 1차 mock에서 json seed 기반 고정 응답으로 처리한다. DB 전환 시 volumes/price 데이터를 저장할 테이블 구조(컬럼, 파티션, 인덱스 전략)는 별도 ERD review가 필요하다.
+- Volumes/Trade Flows/Price 결과 데이터는 1차 mock에서 json seed 기반 고정 응답으로 처리한다. DB-backed 전환 시 parsed result table, key, partition/index, mock-to-real 경계는 [mi-fundamental-model-output-result-persistence-design.md](../design-docs/gas/mi-fundamental-model-output-result-persistence-design.md)를 따른다.
 - 결과 파일 다운로드는 이번 1차 scope에서 제외한다. 단, status response의 `latestRun.runId`는 후속 결과 조회의 연결 키가 될 수 있다.
 - Volumes 필터의 Save 토글(사용자별 필터 저장)은 1차 scope에서 제외한다. 후속 구현 시 user preference 테이블 설계가 필요하다.
 - 삭제는 phase-1에서 case active-resource 제외를 위한 soft delete만 구현한다. 보존 기간, audit 조회, 복구 정책은 후속 정책 범위다.
@@ -1739,7 +1744,7 @@ phase 1 mock 시연 동선:
 - 실제 Kubernetes Job 연동
 - callback 운영 인증/서명/재시도 세부 정책
 - 결과 파일 다운로드
-- Volumes/Price DB persistence/DDL (테이블 구조, 파티션, 인덱스 전략)
+- Volumes/Trade Flows/Price DB persistence implementation (canonical table/key/partition/index design은 `mi-fundamental-model-output-result-persistence-design.md`에 확정됨)
 - timeout scheduler
 - Volumes 필터 Save 기능 (user preference 저장)
 

@@ -12,23 +12,32 @@ import com.sk.domain.mi.dto.response.fundamentalmodel.FilterOption;
 import com.sk.domain.mi.dto.response.fundamentalmodel.FundamentalModelCaseCreateRes;
 import com.sk.domain.mi.dto.response.fundamentalmodel.FundamentalModelCaseDetailRes;
 import com.sk.domain.mi.dto.response.fundamentalmodel.FundamentalModelCaseFileRes;
+import com.sk.domain.mi.dto.response.fundamentalmodel.FundamentalModelCaseListItemRes;
 import com.sk.domain.mi.dto.response.fundamentalmodel.FundamentalModelCaseListRes;
 import com.sk.domain.mi.dto.response.fundamentalmodel.FundamentalModelCaseStatusRes;
 import com.sk.domain.mi.dto.response.fundamentalmodel.FundamentalModelPriceRes;
 import com.sk.domain.mi.dto.response.fundamentalmodel.FundamentalModelRunAcceptRes;
 import com.sk.domain.mi.dto.response.fundamentalmodel.FundamentalModelRunCallbackRes;
+import com.sk.domain.mi.dto.response.fundamentalmodel.FundamentalModelRunStatusRes;
 import com.sk.domain.mi.dto.response.fundamentalmodel.FundamentalModelTradeFlowsRes;
 import com.sk.domain.mi.dto.response.fundamentalmodel.FundamentalModelVolumesFilterOptionsRes;
 import com.sk.domain.mi.dto.response.fundamentalmodel.FundamentalModelVolumesRes;
 import com.sk.domain.mi.dto.response.fundamentalmodel.VolumesSegmentFilterOptions;
+import com.sk.domain.shared.entity.master.tcm.UploadedFile;
 import com.sk.domain.shared.entity.master.tmd.ScenarioCase;
+import com.sk.domain.shared.entity.master.tmd.ScenarioCaseRunHistory;
 import com.sk.domain.shared.enums.Role;
+import com.sk.domain.shared.enums.fundamentalmodel.FundamentalModelCaseSearchType;
 import com.sk.domain.shared.enums.fundamentalmodel.FundamentalModelDataType;
 import com.sk.domain.shared.enums.fundamentalmodel.FundamentalModelGranularity;
 import com.sk.domain.shared.enums.fundamentalmodel.FundamentalModelRegion;
 import com.sk.domain.shared.enums.fundamentalmodel.FundamentalModelSegment;
 import com.sk.domain.shared.enums.fundamentalmodel.TradeFlowDirection;
+import com.sk.domain.shared.repository.master.tcm.UploadedFileRepository;
 import com.sk.domain.shared.repository.master.tmd.ScenarioCaseRepository;
+import com.sk.domain.shared.repository.master.tmd.ScenarioCaseRunHistoryRepository;
+import com.sk.domain.shared.repository.master.tmd.projection.ScenarioCaseDetailRow;
+import com.sk.domain.shared.repository.master.tmd.projection.ScenarioCaseListRow;
 import com.sk.domain.shared.service.FileService;
 import com.sk.domain.shared.service.permissions.AuthorizationService;
 import java.util.ArrayList;
@@ -50,12 +59,31 @@ public class FundamentalModelCaseServiceImpl implements FundamentalModelCaseServ
     private static final String FILE_RELATION_SCENARIO_CASE = "SCNCASE";
 
     private final ScenarioCaseRepository scenarioCaseRepository;
+    private final ScenarioCaseRunHistoryRepository scenarioCaseRunHistoryRepository;
+    private final UploadedFileRepository uploadedFileRepository;
     private final FileService fileService;
     private final AuthorizationService authorizationService;
 
     @Override
+    @Transactional(readOnly = true)
     public FundamentalModelCaseListRes listCases(FundamentalModelCaseListReq request) {
-        throw new UnsupportedOperationException("Fundamental model case list DB implementation is not ready.");
+        FundamentalModelCaseSearchType searchType = request == null ? null : request.searchType();
+        String keyword = normalizeKeyword(request == null ? null : request.keyword());
+        if (keyword != null && searchType == null) {
+            throw AppErrorException.of(
+                ResultCode.Error.REQ_INVALID_PARAMETER,
+                "keyword가 전달되면 searchType은 필수입니다."
+            );
+        }
+        if (keyword == null) {
+            searchType = null;
+        }
+
+        List<FundamentalModelCaseListItemRes> cases = scenarioCaseRepository.findListRows(searchType, keyword)
+            .stream()
+            .map(this::toListItemResponse)
+            .toList();
+        return new FundamentalModelCaseListRes(cases.size(), cases);
     }
 
     @Override
@@ -103,8 +131,29 @@ public class FundamentalModelCaseServiceImpl implements FundamentalModelCaseServ
     }
 
     @Override
+    @Transactional(readOnly = true)
     public FundamentalModelCaseDetailRes getCaseDetail(Long caseId) {
-        throw new UnsupportedOperationException("Fundamental model case detail DB implementation is not ready.");
+        ScenarioCaseDetailRow caseRow = scenarioCaseRepository.findDetailRow(caseId)
+            .orElseThrow(() -> AppErrorException.of(
+                ResultCode.Error.RSC_NOT_FOUND,
+                "fundamental model case not found. caseId: %d".formatted(caseId)
+            ));
+
+        List<FundamentalModelCaseFileRes> files = findCaseFiles(caseId);
+        FundamentalModelRunStatusRes latestRun = findLatestRun(caseRow.lastRunId());
+
+        return new FundamentalModelCaseDetailRes(
+            caseRow.caseId(),
+            caseRow.title(),
+            caseRow.description(),
+            caseRow.status(),
+            caseRow.assigneeName(),
+            caseRow.assigneeUserNo(),
+            files,
+            latestRun,
+            caseRow.createdAt(),
+            caseRow.updatedAt()
+        );
     }
 
     @Override
@@ -201,6 +250,13 @@ public class FundamentalModelCaseServiceImpl implements FundamentalModelCaseServ
         return normalized;
     }
 
+    private String normalizeKeyword(String keyword) {
+        if (keyword == null || keyword.trim().isEmpty()) {
+            return null;
+        }
+        return keyword.trim();
+    }
+
     private void validateFiles(List<MultipartFile> files) {
         if (files == null || files.size() != REQUIRED_FILE_COUNT) {
             throw AppErrorException.of(
@@ -259,5 +315,58 @@ public class FundamentalModelCaseServiceImpl implements FundamentalModelCaseServ
 
     private String buildStatusEndpoint(Long caseId) {
         return "/api/v1/mi/fundamental-model/cases/%d/status".formatted(caseId);
+    }
+
+    private FundamentalModelCaseListItemRes toListItemResponse(ScenarioCaseListRow row) {
+        return new FundamentalModelCaseListItemRes(
+            row.caseId(),
+            row.title(),
+            row.status(),
+            row.assigneeName(),
+            row.createdAt(),
+            row.updatedAt()
+        );
+    }
+
+    private List<FundamentalModelCaseFileRes> findCaseFiles(Long caseId) {
+        List<UploadedFile> uploadedFiles = uploadedFileRepository.findActiveRelationshipFilesOrderByFileNoAsc(
+            Math.toIntExact(caseId),
+            FILE_RELATION_SCENARIO_CASE
+        );
+
+        List<FundamentalModelCaseFileRes> files = new ArrayList<>();
+        for (int index = 0; index < uploadedFiles.size(); index++) {
+            UploadedFile uploadedFile = uploadedFiles.get(index);
+            files.add(new FundamentalModelCaseFileRes(
+                uploadedFile.getFileNo(),
+                index + 1,
+                uploadedFile.getOriginalFileNm(),
+                uploadedFile.getMimeTypeNm(),
+                uploadedFile.getFileSize()
+            ));
+        }
+        return files;
+    }
+
+    private FundamentalModelRunStatusRes findLatestRun(String lastRunId) {
+        if (lastRunId == null) {
+            return null;
+        }
+
+        return scenarioCaseRunHistoryRepository.findById(lastRunId)
+            .map(this::toLatestRunResponse)
+            .orElse(null);
+    }
+
+    private FundamentalModelRunStatusRes toLatestRunResponse(ScenarioCaseRunHistory runHistory) {
+        return new FundamentalModelRunStatusRes(
+            runHistory.getRunId(),
+            runHistory.getStatus(),
+            runHistory.getCreateDt(),
+            runHistory.getExecutionBeginDt(),
+            runHistory.getExecutionEndDt(),
+            runHistory.getFailureReasonCode(),
+            runHistory.getErrorMessage()
+        );
     }
 }
