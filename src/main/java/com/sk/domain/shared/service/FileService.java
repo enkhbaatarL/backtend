@@ -1,26 +1,7 @@
 package com.sk.domain.shared.service;
 
-import com.amazonaws.util.IOUtils;
-import java.io.ByteArrayOutputStream;
-import java.io.IOException;
-import java.net.MalformedURLException;
-import java.net.URL;
-import java.text.Normalizer;
-import java.util.Arrays;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
-import java.util.UUID;
-import java.util.zip.ZipEntry;
-import java.util.zip.ZipOutputStream;
-
-import org.apache.commons.io.FilenameUtils;
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
-import org.springframework.web.multipart.MultipartFile;
-
 import com.amazonaws.services.s3.model.S3ObjectInputStream;
+import com.amazonaws.util.IOUtils;
 import com.sk.common.enums.ResultCode;
 import com.sk.common.exception.AppErrorException;
 import com.sk.common.utils.DateUtil;
@@ -33,9 +14,25 @@ import com.sk.domain.shared.entity.master.tcm.UploadedFile;
 import com.sk.domain.shared.enums.FileRelationshipObjectSeparateCode;
 import com.sk.domain.shared.enums.Role;
 import com.sk.domain.shared.repository.master.tcm.UploadedFileRepository;
-
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
+import java.net.MalformedURLException;
+import java.net.URL;
+import java.text.Normalizer;
+import java.util.Arrays;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
+import java.util.UUID;
+import java.util.zip.ZipEntry;
+import java.util.zip.ZipOutputStream;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.io.FilenameUtils;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.multipart.MultipartFile;
 
 @Slf4j
 @Service
@@ -119,6 +116,39 @@ public class FileService {
     }
 
     /**
+     * 파일을 지정 relation으로 바로 업로드 한다.
+     *
+     * @param companyCd 회사코드
+     * @param role 역할
+     * @param file 단일 파일 업로드
+     * @param isPublic 공용 여부
+     * @param fileRelationshipObjectDistinguishNo 파일관계객체식별번호
+     * @param fileRelationshipObjectSeparateCode 파일관계객체구분코드
+     * @return FileUploadRes
+     */
+    @Transactional
+    public FileUploadRes uploadFileToRelationship(
+            String companyCd,
+            Role role,
+            MultipartFile file,
+            boolean isPublic,
+            Integer fileRelationshipObjectDistinguishNo,
+            String fileRelationshipObjectSeparateCode) {
+        if (fileRelationshipObjectDistinguishNo == null || fileRelationshipObjectSeparateCode == null || fileRelationshipObjectSeparateCode.isBlank()) {
+            throw AppErrorException.of(ResultCode.Error.REQ_INVALID_PARAMETER, "파일 relation 정보가 올바르지 않습니다.");
+        }
+
+        return upload(
+                companyCd,
+                role,
+                file,
+                isPublic,
+                null,
+                fileRelationshipObjectSeparateCode,
+                fileRelationshipObjectDistinguishNo);
+    }
+
+    /**
      * 정형파일을 업로드 한다.
      * 정형파일 업로드시 OAuth2.0 인증의 경우 버킷 디렉토리가 정형 디렉토리로 바로 설정된다.
      *
@@ -150,6 +180,17 @@ public class FileService {
      * @return FileUploadRes
      */
     private FileUploadRes upload(String companyCd, Role role, MultipartFile file, boolean isPublic, String fileHash, String separateCode) {
+        return upload(companyCd, role, file, isPublic, fileHash, separateCode, 0);
+    }
+
+    private FileUploadRes upload(
+            String companyCd,
+            Role role,
+            MultipartFile file,
+            boolean isPublic,
+            String fileHash,
+            String separateCode,
+            Integer fileRelationshipObjectDistinguishNo) {
         if (file == null) {
             throw AppErrorException.of(ResultCode.Error.FILE_INVALID);
         }
@@ -158,6 +199,8 @@ public class FileService {
             throw AppErrorException.of(ResultCode.Error.FILE_SIZE_ERROR);
         }
 
+        String uploadedBucketName = null;
+        String uploadedFileName = null;
         try {
             String originalFileNm = Normalizer.normalize(file.getOriginalFilename(), Normalizer.Form.NFC);
             String fileExtNm = originalFileNm.substring(originalFileNm.lastIndexOf('.') + 1).toLowerCase();
@@ -170,12 +213,13 @@ public class FileService {
             String storagePathNm = PathUtil.IncludeTrailingPathDelimiter(endPoint) + PathUtil.IncludeTrailingPathDelimiter(bucketName)
                     + PathUtil.IncludeTrailingPathDelimiter(separateCode)
                     + storageFileNm;
-            Integer fileRelationshipObjectDistinguishNo = 0;
             String fileRelationshipObjectSeparateCd = separateCode;
 
             // Object Storage 저장
             String fileName = PathUtil.IncludeTrailingPathDelimiter(separateCode) + storageFileNm;
             String fileUrl = objectStorageService.uploadFile(file, bucketName, fileName, isPublic);
+            uploadedBucketName = bucketName;
+            uploadedFileName = fileName;
 
             // DB 에 저장
             UploadedFile savedUploadedFile = uploadedFileRepository.save(UploadedFile.of(
@@ -192,7 +236,20 @@ public class FileService {
 
             return FileUploadRes.of(savedUploadedFile.getFileNo(), originalFileNm, fileSize, fileUrl);
         } catch (Exception e) {
+            deleteUploadedObjectQuietly(uploadedBucketName, uploadedFileName);
             throw AppErrorException.of(ResultCode.Error.SYS_INTERNAL_ERROR, "파일 업로드 중 오류가 발생했습니다." + e.getMessage());
+        }
+    }
+
+    private void deleteUploadedObjectQuietly(String bucketName, String fileName) {
+        if (bucketName == null || fileName == null) {
+            return;
+        }
+
+        try {
+            objectStorageService.deleteFile(bucketName, fileName);
+        } catch (Exception deleteException) {
+            log.warn("Failed to compensate uploaded object. bucketName={}, fileName={}", bucketName, fileName, deleteException);
         }
     }
 

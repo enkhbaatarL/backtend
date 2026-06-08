@@ -81,6 +81,7 @@ public class FundamentalModelCaseMockService {
     private static final int REQUIRED_FILE_COUNT = 3;
     private static final int TITLE_MAX_LENGTH = 200;
     private static final DateTimeFormatter RUN_ID_TIMESTAMP_FORMATTER = DateTimeFormatter.ofPattern("yyyyMMdd_HHmmss");
+    private static final int MOCK_ASSIGNEE_USER_NO = 1;
     private static final String MOCK_ASSIGNEE_NAME = "홍길동";
     private static final String DELETE_YN_Y = "Y";
     private static final String DELETE_YN_N = "N";
@@ -143,6 +144,7 @@ public class FundamentalModelCaseMockService {
             description,
             FundamentalModelCaseStatus.PENDING,
             MOCK_ASSIGNEE_NAME,
+            MOCK_ASSIGNEE_USER_NO,
             fileRecords,
             null,
             DELETE_YN_N,
@@ -240,7 +242,6 @@ public class FundamentalModelCaseMockService {
     }
 
     public synchronized FundamentalModelVolumesRes getVolumes(Long caseId, FundamentalModelVolumesReq request) {
-        FundamentalModelCaseMockRecord caseRecord = getResultReadyCaseRecord(caseId);
         FundamentalModelSegment segment = validateSegment(request);
         FundamentalModelGranularity granularity = request == null || request.granularity() == null
             ? FundamentalModelGranularity.MONTHLY
@@ -264,7 +265,7 @@ public class FundamentalModelCaseMockService {
         }
 
         return new FundamentalModelVolumesRes(
-            caseRecord.caseId(),
+            caseId,
             segment,
             granularity,
             FundamentalModelVolumeUnit.MTPA,
@@ -275,8 +276,6 @@ public class FundamentalModelCaseMockService {
     }
 
     public synchronized FundamentalModelTradeFlowsRes getTradeFlows(Long caseId, FundamentalModelTradeFlowsReq request) {
-        FundamentalModelCaseMockRecord caseRecord = getResultReadyCaseRecord(caseId);
-
         if (request == null || request.selector() == null) {
             throw AppErrorException.of(ResultCode.Error.REQ_INVALID_PARAMETER, "selector는 필수입니다.");
         }
@@ -307,7 +306,7 @@ public class FundamentalModelCaseMockService {
             appendFromTotalFlows(filteredTo, filteredFlows);
 
         return new FundamentalModelTradeFlowsRes(
-            caseRecord.caseId(),
+            caseId,
             request.selector(),
             request.year(),
             unit,
@@ -319,9 +318,8 @@ public class FundamentalModelCaseMockService {
     }
 
     public synchronized FundamentalModelPriceRes getPrice(Long caseId) {
-        FundamentalModelCaseMockRecord caseRecord = getResultReadyCaseRecord(caseId);
         return new FundamentalModelPriceRes(
-            caseRecord.caseId(),
+            caseId,
             priceSeed.chart(),
             priceSeed.annualTable(),
             priceSeed.monthlyTable()
@@ -820,6 +818,7 @@ public class FundamentalModelCaseMockService {
                 caseNode.path("description").asText(null),
                 FundamentalModelCaseStatus.from(caseNode.path("status").asText()),
                 caseNode.path("assigneeName").asText(MOCK_ASSIGNEE_NAME),
+                caseNode.path("assigneeUserNo").asInt(MOCK_ASSIGNEE_USER_NO),
                 readFiles(caseNode.path("files")),
                 caseNode.path("latestRunId").isMissingNode() || caseNode.path("latestRunId").isNull()
                     ? null
@@ -840,7 +839,7 @@ public class FundamentalModelCaseMockService {
         List<FundamentalModelFileMockRecord> records = new ArrayList<>();
         for (JsonNode fileNode : filesNode) {
             records.add(new FundamentalModelFileMockRecord(
-                fileNode.path("mockFileId").asText(),
+                readMockFileNo(fileNode),
                 fileNode.path("fileIndex").asInt(),
                 fileNode.path("originalFileName").asText(null),
                 fileNode.path("contentType").asText(null),
@@ -1266,7 +1265,7 @@ public class FundamentalModelCaseMockService {
             MultipartFile file = files.get(index);
             int fileIndex = index + 1;
             records.add(new FundamentalModelFileMockRecord(
-                "mock_file_%d_%d".formatted(caseId, fileIndex),
+                buildMockFileNo(caseId, fileIndex),
                 fileIndex,
                 file.getOriginalFilename(),
                 file.getContentType(),
@@ -1313,6 +1312,7 @@ public class FundamentalModelCaseMockService {
             record.description(),
             record.status(),
             record.assigneeName(),
+            record.assigneeUserNo(),
             record.files().stream().map(this::toFileResponse).toList(),
             latestRun,
             record.createdAt(),
@@ -1337,12 +1337,37 @@ public class FundamentalModelCaseMockService {
 
     private FundamentalModelCaseFileRes toFileResponse(FundamentalModelFileMockRecord record) {
         return new FundamentalModelCaseFileRes(
+            record.fileNo(),
             record.fileIndex(),
             record.originalFileName(),
             record.contentType(),
-            record.size(),
-            record.mockFileId()
+            record.size()
         );
+    }
+
+    private long buildMockFileNo(Long caseId, int fileIndex) {
+        return caseId * 10 + fileIndex;
+    }
+
+    private long readMockFileNo(JsonNode fileNode) {
+        JsonNode fileNoNode = fileNode.path("fileNo");
+        if (fileNoNode.canConvertToLong()) {
+            return fileNoNode.asLong();
+        }
+
+        String legacyMockFileId = fileNode.path("mockFileId").asText("");
+        if (!legacyMockFileId.isBlank()) {
+            String[] tokens = legacyMockFileId.split("_");
+            if (tokens.length >= 4) {
+                try {
+                    return buildMockFileNo(Long.parseLong(tokens[2]), Integer.parseInt(tokens[3]));
+                } catch (NumberFormatException ignored) {
+                    // Fall through to deterministic fallback.
+                }
+            }
+        }
+
+        return 0L;
     }
 
     private FundamentalModelCaseStatus toCaseStatus(FundamentalModelRunStatus status) {
@@ -1370,7 +1395,7 @@ public class FundamentalModelCaseMockService {
             .filter(f -> f.originalFileName() != null
                 && f.originalFileName().toUpperCase(Locale.ROOT).contains(keyword))
             .findFirst()
-            .map(f -> "mock-storage://" + f.mockFileId())
+            .map(f -> "mock-storage://" + f.fileNo())
             .orElse(null);
     }
 
@@ -1419,6 +1444,7 @@ public class FundamentalModelCaseMockService {
         String description,
         FundamentalModelCaseStatus status,
         String assigneeName,
+        Integer assigneeUserNo,
         List<FundamentalModelFileMockRecord> files,
         String latestRunId,
         String delYn,
@@ -1433,6 +1459,7 @@ public class FundamentalModelCaseMockService {
                 description,
                 status,
                 assigneeName,
+                assigneeUserNo,
                 files,
                 latestRunId,
                 delYn,
@@ -1448,6 +1475,7 @@ public class FundamentalModelCaseMockService {
                 description,
                 status,
                 assigneeName,
+                assigneeUserNo,
                 files,
                 latestRunId,
                 DELETE_YN_Y,
@@ -1463,6 +1491,7 @@ public class FundamentalModelCaseMockService {
                 description,
                 FundamentalModelCaseStatus.RUNNING,
                 assigneeName,
+                assigneeUserNo,
                 files,
                 runId,
                 delYn,
@@ -1478,6 +1507,7 @@ public class FundamentalModelCaseMockService {
                 description,
                 terminalStatus,
                 assigneeName,
+                assigneeUserNo,
                 files,
                 latestRunId,
                 delYn,
@@ -1518,7 +1548,7 @@ public class FundamentalModelCaseMockService {
     }
 
     private record FundamentalModelFileMockRecord(
-        String mockFileId,
+        Long fileNo,
         Integer fileIndex,
         String originalFileName,
         String contentType,

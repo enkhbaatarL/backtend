@@ -23,6 +23,9 @@ public record FundamentalModelCaseDetailRes(
     @Schema(description = "case 업로더 이름. mock에서는 고정값입니다.", example = "홍길동")
     String assigneeName,
 
+    @Schema(description = "case 업로더 사용자 번호", example = "1")
+    Integer assigneeUserNo,
+
     @ArraySchema(schema = @Schema(implementation = FundamentalModelCaseFileRes.class))
     List<FundamentalModelCaseFileRes> files,
 

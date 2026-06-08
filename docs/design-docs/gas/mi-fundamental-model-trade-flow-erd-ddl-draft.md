@@ -3,23 +3,30 @@
 ## Document Control
 
 - domain: gas
-- status: draft
-- canonical for: Schema rollout draft for Trade Flow header/flow persistence candidates only
+- status: Superseded
+- canonical for: Reference only - historical Trade Flow header/flow persistence candidate
 - owner: platform BE
-- updated at: 2026-06-03
+- updated at: 2026-06-07
 - source documents:
   - mi-fundamental-model-mock-api-feature-spec.md
   - mi-fundamental-model-trade-flows-api-design.md
   - scenario-case-execution-erd-ddl-draft.md
 - depends on:
   - Trade Flow API response contract (`key`, `label`, `kind`, `fromKey`, `toKey`) in mi-fundamental-model-mock-api-feature-spec.md
+- superseded by:
+  - mi-fundamental-model-output-result-persistence-design.md
 - open questions:
-  - DBA JSON column policy
-  - DBA physical naming / dictionary alignment for response key and label fields
-  - final `flow_value` precision after source data confirmation
-  - MTPA to BCM conversion coefficient and rounding/display precision
+  - 없음. Active open questions moved to mi-fundamental-model-output-result-persistence-design.md.
 
 ---
+
+## Supersession Notice
+
+이 문서는 2026-06-03 시점의 Trade Flow 단독 ERD 후보를 보존하는 reference-only 문서다.
+
+2026-06-07 이후 Volumes / Trade Flows / Price output result persistence의 canonical source는 [mi-fundamental-model-output-result-persistence-design.md](mi-fundamental-model-output-result-persistence-design.md) 이다.
+
+특히 이 문서의 JSON header 후보(`from_countries_json`, `to_countries_json`)는 superseded되었다. Canonical 설계는 `tmd_scncaseh_trd_hdr_l` row table과 `tmd_scncaseh_trd_flw_l` sparse flow table을 사용한다.
 
 ## 1. 구조 개요
 
@@ -202,8 +209,7 @@ tmd_scncasem
 
 ## 7. Implementation Readiness
 
-blocked by open questions
+superseded
 
-- 이 문서는 API 응답 key 계약을 반영한 ERD/DDL 초안이다.
-- `uq_trd_flow` nullable 컬럼 이슈는 `from_country_key` / `to_country_key` 후보로 해소했다.
-- 단, rollout SQL로 사용하려면 DBA JSON 컬럼 정책, 물리 컬럼명 표준, key 길이, `flow_value` 정밀도, MTPA→BCM 변환 규칙이 먼저 확정되어야 한다.
+- 이 문서는 더 이상 rollout SQL 또는 implementation input으로 사용하지 않는다.
+- 새 implementation/DBA review는 [mi-fundamental-model-output-result-persistence-design.md](mi-fundamental-model-output-result-persistence-design.md)를 기준으로 진행한다.

@@ -8,7 +8,7 @@ import java.util.List;
 
 public record FundamentalModelCaseCreateRes(
 
-    @Schema(description = "mock store가 생성한 case ID", example = "101")
+    @Schema(description = "Scenario Case ID", example = "101")
     Long caseId,
 
     @Schema(description = "제목", example = "JKM price upside case")
