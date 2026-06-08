@@ -108,14 +108,14 @@ mi:
     mock:
       fundamental-model-cases:
         api:
-          list-cases: true
-          create-case: true
-          get-detail: true
-          update: true
-          delete: true
-          run: true
-          get-status: true
+          list-cases: false
+          create-case: false
+          get-detail: false
+          update: false
+          delete: false
+          run: false
+          get-status: false
           reset: true
       fundamental-model-runs:
         api:
-          callback: true
+          callback: false

@@ -4,6 +4,9 @@ import io.swagger.v3.oas.annotations.media.Schema;
 
 public record FundamentalModelCaseFileRes(
 
+    @Schema(description = "파일번호", example = "1001")
+    Long fileNo,
+
     @Schema(description = "1부터 시작하는 업로드 순서", example = "1")
     Integer fileIndex,
 
@@ -14,10 +17,7 @@ public record FundamentalModelCaseFileRes(
     String contentType,
 
     @Schema(description = "파일 크기 byte", example = "12345")
-    Long size,
-
-    @Schema(description = "mock store 내부 식별자", example = "mock_file_101_1")
-    String mockFileId
+    Long size
 
 ) {
 }
