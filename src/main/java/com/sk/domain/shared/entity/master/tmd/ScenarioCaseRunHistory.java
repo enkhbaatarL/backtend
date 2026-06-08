@@ -90,4 +90,19 @@ public class ScenarioCaseRunHistory extends BaseEntity {
         this.executionBeginDt = executionBeginDt;
         this.executionEndDt = executionEndDt;
     }
+
+    public static ScenarioCaseRunHistory createRunning(Long caseId, String runId, String actorLoginId) {
+        LocalDateTime now = LocalDateTime.now();
+        return ScenarioCaseRunHistory.builder()
+            .runId(runId)
+            .caseId(caseId)
+            .status(FundamentalModelRunStatus.RUNNING)
+            .executionBeginDt(now)
+            .createDt(now)
+            .modifyDt(now)
+            .createUserId(actorLoginId)
+            .modifyUserId(actorLoginId)
+            .isDeleted(Boolean.FALSE)
+            .build();
+    }
 }

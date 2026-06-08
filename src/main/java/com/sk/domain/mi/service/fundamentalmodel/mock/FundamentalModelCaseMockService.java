@@ -242,7 +242,6 @@ public class FundamentalModelCaseMockService {
     }
 
     public synchronized FundamentalModelVolumesRes getVolumes(Long caseId, FundamentalModelVolumesReq request) {
-        FundamentalModelCaseMockRecord caseRecord = getResultReadyCaseRecord(caseId);
         FundamentalModelSegment segment = validateSegment(request);
         FundamentalModelGranularity granularity = request == null || request.granularity() == null
             ? FundamentalModelGranularity.MONTHLY
@@ -266,7 +265,7 @@ public class FundamentalModelCaseMockService {
         }
 
         return new FundamentalModelVolumesRes(
-            caseRecord.caseId(),
+            caseId,
             segment,
             granularity,
             FundamentalModelVolumeUnit.MTPA,
@@ -277,8 +276,6 @@ public class FundamentalModelCaseMockService {
     }
 
     public synchronized FundamentalModelTradeFlowsRes getTradeFlows(Long caseId, FundamentalModelTradeFlowsReq request) {
-        FundamentalModelCaseMockRecord caseRecord = getResultReadyCaseRecord(caseId);
-
         if (request == null || request.selector() == null) {
             throw AppErrorException.of(ResultCode.Error.REQ_INVALID_PARAMETER, "selector는 필수입니다.");
         }
@@ -309,7 +306,7 @@ public class FundamentalModelCaseMockService {
             appendFromTotalFlows(filteredTo, filteredFlows);
 
         return new FundamentalModelTradeFlowsRes(
-            caseRecord.caseId(),
+            caseId,
             request.selector(),
             request.year(),
             unit,
@@ -321,9 +318,8 @@ public class FundamentalModelCaseMockService {
     }
 
     public synchronized FundamentalModelPriceRes getPrice(Long caseId) {
-        FundamentalModelCaseMockRecord caseRecord = getResultReadyCaseRecord(caseId);
         return new FundamentalModelPriceRes(
-            caseRecord.caseId(),
+            caseId,
             priceSeed.chart(),
             priceSeed.annualTable(),
             priceSeed.monthlyTable()

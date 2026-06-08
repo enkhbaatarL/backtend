@@ -111,11 +111,11 @@ mi:
           list-cases: false
           create-case: false
           get-detail: false
-          update: true
-          delete: true
-          run: true
-          get-status: true
+          update: false
+          delete: false
+          run: false
+          get-status: false
           reset: true
       fundamental-model-runs:
         api:
-          callback: true
+          callback: false

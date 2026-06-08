@@ -32,6 +32,7 @@ import com.sk.domain.shared.enums.fundamentalmodel.FundamentalModelCaseStatus;
 import com.sk.domain.shared.enums.fundamentalmodel.FundamentalModelDataType;
 import com.sk.domain.shared.enums.fundamentalmodel.FundamentalModelGranularity;
 import com.sk.domain.shared.enums.fundamentalmodel.FundamentalModelRegion;
+import com.sk.domain.shared.enums.fundamentalmodel.FundamentalModelRunStatus;
 import com.sk.domain.shared.enums.fundamentalmodel.FundamentalModelSegment;
 import com.sk.domain.shared.enums.fundamentalmodel.TradeFlowDirection;
 import com.sk.domain.shared.repository.master.tcm.UploadedFileRepository;
@@ -41,9 +42,13 @@ import com.sk.domain.shared.repository.master.tmd.projection.ScenarioCaseDetailR
 import com.sk.domain.shared.repository.master.tmd.projection.ScenarioCaseListRow;
 import com.sk.domain.shared.service.FileService;
 import com.sk.domain.shared.service.permissions.AuthorizationService;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Objects;
+import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -58,6 +63,13 @@ public class FundamentalModelCaseServiceImpl implements FundamentalModelCaseServ
     private static final int REQUIRED_FILE_COUNT = 3;
     private static final int TITLE_MAX_LENGTH = 200;
     private static final String FILE_RELATION_SCENARIO_CASE = "SCNCASE";
+    private static final String CALLBACK_ACTOR = "SYSTEM";
+    private static final DateTimeFormatter RUN_ID_TIMESTAMP_FORMATTER = DateTimeFormatter.ofPattern("yyyyMMdd_HHmmss");
+    private static final List<FundamentalModelCaseStatus> RUN_CLAIMABLE_CASE_STATUSES = List.of(
+        FundamentalModelCaseStatus.PENDING,
+        FundamentalModelCaseStatus.COMPLETED,
+        FundamentalModelCaseStatus.FAILED
+    );
 
     private final ScenarioCaseRepository scenarioCaseRepository;
     private final ScenarioCaseRunHistoryRepository scenarioCaseRunHistoryRepository;
@@ -182,8 +194,41 @@ public class FundamentalModelCaseServiceImpl implements FundamentalModelCaseServ
     }
 
     @Override
+    @Transactional
     public FundamentalModelRunAcceptRes runCase(Long caseId) {
-        throw new UnsupportedOperationException("Fundamental model case run DB implementation is not ready.");
+        String actorLoginId = authorizationService.getSubject();
+        LocalDateTime requestedAt = LocalDateTime.now();
+        String runId = generateRunId(requestedAt);
+
+        int claimCount = scenarioCaseRepository.claimRun(
+            caseId,
+            runId,
+            FundamentalModelCaseStatus.RUNNING,
+            RUN_CLAIMABLE_CASE_STATUSES,
+            requestedAt,
+            actorLoginId
+        );
+        if (claimCount == 0) {
+            handleRunClaimFailure(caseId);
+        }
+
+        ScenarioCaseRunHistory runHistory = scenarioCaseRunHistoryRepository.saveAndFlush(
+            ScenarioCaseRunHistory.createRunning(caseId, runId, actorLoginId)
+        );
+        scenarioCaseRunHistoryRepository.findRunSeqByRunId(runId)
+            .orElseThrow(() -> AppErrorException.of(
+                ResultCode.Error.RSC_NOT_FOUND,
+                "fundamental model run_seq not found after insert. runId: %s".formatted(runId)
+            ));
+
+        return new FundamentalModelRunAcceptRes(
+            caseId,
+            runId,
+            FundamentalModelRunStatus.RUNNING,
+            runHistory.getCreateDt(),
+            runHistory.getExecutionBeginDt(),
+            buildStatusEndpoint(caseId)
+        );
     }
 
     @Override
@@ -258,8 +303,62 @@ public class FundamentalModelCaseServiceImpl implements FundamentalModelCaseServ
     }
 
     @Override
+    @Transactional
     public FundamentalModelRunCallbackRes handleCallback(String runId, FundamentalModelRunCallbackReq request) {
-        throw new UnsupportedOperationException("Fundamental model run callback DB implementation is not ready.");
+        validateCallbackRequest(request);
+
+        ScenarioCaseRunHistory runHistory = scenarioCaseRunHistoryRepository.findById(runId)
+            .orElseThrow(() -> AppErrorException.of(
+                ResultCode.Error.RSC_NOT_FOUND,
+                "fundamental model run not found. runId: %s".formatted(runId)
+            ));
+
+        LocalDateTime processedAt = LocalDateTime.now();
+        if (runHistory.getStatus() != FundamentalModelRunStatus.RUNNING) {
+            if (isSameTerminalPayload(runHistory, request)) {
+                return new FundamentalModelRunCallbackRes(runId, runHistory.getStatus(), processedAt);
+            }
+            throw AppErrorException.of(
+                ResultCode.Error.BIZ_RULE_VIOLATION,
+                "terminal run callback payload conflicts with existing result. runId: %s".formatted(runId)
+            );
+        }
+
+        String failureReason = request.status() == FundamentalModelRunStatus.FAILED ? request.failureReason() : null;
+        String errorMessage = request.status() == FundamentalModelRunStatus.FAILED ? request.errorMessage() : null;
+        int updateCount = scenarioCaseRunHistoryRepository.updateRunningToTerminal(
+            runId,
+            request.status(),
+            FundamentalModelRunStatus.RUNNING,
+            request.finishedAt(),
+            failureReason,
+            errorMessage,
+            processedAt,
+            CALLBACK_ACTOR
+        );
+        if (updateCount == 0) {
+            ScenarioCaseRunHistory refreshedRun = scenarioCaseRunHistoryRepository.findById(runId)
+                .orElseThrow(() -> AppErrorException.of(
+                    ResultCode.Error.RSC_NOT_FOUND,
+                    "fundamental model run not found. runId: %s".formatted(runId)
+                ));
+            if (isSameTerminalPayload(refreshedRun, request)) {
+                return new FundamentalModelRunCallbackRes(runId, refreshedRun.getStatus(), processedAt);
+            }
+            throw AppErrorException.of(
+                ResultCode.Error.BIZ_RULE_VIOLATION,
+                "terminal run callback payload conflicts with existing result. runId: %s".formatted(runId)
+            );
+        }
+
+        scenarioCaseRepository.updateLatestRunStatus(
+            runId,
+            FundamentalModelCaseStatus.valueOf(request.status().name()),
+            processedAt,
+            CALLBACK_ACTOR
+        );
+
+        return new FundamentalModelRunCallbackRes(runId, request.status(), processedAt);
     }
 
     @Override
@@ -283,6 +382,56 @@ public class FundamentalModelCaseServiceImpl implements FundamentalModelCaseServ
             return null;
         }
         return keyword.trim();
+    }
+
+    private void handleRunClaimFailure(Long caseId) {
+        ScenarioCase scenarioCase = scenarioCaseRepository.findById(caseId)
+            .orElseThrow(() -> AppErrorException.of(
+                ResultCode.Error.RSC_NOT_FOUND,
+                "fundamental model case not found. caseId: %d".formatted(caseId)
+            ));
+        if (Boolean.TRUE.equals(scenarioCase.getIsDeleted())) {
+            throw AppErrorException.of(
+                ResultCode.Error.RSC_NOT_FOUND,
+                "fundamental model case not found. caseId: %d".formatted(caseId)
+            );
+        }
+        if (scenarioCase.getStatus() == FundamentalModelCaseStatus.RUNNING) {
+            throw AppErrorException.of(
+                ResultCode.Error.BIZ_RULE_VIOLATION,
+                "fundamental model case is already running. caseId: %d".formatted(caseId)
+            );
+        }
+        throw AppErrorException.of(
+            ResultCode.Error.BIZ_RULE_VIOLATION,
+            "fundamental model case cannot be run from current status. caseId: %d".formatted(caseId)
+        );
+    }
+
+    private String generateRunId(LocalDateTime requestedAt) {
+        String suffix = UUID.randomUUID().toString().replace("-", "").substring(0, 4).toUpperCase();
+        return RUN_ID_TIMESTAMP_FORMATTER.format(requestedAt) + "_" + suffix;
+    }
+
+    private void validateCallbackRequest(FundamentalModelRunCallbackReq request) {
+        if (request == null || request.status() == null) {
+            throw AppErrorException.of(ResultCode.Error.REQ_INVALID_PARAMETER, "callback status는 필수입니다.");
+        }
+        if (!request.status().isTerminal()) {
+            throw AppErrorException.of(ResultCode.Error.REQ_INVALID_PARAMETER, "callback status는 COMPLETED 또는 FAILED 여야 합니다.");
+        }
+        if (request.finishedAt() == null) {
+            throw AppErrorException.of(ResultCode.Error.REQ_INVALID_PARAMETER, "finishedAt은 필수입니다.");
+        }
+    }
+
+    private boolean isSameTerminalPayload(ScenarioCaseRunHistory runHistory, FundamentalModelRunCallbackReq request) {
+        String requestFailureReason = request.status() == FundamentalModelRunStatus.FAILED ? request.failureReason() : null;
+        String requestErrorMessage = request.status() == FundamentalModelRunStatus.FAILED ? request.errorMessage() : null;
+        return runHistory.getStatus() == request.status()
+            && Objects.equals(runHistory.getExecutionEndDt(), request.finishedAt())
+            && Objects.equals(runHistory.getFailureReasonCode(), requestFailureReason)
+            && Objects.equals(runHistory.getErrorMessage(), requestErrorMessage);
     }
 
     private ScenarioCase findActiveCase(Long caseId) {
