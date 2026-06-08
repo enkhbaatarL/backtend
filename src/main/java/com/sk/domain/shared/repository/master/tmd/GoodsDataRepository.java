@@ -1,5 +1,6 @@
 package com.sk.domain.shared.repository.master.tmd;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
@@ -38,6 +39,8 @@ public interface GoodsDataRepository extends JpaRepository<GoodsData, Integer> {
                 AND gd.goods.goodsNo = :goodsNo
                 AND (:keyword IS NULL OR (LOWER(gd.goodsDataNm) LIKE CONCAT('%', LOWER(:keyword), '%')
                   OR LOWER(gd.goodsDataExpn) LIKE CONCAT('%', LOWER(:keyword), '%')))
+                AND (:startDate IS NULL OR gd.publishedDate >= :startDate)
+                AND (:endDate IS NULL OR gd.publishedDate <= :endDate)
             """, countQuery = """
             SELECT COUNT(DISTINCT gd.goodsDataNo)
             FROM GoodsData gd
@@ -47,9 +50,11 @@ public interface GoodsDataRepository extends JpaRepository<GoodsData, Integer> {
                 AND gd.goods.goodsNo = :goodsNo
                 AND (:keyword IS NULL OR (LOWER(gd.goodsDataNm) LIKE CONCAT('%', LOWER(:keyword), '%')
                   OR LOWER(gd.goodsDataExpn) LIKE CONCAT('%', LOWER(:keyword), '%')))
+                AND (:startDate IS NULL OR gd.publishedDate >= :startDate)
+                AND (:endDate IS NULL OR gd.publishedDate <= :endDate)
             """)
     Page<GoodsDataRes> findGoodsDataByProviderNoAndGoodsNo(@Param("providerNo") int providerNo, @Param("goodsNo") int goodsNo,
-            @Param("keyword") String keyword, Pageable pageable);
+            @Param("keyword") String keyword, @Param("startDate") LocalDate startDate, @Param("endDate") LocalDate endDate, Pageable pageable);
 
     @Query(value = """
             SELECT new com.sk.domain.admin.dto.response.provider.GoodsDataNameRes(

@@ -115,17 +115,22 @@ public class AdminGoodsDataService {
     * @return PaginationRes<GoodsDataRes>
     */
     public PaginationRes<GoodsDataRes> getAllGoodsData(int companyNo, Role role, int page, int size, String keyword,
-        String sortDirection, String sortProperty, int providerNo, int goodsNo) {
+        String sortDirection, String sortProperty, int providerNo, int goodsNo, String startDate, String endDate) {
+
+        LocalDate start = StringUtils.hasText(startDate) ? LocalDate.parse(startDate) : null;
+        LocalDate end = StringUtils.hasText(endDate) ? LocalDate.parse(endDate) : null;
 
         Pageable pageable = null;
         if (StringUtils.hasText(sortDirection) && StringUtils.hasText(sortProperty)) {
-            pageable = PageRequest.of(page - 1, size, Sort.by(Sort.Direction.fromString(sortDirection), "gd."+sortProperty));
-        }else{
+            pageable = PageRequest.of(page - 1, size, Sort.by(Sort.Direction.fromString(sortDirection), "gd." + sortProperty));
+        } else if (StringUtils.hasText(startDate) || StringUtils.hasText(endDate)) {
+            pageable = PageRequest.of(page - 1, size, Sort.by(Direction.DESC, "gd.publishedDate"));
+        } else {
             pageable = PageRequest.of(page - 1, size, Sort.by(Direction.ASC, "gd.goodsDataNm"));
         }
-      return PaginationRes.toRes(
-          goodsDataRepository.findGoodsDataByProviderNoAndGoodsNo(
-              providerNo, goodsNo, keyword, pageable));
+        return PaginationRes.toRes(
+            goodsDataRepository.findGoodsDataByProviderNoAndGoodsNo(
+                providerNo, goodsNo, keyword, start, end, pageable));
     }
 
     /**
