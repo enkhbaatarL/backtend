@@ -1,8 +1,10 @@
 package com.sk.domain.mi.dto.response.nextgen;
 
 import com.sk.domain.shared.enums.nextgen.ModelExecutionStatus;
+import io.swagger.v3.oas.annotations.media.ArraySchema;
 import io.swagger.v3.oas.annotations.media.Schema;
 import java.time.LocalDateTime;
+import java.util.List;
 
 public record ModelExecutionStatusRes(
 
@@ -17,6 +19,9 @@ public record ModelExecutionStatusRes(
 
     @Schema(description = "현재 실행 상태", implementation = ModelExecutionStatus.class, example = "RUNNING")
     ModelExecutionStatus status,
+
+    @ArraySchema(schema = @Schema(implementation = ModelExecutionFileRes.class))
+    List<ModelExecutionFileRes> files,
 
     @Schema(description = "실행 접수 시각")
     LocalDateTime requestedAt,
