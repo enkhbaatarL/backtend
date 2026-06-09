@@ -184,4 +184,10 @@ public class ScenarioGroupServiceImpl implements ScenarioGroupService {
         throw AppErrorException.of(ResultCode.Error.RSC_NOT_FOUND, "Scenario status 일괄 변경 DB 연동 미구현");
     }
 
+    @Override
+    public void deleteScenarioGroup(Long scenarioGroupId) {
+        // TODO: DB 연동 구현
+        throw AppErrorException.of(ResultCode.Error.RSC_NOT_FOUND, "Scenario group 삭제 DB 연동 미구현");
+    }
+
 }

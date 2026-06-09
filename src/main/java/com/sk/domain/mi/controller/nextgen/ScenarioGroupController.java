@@ -36,6 +36,7 @@ import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -311,9 +312,38 @@ public class ScenarioGroupController {
 
     @ApiOrder(9)
     @Operation(
-        summary = "[mockapi 전용] 시나리오 상태 변경 초기화 API",
+        summary = "Scenario Group 삭제 API",
         description = """
-            상태 변경 API(`PATCH .../status`)로 바꾼 **모든 시나리오 판정 상태를 초기 설정값으로 되돌립니다.** <br>
+            시나리오 그룹을 삭제합니다. <br>
+            그룹이 삭제되면 **그룹에 포함된 모든 시나리오도 함께 soft delete** 됩니다. <br>
+            삭제된 그룹·시나리오는 목록/개별/상세/그래프/상태변경 조회에서 제외됩니다. <br>
+
+            <br><br>
+            ### 경로 변수
+            - `scenarioGroupId`: 삭제할 시나리오 그룹 ID
+
+            <br>
+            존재하지 않거나 이미 삭제된 그룹이면 `404`를 반환합니다.
+            """
+    )
+    @ApiResponse(responseCode = "200", description = "삭제 성공")
+    @DeleteMapping("/{scenarioGroupId}")
+    @RequiredPermissionRules(rules = {
+        @PermissionRule(role = Role.USER, conditions = {PermissionCondition.SKGAS_COMPANY_USER_ONLY}),
+        @PermissionRule(role = Role.ADMIN, conditions = {PermissionCondition.THIRD_PARTY_ADMIN_ONLY})
+    })
+    public BaseResponse<Void> deleteScenarioGroup(
+        @Parameter(description = "시나리오 그룹 ID", example = "1") @PathVariable Long scenarioGroupId
+    ) {
+        scenarioGroupService.deleteScenarioGroup(scenarioGroupId);
+        return BaseResponseFactory.create(ResultCode.Success.OK);
+    }
+
+    @ApiOrder(10)
+    @Operation(
+        summary = "[mockapi 전용] 시나리오 상태/삭제 초기화 API",
+        description = """
+            상태 변경 API로 바꾼 **모든 시나리오 판정 상태**와 그룹 삭제 API로 삭제한 **모든 그룹/시나리오를 초기 설정값으로 되돌립니다.** <br>
             테스트/데모 반복 시 사용하는 mock 전용 API입니다. (실 DB 연동 없음 / 변경분은 mock 메모리에만 존재) <br>
             """
     )

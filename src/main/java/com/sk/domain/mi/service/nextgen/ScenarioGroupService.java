@@ -38,4 +38,7 @@ public interface ScenarioGroupService {
     /** 시나리오 판정 상태 일괄 변경 (그룹 전체 모두 대기/실현/폐기) */
     ScenarioBulkStatusRes bulkUpdateScenarioStatus(Long scenarioGroupId, ScenarioStatus status);
 
+    /** 시나리오 그룹 삭제 (그룹 + 하위 시나리오 soft delete) */
+    void deleteScenarioGroup(Long scenarioGroupId);
+
 }

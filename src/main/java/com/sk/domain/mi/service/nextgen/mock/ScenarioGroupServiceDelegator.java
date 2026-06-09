@@ -85,4 +85,13 @@ public class ScenarioGroupServiceDelegator implements ScenarioGroupService {
             : realService.bulkUpdateScenarioStatus(scenarioGroupId, status);
     }
 
+    @Override
+    public void deleteScenarioGroup(Long scenarioGroupId) {
+        if (mockProps.getScenarioGroups().getApi().isDeleteGroup()) {
+            mockService.deleteScenarioGroup(scenarioGroupId);
+        } else {
+            realService.deleteScenarioGroup(scenarioGroupId);
+        }
+    }
+
 }

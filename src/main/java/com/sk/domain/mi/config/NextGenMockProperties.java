@@ -62,6 +62,7 @@ public class NextGenMockProperties {
             private boolean getScenarioDetail = false;
             private boolean updateScenarioStatus = false;
             private boolean bulkUpdateScenarioStatus = false;
+            private boolean deleteGroup = false;
         }
     }
 

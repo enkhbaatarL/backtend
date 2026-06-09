@@ -123,6 +123,7 @@ public class SwaggerConfig {
   | 시나리오 상세 | %s |
   | 시나리오 상태 변경 | %s |
   | 시나리오 상태 일괄 변경 | %s |
+  | 시나리오 그룹 삭제 | %s |
   | **Model Execution** | |
   | 수급모델 실행 요청 | %s |
   | 수급모델 실행 상태 조회 | %s |
@@ -152,7 +153,8 @@ public class SwaggerConfig {
   <summary><strong>v1.1.11 (2026-06-09)</strong></summary>
 
   - [Scenario Group]
-    - 시나리오 판정 상태 일괄 변경 API 추가 (그룹 전체 모두 대기/실현/폐기, `PATCH .../scenarios/status`)
+    - 시나리오 판정 상태 일괄 변경 API 추가
+    - 시나리오 그룹 삭제 API 추가
 
   </details>
 
@@ -286,6 +288,7 @@ public class SwaggerConfig {
             label(mockProps.getScenarioGroups().getApi().isGetScenarioDetail()),
             label(mockProps.getScenarioGroups().getApi().isUpdateScenarioStatus()),
             label(mockProps.getScenarioGroups().getApi().isBulkUpdateScenarioStatus()),
+            label(mockProps.getScenarioGroups().getApi().isDeleteGroup()),
             label(mockProps.getModelExecutions().getApi().isGetParameters()),
             label(mockProps.getModelExecutions().getApi().isSubmit()),
             label(mockProps.getModelExecutions().getApi().isGetStatus()),
