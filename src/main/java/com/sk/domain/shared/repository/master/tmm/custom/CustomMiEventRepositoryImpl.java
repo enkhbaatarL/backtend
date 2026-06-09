@@ -141,7 +141,7 @@ public class CustomMiEventRepositoryImpl implements CustomMiEventRepository {
             case UPDATED -> where
                 .and(miEvent.isNew.isFalse())
                 .and(isSignalEvent());
-            case ALL -> { /* no filter */ }
+            case ALL -> where.and(isSignalEvent());
         }
     }
 
