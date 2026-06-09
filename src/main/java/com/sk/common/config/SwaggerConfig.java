@@ -82,7 +82,7 @@ public class SwaggerConfig {
     }
 
     // note: 안정화 후 투머치 문서 모두 삭제예정
-    private static final String SW_VERSION_BASE = "v1.1.0";
+    private static final String SW_VERSION_BASE = "v1.2.0";
     private static final DateTimeFormatter SW_DEPLOY_DATE_FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
 
     @Bean
@@ -122,6 +122,7 @@ public class SwaggerConfig {
   | 시나리오 그룹 상세 | %s |
   | 시나리오 상세 | %s |
   | 시나리오 상태 변경 | %s |
+  | 시나리오 상태 일괄 변경 | %s |
   | **Model Execution** | |
   | 수급모델 파라미터 조회 | %s |
   | 수급모델 실행 요청 | %s |
@@ -144,6 +145,14 @@ public class SwaggerConfig {
   ## 수정사항
 
   <details open>
+  <summary><strong>v1.2.0 (2026-06-09)</strong></summary>
+
+  - [Scenario Group]
+    - 시나리오 판정 상태 일괄 변경 API 추가 (그룹 전체 모두 대기/실현/폐기, `PATCH .../scenarios/status`)
+
+  </details>
+
+  <details>
   <summary><strong>v1.1.0 (2026-06-04)</strong></summary>
 
   - [Scenario Group — 신규 도메인]
@@ -259,6 +268,7 @@ public class SwaggerConfig {
             label(mockProps.getScenarioGroups().getApi().isGetDetail()),
             label(mockProps.getScenarioGroups().getApi().isGetScenarioDetail()),
             label(mockProps.getScenarioGroups().getApi().isUpdateScenarioStatus()),
+            label(mockProps.getScenarioGroups().getApi().isBulkUpdateScenarioStatus()),
             label(mockProps.getModelExecutions().getApi().isGetParameters()),
             label(mockProps.getModelExecutions().getApi().isSubmit()),
             label(mockProps.getModelExecutions().getApi().isGetStatus()),
