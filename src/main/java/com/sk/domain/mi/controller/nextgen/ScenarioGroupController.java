@@ -8,6 +8,7 @@ import com.sk.common.model.BaseResponse;
 import com.sk.common.model.BaseResponseFactory;
 import com.sk.domain.mi.dto.request.nextgen.ScenarioGroupListReq;
 import com.sk.domain.mi.dto.request.nextgen.ScenarioStatusUpdateReq;
+import com.sk.domain.mi.dto.response.nextgen.ScenarioBulkStatusRes;
 import com.sk.domain.mi.dto.response.nextgen.ScenarioDetailViewRes;
 import com.sk.domain.mi.dto.response.nextgen.ScenarioGroupDetailRes;
 import com.sk.domain.mi.dto.response.nextgen.ScenarioGroupGraphRes;
@@ -276,6 +277,39 @@ public class ScenarioGroupController {
     }
 
     @ApiOrder(8)
+    @Operation(
+        summary = "Scenario 상태 일괄 변경 API (모두 대기/실현/폐기)",
+        description = """
+            그룹 내 **모든 시나리오의 판정 상태를 한 번에** 변경합니다. (모두 대기/실현/폐기) <br>
+            대상은 path의 `scenarioGroupId` 그룹 전체이며, 요청 본문은 단건 변경과 동일하게 `status` 하나만 받습니다. <br>
+
+            <br><br>
+            ### 요청 본문
+            - `status`: 일괄 적용할 판정 상태 (`pending` / `realized` / `discarded`)
+
+            <br><br>
+            ### 응답 필드
+            - `status`, `statusLabel`(대기/실현/폐기)
+            - `updatedCount`: 변경된 시나리오 수
+            - `scenarioIds`: 변경된 시나리오 ID 목록
+            """
+    )
+    @ApiResponse(responseCode = "200", description = "변경 성공")
+    @PatchMapping("/{scenarioGroupId}/scenarios/status")
+    @RequiredPermissionRules(rules = {
+        @PermissionRule(role = Role.USER, conditions = {PermissionCondition.SKGAS_COMPANY_USER_ONLY}),
+        @PermissionRule(role = Role.ADMIN, conditions = {PermissionCondition.THIRD_PARTY_ADMIN_ONLY})
+    })
+    public BaseResponse<ScenarioBulkStatusRes> bulkUpdateScenarioStatus(
+        @Parameter(description = "시나리오 그룹 ID", example = "1") @PathVariable Long scenarioGroupId,
+        @Valid @RequestBody ScenarioStatusUpdateReq request
+    ) {
+        return BaseResponseFactory.create(
+            scenarioGroupService.bulkUpdateScenarioStatus(scenarioGroupId, request.status())
+        );
+    }
+
+    @ApiOrder(9)
     @Operation(
         summary = "[mockapi 전용] 시나리오 상태 변경 초기화 API",
         description = """

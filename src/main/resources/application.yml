@@ -82,6 +82,7 @@ mi:
           get-detail: true
           get-scenario-detail: true
           update-scenario-status: true
+          bulk-update-scenario-status: true
       model-executions:
         api:
           get-parameters: true

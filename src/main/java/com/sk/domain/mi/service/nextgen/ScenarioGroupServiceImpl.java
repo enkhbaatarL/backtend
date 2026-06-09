@@ -6,6 +6,7 @@ import org.springframework.transaction.annotation.Transactional;
 import com.sk.common.enums.ResultCode;
 import com.sk.common.exception.AppErrorException;
 import com.sk.domain.mi.dto.request.nextgen.ScenarioGroupListReq;
+import com.sk.domain.mi.dto.response.nextgen.ScenarioBulkStatusRes;
 import com.sk.domain.mi.dto.response.nextgen.ScenarioDetailViewRes;
 import com.sk.domain.mi.dto.response.nextgen.ScenarioGroupDetailRes;
 import com.sk.domain.mi.dto.response.nextgen.ScenarioGroupGraphRes;
@@ -65,6 +66,12 @@ public class ScenarioGroupServiceImpl implements ScenarioGroupService {
     public ScenarioStatusRes updateScenarioStatus(Long scenarioGroupId, Long scenarioId, ScenarioStatus status) {
         // TODO: DB 연동 구현
         throw AppErrorException.of(ResultCode.Error.RSC_NOT_FOUND, "Scenario status 변경 DB 연동 미구현");
+    }
+
+    @Override
+    public ScenarioBulkStatusRes bulkUpdateScenarioStatus(Long scenarioGroupId, ScenarioStatus status) {
+        // TODO: DB 연동 구현
+        throw AppErrorException.of(ResultCode.Error.RSC_NOT_FOUND, "Scenario status 일괄 변경 DB 연동 미구현");
     }
 
 }

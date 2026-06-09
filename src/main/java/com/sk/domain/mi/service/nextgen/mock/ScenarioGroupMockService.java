@@ -15,6 +15,7 @@ import com.sk.domain.mi.dto.response.nextgen.ScenarioGroupDetailRes;
 import com.sk.domain.mi.dto.response.nextgen.ScenarioGroupDetailRowRes;
 import com.sk.domain.mi.dto.response.nextgen.ScenarioGroupGraphRes;
 import com.sk.domain.mi.dto.response.nextgen.ScenarioGroupListItemRes;
+import com.sk.domain.mi.dto.response.nextgen.ScenarioBulkStatusRes;
 import com.sk.domain.mi.dto.response.nextgen.ScenarioGroupListRes;
 import com.sk.domain.mi.dto.response.nextgen.ScenarioIndividualItemRes;
 import com.sk.domain.mi.dto.response.nextgen.ScenarioIndividualListRes;
@@ -268,6 +269,20 @@ public class ScenarioGroupMockService {
         // mock: 변경분을 메모리에 저장 → 그룹 상세 조회에 반영, reset API로 초기화 가능
         statusOverrides.put(scenarioId, status);
         return new ScenarioStatusRes(scenarioId, status, status.getLabel());
+    }
+
+    public ScenarioBulkStatusRes bulkUpdateScenarioStatus(Long scenarioGroupId, ScenarioStatus status) {
+        ScenarioGroupDetailRes detail = groupDetailMap.get(scenarioGroupId);
+        if (detail == null) {
+            throw AppErrorException.of(ResultCode.Error.RSC_NOT_FOUND,
+                "Scenario group not found: " + scenarioGroupId);
+        }
+        // 그룹 전체 시나리오를 동일 상태로 일괄 변경 (mock: 변경분을 메모리에 저장, reset API로 초기화)
+        List<Long> scenarioIds = detail.scenarios().stream()
+            .map(ScenarioGroupDetailRowRes::scenarioId)
+            .toList();
+        scenarioIds.forEach(id -> statusOverrides.put(id, status));
+        return new ScenarioBulkStatusRes(status, status.getLabel(), scenarioIds.size(), scenarioIds);
     }
 
     /** [mock 전용] 상태 변경 API가 바꾼 시나리오 상태를 모두 초기 설정값으로 되돌린다. */
