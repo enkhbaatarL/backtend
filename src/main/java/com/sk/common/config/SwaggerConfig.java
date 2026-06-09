@@ -149,6 +149,14 @@ public class SwaggerConfig {
   ## 수정사항
 
   <details open>
+  <summary><strong>v1.1.11 (2026-06-09)</strong></summary>
+
+  - [Scenario Group]
+    - 시나리오 판정 상태 일괄 변경 API 추가 (그룹 전체 모두 대기/실현/폐기, `PATCH .../scenarios/status`)
+
+  </details>
+
+  <details>
   <summary><strong>v1.1.10 (2026-06-09)</strong></summary>
 
   - [Model Execution]
@@ -158,14 +166,6 @@ public class SwaggerConfig {
     - 실행 접수 응답 / 실행 상태 응답에 업로드 파일 메타데이터 `files[]` 추가
       - `fileNo`(DB `tcm_filel.file_no` 매핑) · `fileIndex` · `originalFileName` · `contentType` · `size`
     - [Mock 전용] 수급모델 실행 데이터 초기화 API(`POST .../model-executions/reset`)를 데이터 소스 현황에 추가
-
-  </details>
-
-  <details>
-  <summary><strong>v1.2.0 (2026-06-09)</strong></summary>
-
-  - [Scenario Group]
-    - 시나리오 판정 상태 일괄 변경 API 추가 (그룹 전체 모두 대기/실현/폐기, `PATCH .../scenarios/status`)
 
   </details>
 
