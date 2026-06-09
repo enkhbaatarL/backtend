@@ -35,6 +35,10 @@ public class GoodsDataFileSummary extends BaseEntity {
     @Comment("상품데이터 파일 요약")
     private String fileSummary;
 
+    @Column(name = "file_smry_shrt", columnDefinition = "text")
+    @Comment("상품데이터 파일 요약 요약")
+    private String fileSummaryShort;
+
     @Column(name = "file_rcrd", columnDefinition = "json")
     @Comment("상품데이터 파일 레코드")
     private String fileRecord;

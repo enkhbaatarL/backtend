@@ -321,10 +321,14 @@ public class MiMarketDataService {
                                 Double.parseDouble(fromData.get(defaultDataColumnName).toString());
 
                             // 계산식 (최근 값 - 이전 값) / 이전 값 * 100
-                            Double changeRate = (toValue - fromValue) / fromValue * 100;
-                            BigDecimal bd = BigDecimal.valueOf(changeRate)
-                                .setScale(2, RoundingMode.HALF_UP);
-                            recentChangeRateValue = bd.doubleValue();
+                            if (fromValue != 0) {
+                                double changeRate = (toValue - fromValue) / fromValue * 100;
+                                if (Double.isFinite(changeRate)) {
+                                    BigDecimal bd = BigDecimal.valueOf(changeRate)
+                                        .setScale(2, RoundingMode.HALF_UP);
+                                    recentChangeRateValue = bd.doubleValue();
+                                }
+                            }
                         }
                     }
 

@@ -612,12 +612,19 @@ public class MiMarketNewsService {
      */
     private MarketNewsDetailRes toMarketNewsDetailRes(NewsSummary newsSummary,
         List<String> tagList) {
+        String story = newsSummary.getRefinitivNewsData().getStory();
+        String summary = newsSummary.getSummary();
+
+        if (summary != null && !summary.isBlank()) {
+            story = String.format("### 요약\n%s\n\n### 본문\n%s", summary, story != null ? story : "");
+        }
+
         return new MarketNewsDetailRes(
             newsSummary.getNewsSummaryId(),
             newsSummary.getRefinitivNewsData().getId().getDataRegistrationSn(),
             newsSummary.getRefinitivNewsData().getId().getFirstCreated(),
             newsSummary.getRefinitivNewsData().getTitle(),
-            newsSummary.getRefinitivNewsData().getStory(),
+            story,
             newsSummary.getProviderId(),  // provider → providerId
             tagList
         );
