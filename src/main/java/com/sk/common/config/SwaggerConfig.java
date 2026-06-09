@@ -123,10 +123,10 @@ public class SwaggerConfig {
   | 시나리오 상세 | %s |
   | 시나리오 상태 변경 | %s |
   | **Model Execution** | |
-  | 수급모델 파라미터 조회 | %s |
   | 수급모델 실행 요청 | %s |
   | 수급모델 실행 상태 조회 | %s |
   | 수급모델 실행 콜백 | %s |
+  | 수급모델 실행 데이터 초기화 | %s |
   | **Fundamental Model Case** | |
   | Fundamental Model Case 목록 | %s |
   | Fundamental Model Case 업로드 | %s |
@@ -135,6 +135,10 @@ public class SwaggerConfig {
   | Fundamental Model Case 삭제 | %s |
   | Fundamental Model Case 실행 요청 | %s |
   | Fundamental Model Case 상태 조회 | %s |
+  | Fundamental Model Volumes 필터 옵션 조회 | %s |
+  | Fundamental Model Volumes 데이터 조회 | %s |
+  | Fundamental Model Trade Flows 데이터 조회 | %s |
+  | Fundamental Model Price 데이터 조회 | %s |
   | Fundamental Model Case 데이터 초기화 | %s |
   | **Fundamental Model Run** | |
   | Fundamental Model Run 콜백 | %s |
@@ -144,6 +148,19 @@ public class SwaggerConfig {
   ## 수정사항
 
   <details open>
+  <summary><strong>v1.1.10 (2026-06-09)</strong></summary>
+
+  - [Model Execution]
+    - 수급모델 실행 요청: parameter(JSON) 기반 → 입력 파일 3개 multipart 업로드 방식으로 변경
+      - 요청 형식 `application/json` → `multipart/form-data` (`files` 파트, 입력 파일 3개)
+      - 요청 DTO(`ModelExecutionSubmitReq` · `ModelExecutionTableReq` · `ModelExecutionTableRowReq`) 제거
+    - 실행 접수 응답 / 실행 상태 응답에 업로드 파일 메타데이터 `files[]` 추가
+      - `fileNo`(DB `tcm_filel.file_no` 매핑) · `fileIndex` · `originalFileName` · `contentType` · `size`
+    - [Mock 전용] 수급모델 실행 데이터 초기화 API(`POST .../model-executions/reset`)를 데이터 소스 현황에 추가
+
+  </details>
+
+  <details>
   <summary><strong>v1.1.0 (2026-06-04)</strong></summary>
 
   - [Scenario Group — 신규 도메인]
@@ -259,10 +276,10 @@ public class SwaggerConfig {
             label(mockProps.getScenarioGroups().getApi().isGetDetail()),
             label(mockProps.getScenarioGroups().getApi().isGetScenarioDetail()),
             label(mockProps.getScenarioGroups().getApi().isUpdateScenarioStatus()),
-            label(mockProps.getModelExecutions().getApi().isGetParameters()),
             label(mockProps.getModelExecutions().getApi().isSubmit()),
             label(mockProps.getModelExecutions().getApi().isGetStatus()),
             label(mockProps.getModelExecutions().getApi().isCallback()),
+            label(true),
             label(fundamentalModelMockProps.getFundamentalModelCases().getApi().isListCases()),
             label(fundamentalModelMockProps.getFundamentalModelCases().getApi().isCreateCase()),
             label(fundamentalModelMockProps.getFundamentalModelCases().getApi().isGetDetail()),
@@ -270,6 +287,10 @@ public class SwaggerConfig {
             label(fundamentalModelMockProps.getFundamentalModelCases().getApi().isDelete()),
             label(fundamentalModelMockProps.getFundamentalModelCases().getApi().isRun()),
             label(fundamentalModelMockProps.getFundamentalModelCases().getApi().isGetStatus()),
+            label(true),
+            label(fundamentalModelMockProps.getFundamentalModelCases().getApi().isGetVolumes()),
+            label(fundamentalModelMockProps.getFundamentalModelCases().getApi().isGetTradeFlows()),
+            label(fundamentalModelMockProps.getFundamentalModelCases().getApi().isGetPrice()),
             label(fundamentalModelMockProps.getFundamentalModelCases().getApi().isReset()),
             label(fundamentalModelMockProps.getFundamentalModelRuns().getApi().isCallback())
         );

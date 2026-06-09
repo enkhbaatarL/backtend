@@ -2,15 +2,16 @@ package com.sk.domain.mi.service.nextgen.mock;
 
 import com.sk.domain.mi.config.NextGenMockProperties;
 import com.sk.domain.mi.dto.request.nextgen.ModelExecutionCallbackReq;
-import com.sk.domain.mi.dto.request.nextgen.ModelExecutionSubmitReq;
 import com.sk.domain.mi.dto.response.nextgen.ModelExecutionAcceptRes;
 import com.sk.domain.mi.dto.response.nextgen.ModelExecutionParameterRes;
 import com.sk.domain.mi.dto.response.nextgen.ModelExecutionStatusRes;
 import com.sk.domain.mi.service.nextgen.ScenarioModelExecutionService;
 import com.sk.domain.mi.service.nextgen.ScenarioModelExecutionServiceImpl;
+import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Primary;
 import org.springframework.stereotype.Service;
+import org.springframework.web.multipart.MultipartFile;
 
 @Service
 @Primary
@@ -29,10 +30,10 @@ public class ScenarioModelExecutionServiceDelegator implements ScenarioModelExec
     }
 
     @Override
-    public ModelExecutionAcceptRes submitModelExecution(Long scenarioId, ModelExecutionSubmitReq request) {
+    public ModelExecutionAcceptRes submitModelExecution(Long scenarioId, List<MultipartFile> files) {
         return mockProps.getModelExecutions().getApi().isSubmit()
-            ? mockService.submitModelExecution(scenarioId, request)
-            : realService.submitModelExecution(scenarioId, request);
+            ? mockService.submitModelExecution(scenarioId, files)
+            : realService.submitModelExecution(scenarioId, files);
     }
 
     @Override

@@ -1,6 +1,5 @@
 package com.sk.domain.mi.service.nextgen.mock;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -8,8 +7,8 @@ import com.sk.common.enums.ResultCode;
 import com.sk.common.exception.AppErrorException;
 import com.sk.domain.mi.config.NextGenMockProperties;
 import com.sk.domain.mi.dto.request.nextgen.ModelExecutionCallbackReq;
-import com.sk.domain.mi.dto.request.nextgen.ModelExecutionSubmitReq;
 import com.sk.domain.mi.dto.response.nextgen.ModelExecutionAcceptRes;
+import com.sk.domain.mi.dto.response.nextgen.ModelExecutionFileRes;
 import com.sk.domain.mi.dto.response.nextgen.ModelExecutionParameterRes;
 import com.sk.domain.mi.dto.response.nextgen.ModelExecutionParameterTableRes;
 import com.sk.domain.mi.dto.response.nextgen.ModelExecutionStatusRes;
@@ -21,6 +20,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.time.Duration;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
@@ -30,16 +30,19 @@ import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicLong;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.stereotype.Component;
+import org.springframework.web.multipart.MultipartFile;
 
 @Slf4j
 @Component
 @RequiredArgsConstructor
 public class ScenarioModelExecutionMockService {
 
+    private static final int REQUIRED_FILE_COUNT = 3;
     private static final String MOCK_DISPATCH_FAILURE_MESSAGE = "Mock external API dispatch failed.";
     private static final String TIMEOUT_ERROR_MESSAGE = "Model execution timed out.";
 
@@ -48,6 +51,7 @@ public class ScenarioModelExecutionMockService {
     private final ScenarioMockService scenarioMockService;
     private final ConcurrentMap<String, StoredExecution> executionStore = new ConcurrentHashMap<>();
     private final ScheduledExecutorService scheduler = Executors.newSingleThreadScheduledExecutor();
+    private final AtomicLong fileNoSequence = new AtomicLong(1000);
     private Map<String, List<ModelExecutionParameterTableRes>> parameterTablesByScenario;
 
     @PostConstruct
@@ -81,16 +85,17 @@ public class ScenarioModelExecutionMockService {
         );
     }
 
-    public ModelExecutionAcceptRes submitModelExecution(Long scenarioId, ModelExecutionSubmitReq request) {
+    public ModelExecutionAcceptRes submitModelExecution(Long scenarioId, List<MultipartFile> files) {
         getScenarioDetail(scenarioId);
+        validateFiles(files);
         rejectIfActiveExecutionExists(scenarioId);
 
         LocalDateTime requestedAt = LocalDateTime.now();
         String executionId = generateExecutionId();
         String externalRunId = generateExternalRunId();
-        String tablesSnapshotJson = serializeTablesSnapshot(request);
+        List<ModelExecutionFileRes> uploadedFiles = mockUploadFiles(files);
 
-        StoredExecution queuedExecution = new StoredExecution(
+        StoredExecution pendingExecution = new StoredExecution(
             executionId,
             scenarioId,
             externalRunId,
@@ -99,16 +104,17 @@ public class ScenarioModelExecutionMockService {
             null,
             null,
             null,
-            tablesSnapshotJson
+            uploadedFiles
         );
-        executionStore.put(executionId, queuedExecution);
-        simulateExternalDispatch(queuedExecution);
+        executionStore.put(executionId, pendingExecution);
+        simulateExternalDispatch(pendingExecution);
 
         return new ModelExecutionAcceptRes(
             executionId,
             scenarioId,
             externalRunId,
             ModelExecutionStatus.QUEUED,
+            uploadedFiles,
             requestedAt,
             buildStatusEndpoint(scenarioId, executionId)
         );
@@ -165,7 +171,7 @@ public class ScenarioModelExecutionMockService {
             startedAt,
             finishedAt,
             errorMessage,
-            currentWithTimeout.tablesSnapshotJson()
+            currentWithTimeout.files()
         );
         executionStore.put(executionId, updated);
         return updated.toResponse();
@@ -177,6 +183,34 @@ public class ScenarioModelExecutionMockService {
             throw AppErrorException.of(ResultCode.Error.RSC_NOT_FOUND, "Model execution을 찾을 수 없습니다.");
         }
         return applyTimeoutIfNeeded(execution);
+    }
+
+    private void validateFiles(List<MultipartFile> files) {
+        if (files == null || files.size() != REQUIRED_FILE_COUNT) {
+            throw AppErrorException.of(
+                ResultCode.Error.REQ_INVALID_PARAMETER,
+                "files는 정확히 3개여야 합니다."
+            );
+        }
+        boolean hasEmptyFile = files.stream().anyMatch(file -> file == null || file.isEmpty());
+        if (hasEmptyFile) {
+            throw AppErrorException.of(ResultCode.Error.FILE_INVALID, "빈 파일은 업로드할 수 없습니다.");
+        }
+    }
+
+    private List<ModelExecutionFileRes> mockUploadFiles(List<MultipartFile> files) {
+        List<ModelExecutionFileRes> uploadedFiles = new ArrayList<>();
+        for (int index = 0; index < files.size(); index++) {
+            MultipartFile file = files.get(index);
+            uploadedFiles.add(new ModelExecutionFileRes(
+                fileNoSequence.incrementAndGet(),
+                index + 1,
+                file.getOriginalFilename(),
+                file.getContentType(),
+                file.getSize()
+            ));
+        }
+        return uploadedFiles;
     }
 
     private void rejectIfActiveExecutionExists(Long scenarioId) {
@@ -194,36 +228,36 @@ public class ScenarioModelExecutionMockService {
         }
     }
 
-    private void simulateExternalDispatch(StoredExecution queuedExecution) {
+    private void simulateExternalDispatch(StoredExecution pendingExecution) {
         boolean dispatchSuccess = mockProperties.getModelExecutions().getWorkflow().isDispatchSuccess();
         if (!dispatchSuccess) {
             StoredExecution failedExecution = new StoredExecution(
-                queuedExecution.executionId(),
-                queuedExecution.scenarioId(),
-                queuedExecution.externalRunId(),
+                pendingExecution.executionId(),
+                pendingExecution.scenarioId(),
+                pendingExecution.externalRunId(),
                 ModelExecutionStatus.FAILED,
-                queuedExecution.requestedAt(),
+                pendingExecution.requestedAt(),
                 null,
                 LocalDateTime.now(),
                 MOCK_DISPATCH_FAILURE_MESSAGE,
-                queuedExecution.tablesSnapshotJson()
+                pendingExecution.files()
             );
-            executionStore.put(queuedExecution.executionId(), failedExecution);
+            executionStore.put(pendingExecution.executionId(), failedExecution);
             return;
         }
 
         StoredExecution runningExecution = new StoredExecution(
-            queuedExecution.executionId(),
-            queuedExecution.scenarioId(),
-            queuedExecution.externalRunId(),
+            pendingExecution.executionId(),
+            pendingExecution.scenarioId(),
+            pendingExecution.externalRunId(),
             ModelExecutionStatus.RUNNING,
-            queuedExecution.requestedAt(),
+            pendingExecution.requestedAt(),
             LocalDateTime.now(),
             null,
             null,
-            queuedExecution.tablesSnapshotJson()
+            pendingExecution.files()
         );
-        executionStore.put(queuedExecution.executionId(), runningExecution);
+        executionStore.put(pendingExecution.executionId(), runningExecution);
         scheduleAutoComplete(runningExecution);
     }
 
@@ -241,7 +275,7 @@ public class ScenarioModelExecutionMockService {
                     current.startedAt(),
                     LocalDateTime.now(),
                     null,
-                    current.tablesSnapshotJson()
+                    current.files()
                 );
                 executionStore.put(current.executionId(), completed);
                 log.info("[Mock] Auto-completed model execution: executionId={}, scenarioId={}",
@@ -271,7 +305,7 @@ public class ScenarioModelExecutionMockService {
             execution.startedAt(),
             LocalDateTime.now(),
             TIMEOUT_ERROR_MESSAGE,
-            execution.tablesSnapshotJson()
+            execution.files()
         );
         executionStore.put(execution.executionId(), timedOutExecution);
         return timedOutExecution;
@@ -313,14 +347,6 @@ public class ScenarioModelExecutionMockService {
         );
     }
 
-    private String serializeTablesSnapshot(ModelExecutionSubmitReq request) {
-        try {
-            return objectMapper.writeValueAsString(request.tables());
-        } catch (JsonProcessingException e) {
-            throw AppErrorException.of(ResultCode.Error.REQ_INVALID_JSON, "tables snapshot 직렬화에 실패했습니다.");
-        }
-    }
-
     private String generateExecutionId() {
         return "exec_" + UUID.randomUUID().toString().replace("-", "").substring(0, 12);
     }
@@ -342,7 +368,7 @@ public class ScenarioModelExecutionMockService {
         LocalDateTime startedAt,
         LocalDateTime finishedAt,
         String errorMessage,
-        String tablesSnapshotJson
+        List<ModelExecutionFileRes> files
     ) {
 
         private ModelExecutionStatusRes toResponse() {
@@ -351,6 +377,7 @@ public class ScenarioModelExecutionMockService {
                 scenarioId,
                 externalRunId,
                 status,
+                files,
                 requestedAt,
                 startedAt,
                 finishedAt,
