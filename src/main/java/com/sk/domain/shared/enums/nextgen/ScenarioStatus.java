@@ -29,4 +29,18 @@ public enum ScenarioStatus {
             .orElseThrow(() -> new IllegalArgumentException("Unknown ScenarioStatus: " + value));
     }
 
+    /**
+     * DB judgment_status_code(한글 라벨)를 enum으로 역매핑.
+     * 컬럼은 NULL 허용이며 기본값이 '대기'이므로 null/blank 는 PENDING 으로 처리한다.
+     */
+    public static ScenarioStatus fromLabel(String label) {
+        if (label == null || label.isBlank()) {
+            return PENDING;
+        }
+        return Arrays.stream(values())
+            .filter(status -> status.label.equals(label))
+            .findFirst()
+            .orElseThrow(() -> new IllegalArgumentException("Unknown ScenarioStatus label: " + label));
+    }
+
 }

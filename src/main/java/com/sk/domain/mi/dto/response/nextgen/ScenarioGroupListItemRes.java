@@ -1,5 +1,6 @@
 package com.sk.domain.mi.dto.response.nextgen;
 
+import com.sk.domain.shared.repository.master.tmm.projection.ScenarioGroupBaseRow;
 import io.swagger.v3.oas.annotations.media.Schema;
 import java.time.LocalDateTime;
 import java.util.List;
@@ -30,4 +31,23 @@ public record ScenarioGroupListItemRes(
     @Schema(description = "그룹에 속한 시나리오 목록 (표 본문)")
     List<ScenarioRowRes> scenarios
 
-) {}
+) {
+
+    /** dimensionColumns/scenarios 는 template 병합이 필요해 외부에서 조립한 값을 받는다. */
+    public static ScenarioGroupListItemRes of(
+        ScenarioGroupBaseRow base,
+        List<ScenarioDimensionColumnRes> dimensionColumns,
+        List<ScenarioRowRes> scenarios
+    ) {
+        return new ScenarioGroupListItemRes(
+            base.scenarioGroupId(),
+            base.title(),
+            base.createDt(),
+            base.summary(),
+            base.scenarioCount() == null ? 0 : base.scenarioCount(),
+            dimensionColumns,
+            scenarios
+        );
+    }
+
+}

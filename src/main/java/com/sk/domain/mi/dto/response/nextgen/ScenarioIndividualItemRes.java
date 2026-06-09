@@ -1,5 +1,6 @@
 package com.sk.domain.mi.dto.response.nextgen;
 
+import com.sk.domain.shared.repository.master.tmm.projection.ScenarioIndividualBaseRow;
 import io.swagger.v3.oas.annotations.media.Schema;
 import java.time.LocalDateTime;
 import java.util.List;
@@ -41,6 +42,19 @@ public record ScenarioIndividualItemRes(
             new ScenarioGroupRefRes(group.scenarioGroupId(), group.groupName(), group.createdAt()),
             row.dimensions(),
             row.probability()
+        );
+    }
+
+    /** 개별 모드 base row + 조립된 dimensions → 응답 행. */
+    public static ScenarioIndividualItemRes of(ScenarioIndividualBaseRow row, List<ScenarioDimensionRes> dimensions) {
+        return new ScenarioIndividualItemRes(
+            row.scenarioId(),
+            row.scenarioTitle(),
+            Boolean.TRUE.equals(row.isBaseline()),
+            row.groupCreatedAt(),
+            new ScenarioGroupRefRes(row.scenarioGroupId(), row.groupTitle(), row.groupCreatedAt()),
+            dimensions,
+            row.probabilityScore() == null ? null : row.probabilityScore().intValue()
         );
     }
 

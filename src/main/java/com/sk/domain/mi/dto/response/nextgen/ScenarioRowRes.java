@@ -1,5 +1,6 @@
 package com.sk.domain.mi.dto.response.nextgen;
 
+import com.sk.domain.shared.repository.master.tmm.projection.ScenarioBaseRow;
 import io.swagger.v3.oas.annotations.media.Schema;
 import java.util.List;
 
@@ -23,4 +24,17 @@ public record ScenarioRowRes(
     @Schema(description = "시나리오 발생 확률 (0~100)", example = "30")
     Integer probability
 
-) {}
+) {
+
+    /** dimension 셀은 template 병합이 필요해 외부에서 조립한 값을 받는다. */
+    public static ScenarioRowRes of(ScenarioBaseRow row, List<ScenarioDimensionRes> dimensions) {
+        return new ScenarioRowRes(
+            row.scenarioId(),
+            row.title(),
+            Boolean.TRUE.equals(row.isBaseline()),
+            dimensions,
+            row.probabilityScore() == null ? null : row.probabilityScore().intValue()
+        );
+    }
+
+}

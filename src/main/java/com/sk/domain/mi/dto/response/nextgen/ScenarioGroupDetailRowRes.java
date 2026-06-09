@@ -1,12 +1,11 @@
 package com.sk.domain.mi.dto.response.nextgen;
 
 import com.sk.domain.shared.enums.nextgen.ScenarioStatus;
+import com.sk.domain.shared.repository.master.tmm.projection.ScenarioBaseRow;
 import io.swagger.v3.oas.annotations.media.Schema;
 import java.util.List;
 
-/**
- * 그룹 상세 '가정 및 실행 가능성' 표의 한 행. 목록 행 + 판정 상태(status).
- */
+
 public record ScenarioGroupDetailRowRes(
 
     @Schema(description = "시나리오 ID", example = "11")
@@ -30,4 +29,22 @@ public record ScenarioGroupDetailRowRes(
     @Schema(description = "판정 상태 라벨", example = "대기")
     String statusLabel
 
-) {}
+) {
+
+    public static ScenarioGroupDetailRowRes of(
+        ScenarioBaseRow row,
+        List<ScenarioDimensionRes> dimensions,
+        ScenarioStatus status
+    ) {
+        return new ScenarioGroupDetailRowRes(
+            row.scenarioId(),
+            row.title(),
+            Boolean.TRUE.equals(row.isBaseline()),
+            dimensions,
+            row.probabilityScore() == null ? null : row.probabilityScore().intValue(),
+            status,
+            status == null ? null : status.getLabel()
+        );
+    }
+
+}
