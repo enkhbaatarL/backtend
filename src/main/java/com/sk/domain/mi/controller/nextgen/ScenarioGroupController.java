@@ -228,7 +228,7 @@ public class ScenarioGroupController {
             - `narrative`: 시나리오 내러티브
             - `probability`: 시나리오 발생 확률 (0~100)
             - `dimensions`: 주요 가정 (key, label, value, valueLabel) — 자기완결형 차원값
-            - `signpostDefinitions`: Signpost 정의 (label, direction[up/down], directionLabel, strength(%), rationale)
+            - `signpostDefinitions`: Signpost 정의 (label, direction[sup], directionLabel[가능성강화], strength(%), rationale)
             - `signpostMonitorings`: Signpost 모니터링 이력 (updatedAt, eventSummary, probability, probabilityDelta, rationale)
             """
     )

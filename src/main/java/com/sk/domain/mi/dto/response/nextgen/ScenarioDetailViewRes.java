@@ -1,5 +1,6 @@
 package com.sk.domain.mi.dto.response.nextgen;
 
+import com.sk.domain.shared.repository.master.tmm.projection.ScenarioDetailBaseRow;
 import io.swagger.v3.oas.annotations.media.Schema;
 import java.util.List;
 
@@ -35,4 +36,23 @@ public record ScenarioDetailViewRes(
     @Schema(description = "Signpost 모니터링 현황")
     List<ScenarioSignpostMonitoringRes> signpostMonitorings
 
-) {}
+) {
+
+    public static ScenarioDetailViewRes of(ScenarioDetailBaseRow base,
+                                           List<ScenarioDimensionRes> dimensions,
+                                           List<ScenarioSignpostDefinitionViewRes> signpostDefinitions,
+                                           List<ScenarioSignpostMonitoringRes> signpostMonitorings) {
+        return new ScenarioDetailViewRes(
+            base.scenarioId(),
+            base.scenarioGroupId(),
+            base.title(),
+            Boolean.TRUE.equals(base.isBaseline()),
+            base.narrative(),
+            base.probabilityScore() == null ? null : base.probabilityScore().intValue(),
+            dimensions,
+            signpostDefinitions,
+            signpostMonitorings
+        );
+    }
+
+}

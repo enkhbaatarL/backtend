@@ -5,9 +5,12 @@ import java.math.BigDecimal;
 import org.hibernate.annotations.ColumnDefault;
 import org.hibernate.annotations.Comment;
 
+import com.sk.domain.shared.converter.ProbabilityDirectionConverter;
 import com.sk.domain.shared.entity.base.BaseEntity;
+import com.sk.domain.shared.enums.nextgen.ProbabilityDirection;
 
 import jakarta.persistence.Column;
+import jakarta.persistence.Convert;
 import jakarta.persistence.Entity;
 import jakarta.persistence.FetchType;
 import jakarta.persistence.GeneratedValue;
@@ -43,9 +46,10 @@ public class MiSignpost extends BaseEntity {
     @Comment("signpost label")
     private String label;
 
+    @Convert(converter = ProbabilityDirectionConverter.class)
     @Column(name = "probability_direction_code", length = 50)
     @Comment("확률 변화 방향")
-    private String probabilityDirectionCode;
+    private ProbabilityDirection probabilityDirection;
 
     @Column(name = "probability_impact_score", precision = 5, scale = 2)
     @Comment("확률 변화 강도")
@@ -61,12 +65,12 @@ public class MiSignpost extends BaseEntity {
     private Integer displayOrder;
 
     @Builder
-    public MiSignpost(Long signpostId, MiScenario scenario, String label, String probabilityDirectionCode,
+    public MiSignpost(Long signpostId, MiScenario scenario, String label, ProbabilityDirection probabilityDirection,
                       BigDecimal probabilityImpactScore, String signpostReason, Integer displayOrder) {
         this.signpostId = signpostId;
         this.scenario = scenario;
         this.label = label;
-        this.probabilityDirectionCode = probabilityDirectionCode;
+        this.probabilityDirection = probabilityDirection;
         this.probabilityImpactScore = probabilityImpactScore;
         this.signpostReason = signpostReason;
         this.displayOrder = displayOrder;

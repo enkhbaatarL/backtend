@@ -1,6 +1,7 @@
 package com.sk.domain.mi.dto.response.nextgen;
 
 import com.sk.domain.shared.enums.nextgen.ProbabilityDirection;
+import com.sk.domain.shared.repository.master.tmm.projection.ScenarioSignpostRow;
 import io.swagger.v3.oas.annotations.media.Schema;
 
 /**
@@ -11,10 +12,10 @@ public record ScenarioSignpostDefinitionViewRes(
     @Schema(description = "Signpost 라벨 (관측 사건)", example = "이란 혁명수비대 호르무즈 해협 부분 통항 허용 발표")
     String label,
 
-    @Schema(description = "확률 변화 방향 (up/down)", example = "up")
+    @Schema(description = "확률 변화 방향 (실DB는 sup 단일 코드)", example = "sup")
     ProbabilityDirection direction,
 
-    @Schema(description = "확률 변화 방향 라벨", example = "상승")
+    @Schema(description = "확률 변화 방향 라벨", example = "가능성강화")
     String directionLabel,
 
     @Schema(description = "확률 변화 강도 (%)", example = "54")
@@ -23,4 +24,17 @@ public record ScenarioSignpostDefinitionViewRes(
     @Schema(description = "Signpost 근거")
     String rationale
 
-) {}
+) {
+
+    public static ScenarioSignpostDefinitionViewRes of(ScenarioSignpostRow row) {
+        ProbabilityDirection direction = row.probabilityDirection();
+        return new ScenarioSignpostDefinitionViewRes(
+            row.label(),
+            direction,
+            direction == null ? null : direction.getLabel(),
+            row.probabilityImpactScore() == null ? null : row.probabilityImpactScore().intValue(),
+            row.signpostReason()
+        );
+    }
+
+}

@@ -1,5 +1,6 @@
 package com.sk.domain.mi.dto.response.nextgen;
 
+import com.sk.domain.shared.repository.master.tmm.projection.ScenarioSignpostEventRow;
 import io.swagger.v3.oas.annotations.media.Schema;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
@@ -24,4 +25,16 @@ public record ScenarioSignpostMonitoringRes(
     @Schema(description = "상세 내역 (Signpost 해석 근거)")
     String rationale
 
-) {}
+) {
+
+    public static ScenarioSignpostMonitoringRes of(ScenarioSignpostEventRow row) {
+        return new ScenarioSignpostMonitoringRes(
+            row.occurredAt(),
+            row.summary(),
+            row.probabilityScore() == null ? null : row.probabilityScore().intValue(),
+            row.probabilityDelta(),
+            row.matchingReason()
+        );
+    }
+
+}

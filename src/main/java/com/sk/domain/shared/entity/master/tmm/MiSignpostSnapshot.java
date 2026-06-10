@@ -4,9 +4,12 @@ import java.math.BigDecimal;
 
 import org.hibernate.annotations.Comment;
 
+import com.sk.domain.shared.converter.ProbabilityDirectionConverter;
 import com.sk.domain.shared.entity.base.BaseEntity;
+import com.sk.domain.shared.enums.nextgen.ProbabilityDirection;
 
 import jakarta.persistence.Column;
+import jakarta.persistence.Convert;
 import jakarta.persistence.Entity;
 import jakarta.persistence.FetchType;
 import jakarta.persistence.GeneratedValue;
@@ -51,9 +54,10 @@ public class MiSignpostSnapshot extends BaseEntity {
     @Comment("signpost label (동결)")
     private String label;
 
+    @Convert(converter = ProbabilityDirectionConverter.class)
     @Column(name = "probability_direction_code", length = 50)
     @Comment("확률 변화 방향 (동결)")
-    private String probabilityDirectionCode;
+    private ProbabilityDirection probabilityDirection;
 
     @Column(name = "probability_impact_score", precision = 5, scale = 2)
     @Comment("확률 변화 강도 (동결)")
@@ -61,14 +65,14 @@ public class MiSignpostSnapshot extends BaseEntity {
 
     @Builder
     public MiSignpostSnapshot(Long signpostSnapId, MiSnapshot snapshot, MiScenarioSnapshot scenarioSnapshot,
-                              Long srcSignpostId, String label, String probabilityDirectionCode,
+                              Long srcSignpostId, String label, ProbabilityDirection probabilityDirection,
                               BigDecimal probabilityImpactScore) {
         this.signpostSnapId = signpostSnapId;
         this.snapshot = snapshot;
         this.scenarioSnapshot = scenarioSnapshot;
         this.srcSignpostId = srcSignpostId;
         this.label = label;
-        this.probabilityDirectionCode = probabilityDirectionCode;
+        this.probabilityDirection = probabilityDirection;
         this.probabilityImpactScore = probabilityImpactScore;
     }
 

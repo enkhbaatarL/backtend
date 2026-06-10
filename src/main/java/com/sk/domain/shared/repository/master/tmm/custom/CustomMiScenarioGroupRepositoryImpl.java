@@ -6,6 +6,8 @@ import static com.sk.domain.shared.entity.master.tmm.QMiEventTypeL2.miEventTypeL
 import static com.sk.domain.shared.entity.master.tmm.QMiScenario.miScenario;
 import static com.sk.domain.shared.entity.master.tmm.QMiScenarioDimensionTemplate.miScenarioDimensionTemplate;
 import static com.sk.domain.shared.entity.master.tmm.QMiScenarioGroup.miScenarioGroup;
+import static com.sk.domain.shared.entity.master.tmm.QMiSignpost.miSignpost;
+import static com.sk.domain.shared.entity.master.tmm.QMiSignpostEvent.miSignpostEvent;
 
 import com.querydsl.core.BooleanBuilder;
 import com.querydsl.core.types.OrderSpecifier;
@@ -13,15 +15,21 @@ import com.querydsl.jpa.JPQLQuery;
 import com.querydsl.jpa.impl.JPAQueryFactory;
 import com.sk.domain.mi.dto.request.nextgen.ScenarioGroupListReq;
 import com.sk.domain.shared.repository.master.tmm.projection.QScenarioBaseRow;
+import com.sk.domain.shared.repository.master.tmm.projection.QScenarioDetailBaseRow;
 import com.sk.domain.shared.repository.master.tmm.projection.QScenarioDimensionTemplateRow;
 import com.sk.domain.shared.repository.master.tmm.projection.QScenarioGroupBaseRow;
 import com.sk.domain.shared.repository.master.tmm.projection.QScenarioGroupDetailBaseRow;
 import com.sk.domain.shared.repository.master.tmm.projection.QScenarioIndividualBaseRow;
+import com.sk.domain.shared.repository.master.tmm.projection.QScenarioSignpostEventRow;
+import com.sk.domain.shared.repository.master.tmm.projection.QScenarioSignpostRow;
 import com.sk.domain.shared.repository.master.tmm.projection.ScenarioBaseRow;
+import com.sk.domain.shared.repository.master.tmm.projection.ScenarioDetailBaseRow;
 import com.sk.domain.shared.repository.master.tmm.projection.ScenarioDimensionTemplateRow;
 import com.sk.domain.shared.repository.master.tmm.projection.ScenarioGroupBaseRow;
 import com.sk.domain.shared.repository.master.tmm.projection.ScenarioGroupDetailBaseRow;
 import com.sk.domain.shared.repository.master.tmm.projection.ScenarioIndividualBaseRow;
+import com.sk.domain.shared.repository.master.tmm.projection.ScenarioSignpostEventRow;
+import com.sk.domain.shared.repository.master.tmm.projection.ScenarioSignpostRow;
 import java.util.List;
 import java.util.Optional;
 import lombok.RequiredArgsConstructor;
@@ -204,6 +212,75 @@ public class CustomMiScenarioGroupRepositoryImpl implements CustomMiScenarioGrou
                 miScenario.scenarioGroup.scenarioGroupId.asc(),
                 miScenario.displayOrder.asc(),
                 miScenario.scenarioId.asc()
+            )
+            .fetch();
+    }
+
+    @Override
+    public Optional<ScenarioDetailBaseRow> findScenarioDetail(Long scenarioGroupId, Long scenarioId) {
+        ScenarioDetailBaseRow row = queryFactory
+            .select(new QScenarioDetailBaseRow(
+                miScenario.scenarioId,
+                miScenarioGroup.scenarioGroupId,
+                miScenario.title,
+                miScenario.isBaseline,
+                miScenario.narrative,
+                miScenario.probabilityScore,
+                miScenario.dimensionValues,
+                miScenarioGroup.dimensionSelected,
+                miScenarioGroup.eventTypeL2.eventTypeL2Id
+            ))
+            .from(miScenario)
+            .innerJoin(miScenario.scenarioGroup, miScenarioGroup).on(miScenarioGroup.isDeleted.isFalse())
+            .where(
+                miScenario.scenarioId.eq(scenarioId),
+                miScenarioGroup.scenarioGroupId.eq(scenarioGroupId),
+                miScenario.isDeleted.isFalse()
+            )
+            .fetchOne();
+        return Optional.ofNullable(row);
+    }
+
+    @Override
+    public List<ScenarioSignpostRow> findSignpostsByScenarioId(Long scenarioId) {
+        return queryFactory
+            .select(new QScenarioSignpostRow(
+                miSignpost.label,
+                miSignpost.probabilityDirection,
+                miSignpost.probabilityImpactScore,
+                miSignpost.signpostReason
+            ))
+            .from(miSignpost)
+            .where(
+                miSignpost.scenario.scenarioId.eq(scenarioId),
+                miSignpost.isDeleted.isFalse()
+            )
+            .orderBy(
+                miSignpost.displayOrder.asc(),
+                miSignpost.signpostId.asc()
+            )
+            .fetch();
+    }
+
+    @Override
+    public List<ScenarioSignpostEventRow> findSignpostEventsByScenarioId(Long scenarioId) {
+        return queryFactory
+            .select(new QScenarioSignpostEventRow(
+                miSignpostEvent.occurredAt,
+                miSignpostEvent.summary,
+                miSignpostEvent.probabilityScore,
+                miSignpostEvent.probabilityDelta,
+                miSignpostEvent.matchingReason
+            ))
+            .from(miSignpostEvent)
+            .innerJoin(miSignpostEvent.signpost, miSignpost).on(miSignpost.isDeleted.isFalse())
+            .where(
+                miSignpost.scenario.scenarioId.eq(scenarioId),
+                miSignpostEvent.isDeleted.isFalse()
+            )
+            .orderBy(
+                miSignpostEvent.occurredAt.asc().nullsLast(),
+                miSignpostEvent.signpostEventId.asc()
             )
             .fetch();
     }

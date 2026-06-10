@@ -7,7 +7,6 @@ import com.sk.common.enums.ResultCode;
 import com.sk.common.exception.AppErrorException;
 import com.sk.common.model.PaginationRes;
 import com.sk.domain.mi.dto.request.nextgen.ScenarioGroupListReq;
-import com.sk.domain.mi.dto.response.nextgen.ScenarioBaseEventRes;
 import com.sk.domain.mi.dto.response.nextgen.ScenarioBulkStatusRes;
 import com.sk.domain.mi.dto.response.nextgen.ScenarioDetailViewRes;
 import com.sk.domain.mi.dto.response.nextgen.ScenarioDimensionColumnRes;
@@ -21,6 +20,8 @@ import com.sk.domain.mi.dto.response.nextgen.ScenarioGroupListRes;
 import com.sk.domain.mi.dto.response.nextgen.ScenarioIndividualItemRes;
 import com.sk.domain.mi.dto.response.nextgen.ScenarioIndividualListRes;
 import com.sk.domain.mi.dto.response.nextgen.ScenarioRowRes;
+import com.sk.domain.mi.dto.response.nextgen.ScenarioSignpostDefinitionViewRes;
+import com.sk.domain.mi.dto.response.nextgen.ScenarioSignpostMonitoringRes;
 import com.sk.domain.mi.dto.response.nextgen.ScenarioStatusRes;
 import com.sk.domain.mi.service.nextgen.support.ScenarioDimensionMapper;
 import com.sk.domain.mi.service.nextgen.support.ScenarioDimensionMapper.GroupDimensionTemplate;
@@ -28,6 +29,7 @@ import com.sk.domain.shared.enums.nextgen.IndexName;
 import com.sk.domain.shared.enums.nextgen.ScenarioStatus;
 import com.sk.domain.shared.repository.master.tmm.MiScenarioGroupRepository;
 import com.sk.domain.shared.repository.master.tmm.projection.ScenarioBaseRow;
+import com.sk.domain.shared.repository.master.tmm.projection.ScenarioDetailBaseRow;
 import com.sk.domain.shared.repository.master.tmm.projection.ScenarioGroupBaseRow;
 import com.sk.domain.shared.repository.master.tmm.projection.ScenarioGroupDetailBaseRow;
 import com.sk.domain.shared.repository.master.tmm.projection.ScenarioIndividualBaseRow;
@@ -133,8 +135,7 @@ public class ScenarioGroupServiceImpl implements ScenarioGroupService {
     @Override
     public ScenarioGroupDetailRes getScenarioGroupDetail(Long scenarioGroupId) {
         ScenarioGroupDetailBaseRow base = scenarioGroupRepository.findScenarioGroupDetail(scenarioGroupId)
-            .orElseThrow(() -> AppErrorException.of(ResultCode.Error.RSC_NOT_FOUND,
-                "Scenario group not found: " + scenarioGroupId));
+            .orElseThrow(() -> AppErrorException.of(ResultCode.Error.RSC_NOT_FOUND, "Scenario group not found: %d".formatted(scenarioGroupId)));
 
         GroupDimensionTemplate template = ScenarioDimensionMapper.parseTemplates(
                 scenarioGroupRepository.findTemplatesByEventTypeL2Ids(List.of(base.eventTypeL2Id())))
@@ -151,25 +152,31 @@ public class ScenarioGroupServiceImpl implements ScenarioGroupService {
             ))
             .toList();
 
-        ScenarioBaseEventRes baseEvent = new ScenarioBaseEventRes(
-            base.eventId(), base.eventName(), base.eventTypeLv1Code(), base.eventTypeLv1Label(), base.eventUpdatedAt());
-
-        return new ScenarioGroupDetailRes(
-            base.scenarioGroupId(),
-            base.groupName(),
-            base.createdAt(),
-            baseEvent,
-            base.summary(),
-            base.scenarioCount() == null ? scenarios.size() : base.scenarioCount(),
-            dimensionColumns,
-            scenarios
-        );
+        return ScenarioGroupDetailRes.of(base, dimensionColumns, scenarios);
     }
 
     @Override
     public ScenarioDetailViewRes getScenarioDetail(Long scenarioGroupId, Long scenarioId) {
-        // TODO: DB 연동 구현
-        throw AppErrorException.of(ResultCode.Error.RSC_NOT_FOUND, "Scenario detail DB 연동 미구현");
+        ScenarioDetailBaseRow base = scenarioGroupRepository.findScenarioDetail(scenarioGroupId, scenarioId)
+            .orElseThrow(() -> AppErrorException.of(ResultCode.Error.RSC_NOT_FOUND, "Scenario not found: scenarioGroupId=%d, scenarioId=%d".formatted(scenarioGroupId, scenarioId)));
+
+        GroupDimensionTemplate template = ScenarioDimensionMapper.parseTemplates(
+                scenarioGroupRepository.findTemplatesByEventTypeL2Ids(List.of(base.eventTypeL2Id())))
+            .getOrDefault(base.eventTypeL2Id(), GroupDimensionTemplate.EMPTY);
+
+        List<String> selectedKeys = ScenarioDimensionMapper.parseSelectedKeys(base.dimensionSelected());
+
+        List<ScenarioDimensionRes> dimensions = template.dimensions(selectedKeys, base.dimensionValues());
+
+        List<ScenarioSignpostDefinitionViewRes> signpostDefinitions = scenarioGroupRepository.findSignpostsByScenarioId(scenarioId).stream()
+                .map(ScenarioSignpostDefinitionViewRes::of)
+                .toList();
+
+        List<ScenarioSignpostMonitoringRes> signpostMonitorings = scenarioGroupRepository.findSignpostEventsByScenarioId(scenarioId).stream()
+                .map(ScenarioSignpostMonitoringRes::of)
+                .toList();
+
+        return ScenarioDetailViewRes.of(base, dimensions, signpostDefinitions, signpostMonitorings);
     }
 
     @Override
