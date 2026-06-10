@@ -6,6 +6,8 @@
               "updatedAt":  "2026-05-12T15:08:34",
               "signalType":  "signal",
               "signalTypeLabel":  "신호",
+              "isScenarioSuggested":  true,
+              "scenarioSuggestReason":  "글로벌 LNG 공급 차질 가능성이 시나리오화 가치 있음",
               "impactAnalysis":  {
                                      "indexImpacts":  [
                                                           {
@@ -187,6 +189,8 @@
               "updatedAt":  "2026-05-12T15:08:34",
               "signalType":  "signal",
               "signalTypeLabel":  "신호",
+              "isScenarioSuggested":  false,
+              "scenarioSuggestReason":  null,
               "impactAnalysis":  {
                                      "indexImpacts":  [
                                                           {
@@ -369,6 +373,8 @@
               "updatedAt":  "2026-05-12T15:08:34",
               "signalType":  "signal",
               "signalTypeLabel":  "신호",
+              "isScenarioSuggested":  false,
+              "scenarioSuggestReason":  null,
               "impactAnalysis":  {
                                      "indexImpacts":  [
                                                           {
@@ -530,6 +536,8 @@
               "updatedAt":  "2026-05-12T15:08:34",
               "signalType":  "signal",
               "signalTypeLabel":  "신호",
+              "isScenarioSuggested":  true,
+              "scenarioSuggestReason":  "아시아/유럽 가격 디커플링 시그널이 강해 시나리오 분기 필요",
               "impactAnalysis":  {
                                      "indexImpacts":  [
                                                           {
@@ -691,6 +699,8 @@
               "updatedAt":  "2026-05-12T15:08:34",
               "signalType":  "signal",
               "signalTypeLabel":  "신호",
+              "isScenarioSuggested":  false,
+              "scenarioSuggestReason":  null,
               "impactAnalysis":  {
                                      "indexImpacts":  [
                                                           {
@@ -852,6 +862,8 @@
               "updatedAt":  "2026-05-12T15:08:34",
               "signalType":  "signal",
               "signalTypeLabel":  "신호",
+              "isScenarioSuggested":  false,
+              "scenarioSuggestReason":  null,
               "impactAnalysis":  {
                                      "indexImpacts":  [
                                                           {
@@ -1013,6 +1025,8 @@
               "updatedAt":  "2026-05-12T15:08:34",
               "signalType":  "signal",
               "signalTypeLabel":  "신호",
+              "isScenarioSuggested":  false,
+              "scenarioSuggestReason":  null,
               "impactAnalysis":  {
                                      "indexImpacts":  [
                                                           {
@@ -1195,6 +1209,8 @@
               "updatedAt":  "2026-05-12T15:08:34",
               "signalType":  "signal",
               "signalTypeLabel":  "신호",
+              "isScenarioSuggested":  true,
+              "scenarioSuggestReason":  "단기 spot 프리미엄 확장 추세로 모델 시뮬레이션 적합",
               "impactAnalysis":  {
                                      "indexImpacts":  [
                                                           {
@@ -1377,6 +1393,8 @@
               "updatedAt":  "2026-05-12T15:08:34",
               "signalType":  "signal",
               "signalTypeLabel":  "신호",
+              "isScenarioSuggested":  false,
+              "scenarioSuggestReason":  null,
               "impactAnalysis":  {
                                      "indexImpacts":  [
                                                           {
@@ -1512,6 +1530,8 @@
                "updatedAt":  "2026-05-12T15:06:57",
                "signalType":  "signal",
                "signalTypeLabel":  "신호",
+               "isScenarioSuggested":  false,
+               "scenarioSuggestReason":  null,
                "impactAnalysis":  {
                                       "indexImpacts":  [
                                                            {
@@ -1647,6 +1667,8 @@
                "updatedAt":  "2026-05-12T15:06:43",
                "signalType":  "signal",
                "signalTypeLabel":  "신호",
+               "isScenarioSuggested":  true,
+               "scenarioSuggestReason":  "수급 밸런스 변동성이 커 다중 시나리오 검토 필요",
                "impactAnalysis":  {
                                       "indexImpacts":  [
                                                            {
@@ -1782,6 +1804,8 @@
                "updatedAt":  "2026-05-12T15:06:43",
                "signalType":  "signal",
                "signalTypeLabel":  "신호",
+               "isScenarioSuggested":  false,
+               "scenarioSuggestReason":  null,
                "impactAnalysis":  {
                                       "indexImpacts":  [
                                                            {
@@ -1891,6 +1915,8 @@
                "updatedAt":  "2026-03-14T18:31:03",
                "signalType":  "noise",
                "signalTypeLabel":  "소음",
+               "isScenarioSuggested":  false,
+               "scenarioSuggestReason":  null,
                "impactAnalysis":  {
                                       "indexImpacts":  [
                                                            {
@@ -2000,6 +2026,8 @@
                "updatedAt":  "2026-05-12T15:06:43",
                "signalType":  "signal",
                "signalTypeLabel":  "신호",
+               "isScenarioSuggested":  true,
+               "scenarioSuggestReason":  "정책/제재 변수가 가격 경로를 가르는 분기점",
                "impactAnalysis":  {
                                       "indexImpacts":  [
                                                            {
@@ -2109,6 +2137,8 @@
                "updatedAt":  "2026-03-13T15:04:59",
                "signalType":  "noise",
                "signalTypeLabel":  "소음",
+               "isScenarioSuggested":  false,
+               "scenarioSuggestReason":  null,
                "impactAnalysis":  {
                                       "indexImpacts":  [
                                                            {
@@ -2218,6 +2248,8 @@
                "updatedAt":  "2026-03-13T15:04:59",
                "signalType":  "signal",
                "signalTypeLabel":  "신호",
+               "isScenarioSuggested":  false,
+               "scenarioSuggestReason":  null,
                "impactAnalysis":  {
                                       "indexImpacts":  [
                                                            {
@@ -2378,6 +2410,8 @@
                "updatedAt":  "2026-03-13T15:39:10",
                "signalType":  "signal",
                "signalTypeLabel":  "신호",
+               "isScenarioSuggested":  false,
+               "scenarioSuggestReason":  null,
                "impactAnalysis":  {
                                       "indexImpacts":  [
                                                            {
@@ -2559,6 +2593,8 @@
                "updatedAt":  "2026-03-13T18:49:33",
                "signalType":  "signal",
                "signalTypeLabel":  "신호",
+               "isScenarioSuggested":  true,
+               "scenarioSuggestReason":  "기후/계절 패턴이 기준선과 이탈, 모델 재검토 필요",
                "impactAnalysis":  {
                                       "indexImpacts":  [
                                                            {
@@ -2740,6 +2776,8 @@
                "updatedAt":  "2026-03-13T13:03:36",
                "signalType":  "signal",
                "signalTypeLabel":  "신호",
+               "isScenarioSuggested":  false,
+               "scenarioSuggestReason":  null,
                "impactAnalysis":  {
                                       "indexImpacts":  [
                                                            {
@@ -2900,6 +2938,8 @@
                "updatedAt":  "2026-03-13T18:49:33",
                "signalType":  "signal",
                "signalTypeLabel":  "신호",
+               "isScenarioSuggested":  false,
+               "scenarioSuggestReason":  null,
                "impactAnalysis":  {
                                       "indexImpacts":  [
                                                            {
@@ -3035,6 +3075,8 @@
                "updatedAt":  "2026-03-13T13:03:36",
                "signalType":  "signal",
                "signalTypeLabel":  "신호",
+               "isScenarioSuggested":  true,
+               "scenarioSuggestReason":  "글로벌 LNG 공급 차질 가능성이 시나리오화 가치 있음",
                "impactAnalysis":  {
                                       "indexImpacts":  [
                                                            {
@@ -3195,6 +3237,8 @@
                "updatedAt":  "2026-03-13T15:39:10",
                "signalType":  "signal",
                "signalTypeLabel":  "신호",
+               "isScenarioSuggested":  false,
+               "scenarioSuggestReason":  null,
                "impactAnalysis":  {
                                       "indexImpacts":  [
                                                            {
@@ -3278,6 +3322,8 @@
                "updatedAt":  "2026-03-12T18:22:50",
                "signalType":  "signal",
                "signalTypeLabel":  "신호",
+               "isScenarioSuggested":  false,
+               "scenarioSuggestReason":  null,
                "impactAnalysis":  {
                                       "indexImpacts":  [
                                                            {
@@ -3361,6 +3407,8 @@
                "updatedAt":  "2026-03-12T23:48:27",
                "signalType":  "signal",
                "signalTypeLabel":  "신호",
+               "isScenarioSuggested":  true,
+               "scenarioSuggestReason":  "아시아/유럽 가격 디커플링 시그널이 강해 시나리오 분기 필요",
                "impactAnalysis":  {
                                       "indexImpacts":  [
                                                            {
@@ -3445,6 +3493,8 @@
                "updatedAt":  "2026-03-12T14:33:11",
                "signalType":  "signal",
                "signalTypeLabel":  "신호",
+               "isScenarioSuggested":  false,
+               "scenarioSuggestReason":  null,
                "impactAnalysis":  {
                                       "indexImpacts":  [
                                                            {
@@ -3580,6 +3630,8 @@
                "updatedAt":  "2026-03-12T15:57:24",
                "signalType":  "signal",
                "signalTypeLabel":  "신호",
+               "isScenarioSuggested":  false,
+               "scenarioSuggestReason":  null,
                "impactAnalysis":  {
                                       "indexImpacts":  [
                                                            {
@@ -3714,6 +3766,8 @@
                "updatedAt":  "2026-03-12T20:50:41",
                "signalType":  "signal",
                "signalTypeLabel":  "신호",
+               "isScenarioSuggested":  false,
+               "scenarioSuggestReason":  null,
                "impactAnalysis":  {
                                       "indexImpacts":  [
                                                            {
@@ -3848,6 +3902,8 @@
                "updatedAt":  "2026-03-12T20:17:13",
                "signalType":  "noise",
                "signalTypeLabel":  "소음",
+               "isScenarioSuggested":  false,
+               "scenarioSuggestReason":  null,
                "impactAnalysis":  {
                                       "indexImpacts":  [
                                                            {
@@ -3982,6 +4038,8 @@
                "updatedAt":  "2026-03-12T11:00:00",
                "signalType":  "noise",
                "signalTypeLabel":  "소음",
+               "isScenarioSuggested":  false,
+               "scenarioSuggestReason":  null,
                "impactAnalysis":  {
                                       "indexImpacts":  [
                                                            {
@@ -4116,6 +4174,8 @@
                "updatedAt":  "2026-03-12T19:58:04",
                "signalType":  "noise",
                "signalTypeLabel":  "소음",
+               "isScenarioSuggested":  false,
+               "scenarioSuggestReason":  null,
                "impactAnalysis":  {
                                       "indexImpacts":  [
                                                            {
@@ -4250,6 +4310,8 @@
                "updatedAt":  "2026-03-12T23:48:27",
                "signalType":  "signal",
                "signalTypeLabel":  "신호",
+               "isScenarioSuggested":  true,
+               "scenarioSuggestReason":  "단기 spot 프리미엄 확장 추세로 모델 시뮬레이션 적합",
                "impactAnalysis":  {
                                       "indexImpacts":  [
                                                            {
@@ -4431,6 +4493,8 @@
                "updatedAt":  "2026-03-12T11:00:00",
                "signalType":  "signal",
                "signalTypeLabel":  "신호",
+               "isScenarioSuggested":  false,
+               "scenarioSuggestReason":  null,
                "impactAnalysis":  {
                                       "indexImpacts":  [
                                                            {
@@ -4654,6 +4718,8 @@
                "updatedAt":  "2026-03-12T03:25:02",
                "signalType":  "signal",
                "signalTypeLabel":  "신호",
+               "isScenarioSuggested":  false,
+               "scenarioSuggestReason":  null,
                "impactAnalysis":  {
                                       "indexImpacts":  [
                                                            {
@@ -4814,6 +4880,8 @@
                "updatedAt":  "2026-03-12T17:03:47",
                "signalType":  "signal",
                "signalTypeLabel":  "신호",
+               "isScenarioSuggested":  true,
+               "scenarioSuggestReason":  "수급 밸런스 변동성이 커 다중 시나리오 검토 필요",
                "impactAnalysis":  {
                                       "indexImpacts":  [
                                                            {
@@ -4995,6 +5063,8 @@
                "updatedAt":  "2026-03-12T11:00:00",
                "signalType":  "signal",
                "signalTypeLabel":  "신호",
+               "isScenarioSuggested":  false,
+               "scenarioSuggestReason":  null,
                "impactAnalysis":  {
                                       "indexImpacts":  [
                                                            {
@@ -5129,6 +5199,8 @@
                "updatedAt":  "2026-05-12T15:03:04",
                "signalType":  "signal",
                "signalTypeLabel":  "신호",
+               "isScenarioSuggested":  false,
+               "scenarioSuggestReason":  null,
                "impactAnalysis":  {
                                       "indexImpacts":  [
                                                            {
@@ -5289,6 +5361,8 @@
                "updatedAt":  "2026-03-11T12:19:09",
                "signalType":  "signal",
                "signalTypeLabel":  "신호",
+               "isScenarioSuggested":  false,
+               "scenarioSuggestReason":  null,
                "impactAnalysis":  {
                                       "indexImpacts":  [
                                                            {
@@ -5423,6 +5497,8 @@
                "updatedAt":  "2026-03-11T07:00:00",
                "signalType":  "signal",
                "signalTypeLabel":  "신호",
+               "isScenarioSuggested":  true,
+               "scenarioSuggestReason":  "정책/제재 변수가 가격 경로를 가르는 분기점",
                "impactAnalysis":  {
                                       "indexImpacts":  [
                                                            {
@@ -5557,6 +5633,8 @@
                "updatedAt":  "2026-03-11T07:00:00",
                "signalType":  "signal",
                "signalTypeLabel":  "신호",
+               "isScenarioSuggested":  false,
+               "scenarioSuggestReason":  null,
                "impactAnalysis":  {
                                       "indexImpacts":  [
                                                            {
@@ -5717,6 +5795,8 @@
                "updatedAt":  "2026-03-11T12:57:51",
                "signalType":  "signal",
                "signalTypeLabel":  "신호",
+               "isScenarioSuggested":  false,
+               "scenarioSuggestReason":  null,
                "impactAnalysis":  {
                                       "indexImpacts":  [
                                                            {
@@ -5851,6 +5931,8 @@
                "updatedAt":  "2026-05-12T15:03:04",
                "signalType":  "signal",
                "signalTypeLabel":  "신호",
+               "isScenarioSuggested":  true,
+               "scenarioSuggestReason":  "기후/계절 패턴이 기준선과 이탈, 모델 재검토 필요",
                "impactAnalysis":  {
                                       "indexImpacts":  [
                                                            {
@@ -5985,6 +6067,8 @@
                "updatedAt":  "2026-03-11T14:52:03",
                "signalType":  "noise",
                "signalTypeLabel":  "소음",
+               "isScenarioSuggested":  false,
+               "scenarioSuggestReason":  null,
                "impactAnalysis":  {
                                       "indexImpacts":  [
                                                            {
@@ -6119,6 +6203,8 @@
                "updatedAt":  "2026-03-11T12:19:09",
                "signalType":  "noise",
                "signalTypeLabel":  "소음",
+               "isScenarioSuggested":  false,
+               "scenarioSuggestReason":  null,
                "impactAnalysis":  {
                                       "indexImpacts":  [
                                                            {
@@ -6279,6 +6365,8 @@
                "updatedAt":  "2026-03-10T17:29:15",
                "signalType":  "noise",
                "signalTypeLabel":  "소음",
+               "isScenarioSuggested":  false,
+               "scenarioSuggestReason":  null,
                "impactAnalysis":  {
                                       "indexImpacts":  [
                                                            {
@@ -6460,6 +6548,8 @@
                "updatedAt":  "2026-05-12T15:01:41",
                "signalType":  "noise",
                "signalTypeLabel":  "소음",
+               "isScenarioSuggested":  false,
+               "scenarioSuggestReason":  null,
                "impactAnalysis":  {
                                       "indexImpacts":  [
                                                            {
@@ -6641,6 +6731,8 @@
                "updatedAt":  "2026-03-10T19:24:39",
                "signalType":  "signal",
                "signalTypeLabel":  "신호",
+               "isScenarioSuggested":  false,
+               "scenarioSuggestReason":  null,
                "impactAnalysis":  {
                                       "indexImpacts":  [
                                                            {
@@ -6843,6 +6935,8 @@
                "updatedAt":  "2026-03-10T17:29:15",
                "signalType":  "signal",
                "signalTypeLabel":  "신호",
+               "isScenarioSuggested":  false,
+               "scenarioSuggestReason":  null,
                "impactAnalysis":  {
                                       "indexImpacts":  [
                                                            {
@@ -7045,6 +7139,8 @@
                "updatedAt":  "2026-05-12T15:01:41",
                "signalType":  "signal",
                "signalTypeLabel":  "신호",
+               "isScenarioSuggested":  true,
+               "scenarioSuggestReason":  "글로벌 LNG 공급 차질 가능성이 시나리오화 가치 있음",
                "impactAnalysis":  {
                                       "indexImpacts":  [
                                                            {
@@ -7226,6 +7322,8 @@
                "updatedAt":  "2026-03-10T19:27:22",
                "signalType":  "signal",
                "signalTypeLabel":  "신호",
+               "isScenarioSuggested":  false,
+               "scenarioSuggestReason":  null,
                "impactAnalysis":  {
                                       "indexImpacts":  [
                                                            {
@@ -7360,6 +7458,8 @@
                "updatedAt":  "2026-03-10T19:24:39",
                "signalType":  "signal",
                "signalTypeLabel":  "신호",
+               "isScenarioSuggested":  false,
+               "scenarioSuggestReason":  null,
                "impactAnalysis":  {
                                       "indexImpacts":  [
                                                            {
@@ -7494,6 +7594,8 @@
                "updatedAt":  "2026-03-10T19:24:39",
                "signalType":  "signal",
                "signalTypeLabel":  "신호",
+               "isScenarioSuggested":  true,
+               "scenarioSuggestReason":  "아시아/유럽 가격 디커플링 시그널이 강해 시나리오 분기 필요",
                "impactAnalysis":  {
                                       "indexImpacts":  [
                                                            {
@@ -7654,6 +7756,8 @@
                "updatedAt":  "2026-05-12T15:00:24",
                "signalType":  "signal",
                "signalTypeLabel":  "신호",
+               "isScenarioSuggested":  false,
+               "scenarioSuggestReason":  null,
                "impactAnalysis":  {
                                       "indexImpacts":  [
                                                            {
@@ -7762,6 +7866,8 @@
                "updatedAt":  "2026-03-09T11:00:45",
                "signalType":  "signal",
                "signalTypeLabel":  "신호",
+               "isScenarioSuggested":  false,
+               "scenarioSuggestReason":  null,
                "impactAnalysis":  {
                                       "indexImpacts":  [
                                                            {
@@ -7896,6 +8002,8 @@
                "updatedAt":  "2026-03-09T18:59:51",
                "signalType":  "signal",
                "signalTypeLabel":  "신호",
+               "isScenarioSuggested":  true,
+               "scenarioSuggestReason":  "단기 spot 프리미엄 확장 추세로 모델 시뮬레이션 적합",
                "impactAnalysis":  {
                                       "indexImpacts":  [
                                                            {
@@ -8030,6 +8138,8 @@
                "updatedAt":  "2026-05-12T15:00:24",
                "signalType":  "signal",
                "signalTypeLabel":  "신호",
+               "isScenarioSuggested":  false,
+               "scenarioSuggestReason":  null,
                "impactAnalysis":  {
                                       "indexImpacts":  [
                                                            {
@@ -8113,6 +8223,8 @@
                "updatedAt":  "2026-05-12T15:00:24",
                "signalType":  "signal",
                "signalTypeLabel":  "신호",
+               "isScenarioSuggested":  false,
+               "scenarioSuggestReason":  null,
                "impactAnalysis":  {
                                       "indexImpacts":  [
                                                            {
@@ -8221,6 +8333,8 @@
                "updatedAt":  "2026-05-12T15:00:24",
                "signalType":  "signal",
                "signalTypeLabel":  "신호",
+               "isScenarioSuggested":  false,
+               "scenarioSuggestReason":  null,
                "impactAnalysis":  {
                                       "indexImpacts":  [
                                                            {
@@ -8355,6 +8469,8 @@
                "updatedAt":  "2026-03-09T18:16:53",
                "signalType":  "signal",
                "signalTypeLabel":  "신호",
+               "isScenarioSuggested":  true,
+               "scenarioSuggestReason":  "수급 밸런스 변동성이 커 다중 시나리오 검토 필요",
                "impactAnalysis":  {
                                       "indexImpacts":  [
                                                            {
@@ -8489,6 +8605,8 @@
                "updatedAt":  "2026-05-12T15:00:24",
                "signalType":  "signal",
                "signalTypeLabel":  "신호",
+               "isScenarioSuggested":  false,
+               "scenarioSuggestReason":  null,
                "impactAnalysis":  {
                                       "indexImpacts":  [
                                                            {
@@ -8649,6 +8767,8 @@
                "updatedAt":  "2026-05-12T14:58:49",
                "signalType":  "signal",
                "signalTypeLabel":  "신호",
+               "isScenarioSuggested":  false,
+               "scenarioSuggestReason":  null,
                "impactAnalysis":  {
                                       "indexImpacts":  [
                                                            {
@@ -8809,6 +8929,8 @@
                "updatedAt":  "2026-03-07T07:15:34",
                "signalType":  "signal",
                "signalTypeLabel":  "신호",
+               "isScenarioSuggested":  true,
+               "scenarioSuggestReason":  "정책/제재 변수가 가격 경로를 가르는 분기점",
                "impactAnalysis":  {
                                       "indexImpacts":  [
                                                            {
@@ -8990,6 +9112,8 @@
                "updatedAt":  "2026-03-06T17:35:10",
                "signalType":  "signal",
                "signalTypeLabel":  "신호",
+               "isScenarioSuggested":  false,
+               "scenarioSuggestReason":  null,
                "impactAnalysis":  {
                                       "indexImpacts":  [
                                                            {
@@ -9171,6 +9295,8 @@
                "updatedAt":  "2026-03-06T17:35:10",
                "signalType":  "signal",
                "signalTypeLabel":  "신호",
+               "isScenarioSuggested":  false,
+               "scenarioSuggestReason":  null,
                "impactAnalysis":  {
                                       "indexImpacts":  [
                                                            {
@@ -9352,6 +9478,8 @@
                "updatedAt":  "2026-03-06T16:11:35",
                "signalType":  "signal",
                "signalTypeLabel":  "신호",
+               "isScenarioSuggested":  true,
+               "scenarioSuggestReason":  "기후/계절 패턴이 기준선과 이탈, 모델 재검토 필요",
                "impactAnalysis":  {
                                       "indexImpacts":  [
                                                            {
@@ -9512,6 +9640,8 @@
                "updatedAt":  "2026-03-06T19:39:45",
                "signalType":  "signal",
                "signalTypeLabel":  "신호",
+               "isScenarioSuggested":  false,
+               "scenarioSuggestReason":  null,
                "impactAnalysis":  {
                                       "indexImpacts":  [
                                                            {
@@ -9646,6 +9776,8 @@
                "updatedAt":  "2026-05-12T14:58:18",
                "signalType":  "signal",
                "signalTypeLabel":  "신호",
+               "isScenarioSuggested":  false,
+               "scenarioSuggestReason":  null,
                "impactAnalysis":  {
                                       "indexImpacts":  [
                                                            {
@@ -9780,6 +9912,8 @@
                "updatedAt":  "2026-03-06T01:55:48",
                "signalType":  "signal",
                "signalTypeLabel":  "신호",
+               "isScenarioSuggested":  false,
+               "scenarioSuggestReason":  null,
                "impactAnalysis":  {
                                       "indexImpacts":  [
                                                            {
@@ -9914,6 +10048,8 @@
                "updatedAt":  "2026-03-06T10:40:31",
                "signalType":  "signal",
                "signalTypeLabel":  "신호",
+               "isScenarioSuggested":  true,
+               "scenarioSuggestReason":  "글로벌 LNG 공급 차질 가능성이 시나리오화 가치 있음",
                "impactAnalysis":  {
                                       "indexImpacts":  [
                                                            {
@@ -9997,6 +10133,8 @@
                "updatedAt":  "2026-03-06T16:12:27",
                "signalType":  "signal",
                "signalTypeLabel":  "신호",
+               "isScenarioSuggested":  false,
+               "scenarioSuggestReason":  null,
                "impactAnalysis":  {
                                       "indexImpacts":  [
                                                            {
@@ -10131,6 +10269,8 @@
                "updatedAt":  "2026-03-05T17:03:12",
                "signalType":  "signal",
                "signalTypeLabel":  "신호",
+               "isScenarioSuggested":  false,
+               "scenarioSuggestReason":  null,
                "impactAnalysis":  {
                                       "indexImpacts":  [
                                                            {
@@ -10239,6 +10379,8 @@
                "updatedAt":  "2026-05-12T14:56:43",
                "signalType":  "signal",
                "signalTypeLabel":  "신호",
+               "isScenarioSuggested":  true,
+               "scenarioSuggestReason":  "아시아/유럽 가격 디커플링 시그널이 강해 시나리오 분기 필요",
                "impactAnalysis":  {
                                       "indexImpacts":  [
                                                            {
@@ -10373,6 +10515,8 @@
                "updatedAt":  "2026-03-05T07:48:15",
                "signalType":  "noise",
                "signalTypeLabel":  "소음",
+               "isScenarioSuggested":  false,
+               "scenarioSuggestReason":  null,
                "impactAnalysis":  {
                                       "indexImpacts":  [
                                                            {
@@ -10533,6 +10677,8 @@
                "updatedAt":  "2026-03-05T11:08:23",
                "signalType":  "noise",
                "signalTypeLabel":  "소음",
+               "isScenarioSuggested":  false,
+               "scenarioSuggestReason":  null,
                "impactAnalysis":  {
                                       "indexImpacts":  [
                                                            {
@@ -10616,6 +10762,8 @@
                "updatedAt":  "2026-03-05T15:31:33",
                "signalType":  "noise",
                "signalTypeLabel":  "소음",
+               "isScenarioSuggested":  false,
+               "scenarioSuggestReason":  null,
                "impactAnalysis":  {
                                       "indexImpacts":  [
                                                            {
@@ -10750,6 +10898,8 @@
                "updatedAt":  "2026-03-05T09:54:26",
                "signalType":  "noise",
                "signalTypeLabel":  "소음",
+               "isScenarioSuggested":  false,
+               "scenarioSuggestReason":  null,
                "impactAnalysis":  {
                                       "indexImpacts":  [
                                                            {
@@ -10884,6 +11034,8 @@
                "updatedAt":  "2026-03-05T15:39:48",
                "signalType":  "signal",
                "signalTypeLabel":  "신호",
+               "isScenarioSuggested":  false,
+               "scenarioSuggestReason":  null,
                "impactAnalysis":  {
                                       "indexImpacts":  [
                                                            {
@@ -11066,6 +11218,8 @@
                "updatedAt":  "2026-03-05T20:56:07",
                "signalType":  "signal",
                "signalTypeLabel":  "신호",
+               "isScenarioSuggested":  false,
+               "scenarioSuggestReason":  null,
                "impactAnalysis":  {
                                       "indexImpacts":  [
                                                            {
@@ -11248,6 +11402,8 @@
                "updatedAt":  "2026-05-12T14:56:43",
                "signalType":  "signal",
                "signalTypeLabel":  "신호",
+               "isScenarioSuggested":  true,
+               "scenarioSuggestReason":  "단기 spot 프리미엄 확장 추세로 모델 시뮬레이션 적합",
                "impactAnalysis":  {
                                       "indexImpacts":  [
                                                            {
@@ -11451,6 +11607,8 @@
                "updatedAt":  "2026-03-05T17:58:02",
                "signalType":  "signal",
                "signalTypeLabel":  "신호",
+               "isScenarioSuggested":  false,
+               "scenarioSuggestReason":  null,
                "impactAnalysis":  {
                                       "indexImpacts":  [
                                                            {
@@ -11633,6 +11791,8 @@
                "updatedAt":  "2026-03-05T23:01:49",
                "signalType":  "signal",
                "signalTypeLabel":  "신호",
+               "isScenarioSuggested":  false,
+               "scenarioSuggestReason":  null,
                "impactAnalysis":  {
                                       "indexImpacts":  [
                                                            {
@@ -11815,6 +11975,8 @@
                "updatedAt":  "2026-03-04T18:39:43",
                "signalType":  "signal",
                "signalTypeLabel":  "신호",
+               "isScenarioSuggested":  true,
+               "scenarioSuggestReason":  "수급 밸런스 변동성이 커 다중 시나리오 검토 필요",
                "impactAnalysis":  {
                                       "indexImpacts":  [
                                                            {
@@ -11976,6 +12138,8 @@
                "updatedAt":  "2026-05-12T14:55:07",
                "signalType":  "signal",
                "signalTypeLabel":  "신호",
+               "isScenarioSuggested":  false,
+               "scenarioSuggestReason":  null,
                "impactAnalysis":  {
                                       "indexImpacts":  [
                                                            {
@@ -12111,6 +12275,8 @@
                "updatedAt":  "2026-03-04T18:39:43",
                "signalType":  "signal",
                "signalTypeLabel":  "신호",
+               "isScenarioSuggested":  false,
+               "scenarioSuggestReason":  null,
                "impactAnalysis":  {
                                       "indexImpacts":  [
                                                            {
@@ -12220,6 +12386,8 @@
                "updatedAt":  "2026-03-04T15:45:29",
                "signalType":  "noise",
                "signalTypeLabel":  "소음",
+               "isScenarioSuggested":  false,
+               "scenarioSuggestReason":  null,
                "impactAnalysis":  {
                                       "indexImpacts":  [
                                                            {
@@ -12355,6 +12523,8 @@
                "updatedAt":  "2026-03-04T06:24:54",
                "signalType":  "signal",
                "signalTypeLabel":  "신호",
+               "isScenarioSuggested":  false,
+               "scenarioSuggestReason":  null,
                "impactAnalysis":  {
                                       "indexImpacts":  [
                                                            {
@@ -12516,6 +12686,8 @@
                "updatedAt":  "2026-05-12T14:55:07",
                "signalType":  "noise",
                "signalTypeLabel":  "소음",
+               "isScenarioSuggested":  false,
+               "scenarioSuggestReason":  null,
                "impactAnalysis":  {
                                       "indexImpacts":  [
                                                            {
@@ -12677,6 +12849,8 @@
                "updatedAt":  "2026-05-12T14:55:07",
                "signalType":  "noise",
                "signalTypeLabel":  "소음",
+               "isScenarioSuggested":  false,
+               "scenarioSuggestReason":  null,
                "impactAnalysis":  {
                                       "indexImpacts":  [
                                                            {
@@ -12786,6 +12960,8 @@
                "updatedAt":  "2026-05-12T14:55:07",
                "signalType":  "noise",
                "signalTypeLabel":  "소음",
+               "isScenarioSuggested":  false,
+               "scenarioSuggestReason":  null,
                "impactAnalysis":  {
                                       "indexImpacts":  [
                                                            {
@@ -12921,6 +13097,8 @@
                "updatedAt":  "2026-05-12T14:53:43",
                "signalType":  "signal",
                "signalTypeLabel":  "신호",
+               "isScenarioSuggested":  false,
+               "scenarioSuggestReason":  null,
                "impactAnalysis":  {
                                       "indexImpacts":  [
                                                            {
@@ -13056,6 +13234,8 @@
                "updatedAt":  "2026-05-12T14:53:43",
                "signalType":  "noise",
                "signalTypeLabel":  "소음",
+               "isScenarioSuggested":  false,
+               "scenarioSuggestReason":  null,
                "impactAnalysis":  {
                                       "indexImpacts":  [
                                                            {
@@ -13217,6 +13397,8 @@
                "updatedAt":  "2026-05-12T14:53:43",
                "signalType":  "signal",
                "signalTypeLabel":  "신호",
+               "isScenarioSuggested":  true,
+               "scenarioSuggestReason":  "정책/제재 변수가 가격 경로를 가르는 분기점",
                "impactAnalysis":  {
                                       "indexImpacts":  [
                                                            {
@@ -13398,6 +13580,8 @@
                "updatedAt":  "2026-05-12T14:53:43",
                "signalType":  "signal",
                "signalTypeLabel":  "신호",
+               "isScenarioSuggested":  false,
+               "scenarioSuggestReason":  null,
                "impactAnalysis":  {
                                       "indexImpacts":  [
                                                            {
@@ -13601,6 +13785,8 @@
                "updatedAt":  "2026-05-12T14:53:43",
                "signalType":  "signal",
                "signalTypeLabel":  "신호",
+               "isScenarioSuggested":  false,
+               "scenarioSuggestReason":  null,
                "impactAnalysis":  {
                                       "indexImpacts":  [
                                                            {
@@ -13782,6 +13968,8 @@
                "updatedAt":  "2026-05-12T14:53:43",
                "signalType":  "signal",
                "signalTypeLabel":  "신호",
+               "isScenarioSuggested":  true,
+               "scenarioSuggestReason":  "기후/계절 패턴이 기준선과 이탈, 모델 재검토 필요",
                "impactAnalysis":  {
                                       "indexImpacts":  [
                                                            {
@@ -13942,6 +14130,8 @@
                "updatedAt":  "2026-05-12T14:53:43",
                "signalType":  "signal",
                "signalTypeLabel":  "신호",
+               "isScenarioSuggested":  false,
+               "scenarioSuggestReason":  null,
                "impactAnalysis":  {
                                       "indexImpacts":  [
                                                            {
@@ -14102,6 +14292,8 @@
                "updatedAt":  "2026-05-12T14:52:34",
                "signalType":  "signal",
                "signalTypeLabel":  "신호",
+               "isScenarioSuggested":  false,
+               "scenarioSuggestReason":  null,
                "impactAnalysis":  {
                                       "indexImpacts":  [
                                                            {
@@ -14262,6 +14454,8 @@
                "updatedAt":  "2026-03-02T11:26:33",
                "signalType":  "signal",
                "signalTypeLabel":  "신호",
+               "isScenarioSuggested":  false,
+               "scenarioSuggestReason":  null,
                "impactAnalysis":  {
                                       "indexImpacts":  [
                                                            {
@@ -14422,6 +14616,8 @@
                "updatedAt":  "2026-05-12T14:52:34",
                "signalType":  "signal",
                "signalTypeLabel":  "신호",
+               "isScenarioSuggested":  true,
+               "scenarioSuggestReason":  "글로벌 LNG 공급 차질 가능성이 시나리오화 가치 있음",
                "impactAnalysis":  {
                                       "indexImpacts":  [
                                                            {
@@ -14556,6 +14752,8 @@
                "updatedAt":  "2026-05-12T14:52:34",
                "signalType":  "signal",
                "signalTypeLabel":  "신호",
+               "isScenarioSuggested":  false,
+               "scenarioSuggestReason":  null,
                "impactAnalysis":  {
                                       "indexImpacts":  [
                                                            {
@@ -14716,6 +14914,8 @@
                 "updatedAt":  "2026-05-12T14:52:34",
                 "signalType":  "signal",
                 "signalTypeLabel":  "신호",
+                "isScenarioSuggested":  false,
+                "scenarioSuggestReason":  null,
                 "impactAnalysis":  {
                                        "indexImpacts":  [
                                                             {
@@ -14876,6 +15076,8 @@
                 "updatedAt":  "2026-05-12T14:52:34",
                 "signalType":  "signal",
                 "signalTypeLabel":  "신호",
+                "isScenarioSuggested":  true,
+                "scenarioSuggestReason":  "아시아/유럽 가격 디커플링 시그널이 강해 시나리오 분기 필요",
                 "impactAnalysis":  {
                                        "indexImpacts":  [
                                                             {
@@ -15036,6 +15238,8 @@
                 "updatedAt":  "2026-05-12T14:52:34",
                 "signalType":  "signal",
                 "signalTypeLabel":  "신호",
+                "isScenarioSuggested":  false,
+                "scenarioSuggestReason":  null,
                 "impactAnalysis":  {
                                        "indexImpacts":  [
                                                             {
@@ -15170,6 +15374,8 @@
                 "updatedAt":  "2026-03-02T22:49:22",
                 "signalType":  "signal",
                 "signalTypeLabel":  "신호",
+                "isScenarioSuggested":  false,
+                "scenarioSuggestReason":  null,
                 "impactAnalysis":  {
                                        "indexImpacts":  [
                                                             {
@@ -15304,6 +15510,8 @@
                 "updatedAt":  "2026-05-12T14:51:05",
                 "signalType":  "signal",
                 "signalTypeLabel":  "신호",
+                "isScenarioSuggested":  true,
+                "scenarioSuggestReason":  "단기 spot 프리미엄 확장 추세로 모델 시뮬레이션 적합",
                 "impactAnalysis":  {
                                        "indexImpacts":  [
                                                             {
@@ -15464,6 +15672,8 @@
                 "updatedAt":  "2026-05-12T14:51:05",
                 "signalType":  "noise",
                 "signalTypeLabel":  "소음",
+                "isScenarioSuggested":  false,
+                "scenarioSuggestReason":  null,
                 "impactAnalysis":  {
                                        "indexImpacts":  [
                                                             {
@@ -15598,6 +15808,8 @@
                 "updatedAt":  "2026-05-12T03:31:45",
                 "signalType":  "signal",
                 "signalTypeLabel":  "신호",
+                "isScenarioSuggested":  false,
+                "scenarioSuggestReason":  null,
                 "impactAnalysis":  {
                                        "indexImpacts":  [
                                                             {
@@ -15780,6 +15992,8 @@
                 "updatedAt":  "2026-05-12T03:31:45",
                 "signalType":  "signal",
                 "signalTypeLabel":  "신호",
+                "isScenarioSuggested":  false,
+                "scenarioSuggestReason":  null,
                 "impactAnalysis":  {
                                        "indexImpacts":  [
                                                             {
@@ -15982,6 +16196,8 @@
                 "updatedAt":  "2026-05-09T06:54:58",
                 "signalType":  "signal",
                 "signalTypeLabel":  "신호",
+                "isScenarioSuggested":  true,
+                "scenarioSuggestReason":  "수급 밸런스 변동성이 커 다중 시나리오 검토 필요",
                 "impactAnalysis":  {
                                        "indexImpacts":  [
                                                             {
@@ -16163,6 +16379,8 @@
                 "updatedAt":  "2026-05-09T06:54:58",
                 "signalType":  "signal",
                 "signalTypeLabel":  "신호",
+                "isScenarioSuggested":  false,
+                "scenarioSuggestReason":  null,
                 "impactAnalysis":  {
                                        "indexImpacts":  [
                                                             {
@@ -16344,6 +16562,8 @@
                 "updatedAt":  "2026-05-09T06:54:58",
                 "signalType":  "signal",
                 "signalTypeLabel":  "신호",
+                "isScenarioSuggested":  false,
+                "scenarioSuggestReason":  null,
                 "impactAnalysis":  {
                                        "indexImpacts":  [
                                                             {
@@ -16525,6 +16745,8 @@
                 "updatedAt":  "2026-05-09T06:54:58",
                 "signalType":  "signal",
                 "signalTypeLabel":  "신호",
+                "isScenarioSuggested":  true,
+                "scenarioSuggestReason":  "정책/제재 변수가 가격 경로를 가르는 분기점",
                 "impactAnalysis":  {
                                        "indexImpacts":  [
                                                             {
@@ -16685,6 +16907,8 @@
                 "updatedAt":  "2026-05-08T03:39:06",
                 "signalType":  "signal",
                 "signalTypeLabel":  "신호",
+                "isScenarioSuggested":  false,
+                "scenarioSuggestReason":  null,
                 "impactAnalysis":  {
                                        "indexImpacts":  [
                                                             {
@@ -16866,6 +17090,8 @@
                 "updatedAt":  "2026-05-08T04:28:58",
                 "signalType":  "signal",
                 "signalTypeLabel":  "신호",
+                "isScenarioSuggested":  false,
+                "scenarioSuggestReason":  null,
                 "impactAnalysis":  {
                                        "indexImpacts":  [
                                                             {
@@ -17047,6 +17273,8 @@
                 "updatedAt":  "2026-05-08T22:31:08",
                 "signalType":  "noise",
                 "signalTypeLabel":  "소음",
+                "isScenarioSuggested":  false,
+                "scenarioSuggestReason":  null,
                 "impactAnalysis":  {
                                        "indexImpacts":  [
                                                             {
@@ -17228,6 +17456,8 @@
                 "updatedAt":  "2026-05-08T14:03:05",
                 "signalType":  "signal",
                 "signalTypeLabel":  "신호",
+                "isScenarioSuggested":  false,
+                "scenarioSuggestReason":  null,
                 "impactAnalysis":  {
                                        "indexImpacts":  [
                                                             {
@@ -17388,6 +17618,8 @@
                 "updatedAt":  "2026-05-12T03:30:06",
                 "signalType":  "signal",
                 "signalTypeLabel":  "신호",
+                "isScenarioSuggested":  false,
+                "scenarioSuggestReason":  null,
                 "impactAnalysis":  {
                                        "indexImpacts":  [
                                                             {
@@ -17548,6 +17780,8 @@
                 "updatedAt":  "2026-05-08T04:55:01",
                 "signalType":  "signal",
                 "signalTypeLabel":  "신호",
+                "isScenarioSuggested":  false,
+                "scenarioSuggestReason":  null,
                 "impactAnalysis":  {
                                        "indexImpacts":  [
                                                             {
@@ -17708,6 +17942,8 @@
                 "updatedAt":  "2026-05-08T19:11:07",
                 "signalType":  "signal",
                 "signalTypeLabel":  "신호",
+                "isScenarioSuggested":  true,
+                "scenarioSuggestReason":  "기후/계절 패턴이 기준선과 이탈, 모델 재검토 필요",
                 "impactAnalysis":  {
                                        "indexImpacts":  [
                                                             {
@@ -17911,6 +18147,8 @@
                 "updatedAt":  "2026-05-08T19:11:07",
                 "signalType":  "noise",
                 "signalTypeLabel":  "소음",
+                "isScenarioSuggested":  false,
+                "scenarioSuggestReason":  null,
                 "impactAnalysis":  {
                                        "indexImpacts":  [
                                                             {
@@ -18045,6 +18283,8 @@
                 "updatedAt":  "2026-05-07T05:49:05",
                 "signalType":  "noise",
                 "signalTypeLabel":  "소음",
+                "isScenarioSuggested":  false,
+                "scenarioSuggestReason":  null,
                 "impactAnalysis":  {
                                        "indexImpacts":  [
                                                             {
@@ -18205,6 +18445,8 @@
                 "updatedAt":  "2026-05-12T03:28:39",
                 "signalType":  "signal",
                 "signalTypeLabel":  "신호",
+                "isScenarioSuggested":  true,
+                "scenarioSuggestReason":  "글로벌 LNG 공급 차질 가능성이 시나리오화 가치 있음",
                 "impactAnalysis":  {
                                        "indexImpacts":  [
                                                             {
@@ -18428,6 +18670,8 @@
                 "updatedAt":  "2026-05-07T06:11:08",
                 "signalType":  "signal",
                 "signalTypeLabel":  "신호",
+                "isScenarioSuggested":  false,
+                "scenarioSuggestReason":  null,
                 "impactAnalysis":  {
                                        "indexImpacts":  [
                                                             {
@@ -18609,6 +18853,8 @@
                 "updatedAt":  "2026-05-07T18:52:23",
                 "signalType":  "signal",
                 "signalTypeLabel":  "신호",
+                "isScenarioSuggested":  false,
+                "scenarioSuggestReason":  null,
                 "impactAnalysis":  {
                                        "indexImpacts":  [
                                                             {
@@ -18790,6 +19036,8 @@
                 "updatedAt":  "2026-05-07T11:34:44",
                 "signalType":  "signal",
                 "signalTypeLabel":  "신호",
+                "isScenarioSuggested":  true,
+                "scenarioSuggestReason":  "아시아/유럽 가격 디커플링 시그널이 강해 시나리오 분기 필요",
                 "impactAnalysis":  {
                                        "indexImpacts":  [
                                                             {
@@ -18971,6 +19219,8 @@
                 "updatedAt":  "2026-05-12T03:28:39",
                 "signalType":  "signal",
                 "signalTypeLabel":  "신호",
+                "isScenarioSuggested":  false,
+                "scenarioSuggestReason":  null,
                 "impactAnalysis":  {
                                        "indexImpacts":  [
                                                             {
@@ -19153,6 +19403,8 @@
                 "updatedAt":  "2026-05-07T03:12:32",
                 "signalType":  "signal",
                 "signalTypeLabel":  "신호",
+                "isScenarioSuggested":  false,
+                "scenarioSuggestReason":  null,
                 "impactAnalysis":  {
                                        "indexImpacts":  [
                                                             {
@@ -19356,6 +19608,8 @@
                 "updatedAt":  "2026-05-07T14:31:08",
                 "signalType":  "signal",
                 "signalTypeLabel":  "신호",
+                "isScenarioSuggested":  false,
+                "scenarioSuggestReason":  null,
                 "impactAnalysis":  {
                                        "indexImpacts":  [
                                                             {
@@ -19538,6 +19792,8 @@
                 "updatedAt":  "2026-05-06T04:50:08",
                 "signalType":  "signal",
                 "signalTypeLabel":  "신호",
+                "isScenarioSuggested":  true,
+                "scenarioSuggestReason":  "단기 spot 프리미엄 확장 추세로 모델 시뮬레이션 적합",
                 "impactAnalysis":  {
                                        "indexImpacts":  [
                                                             {
@@ -19698,6 +19954,8 @@
                 "updatedAt":  "2026-05-06T08:37:04",
                 "signalType":  "signal",
                 "signalTypeLabel":  "신호",
+                "isScenarioSuggested":  false,
+                "scenarioSuggestReason":  null,
                 "impactAnalysis":  {
                                        "indexImpacts":  [
                                                             {
@@ -19879,6 +20137,8 @@
                 "updatedAt":  "2026-05-12T03:27:28",
                 "signalType":  "signal",
                 "signalTypeLabel":  "신호",
+                "isScenarioSuggested":  false,
+                "scenarioSuggestReason":  null,
                 "impactAnalysis":  {
                                        "indexImpacts":  [
                                                             {
@@ -20061,6 +20321,8 @@
                 "updatedAt":  "2026-05-12T03:27:28",
                 "signalType":  "signal",
                 "signalTypeLabel":  "신호",
+                "isScenarioSuggested":  true,
+                "scenarioSuggestReason":  "수급 밸런스 변동성이 커 다중 시나리오 검토 필요",
                 "impactAnalysis":  {
                                        "indexImpacts":  [
                                                             {
@@ -20242,6 +20504,8 @@
                 "updatedAt":  "2026-05-06T18:59:07",
                 "signalType":  "signal",
                 "signalTypeLabel":  "신호",
+                "isScenarioSuggested":  false,
+                "scenarioSuggestReason":  null,
                 "impactAnalysis":  {
                                        "indexImpacts":  [
                                                             {
@@ -20423,6 +20687,8 @@
                 "updatedAt":  "2026-05-06T11:07:37",
                 "signalType":  "signal",
                 "signalTypeLabel":  "신호",
+                "isScenarioSuggested":  false,
+                "scenarioSuggestReason":  null,
                 "impactAnalysis":  {
                                        "indexImpacts":  [
                                                             {
@@ -20583,6 +20849,8 @@
                 "updatedAt":  "2026-05-12T03:27:28",
                 "signalType":  "noise",
                 "signalTypeLabel":  "소음",
+                "isScenarioSuggested":  false,
+                "scenarioSuggestReason":  null,
                 "impactAnalysis":  {
                                        "indexImpacts":  [
                                                             {
@@ -20743,6 +21011,8 @@
                 "updatedAt":  "2026-05-06T09:05:08",
                 "signalType":  "noise",
                 "signalTypeLabel":  "소음",
+                "isScenarioSuggested":  false,
+                "scenarioSuggestReason":  null,
                 "impactAnalysis":  {
                                        "indexImpacts":  [
                                                             {
@@ -20903,6 +21173,8 @@
                 "updatedAt":  "2026-05-12T03:25:58",
                 "signalType":  "signal",
                 "signalTypeLabel":  "신호",
+                "isScenarioSuggested":  false,
+                "scenarioSuggestReason":  null,
                 "impactAnalysis":  {
                                        "indexImpacts":  [
                                                             {
@@ -21126,6 +21398,8 @@
                 "updatedAt":  "2026-05-05T12:00:00",
                 "signalType":  "signal",
                 "signalTypeLabel":  "신호",
+                "isScenarioSuggested":  false,
+                "scenarioSuggestReason":  null,
                 "impactAnalysis":  {
                                        "indexImpacts":  [
                                                             {
@@ -21349,6 +21623,8 @@
                 "updatedAt":  "2026-05-05T16:35:48",
                 "signalType":  "signal",
                 "signalTypeLabel":  "신호",
+                "isScenarioSuggested":  true,
+                "scenarioSuggestReason":  "정책/제재 변수가 가격 경로를 가르는 분기점",
                 "impactAnalysis":  {
                                        "indexImpacts":  [
                                                             {
@@ -21551,6 +21827,8 @@
                 "updatedAt":  "2026-05-12T03:25:58",
                 "signalType":  "signal",
                 "signalTypeLabel":  "신호",
+                "isScenarioSuggested":  false,
+                "scenarioSuggestReason":  null,
                 "impactAnalysis":  {
                                        "indexImpacts":  [
                                                             {
@@ -21732,6 +22010,8 @@
                 "updatedAt":  "2026-05-05T18:53:07",
                 "signalType":  "signal",
                 "signalTypeLabel":  "신호",
+                "isScenarioSuggested":  false,
+                "scenarioSuggestReason":  null,
                 "impactAnalysis":  {
                                        "indexImpacts":  [
                                                             {
@@ -21913,6 +22193,8 @@
                 "updatedAt":  "2026-05-12T03:25:58",
                 "signalType":  "signal",
                 "signalTypeLabel":  "신호",
+                "isScenarioSuggested":  true,
+                "scenarioSuggestReason":  "기후/계절 패턴이 기준선과 이탈, 모델 재검토 필요",
                 "impactAnalysis":  {
                                        "indexImpacts":  [
                                                             {
@@ -22094,6 +22376,8 @@
                 "updatedAt":  "2026-05-05T18:53:07",
                 "signalType":  "signal",
                 "signalTypeLabel":  "신호",
+                "isScenarioSuggested":  false,
+                "scenarioSuggestReason":  null,
                 "impactAnalysis":  {
                                        "indexImpacts":  [
                                                             {
@@ -22254,6 +22538,8 @@
                 "updatedAt":  "2026-05-12T03:25:58",
                 "signalType":  "signal",
                 "signalTypeLabel":  "신호",
+                "isScenarioSuggested":  false,
+                "scenarioSuggestReason":  null,
                 "impactAnalysis":  {
                                        "indexImpacts":  [
                                                             {
@@ -22435,6 +22721,8 @@
                 "updatedAt":  "2026-05-05T04:43:59",
                 "signalType":  "signal",
                 "signalTypeLabel":  "신호",
+                "isScenarioSuggested":  true,
+                "scenarioSuggestReason":  "글로벌 LNG 공급 차질 가능성이 시나리오화 가치 있음",
                 "impactAnalysis":  {
                                        "indexImpacts":  [
                                                             {
@@ -22595,6 +22883,8 @@
                 "updatedAt":  "2026-05-05T07:33:47",
                 "signalType":  "signal",
                 "signalTypeLabel":  "신호",
+                "isScenarioSuggested":  false,
+                "scenarioSuggestReason":  null,
                 "impactAnalysis":  {
                                        "indexImpacts":  [
                                                             {
@@ -22755,6 +23045,8 @@
                 "updatedAt":  "2026-05-05T16:28:30",
                 "signalType":  "signal",
                 "signalTypeLabel":  "신호",
+                "isScenarioSuggested":  false,
+                "scenarioSuggestReason":  null,
                 "impactAnalysis":  {
                                        "indexImpacts":  [
                                                             {
@@ -22889,6 +23181,8 @@
                 "updatedAt":  "2026-05-04T04:50:18",
                 "signalType":  "noise",
                 "signalTypeLabel":  "소음",
+                "isScenarioSuggested":  false,
+                "scenarioSuggestReason":  null,
                 "impactAnalysis":  {
                                        "indexImpacts":  [
                                                             {
@@ -23023,6 +23317,8 @@
                 "updatedAt":  "2026-05-04T09:03:50",
                 "signalType":  "signal",
                 "signalTypeLabel":  "신호",
+                "isScenarioSuggested":  true,
+                "scenarioSuggestReason":  "아시아/유럽 가격 디커플링 시그널이 강해 시나리오 분기 필요",
                 "impactAnalysis":  {
                                        "indexImpacts":  [
                                                             {
@@ -23157,6 +23453,8 @@
                 "updatedAt":  "2026-05-12T03:24:09",
                 "signalType":  "noise",
                 "signalTypeLabel":  "소음",
+                "isScenarioSuggested":  false,
+                "scenarioSuggestReason":  null,
                 "impactAnalysis":  {
                                        "indexImpacts":  [
                                                             {
@@ -23317,6 +23615,8 @@
                 "updatedAt":  "2026-05-04T04:50:18",
                 "signalType":  "signal",
                 "signalTypeLabel":  "신호",
+                "isScenarioSuggested":  false,
+                "scenarioSuggestReason":  null,
                 "impactAnalysis":  {
                                        "indexImpacts":  [
                                                             {
@@ -23477,6 +23777,8 @@
                 "updatedAt":  "2026-05-04T11:39:11",
                 "signalType":  "signal",
                 "signalTypeLabel":  "신호",
+                "isScenarioSuggested":  true,
+                "scenarioSuggestReason":  "단기 spot 프리미엄 확장 추세로 모델 시뮬레이션 적합",
                 "impactAnalysis":  {
                                        "indexImpacts":  [
                                                             {
@@ -23680,6 +23982,8 @@
                 "updatedAt":  "2026-05-12T03:24:09",
                 "signalType":  "signal",
                 "signalTypeLabel":  "신호",
+                "isScenarioSuggested":  false,
+                "scenarioSuggestReason":  null,
                 "impactAnalysis":  {
                                        "indexImpacts":  [
                                                             {
@@ -23883,6 +24187,8 @@
                 "updatedAt":  "2026-05-12T03:24:09",
                 "signalType":  "signal",
                 "signalTypeLabel":  "신호",
+                "isScenarioSuggested":  false,
+                "scenarioSuggestReason":  null,
                 "impactAnalysis":  {
                                        "indexImpacts":  [
                                                             {
@@ -24065,6 +24371,8 @@
                 "updatedAt":  "2026-05-04T19:15:04",
                 "signalType":  "signal",
                 "signalTypeLabel":  "신호",
+                "isScenarioSuggested":  true,
+                "scenarioSuggestReason":  "수급 밸런스 변동성이 커 다중 시나리오 검토 필요",
                 "impactAnalysis":  {
                                        "indexImpacts":  [
                                                             {
@@ -24247,6 +24555,8 @@
                 "updatedAt":  "2026-05-04T19:15:04",
                 "signalType":  "signal",
                 "signalTypeLabel":  "신호",
+                "isScenarioSuggested":  false,
+                "scenarioSuggestReason":  null,
                 "impactAnalysis":  {
                                        "indexImpacts":  [
                                                             {
@@ -24429,6 +24739,8 @@
                 "updatedAt":  "2026-05-04T19:15:04",
                 "signalType":  "signal",
                 "signalTypeLabel":  "신호",
+                "isScenarioSuggested":  false,
+                "scenarioSuggestReason":  null,
                 "impactAnalysis":  {
                                        "indexImpacts":  [
                                                             {
@@ -24590,6 +24902,8 @@
                 "updatedAt":  "2026-05-03T21:04:43",
                 "signalType":  "signal",
                 "signalTypeLabel":  "신호",
+                "isScenarioSuggested":  false,
+                "scenarioSuggestReason":  null,
                 "impactAnalysis":  {
                                        "indexImpacts":  [
                                                             {
@@ -24725,6 +25039,8 @@
                 "updatedAt":  "2026-05-12T03:22:38",
                 "signalType":  "signal",
                 "signalTypeLabel":  "신호",
+                "isScenarioSuggested":  true,
+                "scenarioSuggestReason":  "정책/제재 변수가 가격 경로를 가르는 분기점",
                 "impactAnalysis":  {
                                        "indexImpacts":  [
                                                             {
@@ -24907,6 +25223,8 @@
                 "updatedAt":  "2026-05-03T21:04:43",
                 "signalType":  "signal",
                 "signalTypeLabel":  "신호",
+                "isScenarioSuggested":  false,
+                "scenarioSuggestReason":  null,
                 "impactAnalysis":  {
                                        "indexImpacts":  [
                                                             {
@@ -25089,6 +25407,8 @@
                 "updatedAt":  "2026-05-02T23:15:16",
                 "signalType":  "noise",
                 "signalTypeLabel":  "소음",
+                "isScenarioSuggested":  false,
+                "scenarioSuggestReason":  null,
                 "impactAnalysis":  {
                                        "indexImpacts":  [
                                                             {
@@ -25250,6 +25570,8 @@
                 "updatedAt":  "2026-05-02T23:15:16",
                 "signalType":  "noise",
                 "signalTypeLabel":  "소음",
+                "isScenarioSuggested":  false,
+                "scenarioSuggestReason":  null,
                 "impactAnalysis":  {
                                        "indexImpacts":  [
                                                             {
@@ -25411,6 +25733,8 @@
                 "updatedAt":  "2026-05-02T23:15:16",
                 "signalType":  "noise",
                 "signalTypeLabel":  "소음",
+                "isScenarioSuggested":  false,
+                "scenarioSuggestReason":  null,
                 "impactAnalysis":  {
                                        "indexImpacts":  [
                                                             {
@@ -25593,6 +25917,8 @@
                 "updatedAt":  "2026-05-02T23:15:16",
                 "signalType":  "noise",
                 "signalTypeLabel":  "소음",
+                "isScenarioSuggested":  false,
+                "scenarioSuggestReason":  null,
                 "impactAnalysis":  {
                                        "indexImpacts":  [
                                                             {
@@ -25796,6 +26122,8 @@
                 "updatedAt":  "2026-05-11T13:34:39",
                 "signalType":  "signal",
                 "signalTypeLabel":  "신호",
+                "isScenarioSuggested":  true,
+                "scenarioSuggestReason":  "기후/계절 패턴이 기준선과 이탈, 모델 재검토 필요",
                 "impactAnalysis":  {
                                        "indexImpacts":  [
                                                             {
@@ -25978,6 +26306,8 @@
                 "updatedAt":  "2026-05-11T16:48:51",
                 "signalType":  "signal",
                 "signalTypeLabel":  "신호",
+                "isScenarioSuggested":  false,
+                "scenarioSuggestReason":  null,
                 "impactAnalysis":  {
                                        "indexImpacts":  [
                                                             {
@@ -26160,6 +26490,8 @@
                 "updatedAt":  "2026-05-11T16:48:51",
                 "signalType":  "signal",
                 "signalTypeLabel":  "신호",
+                "isScenarioSuggested":  false,
+                "scenarioSuggestReason":  null,
                 "impactAnalysis":  {
                                        "indexImpacts":  [
                                                             {
@@ -26342,6 +26674,8 @@
                 "updatedAt":  "2026-05-12T14:26:16",
                 "signalType":  "signal",
                 "signalTypeLabel":  "신호",
+                "isScenarioSuggested":  false,
+                "scenarioSuggestReason":  null,
                 "impactAnalysis":  {
                                        "indexImpacts":  [
                                                             {
@@ -26503,6 +26837,8 @@
                 "updatedAt":  "2026-05-11T04:00:00",
                 "signalType":  "signal",
                 "signalTypeLabel":  "신호",
+                "isScenarioSuggested":  true,
+                "scenarioSuggestReason":  "글로벌 LNG 공급 차질 가능성이 시나리오화 가치 있음",
                 "impactAnalysis":  {
                                        "indexImpacts":  [
                                                             {
@@ -26638,6 +26974,8 @@
                 "updatedAt":  "2026-05-11T16:00:00",
                 "signalType":  "signal",
                 "signalTypeLabel":  "신호",
+                "isScenarioSuggested":  false,
+                "scenarioSuggestReason":  null,
                 "impactAnalysis":  {
                                        "indexImpacts":  [
                                                             {
@@ -26773,6 +27111,8 @@
                 "updatedAt":  "2026-05-11T05:03:38",
                 "signalType":  "signal",
                 "signalTypeLabel":  "신호",
+                "isScenarioSuggested":  false,
+                "scenarioSuggestReason":  null,
                 "impactAnalysis":  {
                                        "indexImpacts":  [
                                                             {
@@ -26908,6 +27248,8 @@
                 "updatedAt":  "2026-05-11T15:18:12",
                 "signalType":  "signal",
                 "signalTypeLabel":  "신호",
+                "isScenarioSuggested":  true,
+                "scenarioSuggestReason":  "아시아/유럽 가격 디커플링 시그널이 강해 시나리오 분기 필요",
                 "impactAnalysis":  {
                                        "indexImpacts":  [
                                                             {
@@ -27069,6 +27411,8 @@
                 "updatedAt":  "2026-05-12T14:26:16",
                 "signalType":  "noise",
                 "signalTypeLabel":  "소음",
+                "isScenarioSuggested":  false,
+                "scenarioSuggestReason":  null,
                 "impactAnalysis":  {
                                        "indexImpacts":  [
                                                             {
@@ -27178,6 +27522,8 @@
                 "updatedAt":  "2026-05-11T05:03:38",
                 "signalType":  "noise",
                 "signalTypeLabel":  "소음",
+                "isScenarioSuggested":  false,
+                "scenarioSuggestReason":  null,
                 "impactAnalysis":  {
                                        "indexImpacts":  [
                                                             {

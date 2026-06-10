@@ -14,6 +14,8 @@ public record EventDetailBaseRow(
     String level2Label,
     Boolean isSignal,
     Boolean isNew,
+    Boolean isScenarioSuggested,
+    String scenarioSuggestReason,
     String detailAnalysis,
     String keyBulletsJson
 ) {

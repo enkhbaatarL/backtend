@@ -199,6 +199,8 @@ public class CustomMiEventRepositoryImpl implements CustomMiEventRepository {
                 miEventTypeL2.level2Label,
                 miEvent.isSignal,
                 miEvent.isNew,
+                miEvent.isScenarioSuggested,
+                miEvent.scenarioSuggestReason,
                 miEvent.detailAnalysis,
                 miEvent.keyBulletsJson
             ))
@@ -241,6 +243,8 @@ public class CustomMiEventRepositoryImpl implements CustomMiEventRepository {
             base.level2Label(),
             base.isSignal(),
             base.isNew(),
+            base.isScenarioSuggested(),
+            base.scenarioSuggestReason(),
             base.detailAnalysis(),
             impactSummary,
             indexImpacts,

@@ -137,6 +137,8 @@ public class EventController {
             - `eventId`, `eventName`
             - `status` / `statusLabel`: 신규(`new`) / 갱신(`updated`)
             - `signalType` / `signalTypeLabel`: 신호(`signal`) / 소음(`noise`)
+            - `isScenarioSuggested`: 시나리오화 추천 여부
+            - `scenarioSuggestReason`: 시나리오화 추천 근거 (추천 아님일 때 null)
             - `eventTypeLv1` / `eventTypeLv1Label` / `eventTypeLv2` / `eventTypeLv2Label`
             - `createdAt`, `updatedAt`
 

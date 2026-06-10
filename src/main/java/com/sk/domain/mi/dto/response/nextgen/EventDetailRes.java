@@ -38,6 +38,12 @@ public record EventDetailRes(
     @Schema(description = "신호/소음 라벨", example = "신호")
     String signalTypeLabel,
 
+    @Schema(description = "시나리오화 추천 여부", example = "true")
+    Boolean isScenarioSuggested,
+
+    @Schema(description = "시나리오화 추천 근거 (추천 아님일 때 null)", example = "글로벌 LNG 공급 차질 가능성이 시나리오화 가치 있음")
+    String scenarioSuggestReason,
+
     @Schema(description = "AI Insights")
     EventAiInsightsRes aiInsights,
 
@@ -66,6 +72,8 @@ public record EventDetailRes(
             row.modifyDt(),
             signalType,
             signalType.getLabel(),
+            Boolean.TRUE.equals(row.isScenarioSuggested()),
+            row.scenarioSuggestReason(),
             EventAiInsightsRes.from(row),
             impactAnalysis,
             buildDriverTreeScoreboard(row.driverTags()),
