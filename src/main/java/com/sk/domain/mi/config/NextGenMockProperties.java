@@ -12,11 +12,8 @@ import org.springframework.stereotype.Component;
 public class NextGenMockProperties {
 
     private Events events = new Events();
-    private Scenarios scenarios = new Scenarios();
     private ScenarioGroups scenarioGroups = new ScenarioGroups();
-    private Overview overview = new Overview();
     private ModelExecutions modelExecutions = new ModelExecutions();
-    private Design design = new Design();
 
     @Getter
     @Setter
@@ -30,19 +27,6 @@ public class NextGenMockProperties {
             private boolean getDetail = false;
             private boolean getRecords = false;
             private boolean getOutlooks = false;
-        }
-    }
-
-    @Getter
-    @Setter
-    public static class Scenarios {
-        private Api api = new Api();
-
-        @Getter
-        @Setter
-        public static class Api {
-            private boolean getList = false;
-            private boolean getDetail = false;
         }
     }
 
@@ -63,36 +47,6 @@ public class NextGenMockProperties {
             private boolean updateScenarioStatus = false;
             private boolean bulkUpdateScenarioStatus = false;
             private boolean deleteGroup = false;
-        }
-    }
-
-    @Getter
-    @Setter
-    public static class Overview {
-        private Api api = new Api();
-
-        @Getter
-        @Setter
-        public static class Api {
-            private boolean getEvents = false;
-            private boolean getScenarios = false;
-            private boolean getPriceForecasts = false;
-        }
-    }
-
-    @Getter
-    @Setter
-    public static class Design {
-        private Api api = new Api();
-
-        @Getter
-        @Setter
-        public static class Api {
-            private boolean getEvents = false;
-            private boolean postGenerate = false;
-            private boolean postCallback = false;
-            private boolean getGeneratedScenarios = false;
-            private boolean getStatuses = false;
         }
     }
 

@@ -82,7 +82,7 @@ public class SwaggerConfig {
     }
 
     // note: 안정화 후 투머치 문서 모두 삭제예정
-    private static final String SW_VERSION_BASE = "v1.2.0";
+    private static final String SW_VERSION_BASE = "v1.2.1";
     private static final DateTimeFormatter SW_DEPLOY_DATE_FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
 
     @Bean
@@ -148,8 +148,15 @@ public class SwaggerConfig {
   ---
 
   ## 수정사항
-
   <details open>
+  <summary><strong>v1.2.1 (2026-06-10)</strong></summary>
+
+  - [Overview / Scenario / Design]
+    - AS-IS API(Deprecated) 모두 삭제
+
+  </details>
+
+  <details>
   <summary><strong>v1.1.11 (2026-06-09)</strong></summary>
 
   - [Scenario Group]
