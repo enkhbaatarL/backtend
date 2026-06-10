@@ -80,7 +80,7 @@ public class ScenarioGroupController {
             - `summary`: 시나리오 그룹 요약
             - `scenarioCount`: 시나리오 수
             - `dimensionColumns`: 그룹별 동적 표 헤더 (key, label)
-            - `scenarios`: 그룹 내 시나리오 표 본문 (scenarioName, baseCase, dimensions, probability)
+            - `scenarios`: 그룹 내 시나리오 표 본문 (scenarioName, baseCase, dimensions, probability, adjustedProbability)
             """
     )
     @Parameter(name = "sort", description = "정렬 기준 (`latest` / `oldest`, 대소문자 무관). 기본값 `latest`")
@@ -119,7 +119,8 @@ public class ScenarioGroupController {
             - `createdAt`: 생성일시
             - `group`: 부모 그룹 (scenarioGroupId, groupName, createdAt)
             - `dimensions`: 차원값 목록
-            - `probability`: 시나리오 발생 확률 (0~100 정수)
+            - `probability`: 시나리오 발생 확률 (0~100 정수, 원본)
+            - `adjustedProbability`: 재분배 확률 — 그룹 내 폐기 제외 비례 재분배(활성 합 100, 폐기=0). 조회 시점 계산값(비영속)
             """
     )
     @Parameter(name = "sort", description = "정렬 기준 (`latest` / `oldest`, 대소문자 무관). 기본값 `latest`")
@@ -201,7 +202,8 @@ public class ScenarioGroupController {
             - `summary`: 시나리오 그룹 설명 — 요약 탭
             - `scenarioCount`: 시나리오 수
             - `dimensionColumns`: 가정 표 동적 헤더 (key, label)
-            - `scenarios`: 가정 및 실행 가능성 표 행 (dimensions, probability, status, statusLabel[대기/실현/폐기])
+            - `scenarios`: 가정 및 실행 가능성 표 행 (dimensions, probability, adjustedProbability, status, statusLabel[대기/실현/폐기])
+            - `adjustedProbability`: 재분배 확률 — 폐기 제외 비례 재분배(활성 합 100, 폐기=0). 조회 시점 계산값(비영속)
             """
     )
     @ApiResponse(responseCode = "200", description = "조회 성공")
@@ -226,7 +228,8 @@ public class ScenarioGroupController {
             ### 상위(top-level) 필드
             - `scenarioId`, `scenarioGroupId`, `scenarioName`, `baseCase`
             - `narrative`: 시나리오 내러티브
-            - `probability`: 시나리오 발생 확률 (0~100)
+            - `probability`: 시나리오 발생 확률 (0~100, 원본)
+            - `adjustedProbability`: 재분배 확률 — 그룹 내 폐기 제외 비례 재분배(활성 합 100, 폐기=0). 조회 시점 계산값(비영속)
             - `dimensions`: 주요 가정 (key, label, value, valueLabel) — 자기완결형 차원값
             - `signpostDefinitions`: Signpost 정의 (label, direction[sup], directionLabel[가능성강화], strength(%), rationale)
             - `signpostMonitorings`: Signpost 모니터링 이력 (updatedAt, eventSummary, probability, probabilityDelta, rationale)

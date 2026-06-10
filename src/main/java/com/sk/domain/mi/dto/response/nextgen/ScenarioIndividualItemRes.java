@@ -28,8 +28,11 @@ public record ScenarioIndividualItemRes(
     @Schema(description = "차원값 목록")
     List<ScenarioDimensionRes> dimensions,
 
-    @Schema(description = "시나리오 발생 확률 (0~100). 라벨/등급 환산은 FE 처리", example = "30")
-    Integer probability
+    @Schema(description = "시나리오 발생 확률 (0~100, 원본). 라벨/등급 환산은 FE 처리", example = "30")
+    Integer probability,
+
+    @Schema(description = "재분배 확률 (0~100). 폐기 제외 비례 재분배로 활성 시나리오 합 100, 폐기는 0. 조회 시점 계산값(비영속)", example = "43")
+    Integer adjustedProbability
 
 ) {
 
@@ -41,12 +44,14 @@ public record ScenarioIndividualItemRes(
             group.createdAt(),
             new ScenarioGroupRefRes(group.scenarioGroupId(), group.groupName(), group.createdAt()),
             row.dimensions(),
-            row.probability()
+            row.probability(),
+            row.adjustedProbability()
         );
     }
 
     /** 개별 모드 base row + 조립된 dimensions → 응답 행. */
-    public static ScenarioIndividualItemRes of(ScenarioIndividualBaseRow row, List<ScenarioDimensionRes> dimensions) {
+    public static ScenarioIndividualItemRes of(ScenarioIndividualBaseRow row, List<ScenarioDimensionRes> dimensions,
+                                               Integer adjustedProbability) {
         return new ScenarioIndividualItemRes(
             row.scenarioId(),
             row.scenarioTitle(),
@@ -54,7 +59,8 @@ public record ScenarioIndividualItemRes(
             row.groupCreatedAt(),
             new ScenarioGroupRefRes(row.scenarioGroupId(), row.groupTitle(), row.groupCreatedAt()),
             dimensions,
-            row.probabilityScore() == null ? null : row.probabilityScore().intValue()
+            row.probabilityScore() == null ? null : row.probabilityScore().intValue(),
+            adjustedProbability
         );
     }
 

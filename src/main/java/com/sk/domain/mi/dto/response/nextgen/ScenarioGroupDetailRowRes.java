@@ -20,8 +20,11 @@ public record ScenarioGroupDetailRowRes(
     @Schema(description = "차원값 목록 (dimensionColumns 순서와 매칭)")
     List<ScenarioDimensionRes> dimensions,
 
-    @Schema(description = "시나리오 발생 확률 (0~100)", example = "30")
+    @Schema(description = "시나리오 발생 확률 (0~100, 원본)", example = "30")
     Integer probability,
+
+    @Schema(description = "재분배 확률 (0~100). 폐기 제외 비례 재분배로 활성 시나리오 합 100, 폐기는 0. 조회 시점 계산값(비영속)", example = "43")
+    Integer adjustedProbability,
 
     @Schema(description = "판정 상태 (pending/realized/discarded)", example = "pending")
     ScenarioStatus status,
@@ -34,7 +37,8 @@ public record ScenarioGroupDetailRowRes(
     public static ScenarioGroupDetailRowRes of(
         ScenarioBaseRow row,
         List<ScenarioDimensionRes> dimensions,
-        ScenarioStatus status
+        ScenarioStatus status,
+        Integer adjustedProbability
     ) {
         return new ScenarioGroupDetailRowRes(
             row.scenarioId(),
@@ -42,6 +46,7 @@ public record ScenarioGroupDetailRowRes(
             Boolean.TRUE.equals(row.isBaseline()),
             dimensions,
             row.probabilityScore() == null ? null : row.probabilityScore().intValue(),
+            adjustedProbability,
             status,
             status == null ? null : status.getLabel()
         );

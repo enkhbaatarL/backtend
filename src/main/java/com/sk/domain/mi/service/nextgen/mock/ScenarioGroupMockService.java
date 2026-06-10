@@ -21,6 +21,7 @@ import com.sk.domain.mi.dto.response.nextgen.ScenarioIndividualItemRes;
 import com.sk.domain.mi.dto.response.nextgen.ScenarioIndividualListRes;
 import com.sk.domain.mi.dto.response.nextgen.ScenarioRowRes;
 import com.sk.domain.mi.dto.response.nextgen.ScenarioStatusRes;
+import com.sk.domain.mi.service.nextgen.support.ScenarioProbabilityAllocator;
 import com.sk.domain.shared.enums.nextgen.IndexName;
 import com.sk.domain.shared.enums.nextgen.ScenarioStatus;
 import com.sk.domain.shared.enums.nextgen.SortOrder;
@@ -233,26 +234,39 @@ public class ScenarioGroupMockService {
         return applyStatusOverrides(detail);
     }
 
-    /** mock 메모리에 저장된 상태 변경분을 그룹 상세에 반영 */
+    /** mock 메모리에 저장된 상태 변경분 반영 + 폐기 제외 재분배 확률 계산 */
     private ScenarioGroupDetailRes applyStatusOverrides(ScenarioGroupDetailRes detail) {
-        if (statusOverrides.isEmpty()) {
-            return detail;
-        }
+        Map<Long, Integer> adjusted = redistributeRows(detail.scenarios());
         List<ScenarioGroupDetailRowRes> rows = detail.scenarios().stream()
             .map(row -> {
-                ScenarioStatus override = statusOverrides.get(row.scenarioId());
-                if (override == null) {
-                    return row;
-                }
+                ScenarioStatus status = effectiveStatus(row);
                 return new ScenarioGroupDetailRowRes(
                     row.scenarioId(), row.scenarioName(), row.baseCase(),
-                    row.dimensions(), row.probability(), override, override.getLabel());
+                    row.dimensions(), row.probability(), adjusted.get(row.scenarioId()),
+                    status, status.getLabel());
             })
             .toList();
         return new ScenarioGroupDetailRes(
             detail.scenarioGroupId(), detail.groupName(), detail.createdAt(),
             detail.baseEvent(), detail.summary(), detail.scenarioCount(),
             detail.dimensionColumns(), rows);
+    }
+
+    private Map<Long, Integer> redistributeRows(List<ScenarioGroupDetailRowRes> rows) {
+        return ScenarioProbabilityAllocator.redistribute(rows.stream()
+            .map(row -> new ScenarioProbabilityAllocator.Item(
+                row.scenarioId(),
+                row.probability() == null ? null : BigDecimal.valueOf(row.probability()),
+                effectiveStatus(row) == ScenarioStatus.DISCARDED))
+            .toList());
+    }
+
+    private ScenarioStatus effectiveStatus(ScenarioGroupDetailRowRes row) {
+        ScenarioStatus override = statusOverrides.get(row.scenarioId());
+        if (override != null) {
+            return override;
+        }
+        return row.status() == null ? ScenarioStatus.PENDING : row.status();
     }
 
     public ScenarioDetailViewRes getScenarioDetail(Long scenarioGroupId, Long scenarioId) {
@@ -263,7 +277,11 @@ public class ScenarioGroupMockService {
             throw AppErrorException.of(ResultCode.Error.RSC_NOT_FOUND,
                 "Scenario detail not found: scenarioGroupId=" + scenarioGroupId + ", scenarioId=" + scenarioId);
         }
-        return detail;
+        ScenarioGroupDetailRes groupDetail = groupDetailMap.get(scenarioGroupId);
+        if (groupDetail == null) {
+            return detail;
+        }
+        return detail.withAdjustedProbability(redistributeRows(groupDetail.scenarios()).get(scenarioId));
     }
 
     public ScenarioStatusRes updateScenarioStatus(Long scenarioGroupId, Long scenarioId, ScenarioStatus status) {

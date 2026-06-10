@@ -25,6 +25,7 @@ import com.sk.domain.mi.dto.response.nextgen.ScenarioSignpostMonitoringRes;
 import com.sk.domain.mi.dto.response.nextgen.ScenarioStatusRes;
 import com.sk.domain.mi.service.nextgen.support.ScenarioDimensionMapper;
 import com.sk.domain.mi.service.nextgen.support.ScenarioDimensionMapper.GroupDimensionTemplate;
+import com.sk.domain.mi.service.nextgen.support.ScenarioProbabilityAllocator;
 import com.sk.domain.shared.entity.master.tmm.MiScenario;
 import com.sk.domain.shared.enums.nextgen.IndexName;
 import com.sk.domain.shared.enums.nextgen.ScenarioStatus;
@@ -78,8 +79,11 @@ public class ScenarioGroupServiceImpl implements ScenarioGroupService {
             List<String> selectedKeys = ScenarioDimensionMapper.parseSelectedKeys(base.dimensionSelected());
 
             List<ScenarioDimensionColumnRes> dimensionColumns = template.columns(selectedKeys);
-            List<ScenarioRowRes> scenarios = scenariosByGroup.getOrDefault(base.scenarioGroupId(), List.of()).stream()
-                .map(s -> ScenarioRowRes.of(s, template.dimensions(selectedKeys, s.dimensionValues())))
+            List<ScenarioBaseRow> groupScenarios = scenariosByGroup.getOrDefault(base.scenarioGroupId(), List.of());
+            Map<Long, Integer> adjusted = ScenarioProbabilityAllocator.redistributeRows(groupScenarios);
+            List<ScenarioRowRes> scenarios = groupScenarios.stream()
+                .map(s -> ScenarioRowRes.of(s, template.dimensions(selectedKeys, s.dimensionValues()),
+                    adjusted.get(s.scenarioId())))
                 .toList();
 
             itemsByGroupId.put(base.scenarioGroupId(), ScenarioGroupListItemRes.of(base, dimensionColumns, scenarios));
@@ -106,13 +110,22 @@ public class ScenarioGroupServiceImpl implements ScenarioGroupService {
             scenarioGroupRepository.findTemplatesByEventTypeL2Ids(eventTypeL2Ids)
         );
 
+        // 재분배 확률은 그룹 단위 계산이라 페이지 내 그룹들의 시나리오 전체를 일괄 조회
+        List<Long> groupIds = bases.stream().map(ScenarioIndividualBaseRow::scenarioGroupId).distinct().toList();
+        Map<Long, Integer> adjusted = new LinkedHashMap<>();
+        scenarioGroupRepository.findScenariosByGroupIds(groupIds).stream()
+            .collect(Collectors.groupingBy(ScenarioBaseRow::scenarioGroupId, LinkedHashMap::new, Collectors.toList()))
+            .values()
+            .forEach(rows -> adjusted.putAll(ScenarioProbabilityAllocator.redistributeRows(rows)));
+
         Map<Long, ScenarioIndividualItemRes> itemsByScenarioId = new LinkedHashMap<>();
         for (ScenarioIndividualBaseRow base : bases) {
             GroupDimensionTemplate template = templates.getOrDefault(base.eventTypeL2Id(), GroupDimensionTemplate.EMPTY);
             List<String> selectedKeys = ScenarioDimensionMapper.parseSelectedKeys(base.dimensionSelected());
             List<ScenarioDimensionRes> dimensions = template.dimensions(selectedKeys, base.dimensionValues());
 
-            itemsByScenarioId.put(base.scenarioId(), ScenarioIndividualItemRes.of(base, dimensions));
+            itemsByScenarioId.put(base.scenarioId(),
+                ScenarioIndividualItemRes.of(base, dimensions, adjusted.get(base.scenarioId())));
         }
 
         return new ScenarioIndividualListRes(
@@ -144,12 +157,14 @@ public class ScenarioGroupServiceImpl implements ScenarioGroupService {
         List<String> selectedKeys = ScenarioDimensionMapper.parseSelectedKeys(base.dimensionSelected());
 
         List<ScenarioDimensionColumnRes> dimensionColumns = template.columns(selectedKeys);
-        List<ScenarioGroupDetailRowRes> scenarios = scenarioGroupRepository
-            .findScenariosByGroupIds(List.of(scenarioGroupId)).stream()
+        List<ScenarioBaseRow> groupScenarios = scenarioGroupRepository.findScenariosByGroupIds(List.of(scenarioGroupId));
+        Map<Long, Integer> adjusted = ScenarioProbabilityAllocator.redistributeRows(groupScenarios);
+        List<ScenarioGroupDetailRowRes> scenarios = groupScenarios.stream()
             .map(s -> ScenarioGroupDetailRowRes.of(
                 s,
                 template.dimensions(selectedKeys, s.dimensionValues()),
-                ScenarioStatus.fromLabel(s.judgmentStatusCode())
+                ScenarioStatus.fromLabel(s.judgmentStatusCode()),
+                adjusted.get(s.scenarioId())
             ))
             .toList();
 
@@ -177,7 +192,11 @@ public class ScenarioGroupServiceImpl implements ScenarioGroupService {
                 .map(ScenarioSignpostMonitoringRes::of)
                 .toList();
 
-        return ScenarioDetailViewRes.of(base, dimensions, signpostDefinitions, signpostMonitorings);
+        Map<Long, Integer> adjusted = ScenarioProbabilityAllocator.redistributeRows(
+            scenarioGroupRepository.findScenariosByGroupIds(List.of(scenarioGroupId)));
+
+        return ScenarioDetailViewRes.of(base, dimensions, adjusted.get(scenarioId),
+            signpostDefinitions, signpostMonitorings);
     }
 
     @Override
