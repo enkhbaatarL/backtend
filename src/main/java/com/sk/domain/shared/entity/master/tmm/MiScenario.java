@@ -7,6 +7,7 @@ import org.hibernate.annotations.Comment;
 
 import com.sk.common.converter.BooleanToYNAttributeConverter;
 import com.sk.domain.shared.entity.base.BaseEntity;
+import com.sk.domain.shared.enums.nextgen.ScenarioStatus;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Convert;
@@ -117,6 +118,11 @@ public class MiScenario extends BaseEntity {
         this.judgmentStatusCode = judgmentStatusCode;
         this.displayOrder = displayOrder;
         this.isBaseline = isBaseline;
+    }
+
+    /** 판정 상태 변경. DB 컬럼은 한글 라벨(대기/실현/폐기)로 적재한다. */
+    public void updateJudgmentStatus(ScenarioStatus status) {
+        this.judgmentStatusCode = status.getLabel();
     }
 
 }

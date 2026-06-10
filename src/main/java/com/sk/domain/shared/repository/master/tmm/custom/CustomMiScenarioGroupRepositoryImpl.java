@@ -14,6 +14,7 @@ import com.querydsl.core.types.OrderSpecifier;
 import com.querydsl.jpa.JPQLQuery;
 import com.querydsl.jpa.impl.JPAQueryFactory;
 import com.sk.domain.mi.dto.request.nextgen.ScenarioGroupListReq;
+import com.sk.domain.shared.entity.master.tmm.MiScenario;
 import com.sk.domain.shared.repository.master.tmm.projection.QScenarioBaseRow;
 import com.sk.domain.shared.repository.master.tmm.projection.QScenarioDetailBaseRow;
 import com.sk.domain.shared.repository.master.tmm.projection.QScenarioDimensionTemplateRow;
@@ -281,6 +282,22 @@ public class CustomMiScenarioGroupRepositoryImpl implements CustomMiScenarioGrou
             .orderBy(
                 miSignpostEvent.occurredAt.asc().nullsLast(),
                 miSignpostEvent.signpostEventId.asc()
+            )
+            .fetch();
+    }
+
+    @Override
+    public List<MiScenario> findScenarioEntitiesByGroupId(Long scenarioGroupId) {
+        return queryFactory
+            .selectFrom(miScenario)
+            .innerJoin(miScenario.scenarioGroup, miScenarioGroup).on(miScenarioGroup.isDeleted.isFalse())
+            .where(
+                miScenarioGroup.scenarioGroupId.eq(scenarioGroupId),
+                miScenario.isDeleted.isFalse()
+            )
+            .orderBy(
+                miScenario.displayOrder.asc(),
+                miScenario.scenarioId.asc()
             )
             .fetch();
     }

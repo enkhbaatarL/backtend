@@ -252,6 +252,10 @@ public class ScenarioGroupController {
             시나리오의 상태를 변경합니다. <br>
             대기(`pending`) -> 실현(`realized`) / 폐기(`discarded`). <br>
 
+            <br>
+            **`realized`(실현)로 변경 시, 같은 그룹의 나머지 시나리오는 모두 `discarded`(폐기)로 자동 변경됩니다.** <br>
+            (그룹 내 실현 시나리오는 항상 1개)<br>
+
             <br><br>
             ### 요청 본문
             - `status`: 변경할 판정 상태 (`pending` / `realized` / `discarded`)
@@ -259,6 +263,7 @@ public class ScenarioGroupController {
             <br><br>
             ### 응답 필드
             - `scenarioId`, `status`, `statusLabel`(대기/실현/폐기)
+            - `discardedScenarioIds`: 함께 '폐기'로 자동 변경된 시나리오 ID 목록 (`realized` 변경 시에만 채워지고, 그 외 빈 배열)
             """
     )
     @ApiResponse(responseCode = "200", description = "변경 성공")

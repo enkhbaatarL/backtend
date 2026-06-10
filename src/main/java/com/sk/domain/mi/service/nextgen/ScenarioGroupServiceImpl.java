@@ -25,6 +25,7 @@ import com.sk.domain.mi.dto.response.nextgen.ScenarioSignpostMonitoringRes;
 import com.sk.domain.mi.dto.response.nextgen.ScenarioStatusRes;
 import com.sk.domain.mi.service.nextgen.support.ScenarioDimensionMapper;
 import com.sk.domain.mi.service.nextgen.support.ScenarioDimensionMapper.GroupDimensionTemplate;
+import com.sk.domain.shared.entity.master.tmm.MiScenario;
 import com.sk.domain.shared.enums.nextgen.IndexName;
 import com.sk.domain.shared.enums.nextgen.ScenarioStatus;
 import com.sk.domain.shared.repository.master.tmm.MiScenarioGroupRepository;
@@ -180,9 +181,28 @@ public class ScenarioGroupServiceImpl implements ScenarioGroupService {
     }
 
     @Override
+    @Transactional
     public ScenarioStatusRes updateScenarioStatus(Long scenarioGroupId, Long scenarioId, ScenarioStatus status) {
-        // TODO: DB 연동 구현
-        throw AppErrorException.of(ResultCode.Error.RSC_NOT_FOUND, "Scenario status 변경 DB 연동 미구현");
+        List<MiScenario> scenarios = scenarioGroupRepository.findScenarioEntitiesByGroupId(scenarioGroupId);
+
+        MiScenario target = scenarios.stream()
+            .filter(s -> s.getScenarioId().equals(scenarioId))
+            .findFirst()
+            .orElseThrow(() -> AppErrorException.of(ResultCode.Error.RSC_NOT_FOUND, "Scenario not found: scenarioGroupId=%d, scenarioId=%d".formatted(scenarioGroupId, scenarioId)));
+
+        target.updateJudgmentStatus(status);
+
+        // 기획: 그룹 내 시나리오가 하나라도 '실현'되면 나머지는 모두 '폐기' 처리
+        List<Long> discardedScenarioIds = List.of();
+        if (status == ScenarioStatus.REALIZED) {
+            List<MiScenario> others = scenarios.stream()
+                .filter(s -> !s.getScenarioId().equals(scenarioId))
+                .toList();
+            others.forEach(s -> s.updateJudgmentStatus(ScenarioStatus.DISCARDED));
+            discardedScenarioIds = others.stream().map(MiScenario::getScenarioId).toList();
+        }
+
+        return ScenarioStatusRes.of(scenarioId, status, discardedScenarioIds);
     }
 
     @Override

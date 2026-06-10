@@ -277,7 +277,16 @@ public class ScenarioGroupMockService {
         }
         // mock: 변경분을 메모리에 저장 → 그룹 상세 조회에 반영, reset API로 초기화 가능
         statusOverrides.put(scenarioId, status);
-        return new ScenarioStatusRes(scenarioId, status, status.getLabel());
+        // 기획: 그룹 내 시나리오가 하나라도 '실현'되면 나머지는 모두 '폐기' 처리
+        List<Long> discardedScenarioIds = List.of();
+        if (status == ScenarioStatus.REALIZED) {
+            discardedScenarioIds = detail.scenarios().stream()
+                .map(ScenarioGroupDetailRowRes::scenarioId)
+                .filter(id -> !id.equals(scenarioId))
+                .toList();
+            discardedScenarioIds.forEach(id -> statusOverrides.put(id, ScenarioStatus.DISCARDED));
+        }
+        return ScenarioStatusRes.of(scenarioId, status, discardedScenarioIds);
     }
 
     public ScenarioBulkStatusRes bulkUpdateScenarioStatus(Long scenarioGroupId, ScenarioStatus status) {

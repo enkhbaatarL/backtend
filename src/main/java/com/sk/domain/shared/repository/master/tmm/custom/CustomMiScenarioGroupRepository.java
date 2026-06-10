@@ -1,6 +1,7 @@
 package com.sk.domain.shared.repository.master.tmm.custom;
 
 import com.sk.domain.mi.dto.request.nextgen.ScenarioGroupListReq;
+import com.sk.domain.shared.entity.master.tmm.MiScenario;
 import com.sk.domain.shared.repository.master.tmm.projection.ScenarioBaseRow;
 import com.sk.domain.shared.repository.master.tmm.projection.ScenarioDetailBaseRow;
 import com.sk.domain.shared.repository.master.tmm.projection.ScenarioDimensionTemplateRow;
@@ -30,5 +31,7 @@ public interface CustomMiScenarioGroupRepository {
     List<ScenarioSignpostRow> findSignpostsByScenarioId(Long scenarioId);
 
     List<ScenarioSignpostEventRow> findSignpostEventsByScenarioId(Long scenarioId);
+
+    List<MiScenario> findScenarioEntitiesByGroupId(Long scenarioGroupId);
 
 }
