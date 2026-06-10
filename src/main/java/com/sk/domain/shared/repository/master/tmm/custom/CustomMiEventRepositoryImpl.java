@@ -14,6 +14,8 @@ import static com.sk.domain.shared.entity.master.tmm.QMiImpact.miImpact;
 import static com.sk.domain.shared.entity.master.tmm.QMiImpactDriver.miImpactDriver;
 import static com.sk.domain.shared.entity.master.tmm.QMiImpactResult.miImpactResult;
 import static com.sk.domain.shared.entity.master.tmm.QMiInstitutionView.miInstitutionView;
+import static com.sk.domain.shared.entity.master.tmm.QMiScenario.miScenario;
+import static com.sk.domain.shared.entity.master.tmm.QMiScenarioGroup.miScenarioGroup;
 
 import com.querydsl.core.BooleanBuilder;
 import com.querydsl.core.types.OrderSpecifier;
@@ -230,7 +232,26 @@ public class CustomMiEventRepositoryImpl implements CustomMiEventRepository {
         // Driver Tree Scoreboard 조회 (인덱스 target_id 포함)
         List<DriverTagScoreboardRow> driverTags = fetchDriverTags(base.miEventId());
 
-        // todo 연관 시나리오
+        // 연관 시나리오
+        ScenarioGroupBaseRow relatedScenarioGroup = queryFactory
+            .select(new QScenarioGroupBaseRow(
+                miScenarioGroup.scenarioGroupId,
+                miScenarioGroup.eventTypeL2.eventTypeL2Id,
+                miScenarioGroup.title,
+                miScenarioGroup.summary,
+                miScenarioGroup.scenarioCount,
+                miScenarioGroup.createDt,
+                miScenarioGroup.dimensionSelected
+            ))
+            .from(miScenarioGroup)
+            .where(
+                miScenarioGroup.miEvent.miEventId.eq(eventId),
+                miScenarioGroup.isDeleted.isFalse()
+            )
+            .fetchFirst();
+        List<ScenarioBaseRow> relatedScenarios = relatedScenarioGroup == null
+            ? List.of()
+            : fetchRelatedScenarios(relatedScenarioGroup.scenarioGroupId());
 
         return Optional.of(new EventDetailRow(
             base.miEventId(),
@@ -250,8 +271,34 @@ public class CustomMiEventRepositoryImpl implements CustomMiEventRepository {
             indexImpacts,
             keyBullets,
             sources,
-            driverTags
+            driverTags,
+            relatedScenarioGroup,
+            relatedScenarios
         ));
+    }
+
+    private List<ScenarioBaseRow> fetchRelatedScenarios(Long scenarioGroupId) {
+        return queryFactory
+            .select(new QScenarioBaseRow(
+                miScenario.scenarioGroup.scenarioGroupId,
+                miScenario.scenarioId,
+                miScenario.title,
+                miScenario.isBaseline,
+                miScenario.probabilityScore,
+                miScenario.judgmentStatusCode,
+                miScenario.dimensionValues,
+                miScenario.displayOrder
+            ))
+            .from(miScenario)
+            .where(
+                miScenario.scenarioGroup.scenarioGroupId.eq(scenarioGroupId),
+                miScenario.isDeleted.isFalse()
+            )
+            .orderBy(
+                miScenario.displayOrder.asc(),
+                miScenario.scenarioId.asc()
+            )
+            .fetch();
     }
 
     // note: 이벤트 전체 영향도 종합 요약 (tmm_mi_impact_m.impact_summary). 이벤트당 1건.

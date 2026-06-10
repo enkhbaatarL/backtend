@@ -22,6 +22,8 @@ public record EventDetailRow(
     List<EventIndexImpactRow> indexImpacts,
     List<String> keyBullets,
     List<String> sources,
-    List<DriverTagScoreboardRow> driverTags
+    List<DriverTagScoreboardRow> driverTags,
+    ScenarioGroupBaseRow relatedScenarioGroup,
+    List<ScenarioBaseRow> relatedScenarios
 ) {
 }

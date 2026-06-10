@@ -167,7 +167,13 @@ public class EventController {
 
             <br><br>
             ### relatedEventScenario 필드
-            관련 테이블 미준비 상태로 현재 `null` 반환.
+            이벤트에서 생성된 시나리오 그룹과 그 시나리오 표입니다.
+            - `scenarioGroupId`, `groupName`
+            - `dimensionColumns`: 동적 표 헤더 (key, label) — 시나리오 그룹 목록/상세와 동일 구조
+            - `scenarios[]`: `scenarioId`, `scenarioName`, `baseCase`, `dimensions`(차원값, dimensionColumns 순서 매칭),
+              `probability`(원본 0~100),
+              `adjustedProbability`(재분배 확률 — 폐기 제외 비례 재분배로 활성 합 100, 폐기=0, 폐기 없으면 probability와 동일),
+              `status` / `statusLabel`(대기/실현/폐기)
             """
     )
     @ApiResponse(responseCode = "200", description = "조회 성공")

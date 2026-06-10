@@ -53,12 +53,12 @@ public record EventDetailRes(
     @Schema(description = "Driver Tree Scoreboard — 인덱스(JKM/TTF/HH)별 그룹")
     List<EventDriverTreeIndexRes> driverTreeScoreboard,
 
-    @Schema(description = "관련 이벤트 및 시나리오 (관련 테이블 미준비 상태로 현재 항상 null)", nullable = true)
-    RelatedEventScenarioRes relatedEventScenario
+    @Schema(description = "연관 시나리오", nullable = true)
+    EventRelatedScenariosRes relatedEventScenario
 
 ) {
 
-    public static EventDetailRes from(EventDetailRow row) {
+    public static EventDetailRes from(EventDetailRow row, EventRelatedScenariosRes relatedEventScenario) {
         ContentStatus status = Boolean.TRUE.equals(row.isNew()) ? ContentStatus.NEW : ContentStatus.UPDATED;
         EventSignalType signalType = Boolean.TRUE.equals(row.isSignal()) ? EventSignalType.SIGNAL : EventSignalType.NOISE;
         EventImpactAnalysisRes impactAnalysis = EventImpactAnalysisRes.from(row);
@@ -77,7 +77,7 @@ public record EventDetailRes(
             EventAiInsightsRes.from(row),
             impactAnalysis,
             buildDriverTreeScoreboard(row.driverTags()),
-            null
+            relatedEventScenario
         );
     }
 
