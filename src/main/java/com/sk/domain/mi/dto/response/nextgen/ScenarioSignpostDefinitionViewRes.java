@@ -18,8 +18,8 @@ public record ScenarioSignpostDefinitionViewRes(
     @Schema(description = "확률 변화 방향 라벨", example = "가능성강화")
     String directionLabel,
 
-    @Schema(description = "확률 변화 강도 (%)", example = "54")
-    Integer strength,
+    @Schema(description = "확률 변화 강도", example = "54")
+    Integer probabilityImpact,
 
     @Schema(description = "Signpost 근거")
     String rationale

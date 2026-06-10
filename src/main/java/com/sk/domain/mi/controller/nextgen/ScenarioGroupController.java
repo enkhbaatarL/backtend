@@ -66,8 +66,8 @@ public class ScenarioGroupController {
 
             <br><br>
             ### 사용 가능한 파라미터
-             - sort: 정렬 기준 / 기본값 latest(최신순) / example - sort=latest, sort=oldest
-             - startDate / endDate: 조회 기간 (그룹 생성일 기준)
+             - sort: 정렬 기준 / 기본값 latest(최신순) / 그룹 수정일시 기준 정렬 / example - sort=latest, sort=oldest
+             - startDate / endDate: 조회 기간 (그룹 수정일시 기준)
              - keyword: 시나리오 그룹명 검색 키워드 / example - keyword=카타르
              - page: 기본값 1 / 1-based
              - size: 기본값 20
@@ -77,6 +77,7 @@ public class ScenarioGroupController {
             - `scenarioGroupId`: 시나리오 그룹 식별자
             - `groupName`: 시나리오 그룹명
             - `createdAt`: 생성일시
+            - `updatedAt`: 수정일시 (최신순 정렬·기간 필터 기준)
             - `summary`: 시나리오 그룹 요약
             - `scenarioCount`: 시나리오 수
             - `dimensionColumns`: 그룹별 동적 표 헤더 (key, label)
@@ -84,8 +85,8 @@ public class ScenarioGroupController {
             """
     )
     @Parameter(name = "sort", description = "정렬 기준 (`latest` / `oldest`, 대소문자 무관). 기본값 `latest`")
-    @Parameter(name = "startDate", description = "조회 시작일 (yyyy-MM-dd, 그룹 생성일 기준)")
-    @Parameter(name = "endDate", description = "조회 종료일 (yyyy-MM-dd, 그룹 생성일 기준)")
+    @Parameter(name = "startDate", description = "조회 시작일 (yyyy-MM-dd, 그룹 수정일시 기준)")
+    @Parameter(name = "endDate", description = "조회 종료일 (yyyy-MM-dd, 그룹 수정일시 기준)")
     @Parameter(name = "keyword", description = "시나리오 그룹명 검색 키워드")
     @Parameter(name = "page", description = "페이지 번호 (1-based). 기본값 1")
     @Parameter(name = "size", description = "페이지당 항목 수. 기본값 20")
@@ -108,15 +109,16 @@ public class ScenarioGroupController {
 
             <br><br>
             ### 사용 가능한 파라미터
-             - sort: 정렬 기준 (latest / oldest) / 기본값 latest / 그룹 생성일 기준 정렬
-             - startDate / endDate: 조회 기간 (부모 그룹 생성일 기준)
+             - sort: 정렬 기준 (latest / oldest) / 기본값 latest / 시나리오 수정일시 기준 정렬
+             - startDate / endDate: 조회 기간 (시나리오 수정일시 기준)
              - keyword: 시나리오명 검색 키워드
              - page / size: 페이징
 
             <br><br>
             ### content 항목 필드
             - `scenarioId`, `scenarioName`, `baseCase`
-            - `createdAt`: 생성일시
+            - `createdAt`: 시나리오 생성일시
+            - `updatedAt`: 시나리오 수정일시 (최신순 정렬·기간 필터 기준)
             - `group`: 부모 그룹 (scenarioGroupId, groupName, createdAt)
             - `dimensions`: 차원값 목록
             - `probability`: 시나리오 발생 확률 (0~100 정수, 원본)
@@ -124,8 +126,8 @@ public class ScenarioGroupController {
             """
     )
     @Parameter(name = "sort", description = "정렬 기준 (`latest` / `oldest`, 대소문자 무관). 기본값 `latest`")
-    @Parameter(name = "startDate", description = "조회 시작일 (yyyy-MM-dd, 부모 그룹 생성일 기준)")
-    @Parameter(name = "endDate", description = "조회 종료일 (yyyy-MM-dd, 부모 그룹 생성일 기준)")
+    @Parameter(name = "startDate", description = "조회 시작일 (yyyy-MM-dd, 시나리오 수정일시 기준)")
+    @Parameter(name = "endDate", description = "조회 종료일 (yyyy-MM-dd, 시나리오 수정일시 기준)")
     @Parameter(name = "keyword", description = "시나리오명 검색 키워드")
     @Parameter(name = "page", description = "페이지 번호 (1-based). 기본값 1")
     @Parameter(name = "size", description = "페이지당 항목 수. 기본값 20")
@@ -197,7 +199,7 @@ public class ScenarioGroupController {
 
             <br><br>
             ### 상위(top-level) 필드
-            - `scenarioGroupId`, `groupName`, `createdAt`
+            - `scenarioGroupId`, `groupName`, `createdAt`, `updatedAt`
             - `baseEvent`: 기반 이벤트 (eventName, eventTypeLv1, eventTypeLv1Label, updatedAt) — 요약 탭
             - `summary`: 시나리오 그룹 설명 — 요약 탭
             - `scenarioCount`: 시나리오 수
@@ -227,11 +229,12 @@ public class ScenarioGroupController {
             <br><br>
             ### 상위(top-level) 필드
             - `scenarioId`, `scenarioGroupId`, `scenarioName`, `baseCase`
+            - `createdAt` / `updatedAt`: 시나리오 생성/수정일시
             - `narrative`: 시나리오 내러티브
             - `probability`: 시나리오 발생 확률 (0~100, 원본)
             - `adjustedProbability`: 재분배 확률 — 그룹 내 폐기 제외 비례 재분배(활성 합 100, 폐기=0). 조회 시점 계산값(비영속)
-            - `dimensions`: 주요 가정 (key, label, value, valueLabel) — 자기완결형 차원값
-            - `signpostDefinitions`: Signpost 정의 (label, direction[sup], directionLabel[가능성강화], strength(%), rationale)
+            - `dimensions`: 주요 가정 (key, label, value, valueLabel)
+            - `signpostDefinitions`: Signpost 정의 (label, direction[sup], directionLabel[가능성강화], probabilityImpact(%), rationale)
             - `signpostMonitorings`: Signpost 모니터링 이력 (updatedAt, eventSummary, probability, probabilityDelta, rationale)
             """
     )

@@ -50,9 +50,10 @@ public class CustomMiScenarioGroupRepositoryImpl implements CustomMiScenarioGrou
         Pageable pageable = PageRequest.of(request.page() - 1, request.size());
 
         BooleanBuilder where = buildGroupWhere(request);
+        // 최신순 정렬 기준은 그룹 수정일시
         OrderSpecifier<?> order = request.sort().isAscending()
-            ? miScenarioGroup.createDt.asc()
-            : miScenarioGroup.createDt.desc();
+            ? miScenarioGroup.modifyDt.asc()
+            : miScenarioGroup.modifyDt.desc();
 
         List<ScenarioGroupBaseRow> rows = queryFactory
             .select(new QScenarioGroupBaseRow(
@@ -62,6 +63,7 @@ public class CustomMiScenarioGroupRepositoryImpl implements CustomMiScenarioGrou
                 miScenarioGroup.summary,
                 miScenarioGroup.scenarioCount,
                 miScenarioGroup.createDt,
+                miScenarioGroup.modifyDt,
                 miScenarioGroup.dimensionSelected
             ))
             .from(miScenarioGroup)
@@ -84,10 +86,10 @@ public class CustomMiScenarioGroupRepositoryImpl implements CustomMiScenarioGrou
         where.and(miScenarioGroup.isDeleted.isFalse());
 
         if (request.startDate() != null) {
-            where.and(miScenarioGroup.createDt.goe(request.startDate().atStartOfDay()));
+            where.and(miScenarioGroup.modifyDt.goe(request.startDate().atStartOfDay()));
         }
         if (request.endDate() != null) {
-            where.and(miScenarioGroup.createDt.lt(request.endDate().plusDays(1).atStartOfDay()));
+            where.and(miScenarioGroup.modifyDt.lt(request.endDate().plusDays(1).atStartOfDay()));
         }
         if (request.keyword() != null && !request.keyword().isBlank()) {
             where.and(miScenarioGroup.title.contains(request.keyword().trim()));
@@ -101,10 +103,10 @@ public class CustomMiScenarioGroupRepositoryImpl implements CustomMiScenarioGrou
         Pageable pageable = PageRequest.of(request.page() - 1, request.size());
 
         BooleanBuilder where = buildScenarioWhere(request);
-        // 개별 모드 정렬/기간 필터 기준은 부모 그룹 생성일시 (그룹 모드와 동일 기준)
+        // 개별 모드: 최신순 정렬/기간 필터 모두 시나리오 수정일시 기준
         OrderSpecifier<?> dateOrder = request.sort().isAscending()
-            ? miScenarioGroup.createDt.asc()
-            : miScenarioGroup.createDt.desc();
+            ? miScenario.modifyDt.asc()
+            : miScenario.modifyDt.desc();
 
         List<ScenarioIndividualBaseRow> rows = queryFactory
             .select(new QScenarioIndividualBaseRow(
@@ -113,6 +115,8 @@ public class CustomMiScenarioGroupRepositoryImpl implements CustomMiScenarioGrou
                 miScenario.isBaseline,
                 miScenario.probabilityScore,
                 miScenario.dimensionValues,
+                miScenario.createDt,
+                miScenario.modifyDt,
                 miScenarioGroup.scenarioGroupId,
                 miScenarioGroup.title,
                 miScenarioGroup.createDt,
@@ -147,10 +151,10 @@ public class CustomMiScenarioGroupRepositoryImpl implements CustomMiScenarioGrou
         where.and(miScenario.isDeleted.isFalse());
 
         if (request.startDate() != null) {
-            where.and(miScenarioGroup.createDt.goe(request.startDate().atStartOfDay()));
+            where.and(miScenario.modifyDt.goe(request.startDate().atStartOfDay()));
         }
         if (request.endDate() != null) {
-            where.and(miScenarioGroup.createDt.lt(request.endDate().plusDays(1).atStartOfDay()));
+            where.and(miScenario.modifyDt.lt(request.endDate().plusDays(1).atStartOfDay()));
         }
         // 개별 모드 키워드는 시나리오명 검색
         if (request.keyword() != null && !request.keyword().isBlank()) {
@@ -166,12 +170,14 @@ public class CustomMiScenarioGroupRepositoryImpl implements CustomMiScenarioGrou
                 miScenarioGroup.scenarioGroupId,
                 miScenarioGroup.title,
                 miScenarioGroup.createDt,
+                miScenarioGroup.modifyDt,
                 miScenarioGroup.summary,
                 miScenarioGroup.scenarioCount,
                 miScenarioGroup.dimensionSelected,
                 miScenarioGroup.eventTypeL2.eventTypeL2Id,
                 miEvent.miEventId,
-                miEvent.eventTitle,
+                // note: 이벤트명은 event_title 대신 one_line_summary 표기 (이벤트 도메인과 동일 기준, 요청 2026-06-08)
+                miEvent.oneLineSummary,
                 miEventTypeL1.level1Code,
                 miEventTypeL1.level1Label,
                 miEvent.modifyDt
@@ -225,6 +231,8 @@ public class CustomMiScenarioGroupRepositoryImpl implements CustomMiScenarioGrou
                 miScenarioGroup.scenarioGroupId,
                 miScenario.title,
                 miScenario.isBaseline,
+                miScenario.createDt,
+                miScenario.modifyDt,
                 miScenario.narrative,
                 miScenario.probabilityScore,
                 miScenario.dimensionValues,

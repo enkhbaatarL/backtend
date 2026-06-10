@@ -241,6 +241,7 @@ public class CustomMiEventRepositoryImpl implements CustomMiEventRepository {
                 miScenarioGroup.summary,
                 miScenarioGroup.scenarioCount,
                 miScenarioGroup.createDt,
+                miScenarioGroup.modifyDt,
                 miScenarioGroup.dimensionSelected
             ))
             .from(miScenarioGroup)

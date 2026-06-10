@@ -19,6 +19,9 @@ public record ScenarioGroupListItemRes(
     @Schema(description = "생성일시")
     LocalDateTime createdAt,
 
+    @Schema(description = "수정일시 (최신순 정렬·기간 필터 기준)")
+    LocalDateTime updatedAt,
+
     @Schema(description = "시나리오 그룹 요약")
     String summary,
 
@@ -43,6 +46,7 @@ public record ScenarioGroupListItemRes(
             base.scenarioGroupId(),
             base.title(),
             base.createDt(),
+            base.modifyDt(),
             base.summary(),
             base.scenarioCount() == null ? 0 : base.scenarioCount(),
             dimensionColumns,

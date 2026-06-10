@@ -19,8 +19,11 @@ public record ScenarioIndividualItemRes(
     @Schema(description = "BC(Base Case) 여부", example = "false")
     boolean baseCase,
 
-    @Schema(description = "생성일시")
+    @Schema(description = "시나리오 생성일시")
     LocalDateTime createdAt,
+
+    @Schema(description = "시나리오 수정일시 (최신순 정렬·기간 필터 기준)")
+    LocalDateTime updatedAt,
 
     @Schema(description = "부모 시나리오 그룹")
     ScenarioGroupRefRes group,
@@ -41,7 +44,9 @@ public record ScenarioIndividualItemRes(
             row.scenarioId(),
             row.scenarioName(),
             row.baseCase(),
+            // mock 전용 경로: mock 데이터에 시나리오 자체 일시가 없어 그룹 일시로 대체
             group.createdAt(),
+            group.updatedAt(),
             new ScenarioGroupRefRes(group.scenarioGroupId(), group.groupName(), group.createdAt()),
             row.dimensions(),
             row.probability(),
@@ -56,7 +61,8 @@ public record ScenarioIndividualItemRes(
             row.scenarioId(),
             row.scenarioTitle(),
             Boolean.TRUE.equals(row.isBaseline()),
-            row.groupCreatedAt(),
+            row.createdAt(),
+            row.updatedAt(),
             new ScenarioGroupRefRes(row.scenarioGroupId(), row.groupTitle(), row.groupCreatedAt()),
             dimensions,
             row.probabilityScore() == null ? null : row.probabilityScore().intValue(),

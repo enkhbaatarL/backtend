@@ -11,6 +11,8 @@ public record ScenarioIndividualBaseRow(
     Boolean isBaseline,
     BigDecimal probabilityScore,
     String dimensionValues,
+    LocalDateTime createdAt,
+    LocalDateTime updatedAt,
     Long scenarioGroupId,
     String groupTitle,
     LocalDateTime groupCreatedAt,

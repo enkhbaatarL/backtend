@@ -20,6 +20,9 @@ public record ScenarioGroupDetailRes(
     @Schema(description = "생성일시")
     LocalDateTime createdAt,
 
+    @Schema(description = "수정일시")
+    LocalDateTime updatedAt,
+
     @Schema(description = "기반 이벤트 (Base Event)")
     ScenarioBaseEventRes baseEvent,
 
@@ -44,6 +47,7 @@ public record ScenarioGroupDetailRes(
             base.scenarioGroupId(),
             base.groupName(),
             base.createdAt(),
+            base.updatedAt(),
             ScenarioBaseEventRes.from(base),
             base.summary(),
             base.scenarioCount() == null ? scenarios.size() : base.scenarioCount(),

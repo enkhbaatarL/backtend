@@ -10,6 +10,7 @@ public record ScenarioGroupBaseRow(
     String summary,
     Integer scenarioCount,
     LocalDateTime createDt,
+    LocalDateTime modifyDt,
     String dimensionSelected
 ) {
 

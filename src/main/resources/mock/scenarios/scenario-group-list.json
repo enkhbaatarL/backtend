@@ -4,6 +4,7 @@
       "scenarioGroupId": 1,
       "groupName": "미-이란 충돌 및 호르무즈 해협 봉쇄",
       "createdAt": "2026-05-28T11:01:00",
+      "updatedAt": "2026-05-28T11:01:00",
       "summary": "미-이란 충돌의 지속 기간과 호르무즈 해협 봉쇄 강도, 지정학적 리스크 프리미엄, 주요 산유국의 공급 대응 방식에 따라 단기 일시 상승부터 장기 초강세까지 가격 경로가 갈린다. 부분 봉쇄·단기 충돌·구두 개입 조합에서는 상승이 제한되지만, 전면 봉쇄·장기화·실질적 공급 대응 부재가 겹치면 JKM/TTF가 급등한다.",
       "scenarioCount": 6,
       "dimensionColumns": [
@@ -55,7 +56,8 @@
               "valueLabel": "구두 개입"
             }
           ],
-          "probability": 30
+          "probability": 30,
+          "adjustedProbability": 30
         },
         {
           "scenarioId": 12,
@@ -87,7 +89,8 @@
               "valueLabel": "SPR 전면 방출"
             }
           ],
-          "probability": 12
+          "probability": 12,
+          "adjustedProbability": 12
         },
         {
           "scenarioId": 13,
@@ -119,7 +122,8 @@
               "valueLabel": "SPR 부분 방출"
             }
           ],
-          "probability": 10
+          "probability": 10,
+          "adjustedProbability": 10
         },
         {
           "scenarioId": 14,
@@ -151,7 +155,8 @@
               "valueLabel": "SPR 부분 방출"
             }
           ],
-          "probability": 28
+          "probability": 28,
+          "adjustedProbability": 28
         },
         {
           "scenarioId": 15,
@@ -183,7 +188,8 @@
               "valueLabel": "구두 개입"
             }
           ],
-          "probability": 5
+          "probability": 5,
+          "adjustedProbability": 5
         },
         {
           "scenarioId": 16,
@@ -215,7 +221,8 @@
               "valueLabel": "SPR 전면 방출"
             }
           ],
-          "probability": 15
+          "probability": 15,
+          "adjustedProbability": 15
         }
       ]
     },
@@ -223,6 +230,7 @@
       "scenarioGroupId": 2,
       "groupName": "유럽 저장 재고 재주입 압력",
       "createdAt": "2026-05-30T11:02:00",
+      "updatedAt": "2026-05-30T11:02:00",
       "summary": "중동산 LNG 공급 차질로 유럽의 저장 재주입 수요가 맞물릴 경우, 유럽 주요 LNG 수입 터미널의 가동률이 빠르게 상승할 수 있다. 재고 수준과 동절기 기온, 산업 수요 회복 속도에 따라 TTF 가격의 경로가 갈린다.",
       "scenarioCount": 4,
       "dimensionColumns": [
@@ -274,7 +282,8 @@
               "valueLabel": "안정 횡보"
             }
           ],
-          "probability": 45
+          "probability": 45,
+          "adjustedProbability": 45
         },
         {
           "scenarioId": 22,
@@ -306,7 +315,8 @@
               "valueLabel": "급등"
             }
           ],
-          "probability": 22
+          "probability": 22,
+          "adjustedProbability": 22
         },
         {
           "scenarioId": 23,
@@ -338,7 +348,8 @@
               "valueLabel": "하락"
             }
           ],
-          "probability": 20
+          "probability": 20,
+          "adjustedProbability": 20
         },
         {
           "scenarioId": 24,
@@ -370,7 +381,8 @@
               "valueLabel": "초급등"
             }
           ],
-          "probability": 13
+          "probability": 13,
+          "adjustedProbability": 13
         }
       ]
     },
@@ -378,6 +390,7 @@
       "scenarioGroupId": 3,
       "groupName": "JKM-TTF Spread 급변",
       "createdAt": "2026-05-26T10:50:00",
+      "updatedAt": "2026-05-26T10:50:00",
       "summary": "아시아와 유럽의 LNG 확보 경쟁이 동시에 강화되면 JKM과 TTF 간 가격 Spread가 큰 폭으로 흔들릴 수 있다. 아시아 구매자의 spot 확보 강도와 유럽의 재주입 수요 강도에 따라 spread 방향이 갈린다.",
       "scenarioCount": 3,
       "dimensionColumns": [
@@ -419,7 +432,8 @@
               "valueLabel": "JKM 프리미엄 확대"
             }
           ],
-          "probability": 50
+          "probability": 50,
+          "adjustedProbability": 50
         },
         {
           "scenarioId": 32,
@@ -445,7 +459,8 @@
               "valueLabel": "TTF 프리미엄"
             }
           ],
-          "probability": 30
+          "probability": 30,
+          "adjustedProbability": 30
         },
         {
           "scenarioId": 33,
@@ -471,7 +486,8 @@
               "valueLabel": "동반 상승 / 횡보"
             }
           ],
-          "probability": 20
+          "probability": 20,
+          "adjustedProbability": 20
         }
       ]
     },
@@ -479,6 +495,7 @@
       "scenarioGroupId": 4,
       "groupName": "미국 Freeport LNG 가동 차질",
       "createdAt": "2026-06-03T09:30:00",
+      "updatedAt": "2026-06-03T09:30:00",
       "summary": "미국 Freeport LNG Train 2의 비상 정지로 Gulf Coast 수출 물량이 일부 중단됐다. 정지 기간과 가동 손실 규모, 유럽향 물량 전환 성공 여부에 따라 JKM·TTF 가격 경로가 갈린다. 단기 정지·부분 손실 조합에서는 상승이 제한되지만, 장기 정지와 연쇄 설비 정지가 겹치면 아시아 spot 확보 경쟁이 격화된다.",
       "scenarioCount": 4,
       "dimensionColumns": [
@@ -530,7 +547,8 @@
               "valueLabel": "완만 상승"
             }
           ],
-          "probability": 40
+          "probability": 40,
+          "adjustedProbability": 40
         },
         {
           "scenarioId": 42,
@@ -562,7 +580,8 @@
               "valueLabel": "급등"
             }
           ],
-          "probability": 25
+          "probability": 25,
+          "adjustedProbability": 25
         },
         {
           "scenarioId": 43,
@@ -594,7 +613,8 @@
               "valueLabel": "안정 횡보"
             }
           ],
-          "probability": 20
+          "probability": 20,
+          "adjustedProbability": 20
         },
         {
           "scenarioId": 44,
@@ -626,7 +646,8 @@
               "valueLabel": "초급등"
             }
           ],
-          "probability": 15
+          "probability": 15,
+          "adjustedProbability": 15
         }
       ]
     },
@@ -634,6 +655,7 @@
       "scenarioGroupId": 5,
       "groupName": "호주 LNG 노조 파업 리스크",
       "createdAt": "2026-06-05T14:20:00",
+      "updatedAt": "2026-06-05T14:20:00",
       "summary": "호주 Gorgon·Wheatstone LNG 설비 노조가 파업을 가결하며 아시아향 공급 불확실성이 커졌다. 파업 규모와 지속 기간, 아시아 시장 영향 정도에 따라 JKM 가격 경로가 갈린다. 부분·단기 파업에서는 영향이 제한되지만, 전면·장기 파업이 현실화되면 JKM이 급등한다.",
       "scenarioCount": 3,
       "dimensionColumns": [
@@ -685,7 +707,8 @@
               "valueLabel": "완만 상승"
             }
           ],
-          "probability": 48
+          "probability": 48,
+          "adjustedProbability": 48
         },
         {
           "scenarioId": 52,
@@ -717,7 +740,8 @@
               "valueLabel": "급등"
             }
           ],
-          "probability": 32
+          "probability": 32,
+          "adjustedProbability": 32
         },
         {
           "scenarioId": 53,
@@ -749,7 +773,8 @@
               "valueLabel": "안정 횡보"
             }
           ],
-          "probability": 20
+          "probability": 20,
+          "adjustedProbability": 20
         }
       ]
     }

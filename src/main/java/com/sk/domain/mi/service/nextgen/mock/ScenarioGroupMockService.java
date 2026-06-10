@@ -113,15 +113,15 @@ public class ScenarioGroupMockService {
         LocalDateTime startDateTime = request.startDate() != null ? request.startDate().atStartOfDay() : null;
         LocalDateTime endDateTime = request.endDate() != null ? request.endDate().plusDays(1).atStartOfDay() : null;
 
-        Comparator<ScenarioGroupListItemRes> comparator = Comparator.comparing(ScenarioGroupListItemRes::createdAt);
+        Comparator<ScenarioGroupListItemRes> comparator = Comparator.comparing(ScenarioGroupListItemRes::updatedAt);
         if (request.sort() == SortOrder.LATEST) {
             comparator = comparator.reversed();
         }
 
         List<ScenarioGroupListItemRes> filtered = groups.stream()
             .filter(g -> !deletedGroupIds.contains(g.scenarioGroupId()))
-            .filter(g -> startDateTime == null || !g.createdAt().isBefore(startDateTime))
-            .filter(g -> endDateTime == null || g.createdAt().isBefore(endDateTime))
+            .filter(g -> startDateTime == null || !g.updatedAt().isBefore(startDateTime))
+            .filter(g -> endDateTime == null || g.updatedAt().isBefore(endDateTime))
             .filter(g -> request.keyword().isEmpty() || g.groupName().contains(request.keyword()))
             .sorted(comparator)
             .toList();
@@ -145,14 +145,14 @@ public class ScenarioGroupMockService {
         }
 
         Comparator<ScenarioIndividualItemRes> comparator =
-            Comparator.comparing((ScenarioIndividualItemRes s) -> s.group().createdAt());
+            Comparator.comparing(ScenarioIndividualItemRes::updatedAt);
         if (request.sort() == SortOrder.LATEST) {
             comparator = comparator.reversed();
         }
 
         List<ScenarioIndividualItemRes> filtered = all.stream()
-            .filter(s -> startDateTime == null || !s.group().createdAt().isBefore(startDateTime))
-            .filter(s -> endDateTime == null || s.group().createdAt().isBefore(endDateTime))
+            .filter(s -> startDateTime == null || !s.updatedAt().isBefore(startDateTime))
+            .filter(s -> endDateTime == null || s.updatedAt().isBefore(endDateTime))
             .filter(s -> request.keyword().isEmpty() || s.scenarioName().contains(request.keyword()))
             .sorted(comparator)
             .toList();
@@ -248,7 +248,7 @@ public class ScenarioGroupMockService {
             })
             .toList();
         return new ScenarioGroupDetailRes(
-            detail.scenarioGroupId(), detail.groupName(), detail.createdAt(),
+            detail.scenarioGroupId(), detail.groupName(), detail.createdAt(), detail.updatedAt(),
             detail.baseEvent(), detail.summary(), detail.scenarioCount(),
             detail.dimensionColumns(), rows);
     }
