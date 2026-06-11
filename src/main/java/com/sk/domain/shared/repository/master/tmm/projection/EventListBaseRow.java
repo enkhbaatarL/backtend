@@ -13,7 +13,8 @@ public record EventListBaseRow(
     Boolean isScenarioSuggested,
     String scenarioSuggestReason,
     LocalDateTime createDt,
-    LocalDateTime modifyDt
+    LocalDateTime modifyDt,
+    LocalDateTime latestRecordFirstCreated
 ) {
 
     @QueryProjection

@@ -14,6 +14,7 @@ public record EventListRow(
     String scenarioSuggestReason,
     LocalDateTime createDt,
     LocalDateTime modifyDt,
+    LocalDateTime latestRecordFirstCreated,
     List<EventIndexImpactRow> indexImpacts
 ) {
 }

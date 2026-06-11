@@ -77,7 +77,8 @@ public class CustomMiEventRepositoryImpl implements CustomMiEventRepository {
                 miEvent.isScenarioSuggested,
                 miEvent.scenarioSuggestReason,
                 miEvent.createDt,
-                miEvent.modifyDt
+                miEvent.modifyDt,
+                miEvent.latestRecordFirstCreated
             ))
             .from(miEvent)
             .innerJoin(miEvent.eventTypeL2, miEventTypeL2).on(miEventTypeL2.isDeleted.isFalse())
@@ -114,6 +115,7 @@ public class CustomMiEventRepositoryImpl implements CustomMiEventRepository {
                 base.scenarioSuggestReason(),
                 base.createDt(),
                 base.modifyDt(),
+                base.latestRecordFirstCreated(),
                 impactsByEventId.getOrDefault(base.miEventId(), List.of())
             ))
             .toList();
@@ -182,7 +184,10 @@ public class CustomMiEventRepositoryImpl implements CustomMiEventRepository {
     }
 
     private OrderSpecifier<?> buildEventOrder(EventListReq request) {
-        return request.sort().isAscending() ? miEvent.modifyDt.asc() : miEvent.modifyDt.desc();
+        // 최신순 정렬 기준은 최신 연관 레코드 최초 생성일시
+        return request.sort().isAscending()
+            ? miEvent.latestRecordFirstCreated.asc()
+            : miEvent.latestRecordFirstCreated.desc();
     }
 
     @Override
@@ -195,6 +200,7 @@ public class CustomMiEventRepositoryImpl implements CustomMiEventRepository {
                 miEvent.oneLineSummary,
                 miEvent.createDt,
                 miEvent.modifyDt,
+                miEvent.latestRecordFirstCreated,
                 miEventTypeL1.level1Code,
                 miEventTypeL1.level1Label,
                 miEventTypeL2.level2Code,
@@ -259,6 +265,7 @@ public class CustomMiEventRepositoryImpl implements CustomMiEventRepository {
             base.eventTitle(),
             base.createDt(),
             base.modifyDt(),
+            base.latestRecordFirstCreated(),
             base.level1Code(),
             base.level1Label(),
             base.level2Code(),

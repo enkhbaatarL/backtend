@@ -102,7 +102,7 @@ public class EventMockService {
         LocalDateTime startDateTime = request.startDate() != null ? request.startDate().atStartOfDay() : null;
         LocalDateTime endDateTime = request.endDate() != null ? request.endDate().plusDays(1).atStartOfDay() : null;
 
-        Comparator<EventListItemRes> comparator = Comparator.comparing(EventListItemRes::updatedAt);
+        Comparator<EventListItemRes> comparator = Comparator.comparing(EventListItemRes::latestRecordFirstCreated);
         if (request.sort() == SortOrder.LATEST) {
             comparator = comparator.reversed();
         }

@@ -75,7 +75,7 @@ public class EventController {
             <br><br>
             ### 사용 가능한 파라미터
              - eventStatus: 이벤트 상태 / 기본값 all / example - eventStatus=new, eventStatus=updated
-             - sort: 정렬 기준 / 기본값 latest(최신순) / example - sort=latest, sort=oldest
+             - sort: 정렬 기준 / 기본값 latest(최신순) / 최신 연관 레코드 최초 생성일시(latestRecordFirstCreated) 기준 정렬 / example - sort=latest, sort=oldest
              - eventTypeL1Id: 이벤트 유형 Lv1 ID 필터 (복수 가능) / example - eventTypeL1Id=1&eventTypeL1Id=2
              - startDate: 커스텀 조회 시작일 / example - startDate=2025-09-01
              - endDate: 커스텀 조회 종료일 / example - endDate=2026-02-28
@@ -96,6 +96,7 @@ public class EventController {
             - `eventTypeLv1` / `eventTypeLv1Label`: 이벤트 유형 Lv1 코드/라벨
             - `createdAt`: 생성일시
             - `updatedAt`: 수정일시
+            - `latestRecordFirstCreated`: 최신 연관 레코드 최초 생성일시 (최신순 정렬 기준)
             - `status` / `statusLabel`: 신규(`new`) / 갱신(`updated`)
             - `signalType` / `signalTypeLabel`: 신호(`signal`) / 소음(`noise`)
             - `isScenarioSuggested`: 시나리오화 추천 여부
@@ -140,7 +141,7 @@ public class EventController {
             - `isScenarioSuggested`: 시나리오화 추천 여부
             - `scenarioSuggestReason`: 시나리오화 추천 근거 (추천 아님일 때 null)
             - `eventTypeLv1` / `eventTypeLv1Label` / `eventTypeLv2` / `eventTypeLv2Label`
-            - `createdAt`, `updatedAt`
+            - `createdAt`, `updatedAt`, `latestRecordFirstCreated`(최신 연관 레코드 최초 생성일시)
 
             <br><br>
             ### impactAnalysis 필드
