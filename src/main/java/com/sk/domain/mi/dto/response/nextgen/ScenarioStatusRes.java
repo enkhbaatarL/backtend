@@ -1,6 +1,6 @@
 package com.sk.domain.mi.dto.response.nextgen;
 
-import com.sk.domain.shared.enums.nextgen.ScenarioStatus;
+import com.sk.domain.shared.enums.nextgen.ScenarioDisplayStatus;
 import io.swagger.v3.oas.annotations.media.Schema;
 import java.util.List;
 
@@ -14,7 +14,7 @@ public record ScenarioStatusRes(
     Long scenarioId,
 
     @Schema(description = "변경된 판정 상태 (pending/realized/discarded)", example = "realized")
-    ScenarioStatus status,
+    ScenarioDisplayStatus status,
 
     @Schema(description = "판정 상태 라벨", example = "실현")
     String statusLabel,
@@ -24,7 +24,7 @@ public record ScenarioStatusRes(
 
 ) {
 
-    public static ScenarioStatusRes of(Long scenarioId, ScenarioStatus status, List<Long> discardedScenarioIds) {
+    public static ScenarioStatusRes of(Long scenarioId, ScenarioDisplayStatus status, List<Long> discardedScenarioIds) {
         return new ScenarioStatusRes(scenarioId, status, status.getLabel(), discardedScenarioIds);
     }
 

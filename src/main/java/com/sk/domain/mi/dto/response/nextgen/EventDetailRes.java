@@ -2,6 +2,7 @@ package com.sk.domain.mi.dto.response.nextgen;
 
 import com.sk.domain.shared.enums.nextgen.ContentStatus;
 import com.sk.domain.shared.enums.nextgen.EventSignalType;
+import com.sk.domain.shared.enums.nextgen.ScenarioDesignDisplayStatus;
 import com.sk.domain.shared.repository.master.tmm.projection.DriverTagScoreboardRow;
 import com.sk.domain.shared.repository.master.tmm.projection.EventDetailRow;
 import io.swagger.v3.oas.annotations.media.Schema;
@@ -47,6 +48,12 @@ public record EventDetailRes(
     @Schema(description = "시나리오화 추천 근거 (추천 아님일 때 null)", example = "글로벌 LNG 공급 차질 가능성이 시나리오화 가치 있음")
     String scenarioSuggestReason,
 
+    @Schema(description = "시나리오 디자인 상태 — designable(설계가능) / creating(생성중) / created(생성완료)", example = "designable")
+    ScenarioDesignDisplayStatus scenarioDesignStatus,
+
+    @Schema(description = "시나리오 디자인 상태 라벨", example = "설계가능")
+    String scenarioDesignStatusLabel,
+
     @Schema(description = "AI Insights")
     EventAiInsightsRes aiInsights,
 
@@ -65,6 +72,7 @@ public record EventDetailRes(
         ContentStatus status = Boolean.TRUE.equals(row.isNew()) ? ContentStatus.NEW : ContentStatus.UPDATED;
         EventSignalType signalType = Boolean.TRUE.equals(row.isSignal()) ? EventSignalType.SIGNAL : EventSignalType.NOISE;
         EventImpactAnalysisRes impactAnalysis = EventImpactAnalysisRes.from(row);
+        ScenarioDesignDisplayStatus designStatus = ScenarioDesignDisplayStatus.of(row.relatedScenarioGroup() == null ? null : row.relatedScenarioGroup().status());
 
         return new EventDetailRes(
             row.miEventId(),
@@ -78,6 +86,8 @@ public record EventDetailRes(
             signalType.getLabel(),
             Boolean.TRUE.equals(row.isScenarioSuggested()),
             row.scenarioSuggestReason(),
+            designStatus,
+            designStatus.getLabel(),
             EventAiInsightsRes.from(row),
             impactAnalysis,
             buildDriverTreeScoreboard(row.driverTags()),

@@ -44,7 +44,10 @@
                        "eventTypeL1Id":  1,
                        "newYn":  true,
                        "isScenarioSuggested":  true,
-                       "scenarioSuggestReason":  "글로벌 LNG 공급 차질 가능성이 시나리오화 가치 있음"
+                       "scenarioSuggestReason":  "글로벌 LNG 공급 차질 가능성이 시나리오화 가치 있음",
+                       "scenarioDesignStatus":  "created",
+                       "scenarioDesignStatusLabel":  "설계완료",
+                       "scenarioGroupId":  1
                    },
                    {
                        "eventId":  2,
@@ -90,7 +93,10 @@
                        "eventTypeL1Id":  5,
                        "newYn":  true,
                        "isScenarioSuggested":  false,
-                       "scenarioSuggestReason":  null
+                       "scenarioSuggestReason":  null,
+                       "scenarioDesignStatus":  "created",
+                       "scenarioDesignStatusLabel":  "설계완료",
+                       "scenarioGroupId":  2
                    },
                    {
                        "eventId":  3,
@@ -136,7 +142,10 @@
                        "eventTypeL1Id":  4,
                        "newYn":  true,
                        "isScenarioSuggested":  false,
-                       "scenarioSuggestReason":  null
+                       "scenarioSuggestReason":  null,
+                       "scenarioDesignStatus":  "created",
+                       "scenarioDesignStatusLabel":  "설계완료",
+                       "scenarioGroupId":  3
                    },
                    {
                        "eventId":  4,
@@ -182,7 +191,10 @@
                        "eventTypeL1Id":  4,
                        "newYn":  true,
                        "isScenarioSuggested":  true,
-                       "scenarioSuggestReason":  "아시아/유럽 가격 디커플링 시그널이 강해 시나리오 분기 필요"
+                       "scenarioSuggestReason":  "아시아/유럽 가격 디커플링 시그널이 강해 시나리오 분기 필요",
+                       "scenarioDesignStatus":  "created",
+                       "scenarioDesignStatusLabel":  "설계완료",
+                       "scenarioGroupId":  4
                    },
                    {
                        "eventId":  5,
@@ -228,7 +240,10 @@
                        "eventTypeL1Id":  8,
                        "newYn":  true,
                        "isScenarioSuggested":  false,
-                       "scenarioSuggestReason":  null
+                       "scenarioSuggestReason":  null,
+                       "scenarioDesignStatus":  "created",
+                       "scenarioDesignStatusLabel":  "설계완료",
+                       "scenarioGroupId":  5
                    },
                    {
                        "eventId":  6,
@@ -274,7 +289,10 @@
                        "eventTypeL1Id":  4,
                        "newYn":  true,
                        "isScenarioSuggested":  false,
-                       "scenarioSuggestReason":  null
+                       "scenarioSuggestReason":  null,
+                       "scenarioDesignStatus":  "designable",
+                       "scenarioDesignStatusLabel":  "설계가능",
+                       "scenarioGroupId":  null
                    },
                    {
                        "eventId":  7,
@@ -320,7 +338,10 @@
                        "eventTypeL1Id":  3,
                        "newYn":  true,
                        "isScenarioSuggested":  false,
-                       "scenarioSuggestReason":  null
+                       "scenarioSuggestReason":  null,
+                       "scenarioDesignStatus":  "designable",
+                       "scenarioDesignStatusLabel":  "설계가능",
+                       "scenarioGroupId":  null
                    },
                    {
                        "eventId":  8,
@@ -366,7 +387,10 @@
                        "eventTypeL1Id":  3,
                        "newYn":  true,
                        "isScenarioSuggested":  true,
-                       "scenarioSuggestReason":  "단기 spot 프리미엄 확장 추세로 모델 시뮬레이션 적합"
+                       "scenarioSuggestReason":  "단기 spot 프리미엄 확장 추세로 모델 시뮬레이션 적합",
+                       "scenarioDesignStatus":  "designable",
+                       "scenarioDesignStatusLabel":  "설계가능",
+                       "scenarioGroupId":  null
                    },
                    {
                        "eventId":  9,
@@ -412,7 +436,10 @@
                        "eventTypeL1Id":  3,
                        "newYn":  true,
                        "isScenarioSuggested":  false,
-                       "scenarioSuggestReason":  null
+                       "scenarioSuggestReason":  null,
+                       "scenarioDesignStatus":  "designable",
+                       "scenarioDesignStatusLabel":  "설계가능",
+                       "scenarioGroupId":  null
                    },
                    {
                        "eventId":  10,
@@ -458,7 +485,10 @@
                        "eventTypeL1Id":  3,
                        "newYn":  true,
                        "isScenarioSuggested":  false,
-                       "scenarioSuggestReason":  null
+                       "scenarioSuggestReason":  null,
+                       "scenarioDesignStatus":  "designable",
+                       "scenarioDesignStatusLabel":  "설계가능",
+                       "scenarioGroupId":  null
                    },
                    {
                        "eventId":  11,
@@ -504,7 +534,10 @@
                        "eventTypeL1Id":  1,
                        "newYn":  true,
                        "isScenarioSuggested":  true,
-                       "scenarioSuggestReason":  "수급 밸런스 변동성이 커 다중 시나리오 검토 필요"
+                       "scenarioSuggestReason":  "수급 밸런스 변동성이 커 다중 시나리오 검토 필요",
+                       "scenarioDesignStatus":  "designable",
+                       "scenarioDesignStatusLabel":  "설계가능",
+                       "scenarioGroupId":  null
                    },
                    {
                        "eventId":  12,
@@ -550,7 +583,10 @@
                        "eventTypeL1Id":  5,
                        "newYn":  true,
                        "isScenarioSuggested":  false,
-                       "scenarioSuggestReason":  null
+                       "scenarioSuggestReason":  null,
+                       "scenarioDesignStatus":  "designable",
+                       "scenarioDesignStatusLabel":  "설계가능",
+                       "scenarioGroupId":  null
                    },
                    {
                        "eventId":  13,
@@ -596,7 +632,10 @@
                        "eventTypeL1Id":  3,
                        "newYn":  false,
                        "isScenarioSuggested":  false,
-                       "scenarioSuggestReason":  null
+                       "scenarioSuggestReason":  null,
+                       "scenarioDesignStatus":  "designable",
+                       "scenarioDesignStatusLabel":  "설계가능",
+                       "scenarioGroupId":  null
                    },
                    {
                        "eventId":  14,
@@ -642,7 +681,10 @@
                        "eventTypeL1Id":  1,
                        "newYn":  true,
                        "isScenarioSuggested":  true,
-                       "scenarioSuggestReason":  "정책/제재 변수가 가격 경로를 가르는 분기점"
+                       "scenarioSuggestReason":  "정책/제재 변수가 가격 경로를 가르는 분기점",
+                       "scenarioDesignStatus":  "designable",
+                       "scenarioDesignStatusLabel":  "설계가능",
+                       "scenarioGroupId":  null
                    },
                    {
                        "eventId":  15,
@@ -688,7 +730,10 @@
                        "eventTypeL1Id":  1,
                        "newYn":  false,
                        "isScenarioSuggested":  false,
-                       "scenarioSuggestReason":  null
+                       "scenarioSuggestReason":  null,
+                       "scenarioDesignStatus":  "designable",
+                       "scenarioDesignStatusLabel":  "설계가능",
+                       "scenarioGroupId":  null
                    },
                    {
                        "eventId":  16,
@@ -734,7 +779,10 @@
                        "eventTypeL1Id":  3,
                        "newYn":  false,
                        "isScenarioSuggested":  false,
-                       "scenarioSuggestReason":  null
+                       "scenarioSuggestReason":  null,
+                       "scenarioDesignStatus":  "designable",
+                       "scenarioDesignStatusLabel":  "설계가능",
+                       "scenarioGroupId":  null
                    },
                    {
                        "eventId":  17,
@@ -780,7 +828,10 @@
                        "eventTypeL1Id":  5,
                        "newYn":  false,
                        "isScenarioSuggested":  false,
-                       "scenarioSuggestReason":  null
+                       "scenarioSuggestReason":  null,
+                       "scenarioDesignStatus":  "designable",
+                       "scenarioDesignStatusLabel":  "설계가능",
+                       "scenarioGroupId":  null
                    },
                    {
                        "eventId":  18,
@@ -826,7 +877,10 @@
                        "eventTypeL1Id":  4,
                        "newYn":  false,
                        "isScenarioSuggested":  true,
-                       "scenarioSuggestReason":  "기후/계절 패턴이 기준선과 이탈, 모델 재검토 필요"
+                       "scenarioSuggestReason":  "기후/계절 패턴이 기준선과 이탈, 모델 재검토 필요",
+                       "scenarioDesignStatus":  "designable",
+                       "scenarioDesignStatusLabel":  "설계가능",
+                       "scenarioGroupId":  null
                    },
                    {
                        "eventId":  19,
@@ -872,7 +926,10 @@
                        "eventTypeL1Id":  3,
                        "newYn":  false,
                        "isScenarioSuggested":  false,
-                       "scenarioSuggestReason":  null
+                       "scenarioSuggestReason":  null,
+                       "scenarioDesignStatus":  "designable",
+                       "scenarioDesignStatusLabel":  "설계가능",
+                       "scenarioGroupId":  null
                    },
                    {
                        "eventId":  20,
@@ -918,7 +975,10 @@
                        "eventTypeL1Id":  3,
                        "newYn":  false,
                        "isScenarioSuggested":  false,
-                       "scenarioSuggestReason":  null
+                       "scenarioSuggestReason":  null,
+                       "scenarioDesignStatus":  "designable",
+                       "scenarioDesignStatusLabel":  "설계가능",
+                       "scenarioGroupId":  null
                    },
                    {
                        "eventId":  21,
@@ -964,7 +1024,10 @@
                        "eventTypeL1Id":  1,
                        "newYn":  false,
                        "isScenarioSuggested":  true,
-                       "scenarioSuggestReason":  "글로벌 LNG 공급 차질 가능성이 시나리오화 가치 있음"
+                       "scenarioSuggestReason":  "글로벌 LNG 공급 차질 가능성이 시나리오화 가치 있음",
+                       "scenarioDesignStatus":  "designable",
+                       "scenarioDesignStatusLabel":  "설계가능",
+                       "scenarioGroupId":  null
                    },
                    {
                        "eventId":  22,
@@ -1010,7 +1073,10 @@
                        "eventTypeL1Id":  2,
                        "newYn":  false,
                        "isScenarioSuggested":  false,
-                       "scenarioSuggestReason":  null
+                       "scenarioSuggestReason":  null,
+                       "scenarioDesignStatus":  "designable",
+                       "scenarioDesignStatusLabel":  "설계가능",
+                       "scenarioGroupId":  null
                    },
                    {
                        "eventId":  23,
@@ -1056,7 +1122,10 @@
                        "eventTypeL1Id":  2,
                        "newYn":  false,
                        "isScenarioSuggested":  false,
-                       "scenarioSuggestReason":  null
+                       "scenarioSuggestReason":  null,
+                       "scenarioDesignStatus":  "designable",
+                       "scenarioDesignStatusLabel":  "설계가능",
+                       "scenarioGroupId":  null
                    },
                    {
                        "eventId":  24,
@@ -1102,7 +1171,10 @@
                        "eventTypeL1Id":  3,
                        "newYn":  false,
                        "isScenarioSuggested":  true,
-                       "scenarioSuggestReason":  "아시아/유럽 가격 디커플링 시그널이 강해 시나리오 분기 필요"
+                       "scenarioSuggestReason":  "아시아/유럽 가격 디커플링 시그널이 강해 시나리오 분기 필요",
+                       "scenarioDesignStatus":  "designable",
+                       "scenarioDesignStatusLabel":  "설계가능",
+                       "scenarioGroupId":  null
                    },
                    {
                        "eventId":  25,
@@ -1148,7 +1220,10 @@
                        "eventTypeL1Id":  3,
                        "newYn":  false,
                        "isScenarioSuggested":  false,
-                       "scenarioSuggestReason":  null
+                       "scenarioSuggestReason":  null,
+                       "scenarioDesignStatus":  "designable",
+                       "scenarioDesignStatusLabel":  "설계가능",
+                       "scenarioGroupId":  null
                    },
                    {
                        "eventId":  26,
@@ -1194,7 +1269,10 @@
                        "eventTypeL1Id":  4,
                        "newYn":  false,
                        "isScenarioSuggested":  false,
-                       "scenarioSuggestReason":  null
+                       "scenarioSuggestReason":  null,
+                       "scenarioDesignStatus":  "designable",
+                       "scenarioDesignStatusLabel":  "설계가능",
+                       "scenarioGroupId":  null
                    },
                    {
                        "eventId":  27,
@@ -1240,7 +1318,10 @@
                        "eventTypeL1Id":  3,
                        "newYn":  false,
                        "isScenarioSuggested":  false,
-                       "scenarioSuggestReason":  null
+                       "scenarioSuggestReason":  null,
+                       "scenarioDesignStatus":  "designable",
+                       "scenarioDesignStatusLabel":  "설계가능",
+                       "scenarioGroupId":  null
                    },
                    {
                        "eventId":  28,
@@ -1286,7 +1367,10 @@
                        "eventTypeL1Id":  5,
                        "newYn":  false,
                        "isScenarioSuggested":  false,
-                       "scenarioSuggestReason":  null
+                       "scenarioSuggestReason":  null,
+                       "scenarioDesignStatus":  "designable",
+                       "scenarioDesignStatusLabel":  "설계가능",
+                       "scenarioGroupId":  null
                    },
                    {
                        "eventId":  29,
@@ -1332,7 +1416,10 @@
                        "eventTypeL1Id":  3,
                        "newYn":  false,
                        "isScenarioSuggested":  false,
-                       "scenarioSuggestReason":  null
+                       "scenarioSuggestReason":  null,
+                       "scenarioDesignStatus":  "designable",
+                       "scenarioDesignStatusLabel":  "설계가능",
+                       "scenarioGroupId":  null
                    },
                    {
                        "eventId":  30,
@@ -1378,7 +1465,10 @@
                        "eventTypeL1Id":  1,
                        "newYn":  false,
                        "isScenarioSuggested":  false,
-                       "scenarioSuggestReason":  null
+                       "scenarioSuggestReason":  null,
+                       "scenarioDesignStatus":  "designable",
+                       "scenarioDesignStatusLabel":  "설계가능",
+                       "scenarioGroupId":  null
                    },
                    {
                        "eventId":  31,
@@ -1424,7 +1514,10 @@
                        "eventTypeL1Id":  1,
                        "newYn":  false,
                        "isScenarioSuggested":  true,
-                       "scenarioSuggestReason":  "단기 spot 프리미엄 확장 추세로 모델 시뮬레이션 적합"
+                       "scenarioSuggestReason":  "단기 spot 프리미엄 확장 추세로 모델 시뮬레이션 적합",
+                       "scenarioDesignStatus":  "designable",
+                       "scenarioDesignStatusLabel":  "설계가능",
+                       "scenarioGroupId":  null
                    },
                    {
                        "eventId":  32,
@@ -1470,7 +1563,10 @@
                        "eventTypeL1Id":  5,
                        "newYn":  false,
                        "isScenarioSuggested":  false,
-                       "scenarioSuggestReason":  null
+                       "scenarioSuggestReason":  null,
+                       "scenarioDesignStatus":  "designable",
+                       "scenarioDesignStatusLabel":  "설계가능",
+                       "scenarioGroupId":  null
                    },
                    {
                        "eventId":  33,
@@ -1516,7 +1612,10 @@
                        "eventTypeL1Id":  3,
                        "newYn":  false,
                        "isScenarioSuggested":  false,
-                       "scenarioSuggestReason":  null
+                       "scenarioSuggestReason":  null,
+                       "scenarioDesignStatus":  "designable",
+                       "scenarioDesignStatusLabel":  "설계가능",
+                       "scenarioGroupId":  null
                    },
                    {
                        "eventId":  34,
@@ -1562,7 +1661,10 @@
                        "eventTypeL1Id":  5,
                        "newYn":  false,
                        "isScenarioSuggested":  true,
-                       "scenarioSuggestReason":  "수급 밸런스 변동성이 커 다중 시나리오 검토 필요"
+                       "scenarioSuggestReason":  "수급 밸런스 변동성이 커 다중 시나리오 검토 필요",
+                       "scenarioDesignStatus":  "designable",
+                       "scenarioDesignStatusLabel":  "설계가능",
+                       "scenarioGroupId":  null
                    },
                    {
                        "eventId":  35,
@@ -1608,7 +1710,10 @@
                        "eventTypeL1Id":  4,
                        "newYn":  false,
                        "isScenarioSuggested":  false,
-                       "scenarioSuggestReason":  null
+                       "scenarioSuggestReason":  null,
+                       "scenarioDesignStatus":  "designable",
+                       "scenarioDesignStatusLabel":  "설계가능",
+                       "scenarioGroupId":  null
                    },
                    {
                        "eventId":  36,
@@ -1654,7 +1759,10 @@
                        "eventTypeL1Id":  4,
                        "newYn":  true,
                        "isScenarioSuggested":  false,
-                       "scenarioSuggestReason":  null
+                       "scenarioSuggestReason":  null,
+                       "scenarioDesignStatus":  "designable",
+                       "scenarioDesignStatusLabel":  "설계가능",
+                       "scenarioGroupId":  null
                    },
                    {
                        "eventId":  37,
@@ -1700,7 +1808,10 @@
                        "eventTypeL1Id":  1,
                        "newYn":  false,
                        "isScenarioSuggested":  false,
-                       "scenarioSuggestReason":  null
+                       "scenarioSuggestReason":  null,
+                       "scenarioDesignStatus":  "designable",
+                       "scenarioDesignStatusLabel":  "설계가능",
+                       "scenarioGroupId":  null
                    },
                    {
                        "eventId":  38,
@@ -1746,7 +1857,10 @@
                        "eventTypeL1Id":  3,
                        "newYn":  false,
                        "isScenarioSuggested":  true,
-                       "scenarioSuggestReason":  "정책/제재 변수가 가격 경로를 가르는 분기점"
+                       "scenarioSuggestReason":  "정책/제재 변수가 가격 경로를 가르는 분기점",
+                       "scenarioDesignStatus":  "designable",
+                       "scenarioDesignStatusLabel":  "설계가능",
+                       "scenarioGroupId":  null
                    },
                    {
                        "eventId":  39,
@@ -1792,7 +1906,10 @@
                        "eventTypeL1Id":  3,
                        "newYn":  false,
                        "isScenarioSuggested":  false,
-                       "scenarioSuggestReason":  null
+                       "scenarioSuggestReason":  null,
+                       "scenarioDesignStatus":  "designable",
+                       "scenarioDesignStatusLabel":  "설계가능",
+                       "scenarioGroupId":  null
                    },
                    {
                        "eventId":  40,
@@ -1838,7 +1955,10 @@
                        "eventTypeL1Id":  3,
                        "newYn":  false,
                        "isScenarioSuggested":  false,
-                       "scenarioSuggestReason":  null
+                       "scenarioSuggestReason":  null,
+                       "scenarioDesignStatus":  "designable",
+                       "scenarioDesignStatusLabel":  "설계가능",
+                       "scenarioGroupId":  null
                    },
                    {
                        "eventId":  41,
@@ -1884,7 +2004,10 @@
                        "eventTypeL1Id":  1,
                        "newYn":  true,
                        "isScenarioSuggested":  true,
-                       "scenarioSuggestReason":  "기후/계절 패턴이 기준선과 이탈, 모델 재검토 필요"
+                       "scenarioSuggestReason":  "기후/계절 패턴이 기준선과 이탈, 모델 재검토 필요",
+                       "scenarioDesignStatus":  "designable",
+                       "scenarioDesignStatusLabel":  "설계가능",
+                       "scenarioGroupId":  null
                    },
                    {
                        "eventId":  42,
@@ -1930,7 +2053,10 @@
                        "eventTypeL1Id":  8,
                        "newYn":  false,
                        "isScenarioSuggested":  false,
-                       "scenarioSuggestReason":  null
+                       "scenarioSuggestReason":  null,
+                       "scenarioDesignStatus":  "designable",
+                       "scenarioDesignStatusLabel":  "설계가능",
+                       "scenarioGroupId":  null
                    },
                    {
                        "eventId":  43,
@@ -1976,7 +2102,10 @@
                        "eventTypeL1Id":  3,
                        "newYn":  false,
                        "isScenarioSuggested":  false,
-                       "scenarioSuggestReason":  null
+                       "scenarioSuggestReason":  null,
+                       "scenarioDesignStatus":  "designable",
+                       "scenarioDesignStatusLabel":  "설계가능",
+                       "scenarioGroupId":  null
                    },
                    {
                        "eventId":  44,
@@ -2022,7 +2151,10 @@
                        "eventTypeL1Id":  3,
                        "newYn":  false,
                        "isScenarioSuggested":  false,
-                       "scenarioSuggestReason":  null
+                       "scenarioSuggestReason":  null,
+                       "scenarioDesignStatus":  "designable",
+                       "scenarioDesignStatusLabel":  "설계가능",
+                       "scenarioGroupId":  null
                    },
                    {
                        "eventId":  45,
@@ -2068,7 +2200,10 @@
                        "eventTypeL1Id":  3,
                        "newYn":  true,
                        "isScenarioSuggested":  false,
-                       "scenarioSuggestReason":  null
+                       "scenarioSuggestReason":  null,
+                       "scenarioDesignStatus":  "designable",
+                       "scenarioDesignStatusLabel":  "설계가능",
+                       "scenarioGroupId":  null
                    },
                    {
                        "eventId":  46,
@@ -2114,7 +2249,10 @@
                        "eventTypeL1Id":  3,
                        "newYn":  false,
                        "isScenarioSuggested":  false,
-                       "scenarioSuggestReason":  null
+                       "scenarioSuggestReason":  null,
+                       "scenarioDesignStatus":  "designable",
+                       "scenarioDesignStatusLabel":  "설계가능",
+                       "scenarioGroupId":  null
                    },
                    {
                        "eventId":  47,
@@ -2160,7 +2298,10 @@
                        "eventTypeL1Id":  5,
                        "newYn":  false,
                        "isScenarioSuggested":  false,
-                       "scenarioSuggestReason":  null
+                       "scenarioSuggestReason":  null,
+                       "scenarioDesignStatus":  "designable",
+                       "scenarioDesignStatusLabel":  "설계가능",
+                       "scenarioGroupId":  null
                    },
                    {
                        "eventId":  48,
@@ -2206,7 +2347,10 @@
                        "eventTypeL1Id":  8,
                        "newYn":  true,
                        "isScenarioSuggested":  true,
-                       "scenarioSuggestReason":  "글로벌 LNG 공급 차질 가능성이 시나리오화 가치 있음"
+                       "scenarioSuggestReason":  "글로벌 LNG 공급 차질 가능성이 시나리오화 가치 있음",
+                       "scenarioDesignStatus":  "designable",
+                       "scenarioDesignStatusLabel":  "설계가능",
+                       "scenarioGroupId":  null
                    },
                    {
                        "eventId":  49,
@@ -2252,7 +2396,10 @@
                        "eventTypeL1Id":  4,
                        "newYn":  false,
                        "isScenarioSuggested":  false,
-                       "scenarioSuggestReason":  null
+                       "scenarioSuggestReason":  null,
+                       "scenarioDesignStatus":  "designable",
+                       "scenarioDesignStatusLabel":  "설계가능",
+                       "scenarioGroupId":  null
                    },
                    {
                        "eventId":  50,
@@ -2298,7 +2445,10 @@
                        "eventTypeL1Id":  3,
                        "newYn":  false,
                        "isScenarioSuggested":  false,
-                       "scenarioSuggestReason":  null
+                       "scenarioSuggestReason":  null,
+                       "scenarioDesignStatus":  "designable",
+                       "scenarioDesignStatusLabel":  "설계가능",
+                       "scenarioGroupId":  null
                    },
                    {
                        "eventId":  51,
@@ -2344,7 +2494,10 @@
                        "eventTypeL1Id":  4,
                        "newYn":  false,
                        "isScenarioSuggested":  true,
-                       "scenarioSuggestReason":  "아시아/유럽 가격 디커플링 시그널이 강해 시나리오 분기 필요"
+                       "scenarioSuggestReason":  "아시아/유럽 가격 디커플링 시그널이 강해 시나리오 분기 필요",
+                       "scenarioDesignStatus":  "designable",
+                       "scenarioDesignStatusLabel":  "설계가능",
+                       "scenarioGroupId":  null
                    },
                    {
                        "eventId":  52,
@@ -2390,7 +2543,10 @@
                        "eventTypeL1Id":  3,
                        "newYn":  true,
                        "isScenarioSuggested":  false,
-                       "scenarioSuggestReason":  null
+                       "scenarioSuggestReason":  null,
+                       "scenarioDesignStatus":  "designable",
+                       "scenarioDesignStatusLabel":  "설계가능",
+                       "scenarioGroupId":  null
                    },
                    {
                        "eventId":  53,
@@ -2436,7 +2592,10 @@
                        "eventTypeL1Id":  3,
                        "newYn":  false,
                        "isScenarioSuggested":  false,
-                       "scenarioSuggestReason":  null
+                       "scenarioSuggestReason":  null,
+                       "scenarioDesignStatus":  "designable",
+                       "scenarioDesignStatusLabel":  "설계가능",
+                       "scenarioGroupId":  null
                    },
                    {
                        "eventId":  54,
@@ -2482,7 +2641,10 @@
                        "eventTypeL1Id":  3,
                        "newYn":  false,
                        "isScenarioSuggested":  true,
-                       "scenarioSuggestReason":  "단기 spot 프리미엄 확장 추세로 모델 시뮬레이션 적합"
+                       "scenarioSuggestReason":  "단기 spot 프리미엄 확장 추세로 모델 시뮬레이션 적합",
+                       "scenarioDesignStatus":  "designable",
+                       "scenarioDesignStatusLabel":  "설계가능",
+                       "scenarioGroupId":  null
                    },
                    {
                        "eventId":  55,
@@ -2528,7 +2690,10 @@
                        "eventTypeL1Id":  2,
                        "newYn":  true,
                        "isScenarioSuggested":  false,
-                       "scenarioSuggestReason":  null
+                       "scenarioSuggestReason":  null,
+                       "scenarioDesignStatus":  "designable",
+                       "scenarioDesignStatusLabel":  "설계가능",
+                       "scenarioGroupId":  null
                    },
                    {
                        "eventId":  56,
@@ -2574,7 +2739,10 @@
                        "eventTypeL1Id":  3,
                        "newYn":  true,
                        "isScenarioSuggested":  false,
-                       "scenarioSuggestReason":  null
+                       "scenarioSuggestReason":  null,
+                       "scenarioDesignStatus":  "designable",
+                       "scenarioDesignStatusLabel":  "설계가능",
+                       "scenarioGroupId":  null
                    },
                    {
                        "eventId":  57,
@@ -2620,7 +2788,10 @@
                        "eventTypeL1Id":  6,
                        "newYn":  true,
                        "isScenarioSuggested":  false,
-                       "scenarioSuggestReason":  null
+                       "scenarioSuggestReason":  null,
+                       "scenarioDesignStatus":  "designable",
+                       "scenarioDesignStatusLabel":  "설계가능",
+                       "scenarioGroupId":  null
                    },
                    {
                        "eventId":  58,
@@ -2666,7 +2837,10 @@
                        "eventTypeL1Id":  1,
                        "newYn":  false,
                        "isScenarioSuggested":  true,
-                       "scenarioSuggestReason":  "수급 밸런스 변동성이 커 다중 시나리오 검토 필요"
+                       "scenarioSuggestReason":  "수급 밸런스 변동성이 커 다중 시나리오 검토 필요",
+                       "scenarioDesignStatus":  "designable",
+                       "scenarioDesignStatusLabel":  "설계가능",
+                       "scenarioGroupId":  null
                    },
                    {
                        "eventId":  59,
@@ -2712,7 +2886,10 @@
                        "eventTypeL1Id":  4,
                        "newYn":  true,
                        "isScenarioSuggested":  false,
-                       "scenarioSuggestReason":  null
+                       "scenarioSuggestReason":  null,
+                       "scenarioDesignStatus":  "designable",
+                       "scenarioDesignStatusLabel":  "설계가능",
+                       "scenarioGroupId":  null
                    },
                    {
                        "eventId":  60,
@@ -2758,7 +2935,10 @@
                        "eventTypeL1Id":  5,
                        "newYn":  true,
                        "isScenarioSuggested":  false,
-                       "scenarioSuggestReason":  null
+                       "scenarioSuggestReason":  null,
+                       "scenarioDesignStatus":  "designable",
+                       "scenarioDesignStatusLabel":  "설계가능",
+                       "scenarioGroupId":  null
                    },
                    {
                        "eventId":  61,
@@ -2804,7 +2984,10 @@
                        "eventTypeL1Id":  3,
                        "newYn":  false,
                        "isScenarioSuggested":  true,
-                       "scenarioSuggestReason":  "정책/제재 변수가 가격 경로를 가르는 분기점"
+                       "scenarioSuggestReason":  "정책/제재 변수가 가격 경로를 가르는 분기점",
+                       "scenarioDesignStatus":  "designable",
+                       "scenarioDesignStatusLabel":  "설계가능",
+                       "scenarioGroupId":  null
                    },
                    {
                        "eventId":  62,
@@ -2850,7 +3033,10 @@
                        "eventTypeL1Id":  1,
                        "newYn":  false,
                        "isScenarioSuggested":  false,
-                       "scenarioSuggestReason":  null
+                       "scenarioSuggestReason":  null,
+                       "scenarioDesignStatus":  "designable",
+                       "scenarioDesignStatusLabel":  "설계가능",
+                       "scenarioGroupId":  null
                    },
                    {
                        "eventId":  63,
@@ -2896,7 +3082,10 @@
                        "eventTypeL1Id":  5,
                        "newYn":  false,
                        "isScenarioSuggested":  false,
-                       "scenarioSuggestReason":  null
+                       "scenarioSuggestReason":  null,
+                       "scenarioDesignStatus":  "designable",
+                       "scenarioDesignStatusLabel":  "설계가능",
+                       "scenarioGroupId":  null
                    },
                    {
                        "eventId":  64,
@@ -2942,7 +3131,10 @@
                        "eventTypeL1Id":  5,
                        "newYn":  false,
                        "isScenarioSuggested":  true,
-                       "scenarioSuggestReason":  "기후/계절 패턴이 기준선과 이탈, 모델 재검토 필요"
+                       "scenarioSuggestReason":  "기후/계절 패턴이 기준선과 이탈, 모델 재검토 필요",
+                       "scenarioDesignStatus":  "designable",
+                       "scenarioDesignStatusLabel":  "설계가능",
+                       "scenarioGroupId":  null
                    },
                    {
                        "eventId":  65,
@@ -2988,7 +3180,10 @@
                        "eventTypeL1Id":  4,
                        "newYn":  false,
                        "isScenarioSuggested":  false,
-                       "scenarioSuggestReason":  null
+                       "scenarioSuggestReason":  null,
+                       "scenarioDesignStatus":  "designable",
+                       "scenarioDesignStatusLabel":  "설계가능",
+                       "scenarioGroupId":  null
                    },
                    {
                        "eventId":  66,
@@ -3034,7 +3229,10 @@
                        "eventTypeL1Id":  1,
                        "newYn":  true,
                        "isScenarioSuggested":  false,
-                       "scenarioSuggestReason":  null
+                       "scenarioSuggestReason":  null,
+                       "scenarioDesignStatus":  "designable",
+                       "scenarioDesignStatusLabel":  "설계가능",
+                       "scenarioGroupId":  null
                    },
                    {
                        "eventId":  67,
@@ -3080,7 +3278,10 @@
                        "eventTypeL1Id":  4,
                        "newYn":  false,
                        "isScenarioSuggested":  false,
-                       "scenarioSuggestReason":  null
+                       "scenarioSuggestReason":  null,
+                       "scenarioDesignStatus":  "designable",
+                       "scenarioDesignStatusLabel":  "설계가능",
+                       "scenarioGroupId":  null
                    },
                    {
                        "eventId":  68,
@@ -3126,7 +3327,10 @@
                        "eventTypeL1Id":  4,
                        "newYn":  false,
                        "isScenarioSuggested":  true,
-                       "scenarioSuggestReason":  "글로벌 LNG 공급 차질 가능성이 시나리오화 가치 있음"
+                       "scenarioSuggestReason":  "글로벌 LNG 공급 차질 가능성이 시나리오화 가치 있음",
+                       "scenarioDesignStatus":  "designable",
+                       "scenarioDesignStatusLabel":  "설계가능",
+                       "scenarioGroupId":  null
                    },
                    {
                        "eventId":  69,
@@ -3172,7 +3376,10 @@
                        "eventTypeL1Id":  3,
                        "newYn":  false,
                        "isScenarioSuggested":  false,
-                       "scenarioSuggestReason":  null
+                       "scenarioSuggestReason":  null,
+                       "scenarioDesignStatus":  "designable",
+                       "scenarioDesignStatusLabel":  "설계가능",
+                       "scenarioGroupId":  null
                    },
                    {
                        "eventId":  70,
@@ -3218,7 +3425,10 @@
                        "eventTypeL1Id":  1,
                        "newYn":  false,
                        "isScenarioSuggested":  false,
-                       "scenarioSuggestReason":  null
+                       "scenarioSuggestReason":  null,
+                       "scenarioDesignStatus":  "designable",
+                       "scenarioDesignStatusLabel":  "설계가능",
+                       "scenarioGroupId":  null
                    },
                    {
                        "eventId":  71,
@@ -3264,7 +3474,10 @@
                        "eventTypeL1Id":  5,
                        "newYn":  true,
                        "isScenarioSuggested":  true,
-                       "scenarioSuggestReason":  "아시아/유럽 가격 디커플링 시그널이 강해 시나리오 분기 필요"
+                       "scenarioSuggestReason":  "아시아/유럽 가격 디커플링 시그널이 강해 시나리오 분기 필요",
+                       "scenarioDesignStatus":  "designable",
+                       "scenarioDesignStatusLabel":  "설계가능",
+                       "scenarioGroupId":  null
                    },
                    {
                        "eventId":  72,
@@ -3310,7 +3523,10 @@
                        "eventTypeL1Id":  5,
                        "newYn":  false,
                        "isScenarioSuggested":  false,
-                       "scenarioSuggestReason":  null
+                       "scenarioSuggestReason":  null,
+                       "scenarioDesignStatus":  "designable",
+                       "scenarioDesignStatusLabel":  "설계가능",
+                       "scenarioGroupId":  null
                    },
                    {
                        "eventId":  73,
@@ -3356,7 +3572,10 @@
                        "eventTypeL1Id":  6,
                        "newYn":  false,
                        "isScenarioSuggested":  false,
-                       "scenarioSuggestReason":  null
+                       "scenarioSuggestReason":  null,
+                       "scenarioDesignStatus":  "designable",
+                       "scenarioDesignStatusLabel":  "설계가능",
+                       "scenarioGroupId":  null
                    },
                    {
                        "eventId":  74,
@@ -3402,7 +3621,10 @@
                        "eventTypeL1Id":  3,
                        "newYn":  false,
                        "isScenarioSuggested":  false,
-                       "scenarioSuggestReason":  null
+                       "scenarioSuggestReason":  null,
+                       "scenarioDesignStatus":  "designable",
+                       "scenarioDesignStatusLabel":  "설계가능",
+                       "scenarioGroupId":  null
                    },
                    {
                        "eventId":  75,
@@ -3448,7 +3670,10 @@
                        "eventTypeL1Id":  4,
                        "newYn":  false,
                        "isScenarioSuggested":  false,
-                       "scenarioSuggestReason":  null
+                       "scenarioSuggestReason":  null,
+                       "scenarioDesignStatus":  "designable",
+                       "scenarioDesignStatusLabel":  "설계가능",
+                       "scenarioGroupId":  null
                    },
                    {
                        "eventId":  76,
@@ -3494,7 +3719,10 @@
                        "eventTypeL1Id":  3,
                        "newYn":  false,
                        "isScenarioSuggested":  false,
-                       "scenarioSuggestReason":  null
+                       "scenarioSuggestReason":  null,
+                       "scenarioDesignStatus":  "designable",
+                       "scenarioDesignStatusLabel":  "설계가능",
+                       "scenarioGroupId":  null
                    },
                    {
                        "eventId":  77,
@@ -3540,7 +3768,10 @@
                        "eventTypeL1Id":  1,
                        "newYn":  false,
                        "isScenarioSuggested":  false,
-                       "scenarioSuggestReason":  null
+                       "scenarioSuggestReason":  null,
+                       "scenarioDesignStatus":  "designable",
+                       "scenarioDesignStatusLabel":  "설계가능",
+                       "scenarioGroupId":  null
                    },
                    {
                        "eventId":  78,
@@ -3586,7 +3817,10 @@
                        "eventTypeL1Id":  5,
                        "newYn":  true,
                        "isScenarioSuggested":  true,
-                       "scenarioSuggestReason":  "단기 spot 프리미엄 확장 추세로 모델 시뮬레이션 적합"
+                       "scenarioSuggestReason":  "단기 spot 프리미엄 확장 추세로 모델 시뮬레이션 적합",
+                       "scenarioDesignStatus":  "designable",
+                       "scenarioDesignStatusLabel":  "설계가능",
+                       "scenarioGroupId":  null
                    },
                    {
                        "eventId":  79,
@@ -3632,7 +3866,10 @@
                        "eventTypeL1Id":  3,
                        "newYn":  false,
                        "isScenarioSuggested":  false,
-                       "scenarioSuggestReason":  null
+                       "scenarioSuggestReason":  null,
+                       "scenarioDesignStatus":  "designable",
+                       "scenarioDesignStatusLabel":  "설계가능",
+                       "scenarioGroupId":  null
                    },
                    {
                        "eventId":  80,
@@ -3678,7 +3915,10 @@
                        "eventTypeL1Id":  8,
                        "newYn":  false,
                        "isScenarioSuggested":  false,
-                       "scenarioSuggestReason":  null
+                       "scenarioSuggestReason":  null,
+                       "scenarioDesignStatus":  "designable",
+                       "scenarioDesignStatusLabel":  "설계가능",
+                       "scenarioGroupId":  null
                    },
                    {
                        "eventId":  81,
@@ -3724,7 +3964,10 @@
                        "eventTypeL1Id":  4,
                        "newYn":  false,
                        "isScenarioSuggested":  true,
-                       "scenarioSuggestReason":  "수급 밸런스 변동성이 커 다중 시나리오 검토 필요"
+                       "scenarioSuggestReason":  "수급 밸런스 변동성이 커 다중 시나리오 검토 필요",
+                       "scenarioDesignStatus":  "designable",
+                       "scenarioDesignStatusLabel":  "설계가능",
+                       "scenarioGroupId":  null
                    },
                    {
                        "eventId":  82,
@@ -3770,7 +4013,10 @@
                        "eventTypeL1Id":  2,
                        "newYn":  true,
                        "isScenarioSuggested":  false,
-                       "scenarioSuggestReason":  null
+                       "scenarioSuggestReason":  null,
+                       "scenarioDesignStatus":  "designable",
+                       "scenarioDesignStatusLabel":  "설계가능",
+                       "scenarioGroupId":  null
                    },
                    {
                        "eventId":  83,
@@ -3816,7 +4062,10 @@
                        "eventTypeL1Id":  4,
                        "newYn":  false,
                        "isScenarioSuggested":  false,
-                       "scenarioSuggestReason":  null
+                       "scenarioSuggestReason":  null,
+                       "scenarioDesignStatus":  "designable",
+                       "scenarioDesignStatusLabel":  "설계가능",
+                       "scenarioGroupId":  null
                    },
                    {
                        "eventId":  84,
@@ -3862,7 +4111,10 @@
                        "eventTypeL1Id":  3,
                        "newYn":  false,
                        "isScenarioSuggested":  false,
-                       "scenarioSuggestReason":  null
+                       "scenarioSuggestReason":  null,
+                       "scenarioDesignStatus":  "designable",
+                       "scenarioDesignStatusLabel":  "설계가능",
+                       "scenarioGroupId":  null
                    },
                    {
                        "eventId":  85,
@@ -3908,7 +4160,10 @@
                        "eventTypeL1Id":  4,
                        "newYn":  false,
                        "isScenarioSuggested":  false,
-                       "scenarioSuggestReason":  null
+                       "scenarioSuggestReason":  null,
+                       "scenarioDesignStatus":  "designable",
+                       "scenarioDesignStatusLabel":  "설계가능",
+                       "scenarioGroupId":  null
                    },
                    {
                        "eventId":  86,
@@ -3954,7 +4209,10 @@
                        "eventTypeL1Id":  6,
                        "newYn":  true,
                        "isScenarioSuggested":  false,
-                       "scenarioSuggestReason":  null
+                       "scenarioSuggestReason":  null,
+                       "scenarioDesignStatus":  "designable",
+                       "scenarioDesignStatusLabel":  "설계가능",
+                       "scenarioGroupId":  null
                    },
                    {
                        "eventId":  87,
@@ -4000,7 +4258,10 @@
                        "eventTypeL1Id":  5,
                        "newYn":  true,
                        "isScenarioSuggested":  false,
-                       "scenarioSuggestReason":  null
+                       "scenarioSuggestReason":  null,
+                       "scenarioDesignStatus":  "designable",
+                       "scenarioDesignStatusLabel":  "설계가능",
+                       "scenarioGroupId":  null
                    },
                    {
                        "eventId":  88,
@@ -4046,7 +4307,10 @@
                        "eventTypeL1Id":  3,
                        "newYn":  true,
                        "isScenarioSuggested":  false,
-                       "scenarioSuggestReason":  null
+                       "scenarioSuggestReason":  null,
+                       "scenarioDesignStatus":  "designable",
+                       "scenarioDesignStatusLabel":  "설계가능",
+                       "scenarioGroupId":  null
                    },
                    {
                        "eventId":  89,
@@ -4092,7 +4356,10 @@
                        "eventTypeL1Id":  6,
                        "newYn":  true,
                        "isScenarioSuggested":  false,
-                       "scenarioSuggestReason":  null
+                       "scenarioSuggestReason":  null,
+                       "scenarioDesignStatus":  "designable",
+                       "scenarioDesignStatusLabel":  "설계가능",
+                       "scenarioGroupId":  null
                    },
                    {
                        "eventId":  90,
@@ -4138,7 +4405,10 @@
                        "eventTypeL1Id":  3,
                        "newYn":  true,
                        "isScenarioSuggested":  false,
-                       "scenarioSuggestReason":  null
+                       "scenarioSuggestReason":  null,
+                       "scenarioDesignStatus":  "designable",
+                       "scenarioDesignStatusLabel":  "설계가능",
+                       "scenarioGroupId":  null
                    },
                    {
                        "eventId":  91,
@@ -4184,7 +4454,10 @@
                        "eventTypeL1Id":  3,
                        "newYn":  true,
                        "isScenarioSuggested":  true,
-                       "scenarioSuggestReason":  "정책/제재 변수가 가격 경로를 가르는 분기점"
+                       "scenarioSuggestReason":  "정책/제재 변수가 가격 경로를 가르는 분기점",
+                       "scenarioDesignStatus":  "designable",
+                       "scenarioDesignStatusLabel":  "설계가능",
+                       "scenarioGroupId":  null
                    },
                    {
                        "eventId":  92,
@@ -4230,7 +4503,10 @@
                        "eventTypeL1Id":  5,
                        "newYn":  true,
                        "isScenarioSuggested":  false,
-                       "scenarioSuggestReason":  null
+                       "scenarioSuggestReason":  null,
+                       "scenarioDesignStatus":  "designable",
+                       "scenarioDesignStatusLabel":  "설계가능",
+                       "scenarioGroupId":  null
                    },
                    {
                        "eventId":  93,
@@ -4276,7 +4552,10 @@
                        "eventTypeL1Id":  4,
                        "newYn":  true,
                        "isScenarioSuggested":  false,
-                       "scenarioSuggestReason":  null
+                       "scenarioSuggestReason":  null,
+                       "scenarioDesignStatus":  "designable",
+                       "scenarioDesignStatusLabel":  "설계가능",
+                       "scenarioGroupId":  null
                    },
                    {
                        "eventId":  94,
@@ -4322,7 +4601,10 @@
                        "eventTypeL1Id":  5,
                        "newYn":  true,
                        "isScenarioSuggested":  true,
-                       "scenarioSuggestReason":  "기후/계절 패턴이 기준선과 이탈, 모델 재검토 필요"
+                       "scenarioSuggestReason":  "기후/계절 패턴이 기준선과 이탈, 모델 재검토 필요",
+                       "scenarioDesignStatus":  "designable",
+                       "scenarioDesignStatusLabel":  "설계가능",
+                       "scenarioGroupId":  null
                    },
                    {
                        "eventId":  95,
@@ -4368,7 +4650,10 @@
                        "eventTypeL1Id":  4,
                        "newYn":  true,
                        "isScenarioSuggested":  false,
-                       "scenarioSuggestReason":  null
+                       "scenarioSuggestReason":  null,
+                       "scenarioDesignStatus":  "designable",
+                       "scenarioDesignStatusLabel":  "설계가능",
+                       "scenarioGroupId":  null
                    },
                    {
                        "eventId":  96,
@@ -4414,7 +4699,10 @@
                        "eventTypeL1Id":  1,
                        "newYn":  true,
                        "isScenarioSuggested":  false,
-                       "scenarioSuggestReason":  null
+                       "scenarioSuggestReason":  null,
+                       "scenarioDesignStatus":  "designable",
+                       "scenarioDesignStatusLabel":  "설계가능",
+                       "scenarioGroupId":  null
                    },
                    {
                        "eventId":  97,
@@ -4460,7 +4748,10 @@
                        "eventTypeL1Id":  3,
                        "newYn":  false,
                        "isScenarioSuggested":  false,
-                       "scenarioSuggestReason":  null
+                       "scenarioSuggestReason":  null,
+                       "scenarioDesignStatus":  "designable",
+                       "scenarioDesignStatusLabel":  "설계가능",
+                       "scenarioGroupId":  null
                    },
                    {
                        "eventId":  98,
@@ -4506,7 +4797,10 @@
                        "eventTypeL1Id":  3,
                        "newYn":  true,
                        "isScenarioSuggested":  true,
-                       "scenarioSuggestReason":  "글로벌 LNG 공급 차질 가능성이 시나리오화 가치 있음"
+                       "scenarioSuggestReason":  "글로벌 LNG 공급 차질 가능성이 시나리오화 가치 있음",
+                       "scenarioDesignStatus":  "designable",
+                       "scenarioDesignStatusLabel":  "설계가능",
+                       "scenarioGroupId":  null
                    },
                    {
                        "eventId":  99,
@@ -4552,7 +4846,10 @@
                        "eventTypeL1Id":  3,
                        "newYn":  true,
                        "isScenarioSuggested":  false,
-                       "scenarioSuggestReason":  null
+                       "scenarioSuggestReason":  null,
+                       "scenarioDesignStatus":  "designable",
+                       "scenarioDesignStatusLabel":  "설계가능",
+                       "scenarioGroupId":  null
                    },
                    {
                        "eventId":  100,
@@ -4598,7 +4895,10 @@
                        "eventTypeL1Id":  3,
                        "newYn":  true,
                        "isScenarioSuggested":  false,
-                       "scenarioSuggestReason":  null
+                       "scenarioSuggestReason":  null,
+                       "scenarioDesignStatus":  "designable",
+                       "scenarioDesignStatusLabel":  "설계가능",
+                       "scenarioGroupId":  null
                    },
                    {
                        "eventId":  101,
@@ -4644,7 +4944,10 @@
                        "eventTypeL1Id":  2,
                        "newYn":  true,
                        "isScenarioSuggested":  true,
-                       "scenarioSuggestReason":  "아시아/유럽 가격 디커플링 시그널이 강해 시나리오 분기 필요"
+                       "scenarioSuggestReason":  "아시아/유럽 가격 디커플링 시그널이 강해 시나리오 분기 필요",
+                       "scenarioDesignStatus":  "designable",
+                       "scenarioDesignStatusLabel":  "설계가능",
+                       "scenarioGroupId":  null
                    },
                    {
                        "eventId":  102,
@@ -4690,7 +4993,10 @@
                        "eventTypeL1Id":  3,
                        "newYn":  true,
                        "isScenarioSuggested":  false,
-                       "scenarioSuggestReason":  null
+                       "scenarioSuggestReason":  null,
+                       "scenarioDesignStatus":  "designable",
+                       "scenarioDesignStatusLabel":  "설계가능",
+                       "scenarioGroupId":  null
                    },
                    {
                        "eventId":  103,
@@ -4736,7 +5042,10 @@
                        "eventTypeL1Id":  1,
                        "newYn":  false,
                        "isScenarioSuggested":  false,
-                       "scenarioSuggestReason":  null
+                       "scenarioSuggestReason":  null,
+                       "scenarioDesignStatus":  "designable",
+                       "scenarioDesignStatusLabel":  "설계가능",
+                       "scenarioGroupId":  null
                    },
                    {
                        "eventId":  104,
@@ -4782,7 +5091,10 @@
                        "eventTypeL1Id":  2,
                        "newYn":  true,
                        "isScenarioSuggested":  true,
-                       "scenarioSuggestReason":  "단기 spot 프리미엄 확장 추세로 모델 시뮬레이션 적합"
+                       "scenarioSuggestReason":  "단기 spot 프리미엄 확장 추세로 모델 시뮬레이션 적합",
+                       "scenarioDesignStatus":  "designable",
+                       "scenarioDesignStatusLabel":  "설계가능",
+                       "scenarioGroupId":  null
                    },
                    {
                        "eventId":  105,
@@ -4828,7 +5140,10 @@
                        "eventTypeL1Id":  8,
                        "newYn":  true,
                        "isScenarioSuggested":  false,
-                       "scenarioSuggestReason":  null
+                       "scenarioSuggestReason":  null,
+                       "scenarioDesignStatus":  "designable",
+                       "scenarioDesignStatusLabel":  "설계가능",
+                       "scenarioGroupId":  null
                    },
                    {
                        "eventId":  106,
@@ -4874,7 +5189,10 @@
                        "eventTypeL1Id":  3,
                        "newYn":  true,
                        "isScenarioSuggested":  false,
-                       "scenarioSuggestReason":  null
+                       "scenarioSuggestReason":  null,
+                       "scenarioDesignStatus":  "designable",
+                       "scenarioDesignStatusLabel":  "설계가능",
+                       "scenarioGroupId":  null
                    },
                    {
                        "eventId":  107,
@@ -4920,7 +5238,10 @@
                        "eventTypeL1Id":  5,
                        "newYn":  true,
                        "isScenarioSuggested":  false,
-                       "scenarioSuggestReason":  null
+                       "scenarioSuggestReason":  null,
+                       "scenarioDesignStatus":  "designable",
+                       "scenarioDesignStatusLabel":  "설계가능",
+                       "scenarioGroupId":  null
                    },
                    {
                        "eventId":  108,
@@ -4966,7 +5287,10 @@
                        "eventTypeL1Id":  1,
                        "newYn":  false,
                        "isScenarioSuggested":  true,
-                       "scenarioSuggestReason":  "수급 밸런스 변동성이 커 다중 시나리오 검토 필요"
+                       "scenarioSuggestReason":  "수급 밸런스 변동성이 커 다중 시나리오 검토 필요",
+                       "scenarioDesignStatus":  "designable",
+                       "scenarioDesignStatusLabel":  "설계가능",
+                       "scenarioGroupId":  null
                    },
                    {
                        "eventId":  109,
@@ -5012,7 +5336,10 @@
                        "eventTypeL1Id":  1,
                        "newYn":  false,
                        "isScenarioSuggested":  false,
-                       "scenarioSuggestReason":  null
+                       "scenarioSuggestReason":  null,
+                       "scenarioDesignStatus":  "designable",
+                       "scenarioDesignStatusLabel":  "설계가능",
+                       "scenarioGroupId":  null
                    },
                    {
                        "eventId":  110,
@@ -5058,7 +5385,10 @@
                        "eventTypeL1Id":  5,
                        "newYn":  false,
                        "isScenarioSuggested":  false,
-                       "scenarioSuggestReason":  null
+                       "scenarioSuggestReason":  null,
+                       "scenarioDesignStatus":  "designable",
+                       "scenarioDesignStatusLabel":  "설계가능",
+                       "scenarioGroupId":  null
                    },
                    {
                        "eventId":  111,
@@ -5104,7 +5434,10 @@
                        "eventTypeL1Id":  1,
                        "newYn":  false,
                        "isScenarioSuggested":  true,
-                       "scenarioSuggestReason":  "정책/제재 변수가 가격 경로를 가르는 분기점"
+                       "scenarioSuggestReason":  "정책/제재 변수가 가격 경로를 가르는 분기점",
+                       "scenarioDesignStatus":  "designable",
+                       "scenarioDesignStatusLabel":  "설계가능",
+                       "scenarioGroupId":  null
                    },
                    {
                        "eventId":  112,
@@ -5150,7 +5483,10 @@
                        "eventTypeL1Id":  3,
                        "newYn":  false,
                        "isScenarioSuggested":  false,
-                       "scenarioSuggestReason":  null
+                       "scenarioSuggestReason":  null,
+                       "scenarioDesignStatus":  "designable",
+                       "scenarioDesignStatusLabel":  "설계가능",
+                       "scenarioGroupId":  null
                    },
                    {
                        "eventId":  113,
@@ -5196,7 +5532,10 @@
                        "eventTypeL1Id":  1,
                        "newYn":  false,
                        "isScenarioSuggested":  false,
-                       "scenarioSuggestReason":  null
+                       "scenarioSuggestReason":  null,
+                       "scenarioDesignStatus":  "designable",
+                       "scenarioDesignStatusLabel":  "설계가능",
+                       "scenarioGroupId":  null
                    },
                    {
                        "eventId":  114,
@@ -5242,7 +5581,10 @@
                        "eventTypeL1Id":  1,
                        "newYn":  false,
                        "isScenarioSuggested":  false,
-                       "scenarioSuggestReason":  null
+                       "scenarioSuggestReason":  null,
+                       "scenarioDesignStatus":  "designable",
+                       "scenarioDesignStatusLabel":  "설계가능",
+                       "scenarioGroupId":  null
                    },
                    {
                        "eventId":  115,
@@ -5288,7 +5630,10 @@
                        "eventTypeL1Id":  5,
                        "newYn":  false,
                        "isScenarioSuggested":  false,
-                       "scenarioSuggestReason":  null
+                       "scenarioSuggestReason":  null,
+                       "scenarioDesignStatus":  "designable",
+                       "scenarioDesignStatusLabel":  "설계가능",
+                       "scenarioGroupId":  null
                    },
                    {
                        "eventId":  116,
@@ -5334,7 +5679,10 @@
                        "eventTypeL1Id":  1,
                        "newYn":  true,
                        "isScenarioSuggested":  false,
-                       "scenarioSuggestReason":  null
+                       "scenarioSuggestReason":  null,
+                       "scenarioDesignStatus":  "designable",
+                       "scenarioDesignStatusLabel":  "설계가능",
+                       "scenarioGroupId":  null
                    },
                    {
                        "eventId":  117,
@@ -5380,7 +5728,10 @@
                        "eventTypeL1Id":  1,
                        "newYn":  false,
                        "isScenarioSuggested":  false,
-                       "scenarioSuggestReason":  null
+                       "scenarioSuggestReason":  null,
+                       "scenarioDesignStatus":  "designable",
+                       "scenarioDesignStatusLabel":  "설계가능",
+                       "scenarioGroupId":  null
                    },
                    {
                        "eventId":  118,
@@ -5426,7 +5777,10 @@
                        "eventTypeL1Id":  3,
                        "newYn":  false,
                        "isScenarioSuggested":  true,
-                       "scenarioSuggestReason":  "기후/계절 패턴이 기준선과 이탈, 모델 재검토 필요"
+                       "scenarioSuggestReason":  "기후/계절 패턴이 기준선과 이탈, 모델 재검토 필요",
+                       "scenarioDesignStatus":  "designable",
+                       "scenarioDesignStatusLabel":  "설계가능",
+                       "scenarioGroupId":  null
                    },
                    {
                        "eventId":  119,
@@ -5472,7 +5826,10 @@
                        "eventTypeL1Id":  4,
                        "newYn":  false,
                        "isScenarioSuggested":  false,
-                       "scenarioSuggestReason":  null
+                       "scenarioSuggestReason":  null,
+                       "scenarioDesignStatus":  "designable",
+                       "scenarioDesignStatusLabel":  "설계가능",
+                       "scenarioGroupId":  null
                    },
                    {
                        "eventId":  120,
@@ -5518,7 +5875,10 @@
                        "eventTypeL1Id":  4,
                        "newYn":  false,
                        "isScenarioSuggested":  false,
-                       "scenarioSuggestReason":  null
+                       "scenarioSuggestReason":  null,
+                       "scenarioDesignStatus":  "designable",
+                       "scenarioDesignStatusLabel":  "설계가능",
+                       "scenarioGroupId":  null
                    },
                    {
                        "eventId":  121,
@@ -5564,7 +5924,10 @@
                        "eventTypeL1Id":  5,
                        "newYn":  true,
                        "isScenarioSuggested":  true,
-                       "scenarioSuggestReason":  "글로벌 LNG 공급 차질 가능성이 시나리오화 가치 있음"
+                       "scenarioSuggestReason":  "글로벌 LNG 공급 차질 가능성이 시나리오화 가치 있음",
+                       "scenarioDesignStatus":  "designable",
+                       "scenarioDesignStatusLabel":  "설계가능",
+                       "scenarioGroupId":  null
                    },
                    {
                        "eventId":  122,
@@ -5610,7 +5973,10 @@
                        "eventTypeL1Id":  3,
                        "newYn":  false,
                        "isScenarioSuggested":  false,
-                       "scenarioSuggestReason":  null
+                       "scenarioSuggestReason":  null,
+                       "scenarioDesignStatus":  "designable",
+                       "scenarioDesignStatusLabel":  "설계가능",
+                       "scenarioGroupId":  null
                    },
                    {
                        "eventId":  123,
@@ -5656,7 +6022,10 @@
                        "eventTypeL1Id":  1,
                        "newYn":  false,
                        "isScenarioSuggested":  false,
-                       "scenarioSuggestReason":  null
+                       "scenarioSuggestReason":  null,
+                       "scenarioDesignStatus":  "designable",
+                       "scenarioDesignStatusLabel":  "설계가능",
+                       "scenarioGroupId":  null
                    },
                    {
                        "eventId":  124,
@@ -5702,7 +6071,10 @@
                        "eventTypeL1Id":  1,
                        "newYn":  false,
                        "isScenarioSuggested":  true,
-                       "scenarioSuggestReason":  "아시아/유럽 가격 디커플링 시그널이 강해 시나리오 분기 필요"
+                       "scenarioSuggestReason":  "아시아/유럽 가격 디커플링 시그널이 강해 시나리오 분기 필요",
+                       "scenarioDesignStatus":  "designable",
+                       "scenarioDesignStatusLabel":  "설계가능",
+                       "scenarioGroupId":  null
                    },
                    {
                        "eventId":  125,
@@ -5748,7 +6120,10 @@
                        "eventTypeL1Id":  4,
                        "newYn":  true,
                        "isScenarioSuggested":  false,
-                       "scenarioSuggestReason":  null
+                       "scenarioSuggestReason":  null,
+                       "scenarioDesignStatus":  "designable",
+                       "scenarioDesignStatusLabel":  "설계가능",
+                       "scenarioGroupId":  null
                    },
                    {
                        "eventId":  126,
@@ -5794,7 +6169,10 @@
                        "eventTypeL1Id":  3,
                        "newYn":  false,
                        "isScenarioSuggested":  false,
-                       "scenarioSuggestReason":  null
+                       "scenarioSuggestReason":  null,
+                       "scenarioDesignStatus":  "designable",
+                       "scenarioDesignStatusLabel":  "설계가능",
+                       "scenarioGroupId":  null
                    },
                    {
                        "eventId":  127,
@@ -5840,7 +6218,10 @@
                        "eventTypeL1Id":  3,
                        "newYn":  false,
                        "isScenarioSuggested":  false,
-                       "scenarioSuggestReason":  null
+                       "scenarioSuggestReason":  null,
+                       "scenarioDesignStatus":  "designable",
+                       "scenarioDesignStatusLabel":  "설계가능",
+                       "scenarioGroupId":  null
                    },
                    {
                        "eventId":  128,
@@ -5886,7 +6267,10 @@
                        "eventTypeL1Id":  1,
                        "newYn":  false,
                        "isScenarioSuggested":  true,
-                       "scenarioSuggestReason":  "단기 spot 프리미엄 확장 추세로 모델 시뮬레이션 적합"
+                       "scenarioSuggestReason":  "단기 spot 프리미엄 확장 추세로 모델 시뮬레이션 적합",
+                       "scenarioDesignStatus":  "designable",
+                       "scenarioDesignStatusLabel":  "설계가능",
+                       "scenarioGroupId":  null
                    },
                    {
                        "eventId":  129,
@@ -5932,7 +6316,10 @@
                        "eventTypeL1Id":  3,
                        "newYn":  false,
                        "isScenarioSuggested":  false,
-                       "scenarioSuggestReason":  null
+                       "scenarioSuggestReason":  null,
+                       "scenarioDesignStatus":  "designable",
+                       "scenarioDesignStatusLabel":  "설계가능",
+                       "scenarioGroupId":  null
                    },
                    {
                        "eventId":  130,
@@ -5978,7 +6365,10 @@
                        "eventTypeL1Id":  3,
                        "newYn":  true,
                        "isScenarioSuggested":  false,
-                       "scenarioSuggestReason":  null
+                       "scenarioSuggestReason":  null,
+                       "scenarioDesignStatus":  "designable",
+                       "scenarioDesignStatusLabel":  "설계가능",
+                       "scenarioGroupId":  null
                    },
                    {
                        "eventId":  131,
@@ -6024,7 +6414,10 @@
                        "eventTypeL1Id":  4,
                        "newYn":  true,
                        "isScenarioSuggested":  true,
-                       "scenarioSuggestReason":  "수급 밸런스 변동성이 커 다중 시나리오 검토 필요"
+                       "scenarioSuggestReason":  "수급 밸런스 변동성이 커 다중 시나리오 검토 필요",
+                       "scenarioDesignStatus":  "designable",
+                       "scenarioDesignStatusLabel":  "설계가능",
+                       "scenarioGroupId":  null
                    },
                    {
                        "eventId":  132,
@@ -6070,7 +6463,10 @@
                        "eventTypeL1Id":  5,
                        "newYn":  false,
                        "isScenarioSuggested":  false,
-                       "scenarioSuggestReason":  null
+                       "scenarioSuggestReason":  null,
+                       "scenarioDesignStatus":  "designable",
+                       "scenarioDesignStatusLabel":  "설계가능",
+                       "scenarioGroupId":  null
                    },
                    {
                        "eventId":  133,
@@ -6116,7 +6512,10 @@
                        "eventTypeL1Id":  3,
                        "newYn":  false,
                        "isScenarioSuggested":  false,
-                       "scenarioSuggestReason":  null
+                       "scenarioSuggestReason":  null,
+                       "scenarioDesignStatus":  "designable",
+                       "scenarioDesignStatusLabel":  "설계가능",
+                       "scenarioGroupId":  null
                    },
                    {
                        "eventId":  134,
@@ -6162,7 +6561,10 @@
                        "eventTypeL1Id":  1,
                        "newYn":  true,
                        "isScenarioSuggested":  false,
-                       "scenarioSuggestReason":  null
+                       "scenarioSuggestReason":  null,
+                       "scenarioDesignStatus":  "designable",
+                       "scenarioDesignStatusLabel":  "설계가능",
+                       "scenarioGroupId":  null
                    },
                    {
                        "eventId":  135,
@@ -6208,7 +6610,10 @@
                        "eventTypeL1Id":  1,
                        "newYn":  false,
                        "isScenarioSuggested":  false,
-                       "scenarioSuggestReason":  null
+                       "scenarioSuggestReason":  null,
+                       "scenarioDesignStatus":  "designable",
+                       "scenarioDesignStatusLabel":  "설계가능",
+                       "scenarioGroupId":  null
                    },
                    {
                        "eventId":  136,
@@ -6254,7 +6659,10 @@
                        "eventTypeL1Id":  5,
                        "newYn":  true,
                        "isScenarioSuggested":  false,
-                       "scenarioSuggestReason":  null
+                       "scenarioSuggestReason":  null,
+                       "scenarioDesignStatus":  "designable",
+                       "scenarioDesignStatusLabel":  "설계가능",
+                       "scenarioGroupId":  null
                    },
                    {
                        "eventId":  137,
@@ -6300,7 +6708,10 @@
                        "eventTypeL1Id":  3,
                        "newYn":  false,
                        "isScenarioSuggested":  false,
-                       "scenarioSuggestReason":  null
+                       "scenarioSuggestReason":  null,
+                       "scenarioDesignStatus":  "designable",
+                       "scenarioDesignStatusLabel":  "설계가능",
+                       "scenarioGroupId":  null
                    },
                    {
                        "eventId":  138,
@@ -6346,7 +6757,10 @@
                        "eventTypeL1Id":  1,
                        "newYn":  false,
                        "isScenarioSuggested":  true,
-                       "scenarioSuggestReason":  "정책/제재 변수가 가격 경로를 가르는 분기점"
+                       "scenarioSuggestReason":  "정책/제재 변수가 가격 경로를 가르는 분기점",
+                       "scenarioDesignStatus":  "designable",
+                       "scenarioDesignStatusLabel":  "설계가능",
+                       "scenarioGroupId":  null
                    },
                    {
                        "eventId":  139,
@@ -6392,7 +6806,10 @@
                        "eventTypeL1Id":  4,
                        "newYn":  true,
                        "isScenarioSuggested":  false,
-                       "scenarioSuggestReason":  null
+                       "scenarioSuggestReason":  null,
+                       "scenarioDesignStatus":  "designable",
+                       "scenarioDesignStatusLabel":  "설계가능",
+                       "scenarioGroupId":  null
                    },
                    {
                        "eventId":  140,
@@ -6438,7 +6855,10 @@
                        "eventTypeL1Id":  3,
                        "newYn":  false,
                        "isScenarioSuggested":  false,
-                       "scenarioSuggestReason":  null
+                       "scenarioSuggestReason":  null,
+                       "scenarioDesignStatus":  "designable",
+                       "scenarioDesignStatusLabel":  "설계가능",
+                       "scenarioGroupId":  null
                    },
                    {
                        "eventId":  141,
@@ -6484,7 +6904,10 @@
                        "eventTypeL1Id":  6,
                        "newYn":  true,
                        "isScenarioSuggested":  true,
-                       "scenarioSuggestReason":  "기후/계절 패턴이 기준선과 이탈, 모델 재검토 필요"
+                       "scenarioSuggestReason":  "기후/계절 패턴이 기준선과 이탈, 모델 재검토 필요",
+                       "scenarioDesignStatus":  "designable",
+                       "scenarioDesignStatusLabel":  "설계가능",
+                       "scenarioGroupId":  null
                    },
                    {
                        "eventId":  142,
@@ -6530,7 +6953,10 @@
                        "eventTypeL1Id":  3,
                        "newYn":  false,
                        "isScenarioSuggested":  false,
-                       "scenarioSuggestReason":  null
+                       "scenarioSuggestReason":  null,
+                       "scenarioDesignStatus":  "designable",
+                       "scenarioDesignStatusLabel":  "설계가능",
+                       "scenarioGroupId":  null
                    },
                    {
                        "eventId":  143,
@@ -6576,7 +7002,10 @@
                        "eventTypeL1Id":  3,
                        "newYn":  true,
                        "isScenarioSuggested":  false,
-                       "scenarioSuggestReason":  null
+                       "scenarioSuggestReason":  null,
+                       "scenarioDesignStatus":  "designable",
+                       "scenarioDesignStatusLabel":  "설계가능",
+                       "scenarioGroupId":  null
                    },
                    {
                        "eventId":  144,
@@ -6622,7 +7051,10 @@
                        "eventTypeL1Id":  3,
                        "newYn":  false,
                        "isScenarioSuggested":  true,
-                       "scenarioSuggestReason":  "글로벌 LNG 공급 차질 가능성이 시나리오화 가치 있음"
+                       "scenarioSuggestReason":  "글로벌 LNG 공급 차질 가능성이 시나리오화 가치 있음",
+                       "scenarioDesignStatus":  "designable",
+                       "scenarioDesignStatusLabel":  "설계가능",
+                       "scenarioGroupId":  null
                    },
                    {
                        "eventId":  145,
@@ -6668,7 +7100,10 @@
                        "eventTypeL1Id":  3,
                        "newYn":  false,
                        "isScenarioSuggested":  false,
-                       "scenarioSuggestReason":  null
+                       "scenarioSuggestReason":  null,
+                       "scenarioDesignStatus":  "designable",
+                       "scenarioDesignStatusLabel":  "설계가능",
+                       "scenarioGroupId":  null
                    },
                    {
                        "eventId":  146,
@@ -6714,7 +7149,10 @@
                        "eventTypeL1Id":  3,
                        "newYn":  false,
                        "isScenarioSuggested":  false,
-                       "scenarioSuggestReason":  null
+                       "scenarioSuggestReason":  null,
+                       "scenarioDesignStatus":  "designable",
+                       "scenarioDesignStatusLabel":  "설계가능",
+                       "scenarioGroupId":  null
                    },
                    {
                        "eventId":  147,
@@ -6760,7 +7198,10 @@
                        "eventTypeL1Id":  3,
                        "newYn":  false,
                        "isScenarioSuggested":  false,
-                       "scenarioSuggestReason":  null
+                       "scenarioSuggestReason":  null,
+                       "scenarioDesignStatus":  "designable",
+                       "scenarioDesignStatusLabel":  "설계가능",
+                       "scenarioGroupId":  null
                    },
                    {
                        "eventId":  148,
@@ -6806,7 +7247,10 @@
                        "eventTypeL1Id":  6,
                        "newYn":  false,
                        "isScenarioSuggested":  true,
-                       "scenarioSuggestReason":  "아시아/유럽 가격 디커플링 시그널이 강해 시나리오 분기 필요"
+                       "scenarioSuggestReason":  "아시아/유럽 가격 디커플링 시그널이 강해 시나리오 분기 필요",
+                       "scenarioDesignStatus":  "designable",
+                       "scenarioDesignStatusLabel":  "설계가능",
+                       "scenarioGroupId":  null
                    },
                    {
                        "eventId":  149,
@@ -6852,7 +7296,10 @@
                        "eventTypeL1Id":  3,
                        "newYn":  true,
                        "isScenarioSuggested":  false,
-                       "scenarioSuggestReason":  null
+                       "scenarioSuggestReason":  null,
+                       "scenarioDesignStatus":  "designable",
+                       "scenarioDesignStatusLabel":  "설계가능",
+                       "scenarioGroupId":  null
                    },
                    {
                        "eventId":  150,
@@ -6898,7 +7345,10 @@
                        "eventTypeL1Id":  1,
                        "newYn":  false,
                        "isScenarioSuggested":  false,
-                       "scenarioSuggestReason":  null
+                       "scenarioSuggestReason":  null,
+                       "scenarioDesignStatus":  "designable",
+                       "scenarioDesignStatusLabel":  "설계가능",
+                       "scenarioGroupId":  null
                    },
                    {
                        "eventId":  151,
@@ -6944,7 +7394,10 @@
                        "eventTypeL1Id":  5,
                        "newYn":  false,
                        "isScenarioSuggested":  true,
-                       "scenarioSuggestReason":  "단기 spot 프리미엄 확장 추세로 모델 시뮬레이션 적합"
+                       "scenarioSuggestReason":  "단기 spot 프리미엄 확장 추세로 모델 시뮬레이션 적합",
+                       "scenarioDesignStatus":  "designable",
+                       "scenarioDesignStatusLabel":  "설계가능",
+                       "scenarioGroupId":  null
                    },
                    {
                        "eventId":  152,
@@ -6990,7 +7443,10 @@
                        "eventTypeL1Id":  5,
                        "newYn":  true,
                        "isScenarioSuggested":  false,
-                       "scenarioSuggestReason":  null
+                       "scenarioSuggestReason":  null,
+                       "scenarioDesignStatus":  "designable",
+                       "scenarioDesignStatusLabel":  "설계가능",
+                       "scenarioGroupId":  null
                    },
                    {
                        "eventId":  153,
@@ -7036,7 +7492,10 @@
                        "eventTypeL1Id":  1,
                        "newYn":  true,
                        "isScenarioSuggested":  false,
-                       "scenarioSuggestReason":  null
+                       "scenarioSuggestReason":  null,
+                       "scenarioDesignStatus":  "designable",
+                       "scenarioDesignStatusLabel":  "설계가능",
+                       "scenarioGroupId":  null
                    },
                    {
                        "eventId":  154,
@@ -7082,7 +7541,10 @@
                        "eventTypeL1Id":  1,
                        "newYn":  false,
                        "isScenarioSuggested":  true,
-                       "scenarioSuggestReason":  "수급 밸런스 변동성이 커 다중 시나리오 검토 필요"
+                       "scenarioSuggestReason":  "수급 밸런스 변동성이 커 다중 시나리오 검토 필요",
+                       "scenarioDesignStatus":  "designable",
+                       "scenarioDesignStatusLabel":  "설계가능",
+                       "scenarioGroupId":  null
                    },
                    {
                        "eventId":  155,
@@ -7128,7 +7590,10 @@
                        "eventTypeL1Id":  3,
                        "newYn":  false,
                        "isScenarioSuggested":  false,
-                       "scenarioSuggestReason":  null
+                       "scenarioSuggestReason":  null,
+                       "scenarioDesignStatus":  "designable",
+                       "scenarioDesignStatusLabel":  "설계가능",
+                       "scenarioGroupId":  null
                    },
                    {
                        "eventId":  156,
@@ -7174,7 +7639,10 @@
                        "eventTypeL1Id":  3,
                        "newYn":  false,
                        "isScenarioSuggested":  false,
-                       "scenarioSuggestReason":  null
+                       "scenarioSuggestReason":  null,
+                       "scenarioDesignStatus":  "designable",
+                       "scenarioDesignStatusLabel":  "설계가능",
+                       "scenarioGroupId":  null
                    },
                    {
                        "eventId":  157,
@@ -7220,7 +7688,10 @@
                        "eventTypeL1Id":  3,
                        "newYn":  false,
                        "isScenarioSuggested":  false,
-                       "scenarioSuggestReason":  null
+                       "scenarioSuggestReason":  null,
+                       "scenarioDesignStatus":  "designable",
+                       "scenarioDesignStatusLabel":  "설계가능",
+                       "scenarioGroupId":  null
                    },
                    {
                        "eventId":  158,
@@ -7266,7 +7737,10 @@
                        "eventTypeL1Id":  1,
                        "newYn":  true,
                        "isScenarioSuggested":  true,
-                       "scenarioSuggestReason":  "정책/제재 변수가 가격 경로를 가르는 분기점"
+                       "scenarioSuggestReason":  "정책/제재 변수가 가격 경로를 가르는 분기점",
+                       "scenarioDesignStatus":  "designable",
+                       "scenarioDesignStatusLabel":  "설계가능",
+                       "scenarioGroupId":  null
                    },
                    {
                        "eventId":  159,
@@ -7312,7 +7786,10 @@
                        "eventTypeL1Id":  1,
                        "newYn":  false,
                        "isScenarioSuggested":  false,
-                       "scenarioSuggestReason":  null
+                       "scenarioSuggestReason":  null,
+                       "scenarioDesignStatus":  "designable",
+                       "scenarioDesignStatusLabel":  "설계가능",
+                       "scenarioGroupId":  null
                    },
                    {
                        "eventId":  160,
@@ -7358,7 +7835,10 @@
                        "eventTypeL1Id":  3,
                        "newYn":  false,
                        "isScenarioSuggested":  false,
-                       "scenarioSuggestReason":  null
+                       "scenarioSuggestReason":  null,
+                       "scenarioDesignStatus":  "designable",
+                       "scenarioDesignStatusLabel":  "설계가능",
+                       "scenarioGroupId":  null
                    },
                    {
                        "eventId":  161,
@@ -7404,7 +7884,10 @@
                        "eventTypeL1Id":  1,
                        "newYn":  false,
                        "isScenarioSuggested":  false,
-                       "scenarioSuggestReason":  null
+                       "scenarioSuggestReason":  null,
+                       "scenarioDesignStatus":  "designable",
+                       "scenarioDesignStatusLabel":  "설계가능",
+                       "scenarioGroupId":  null
                    },
                    {
                        "eventId":  162,
@@ -7450,7 +7933,10 @@
                        "eventTypeL1Id":  7,
                        "newYn":  false,
                        "isScenarioSuggested":  false,
-                       "scenarioSuggestReason":  null
+                       "scenarioSuggestReason":  null,
+                       "scenarioDesignStatus":  "designable",
+                       "scenarioDesignStatusLabel":  "설계가능",
+                       "scenarioGroupId":  null
                    },
                    {
                        "eventId":  163,
@@ -7496,7 +7982,10 @@
                        "eventTypeL1Id":  3,
                        "newYn":  false,
                        "isScenarioSuggested":  false,
-                       "scenarioSuggestReason":  null
+                       "scenarioSuggestReason":  null,
+                       "scenarioDesignStatus":  "designable",
+                       "scenarioDesignStatusLabel":  "설계가능",
+                       "scenarioGroupId":  null
                    },
                    {
                        "eventId":  164,
@@ -7542,7 +8031,10 @@
                        "eventTypeL1Id":  5,
                        "newYn":  false,
                        "isScenarioSuggested":  true,
-                       "scenarioSuggestReason":  "기후/계절 패턴이 기준선과 이탈, 모델 재검토 필요"
+                       "scenarioSuggestReason":  "기후/계절 패턴이 기준선과 이탈, 모델 재검토 필요",
+                       "scenarioDesignStatus":  "designable",
+                       "scenarioDesignStatusLabel":  "설계가능",
+                       "scenarioGroupId":  null
                    },
                    {
                        "eventId":  165,
@@ -7588,7 +8080,10 @@
                        "eventTypeL1Id":  1,
                        "newYn":  false,
                        "isScenarioSuggested":  false,
-                       "scenarioSuggestReason":  null
+                       "scenarioSuggestReason":  null,
+                       "scenarioDesignStatus":  "designable",
+                       "scenarioDesignStatusLabel":  "설계가능",
+                       "scenarioGroupId":  null
                    },
                    {
                        "eventId":  166,
@@ -7634,7 +8129,10 @@
                        "eventTypeL1Id":  4,
                        "newYn":  false,
                        "isScenarioSuggested":  false,
-                       "scenarioSuggestReason":  null
+                       "scenarioSuggestReason":  null,
+                       "scenarioDesignStatus":  "designable",
+                       "scenarioDesignStatusLabel":  "설계가능",
+                       "scenarioGroupId":  null
                    },
                    {
                        "eventId":  167,
@@ -7680,7 +8178,10 @@
                        "eventTypeL1Id":  3,
                        "newYn":  true,
                        "isScenarioSuggested":  false,
-                       "scenarioSuggestReason":  null
+                       "scenarioSuggestReason":  null,
+                       "scenarioDesignStatus":  "designable",
+                       "scenarioDesignStatusLabel":  "설계가능",
+                       "scenarioGroupId":  null
                    },
                    {
                        "eventId":  168,
@@ -7726,7 +8227,10 @@
                        "eventTypeL1Id":  3,
                        "newYn":  false,
                        "isScenarioSuggested":  true,
-                       "scenarioSuggestReason":  "글로벌 LNG 공급 차질 가능성이 시나리오화 가치 있음"
+                       "scenarioSuggestReason":  "글로벌 LNG 공급 차질 가능성이 시나리오화 가치 있음",
+                       "scenarioDesignStatus":  "designable",
+                       "scenarioDesignStatusLabel":  "설계가능",
+                       "scenarioGroupId":  null
                    },
                    {
                        "eventId":  169,
@@ -7772,7 +8276,10 @@
                        "eventTypeL1Id":  4,
                        "newYn":  false,
                        "isScenarioSuggested":  false,
-                       "scenarioSuggestReason":  null
+                       "scenarioSuggestReason":  null,
+                       "scenarioDesignStatus":  "designable",
+                       "scenarioDesignStatusLabel":  "설계가능",
+                       "scenarioGroupId":  null
                    },
                    {
                        "eventId":  170,
@@ -7818,7 +8325,10 @@
                        "eventTypeL1Id":  3,
                        "newYn":  false,
                        "isScenarioSuggested":  false,
-                       "scenarioSuggestReason":  null
+                       "scenarioSuggestReason":  null,
+                       "scenarioDesignStatus":  "designable",
+                       "scenarioDesignStatusLabel":  "설계가능",
+                       "scenarioGroupId":  null
                    },
                    {
                        "eventId":  171,
@@ -7864,7 +8374,10 @@
                        "eventTypeL1Id":  8,
                        "newYn":  false,
                        "isScenarioSuggested":  true,
-                       "scenarioSuggestReason":  "아시아/유럽 가격 디커플링 시그널이 강해 시나리오 분기 필요"
+                       "scenarioSuggestReason":  "아시아/유럽 가격 디커플링 시그널이 강해 시나리오 분기 필요",
+                       "scenarioDesignStatus":  "designable",
+                       "scenarioDesignStatusLabel":  "설계가능",
+                       "scenarioGroupId":  null
                    },
                    {
                        "eventId":  172,
@@ -7910,7 +8423,10 @@
                        "eventTypeL1Id":  3,
                        "newYn":  true,
                        "isScenarioSuggested":  false,
-                       "scenarioSuggestReason":  null
+                       "scenarioSuggestReason":  null,
+                       "scenarioDesignStatus":  "designable",
+                       "scenarioDesignStatusLabel":  "설계가능",
+                       "scenarioGroupId":  null
                    },
                    {
                        "eventId":  173,
@@ -7956,7 +8472,10 @@
                        "eventTypeL1Id":  1,
                        "newYn":  false,
                        "isScenarioSuggested":  false,
-                       "scenarioSuggestReason":  null
+                       "scenarioSuggestReason":  null,
+                       "scenarioDesignStatus":  "designable",
+                       "scenarioDesignStatusLabel":  "설계가능",
+                       "scenarioGroupId":  null
                    }
                ]
 }

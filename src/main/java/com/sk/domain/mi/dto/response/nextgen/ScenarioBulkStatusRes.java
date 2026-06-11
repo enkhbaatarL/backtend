@@ -1,6 +1,6 @@
 package com.sk.domain.mi.dto.response.nextgen;
 
-import com.sk.domain.shared.enums.nextgen.ScenarioStatus;
+import com.sk.domain.shared.enums.nextgen.ScenarioDisplayStatus;
 import io.swagger.v3.oas.annotations.media.Schema;
 import java.util.List;
 
@@ -10,7 +10,7 @@ import java.util.List;
 public record ScenarioBulkStatusRes(
 
     @Schema(description = "일괄 적용된 판정 상태 (pending/realized/discarded)", example = "realized")
-    ScenarioStatus status,
+    ScenarioDisplayStatus status,
 
     @Schema(description = "판정 상태 라벨", example = "실현")
     String statusLabel,

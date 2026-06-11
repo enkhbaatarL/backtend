@@ -1,8 +1,10 @@
 package com.sk.domain.shared.entity.master.tmm;
 
 import com.sk.common.converter.BooleanToYNAttributeConverter;
+import com.sk.domain.shared.converter.ScenarioStatusConverter;
 import com.sk.domain.shared.entity.base.BaseEntity;
 import com.sk.domain.shared.enums.nextgen.ScenarioStatus;
+import com.sk.domain.shared.enums.nextgen.ScenarioDisplayStatus;
 import jakarta.persistence.Column;
 import jakarta.persistence.Convert;
 import jakarta.persistence.Entity;
@@ -71,10 +73,11 @@ public class MiScenario extends BaseEntity {
     @Comment("이벤트 임팩트(HH)")
     private String impactHh;
 
+    @Convert(converter = ScenarioStatusConverter.class)
     @Column(name = "status", nullable = false, length = 50)
     @ColumnDefault("'creating'")
-    @Comment("상태")
-    private String status;
+    @Comment("상태 (creating:생성중 / created:생성완료 / realized:실현 / discarded:폐기)")
+    private ScenarioStatus status;
 
     @Column(name = "display_order", nullable = false)
     @ColumnDefault("0")
@@ -91,7 +94,7 @@ public class MiScenario extends BaseEntity {
     public MiScenario(Long scenarioId, MiScenarioGroup scenarioGroup, String title, String narrative,
                       String dimensionValues, BigDecimal probabilityScore,
                       BigDecimal probabilityDelta, String impactJkm, String impactTtf, String impactHh,
-                      String status, Integer displayOrder, Boolean isBaseline) {
+                      ScenarioStatus status, Integer displayOrder, Boolean isBaseline) {
         this.scenarioId = scenarioId;
         this.scenarioGroup = scenarioGroup;
         this.title = title;
@@ -108,7 +111,7 @@ public class MiScenario extends BaseEntity {
     }
 
     /** API 상태를 DB status 값으로 저장한다. */
-    public void updateStatus(ScenarioStatus status) {
+    public void updateStatus(ScenarioDisplayStatus status) {
         this.status = status.getDbStatus();
     }
 

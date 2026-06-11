@@ -69,10 +69,6 @@ mi:
           get-detail: false
           get-records: false
           get-outlooks: false
-      scenarios:
-        api:
-          get-list: true
-          get-detail: true
       scenario-groups:
         api:
           get-list: true
@@ -94,18 +90,6 @@ mi:
           dispatch-success: true
           running-timeout-minutes: 10
           auto-complete-seconds: 5
-      overview:
-        api:
-          get-events: true
-          get-scenarios: true
-          get-price-forecasts: true
-      design:
-        api:
-          get-events: true
-          post-generate: true
-          post-callback: true
-          get-generated-scenarios: true
-          get-statuses: true
   fundamental-model:
     mock:
       fundamental-model-cases:

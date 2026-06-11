@@ -1,7 +1,12 @@
 package com.sk.domain.shared.entity.master.tmm;
 
+import com.sk.domain.shared.converter.ScenarioGroupStageConverter;
+import com.sk.domain.shared.converter.ScenarioGroupStatusConverter;
 import com.sk.domain.shared.entity.base.BaseEntity;
+import com.sk.domain.shared.enums.nextgen.ScenarioGroupStage;
+import com.sk.domain.shared.enums.nextgen.ScenarioGroupStatus;
 import jakarta.persistence.Column;
+import jakarta.persistence.Convert;
 import jakarta.persistence.Entity;
 import jakarta.persistence.FetchType;
 import jakarta.persistence.GeneratedValue;
@@ -61,24 +66,26 @@ public class MiScenarioGroup extends BaseEntity {
     @Comment("시나리오 수")
     private Integer scenarioCount;
 
+    @Convert(converter = ScenarioGroupStatusConverter.class)
     @Column(name = "status", nullable = false, length = 50)
     @ColumnDefault("'creating'")
-    @Comment("상태")
-    private String status;
+    @Comment("상태 (creating:생성중 / created:생성완료 / realized:실현)")
+    private ScenarioGroupStatus status;
 
+    @Convert(converter = ScenarioGroupStageConverter.class)
     @Column(name = "stage", nullable = false, length = 50)
     @ColumnDefault("'ready'")
-    @Comment("단계")
-    private String stage;
+    @Comment("단계 (ready / scenario_created / scenario_validated / signpost_created / completed)")
+    private ScenarioGroupStage stage;
 
     @Column(name = "request_usr_id", columnDefinition = "int unsigned")
     @Comment("요청자 사용자 ID")
-    private Integer requestUserId;
+    private Long requestUserId;
 
     @Builder
     public MiScenarioGroup(Long scenarioGroupId, MiEvent miEvent, MiEventTypeL2 eventTypeL2, String title,
                            String summary, String description, String dimensionSelected, Integer scenarioCount,
-                           String status, String stage, Integer requestUserId) {
+                           ScenarioGroupStatus status, ScenarioGroupStage stage, Long requestUserId) {
         this.scenarioGroupId = scenarioGroupId;
         this.miEvent = miEvent;
         this.eventTypeL2 = eventTypeL2;

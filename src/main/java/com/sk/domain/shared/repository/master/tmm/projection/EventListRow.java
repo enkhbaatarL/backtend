@@ -1,5 +1,6 @@
 package com.sk.domain.shared.repository.master.tmm.projection;
 
+import com.sk.domain.shared.enums.nextgen.ScenarioGroupStatus;
 import java.time.LocalDateTime;
 import java.util.List;
 
@@ -15,6 +16,8 @@ public record EventListRow(
     LocalDateTime createDt,
     LocalDateTime modifyDt,
     LocalDateTime latestRecordFirstCreated,
+    Long scenarioGroupId,
+    ScenarioGroupStatus scenarioGroupStatus,
     List<EventIndexImpactRow> indexImpacts
 ) {
 }

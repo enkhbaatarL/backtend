@@ -1,6 +1,7 @@
 package com.sk.domain.shared.repository.master.tmm.projection;
 
 import com.querydsl.core.annotations.QueryProjection;
+import com.sk.domain.shared.enums.nextgen.ScenarioStatus;
 import java.math.BigDecimal;
 
 public record ScenarioBaseRow(
@@ -9,7 +10,7 @@ public record ScenarioBaseRow(
     String title,
     Boolean isBaseline,
     BigDecimal probabilityScore,
-    String status,
+    ScenarioStatus status,
     String dimensionValues,
     Integer displayOrder
 ) {

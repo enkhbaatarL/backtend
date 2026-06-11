@@ -1,6 +1,6 @@
 package com.sk.domain.mi.service.nextgen.support;
 
-import com.sk.domain.shared.enums.nextgen.ScenarioStatus;
+import com.sk.domain.shared.enums.nextgen.ScenarioDisplayStatus;
 import com.sk.domain.shared.repository.master.tmm.projection.ScenarioBaseRow;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
@@ -29,7 +29,7 @@ public final class ScenarioProbabilityAllocator {
     public record Item(Long scenarioId, BigDecimal probabilityScore, boolean discarded) {
 
         public static Item from(ScenarioBaseRow row) {
-            boolean discarded = ScenarioStatus.fromDbStatus(row.status()) == ScenarioStatus.DISCARDED;
+            boolean discarded = ScenarioDisplayStatus.from(row.status()) == ScenarioDisplayStatus.DISCARDED;
             return new Item(row.scenarioId(), row.probabilityScore(), discarded);
         }
     }

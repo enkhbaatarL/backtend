@@ -2,6 +2,7 @@ package com.sk.domain.mi.dto.response.nextgen;
 
 import com.sk.domain.shared.enums.nextgen.ContentStatus;
 import com.sk.domain.shared.enums.nextgen.EventSignalType;
+import com.sk.domain.shared.enums.nextgen.ScenarioDesignDisplayStatus;
 import com.sk.domain.shared.repository.master.tmm.projection.EventListRow;
 import io.swagger.v3.oas.annotations.media.Schema;
 import java.time.LocalDateTime;
@@ -48,6 +49,15 @@ public record EventListItemRes(
     @Schema(description = "시나리오화 추천 근거", example = "글로벌 공급 차질 가능성으로 시나리오화 검토 필요")
     String scenarioSuggestReason,
 
+    @Schema(description = "시나리오 디자인 상태 — designable(설계가능) / creating(생성중) / created(생성완료)", example = "designable")
+    ScenarioDesignDisplayStatus scenarioDesignStatus,
+
+    @Schema(description = "시나리오 디자인 상태 라벨", example = "설계가능")
+    String scenarioDesignStatusLabel,
+
+    @Schema(description = "활성 시나리오 그룹 ID (없으면 null, created일 때 이동 대상)", example = "1", nullable = true)
+    Long scenarioGroupId,
+
     @Schema(description = "인덱스별 영향도 (JKM, TTF, HH)")
     List<EventImpactIndexRes> indexImpacts
 
@@ -56,6 +66,7 @@ public record EventListItemRes(
     public static EventListItemRes from(EventListRow row) {
         ContentStatus status = Boolean.TRUE.equals(row.isNew()) ? ContentStatus.NEW : ContentStatus.UPDATED;
         EventSignalType signalType = Boolean.TRUE.equals(row.isSignal()) ? EventSignalType.SIGNAL : EventSignalType.NOISE;
+        ScenarioDesignDisplayStatus designStatus = ScenarioDesignDisplayStatus.of(row.scenarioGroupStatus());
 
         return new EventListItemRes(
             row.miEventId(),
@@ -71,6 +82,9 @@ public record EventListItemRes(
             signalType.getLabel(),
             Boolean.TRUE.equals(row.isScenarioSuggested()),
             row.scenarioSuggestReason(),
+            designStatus,
+            designStatus.getLabel(),
+            row.scenarioGroupId(),
             row.indexImpacts().stream().map(EventImpactIndexRes::fromRow).toList()
         );
     }
