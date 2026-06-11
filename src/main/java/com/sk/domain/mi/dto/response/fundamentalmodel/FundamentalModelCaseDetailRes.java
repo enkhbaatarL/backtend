@@ -1,10 +1,8 @@
 package com.sk.domain.mi.dto.response.fundamentalmodel;
 
 import com.sk.domain.shared.enums.fundamentalmodel.FundamentalModelCaseStatus;
-import io.swagger.v3.oas.annotations.media.ArraySchema;
 import io.swagger.v3.oas.annotations.media.Schema;
 import java.time.LocalDateTime;
-import java.util.List;
 
 public record FundamentalModelCaseDetailRes(
 
@@ -26,8 +24,8 @@ public record FundamentalModelCaseDetailRes(
     @Schema(description = "case 업로더 사용자 번호", example = "1")
     Integer assigneeUserNo,
 
-    @ArraySchema(schema = @Schema(implementation = FundamentalModelCaseFileRes.class))
-    List<FundamentalModelCaseFileRes> files,
+    @Schema(description = "다운로드 가능한 case 관련 파일 목록", implementation = FundamentalModelCaseFilesRes.class)
+    FundamentalModelCaseFilesRes files,
 
     @Schema(description = "최신 실행 정보. PENDING이면 null입니다.", implementation = FundamentalModelRunStatusRes.class)
     FundamentalModelRunStatusRes latestRun,

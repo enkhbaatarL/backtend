@@ -12,9 +12,11 @@ import com.sk.domain.mi.dto.response.fundamentalmodel.FilterOption;
 import com.sk.domain.mi.dto.response.fundamentalmodel.FundamentalModelCaseCreateRes;
 import com.sk.domain.mi.dto.response.fundamentalmodel.FundamentalModelCaseDetailRes;
 import com.sk.domain.mi.dto.response.fundamentalmodel.FundamentalModelCaseFileRes;
+import com.sk.domain.mi.dto.response.fundamentalmodel.FundamentalModelCaseFilesRes;
 import com.sk.domain.mi.dto.response.fundamentalmodel.FundamentalModelCaseListItemRes;
 import com.sk.domain.mi.dto.response.fundamentalmodel.FundamentalModelCaseListRes;
 import com.sk.domain.mi.dto.response.fundamentalmodel.FundamentalModelCaseStatusRes;
+import com.sk.domain.mi.dto.response.fundamentalmodel.FundamentalModelDownloadFileRes;
 import com.sk.domain.mi.dto.response.fundamentalmodel.FundamentalModelPriceRes;
 import com.sk.domain.mi.dto.response.fundamentalmodel.FundamentalModelRunAcceptRes;
 import com.sk.domain.mi.dto.response.fundamentalmodel.FundamentalModelRunCallbackRes;
@@ -48,6 +50,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -62,7 +65,8 @@ public class FundamentalModelCaseServiceImpl implements FundamentalModelCaseServ
 
     private static final int REQUIRED_FILE_COUNT = 3;
     private static final int TITLE_MAX_LENGTH = 200;
-    private static final String FILE_RELATION_SCENARIO_CASE = "SCNCASE";
+    private static final String FILE_RELATION_SCENARIO_CASE = "SCNRCASE";
+    private static final String FILE_RELATION_SCENARIO_CASE_HISTORY = "SCNRCASEH";
     private static final String CALLBACK_ACTOR = "SYSTEM";
     private static final DateTimeFormatter RUN_ID_TIMESTAMP_FORMATTER = DateTimeFormatter.ofPattern("yyyyMMdd_HHmmss");
     private static final List<FundamentalModelCaseStatus> RUN_CLAIMABLE_CASE_STATUSES = List.of(
@@ -152,8 +156,13 @@ public class FundamentalModelCaseServiceImpl implements FundamentalModelCaseServ
                 "fundamental model case not found. caseId: %d".formatted(caseId)
             ));
 
-        List<FundamentalModelCaseFileRes> files = findCaseFiles(caseId);
-        FundamentalModelRunStatusRes latestRun = findLatestRun(caseRow.lastRunId());
+        List<FundamentalModelDownloadFileRes> inputFiles = findDownloadFiles(
+            caseId,
+            FILE_RELATION_SCENARIO_CASE
+        );
+        ScenarioCaseRunHistory latestRunHistory = findLatestRunHistory(caseRow.lastRunId()).orElse(null);
+        List<FundamentalModelDownloadFileRes> outputFiles = findOutputFiles(latestRunHistory);
+        FundamentalModelRunStatusRes latestRun = latestRunHistory == null ? null : toLatestRunResponse(latestRunHistory);
 
         return new FundamentalModelCaseDetailRes(
             caseRow.caseId(),
@@ -162,7 +171,7 @@ public class FundamentalModelCaseServiceImpl implements FundamentalModelCaseServ
             caseRow.status(),
             caseRow.assigneeName(),
             caseRow.assigneeUserNo(),
-            files,
+            new FundamentalModelCaseFilesRes(inputFiles, outputFiles),
             latestRun,
             caseRow.createdAt(),
             caseRow.updatedAt()
@@ -525,32 +534,46 @@ public class FundamentalModelCaseServiceImpl implements FundamentalModelCaseServ
         );
     }
 
-    private List<FundamentalModelCaseFileRes> findCaseFiles(Long caseId) {
+    private List<FundamentalModelDownloadFileRes> findDownloadFiles(
+        Long relationshipObjectDistinguishNo,
+        String relationshipObjectSeparateCd
+    ) {
         List<UploadedFile> uploadedFiles = uploadedFileRepository.findActiveRelationshipFilesOrderByFileNoAsc(
-            Math.toIntExact(caseId),
-            FILE_RELATION_SCENARIO_CASE
+            Math.toIntExact(relationshipObjectDistinguishNo),
+            relationshipObjectSeparateCd
         );
 
-        List<FundamentalModelCaseFileRes> files = new ArrayList<>();
-        for (int index = 0; index < uploadedFiles.size(); index++) {
-            UploadedFile uploadedFile = uploadedFiles.get(index);
-            files.add(new FundamentalModelCaseFileRes(
+        List<FundamentalModelDownloadFileRes> files = new ArrayList<>();
+        for (UploadedFile uploadedFile : uploadedFiles) {
+            files.add(new FundamentalModelDownloadFileRes(
                 uploadedFile.getFileNo(),
-                index + 1,
                 uploadedFile.getOriginalFileNm(),
-                uploadedFile.getMimeTypeNm(),
                 uploadedFile.getFileSize()
             ));
         }
         return files;
     }
 
-    private FundamentalModelRunStatusRes findLatestRun(String lastRunId) {
+    private List<FundamentalModelDownloadFileRes> findOutputFiles(ScenarioCaseRunHistory latestRunHistory) {
+        if (latestRunHistory == null || latestRunHistory.getRunSeq() == null) {
+            return List.of();
+        }
+        return findDownloadFiles(
+            latestRunHistory.getRunSeq(),
+            FILE_RELATION_SCENARIO_CASE_HISTORY
+        );
+    }
+
+    private Optional<ScenarioCaseRunHistory> findLatestRunHistory(String lastRunId) {
         if (lastRunId == null) {
-            return null;
+            return Optional.empty();
         }
 
-        return scenarioCaseRunHistoryRepository.findById(lastRunId)
+        return scenarioCaseRunHistoryRepository.findById(lastRunId);
+    }
+
+    private FundamentalModelRunStatusRes findLatestRun(String lastRunId) {
+        return findLatestRunHistory(lastRunId)
             .map(this::toLatestRunResponse)
             .orElse(null);
     }

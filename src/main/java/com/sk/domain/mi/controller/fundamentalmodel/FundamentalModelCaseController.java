@@ -115,7 +115,7 @@ public class FundamentalModelCaseController {
     @ApiOrder(3)
     @Operation(
         summary = "MI Fundamental Model Scenario Case 상세 조회 API",
-        description = "case metadata, uploaded file metadata, latestRun만 조회합니다. full run history와 result 조회/download는 포함하지 않습니다."
+        description = "case metadata, input/output 다운로드 파일 metadata, latestRun만 조회합니다. full run history와 result payload는 포함하지 않습니다."
     )
     @ApiResponse(responseCode = "200", description = "조회 성공")
     @GetMapping("/{caseId}")
