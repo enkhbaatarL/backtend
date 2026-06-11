@@ -38,6 +38,12 @@ public record EventDetailRes(
     @Schema(description = "신호/소음 라벨", example = "신호")
     String signalTypeLabel,
 
+    @Schema(description = "시나리오화 추천 여부", example = "true")
+    Boolean isScenarioSuggested,
+
+    @Schema(description = "시나리오화 추천 근거 (추천 아님일 때 null)", example = "글로벌 LNG 공급 차질 가능성이 시나리오화 가치 있음")
+    String scenarioSuggestReason,
+
     @Schema(description = "AI Insights")
     EventAiInsightsRes aiInsights,
 
@@ -47,12 +53,12 @@ public record EventDetailRes(
     @Schema(description = "Driver Tree Scoreboard — 인덱스(JKM/TTF/HH)별 그룹")
     List<EventDriverTreeIndexRes> driverTreeScoreboard,
 
-    @Schema(description = "관련 이벤트 및 시나리오 (관련 테이블 미준비 상태로 현재 항상 null)", nullable = true)
-    RelatedEventScenarioRes relatedEventScenario
+    @Schema(description = "연관 시나리오", nullable = true)
+    EventRelatedScenariosRes relatedEventScenario
 
 ) {
 
-    public static EventDetailRes from(EventDetailRow row) {
+    public static EventDetailRes from(EventDetailRow row, EventRelatedScenariosRes relatedEventScenario) {
         ContentStatus status = Boolean.TRUE.equals(row.isNew()) ? ContentStatus.NEW : ContentStatus.UPDATED;
         EventSignalType signalType = Boolean.TRUE.equals(row.isSignal()) ? EventSignalType.SIGNAL : EventSignalType.NOISE;
         EventImpactAnalysisRes impactAnalysis = EventImpactAnalysisRes.from(row);
@@ -66,10 +72,12 @@ public record EventDetailRes(
             row.modifyDt(),
             signalType,
             signalType.getLabel(),
+            Boolean.TRUE.equals(row.isScenarioSuggested()),
+            row.scenarioSuggestReason(),
             EventAiInsightsRes.from(row),
             impactAnalysis,
             buildDriverTreeScoreboard(row.driverTags()),
-            null
+            relatedEventScenario
         );
     }
 

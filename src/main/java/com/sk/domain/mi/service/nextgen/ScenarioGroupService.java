@@ -5,6 +5,7 @@ import com.sk.domain.mi.dto.response.nextgen.ScenarioDetailViewRes;
 import com.sk.domain.mi.dto.response.nextgen.ScenarioGroupDetailRes;
 import com.sk.domain.mi.dto.response.nextgen.ScenarioGroupGraphRes;
 import com.sk.domain.mi.dto.response.nextgen.ScenarioGroupListRes;
+import com.sk.domain.mi.dto.response.nextgen.ScenarioBulkStatusRes;
 import com.sk.domain.mi.dto.response.nextgen.ScenarioIndividualListRes;
 import com.sk.domain.mi.dto.response.nextgen.ScenarioStatusRes;
 import com.sk.domain.shared.enums.nextgen.IndexName;
@@ -33,5 +34,11 @@ public interface ScenarioGroupService {
 
     /** 시나리오 판정 상태 변경 (대기/실현/폐기) */
     ScenarioStatusRes updateScenarioStatus(Long scenarioGroupId, Long scenarioId, ScenarioStatus status);
+
+    /** 시나리오 판정 상태 일괄 변경 (그룹 전체 모두 대기/실현/폐기) */
+    ScenarioBulkStatusRes bulkUpdateScenarioStatus(Long scenarioGroupId, ScenarioStatus status);
+
+    /** 시나리오 그룹 삭제 (그룹 + 하위 시나리오 soft delete) */
+    void deleteScenarioGroup(Long scenarioGroupId);
 
 }

@@ -1,0 +1,53 @@
+package com.sk.domain.mi.dto.response.nextgen;
+
+import com.sk.domain.shared.enums.nextgen.ScenarioStatus;
+import com.sk.domain.shared.repository.master.tmm.projection.ScenarioBaseRow;
+import io.swagger.v3.oas.annotations.media.Schema;
+import java.util.List;
+
+/**
+ * 이벤트 상세 '연관 시나리오'의 한 행.
+ */
+public record EventRelatedScenarioRes(
+
+    @Schema(description = "시나리오 ID", example = "11")
+    Long scenarioId,
+
+    @Schema(description = "시나리오명", example = "단기 봉쇄와 제한적 공급 대응")
+    String scenarioName,
+
+    @Schema(description = "BC(Base Case) 여부", example = "false")
+    boolean baseCase,
+
+    @Schema(description = "차원값 목록 (dimensionColumns 순서와 매칭)")
+    List<ScenarioDimensionRes> dimensions,
+
+    @Schema(description = "시나리오 발생 확률 (0~100, 원본)", example = "30")
+    Integer probability,
+
+    @Schema(description = "재분배 확률 (0~100). 폐기 제외 비례 재분배로 활성 시나리오 합 100, 폐기는 0. 폐기가 없으면 probability와 동일. 항상 존재", example = "43")
+    Integer adjustedProbability,
+
+    @Schema(description = "판정 상태 (pending/realized/discarded)", example = "pending")
+    ScenarioStatus status,
+
+    @Schema(description = "판정 상태 라벨", example = "대기")
+    String statusLabel
+
+) {
+
+    public static EventRelatedScenarioRes of(ScenarioBaseRow row, List<ScenarioDimensionRes> dimensions, Integer adjustedProbability) {
+        ScenarioStatus status = ScenarioStatus.fromLabel(row.judgmentStatusCode());
+        return new EventRelatedScenarioRes(
+            row.scenarioId(),
+            row.title(),
+            Boolean.TRUE.equals(row.isBaseline()),
+            dimensions,
+            row.probabilityScore() == null ? null : row.probabilityScore().intValue(),
+            adjustedProbability,
+            status,
+            status.getLabel()
+        );
+    }
+
+}

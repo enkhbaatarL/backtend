@@ -1,5 +1,6 @@
 package com.sk.domain.mi.dto.response.nextgen;
 
+import com.sk.domain.shared.repository.master.tmm.projection.ScenarioIndividualBaseRow;
 import io.swagger.v3.oas.annotations.media.Schema;
 import java.time.LocalDateTime;
 import java.util.List;
@@ -18,8 +19,11 @@ public record ScenarioIndividualItemRes(
     @Schema(description = "BC(Base Case) 여부", example = "false")
     boolean baseCase,
 
-    @Schema(description = "생성일시")
+    @Schema(description = "시나리오 생성일시")
     LocalDateTime createdAt,
+
+    @Schema(description = "시나리오 수정일시 (최신순 정렬·기간 필터 기준)")
+    LocalDateTime updatedAt,
 
     @Schema(description = "부모 시나리오 그룹")
     ScenarioGroupRefRes group,
@@ -27,8 +31,11 @@ public record ScenarioIndividualItemRes(
     @Schema(description = "차원값 목록")
     List<ScenarioDimensionRes> dimensions,
 
-    @Schema(description = "시나리오 발생 확률 (0~100). 라벨/등급 환산은 FE 처리", example = "30")
-    Integer probability
+    @Schema(description = "시나리오 발생 확률 (0~100, 원본). 라벨/등급 환산은 FE 처리", example = "30")
+    Integer probability,
+
+    @Schema(description = "재분배 확률 (0~100). 폐기 제외 비례 재분배로 활성 시나리오 합 100, 폐기는 0. 조회 시점 계산값(비영속)", example = "43")
+    Integer adjustedProbability
 
 ) {
 
@@ -37,10 +44,29 @@ public record ScenarioIndividualItemRes(
             row.scenarioId(),
             row.scenarioName(),
             row.baseCase(),
+            // mock 전용 경로: mock 데이터에 시나리오 자체 일시가 없어 그룹 일시로 대체
             group.createdAt(),
+            group.updatedAt(),
             new ScenarioGroupRefRes(group.scenarioGroupId(), group.groupName(), group.createdAt()),
             row.dimensions(),
-            row.probability()
+            row.probability(),
+            row.adjustedProbability()
+        );
+    }
+
+    /** 개별 모드 base row + 조립된 dimensions → 응답 행. */
+    public static ScenarioIndividualItemRes of(ScenarioIndividualBaseRow row, List<ScenarioDimensionRes> dimensions,
+                                               Integer adjustedProbability) {
+        return new ScenarioIndividualItemRes(
+            row.scenarioId(),
+            row.scenarioTitle(),
+            Boolean.TRUE.equals(row.isBaseline()),
+            row.createdAt(),
+            row.updatedAt(),
+            new ScenarioGroupRefRes(row.scenarioGroupId(), row.groupTitle(), row.groupCreatedAt()),
+            dimensions,
+            row.probabilityScore() == null ? null : row.probabilityScore().intValue(),
+            adjustedProbability
         );
     }
 

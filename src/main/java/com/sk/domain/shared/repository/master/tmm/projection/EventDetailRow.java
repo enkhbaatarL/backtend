@@ -15,11 +15,15 @@ public record EventDetailRow(
     String level2Label,
     Boolean isSignal,
     Boolean isNew,
+    Boolean isScenarioSuggested,
+    String scenarioSuggestReason,
     String detailAnalysis,
     String impactSummary,
     List<EventIndexImpactRow> indexImpacts,
     List<String> keyBullets,
     List<String> sources,
-    List<DriverTagScoreboardRow> driverTags
+    List<DriverTagScoreboardRow> driverTags,
+    ScenarioGroupBaseRow relatedScenarioGroup,
+    List<ScenarioBaseRow> relatedScenarios
 ) {
 }

@@ -1,5 +1,6 @@
 package com.sk.domain.mi.dto.response.nextgen;
 
+import com.sk.domain.shared.repository.master.tmm.projection.ScenarioGroupDetailBaseRow;
 import io.swagger.v3.oas.annotations.media.Schema;
 import java.time.LocalDateTime;
 import java.util.List;
@@ -19,6 +20,9 @@ public record ScenarioGroupDetailRes(
     @Schema(description = "생성일시")
     LocalDateTime createdAt,
 
+    @Schema(description = "수정일시")
+    LocalDateTime updatedAt,
+
     @Schema(description = "기반 이벤트 (Base Event)")
     ScenarioBaseEventRes baseEvent,
 
@@ -34,4 +38,22 @@ public record ScenarioGroupDetailRes(
     @Schema(description = "그룹 내 시나리오 (가정 및 실행 가능성 표 + 시나리오 상세 사이드바)")
     List<ScenarioGroupDetailRowRes> scenarios
 
-) {}
+) {
+
+    public static ScenarioGroupDetailRes of(ScenarioGroupDetailBaseRow base,
+                                            List<ScenarioDimensionColumnRes> dimensionColumns,
+                                            List<ScenarioGroupDetailRowRes> scenarios) {
+        return new ScenarioGroupDetailRes(
+            base.scenarioGroupId(),
+            base.groupName(),
+            base.createdAt(),
+            base.updatedAt(),
+            ScenarioBaseEventRes.from(base),
+            base.summary(),
+            base.scenarioCount() == null ? scenarios.size() : base.scenarioCount(),
+            dimensionColumns,
+            scenarios
+        );
+    }
+
+}

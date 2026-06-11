@@ -12,7 +12,6 @@ import com.sk.domain.mi.dto.response.nextgen.ModelExecutionFileRes;
 import com.sk.domain.mi.dto.response.nextgen.ModelExecutionParameterRes;
 import com.sk.domain.mi.dto.response.nextgen.ModelExecutionParameterTableRes;
 import com.sk.domain.mi.dto.response.nextgen.ModelExecutionStatusRes;
-import com.sk.domain.mi.dto.response.nextgen.ScenarioDetailRes;
 import com.sk.domain.shared.enums.nextgen.ModelExecutionStatus;
 import jakarta.annotation.PostConstruct;
 import jakarta.annotation.PreDestroy;
@@ -48,7 +47,7 @@ public class ScenarioModelExecutionMockService {
 
     private final ObjectMapper objectMapper;
     private final NextGenMockProperties mockProperties;
-    private final ScenarioMockService scenarioMockService;
+    private final ScenarioGroupMockService scenarioGroupMockService;
     private final ConcurrentMap<String, StoredExecution> executionStore = new ConcurrentHashMap<>();
     private final ScheduledExecutorService scheduler = Executors.newSingleThreadScheduledExecutor();
     private final AtomicLong fileNoSequence = new AtomicLong(1000);
@@ -77,16 +76,16 @@ public class ScenarioModelExecutionMockService {
     }
 
     public ModelExecutionParameterRes getModelExecutionParameters(Long scenarioId) {
-        ScenarioDetailRes scenarioDetail = getScenarioDetail(scenarioId);
+        String scenarioName = getScenarioName(scenarioId);
         return new ModelExecutionParameterRes(
             scenarioId,
-            scenarioDetail.scenarioName(),
+            scenarioName,
             getMockTables(scenarioId)
         );
     }
 
     public ModelExecutionAcceptRes submitModelExecution(Long scenarioId, List<MultipartFile> files) {
-        getScenarioDetail(scenarioId);
+        getScenarioName(scenarioId);
         validateFiles(files);
         rejectIfActiveExecutionExists(scenarioId);
 
@@ -311,12 +310,9 @@ public class ScenarioModelExecutionMockService {
         return timedOutExecution;
     }
 
-    private ScenarioDetailRes getScenarioDetail(Long scenarioId) {
-        try {
-            return scenarioMockService.getScenarioDetail(scenarioId);
-        } catch (IllegalArgumentException e) {
-            throw AppErrorException.of(ResultCode.Error.RSC_NOT_FOUND, "Scenario를 찾을 수 없습니다.");
-        }
+    private String getScenarioName(Long scenarioId) {
+        return scenarioGroupMockService.findScenarioName(scenarioId)
+            .orElseThrow(() -> AppErrorException.of(ResultCode.Error.RSC_NOT_FOUND, "Scenario를 찾을 수 없습니다."));
     }
 
     private void loadModelExecutionParameters() throws IOException {

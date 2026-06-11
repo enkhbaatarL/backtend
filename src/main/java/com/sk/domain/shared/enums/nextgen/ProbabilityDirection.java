@@ -13,8 +13,7 @@ import lombok.RequiredArgsConstructor;
 @RequiredArgsConstructor
 public enum ProbabilityDirection {
 
-    UP("up", "상승"),
-    DOWN("down", "하락");
+    SUP("sup", "가능성강화");
 
     @JsonValue
     private final String code;

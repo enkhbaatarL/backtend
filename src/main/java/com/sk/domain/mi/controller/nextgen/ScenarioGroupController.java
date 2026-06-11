@@ -8,6 +8,7 @@ import com.sk.common.model.BaseResponse;
 import com.sk.common.model.BaseResponseFactory;
 import com.sk.domain.mi.dto.request.nextgen.ScenarioGroupListReq;
 import com.sk.domain.mi.dto.request.nextgen.ScenarioStatusUpdateReq;
+import com.sk.domain.mi.dto.response.nextgen.ScenarioBulkStatusRes;
 import com.sk.domain.mi.dto.response.nextgen.ScenarioDetailViewRes;
 import com.sk.domain.mi.dto.response.nextgen.ScenarioGroupDetailRes;
 import com.sk.domain.mi.dto.response.nextgen.ScenarioGroupGraphRes;
@@ -35,6 +36,7 @@ import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -64,8 +66,8 @@ public class ScenarioGroupController {
 
             <br><br>
             ### 사용 가능한 파라미터
-             - sort: 정렬 기준 / 기본값 latest(최신순) / example - sort=latest, sort=oldest
-             - startDate / endDate: 조회 기간 (그룹 생성일 기준)
+             - sort: 정렬 기준 / 기본값 latest(최신순) / 그룹 수정일시 기준 정렬 / example - sort=latest, sort=oldest
+             - startDate / endDate: 조회 기간 (그룹 수정일시 기준)
              - keyword: 시나리오 그룹명 검색 키워드 / example - keyword=카타르
              - page: 기본값 1 / 1-based
              - size: 기본값 20
@@ -75,15 +77,16 @@ public class ScenarioGroupController {
             - `scenarioGroupId`: 시나리오 그룹 식별자
             - `groupName`: 시나리오 그룹명
             - `createdAt`: 생성일시
+            - `updatedAt`: 수정일시 (최신순 정렬·기간 필터 기준)
             - `summary`: 시나리오 그룹 요약
             - `scenarioCount`: 시나리오 수
             - `dimensionColumns`: 그룹별 동적 표 헤더 (key, label)
-            - `scenarios`: 그룹 내 시나리오 표 본문 (scenarioName, baseCase, dimensions, probability)
+            - `scenarios`: 그룹 내 시나리오 표 본문 (scenarioName, baseCase, dimensions, probability, adjustedProbability)
             """
     )
     @Parameter(name = "sort", description = "정렬 기준 (`latest` / `oldest`, 대소문자 무관). 기본값 `latest`")
-    @Parameter(name = "startDate", description = "조회 시작일 (yyyy-MM-dd, 그룹 생성일 기준)")
-    @Parameter(name = "endDate", description = "조회 종료일 (yyyy-MM-dd, 그룹 생성일 기준)")
+    @Parameter(name = "startDate", description = "조회 시작일 (yyyy-MM-dd, 그룹 수정일시 기준)")
+    @Parameter(name = "endDate", description = "조회 종료일 (yyyy-MM-dd, 그룹 수정일시 기준)")
     @Parameter(name = "keyword", description = "시나리오 그룹명 검색 키워드")
     @Parameter(name = "page", description = "페이지 번호 (1-based). 기본값 1")
     @Parameter(name = "size", description = "페이지당 항목 수. 기본값 20")
@@ -106,23 +109,25 @@ public class ScenarioGroupController {
 
             <br><br>
             ### 사용 가능한 파라미터
-             - sort: 정렬 기준 (latest / oldest) / 기본값 latest / 그룹 생성일 기준 정렬
-             - startDate / endDate: 조회 기간 (부모 그룹 생성일 기준)
+             - sort: 정렬 기준 (latest / oldest) / 기본값 latest / 시나리오 수정일시 기준 정렬
+             - startDate / endDate: 조회 기간 (시나리오 수정일시 기준)
              - keyword: 시나리오명 검색 키워드
              - page / size: 페이징
 
             <br><br>
             ### content 항목 필드
             - `scenarioId`, `scenarioName`, `baseCase`
-            - `createdAt`: 생성일시
+            - `createdAt`: 시나리오 생성일시
+            - `updatedAt`: 시나리오 수정일시 (최신순 정렬·기간 필터 기준)
             - `group`: 부모 그룹 (scenarioGroupId, groupName, createdAt)
             - `dimensions`: 차원값 목록
-            - `probability`: 시나리오 발생 확률 (0~100 정수)
+            - `probability`: 시나리오 발생 확률 (0~100 정수, 원본)
+            - `adjustedProbability`: 재분배 확률 — 그룹 내 폐기 제외 비례 재분배(활성 합 100, 폐기=0). 조회 시점 계산값(비영속)
             """
     )
     @Parameter(name = "sort", description = "정렬 기준 (`latest` / `oldest`, 대소문자 무관). 기본값 `latest`")
-    @Parameter(name = "startDate", description = "조회 시작일 (yyyy-MM-dd, 부모 그룹 생성일 기준)")
-    @Parameter(name = "endDate", description = "조회 종료일 (yyyy-MM-dd, 부모 그룹 생성일 기준)")
+    @Parameter(name = "startDate", description = "조회 시작일 (yyyy-MM-dd, 시나리오 수정일시 기준)")
+    @Parameter(name = "endDate", description = "조회 종료일 (yyyy-MM-dd, 시나리오 수정일시 기준)")
     @Parameter(name = "keyword", description = "시나리오명 검색 키워드")
     @Parameter(name = "page", description = "페이지 번호 (1-based). 기본값 1")
     @Parameter(name = "size", description = "페이지당 항목 수. 기본값 20")
@@ -194,12 +199,13 @@ public class ScenarioGroupController {
 
             <br><br>
             ### 상위(top-level) 필드
-            - `scenarioGroupId`, `groupName`, `createdAt`
+            - `scenarioGroupId`, `groupName`, `createdAt`, `updatedAt`
             - `baseEvent`: 기반 이벤트 (eventName, eventTypeLv1, eventTypeLv1Label, updatedAt) — 요약 탭
             - `summary`: 시나리오 그룹 설명 — 요약 탭
             - `scenarioCount`: 시나리오 수
             - `dimensionColumns`: 가정 표 동적 헤더 (key, label)
-            - `scenarios`: 가정 및 실행 가능성 표 행 (dimensions, probability, status, statusLabel[대기/실현/폐기])
+            - `scenarios`: 가정 및 실행 가능성 표 행 (dimensions, probability, adjustedProbability, status, statusLabel[대기/실현/폐기])
+            - `adjustedProbability`: 재분배 확률 — 폐기 제외 비례 재분배(활성 합 100, 폐기=0). 조회 시점 계산값(비영속)
             """
     )
     @ApiResponse(responseCode = "200", description = "조회 성공")
@@ -223,10 +229,12 @@ public class ScenarioGroupController {
             <br><br>
             ### 상위(top-level) 필드
             - `scenarioId`, `scenarioGroupId`, `scenarioName`, `baseCase`
+            - `createdAt` / `updatedAt`: 시나리오 생성/수정일시
             - `narrative`: 시나리오 내러티브
-            - `probability`: 시나리오 발생 확률 (0~100)
-            - `dimensions`: 주요 가정 (key, label, value, valueLabel) — 자기완결형 차원값
-            - `signpostDefinitions`: Signpost 정의 (label, direction[up/down], directionLabel, strength(%), rationale)
+            - `probability`: 시나리오 발생 확률 (0~100, 원본)
+            - `adjustedProbability`: 재분배 확률 — 그룹 내 폐기 제외 비례 재분배(활성 합 100, 폐기=0). 조회 시점 계산값(비영속)
+            - `dimensions`: 주요 가정 (key, label, value, valueLabel)
+            - `signpostDefinitions`: Signpost 정의 (label, direction[sup], directionLabel[가능성강화], probabilityImpact(%), rationale)
             - `signpostMonitorings`: Signpost 모니터링 이력 (updatedAt, eventSummary, probability, probabilityDelta, rationale)
             """
     )
@@ -250,6 +258,10 @@ public class ScenarioGroupController {
             시나리오의 상태를 변경합니다. <br>
             대기(`pending`) -> 실현(`realized`) / 폐기(`discarded`). <br>
 
+            <br>
+            **`realized`(실현)로 변경 시, 같은 그룹의 나머지 시나리오는 모두 `discarded`(폐기)로 자동 변경됩니다.** <br>
+            (그룹 내 실현 시나리오는 항상 1개)<br>
+
             <br><br>
             ### 요청 본문
             - `status`: 변경할 판정 상태 (`pending` / `realized` / `discarded`)
@@ -257,6 +269,7 @@ public class ScenarioGroupController {
             <br><br>
             ### 응답 필드
             - `scenarioId`, `status`, `statusLabel`(대기/실현/폐기)
+            - `discardedScenarioIds`: 함께 '폐기'로 자동 변경된 시나리오 ID 목록 (`realized` 변경 시에만 채워지고, 그 외 빈 배열)
             """
     )
     @ApiResponse(responseCode = "200", description = "변경 성공")
@@ -277,9 +290,71 @@ public class ScenarioGroupController {
 
     @ApiOrder(8)
     @Operation(
-        summary = "[mockapi 전용] 시나리오 상태 변경 초기화 API",
+        summary = "Scenario 상태 일괄 변경 API (모두 대기/실현/폐기)",
         description = """
-            상태 변경 API(`PATCH .../status`)로 바꾼 **모든 시나리오 판정 상태를 초기 설정값으로 되돌립니다.** <br>
+            그룹 내 **모든 시나리오의 판정 상태를 한 번에** 변경합니다. (모두 대기/실현/폐기) <br>
+            대상은 path의 `scenarioGroupId` 그룹 전체이며, 요청 본문은 단건 변경과 동일하게 `status` 하나만 받습니다. <br>
+
+            <br><br>
+            ### 요청 본문
+            - `status`: 일괄 적용할 판정 상태 (`pending` / `realized` / `discarded`)
+
+            <br><br>
+            ### 응답 필드
+            - `status`, `statusLabel`(대기/실현/폐기)
+            - `updatedCount`: 변경된 시나리오 수
+            - `scenarioIds`: 변경된 시나리오 ID 목록
+            """
+    )
+    @ApiResponse(responseCode = "200", description = "변경 성공")
+    @PatchMapping("/{scenarioGroupId}/scenarios/status")
+    @RequiredPermissionRules(rules = {
+        @PermissionRule(role = Role.USER, conditions = {PermissionCondition.SKGAS_COMPANY_USER_ONLY}),
+        @PermissionRule(role = Role.ADMIN, conditions = {PermissionCondition.THIRD_PARTY_ADMIN_ONLY})
+    })
+    public BaseResponse<ScenarioBulkStatusRes> bulkUpdateScenarioStatus(
+        @Parameter(description = "시나리오 그룹 ID", example = "1") @PathVariable Long scenarioGroupId,
+        @Valid @RequestBody ScenarioStatusUpdateReq request
+    ) {
+        return BaseResponseFactory.create(
+            scenarioGroupService.bulkUpdateScenarioStatus(scenarioGroupId, request.status())
+        );
+    }
+
+    @ApiOrder(9)
+    @Operation(
+        summary = "Scenario Group 삭제 API",
+        description = """
+            시나리오 그룹을 삭제합니다. <br>
+            그룹이 삭제되면 **그룹에 포함된 모든 시나리오도 함께 soft delete** 됩니다. <br>
+            삭제된 그룹·시나리오는 목록/개별/상세/그래프/상태변경 조회에서 제외됩니다. <br>
+
+            <br><br>
+            ### 경로 변수
+            - `scenarioGroupId`: 삭제할 시나리오 그룹 ID
+
+            <br>
+            존재하지 않거나 이미 삭제된 그룹이면 `404`를 반환합니다.
+            """
+    )
+    @ApiResponse(responseCode = "200", description = "삭제 성공")
+    @DeleteMapping("/{scenarioGroupId}")
+    @RequiredPermissionRules(rules = {
+        @PermissionRule(role = Role.USER, conditions = {PermissionCondition.SKGAS_COMPANY_USER_ONLY}),
+        @PermissionRule(role = Role.ADMIN, conditions = {PermissionCondition.THIRD_PARTY_ADMIN_ONLY})
+    })
+    public BaseResponse<Void> deleteScenarioGroup(
+        @Parameter(description = "시나리오 그룹 ID", example = "1") @PathVariable Long scenarioGroupId
+    ) {
+        scenarioGroupService.deleteScenarioGroup(scenarioGroupId);
+        return BaseResponseFactory.create(ResultCode.Success.OK);
+    }
+
+    @ApiOrder(10)
+    @Operation(
+        summary = "[mockapi 전용] 시나리오 상태/삭제 초기화 API",
+        description = """
+            상태 변경 API로 바꾼 **모든 시나리오 판정 상태**와 그룹 삭제 API로 삭제한 **모든 그룹/시나리오를 초기 설정값으로 되돌립니다.** <br>
             테스트/데모 반복 시 사용하는 mock 전용 API입니다. (실 DB 연동 없음 / 변경분은 mock 메모리에만 존재) <br>
             """
     )

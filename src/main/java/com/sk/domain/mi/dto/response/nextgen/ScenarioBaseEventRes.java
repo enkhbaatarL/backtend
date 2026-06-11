@@ -1,5 +1,6 @@
 package com.sk.domain.mi.dto.response.nextgen;
 
+import com.sk.domain.shared.repository.master.tmm.projection.ScenarioGroupDetailBaseRow;
 import io.swagger.v3.oas.annotations.media.Schema;
 import java.time.LocalDateTime;
 
@@ -23,4 +24,16 @@ public record ScenarioBaseEventRes(
     @Schema(description = "업데이트 일시")
     LocalDateTime updatedAt
 
-) {}
+) {
+
+    public static ScenarioBaseEventRes from(ScenarioGroupDetailBaseRow row) {
+        return new ScenarioBaseEventRes(
+            row.eventId(),
+            row.eventName(),
+            row.eventTypeLv1Code(),
+            row.eventTypeLv1Label(),
+            row.eventUpdatedAt()
+        );
+    }
+
+}
