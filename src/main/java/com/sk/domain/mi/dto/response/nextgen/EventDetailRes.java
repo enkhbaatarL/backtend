@@ -32,6 +32,9 @@ public record EventDetailRes(
     @Schema(description = "수정일시")
     LocalDateTime updatedAt,
 
+    @Schema(description = "Event 관련 Record 중 최신 first_created 시각")
+    LocalDateTime latestRecordFirstCreated,
+
     @Schema(description = "신호/소음 구분", example = "signal")
     EventSignalType signalType,
 
@@ -70,6 +73,7 @@ public record EventDetailRes(
             status.getLabel(),
             row.createDt(),
             row.modifyDt(),
+            row.latestRecordFirstCreated(),
             signalType,
             signalType.getLabel(),
             Boolean.TRUE.equals(row.isScenarioSuggested()),

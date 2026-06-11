@@ -33,6 +33,9 @@ public record EventListItemRes(
     @Schema(description = "수정일시")
     LocalDateTime updatedAt,
 
+    @Schema(description = "최신 연관 레코드 최초 생성일시 (최신순 정렬 기준)")
+    LocalDateTime latestRecordFirstCreated,
+
     @Schema(description = "신호/소음 구분", example = "signal")
     EventSignalType signalType,
 
@@ -63,6 +66,7 @@ public record EventListItemRes(
             row.level1Label(),
             row.createDt(),
             row.modifyDt(),
+            row.latestRecordFirstCreated(),
             signalType,
             signalType.getLabel(),
             Boolean.TRUE.equals(row.isScenarioSuggested()),
