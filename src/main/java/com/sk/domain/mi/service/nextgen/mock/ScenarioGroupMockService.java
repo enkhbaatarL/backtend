@@ -23,7 +23,7 @@ import com.sk.domain.mi.dto.response.nextgen.ScenarioRowRes;
 import com.sk.domain.mi.dto.response.nextgen.ScenarioStatusRes;
 import com.sk.domain.mi.service.nextgen.support.ScenarioProbabilityAllocator;
 import com.sk.domain.shared.enums.nextgen.IndexName;
-import com.sk.domain.shared.enums.nextgen.ScenarioStatus;
+import com.sk.domain.shared.enums.nextgen.ScenarioDisplayStatus;
 import com.sk.domain.shared.enums.nextgen.SortOrder;
 import jakarta.annotation.PostConstruct;
 import java.io.ByteArrayInputStream;
@@ -58,7 +58,7 @@ public class ScenarioGroupMockService {
     private Map<Long, ScenarioDetailViewRes> scenarioDetailMap;
 
     /** [mock 전용] 상태 변경 API가 바꾼 시나리오 상태 (scenarioId → status). reset API로 초기화. */
-    private final Map<Long, ScenarioStatus> statusOverrides = new ConcurrentHashMap<>();
+    private final Map<Long, ScenarioDisplayStatus> statusOverrides = new ConcurrentHashMap<>();
 
     /** [mock 전용] soft delete 된 시나리오 그룹 ID. 그룹 삭제 시 그룹 + 하위 시나리오가 조회에서 제외된다. reset API로 초기화. */
     private final Set<Long> deletedGroupIds = ConcurrentHashMap.newKeySet();
@@ -240,7 +240,7 @@ public class ScenarioGroupMockService {
         Map<Long, Integer> adjusted = redistributeRows(detail.scenarios());
         List<ScenarioGroupDetailRowRes> rows = detail.scenarios().stream()
             .map(row -> {
-                ScenarioStatus status = effectiveStatus(row);
+                ScenarioDisplayStatus status = effectiveStatus(row);
                 return new ScenarioGroupDetailRowRes(
                     row.scenarioId(), row.scenarioName(), row.baseCase(),
                     row.dimensions(), row.probability(), adjusted.get(row.scenarioId()),
@@ -258,16 +258,16 @@ public class ScenarioGroupMockService {
             .map(row -> new ScenarioProbabilityAllocator.Item(
                 row.scenarioId(),
                 row.probability() == null ? null : BigDecimal.valueOf(row.probability()),
-                effectiveStatus(row) == ScenarioStatus.DISCARDED))
+                effectiveStatus(row) == ScenarioDisplayStatus.DISCARDED))
             .toList());
     }
 
-    private ScenarioStatus effectiveStatus(ScenarioGroupDetailRowRes row) {
-        ScenarioStatus override = statusOverrides.get(row.scenarioId());
+    private ScenarioDisplayStatus effectiveStatus(ScenarioGroupDetailRowRes row) {
+        ScenarioDisplayStatus override = statusOverrides.get(row.scenarioId());
         if (override != null) {
             return override;
         }
-        return row.status() == null ? ScenarioStatus.PENDING : row.status();
+        return row.status() == null ? ScenarioDisplayStatus.PENDING : row.status();
     }
 
     public Optional<String> findScenarioName(Long scenarioId) {
@@ -290,7 +290,7 @@ public class ScenarioGroupMockService {
         return detail.withAdjustedProbability(redistributeRows(groupDetail.scenarios()).get(scenarioId));
     }
 
-    public ScenarioStatusRes updateScenarioStatus(Long scenarioGroupId, Long scenarioId, ScenarioStatus status) {
+    public ScenarioStatusRes updateScenarioStatus(Long scenarioGroupId, Long scenarioId, ScenarioDisplayStatus status) {
         ScenarioGroupDetailRes detail = groupDetailMap.get(scenarioGroupId);
         boolean exists = detail != null
             && !deletedGroupIds.contains(scenarioGroupId)
@@ -303,17 +303,17 @@ public class ScenarioGroupMockService {
         statusOverrides.put(scenarioId, status);
         // 기획: 그룹 내 시나리오가 하나라도 '실현'되면 나머지는 모두 '폐기' 처리
         List<Long> discardedScenarioIds = List.of();
-        if (status == ScenarioStatus.REALIZED) {
+        if (status == ScenarioDisplayStatus.REALIZED) {
             discardedScenarioIds = detail.scenarios().stream()
                 .map(ScenarioGroupDetailRowRes::scenarioId)
                 .filter(id -> !id.equals(scenarioId))
                 .toList();
-            discardedScenarioIds.forEach(id -> statusOverrides.put(id, ScenarioStatus.DISCARDED));
+            discardedScenarioIds.forEach(id -> statusOverrides.put(id, ScenarioDisplayStatus.DISCARDED));
         }
         return ScenarioStatusRes.of(scenarioId, status, discardedScenarioIds);
     }
 
-    public ScenarioBulkStatusRes bulkUpdateScenarioStatus(Long scenarioGroupId, ScenarioStatus status) {
+    public ScenarioBulkStatusRes bulkUpdateScenarioStatus(Long scenarioGroupId, ScenarioDisplayStatus status) {
         ScenarioGroupDetailRes detail = groupDetailMap.get(scenarioGroupId);
         if (detail == null || deletedGroupIds.contains(scenarioGroupId)) {
             throw AppErrorException.of(ResultCode.Error.RSC_NOT_FOUND,

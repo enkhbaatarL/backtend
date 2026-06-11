@@ -1,6 +1,6 @@
 package com.sk.domain.mi.dto.response.nextgen;
 
-import com.sk.domain.shared.enums.nextgen.ScenarioStatus;
+import com.sk.domain.shared.enums.nextgen.ScenarioDisplayStatus;
 import com.sk.domain.shared.repository.master.tmm.projection.ScenarioBaseRow;
 import io.swagger.v3.oas.annotations.media.Schema;
 import java.util.List;
@@ -27,7 +27,7 @@ public record ScenarioGroupDetailRowRes(
     Integer adjustedProbability,
 
     @Schema(description = "판정 상태 (pending/realized/discarded)", example = "pending")
-    ScenarioStatus status,
+    ScenarioDisplayStatus status,
 
     @Schema(description = "판정 상태 라벨", example = "대기")
     String statusLabel
@@ -37,7 +37,7 @@ public record ScenarioGroupDetailRowRes(
     public static ScenarioGroupDetailRowRes of(
         ScenarioBaseRow row,
         List<ScenarioDimensionRes> dimensions,
-        ScenarioStatus status,
+        ScenarioDisplayStatus status,
         Integer adjustedProbability
     ) {
         return new ScenarioGroupDetailRowRes(

@@ -15,9 +15,11 @@ import com.sk.domain.mi.dto.request.fundamentalmodel.FundamentalModelVolumesReq;
 import com.sk.domain.mi.dto.response.fundamentalmodel.FundamentalModelCaseCreateRes;
 import com.sk.domain.mi.dto.response.fundamentalmodel.FundamentalModelCaseDetailRes;
 import com.sk.domain.mi.dto.response.fundamentalmodel.FundamentalModelCaseFileRes;
+import com.sk.domain.mi.dto.response.fundamentalmodel.FundamentalModelCaseFilesRes;
 import com.sk.domain.mi.dto.response.fundamentalmodel.FundamentalModelCaseListItemRes;
 import com.sk.domain.mi.dto.response.fundamentalmodel.FundamentalModelCaseListRes;
 import com.sk.domain.mi.dto.response.fundamentalmodel.FundamentalModelCaseStatusRes;
+import com.sk.domain.mi.dto.response.fundamentalmodel.FundamentalModelDownloadFileRes;
 import com.sk.domain.mi.dto.response.fundamentalmodel.FundamentalModelPriceRes;
 import com.sk.domain.mi.dto.response.fundamentalmodel.FundamentalModelRunAcceptRes;
 import com.sk.domain.mi.dto.response.fundamentalmodel.FundamentalModelRunCallbackRes;
@@ -1313,7 +1315,10 @@ public class FundamentalModelCaseMockService {
             record.status(),
             record.assigneeName(),
             record.assigneeUserNo(),
-            record.files().stream().map(this::toFileResponse).toList(),
+            new FundamentalModelCaseFilesRes(
+                record.files().stream().map(this::toDownloadFileResponse).toList(),
+                Collections.emptyList()
+            ),
             latestRun,
             record.createdAt(),
             record.updatedAt()
@@ -1341,6 +1346,14 @@ public class FundamentalModelCaseMockService {
             record.fileIndex(),
             record.originalFileName(),
             record.contentType(),
+            record.size()
+        );
+    }
+
+    private FundamentalModelDownloadFileRes toDownloadFileResponse(FundamentalModelFileMockRecord record) {
+        return new FundamentalModelDownloadFileRes(
+            record.fileNo(),
+            record.originalFileName(),
             record.size()
         );
     }

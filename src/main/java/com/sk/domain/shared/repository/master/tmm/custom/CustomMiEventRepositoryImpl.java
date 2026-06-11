@@ -29,8 +29,22 @@ import com.sk.domain.mi.dto.request.nextgen.EventListReq;
 import com.sk.domain.shared.enums.nextgen.ContentStatus;
 import com.sk.domain.shared.enums.nextgen.IndexName;
 import com.sk.domain.shared.enums.nextgen.TargetType;
-import com.sk.domain.shared.repository.master.tmm.projection.*;
-
+import com.sk.domain.shared.repository.master.tmm.projection.DriverTagScoreboardRow;
+import com.sk.domain.shared.repository.master.tmm.projection.EventDetailBaseRow;
+import com.sk.domain.shared.repository.master.tmm.projection.EventDetailRow;
+import com.sk.domain.shared.repository.master.tmm.projection.EventIndexImpactRow;
+import com.sk.domain.shared.repository.master.tmm.projection.EventListBaseRow;
+import com.sk.domain.shared.repository.master.tmm.projection.EventListRow;
+import com.sk.domain.shared.repository.master.tmm.projection.EventOutlookRow;
+import com.sk.domain.shared.repository.master.tmm.projection.QDriverTagScoreboardRow;
+import com.sk.domain.shared.repository.master.tmm.projection.QEventDetailBaseRow;
+import com.sk.domain.shared.repository.master.tmm.projection.QEventIndexImpactRow;
+import com.sk.domain.shared.repository.master.tmm.projection.QEventListBaseRow;
+import com.sk.domain.shared.repository.master.tmm.projection.QEventOutlookRow;
+import com.sk.domain.shared.repository.master.tmm.projection.QScenarioBaseRow;
+import com.sk.domain.shared.repository.master.tmm.projection.QScenarioGroupBaseRow;
+import com.sk.domain.shared.repository.master.tmm.projection.ScenarioBaseRow;
+import com.sk.domain.shared.repository.master.tmm.projection.ScenarioGroupBaseRow;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Comparator;
@@ -78,11 +92,14 @@ public class CustomMiEventRepositoryImpl implements CustomMiEventRepository {
                 miEvent.scenarioSuggestReason,
                 miEvent.createDt,
                 miEvent.modifyDt,
-                miEvent.latestRecordFirstCreated
+                miEvent.latestRecordFirstCreated,
+                miScenarioGroup.scenarioGroupId,
+                miScenarioGroup.status
             ))
             .from(miEvent)
             .innerJoin(miEvent.eventTypeL2, miEventTypeL2).on(miEventTypeL2.isDeleted.isFalse())
             .innerJoin(miEventTypeL2.eventTypeL1, miEventTypeL1).on(miEventTypeL1.isDeleted.isFalse())
+            .leftJoin(miScenarioGroup).on(miScenarioGroup.miEvent.eq(miEvent), miScenarioGroup.isDeleted.isFalse())
             .where(where)
             .orderBy(order)
             .offset(pageable.getOffset())
@@ -116,6 +133,8 @@ public class CustomMiEventRepositoryImpl implements CustomMiEventRepository {
                 base.createDt(),
                 base.modifyDt(),
                 base.latestRecordFirstCreated(),
+                base.scenarioGroupId(),
+                base.scenarioGroupStatus(),
                 impactsByEventId.getOrDefault(base.miEventId(), List.of())
             ))
             .toList();
@@ -248,7 +267,8 @@ public class CustomMiEventRepositoryImpl implements CustomMiEventRepository {
                 miScenarioGroup.scenarioCount,
                 miScenarioGroup.createDt,
                 miScenarioGroup.modifyDt,
-                miScenarioGroup.dimensionSelected
+                miScenarioGroup.dimensionSelected,
+                miScenarioGroup.status
             ))
             .from(miScenarioGroup)
             .where(
@@ -293,7 +313,7 @@ public class CustomMiEventRepositoryImpl implements CustomMiEventRepository {
                 miScenario.title,
                 miScenario.isBaseline,
                 miScenario.probabilityScore,
-                miScenario.judgmentStatusCode,
+                miScenario.status,
                 miScenario.dimensionValues,
                 miScenario.displayOrder
             ))

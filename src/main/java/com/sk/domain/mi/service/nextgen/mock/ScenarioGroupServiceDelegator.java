@@ -15,7 +15,7 @@ import com.sk.domain.mi.dto.response.nextgen.ScenarioStatusRes;
 import com.sk.domain.mi.service.nextgen.ScenarioGroupService;
 import com.sk.domain.mi.service.nextgen.ScenarioGroupServiceImpl;
 import com.sk.domain.shared.enums.nextgen.IndexName;
-import com.sk.domain.shared.enums.nextgen.ScenarioStatus;
+import com.sk.domain.shared.enums.nextgen.ScenarioDisplayStatus;
 import java.io.ByteArrayInputStream;
 
 import lombok.RequiredArgsConstructor;
@@ -72,14 +72,14 @@ public class ScenarioGroupServiceDelegator implements ScenarioGroupService {
     }
 
     @Override
-    public ScenarioStatusRes updateScenarioStatus(Long scenarioGroupId, Long scenarioId, ScenarioStatus status) {
+    public ScenarioStatusRes updateScenarioStatus(Long scenarioGroupId, Long scenarioId, ScenarioDisplayStatus status) {
         return mockProps.getScenarioGroups().getApi().isUpdateScenarioStatus()
             ? mockService.updateScenarioStatus(scenarioGroupId, scenarioId, status)
             : realService.updateScenarioStatus(scenarioGroupId, scenarioId, status);
     }
 
     @Override
-    public ScenarioBulkStatusRes bulkUpdateScenarioStatus(Long scenarioGroupId, ScenarioStatus status) {
+    public ScenarioBulkStatusRes bulkUpdateScenarioStatus(Long scenarioGroupId, ScenarioDisplayStatus status) {
         return mockProps.getScenarioGroups().getApi().isBulkUpdateScenarioStatus()
             ? mockService.bulkUpdateScenarioStatus(scenarioGroupId, status)
             : realService.bulkUpdateScenarioStatus(scenarioGroupId, status);

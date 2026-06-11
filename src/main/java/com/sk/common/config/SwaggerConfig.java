@@ -82,7 +82,7 @@ public class SwaggerConfig {
     }
 
     // note: 안정화 후 투머치 문서 모두 삭제예정
-    private static final String SW_VERSION_BASE = "v1.2.1";
+    private static final String SW_VERSION_BASE = "v1.2.2";
     private static final DateTimeFormatter SW_DEPLOY_DATE_FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
 
     @Bean
@@ -149,6 +149,20 @@ public class SwaggerConfig {
 
   ## 수정사항
   <details open>
+  <summary><strong>v1.2.2 (2026-06-11)</strong></summary>
+
+  - [Scenario Group]
+    - 적용 완료된 DB schema(`04_incremental_apply_2506111441.sql`) 기준으로 Scenario 상태 매핑 정리
+    - 삭제 컬럼(`feasibility_score`, `probability_level`, `judgment_status_code`) 참조 제거
+    - 신규 `tmm_mi_scenario_m.status` 기반으로 시나리오 상태 조회/변경 처리
+    - 외부 API 상태 계약은 기존 `pending` / `realized` / `discarded` 유지
+    - DB 상태값 호환 매핑: `creating` / `created` / null / blank → `pending`, `realized` → `realized`, `discarded` → `discarded`
+    - 상태 변경 저장 매핑: `pending` → DB `created`, `realized` → DB `realized`, `discarded` → DB `discarded`
+    - 폐기 시나리오 확률 재분배 기준을 신규 DB `status = discarded`로 변경
+
+  </details>
+
+  <details>
   <summary><strong>v1.2.1 (2026-06-10)</strong></summary>
 
   - [Overview / Scenario / Design]

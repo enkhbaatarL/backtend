@@ -9,6 +9,8 @@
               "signalTypeLabel":  "신호",
               "isScenarioSuggested":  true,
               "scenarioSuggestReason":  "글로벌 LNG 공급 차질 가능성이 시나리오화 가치 있음",
+              "scenarioDesignStatus":  "created",
+              "scenarioDesignStatusLabel":  "설계완료",
               "impactAnalysis":  {
                                      "indexImpacts":  [
                                                           {
@@ -193,6 +195,8 @@
               "signalTypeLabel":  "신호",
               "isScenarioSuggested":  false,
               "scenarioSuggestReason":  null,
+              "scenarioDesignStatus":  "created",
+              "scenarioDesignStatusLabel":  "설계완료",
               "impactAnalysis":  {
                                      "indexImpacts":  [
                                                           {
@@ -378,6 +382,8 @@
               "signalTypeLabel":  "신호",
               "isScenarioSuggested":  false,
               "scenarioSuggestReason":  null,
+              "scenarioDesignStatus":  "created",
+              "scenarioDesignStatusLabel":  "설계완료",
               "impactAnalysis":  {
                                      "indexImpacts":  [
                                                           {
@@ -542,6 +548,8 @@
               "signalTypeLabel":  "신호",
               "isScenarioSuggested":  true,
               "scenarioSuggestReason":  "아시아/유럽 가격 디커플링 시그널이 강해 시나리오 분기 필요",
+              "scenarioDesignStatus":  "created",
+              "scenarioDesignStatusLabel":  "설계완료",
               "impactAnalysis":  {
                                      "indexImpacts":  [
                                                           {
@@ -706,6 +714,8 @@
               "signalTypeLabel":  "신호",
               "isScenarioSuggested":  false,
               "scenarioSuggestReason":  null,
+              "scenarioDesignStatus":  "created",
+              "scenarioDesignStatusLabel":  "설계완료",
               "impactAnalysis":  {
                                      "indexImpacts":  [
                                                           {
@@ -870,6 +880,8 @@
               "signalTypeLabel":  "신호",
               "isScenarioSuggested":  false,
               "scenarioSuggestReason":  null,
+              "scenarioDesignStatus":  "designable",
+              "scenarioDesignStatusLabel":  "설계가능",
               "impactAnalysis":  {
                                      "indexImpacts":  [
                                                           {
@@ -1034,6 +1046,8 @@
               "signalTypeLabel":  "신호",
               "isScenarioSuggested":  false,
               "scenarioSuggestReason":  null,
+              "scenarioDesignStatus":  "designable",
+              "scenarioDesignStatusLabel":  "설계가능",
               "impactAnalysis":  {
                                      "indexImpacts":  [
                                                           {
@@ -1219,6 +1233,8 @@
               "signalTypeLabel":  "신호",
               "isScenarioSuggested":  true,
               "scenarioSuggestReason":  "단기 spot 프리미엄 확장 추세로 모델 시뮬레이션 적합",
+              "scenarioDesignStatus":  "designable",
+              "scenarioDesignStatusLabel":  "설계가능",
               "impactAnalysis":  {
                                      "indexImpacts":  [
                                                           {
@@ -1404,6 +1420,8 @@
               "signalTypeLabel":  "신호",
               "isScenarioSuggested":  false,
               "scenarioSuggestReason":  null,
+              "scenarioDesignStatus":  "designable",
+              "scenarioDesignStatusLabel":  "설계가능",
               "impactAnalysis":  {
                                      "indexImpacts":  [
                                                           {
@@ -1542,6 +1560,8 @@
                "signalTypeLabel":  "신호",
                "isScenarioSuggested":  false,
                "scenarioSuggestReason":  null,
+               "scenarioDesignStatus":  "designable",
+               "scenarioDesignStatusLabel":  "설계가능",
                "impactAnalysis":  {
                                       "indexImpacts":  [
                                                            {
@@ -1680,6 +1700,8 @@
                "signalTypeLabel":  "신호",
                "isScenarioSuggested":  true,
                "scenarioSuggestReason":  "수급 밸런스 변동성이 커 다중 시나리오 검토 필요",
+               "scenarioDesignStatus":  "designable",
+               "scenarioDesignStatusLabel":  "설계가능",
                "impactAnalysis":  {
                                       "indexImpacts":  [
                                                            {
@@ -1818,6 +1840,8 @@
                "signalTypeLabel":  "신호",
                "isScenarioSuggested":  false,
                "scenarioSuggestReason":  null,
+               "scenarioDesignStatus":  "designable",
+               "scenarioDesignStatusLabel":  "설계가능",
                "impactAnalysis":  {
                                       "indexImpacts":  [
                                                            {
@@ -1930,6 +1954,8 @@
                "signalTypeLabel":  "소음",
                "isScenarioSuggested":  false,
                "scenarioSuggestReason":  null,
+               "scenarioDesignStatus":  "designable",
+               "scenarioDesignStatusLabel":  "설계가능",
                "impactAnalysis":  {
                                       "indexImpacts":  [
                                                            {
@@ -2042,6 +2068,8 @@
                "signalTypeLabel":  "신호",
                "isScenarioSuggested":  true,
                "scenarioSuggestReason":  "정책/제재 변수가 가격 경로를 가르는 분기점",
+               "scenarioDesignStatus":  "designable",
+               "scenarioDesignStatusLabel":  "설계가능",
                "impactAnalysis":  {
                                       "indexImpacts":  [
                                                            {
@@ -2154,6 +2182,8 @@
                "signalTypeLabel":  "소음",
                "isScenarioSuggested":  false,
                "scenarioSuggestReason":  null,
+               "scenarioDesignStatus":  "designable",
+               "scenarioDesignStatusLabel":  "설계가능",
                "impactAnalysis":  {
                                       "indexImpacts":  [
                                                            {
@@ -2266,6 +2296,8 @@
                "signalTypeLabel":  "신호",
                "isScenarioSuggested":  false,
                "scenarioSuggestReason":  null,
+               "scenarioDesignStatus":  "designable",
+               "scenarioDesignStatusLabel":  "설계가능",
                "impactAnalysis":  {
                                       "indexImpacts":  [
                                                            {
@@ -2429,6 +2461,8 @@
                "signalTypeLabel":  "신호",
                "isScenarioSuggested":  false,
                "scenarioSuggestReason":  null,
+               "scenarioDesignStatus":  "designable",
+               "scenarioDesignStatusLabel":  "설계가능",
                "impactAnalysis":  {
                                       "indexImpacts":  [
                                                            {
@@ -2613,6 +2647,8 @@
                "signalTypeLabel":  "신호",
                "isScenarioSuggested":  true,
                "scenarioSuggestReason":  "기후/계절 패턴이 기준선과 이탈, 모델 재검토 필요",
+               "scenarioDesignStatus":  "designable",
+               "scenarioDesignStatusLabel":  "설계가능",
                "impactAnalysis":  {
                                       "indexImpacts":  [
                                                            {
@@ -2797,6 +2833,8 @@
                "signalTypeLabel":  "신호",
                "isScenarioSuggested":  false,
                "scenarioSuggestReason":  null,
+               "scenarioDesignStatus":  "designable",
+               "scenarioDesignStatusLabel":  "설계가능",
                "impactAnalysis":  {
                                       "indexImpacts":  [
                                                            {
@@ -2960,6 +2998,8 @@
                "signalTypeLabel":  "신호",
                "isScenarioSuggested":  false,
                "scenarioSuggestReason":  null,
+               "scenarioDesignStatus":  "designable",
+               "scenarioDesignStatusLabel":  "설계가능",
                "impactAnalysis":  {
                                       "indexImpacts":  [
                                                            {
@@ -3098,6 +3138,8 @@
                "signalTypeLabel":  "신호",
                "isScenarioSuggested":  true,
                "scenarioSuggestReason":  "글로벌 LNG 공급 차질 가능성이 시나리오화 가치 있음",
+               "scenarioDesignStatus":  "designable",
+               "scenarioDesignStatusLabel":  "설계가능",
                "impactAnalysis":  {
                                       "indexImpacts":  [
                                                            {
@@ -3261,6 +3303,8 @@
                "signalTypeLabel":  "신호",
                "isScenarioSuggested":  false,
                "scenarioSuggestReason":  null,
+               "scenarioDesignStatus":  "designable",
+               "scenarioDesignStatusLabel":  "설계가능",
                "impactAnalysis":  {
                                       "indexImpacts":  [
                                                            {
@@ -3347,6 +3391,8 @@
                "signalTypeLabel":  "신호",
                "isScenarioSuggested":  false,
                "scenarioSuggestReason":  null,
+               "scenarioDesignStatus":  "designable",
+               "scenarioDesignStatusLabel":  "설계가능",
                "impactAnalysis":  {
                                       "indexImpacts":  [
                                                            {
@@ -3433,6 +3479,8 @@
                "signalTypeLabel":  "신호",
                "isScenarioSuggested":  true,
                "scenarioSuggestReason":  "아시아/유럽 가격 디커플링 시그널이 강해 시나리오 분기 필요",
+               "scenarioDesignStatus":  "designable",
+               "scenarioDesignStatusLabel":  "설계가능",
                "impactAnalysis":  {
                                       "indexImpacts":  [
                                                            {
@@ -3520,6 +3568,8 @@
                "signalTypeLabel":  "신호",
                "isScenarioSuggested":  false,
                "scenarioSuggestReason":  null,
+               "scenarioDesignStatus":  "designable",
+               "scenarioDesignStatusLabel":  "설계가능",
                "impactAnalysis":  {
                                       "indexImpacts":  [
                                                            {
@@ -3658,6 +3708,8 @@
                "signalTypeLabel":  "신호",
                "isScenarioSuggested":  false,
                "scenarioSuggestReason":  null,
+               "scenarioDesignStatus":  "designable",
+               "scenarioDesignStatusLabel":  "설계가능",
                "impactAnalysis":  {
                                       "indexImpacts":  [
                                                            {
@@ -3795,6 +3847,8 @@
                "signalTypeLabel":  "신호",
                "isScenarioSuggested":  false,
                "scenarioSuggestReason":  null,
+               "scenarioDesignStatus":  "designable",
+               "scenarioDesignStatusLabel":  "설계가능",
                "impactAnalysis":  {
                                       "indexImpacts":  [
                                                            {
@@ -3932,6 +3986,8 @@
                "signalTypeLabel":  "소음",
                "isScenarioSuggested":  false,
                "scenarioSuggestReason":  null,
+               "scenarioDesignStatus":  "designable",
+               "scenarioDesignStatusLabel":  "설계가능",
                "impactAnalysis":  {
                                       "indexImpacts":  [
                                                            {
@@ -4069,6 +4125,8 @@
                "signalTypeLabel":  "소음",
                "isScenarioSuggested":  false,
                "scenarioSuggestReason":  null,
+               "scenarioDesignStatus":  "designable",
+               "scenarioDesignStatusLabel":  "설계가능",
                "impactAnalysis":  {
                                       "indexImpacts":  [
                                                            {
@@ -4206,6 +4264,8 @@
                "signalTypeLabel":  "소음",
                "isScenarioSuggested":  false,
                "scenarioSuggestReason":  null,
+               "scenarioDesignStatus":  "designable",
+               "scenarioDesignStatusLabel":  "설계가능",
                "impactAnalysis":  {
                                       "indexImpacts":  [
                                                            {
@@ -4343,6 +4403,8 @@
                "signalTypeLabel":  "신호",
                "isScenarioSuggested":  true,
                "scenarioSuggestReason":  "단기 spot 프리미엄 확장 추세로 모델 시뮬레이션 적합",
+               "scenarioDesignStatus":  "designable",
+               "scenarioDesignStatusLabel":  "설계가능",
                "impactAnalysis":  {
                                       "indexImpacts":  [
                                                            {
@@ -4527,6 +4589,8 @@
                "signalTypeLabel":  "신호",
                "isScenarioSuggested":  false,
                "scenarioSuggestReason":  null,
+               "scenarioDesignStatus":  "designable",
+               "scenarioDesignStatusLabel":  "설계가능",
                "impactAnalysis":  {
                                       "indexImpacts":  [
                                                            {
@@ -4753,6 +4817,8 @@
                "signalTypeLabel":  "신호",
                "isScenarioSuggested":  false,
                "scenarioSuggestReason":  null,
+               "scenarioDesignStatus":  "designable",
+               "scenarioDesignStatusLabel":  "설계가능",
                "impactAnalysis":  {
                                       "indexImpacts":  [
                                                            {
@@ -4916,6 +4982,8 @@
                "signalTypeLabel":  "신호",
                "isScenarioSuggested":  true,
                "scenarioSuggestReason":  "수급 밸런스 변동성이 커 다중 시나리오 검토 필요",
+               "scenarioDesignStatus":  "designable",
+               "scenarioDesignStatusLabel":  "설계가능",
                "impactAnalysis":  {
                                       "indexImpacts":  [
                                                            {
@@ -5100,6 +5168,8 @@
                "signalTypeLabel":  "신호",
                "isScenarioSuggested":  false,
                "scenarioSuggestReason":  null,
+               "scenarioDesignStatus":  "designable",
+               "scenarioDesignStatusLabel":  "설계가능",
                "impactAnalysis":  {
                                       "indexImpacts":  [
                                                            {
@@ -5237,6 +5307,8 @@
                "signalTypeLabel":  "신호",
                "isScenarioSuggested":  false,
                "scenarioSuggestReason":  null,
+               "scenarioDesignStatus":  "designable",
+               "scenarioDesignStatusLabel":  "설계가능",
                "impactAnalysis":  {
                                       "indexImpacts":  [
                                                            {
@@ -5400,6 +5472,8 @@
                "signalTypeLabel":  "신호",
                "isScenarioSuggested":  false,
                "scenarioSuggestReason":  null,
+               "scenarioDesignStatus":  "designable",
+               "scenarioDesignStatusLabel":  "설계가능",
                "impactAnalysis":  {
                                       "indexImpacts":  [
                                                            {
@@ -5537,6 +5611,8 @@
                "signalTypeLabel":  "신호",
                "isScenarioSuggested":  true,
                "scenarioSuggestReason":  "정책/제재 변수가 가격 경로를 가르는 분기점",
+               "scenarioDesignStatus":  "designable",
+               "scenarioDesignStatusLabel":  "설계가능",
                "impactAnalysis":  {
                                       "indexImpacts":  [
                                                            {
@@ -5674,6 +5750,8 @@
                "signalTypeLabel":  "신호",
                "isScenarioSuggested":  false,
                "scenarioSuggestReason":  null,
+               "scenarioDesignStatus":  "designable",
+               "scenarioDesignStatusLabel":  "설계가능",
                "impactAnalysis":  {
                                       "indexImpacts":  [
                                                            {
@@ -5837,6 +5915,8 @@
                "signalTypeLabel":  "신호",
                "isScenarioSuggested":  false,
                "scenarioSuggestReason":  null,
+               "scenarioDesignStatus":  "designable",
+               "scenarioDesignStatusLabel":  "설계가능",
                "impactAnalysis":  {
                                       "indexImpacts":  [
                                                            {
@@ -5974,6 +6054,8 @@
                "signalTypeLabel":  "신호",
                "isScenarioSuggested":  true,
                "scenarioSuggestReason":  "기후/계절 패턴이 기준선과 이탈, 모델 재검토 필요",
+               "scenarioDesignStatus":  "designable",
+               "scenarioDesignStatusLabel":  "설계가능",
                "impactAnalysis":  {
                                       "indexImpacts":  [
                                                            {
@@ -6111,6 +6193,8 @@
                "signalTypeLabel":  "소음",
                "isScenarioSuggested":  false,
                "scenarioSuggestReason":  null,
+               "scenarioDesignStatus":  "designable",
+               "scenarioDesignStatusLabel":  "설계가능",
                "impactAnalysis":  {
                                       "indexImpacts":  [
                                                            {
@@ -6248,6 +6332,8 @@
                "signalTypeLabel":  "소음",
                "isScenarioSuggested":  false,
                "scenarioSuggestReason":  null,
+               "scenarioDesignStatus":  "designable",
+               "scenarioDesignStatusLabel":  "설계가능",
                "impactAnalysis":  {
                                       "indexImpacts":  [
                                                            {
@@ -6411,6 +6497,8 @@
                "signalTypeLabel":  "소음",
                "isScenarioSuggested":  false,
                "scenarioSuggestReason":  null,
+               "scenarioDesignStatus":  "designable",
+               "scenarioDesignStatusLabel":  "설계가능",
                "impactAnalysis":  {
                                       "indexImpacts":  [
                                                            {
@@ -6595,6 +6683,8 @@
                "signalTypeLabel":  "소음",
                "isScenarioSuggested":  false,
                "scenarioSuggestReason":  null,
+               "scenarioDesignStatus":  "designable",
+               "scenarioDesignStatusLabel":  "설계가능",
                "impactAnalysis":  {
                                       "indexImpacts":  [
                                                            {
@@ -6779,6 +6869,8 @@
                "signalTypeLabel":  "신호",
                "isScenarioSuggested":  false,
                "scenarioSuggestReason":  null,
+               "scenarioDesignStatus":  "designable",
+               "scenarioDesignStatusLabel":  "설계가능",
                "impactAnalysis":  {
                                       "indexImpacts":  [
                                                            {
@@ -6984,6 +7076,8 @@
                "signalTypeLabel":  "신호",
                "isScenarioSuggested":  false,
                "scenarioSuggestReason":  null,
+               "scenarioDesignStatus":  "designable",
+               "scenarioDesignStatusLabel":  "설계가능",
                "impactAnalysis":  {
                                       "indexImpacts":  [
                                                            {
@@ -7189,6 +7283,8 @@
                "signalTypeLabel":  "신호",
                "isScenarioSuggested":  true,
                "scenarioSuggestReason":  "글로벌 LNG 공급 차질 가능성이 시나리오화 가치 있음",
+               "scenarioDesignStatus":  "designable",
+               "scenarioDesignStatusLabel":  "설계가능",
                "impactAnalysis":  {
                                       "indexImpacts":  [
                                                            {
@@ -7373,6 +7469,8 @@
                "signalTypeLabel":  "신호",
                "isScenarioSuggested":  false,
                "scenarioSuggestReason":  null,
+               "scenarioDesignStatus":  "designable",
+               "scenarioDesignStatusLabel":  "설계가능",
                "impactAnalysis":  {
                                       "indexImpacts":  [
                                                            {
@@ -7510,6 +7608,8 @@
                "signalTypeLabel":  "신호",
                "isScenarioSuggested":  false,
                "scenarioSuggestReason":  null,
+               "scenarioDesignStatus":  "designable",
+               "scenarioDesignStatusLabel":  "설계가능",
                "impactAnalysis":  {
                                       "indexImpacts":  [
                                                            {
@@ -7647,6 +7747,8 @@
                "signalTypeLabel":  "신호",
                "isScenarioSuggested":  true,
                "scenarioSuggestReason":  "아시아/유럽 가격 디커플링 시그널이 강해 시나리오 분기 필요",
+               "scenarioDesignStatus":  "designable",
+               "scenarioDesignStatusLabel":  "설계가능",
                "impactAnalysis":  {
                                       "indexImpacts":  [
                                                            {
@@ -7810,6 +7912,8 @@
                "signalTypeLabel":  "신호",
                "isScenarioSuggested":  false,
                "scenarioSuggestReason":  null,
+               "scenarioDesignStatus":  "designable",
+               "scenarioDesignStatusLabel":  "설계가능",
                "impactAnalysis":  {
                                       "indexImpacts":  [
                                                            {
@@ -7921,6 +8025,8 @@
                "signalTypeLabel":  "신호",
                "isScenarioSuggested":  false,
                "scenarioSuggestReason":  null,
+               "scenarioDesignStatus":  "designable",
+               "scenarioDesignStatusLabel":  "설계가능",
                "impactAnalysis":  {
                                       "indexImpacts":  [
                                                            {
@@ -8058,6 +8164,8 @@
                "signalTypeLabel":  "신호",
                "isScenarioSuggested":  true,
                "scenarioSuggestReason":  "단기 spot 프리미엄 확장 추세로 모델 시뮬레이션 적합",
+               "scenarioDesignStatus":  "designable",
+               "scenarioDesignStatusLabel":  "설계가능",
                "impactAnalysis":  {
                                       "indexImpacts":  [
                                                            {
@@ -8195,6 +8303,8 @@
                "signalTypeLabel":  "신호",
                "isScenarioSuggested":  false,
                "scenarioSuggestReason":  null,
+               "scenarioDesignStatus":  "designable",
+               "scenarioDesignStatusLabel":  "설계가능",
                "impactAnalysis":  {
                                       "indexImpacts":  [
                                                            {
@@ -8281,6 +8391,8 @@
                "signalTypeLabel":  "신호",
                "isScenarioSuggested":  false,
                "scenarioSuggestReason":  null,
+               "scenarioDesignStatus":  "designable",
+               "scenarioDesignStatusLabel":  "설계가능",
                "impactAnalysis":  {
                                       "indexImpacts":  [
                                                            {
@@ -8392,6 +8504,8 @@
                "signalTypeLabel":  "신호",
                "isScenarioSuggested":  false,
                "scenarioSuggestReason":  null,
+               "scenarioDesignStatus":  "designable",
+               "scenarioDesignStatusLabel":  "설계가능",
                "impactAnalysis":  {
                                       "indexImpacts":  [
                                                            {
@@ -8529,6 +8643,8 @@
                "signalTypeLabel":  "신호",
                "isScenarioSuggested":  true,
                "scenarioSuggestReason":  "수급 밸런스 변동성이 커 다중 시나리오 검토 필요",
+               "scenarioDesignStatus":  "designable",
+               "scenarioDesignStatusLabel":  "설계가능",
                "impactAnalysis":  {
                                       "indexImpacts":  [
                                                            {
@@ -8666,6 +8782,8 @@
                "signalTypeLabel":  "신호",
                "isScenarioSuggested":  false,
                "scenarioSuggestReason":  null,
+               "scenarioDesignStatus":  "designable",
+               "scenarioDesignStatusLabel":  "설계가능",
                "impactAnalysis":  {
                                       "indexImpacts":  [
                                                            {
@@ -8829,6 +8947,8 @@
                "signalTypeLabel":  "신호",
                "isScenarioSuggested":  false,
                "scenarioSuggestReason":  null,
+               "scenarioDesignStatus":  "designable",
+               "scenarioDesignStatusLabel":  "설계가능",
                "impactAnalysis":  {
                                       "indexImpacts":  [
                                                            {
@@ -8992,6 +9112,8 @@
                "signalTypeLabel":  "신호",
                "isScenarioSuggested":  true,
                "scenarioSuggestReason":  "정책/제재 변수가 가격 경로를 가르는 분기점",
+               "scenarioDesignStatus":  "designable",
+               "scenarioDesignStatusLabel":  "설계가능",
                "impactAnalysis":  {
                                       "indexImpacts":  [
                                                            {
@@ -9176,6 +9298,8 @@
                "signalTypeLabel":  "신호",
                "isScenarioSuggested":  false,
                "scenarioSuggestReason":  null,
+               "scenarioDesignStatus":  "designable",
+               "scenarioDesignStatusLabel":  "설계가능",
                "impactAnalysis":  {
                                       "indexImpacts":  [
                                                            {
@@ -9360,6 +9484,8 @@
                "signalTypeLabel":  "신호",
                "isScenarioSuggested":  false,
                "scenarioSuggestReason":  null,
+               "scenarioDesignStatus":  "designable",
+               "scenarioDesignStatusLabel":  "설계가능",
                "impactAnalysis":  {
                                       "indexImpacts":  [
                                                            {
@@ -9544,6 +9670,8 @@
                "signalTypeLabel":  "신호",
                "isScenarioSuggested":  true,
                "scenarioSuggestReason":  "기후/계절 패턴이 기준선과 이탈, 모델 재검토 필요",
+               "scenarioDesignStatus":  "designable",
+               "scenarioDesignStatusLabel":  "설계가능",
                "impactAnalysis":  {
                                       "indexImpacts":  [
                                                            {
@@ -9707,6 +9835,8 @@
                "signalTypeLabel":  "신호",
                "isScenarioSuggested":  false,
                "scenarioSuggestReason":  null,
+               "scenarioDesignStatus":  "designable",
+               "scenarioDesignStatusLabel":  "설계가능",
                "impactAnalysis":  {
                                       "indexImpacts":  [
                                                            {
@@ -9844,6 +9974,8 @@
                "signalTypeLabel":  "신호",
                "isScenarioSuggested":  false,
                "scenarioSuggestReason":  null,
+               "scenarioDesignStatus":  "designable",
+               "scenarioDesignStatusLabel":  "설계가능",
                "impactAnalysis":  {
                                       "indexImpacts":  [
                                                            {
@@ -9981,6 +10113,8 @@
                "signalTypeLabel":  "신호",
                "isScenarioSuggested":  false,
                "scenarioSuggestReason":  null,
+               "scenarioDesignStatus":  "designable",
+               "scenarioDesignStatusLabel":  "설계가능",
                "impactAnalysis":  {
                                       "indexImpacts":  [
                                                            {
@@ -10118,6 +10252,8 @@
                "signalTypeLabel":  "신호",
                "isScenarioSuggested":  true,
                "scenarioSuggestReason":  "글로벌 LNG 공급 차질 가능성이 시나리오화 가치 있음",
+               "scenarioDesignStatus":  "designable",
+               "scenarioDesignStatusLabel":  "설계가능",
                "impactAnalysis":  {
                                       "indexImpacts":  [
                                                            {
@@ -10204,6 +10340,8 @@
                "signalTypeLabel":  "신호",
                "isScenarioSuggested":  false,
                "scenarioSuggestReason":  null,
+               "scenarioDesignStatus":  "designable",
+               "scenarioDesignStatusLabel":  "설계가능",
                "impactAnalysis":  {
                                       "indexImpacts":  [
                                                            {
@@ -10341,6 +10479,8 @@
                "signalTypeLabel":  "신호",
                "isScenarioSuggested":  false,
                "scenarioSuggestReason":  null,
+               "scenarioDesignStatus":  "designable",
+               "scenarioDesignStatusLabel":  "설계가능",
                "impactAnalysis":  {
                                       "indexImpacts":  [
                                                            {
@@ -10452,6 +10592,8 @@
                "signalTypeLabel":  "신호",
                "isScenarioSuggested":  true,
                "scenarioSuggestReason":  "아시아/유럽 가격 디커플링 시그널이 강해 시나리오 분기 필요",
+               "scenarioDesignStatus":  "designable",
+               "scenarioDesignStatusLabel":  "설계가능",
                "impactAnalysis":  {
                                       "indexImpacts":  [
                                                            {
@@ -10589,6 +10731,8 @@
                "signalTypeLabel":  "소음",
                "isScenarioSuggested":  false,
                "scenarioSuggestReason":  null,
+               "scenarioDesignStatus":  "designable",
+               "scenarioDesignStatusLabel":  "설계가능",
                "impactAnalysis":  {
                                       "indexImpacts":  [
                                                            {
@@ -10752,6 +10896,8 @@
                "signalTypeLabel":  "소음",
                "isScenarioSuggested":  false,
                "scenarioSuggestReason":  null,
+               "scenarioDesignStatus":  "designable",
+               "scenarioDesignStatusLabel":  "설계가능",
                "impactAnalysis":  {
                                       "indexImpacts":  [
                                                            {
@@ -10838,6 +10984,8 @@
                "signalTypeLabel":  "소음",
                "isScenarioSuggested":  false,
                "scenarioSuggestReason":  null,
+               "scenarioDesignStatus":  "designable",
+               "scenarioDesignStatusLabel":  "설계가능",
                "impactAnalysis":  {
                                       "indexImpacts":  [
                                                            {
@@ -10975,6 +11123,8 @@
                "signalTypeLabel":  "소음",
                "isScenarioSuggested":  false,
                "scenarioSuggestReason":  null,
+               "scenarioDesignStatus":  "designable",
+               "scenarioDesignStatusLabel":  "설계가능",
                "impactAnalysis":  {
                                       "indexImpacts":  [
                                                            {
@@ -11112,6 +11262,8 @@
                "signalTypeLabel":  "신호",
                "isScenarioSuggested":  false,
                "scenarioSuggestReason":  null,
+               "scenarioDesignStatus":  "designable",
+               "scenarioDesignStatusLabel":  "설계가능",
                "impactAnalysis":  {
                                       "indexImpacts":  [
                                                            {
@@ -11297,6 +11449,8 @@
                "signalTypeLabel":  "신호",
                "isScenarioSuggested":  false,
                "scenarioSuggestReason":  null,
+               "scenarioDesignStatus":  "designable",
+               "scenarioDesignStatusLabel":  "설계가능",
                "impactAnalysis":  {
                                       "indexImpacts":  [
                                                            {
@@ -11482,6 +11636,8 @@
                "signalTypeLabel":  "신호",
                "isScenarioSuggested":  true,
                "scenarioSuggestReason":  "단기 spot 프리미엄 확장 추세로 모델 시뮬레이션 적합",
+               "scenarioDesignStatus":  "designable",
+               "scenarioDesignStatusLabel":  "설계가능",
                "impactAnalysis":  {
                                       "indexImpacts":  [
                                                            {
@@ -11688,6 +11844,8 @@
                "signalTypeLabel":  "신호",
                "isScenarioSuggested":  false,
                "scenarioSuggestReason":  null,
+               "scenarioDesignStatus":  "designable",
+               "scenarioDesignStatusLabel":  "설계가능",
                "impactAnalysis":  {
                                       "indexImpacts":  [
                                                            {
@@ -11873,6 +12031,8 @@
                "signalTypeLabel":  "신호",
                "isScenarioSuggested":  false,
                "scenarioSuggestReason":  null,
+               "scenarioDesignStatus":  "designable",
+               "scenarioDesignStatusLabel":  "설계가능",
                "impactAnalysis":  {
                                       "indexImpacts":  [
                                                            {
@@ -12058,6 +12218,8 @@
                "signalTypeLabel":  "신호",
                "isScenarioSuggested":  true,
                "scenarioSuggestReason":  "수급 밸런스 변동성이 커 다중 시나리오 검토 필요",
+               "scenarioDesignStatus":  "designable",
+               "scenarioDesignStatusLabel":  "설계가능",
                "impactAnalysis":  {
                                       "indexImpacts":  [
                                                            {
@@ -12222,6 +12384,8 @@
                "signalTypeLabel":  "신호",
                "isScenarioSuggested":  false,
                "scenarioSuggestReason":  null,
+               "scenarioDesignStatus":  "designable",
+               "scenarioDesignStatusLabel":  "설계가능",
                "impactAnalysis":  {
                                       "indexImpacts":  [
                                                            {
@@ -12360,6 +12524,8 @@
                "signalTypeLabel":  "신호",
                "isScenarioSuggested":  false,
                "scenarioSuggestReason":  null,
+               "scenarioDesignStatus":  "designable",
+               "scenarioDesignStatusLabel":  "설계가능",
                "impactAnalysis":  {
                                       "indexImpacts":  [
                                                            {
@@ -12472,6 +12638,8 @@
                "signalTypeLabel":  "소음",
                "isScenarioSuggested":  false,
                "scenarioSuggestReason":  null,
+               "scenarioDesignStatus":  "designable",
+               "scenarioDesignStatusLabel":  "설계가능",
                "impactAnalysis":  {
                                       "indexImpacts":  [
                                                            {
@@ -12610,6 +12778,8 @@
                "signalTypeLabel":  "신호",
                "isScenarioSuggested":  false,
                "scenarioSuggestReason":  null,
+               "scenarioDesignStatus":  "designable",
+               "scenarioDesignStatusLabel":  "설계가능",
                "impactAnalysis":  {
                                       "indexImpacts":  [
                                                            {
@@ -12774,6 +12944,8 @@
                "signalTypeLabel":  "소음",
                "isScenarioSuggested":  false,
                "scenarioSuggestReason":  null,
+               "scenarioDesignStatus":  "designable",
+               "scenarioDesignStatusLabel":  "설계가능",
                "impactAnalysis":  {
                                       "indexImpacts":  [
                                                            {
@@ -12938,6 +13110,8 @@
                "signalTypeLabel":  "소음",
                "isScenarioSuggested":  false,
                "scenarioSuggestReason":  null,
+               "scenarioDesignStatus":  "designable",
+               "scenarioDesignStatusLabel":  "설계가능",
                "impactAnalysis":  {
                                       "indexImpacts":  [
                                                            {
@@ -13050,6 +13224,8 @@
                "signalTypeLabel":  "소음",
                "isScenarioSuggested":  false,
                "scenarioSuggestReason":  null,
+               "scenarioDesignStatus":  "designable",
+               "scenarioDesignStatusLabel":  "설계가능",
                "impactAnalysis":  {
                                       "indexImpacts":  [
                                                            {
@@ -13188,6 +13364,8 @@
                "signalTypeLabel":  "신호",
                "isScenarioSuggested":  false,
                "scenarioSuggestReason":  null,
+               "scenarioDesignStatus":  "designable",
+               "scenarioDesignStatusLabel":  "설계가능",
                "impactAnalysis":  {
                                       "indexImpacts":  [
                                                            {
@@ -13326,6 +13504,8 @@
                "signalTypeLabel":  "소음",
                "isScenarioSuggested":  false,
                "scenarioSuggestReason":  null,
+               "scenarioDesignStatus":  "designable",
+               "scenarioDesignStatusLabel":  "설계가능",
                "impactAnalysis":  {
                                       "indexImpacts":  [
                                                            {
@@ -13490,6 +13670,8 @@
                "signalTypeLabel":  "신호",
                "isScenarioSuggested":  true,
                "scenarioSuggestReason":  "정책/제재 변수가 가격 경로를 가르는 분기점",
+               "scenarioDesignStatus":  "designable",
+               "scenarioDesignStatusLabel":  "설계가능",
                "impactAnalysis":  {
                                       "indexImpacts":  [
                                                            {
@@ -13674,6 +13856,8 @@
                "signalTypeLabel":  "신호",
                "isScenarioSuggested":  false,
                "scenarioSuggestReason":  null,
+               "scenarioDesignStatus":  "designable",
+               "scenarioDesignStatusLabel":  "설계가능",
                "impactAnalysis":  {
                                       "indexImpacts":  [
                                                            {
@@ -13880,6 +14064,8 @@
                "signalTypeLabel":  "신호",
                "isScenarioSuggested":  false,
                "scenarioSuggestReason":  null,
+               "scenarioDesignStatus":  "designable",
+               "scenarioDesignStatusLabel":  "설계가능",
                "impactAnalysis":  {
                                       "indexImpacts":  [
                                                            {
@@ -14064,6 +14250,8 @@
                "signalTypeLabel":  "신호",
                "isScenarioSuggested":  true,
                "scenarioSuggestReason":  "기후/계절 패턴이 기준선과 이탈, 모델 재검토 필요",
+               "scenarioDesignStatus":  "designable",
+               "scenarioDesignStatusLabel":  "설계가능",
                "impactAnalysis":  {
                                       "indexImpacts":  [
                                                            {
@@ -14227,6 +14415,8 @@
                "signalTypeLabel":  "신호",
                "isScenarioSuggested":  false,
                "scenarioSuggestReason":  null,
+               "scenarioDesignStatus":  "designable",
+               "scenarioDesignStatusLabel":  "설계가능",
                "impactAnalysis":  {
                                       "indexImpacts":  [
                                                            {
@@ -14390,6 +14580,8 @@
                "signalTypeLabel":  "신호",
                "isScenarioSuggested":  false,
                "scenarioSuggestReason":  null,
+               "scenarioDesignStatus":  "designable",
+               "scenarioDesignStatusLabel":  "설계가능",
                "impactAnalysis":  {
                                       "indexImpacts":  [
                                                            {
@@ -14553,6 +14745,8 @@
                "signalTypeLabel":  "신호",
                "isScenarioSuggested":  false,
                "scenarioSuggestReason":  null,
+               "scenarioDesignStatus":  "designable",
+               "scenarioDesignStatusLabel":  "설계가능",
                "impactAnalysis":  {
                                       "indexImpacts":  [
                                                            {
@@ -14716,6 +14910,8 @@
                "signalTypeLabel":  "신호",
                "isScenarioSuggested":  true,
                "scenarioSuggestReason":  "글로벌 LNG 공급 차질 가능성이 시나리오화 가치 있음",
+               "scenarioDesignStatus":  "designable",
+               "scenarioDesignStatusLabel":  "설계가능",
                "impactAnalysis":  {
                                       "indexImpacts":  [
                                                            {
@@ -14853,6 +15049,8 @@
                "signalTypeLabel":  "신호",
                "isScenarioSuggested":  false,
                "scenarioSuggestReason":  null,
+               "scenarioDesignStatus":  "designable",
+               "scenarioDesignStatusLabel":  "설계가능",
                "impactAnalysis":  {
                                       "indexImpacts":  [
                                                            {
@@ -15016,6 +15214,8 @@
                 "signalTypeLabel":  "신호",
                 "isScenarioSuggested":  false,
                 "scenarioSuggestReason":  null,
+                "scenarioDesignStatus":  "designable",
+                "scenarioDesignStatusLabel":  "설계가능",
                 "impactAnalysis":  {
                                        "indexImpacts":  [
                                                             {
@@ -15179,6 +15379,8 @@
                 "signalTypeLabel":  "신호",
                 "isScenarioSuggested":  true,
                 "scenarioSuggestReason":  "아시아/유럽 가격 디커플링 시그널이 강해 시나리오 분기 필요",
+                "scenarioDesignStatus":  "designable",
+                "scenarioDesignStatusLabel":  "설계가능",
                 "impactAnalysis":  {
                                        "indexImpacts":  [
                                                             {
@@ -15342,6 +15544,8 @@
                 "signalTypeLabel":  "신호",
                 "isScenarioSuggested":  false,
                 "scenarioSuggestReason":  null,
+                "scenarioDesignStatus":  "designable",
+                "scenarioDesignStatusLabel":  "설계가능",
                 "impactAnalysis":  {
                                        "indexImpacts":  [
                                                             {
@@ -15479,6 +15683,8 @@
                 "signalTypeLabel":  "신호",
                 "isScenarioSuggested":  false,
                 "scenarioSuggestReason":  null,
+                "scenarioDesignStatus":  "designable",
+                "scenarioDesignStatusLabel":  "설계가능",
                 "impactAnalysis":  {
                                        "indexImpacts":  [
                                                             {
@@ -15616,6 +15822,8 @@
                 "signalTypeLabel":  "신호",
                 "isScenarioSuggested":  true,
                 "scenarioSuggestReason":  "단기 spot 프리미엄 확장 추세로 모델 시뮬레이션 적합",
+                "scenarioDesignStatus":  "designable",
+                "scenarioDesignStatusLabel":  "설계가능",
                 "impactAnalysis":  {
                                        "indexImpacts":  [
                                                             {
@@ -15779,6 +15987,8 @@
                 "signalTypeLabel":  "소음",
                 "isScenarioSuggested":  false,
                 "scenarioSuggestReason":  null,
+                "scenarioDesignStatus":  "designable",
+                "scenarioDesignStatusLabel":  "설계가능",
                 "impactAnalysis":  {
                                        "indexImpacts":  [
                                                             {
@@ -15916,6 +16126,8 @@
                 "signalTypeLabel":  "신호",
                 "isScenarioSuggested":  false,
                 "scenarioSuggestReason":  null,
+                "scenarioDesignStatus":  "designable",
+                "scenarioDesignStatusLabel":  "설계가능",
                 "impactAnalysis":  {
                                        "indexImpacts":  [
                                                             {
@@ -16101,6 +16313,8 @@
                 "signalTypeLabel":  "신호",
                 "isScenarioSuggested":  false,
                 "scenarioSuggestReason":  null,
+                "scenarioDesignStatus":  "designable",
+                "scenarioDesignStatusLabel":  "설계가능",
                 "impactAnalysis":  {
                                        "indexImpacts":  [
                                                             {
@@ -16306,6 +16520,8 @@
                 "signalTypeLabel":  "신호",
                 "isScenarioSuggested":  true,
                 "scenarioSuggestReason":  "수급 밸런스 변동성이 커 다중 시나리오 검토 필요",
+                "scenarioDesignStatus":  "designable",
+                "scenarioDesignStatusLabel":  "설계가능",
                 "impactAnalysis":  {
                                        "indexImpacts":  [
                                                             {
@@ -16490,6 +16706,8 @@
                 "signalTypeLabel":  "신호",
                 "isScenarioSuggested":  false,
                 "scenarioSuggestReason":  null,
+                "scenarioDesignStatus":  "designable",
+                "scenarioDesignStatusLabel":  "설계가능",
                 "impactAnalysis":  {
                                        "indexImpacts":  [
                                                             {
@@ -16674,6 +16892,8 @@
                 "signalTypeLabel":  "신호",
                 "isScenarioSuggested":  false,
                 "scenarioSuggestReason":  null,
+                "scenarioDesignStatus":  "designable",
+                "scenarioDesignStatusLabel":  "설계가능",
                 "impactAnalysis":  {
                                        "indexImpacts":  [
                                                             {
@@ -16858,6 +17078,8 @@
                 "signalTypeLabel":  "신호",
                 "isScenarioSuggested":  true,
                 "scenarioSuggestReason":  "정책/제재 변수가 가격 경로를 가르는 분기점",
+                "scenarioDesignStatus":  "designable",
+                "scenarioDesignStatusLabel":  "설계가능",
                 "impactAnalysis":  {
                                        "indexImpacts":  [
                                                             {
@@ -17021,6 +17243,8 @@
                 "signalTypeLabel":  "신호",
                 "isScenarioSuggested":  false,
                 "scenarioSuggestReason":  null,
+                "scenarioDesignStatus":  "designable",
+                "scenarioDesignStatusLabel":  "설계가능",
                 "impactAnalysis":  {
                                        "indexImpacts":  [
                                                             {
@@ -17205,6 +17429,8 @@
                 "signalTypeLabel":  "신호",
                 "isScenarioSuggested":  false,
                 "scenarioSuggestReason":  null,
+                "scenarioDesignStatus":  "designable",
+                "scenarioDesignStatusLabel":  "설계가능",
                 "impactAnalysis":  {
                                        "indexImpacts":  [
                                                             {
@@ -17389,6 +17615,8 @@
                 "signalTypeLabel":  "소음",
                 "isScenarioSuggested":  false,
                 "scenarioSuggestReason":  null,
+                "scenarioDesignStatus":  "designable",
+                "scenarioDesignStatusLabel":  "설계가능",
                 "impactAnalysis":  {
                                        "indexImpacts":  [
                                                             {
@@ -17573,6 +17801,8 @@
                 "signalTypeLabel":  "신호",
                 "isScenarioSuggested":  false,
                 "scenarioSuggestReason":  null,
+                "scenarioDesignStatus":  "designable",
+                "scenarioDesignStatusLabel":  "설계가능",
                 "impactAnalysis":  {
                                        "indexImpacts":  [
                                                             {
@@ -17736,6 +17966,8 @@
                 "signalTypeLabel":  "신호",
                 "isScenarioSuggested":  false,
                 "scenarioSuggestReason":  null,
+                "scenarioDesignStatus":  "designable",
+                "scenarioDesignStatusLabel":  "설계가능",
                 "impactAnalysis":  {
                                        "indexImpacts":  [
                                                             {
@@ -17899,6 +18131,8 @@
                 "signalTypeLabel":  "신호",
                 "isScenarioSuggested":  false,
                 "scenarioSuggestReason":  null,
+                "scenarioDesignStatus":  "designable",
+                "scenarioDesignStatusLabel":  "설계가능",
                 "impactAnalysis":  {
                                        "indexImpacts":  [
                                                             {
@@ -18062,6 +18296,8 @@
                 "signalTypeLabel":  "신호",
                 "isScenarioSuggested":  true,
                 "scenarioSuggestReason":  "기후/계절 패턴이 기준선과 이탈, 모델 재검토 필요",
+                "scenarioDesignStatus":  "designable",
+                "scenarioDesignStatusLabel":  "설계가능",
                 "impactAnalysis":  {
                                        "indexImpacts":  [
                                                             {
@@ -18268,6 +18504,8 @@
                 "signalTypeLabel":  "소음",
                 "isScenarioSuggested":  false,
                 "scenarioSuggestReason":  null,
+                "scenarioDesignStatus":  "designable",
+                "scenarioDesignStatusLabel":  "설계가능",
                 "impactAnalysis":  {
                                        "indexImpacts":  [
                                                             {
@@ -18405,6 +18643,8 @@
                 "signalTypeLabel":  "소음",
                 "isScenarioSuggested":  false,
                 "scenarioSuggestReason":  null,
+                "scenarioDesignStatus":  "designable",
+                "scenarioDesignStatusLabel":  "설계가능",
                 "impactAnalysis":  {
                                        "indexImpacts":  [
                                                             {
@@ -18568,6 +18808,8 @@
                 "signalTypeLabel":  "신호",
                 "isScenarioSuggested":  true,
                 "scenarioSuggestReason":  "글로벌 LNG 공급 차질 가능성이 시나리오화 가치 있음",
+                "scenarioDesignStatus":  "designable",
+                "scenarioDesignStatusLabel":  "설계가능",
                 "impactAnalysis":  {
                                        "indexImpacts":  [
                                                             {
@@ -18794,6 +19036,8 @@
                 "signalTypeLabel":  "신호",
                 "isScenarioSuggested":  false,
                 "scenarioSuggestReason":  null,
+                "scenarioDesignStatus":  "designable",
+                "scenarioDesignStatusLabel":  "설계가능",
                 "impactAnalysis":  {
                                        "indexImpacts":  [
                                                             {
@@ -18978,6 +19222,8 @@
                 "signalTypeLabel":  "신호",
                 "isScenarioSuggested":  false,
                 "scenarioSuggestReason":  null,
+                "scenarioDesignStatus":  "designable",
+                "scenarioDesignStatusLabel":  "설계가능",
                 "impactAnalysis":  {
                                        "indexImpacts":  [
                                                             {
@@ -19162,6 +19408,8 @@
                 "signalTypeLabel":  "신호",
                 "isScenarioSuggested":  true,
                 "scenarioSuggestReason":  "아시아/유럽 가격 디커플링 시그널이 강해 시나리오 분기 필요",
+                "scenarioDesignStatus":  "designable",
+                "scenarioDesignStatusLabel":  "설계가능",
                 "impactAnalysis":  {
                                        "indexImpacts":  [
                                                             {
@@ -19346,6 +19594,8 @@
                 "signalTypeLabel":  "신호",
                 "isScenarioSuggested":  false,
                 "scenarioSuggestReason":  null,
+                "scenarioDesignStatus":  "designable",
+                "scenarioDesignStatusLabel":  "설계가능",
                 "impactAnalysis":  {
                                        "indexImpacts":  [
                                                             {
@@ -19531,6 +19781,8 @@
                 "signalTypeLabel":  "신호",
                 "isScenarioSuggested":  false,
                 "scenarioSuggestReason":  null,
+                "scenarioDesignStatus":  "designable",
+                "scenarioDesignStatusLabel":  "설계가능",
                 "impactAnalysis":  {
                                        "indexImpacts":  [
                                                             {
@@ -19737,6 +19989,8 @@
                 "signalTypeLabel":  "신호",
                 "isScenarioSuggested":  false,
                 "scenarioSuggestReason":  null,
+                "scenarioDesignStatus":  "designable",
+                "scenarioDesignStatusLabel":  "설계가능",
                 "impactAnalysis":  {
                                        "indexImpacts":  [
                                                             {
@@ -19922,6 +20176,8 @@
                 "signalTypeLabel":  "신호",
                 "isScenarioSuggested":  true,
                 "scenarioSuggestReason":  "단기 spot 프리미엄 확장 추세로 모델 시뮬레이션 적합",
+                "scenarioDesignStatus":  "designable",
+                "scenarioDesignStatusLabel":  "설계가능",
                 "impactAnalysis":  {
                                        "indexImpacts":  [
                                                             {
@@ -20085,6 +20341,8 @@
                 "signalTypeLabel":  "신호",
                 "isScenarioSuggested":  false,
                 "scenarioSuggestReason":  null,
+                "scenarioDesignStatus":  "designable",
+                "scenarioDesignStatusLabel":  "설계가능",
                 "impactAnalysis":  {
                                        "indexImpacts":  [
                                                             {
@@ -20269,6 +20527,8 @@
                 "signalTypeLabel":  "신호",
                 "isScenarioSuggested":  false,
                 "scenarioSuggestReason":  null,
+                "scenarioDesignStatus":  "designable",
+                "scenarioDesignStatusLabel":  "설계가능",
                 "impactAnalysis":  {
                                        "indexImpacts":  [
                                                             {
@@ -20454,6 +20714,8 @@
                 "signalTypeLabel":  "신호",
                 "isScenarioSuggested":  true,
                 "scenarioSuggestReason":  "수급 밸런스 변동성이 커 다중 시나리오 검토 필요",
+                "scenarioDesignStatus":  "designable",
+                "scenarioDesignStatusLabel":  "설계가능",
                 "impactAnalysis":  {
                                        "indexImpacts":  [
                                                             {
@@ -20638,6 +20900,8 @@
                 "signalTypeLabel":  "신호",
                 "isScenarioSuggested":  false,
                 "scenarioSuggestReason":  null,
+                "scenarioDesignStatus":  "designable",
+                "scenarioDesignStatusLabel":  "설계가능",
                 "impactAnalysis":  {
                                        "indexImpacts":  [
                                                             {
@@ -20822,6 +21086,8 @@
                 "signalTypeLabel":  "신호",
                 "isScenarioSuggested":  false,
                 "scenarioSuggestReason":  null,
+                "scenarioDesignStatus":  "designable",
+                "scenarioDesignStatusLabel":  "설계가능",
                 "impactAnalysis":  {
                                        "indexImpacts":  [
                                                             {
@@ -20985,6 +21251,8 @@
                 "signalTypeLabel":  "소음",
                 "isScenarioSuggested":  false,
                 "scenarioSuggestReason":  null,
+                "scenarioDesignStatus":  "designable",
+                "scenarioDesignStatusLabel":  "설계가능",
                 "impactAnalysis":  {
                                        "indexImpacts":  [
                                                             {
@@ -21148,6 +21416,8 @@
                 "signalTypeLabel":  "소음",
                 "isScenarioSuggested":  false,
                 "scenarioSuggestReason":  null,
+                "scenarioDesignStatus":  "designable",
+                "scenarioDesignStatusLabel":  "설계가능",
                 "impactAnalysis":  {
                                        "indexImpacts":  [
                                                             {
@@ -21311,6 +21581,8 @@
                 "signalTypeLabel":  "신호",
                 "isScenarioSuggested":  false,
                 "scenarioSuggestReason":  null,
+                "scenarioDesignStatus":  "designable",
+                "scenarioDesignStatusLabel":  "설계가능",
                 "impactAnalysis":  {
                                        "indexImpacts":  [
                                                             {
@@ -21537,6 +21809,8 @@
                 "signalTypeLabel":  "신호",
                 "isScenarioSuggested":  false,
                 "scenarioSuggestReason":  null,
+                "scenarioDesignStatus":  "designable",
+                "scenarioDesignStatusLabel":  "설계가능",
                 "impactAnalysis":  {
                                        "indexImpacts":  [
                                                             {
@@ -21763,6 +22037,8 @@
                 "signalTypeLabel":  "신호",
                 "isScenarioSuggested":  true,
                 "scenarioSuggestReason":  "정책/제재 변수가 가격 경로를 가르는 분기점",
+                "scenarioDesignStatus":  "designable",
+                "scenarioDesignStatusLabel":  "설계가능",
                 "impactAnalysis":  {
                                        "indexImpacts":  [
                                                             {
@@ -21968,6 +22244,8 @@
                 "signalTypeLabel":  "신호",
                 "isScenarioSuggested":  false,
                 "scenarioSuggestReason":  null,
+                "scenarioDesignStatus":  "designable",
+                "scenarioDesignStatusLabel":  "설계가능",
                 "impactAnalysis":  {
                                        "indexImpacts":  [
                                                             {
@@ -22152,6 +22430,8 @@
                 "signalTypeLabel":  "신호",
                 "isScenarioSuggested":  false,
                 "scenarioSuggestReason":  null,
+                "scenarioDesignStatus":  "designable",
+                "scenarioDesignStatusLabel":  "설계가능",
                 "impactAnalysis":  {
                                        "indexImpacts":  [
                                                             {
@@ -22336,6 +22616,8 @@
                 "signalTypeLabel":  "신호",
                 "isScenarioSuggested":  true,
                 "scenarioSuggestReason":  "기후/계절 패턴이 기준선과 이탈, 모델 재검토 필요",
+                "scenarioDesignStatus":  "designable",
+                "scenarioDesignStatusLabel":  "설계가능",
                 "impactAnalysis":  {
                                        "indexImpacts":  [
                                                             {
@@ -22520,6 +22802,8 @@
                 "signalTypeLabel":  "신호",
                 "isScenarioSuggested":  false,
                 "scenarioSuggestReason":  null,
+                "scenarioDesignStatus":  "designable",
+                "scenarioDesignStatusLabel":  "설계가능",
                 "impactAnalysis":  {
                                        "indexImpacts":  [
                                                             {
@@ -22683,6 +22967,8 @@
                 "signalTypeLabel":  "신호",
                 "isScenarioSuggested":  false,
                 "scenarioSuggestReason":  null,
+                "scenarioDesignStatus":  "designable",
+                "scenarioDesignStatusLabel":  "설계가능",
                 "impactAnalysis":  {
                                        "indexImpacts":  [
                                                             {
@@ -22867,6 +23153,8 @@
                 "signalTypeLabel":  "신호",
                 "isScenarioSuggested":  true,
                 "scenarioSuggestReason":  "글로벌 LNG 공급 차질 가능성이 시나리오화 가치 있음",
+                "scenarioDesignStatus":  "designable",
+                "scenarioDesignStatusLabel":  "설계가능",
                 "impactAnalysis":  {
                                        "indexImpacts":  [
                                                             {
@@ -23030,6 +23318,8 @@
                 "signalTypeLabel":  "신호",
                 "isScenarioSuggested":  false,
                 "scenarioSuggestReason":  null,
+                "scenarioDesignStatus":  "designable",
+                "scenarioDesignStatusLabel":  "설계가능",
                 "impactAnalysis":  {
                                        "indexImpacts":  [
                                                             {
@@ -23193,6 +23483,8 @@
                 "signalTypeLabel":  "신호",
                 "isScenarioSuggested":  false,
                 "scenarioSuggestReason":  null,
+                "scenarioDesignStatus":  "designable",
+                "scenarioDesignStatusLabel":  "설계가능",
                 "impactAnalysis":  {
                                        "indexImpacts":  [
                                                             {
@@ -23330,6 +23622,8 @@
                 "signalTypeLabel":  "소음",
                 "isScenarioSuggested":  false,
                 "scenarioSuggestReason":  null,
+                "scenarioDesignStatus":  "designable",
+                "scenarioDesignStatusLabel":  "설계가능",
                 "impactAnalysis":  {
                                        "indexImpacts":  [
                                                             {
@@ -23467,6 +23761,8 @@
                 "signalTypeLabel":  "신호",
                 "isScenarioSuggested":  true,
                 "scenarioSuggestReason":  "아시아/유럽 가격 디커플링 시그널이 강해 시나리오 분기 필요",
+                "scenarioDesignStatus":  "designable",
+                "scenarioDesignStatusLabel":  "설계가능",
                 "impactAnalysis":  {
                                        "indexImpacts":  [
                                                             {
@@ -23604,6 +23900,8 @@
                 "signalTypeLabel":  "소음",
                 "isScenarioSuggested":  false,
                 "scenarioSuggestReason":  null,
+                "scenarioDesignStatus":  "designable",
+                "scenarioDesignStatusLabel":  "설계가능",
                 "impactAnalysis":  {
                                        "indexImpacts":  [
                                                             {
@@ -23767,6 +24065,8 @@
                 "signalTypeLabel":  "신호",
                 "isScenarioSuggested":  false,
                 "scenarioSuggestReason":  null,
+                "scenarioDesignStatus":  "designable",
+                "scenarioDesignStatusLabel":  "설계가능",
                 "impactAnalysis":  {
                                        "indexImpacts":  [
                                                             {
@@ -23930,6 +24230,8 @@
                 "signalTypeLabel":  "신호",
                 "isScenarioSuggested":  true,
                 "scenarioSuggestReason":  "단기 spot 프리미엄 확장 추세로 모델 시뮬레이션 적합",
+                "scenarioDesignStatus":  "designable",
+                "scenarioDesignStatusLabel":  "설계가능",
                 "impactAnalysis":  {
                                        "indexImpacts":  [
                                                             {
@@ -24136,6 +24438,8 @@
                 "signalTypeLabel":  "신호",
                 "isScenarioSuggested":  false,
                 "scenarioSuggestReason":  null,
+                "scenarioDesignStatus":  "designable",
+                "scenarioDesignStatusLabel":  "설계가능",
                 "impactAnalysis":  {
                                        "indexImpacts":  [
                                                             {
@@ -24342,6 +24646,8 @@
                 "signalTypeLabel":  "신호",
                 "isScenarioSuggested":  false,
                 "scenarioSuggestReason":  null,
+                "scenarioDesignStatus":  "designable",
+                "scenarioDesignStatusLabel":  "설계가능",
                 "impactAnalysis":  {
                                        "indexImpacts":  [
                                                             {
@@ -24527,6 +24833,8 @@
                 "signalTypeLabel":  "신호",
                 "isScenarioSuggested":  true,
                 "scenarioSuggestReason":  "수급 밸런스 변동성이 커 다중 시나리오 검토 필요",
+                "scenarioDesignStatus":  "designable",
+                "scenarioDesignStatusLabel":  "설계가능",
                 "impactAnalysis":  {
                                        "indexImpacts":  [
                                                             {
@@ -24712,6 +25020,8 @@
                 "signalTypeLabel":  "신호",
                 "isScenarioSuggested":  false,
                 "scenarioSuggestReason":  null,
+                "scenarioDesignStatus":  "designable",
+                "scenarioDesignStatusLabel":  "설계가능",
                 "impactAnalysis":  {
                                        "indexImpacts":  [
                                                             {
@@ -24897,6 +25207,8 @@
                 "signalTypeLabel":  "신호",
                 "isScenarioSuggested":  false,
                 "scenarioSuggestReason":  null,
+                "scenarioDesignStatus":  "designable",
+                "scenarioDesignStatusLabel":  "설계가능",
                 "impactAnalysis":  {
                                        "indexImpacts":  [
                                                             {
@@ -25061,6 +25373,8 @@
                 "signalTypeLabel":  "신호",
                 "isScenarioSuggested":  false,
                 "scenarioSuggestReason":  null,
+                "scenarioDesignStatus":  "designable",
+                "scenarioDesignStatusLabel":  "설계가능",
                 "impactAnalysis":  {
                                        "indexImpacts":  [
                                                             {
@@ -25199,6 +25513,8 @@
                 "signalTypeLabel":  "신호",
                 "isScenarioSuggested":  true,
                 "scenarioSuggestReason":  "정책/제재 변수가 가격 경로를 가르는 분기점",
+                "scenarioDesignStatus":  "designable",
+                "scenarioDesignStatusLabel":  "설계가능",
                 "impactAnalysis":  {
                                        "indexImpacts":  [
                                                             {
@@ -25384,6 +25700,8 @@
                 "signalTypeLabel":  "신호",
                 "isScenarioSuggested":  false,
                 "scenarioSuggestReason":  null,
+                "scenarioDesignStatus":  "designable",
+                "scenarioDesignStatusLabel":  "설계가능",
                 "impactAnalysis":  {
                                        "indexImpacts":  [
                                                             {
@@ -25569,6 +25887,8 @@
                 "signalTypeLabel":  "소음",
                 "isScenarioSuggested":  false,
                 "scenarioSuggestReason":  null,
+                "scenarioDesignStatus":  "designable",
+                "scenarioDesignStatusLabel":  "설계가능",
                 "impactAnalysis":  {
                                        "indexImpacts":  [
                                                             {
@@ -25733,6 +26053,8 @@
                 "signalTypeLabel":  "소음",
                 "isScenarioSuggested":  false,
                 "scenarioSuggestReason":  null,
+                "scenarioDesignStatus":  "designable",
+                "scenarioDesignStatusLabel":  "설계가능",
                 "impactAnalysis":  {
                                        "indexImpacts":  [
                                                             {
@@ -25897,6 +26219,8 @@
                 "signalTypeLabel":  "소음",
                 "isScenarioSuggested":  false,
                 "scenarioSuggestReason":  null,
+                "scenarioDesignStatus":  "designable",
+                "scenarioDesignStatusLabel":  "설계가능",
                 "impactAnalysis":  {
                                        "indexImpacts":  [
                                                             {
@@ -26082,6 +26406,8 @@
                 "signalTypeLabel":  "소음",
                 "isScenarioSuggested":  false,
                 "scenarioSuggestReason":  null,
+                "scenarioDesignStatus":  "designable",
+                "scenarioDesignStatusLabel":  "설계가능",
                 "impactAnalysis":  {
                                        "indexImpacts":  [
                                                             {
@@ -26288,6 +26614,8 @@
                 "signalTypeLabel":  "신호",
                 "isScenarioSuggested":  true,
                 "scenarioSuggestReason":  "기후/계절 패턴이 기준선과 이탈, 모델 재검토 필요",
+                "scenarioDesignStatus":  "designable",
+                "scenarioDesignStatusLabel":  "설계가능",
                 "impactAnalysis":  {
                                        "indexImpacts":  [
                                                             {
@@ -26473,6 +26801,8 @@
                 "signalTypeLabel":  "신호",
                 "isScenarioSuggested":  false,
                 "scenarioSuggestReason":  null,
+                "scenarioDesignStatus":  "designable",
+                "scenarioDesignStatusLabel":  "설계가능",
                 "impactAnalysis":  {
                                        "indexImpacts":  [
                                                             {
@@ -26658,6 +26988,8 @@
                 "signalTypeLabel":  "신호",
                 "isScenarioSuggested":  false,
                 "scenarioSuggestReason":  null,
+                "scenarioDesignStatus":  "designable",
+                "scenarioDesignStatusLabel":  "설계가능",
                 "impactAnalysis":  {
                                        "indexImpacts":  [
                                                             {
@@ -26843,6 +27175,8 @@
                 "signalTypeLabel":  "신호",
                 "isScenarioSuggested":  false,
                 "scenarioSuggestReason":  null,
+                "scenarioDesignStatus":  "designable",
+                "scenarioDesignStatusLabel":  "설계가능",
                 "impactAnalysis":  {
                                        "indexImpacts":  [
                                                             {
@@ -27007,6 +27341,8 @@
                 "signalTypeLabel":  "신호",
                 "isScenarioSuggested":  true,
                 "scenarioSuggestReason":  "글로벌 LNG 공급 차질 가능성이 시나리오화 가치 있음",
+                "scenarioDesignStatus":  "designable",
+                "scenarioDesignStatusLabel":  "설계가능",
                 "impactAnalysis":  {
                                        "indexImpacts":  [
                                                             {
@@ -27145,6 +27481,8 @@
                 "signalTypeLabel":  "신호",
                 "isScenarioSuggested":  false,
                 "scenarioSuggestReason":  null,
+                "scenarioDesignStatus":  "designable",
+                "scenarioDesignStatusLabel":  "설계가능",
                 "impactAnalysis":  {
                                        "indexImpacts":  [
                                                             {
@@ -27283,6 +27621,8 @@
                 "signalTypeLabel":  "신호",
                 "isScenarioSuggested":  false,
                 "scenarioSuggestReason":  null,
+                "scenarioDesignStatus":  "designable",
+                "scenarioDesignStatusLabel":  "설계가능",
                 "impactAnalysis":  {
                                        "indexImpacts":  [
                                                             {
@@ -27421,6 +27761,8 @@
                 "signalTypeLabel":  "신호",
                 "isScenarioSuggested":  true,
                 "scenarioSuggestReason":  "아시아/유럽 가격 디커플링 시그널이 강해 시나리오 분기 필요",
+                "scenarioDesignStatus":  "designable",
+                "scenarioDesignStatusLabel":  "설계가능",
                 "impactAnalysis":  {
                                        "indexImpacts":  [
                                                             {
@@ -27585,6 +27927,8 @@
                 "signalTypeLabel":  "소음",
                 "isScenarioSuggested":  false,
                 "scenarioSuggestReason":  null,
+                "scenarioDesignStatus":  "designable",
+                "scenarioDesignStatusLabel":  "설계가능",
                 "impactAnalysis":  {
                                        "indexImpacts":  [
                                                             {
@@ -27697,6 +28041,8 @@
                 "signalTypeLabel":  "소음",
                 "isScenarioSuggested":  false,
                 "scenarioSuggestReason":  null,
+                "scenarioDesignStatus":  "designable",
+                "scenarioDesignStatusLabel":  "설계가능",
                 "impactAnalysis":  {
                                        "indexImpacts":  [
                                                             {

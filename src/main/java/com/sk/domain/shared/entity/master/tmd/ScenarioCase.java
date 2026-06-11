@@ -11,6 +11,7 @@ import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.Index;
 import jakarta.persistence.Table;
+import jakarta.persistence.UniqueConstraint;
 import java.time.LocalDateTime;
 import lombok.AccessLevel;
 import lombok.Builder;
@@ -18,14 +19,20 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import org.hibernate.annotations.ColumnDefault;
 import org.hibernate.annotations.Comment;
+import org.hibernate.annotations.JdbcTypeCode;
+import org.hibernate.type.SqlTypes;
 
 @Getter
 @Entity
 @Comment("TMD_시나리오케이스마스터")
 @Table(
-    name = "tmd_scncasem",
+    name = "tmd_mdl_scnrcasem",
     indexes = {
-        @Index(name = "tmd_scncasem_ix01", columnList = "del_yn, crt_dtm")
+        @Index(name = "tmd_mdl_scnrcasem_ix01", columnList = "del_yn, crt_dtm"),
+        @Index(name = "tmd_mdl_scnrcasem_ix02", columnList = "scnr_id, case_stat_cd, case_id")
+    },
+    uniqueConstraints = {
+        @UniqueConstraint(name = "tmd_mdl_scnrcasem_uq01", columnNames = {"actv_scnr_id"})
     }
 )
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
@@ -41,6 +48,11 @@ public class ScenarioCase extends BaseEntity {
     @Comment("사용자번호")
     private Integer userNo;
 
+    @Column(name = "scnr_id", columnDefinition = "int unsigned")
+    @JdbcTypeCode(SqlTypes.INTEGER)
+    @Comment("시나리오ID (MI 수급모델 실행 연계, MI Fundamental Model은 null, tmm_mi_scenario_m.scenario_id 논리참조, 물리 FK 없음)")
+    private Long scenarioId;
+
     @Column(name = "case_titl_nm", nullable = false, length = 200)
     @Comment("케이스제목명")
     private String title;
@@ -55,6 +67,16 @@ public class ScenarioCase extends BaseEntity {
     @Comment("케이스상태코드")
     private FundamentalModelCaseStatus status;
 
+    @Column(
+        name = "actv_scnr_id",
+        columnDefinition = "int unsigned generated always as (if(case_stat_cd = 'RUNNING', scnr_id, null)) stored",
+        insertable = false,
+        updatable = false
+    )
+    @JdbcTypeCode(SqlTypes.INTEGER)
+    @Comment("활성시나리오ID (case_stat_cd = RUNNING 이면 scnr_id, 그 외 NULL. DB STORED generated column, scenario 당 active 1건 unique helper)")
+    private Long activeScenarioId;
+
     @Column(name = "last_run_id", length = 20)
     @Comment("최신실행ID")
     private String lastRunId;
@@ -68,6 +90,7 @@ public class ScenarioCase extends BaseEntity {
         Boolean isDeleted,
         Long caseId,
         Integer userNo,
+        Long scenarioId,
         String title,
         String description,
         FundamentalModelCaseStatus status,
@@ -76,6 +99,7 @@ public class ScenarioCase extends BaseEntity {
         super(createDt, modifyDt, createUserId, modifyUserId, isDeleted);
         this.caseId = caseId;
         this.userNo = userNo;
+        this.scenarioId = scenarioId;
         this.title = title;
         this.description = description;
         this.status = status;

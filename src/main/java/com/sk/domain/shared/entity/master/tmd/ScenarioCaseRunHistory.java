@@ -7,7 +7,6 @@ import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
 import jakarta.persistence.Enumerated;
 import jakarta.persistence.Id;
-import jakarta.persistence.Index;
 import jakarta.persistence.Table;
 import java.time.LocalDateTime;
 import lombok.AccessLevel;
@@ -16,16 +15,13 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import org.hibernate.annotations.ColumnDefault;
 import org.hibernate.annotations.Comment;
+import org.hibernate.annotations.JdbcTypeCode;
+import org.hibernate.type.SqlTypes;
 
 @Getter
 @Entity
 @Comment("TMD_시나리오케이스이력")
-@Table(
-    name = "tmd_scncaseh",
-    indexes = {
-        @Index(name = "tmd_scncaseh_ix01", columnList = "exec_stat_cd, exec_bgn_dtm")
-    }
-)
+@Table(name = "tmd_mdl_scnrcaseh")
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 public class ScenarioCaseRunHistory extends BaseEntity {
 
@@ -34,7 +30,8 @@ public class ScenarioCaseRunHistory extends BaseEntity {
     @Comment("실행ID")
     private String runId;
 
-    @Column(name = "run_seq", columnDefinition = "bigint unsigned", unique = true)
+    @Column(name = "run_seq", columnDefinition = "int unsigned", nullable = false, unique = true, insertable = false, updatable = false)
+    @JdbcTypeCode(SqlTypes.INTEGER)
     @Comment("실행순번")
     private Long runSeq;
 

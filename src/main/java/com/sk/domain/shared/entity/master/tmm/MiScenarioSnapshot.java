@@ -1,13 +1,7 @@
 package com.sk.domain.shared.entity.master.tmm;
 
-import java.math.BigDecimal;
-
-import org.hibernate.annotations.ColumnDefault;
-import org.hibernate.annotations.Comment;
-
 import com.sk.common.converter.BooleanToYNAttributeConverter;
 import com.sk.domain.shared.entity.base.BaseEntity;
-
 import jakarta.persistence.Column;
 import jakarta.persistence.Convert;
 import jakarta.persistence.Entity;
@@ -18,10 +12,13 @@ import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
+import java.math.BigDecimal;
 import lombok.AccessLevel;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
+import org.hibernate.annotations.ColumnDefault;
+import org.hibernate.annotations.Comment;
 
 @Getter
 @Entity
@@ -53,10 +50,6 @@ public class MiScenarioSnapshot extends BaseEntity {
     @Comment("발생확률 (동결)")
     private BigDecimal probabilityScore;
 
-    @Column(name = "judgment_status_code", length = 50)
-    @Comment("판정 상태 코드 (동결)")
-    private String judgmentStatusCode;
-
     @Column(name = "baseline_yn", nullable = false, length = 1, columnDefinition = "char(1)")
     @ColumnDefault("'N'")
     @Comment("기준 시나리오 여부 (동결)")
@@ -65,13 +58,12 @@ public class MiScenarioSnapshot extends BaseEntity {
 
     @Builder
     public MiScenarioSnapshot(Long scenarioSnapId, MiSnapshot snapshot, Long srcScenarioId, String dimensionValues,
-                              BigDecimal probabilityScore, String judgmentStatusCode, Boolean isBaseline) {
+                              BigDecimal probabilityScore, Boolean isBaseline) {
         this.scenarioSnapId = scenarioSnapId;
         this.snapshot = snapshot;
         this.srcScenarioId = srcScenarioId;
         this.dimensionValues = dimensionValues;
         this.probabilityScore = probabilityScore;
-        this.judgmentStatusCode = judgmentStatusCode;
         this.isBaseline = isBaseline;
     }
 

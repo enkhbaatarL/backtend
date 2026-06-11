@@ -1,8 +1,5 @@
 package com.sk.domain.mi.service.nextgen;
 
-import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
-
 import com.sk.common.enums.ResultCode;
 import com.sk.common.exception.AppErrorException;
 import com.sk.common.model.PaginationRes;
@@ -28,7 +25,7 @@ import com.sk.domain.mi.service.nextgen.support.ScenarioDimensionMapper.GroupDim
 import com.sk.domain.mi.service.nextgen.support.ScenarioProbabilityAllocator;
 import com.sk.domain.shared.entity.master.tmm.MiScenario;
 import com.sk.domain.shared.enums.nextgen.IndexName;
-import com.sk.domain.shared.enums.nextgen.ScenarioStatus;
+import com.sk.domain.shared.enums.nextgen.ScenarioDisplayStatus;
 import com.sk.domain.shared.repository.master.tmm.MiScenarioGroupRepository;
 import com.sk.domain.shared.repository.master.tmm.projection.ScenarioBaseRow;
 import com.sk.domain.shared.repository.master.tmm.projection.ScenarioDetailBaseRow;
@@ -40,10 +37,11 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
-import org.springframework.data.domain.Page;
-
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.domain.Page;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 @Slf4j
 @Service
@@ -163,7 +161,7 @@ public class ScenarioGroupServiceImpl implements ScenarioGroupService {
             .map(s -> ScenarioGroupDetailRowRes.of(
                 s,
                 template.dimensions(selectedKeys, s.dimensionValues()),
-                ScenarioStatus.fromLabel(s.judgmentStatusCode()),
+                ScenarioDisplayStatus.from(s.status()),
                 adjusted.get(s.scenarioId())
             ))
             .toList();
@@ -201,7 +199,7 @@ public class ScenarioGroupServiceImpl implements ScenarioGroupService {
 
     @Override
     @Transactional
-    public ScenarioStatusRes updateScenarioStatus(Long scenarioGroupId, Long scenarioId, ScenarioStatus status) {
+    public ScenarioStatusRes updateScenarioStatus(Long scenarioGroupId, Long scenarioId, ScenarioDisplayStatus status) {
         List<MiScenario> scenarios = scenarioGroupRepository.findScenarioEntitiesByGroupId(scenarioGroupId);
 
         MiScenario target = scenarios.stream()
@@ -209,15 +207,15 @@ public class ScenarioGroupServiceImpl implements ScenarioGroupService {
             .findFirst()
             .orElseThrow(() -> AppErrorException.of(ResultCode.Error.RSC_NOT_FOUND, "Scenario not found: scenarioGroupId=%d, scenarioId=%d".formatted(scenarioGroupId, scenarioId)));
 
-        target.updateJudgmentStatus(status);
+        target.updateStatus(status);
 
         // 기획: 그룹 내 시나리오가 하나라도 '실현'되면 나머지는 모두 '폐기' 처리
         List<Long> discardedScenarioIds = List.of();
-        if (status == ScenarioStatus.REALIZED) {
+        if (status == ScenarioDisplayStatus.REALIZED) {
             List<MiScenario> others = scenarios.stream()
                 .filter(s -> !s.getScenarioId().equals(scenarioId))
                 .toList();
-            others.forEach(s -> s.updateJudgmentStatus(ScenarioStatus.DISCARDED));
+            others.forEach(s -> s.updateStatus(ScenarioDisplayStatus.DISCARDED));
             discardedScenarioIds = others.stream().map(MiScenario::getScenarioId).toList();
         }
 
@@ -225,7 +223,7 @@ public class ScenarioGroupServiceImpl implements ScenarioGroupService {
     }
 
     @Override
-    public ScenarioBulkStatusRes bulkUpdateScenarioStatus(Long scenarioGroupId, ScenarioStatus status) {
+    public ScenarioBulkStatusRes bulkUpdateScenarioStatus(Long scenarioGroupId, ScenarioDisplayStatus status) {
         // TODO: DB 연동 구현
         throw AppErrorException.of(ResultCode.Error.RSC_NOT_FOUND, "Scenario status 일괄 변경 DB 연동 미구현");
     }

@@ -51,7 +51,7 @@ MI Fundamental Model의 1차 mock API는 MI Fundamental Model 화면에서 사�
   - 상태: `PENDING`, `RUNNING`, `COMPLETED`, `FAILED`
 - Scenario Case 상세 조회
   - case metadata
-  - uploaded file metadata
+  - input/output download file metadata
   - latestRun projection
 - Scenario Case metadata 수정
   - `title`, `description`만 허용
@@ -158,7 +158,7 @@ MI Fundamental Model의 1차 mock API는 MI Fundamental Model 화면에서 사�
 | callback 인증/서명/재시도 | mock 구현 밖의 운영 정책 | security/integration design + feature spec update |
 | DB persistence / DDL (volumes/trade flows/price 포함) | phase 1 제외. mock은 json seed | case/run DDL은 `scenario-case-execution-erd-ddl-draft.md`, output result data persistence는 `mi-fundamental-model-output-result-persistence-design.md` |
 | Ownership scope | DB-backed 확정 사항 | `usr_no` only로 확정. 조직/부서/tenant 정책 키는 본 모델에 추가하지 않는다 |
-| `ASSIGNEE_NAME` DB 검색 경계 | DB-backed 확정 사항 + 검증 필요 | `tmd_scncasem.usr_no = tmd_usrm.usr_no` JOIN, 표시값 `tmd_usrm.usr_nm` 사용. rollout 전 JOIN 양측 인덱스 EXPLAIN 검증 필요 |
+| `ASSIGNEE_NAME` DB 검색 경계 | DB-backed 확정 사항 + 검증 필요 | `tmd_mdl_scnrcasem.usr_no = tmd_usrm.usr_no` JOIN, 표시값 `tmd_usrm.usr_nm` 사용. rollout 전 JOIN 양측 인덱스 EXPLAIN 검증 필요 |
 | timeout scheduler | phase 1 제외 | DB-backed scheduler design + query/EXPLAIN verification |
 | Volumes/Price 필터 저장 (Save 토글) | phase 1 제외. FE 로컬 상태로 관리 | user preference API feature spec + DB 테이블 설계 |
 
@@ -170,7 +170,7 @@ MI Fundamental Model의 1차 mock API는 MI Fundamental Model 화면에서 사�
 - 운영 callback 인증/서명/재시도/idempotency 세부 정책
 - result 조회/download endpoint와 result pointer/reference persistence
 - DB-backed timeout scheduler query와 batch update strategy
-- delete retention/audit policy beyond `tmd_scncasem.del_yn = 'Y'`
+- delete retention/audit policy beyond `tmd_mdl_scnrcasem.del_yn = 'Y'`
 
 ### Status Query Recommendation
 
@@ -191,13 +191,17 @@ MI Fundamental Model의 1차 mock API는 MI Fundamental Model 화면에서 사�
 - response DTO: `FundamentalModelCaseDetailRes`
 - 포함 범위:
   - case metadata (`caseId`, `title`, `description`, `status`, `assigneeName`, `createdAt`, `updatedAt`)
-  - uploaded file metadata (`files`)
+  - download file metadata (`files.input`, `files.output`)
   - 최신 실행 projection (`latestRun`)
 - 제외 범위:
   - full run history
   - result payload
-  - result file download URL/path
-  - result 조회/download contract
+  - result 조회 contract
+  - intermediate file download metadata
+
+`files.input`은 `tcm_filel.file_rel_obj_spt_cd = 'SCNRCASE'` 및 `file_rel_obj_dstg_no = case_id` 기준 파일 목록이다.
+`files.output`은 최신 실행의 `run_seq`를 기준으로 `tcm_filel.file_rel_obj_spt_cd = 'SCNRCASEH'` 및 `file_rel_obj_dstg_no = run_seq`에 연결된 파일 목록이다.
+각 파일 항목은 `/api/v1/file-management/download/file` 요청 body로 전달할 수 있도록 `fileNo`, `fileNm`, `fileSize` 필드명을 사용한다.
 
 `GET /cases/{caseId}/status`는 FE polling을 위한 경량 상태 조회로 유지한다. 상태 조회는 파일 metadata와 설명 등 화면 상세 metadata를 반환하지 않는다. 반대로 상세 조회는 화면 상세 rendering에 필요한 projection이며, polling interval에서 반복 호출하는 API로 설계하지 않는다.
 
@@ -311,10 +315,10 @@ createCase(
 
 규칙:
 
-- 존재하는 case이면 case metadata, uploaded file metadata, latest run projection을 반환한다.
+- 존재하는 case이면 case metadata, input/output download file metadata, latest run projection을 반환한다.
 - `latestRunId`가 없거나 아직 실행되지 않은 `PENDING` case이면 `latestRun = null`이다.
 - full run history는 반환하지 않는다.
-- result payload, result reference, download URL은 반환하지 않는다.
+- result payload, result reference, download URL은 반환하지 않는다. 파일 다운로드는 공통 File API에 `files.*[]` 항목의 `fileNo`, `fileNm`, `fileSize`를 전달해 수행한다.
 - case가 없으면 `404 RSC_NOT_FOUND`로 응답한다.
 
 Acceptance criteria:
@@ -346,8 +350,8 @@ Acceptance criteria:
 
 | 필드 | 타입 | 필수 | 검증 | 설명 |
 |---|---|---|---|---|
-| `title` | `String` | Y | trim 후 1-200자 | Scenario Case 제목. `tmd_scncasem.case_titl_nm`에 매핑 |
-| `description` | `String` | N | nullable/optional | Scenario Case 설명. `tmd_scncasem.case_expn`에 매핑 |
+| `title` | `String` | Y | trim 후 1-200자 | Scenario Case 제목. `tmd_mdl_scnrcasem.case_titl_nm`에 매핑 |
+| `description` | `String` | N | nullable/optional | Scenario Case 설명. `tmd_mdl_scnrcasem.case_expn`에 매핑 |
 
 규칙:
 
@@ -380,7 +384,7 @@ Acceptance criteria:
 
 규칙:
 
-- 삭제는 physical delete가 아니라 `tmd_scncasem.del_yn = 'Y'` soft delete semantics로 처리한다.
+- 삭제는 physical delete가 아니라 `tmd_mdl_scnrcasem.del_yn = 'Y'` soft delete semantics로 처리한다.
 - phase-1 mock 구현은 record에 `delYn`을 두고 `Y`로 갱신해 DB soft-delete 동작을 반영한다.
 - 삭제 시 upload files, run history, latestRun/result payload는 물리 삭제하지 않는다.
 - 삭제된 case는 list/detail/status/run/update/delete에서 active resource가 아니므로 `404 RSC_NOT_FOUND`로 취급한다.
@@ -592,15 +596,22 @@ Reset API 포함 판단:
   "status": "RUNNING",
   "assigneeName": "홍길동",
   "assigneeUserNo": 1,
-  "files": [
-    {
-      "fileNo": 1011,
-      "fileIndex": 1,
-      "originalFileName": "input_1.xlsx",
-      "contentType": "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-      "size": 12345
-    }
-  ],
+  "files": {
+    "input": [
+      {
+        "fileNo": 1011,
+        "fileNm": "input_1.xlsx",
+        "fileSize": 12345
+      }
+    ],
+    "output": [
+      {
+        "fileNo": 2011,
+        "fileNm": "output.xlsx",
+        "fileSize": 54321
+      }
+    ]
+  },
   "latestRun": {
     "runId": "20260521_143500_A1B2",
     "status": "RUNNING",
@@ -622,13 +633,28 @@ Reset API 포함 판단:
 | `description` | `String` | case 설명 |
 | `status` | `FundamentalModelCaseStatus` | case 최신 상태 |
 | `assigneeName` | `String` | case를 업로드한 사용자 이름. mock에서는 고정값 사용 |
-| `assigneeUserNo` | `Integer` | case를 업로드한 사용자 번호. DB-backed 구현에서는 `tmd_scncasem.usr_no` |
-| `files` | `List<FundamentalModelCaseFileRes>` | 업로드 파일 metadata |
+| `assigneeUserNo` | `Integer` | case를 업로드한 사용자 번호. DB-backed 구현에서는 `tmd_mdl_scnrcasem.usr_no` |
+| `files` | `FundamentalModelCaseFilesRes` | 다운로드 가능한 input/output 파일 metadata |
 | `latestRun` | `FundamentalModelRunStatusRes` | 최신 실행 정보. `PENDING`이면 `null` |
 | `createdAt` | `LocalDateTime` | case 생성 시각 |
 | `updatedAt` | `LocalDateTime` | case 최종 변경 시각 |
 
-상세 응답은 최신 실행 1건만 포함한다. 전체 실행 이력은 별도 runs API가 정의되기 전까지 이 응답에 포함하지 않는다. result payload와 result download 정보도 포함하지 않는다.
+상세 응답은 최신 실행 1건만 포함한다. 전체 실행 이력은 별도 runs API가 정의되기 전까지 이 응답에 포함하지 않는다. result payload는 포함하지 않는다. 파일 다운로드는 공통 File API(`/api/v1/file-management/download/file`)를 사용하며, 상세 응답의 `fileNo`, `fileNm`, `fileSize`를 그대로 전달한다. `intermediate` 파일은 현재 다운로드 대상이 아니므로 응답에 포함하지 않는다.
+
+#### `FundamentalModelCaseFilesRes`
+
+| 필드 | 타입 | 설명 |
+|---|---|---|
+| `input` | `List<FundamentalModelDownloadFileRes>` | `SCNRCASE + case_id`로 연결된 입력 파일 목록. 업로드 기준 3개 |
+| `output` | `List<FundamentalModelDownloadFileRes>` | 최신 실행 `SCNRCASEH + run_seq`로 연결된 output 파일 목록. 최신 실행 또는 output 파일이 없으면 빈 배열 |
+
+#### `FundamentalModelDownloadFileRes`
+
+| 필드 | 타입 | 설명 |
+|---|---|---|
+| `fileNo` | `Long` | 공통 File API 다운로드 요청의 `fileNo` |
+| `fileNm` | `String` | 공통 File API 다운로드 요청의 `fileNm` |
+| `fileSize` | `Long` | 공통 File API 다운로드 요청의 `fileSize` |
 
 ### 4.4 `FundamentalModelCaseCreateRes`
 
@@ -654,9 +680,9 @@ Reset API 포함 판단:
 
 | 필드 | 타입 | 설명 |
 |---|---|---|
-| `caseId` | `Long` | mock store가 생성한 case ID. future DB는 `tmd_scncasem.case_id` 후보 |
+| `caseId` | `Long` | mock store가 생성한 case ID. future DB는 `tmd_mdl_scnrcasem.case_id` 후보 |
 | `title` | `String` | 제목 |
-| `description` | `String` | 설명. 입력 없으면 `null`. 기존 NextGen mock의 optional 문자열 필드 패턴과 동일. 향후 DB 전환 시 `tmd_scncasem.case_expn TEXT NULL` 과 자연스럽게 매핑됨 |
+| `description` | `String` | 설명. 입력 없으면 `null`. 기존 NextGen mock의 optional 문자열 필드 패턴과 동일. 향후 DB 전환 시 `tmd_mdl_scnrcasem.case_expn TEXT NULL` 과 자연스럽게 매핑됨 |
 | `status` | `FundamentalModelCaseStatus` | 생성 직후 `PENDING` |
 | `files` | `List<FundamentalModelCaseFileRes>` | 업로드 파일 3개 metadata |
 | `createdAt` | `LocalDateTime` | case 생성 시각 |
@@ -688,7 +714,7 @@ Reset API 포함 판단:
 | 필드 | 타입 | 설명 |
 |---|---|---|
 | `caseId` | `Long` | 실행 대상 case ID |
-| `runId` | `String` | backend/mock store가 생성한 `yyyymmdd_hhmmss_XXXX` 포맷 실행 ID. future DB는 `tmd_scncaseh.run_id` |
+| `runId` | `String` | backend/mock store가 생성한 `yyyymmdd_hhmmss_XXXX` 포맷 실행 ID. future DB는 `tmd_mdl_scnrcaseh.run_id` |
 | `status` | `FundamentalModelRunStatus` | 실행 접수 직후 `RUNNING` |
 | `requestedAt` | `LocalDateTime` | 실행 요청 시각 |
 | `startedAt` | `LocalDateTime` | mock 실행 시작 시각. 1차에서는 `requestedAt`과 동일 |
@@ -731,8 +757,8 @@ Reset API 포함 판단:
 | `runId` | `String` | `yyyymmdd_hhmmss_XXXX` 포맷의 실행 추적 ID |
 | `status` | `FundamentalModelRunStatus` | 실행 상태. `RUNNING`, `COMPLETED`, `FAILED` 만 가질 수 있다 |
 | `requestedAt` | `LocalDateTime` | 실행 요청 시각 |
-| `startedAt` | `LocalDateTime` | 실행 시작 시각. future DB `tmd_scncaseh.exec_bgn_dtm` 매핑 |
-| `finishedAt` | `LocalDateTime` | 완료/실패 시각. future DB `tmd_scncaseh.exec_end_dtm` 매핑. 실행 중이면 `null` |
+| `startedAt` | `LocalDateTime` | 실행 시작 시각. future DB `tmd_mdl_scnrcaseh.exec_bgn_dtm` 매핑 |
+| `finishedAt` | `LocalDateTime` | 완료/실패 시각. future DB `tmd_mdl_scnrcaseh.exec_end_dtm` 매핑. 실행 중이면 `null` |
 | `failureReason` | `String` | `TIMEOUT`, `EXTERNAL_ERROR`, `UNKNOWN` 후보. 실패 전에는 `null` |
 | `errorMessage` | `String` | 실패 상세 메시지. 실패 전에는 `null` |
 
@@ -973,6 +999,7 @@ FE는 `latestRun.startedAt`과 `latestRun.finishedAt`으로 소요시간을 계�
 ```json
 {
   "caseId": 101,
+  "unit": "USD/mmbtu",
   "chart": {
     "series": [
       {
@@ -1019,6 +1046,7 @@ FE는 `latestRun.startedAt`과 `latestRun.finishedAt`으로 소요시간을 계�
 | 필드 | 타입 | 설명 |
 |---|---|---|
 | `caseId` | `Long` | case ID |
+| `unit` | `String` | 가격 단위. `"USD/mmbtu"` 고정 상수. 모델 output 불변 계약이므로 DB에 저장하지 않고 서버가 상수로 반환한다 |
 | `chart` | `PriceChart` | Monthly Futures Shoulder Chart용 라인 그래프 데이터 |
 | `annualTable` | `PriceTable` | 연간 가격 테이블 |
 | `monthlyTable` | `PriceTable` | 월별 가격 테이블 |
@@ -1250,7 +1278,7 @@ Swagger 문서에는 다음을 명시한다.
 - 목록 조회 API의 canonical contract는 `non-blank keyword requires searchType`이다. `keyword`가 null 또는 blank이면 `searchType`이 있어도 검색 조건 없음으로 처리한다.
 - 업로드 API는 `multipart/form-data` 전용이다.
 - `files` part는 정확히 3개가 필수다.
-- 상세 조회는 case metadata, uploaded file metadata, latestRun만 반환한다. full run history/result 조회/download는 포함하지 않는다.
+- 상세 조회는 case metadata, input/output download file metadata, latestRun만 반환한다. full run history/result payload/intermediate download metadata는 포함하지 않는다.
 - 수정 API는 `title`, `description`만 받으며 응답은 최신 `FundamentalModelCaseDetailRes`다.
 - 삭제 API는 physical delete가 아니라 soft delete이며, 삭제된 case는 이후 active-resource API에서 `404 RSC_NOT_FOUND`로 취급한다.
 - 실행 요청은 `RUNNING` 상태에서 중복 접수를 차단한다.
@@ -1290,9 +1318,9 @@ seed 파일은 다음 최상위 구조를 가진다.
 | `FundamentalModelRunMockRecord` | `runId`, `caseId`, status, requestedAt, startedAt, finishedAt, failureReason, errorMessage |
 | `FundamentalModelFileMockRecord` | fileNo, fileIndex, originalFileName, contentType, size |
 
-`FundamentalModelCaseMockRecord.assigneeName`은 case 업로드 시점의 사용자 이름을 표현한다. mock에서는 업로드 요청에 업로더 이름을 받지 않으므로 고정값(예: `"홍길동"`)으로 설정한다. 향후 DB 전환 시 `tmd_scncasem.usr_no = tmd_usrm.usr_no`로 JOIN하고, 작성자명 표시는 `tmd_usrm.usr_nm`을 사용한다.
+`FundamentalModelCaseMockRecord.assigneeName`은 case 업로드 시점의 사용자 이름을 표현한다. mock에서는 업로드 요청에 업로더 이름을 받지 않으므로 고정값(예: `"홍길동"`)으로 설정한다. 향후 DB 전환 시 `tmd_mdl_scnrcasem.usr_no = tmd_usrm.usr_no`로 JOIN하고, 작성자명 표시는 `tmd_usrm.usr_nm`을 사용한다.
 
-`FundamentalModelFileMockRecord` 는 별도 store map 없이 `FundamentalModelCaseMockRecord.files` 에 `List` 로 직접 포함된다. case 조회 시 파일 목록을 항상 함께 반환하는 접근 패턴이 유일하고, file만 독립 조회하는 use case가 없기 때문이다. 향후 DB 전환 시에는 이 리스트가 `tcm_filel` 별도 테이블로 분리된다 (§7.2 참고). `FundamentalModelFileMockRecord` 를 `FundamentalModelCaseFileRes` (응답 DTO) 와 별개 타입으로 두는 이유는 mock 내부 표현이 presentation layer에 직접 결합되지 않도록 하기 위함이다.
+`FundamentalModelFileMockRecord` 는 별도 store map 없이 `FundamentalModelCaseMockRecord.files` 에 `List` 로 직접 포함된다. mock seed의 `files`는 입력 파일을 의미하며, 상세 응답에서는 `files.input`으로 변환한다. output 파일은 DB-backed 구현에서 `SCNRCASEH + run_seq`로 조회하며, 현재 mock seed는 별도 output file store를 갖지 않으므로 `files.output`은 빈 배열로 반환한다. 향후 DB 전환 시에는 이 리스트가 `tcm_filel` 별도 테이블로 분리된다 (§7.2 참고). `FundamentalModelFileMockRecord` 를 응답 DTO와 별개 타입으로 두는 이유는 mock 내부 표현이 presentation layer에 직접 결합되지 않도록 하기 위함이다.
 
 동시성:
 
@@ -1379,7 +1407,7 @@ src/main/resources/mock/fundamental-model/fundamental-model-price-data.json
 - `country=null`은 해당 지역의 집계 행/열을 나타낸다.
 - `flows`는 0이 아닌 값만 포함한다. `toRegion=null`인 flows는 Total 행에 대응한다.
 - `fromCountries`와 `toCountries`는 base 버전/기준 정보에 따라 country 목록이 달라질 수 있다. region 고유값은 `FundamentalModelRegion` enum으로 고정된다.
-- DB 전환 시 country 목록의 동적 변동 특성은 [mi-fundamental-model-output-result-persistence-design.md](../design-docs/gas/mi-fundamental-model-output-result-persistence-design.md)의 `tmd_scncaseh_trd_hdr_l` header row table 설계를 따른다.
+- DB 전환 시 country 목록의 동적 변동 특성은 [mi-fundamental-model-output-result-persistence-design.md](../design-docs/gas/mi-fundamental-model-output-result-persistence-design.md)의 `tmd_mdl_scnrcasetrdehdrl` header row table 설계를 따른다.
 
 **`fundamental-model-price-data.json` 최상위 구조:**
 
@@ -1431,27 +1459,27 @@ src/main/resources/mock/fundamental-model/fundamental-model-price-data.json
 
 | API 필드 | 향후 DB 후보 | 메모 |
 |---|---|---|
-| `caseId` | `tmd_scncasem.case_id` | `INT UNSIGNED` 초안. Java DTO는 `Long` 사용 가능하나 mapper 변환 주의 |
+| `caseId` | `tmd_mdl_scnrcasem.case_id` | `INT UNSIGNED` 초안. Java DTO는 `Long` 사용 가능하나 mapper 변환 주의 |
 | `scenarioId` | superseded | MI Fundamental Model 1차 mock API 계약에서는 제거한다. workflow/ERD draft 기준으로 `scenario_id` 전제는 제거 완료되었고 superseded 이력으로만 유지한다 |
-| `title` | `tmd_scncasem.case_titl_nm` | 최대 200자 |
-| `description` | `tmd_scncasem.case_expn` | nullable |
-| `delYn` | `tmd_scncasem.del_yn` | soft delete flag. active resource 조회 조건은 `del_yn = 'N'` |
-| `status` | `tmd_scncasem.case_stat_cd` | 최신 상태 cache 역할 |
-| `assigneeUserNo` | `tmd_scncasem.usr_no` | 상세 응답에서 업로더 사용자 번호로 반환 |
-| `assigneeName` | `tmd_usrm.usr_nm` | `tmd_scncasem.usr_no = tmd_usrm.usr_no` JOIN 표시값 |
-| `latestRunId` | `tmd_scncasem.last_run_id` | `VARCHAR(20) NULL`. `tmd_scncaseh.run_id` 에 대한 application-validated 논리 참조이며 물리 FK 없음. `case_stat_cd` 와 invariant 동기화 |
-| `runId` | `tmd_scncaseh.run_id` | `VARCHAR(20)` + unique. backend-generated `yyyymmdd_hhmmss_XXXX` |
-| run status | `tmd_scncaseh.exec_stat_cd` | execution 관점 상태 |
-| `latestRun.startedAt` | `tmd_scncaseh.exec_bgn_dtm` | FE 소요시간 계산 시작 시각 |
-| `latestRun.finishedAt` | `tmd_scncaseh.exec_end_dtm` | FE 소요시간 계산 종료 시각. `RUNNING`이면 null |
-| `failureReason` | `tmd_scncaseh.fail_rsn_cd` | `TIMEOUT`, `EXTERNAL_ERROR`, `UNKNOWN` |
-| `errorMessage` | `tmd_scncaseh.err_msg_cntt` | 최대 길이 후속 확정 |
-| upload files | `tcm_filel` | `file_rel_obj_spt_cd = 'SCNCASE'`, `file_rel_obj_dstg_no = case_id` |
-| output files | `tcm_filel` | `file_rel_obj_spt_cd = 'SCNCASEH'`, `file_rel_obj_dstg_no = run_seq` |
+| `title` | `tmd_mdl_scnrcasem.case_titl_nm` | 최대 200자 |
+| `description` | `tmd_mdl_scnrcasem.case_expn` | nullable |
+| `delYn` | `tmd_mdl_scnrcasem.del_yn` | soft delete flag. active resource 조회 조건은 `del_yn = 'N'` |
+| `status` | `tmd_mdl_scnrcasem.case_stat_cd` | 최신 상태 cache 역할 |
+| `assigneeUserNo` | `tmd_mdl_scnrcasem.usr_no` | 상세 응답에서 업로더 사용자 번호로 반환 |
+| `assigneeName` | `tmd_usrm.usr_nm` | `tmd_mdl_scnrcasem.usr_no = tmd_usrm.usr_no` JOIN 표시값 |
+| `latestRunId` | `tmd_mdl_scnrcasem.last_run_id` | `VARCHAR(20) NULL`. `tmd_mdl_scnrcaseh.run_id` 에 대한 application-validated 논리 참조이며 물리 FK 없음. `case_stat_cd` 와 invariant 동기화 |
+| `runId` | `tmd_mdl_scnrcaseh.run_id` | `VARCHAR(20)` + unique. backend-generated `yyyymmdd_hhmmss_XXXX` |
+| run status | `tmd_mdl_scnrcaseh.exec_stat_cd` | execution 관점 상태 |
+| `latestRun.startedAt` | `tmd_mdl_scnrcaseh.exec_bgn_dtm` | FE 소요시간 계산 시작 시각 |
+| `latestRun.finishedAt` | `tmd_mdl_scnrcaseh.exec_end_dtm` | FE 소요시간 계산 종료 시각. `RUNNING`이면 null |
+| `failureReason` | `tmd_mdl_scnrcaseh.fail_rsn_cd` | `TIMEOUT`, `EXTERNAL_ERROR`, `UNKNOWN` |
+| `errorMessage` | `tmd_mdl_scnrcaseh.err_msg_cntt` | 최대 길이 후속 확정 |
+| upload files | `tcm_filel` | `file_rel_obj_spt_cd = 'SCNRCASE'`, `file_rel_obj_dstg_no = case_id` |
+| output files | `tcm_filel` | `file_rel_obj_spt_cd = 'SCNRCASEH'`, `file_rel_obj_dstg_no = run_seq` |
 
-`SCNCASE`/`SCNCASEH` 공통코드는 등록 완료된 것으로 implementation input을 둔다. `tcm_filel.file_rel_obj_dstg_no`와 `tmd_scncasem.case_id`/`tmd_scncaseh.run_seq`의 타입 호환성은 `erd-change-review`에서 재확인한다.
+`SCNRCASE`/`SCNRCASEH` 공통코드는 등록 완료된 것으로 implementation input을 둔다. `tcm_filel.file_rel_obj_dstg_no`와 `tmd_mdl_scnrcasem.case_id`/`tmd_mdl_scnrcaseh.run_seq`의 타입 호환성은 `erd-change-review`에서 재확인한다.
 
-Trade Flows의 fromCountries/toCountries country 목록은 base 버전/기준 정보에 따라 변동될 수 있다. region 고유값은 고정이지만 region 내 country 목록이 달라지는 구조이므로, DB-backed 전환 시 header metadata는 [mi-fundamental-model-output-result-persistence-design.md](../design-docs/gas/mi-fundamental-model-output-result-persistence-design.md)의 `tmd_scncaseh_trd_hdr_l` row table에 저장한다.
+Trade Flows의 fromCountries/toCountries country 목록은 base 버전/기준 정보에 따라 변동될 수 있다. region 고유값은 고정이지만 region 내 country 목록이 달라지는 구조이므로, DB-backed 전환 시 header metadata는 [mi-fundamental-model-output-result-persistence-design.md](../design-docs/gas/mi-fundamental-model-output-result-persistence-design.md)의 `tmd_mdl_scnrcasetrdehdrl` row table에 저장한다.
 
 결과 payload/pointer 컬럼은 phase 1 scope에서 제외하기로 결정되었다 (workflow draft Closed Decisions 참고). callback 처리 안에서 결과 데이터를 저장하지 않으며, 결과 조회/download 가 별도 spec으로 확정되면 그 시점에 컬럼 또는 별도 테이블을 재검토한다.
 
@@ -1490,7 +1518,7 @@ DB 전환 시 권장:
 | Mock 설정 properties | 신규 `com.sk.domain.mi.config.FundamentalModelMockProperties` 생성 (`mi.fundamental-model.mock` prefix, `NextGenMockProperties` 와 별개) |
 | Request DTO | `FundamentalModelCaseListReq`, `FundamentalModelCaseUpdateReq`, `FundamentalModelVolumesReq`, `FundamentalModelTradeFlowsReq` |
 | Callback DTO | `FundamentalModelRunCallbackReq` |
-| Response DTO | `FundamentalModelCaseListRes`, `FundamentalModelCaseListItemRes`, `FundamentalModelCaseDetailRes`, `FundamentalModelCaseCreateRes`, `FundamentalModelCaseFileRes`, `FundamentalModelRunAcceptRes`, `FundamentalModelCaseStatusRes`, `FundamentalModelRunStatusRes`, `FundamentalModelRunCallbackRes`, `FundamentalModelVolumesRes`, `FundamentalModelTradeFlowsRes`, `FundamentalModelPriceRes` |
+| Response DTO | `FundamentalModelCaseListRes`, `FundamentalModelCaseListItemRes`, `FundamentalModelCaseDetailRes`, `FundamentalModelCaseFilesRes`, `FundamentalModelDownloadFileRes`, `FundamentalModelCaseCreateRes`, `FundamentalModelCaseFileRes`, `FundamentalModelRunAcceptRes`, `FundamentalModelCaseStatusRes`, `FundamentalModelRunStatusRes`, `FundamentalModelRunCallbackRes`, `FundamentalModelVolumesRes`, `FundamentalModelTradeFlowsRes`, `FundamentalModelPriceRes` |
 | Enum | `FundamentalModelCaseStatus`, `FundamentalModelRunStatus`, `FundamentalModelCaseSearchType`, `FundamentalModelSegment`, `FundamentalModelDataType`, `FundamentalModelRegion`, `FundamentalModelGranularity`, `VolumesRowKind`, `PriceSeriesType`, `TradeFlowSelector`, `TradeFlowUnit`, `TradeFlowDirection`, `TradeCountryHeaderKind` |
 
 package는 이번 feature spec 수정에서 확정하지 않는다. MI Fundamental Model이 Next Gen와 동급 메뉴로 정리되었으므로 implementation follow-up에서 기존 `nextgen` package 후보를 `fundamentalmodel` package로 옮길지 검토해야 한다.
@@ -1579,10 +1607,10 @@ phase 1 mock 시연 동선:
 
 1. `caseId`로 active case를 찾는다.
 2. case가 없거나 `delYn = Y`이면 `RSC_NOT_FOUND`.
-3. case metadata와 uploaded file metadata를 반환한다.
-4. `latestRunId`가 null이면 `latestRun = null`로 반환한다.
-5. `latestRunId`가 있으면 run store에서 최신 run 1건만 찾아 `latestRun`으로 반환한다.
-6. full run history, result payload, result file/download metadata는 반환하지 않는다.
+3. case metadata와 `SCNRCASE + case_id` 기준 input download file metadata를 반환한다.
+4. `latestRunId`가 null이면 `latestRun = null`, `files.output = []`로 반환한다.
+5. `latestRunId`가 있으면 run store에서 최신 run 1건만 찾아 `latestRun`으로 반환하고, 해당 run의 `run_seq` 기준 `SCNRCASEH` output download file metadata를 반환한다.
+6. full run history, result payload, intermediate file/download metadata는 반환하지 않는다.
 
 ### Update
 
@@ -1705,7 +1733,7 @@ phase 1 mock 시연 동선:
 - Volumes 필터의 Save 토글(사용자별 필터 저장)은 1차 scope에서 제외한다. 후속 구현 시 user preference 테이블 설계가 필요하다.
 - 삭제는 phase-1에서 case active-resource 제외를 위한 soft delete만 구현한다. 보존 기간, audit 조회, 복구 정책은 후속 정책 범위다.
 - timeout은 설계 문서에서 5분 가정이 있으나 1차 mock에서는 scheduler를 구현하지 않는다.
-- 운영 입력 파일명에는 `DEMAND`/`SUPPLY`/`TRADE` 키워드가 포함되는 것으로 확정한다. DB-backed run dispatch 전환 시 backend는 `SCNCASE + caseId` 파일 목록에서 파일명 키워드로 입력 파일 역할을 매핑한다.
+- 운영 입력 파일명에는 `DEMAND`/`SUPPLY`/`TRADE` 키워드가 포함되는 것으로 확정한다. DB-backed run dispatch 전환 시 backend는 `SCNRCASE + caseId` 파일 목록에서 파일명 키워드로 입력 파일 역할을 매핑한다.
 - mock store의 런타임 변경분은 서버 재시작 또는 reset 시 유실되고 seed json 기준으로 복원된다. 개발/시연 전용으로만 사용한다.
 - `caseId`를 path에 노출하므로 후속 DB 전환 시 case ownership과 권한 검증이 필수다.
 - DB-backed update/delete 전환 시 predicate는 `case_id + usr_no ownership + del_yn = 'N'`을 포함해야 한다.
@@ -1748,17 +1776,17 @@ phase 1 mock 시연 동선:
 
 ### Input for `erd-change-review`
 
-- `tmd_scncasem`, `tmd_scncaseh`, `tcm_filel` 매핑 초안의 타입/인덱스/제약 검증
+- `tmd_mdl_scnrcasem`, `tmd_mdl_scnrcaseh`, `tcm_filel` 매핑 초안의 타입/인덱스/제약 검증
 - `tcm_filel.file_rel_obj_dstg_no`와 `case_id` 타입 호환성 검증
-- `SCNCASE`/`SCNCASEH` 공통코드는 등록 완료된 것으로 implementation input을 둔다. DDL review에서는 환경별 코드 반영 여부와 `tcm_filel.file_rel_obj_dstg_no` 타입 호환성만 확인한다
+- `SCNRCASE`/`SCNRCASEH` 공통코드는 등록 완료된 것으로 implementation input을 둔다. DDL review에서는 환경별 코드 반영 여부와 `tcm_filel.file_rel_obj_dstg_no` 타입 호환성만 확인한다
 - `case_stat_cd`와 `exec_stat_cd` 이중 상태 저장 정합성 검증
 - `RUNNING` 중복 실행 방지를 위한 transaction/lock/index 전략 검토 (workflow draft §5 conditional master update 기준)
 - `run_id` unique 제약과 조회 인덱스 검토
 - backend-generated `yyyymmdd_hhmmss_XXXX` 저장 길이(`VARCHAR(20)`)와 외부 모델 왕복 payload의 `run_id` 보존 규칙 검토
 - 목록 조회 query shape는 1차 mock canonical contract 기준으로 scenario scope를 전제하지 않는다. `scenario_id` 상태는 §7.2 Future DB Mapping Notes의 superseded note를 기준으로 해석한다.
-- `ASSIGNEE_NAME` 검색 JOIN 경계는 `tmd_scncasem.usr_no = tmd_usrm.usr_no`, 표시 컬럼은 `tmd_usrm.usr_nm`으로 확정한다. DDL review에서는 JOIN 양측 인덱스 커버리지를 확인한다
+- `ASSIGNEE_NAME` 검색 JOIN 경계는 `tmd_mdl_scnrcasem.usr_no = tmd_usrm.usr_no`, 표시 컬럼은 `tmd_usrm.usr_nm`으로 확정한다. DDL review에서는 JOIN 양측 인덱스 커버리지를 확인한다
 - callback compare-and-set update 조건과 terminal overwrite 방지 전략 검토
-- `tmd_scncasem.last_run_id` 컬럼의 invariant 와 application-validated 운용 방식 검토. case 최신 상태 동기화 시 `last_run_id = :run_id` 조건이 race condition 과 late callback 에 대해 충분한지 확인
+- `tmd_mdl_scnrcasem.last_run_id` 컬럼의 invariant 와 application-validated 운용 방식 검토. case 최신 상태 동기화 시 `last_run_id = :run_id` 조건이 race condition 과 late callback 에 대해 충분한지 확인
 - `req_param_json`, `rslt_ref_json` 제거는 workflow draft Closed Decisions 에서 확정되었다. 결과 조회/download spec 이 별도로 확정되면 그 시점의 컬럼/테이블 도입을 별도 review 로 다룬다.
 - DB-backed update predicate는 `case_id + usr_no ownership + del_yn = 'N'` 조건으로 active 소유 case만 갱신하고, `case_titl_nm`, `case_expn`, `mod_*` 컬럼만 변경한다.
 - DB-backed delete predicate는 `case_id + usr_no ownership + del_yn = 'N'` 조건으로 active 소유 case만 soft delete하고, `del_yn = 'Y'`, `mod_*` 컬럼만 변경한다.
