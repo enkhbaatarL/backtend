@@ -81,6 +81,10 @@ public class SwaggerConfig {
             .build();
     }
 
+    // note: 안정화 후 투머치 문서 모두 삭제예정
+    private static final String SW_VERSION_BASE = "v1.2.2";
+    private static final DateTimeFormatter SW_DEPLOY_DATE_FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
+
     @Bean
     public GroupedOpenApi nextGenApi(@Qualifier("sortPathsOpenApiCustomizer") OpenApiCustomizer sortPathsOpenApiCustomizer,
                                                @Qualifier("apiOrderOperationCustomizer") OperationCustomizer apiOrderOperationCustomizer,
