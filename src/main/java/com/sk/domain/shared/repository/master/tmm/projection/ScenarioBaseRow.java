@@ -9,7 +9,7 @@ public record ScenarioBaseRow(
     String title,
     Boolean isBaseline,
     BigDecimal probabilityScore,
-    String judgmentStatusCode,
+    String status,
     String dimensionValues,
     Integer displayOrder
 ) {

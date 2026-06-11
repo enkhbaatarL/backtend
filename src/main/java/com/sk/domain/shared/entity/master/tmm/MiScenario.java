@@ -1,14 +1,8 @@
 package com.sk.domain.shared.entity.master.tmm;
 
-import java.math.BigDecimal;
-
-import org.hibernate.annotations.ColumnDefault;
-import org.hibernate.annotations.Comment;
-
 import com.sk.common.converter.BooleanToYNAttributeConverter;
 import com.sk.domain.shared.entity.base.BaseEntity;
 import com.sk.domain.shared.enums.nextgen.ScenarioStatus;
-
 import jakarta.persistence.Column;
 import jakarta.persistence.Convert;
 import jakarta.persistence.Entity;
@@ -19,10 +13,13 @@ import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
+import java.math.BigDecimal;
 import lombok.AccessLevel;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
+import org.hibernate.annotations.ColumnDefault;
+import org.hibernate.annotations.Comment;
 
 @Getter
 @Entity
@@ -58,10 +55,6 @@ public class MiScenario extends BaseEntity {
     @Comment("시나리오 발생확률")
     private BigDecimal probabilityScore;
 
-    @Column(name = "probability_level", length = 50)
-    @Comment("시나리오 확률 레벨")
-    private String probabilityLevel;
-
     @Column(name = "probability_delta", precision = 5, scale = 2)
     @Comment("시나리오 확률 증감")
     private BigDecimal probabilityDelta;
@@ -78,14 +71,10 @@ public class MiScenario extends BaseEntity {
     @Comment("이벤트 임팩트(HH)")
     private String impactHh;
 
-    @Column(name = "feasibility_score")
-    @Comment("실현가능성 점수")
-    private Short feasibilityScore;
-
-    @Column(name = "judgment_status_code", length = 50)
-    @ColumnDefault("'대기'")
-    @Comment("판정 상태 코드")
-    private String judgmentStatusCode;
+    @Column(name = "status", nullable = false, length = 50)
+    @ColumnDefault("'creating'")
+    @Comment("상태")
+    private String status;
 
     @Column(name = "display_order", nullable = false)
     @ColumnDefault("0")
@@ -100,29 +89,27 @@ public class MiScenario extends BaseEntity {
 
     @Builder
     public MiScenario(Long scenarioId, MiScenarioGroup scenarioGroup, String title, String narrative,
-                      String dimensionValues, BigDecimal probabilityScore, String probabilityLevel,
+                      String dimensionValues, BigDecimal probabilityScore,
                       BigDecimal probabilityDelta, String impactJkm, String impactTtf, String impactHh,
-                      Short feasibilityScore, String judgmentStatusCode, Integer displayOrder, Boolean isBaseline) {
+                      String status, Integer displayOrder, Boolean isBaseline) {
         this.scenarioId = scenarioId;
         this.scenarioGroup = scenarioGroup;
         this.title = title;
         this.narrative = narrative;
         this.dimensionValues = dimensionValues;
         this.probabilityScore = probabilityScore;
-        this.probabilityLevel = probabilityLevel;
         this.probabilityDelta = probabilityDelta;
         this.impactJkm = impactJkm;
         this.impactTtf = impactTtf;
         this.impactHh = impactHh;
-        this.feasibilityScore = feasibilityScore;
-        this.judgmentStatusCode = judgmentStatusCode;
+        this.status = status;
         this.displayOrder = displayOrder;
         this.isBaseline = isBaseline;
     }
 
-    /** 판정 상태 변경. DB 컬럼은 한글 라벨(대기/실현/폐기)로 적재한다. */
-    public void updateJudgmentStatus(ScenarioStatus status) {
-        this.judgmentStatusCode = status.getLabel();
+    /** API 상태를 DB status 값으로 저장한다. */
+    public void updateStatus(ScenarioStatus status) {
+        this.status = status.getDbStatus();
     }
 
 }

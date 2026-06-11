@@ -206,7 +206,7 @@ public class CustomMiScenarioGroupRepositoryImpl implements CustomMiScenarioGrou
                 miScenario.title,
                 miScenario.isBaseline,
                 miScenario.probabilityScore,
-                miScenario.judgmentStatusCode,
+                miScenario.status,
                 miScenario.dimensionValues,
                 miScenario.displayOrder
             ))

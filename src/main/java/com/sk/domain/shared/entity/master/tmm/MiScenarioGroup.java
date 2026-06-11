@@ -1,10 +1,6 @@
 package com.sk.domain.shared.entity.master.tmm;
 
-import org.hibernate.annotations.ColumnDefault;
-import org.hibernate.annotations.Comment;
-
 import com.sk.domain.shared.entity.base.BaseEntity;
-
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.FetchType;
@@ -18,6 +14,8 @@ import lombok.AccessLevel;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
+import org.hibernate.annotations.ColumnDefault;
+import org.hibernate.annotations.Comment;
 
 @Getter
 @Entity
@@ -63,9 +61,24 @@ public class MiScenarioGroup extends BaseEntity {
     @Comment("시나리오 수")
     private Integer scenarioCount;
 
+    @Column(name = "status", nullable = false, length = 50)
+    @ColumnDefault("'creating'")
+    @Comment("상태")
+    private String status;
+
+    @Column(name = "stage", nullable = false, length = 50)
+    @ColumnDefault("'ready'")
+    @Comment("단계")
+    private String stage;
+
+    @Column(name = "request_usr_id", columnDefinition = "int unsigned")
+    @Comment("요청자 사용자 ID")
+    private Integer requestUserId;
+
     @Builder
     public MiScenarioGroup(Long scenarioGroupId, MiEvent miEvent, MiEventTypeL2 eventTypeL2, String title,
-                           String summary, String description, String dimensionSelected, Integer scenarioCount) {
+                           String summary, String description, String dimensionSelected, Integer scenarioCount,
+                           String status, String stage, Integer requestUserId) {
         this.scenarioGroupId = scenarioGroupId;
         this.miEvent = miEvent;
         this.eventTypeL2 = eventTypeL2;
@@ -74,6 +87,9 @@ public class MiScenarioGroup extends BaseEntity {
         this.description = description;
         this.dimensionSelected = dimensionSelected;
         this.scenarioCount = scenarioCount;
+        this.status = status;
+        this.stage = stage;
+        this.requestUserId = requestUserId;
     }
 
 }

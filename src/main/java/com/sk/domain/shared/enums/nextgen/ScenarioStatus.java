@@ -13,13 +13,14 @@ import lombok.RequiredArgsConstructor;
 @RequiredArgsConstructor
 public enum ScenarioStatus {
 
-    PENDING("pending", "대기"),
-    REALIZED("realized", "실현"),
-    DISCARDED("discarded", "폐기");
+    PENDING("pending", "대기", "created"),
+    REALIZED("realized", "실현", "realized"),
+    DISCARDED("discarded", "폐기", "discarded");
 
     @JsonValue
     private final String code;
     private final String label;
+    private final String dbStatus;
 
     @JsonCreator
     public static ScenarioStatus from(String value) {
@@ -30,9 +31,27 @@ public enum ScenarioStatus {
     }
 
     /**
-     * DB judgment_status_code(한글 라벨)를 enum으로 역매핑.
-     * 컬럼은 NULL 허용이며 기본값이 '대기'이므로 null/blank 는 PENDING 으로 처리한다.
+     * DB status 값을 API enum으로 역매핑한다.
+     * DB의 생성 중/완료 상태는 외부 API의 pending 상태로 호환한다.
      */
+    public static ScenarioStatus fromDbStatus(String dbStatus) {
+        if (dbStatus == null || dbStatus.isBlank()) {
+            return PENDING;
+        }
+        String normalized = dbStatus.trim();
+        if ("creating".equalsIgnoreCase(normalized) || "created".equalsIgnoreCase(normalized)) {
+            return PENDING;
+        }
+        return Arrays.stream(values())
+            .filter(status -> status.dbStatus.equalsIgnoreCase(normalized))
+            .findFirst()
+            .orElseThrow(() -> new IllegalArgumentException("Unknown scenario DB status: " + dbStatus));
+    }
+
+    /**
+     * @deprecated use {@link #fromDbStatus(String)} for tmm_mi_scenario_m.status.
+     */
+    @Deprecated(forRemoval = false)
     public static ScenarioStatus fromLabel(String label) {
         if (label == null || label.isBlank()) {
             return PENDING;

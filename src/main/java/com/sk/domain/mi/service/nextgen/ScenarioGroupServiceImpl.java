@@ -1,8 +1,5 @@
 package com.sk.domain.mi.service.nextgen;
 
-import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
-
 import com.sk.common.enums.ResultCode;
 import com.sk.common.exception.AppErrorException;
 import com.sk.common.model.PaginationRes;
@@ -40,10 +37,11 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
-import org.springframework.data.domain.Page;
-
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.domain.Page;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 @Slf4j
 @Service
@@ -163,7 +161,7 @@ public class ScenarioGroupServiceImpl implements ScenarioGroupService {
             .map(s -> ScenarioGroupDetailRowRes.of(
                 s,
                 template.dimensions(selectedKeys, s.dimensionValues()),
-                ScenarioStatus.fromLabel(s.judgmentStatusCode()),
+                ScenarioStatus.fromDbStatus(s.status()),
                 adjusted.get(s.scenarioId())
             ))
             .toList();
@@ -209,7 +207,7 @@ public class ScenarioGroupServiceImpl implements ScenarioGroupService {
             .findFirst()
             .orElseThrow(() -> AppErrorException.of(ResultCode.Error.RSC_NOT_FOUND, "Scenario not found: scenarioGroupId=%d, scenarioId=%d".formatted(scenarioGroupId, scenarioId)));
 
-        target.updateJudgmentStatus(status);
+        target.updateStatus(status);
 
         // 기획: 그룹 내 시나리오가 하나라도 '실현'되면 나머지는 모두 '폐기' 처리
         List<Long> discardedScenarioIds = List.of();
@@ -217,7 +215,7 @@ public class ScenarioGroupServiceImpl implements ScenarioGroupService {
             List<MiScenario> others = scenarios.stream()
                 .filter(s -> !s.getScenarioId().equals(scenarioId))
                 .toList();
-            others.forEach(s -> s.updateJudgmentStatus(ScenarioStatus.DISCARDED));
+            others.forEach(s -> s.updateStatus(ScenarioStatus.DISCARDED));
             discardedScenarioIds = others.stream().map(MiScenario::getScenarioId).toList();
         }
 

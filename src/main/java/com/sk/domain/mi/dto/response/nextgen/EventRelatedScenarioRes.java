@@ -37,7 +37,7 @@ public record EventRelatedScenarioRes(
 ) {
 
     public static EventRelatedScenarioRes of(ScenarioBaseRow row, List<ScenarioDimensionRes> dimensions, Integer adjustedProbability) {
-        ScenarioStatus status = ScenarioStatus.fromLabel(row.judgmentStatusCode());
+        ScenarioStatus status = ScenarioStatus.fromDbStatus(row.status());
         return new EventRelatedScenarioRes(
             row.scenarioId(),
             row.title(),

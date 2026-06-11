@@ -29,7 +29,7 @@ public final class ScenarioProbabilityAllocator {
     public record Item(Long scenarioId, BigDecimal probabilityScore, boolean discarded) {
 
         public static Item from(ScenarioBaseRow row) {
-            boolean discarded = ScenarioStatus.fromLabel(row.judgmentStatusCode()) == ScenarioStatus.DISCARDED;
+            boolean discarded = ScenarioStatus.fromDbStatus(row.status()) == ScenarioStatus.DISCARDED;
             return new Item(row.scenarioId(), row.probabilityScore(), discarded);
         }
     }
