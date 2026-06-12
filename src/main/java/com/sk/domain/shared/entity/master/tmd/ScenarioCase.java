@@ -29,7 +29,8 @@ import org.hibernate.type.SqlTypes;
     name = "tmd_mdl_scnrcasem",
     indexes = {
         @Index(name = "tmd_mdl_scnrcasem_ix01", columnList = "del_yn, crt_dtm"),
-        @Index(name = "tmd_mdl_scnrcasem_ix02", columnList = "scnr_id, case_stat_cd, case_id")
+        @Index(name = "tmd_mdl_scnrcasem_ix02", columnList = "scnr_id, case_stat_cd, case_id"),
+        @Index(name = "tmd_mdl_scnrcasem_ix03", columnList = "last_run_id, del_yn")
     },
     uniqueConstraints = {
         @UniqueConstraint(name = "tmd_mdl_scnrcasem_uq01", columnNames = {"actv_scnr_id"})

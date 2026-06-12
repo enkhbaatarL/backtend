@@ -6,8 +6,6 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.sk.common.enums.ResultCode;
 import com.sk.common.exception.AppErrorException;
 import com.sk.common.model.PaginationRes;
-import com.sk.common.model.TableRes;
-import com.sk.common.utils.ExcelUtils;
 import com.sk.domain.mi.dto.request.nextgen.ScenarioGroupListReq;
 import com.sk.domain.mi.dto.response.nextgen.ScenarioDetailViewRes;
 import com.sk.domain.mi.dto.response.nextgen.ScenarioGroupAppliedFilterRes;
@@ -15,13 +13,14 @@ import com.sk.domain.mi.dto.response.nextgen.ScenarioGroupDetailRes;
 import com.sk.domain.mi.dto.response.nextgen.ScenarioGroupDetailRowRes;
 import com.sk.domain.mi.dto.response.nextgen.ScenarioGroupGraphRes;
 import com.sk.domain.mi.dto.response.nextgen.ScenarioGroupListItemRes;
-import com.sk.domain.mi.dto.response.nextgen.ScenarioBulkStatusRes;
 import com.sk.domain.mi.dto.response.nextgen.ScenarioGroupListRes;
 import com.sk.domain.mi.dto.response.nextgen.ScenarioIndividualItemRes;
 import com.sk.domain.mi.dto.response.nextgen.ScenarioIndividualListRes;
 import com.sk.domain.mi.dto.response.nextgen.ScenarioRowRes;
 import com.sk.domain.mi.dto.response.nextgen.ScenarioStatusRes;
+import com.sk.domain.mi.service.nextgen.support.ScenarioGroupGraphExcelMapper;
 import com.sk.domain.mi.service.nextgen.support.ScenarioProbabilityAllocator;
+import com.sk.domain.shared.enums.nextgen.GraphPeriodUnit;
 import com.sk.domain.shared.enums.nextgen.IndexName;
 import com.sk.domain.shared.enums.nextgen.ScenarioDisplayStatus;
 import com.sk.domain.shared.enums.nextgen.SortOrder;
@@ -34,7 +33,6 @@ import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
-import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -160,70 +158,29 @@ public class ScenarioGroupMockService {
         return new ScenarioIndividualListRes(ScenarioGroupAppliedFilterRes.from(request), paginate(filtered, request));
     }
 
-    public ScenarioGroupGraphRes getScenarioGroupGraph(Long scenarioGroupId, IndexName indexName) {
-        List<ScenarioGroupGraphRes> indexes = graphMap.get(scenarioGroupId);
-        if (indexes == null || deletedGroupIds.contains(scenarioGroupId)) {
+    public ScenarioGroupGraphRes getScenarioGroupGraph(Long scenarioGroupId, IndexName indexName, GraphPeriodUnit periodUnit) {
+        List<ScenarioGroupGraphRes> graphs = graphMap.get(scenarioGroupId);
+        if (graphs == null || deletedGroupIds.contains(scenarioGroupId)) {
             throw AppErrorException.of(ResultCode.Error.RSC_NOT_FOUND,
                 "Scenario group graph not found: " + scenarioGroupId);
         }
-        return indexes.stream()
+        return graphs.stream()
             .filter(g -> indexName.getCode().equalsIgnoreCase(g.indexName()))
+            .filter(g -> periodUnit == g.periodUnit())
             .findFirst()
             .orElseThrow(() -> AppErrorException.of(ResultCode.Error.RSC_NOT_FOUND,
                 "Scenario group graph not found: scenarioGroupId=" + scenarioGroupId + ", indexName=" + indexName));
     }
 
-    public ByteArrayInputStream exportScenarioGroupGraph(Long scenarioGroupId) {
-        List<ScenarioGroupGraphRes> indexes = graphMap.get(scenarioGroupId);
-        if (indexes == null || deletedGroupIds.contains(scenarioGroupId)) {
+    public ByteArrayInputStream exportScenarioGroupGraph(Long scenarioGroupId, GraphPeriodUnit periodUnit) {
+        List<ScenarioGroupGraphRes> graphs = graphMap.get(scenarioGroupId);
+        if (graphs == null || deletedGroupIds.contains(scenarioGroupId)) {
             throw AppErrorException.of(ResultCode.Error.RSC_NOT_FOUND,
                 "Scenario group graph not found: " + scenarioGroupId);
         }
-        // 인덱스(JKM/TTF/HH)별로 시트 1개씩
-        LinkedHashMap<String, TableRes> sheets = new LinkedHashMap<>();
-        for (ScenarioGroupGraphRes index : indexes) {
-            sheets.put(index.indexName(), toSheet(index));
-        }
-        return ExcelUtils.toExcel(sheets);
-    }
-
-    /** 한 인덱스 그래프 → 시트(행=시리즈, 열=날짜). 데이터 없으면 빈 칸 */
-    private TableRes toSheet(ScenarioGroupGraphRes index) {
-        List<String> dates = index.dates();
-
-        // 헤더(열) = 구분 + 날짜들
-        List<TableRes.Column> columns = new ArrayList<>();
-        columns.add(TableRes.Column.of("series", "구분"));
-        for (String date : dates) {
-            columns.add(TableRes.Column.of(date, date));
-        }
-
-        // 행 = 시리즈별 (Base + 시나리오)
-        List<TableRes.Row> rows = new ArrayList<>();
-        for (ScenarioGroupGraphRes.BaseSeries base : index.baseSeries()) {
-            rows.add(seriesRow(base.seriesName(), base.values(), dates.size()));
-        }
-        for (ScenarioGroupGraphRes.ScenarioSeries scenario : index.scenarioSeries()) {
-            rows.add(seriesRow(scenario.scenarioName(), scenario.values(), dates.size()));
-        }
-        return new TableRes(index.indexName(), columns, rows);
-    }
-
-    private TableRes.Row seriesRow(String name, List<BigDecimal> values, int size) {
-        List<String> cells = new ArrayList<>();
-        cells.add(name);
-        for (int i = 0; i < size; i++) {
-            cells.add(valueAt(values, i));
-        }
-        return TableRes.Row.of(cells);
-    }
-
-    /** 값이 없으면 빈 칸 */
-    private String valueAt(List<BigDecimal> values, int i) {
-        if (values == null || i >= values.size() || values.get(i) == null) {
-            return "";
-        }
-        return values.get(i).toPlainString();
+        return ScenarioGroupGraphExcelMapper.toExcel(graphs.stream()
+            .filter(g -> periodUnit == g.periodUnit())
+            .toList());
     }
 
     public ScenarioGroupDetailRes getScenarioGroupDetail(Long scenarioGroupId) {
@@ -311,20 +268,6 @@ public class ScenarioGroupMockService {
             discardedScenarioIds.forEach(id -> statusOverrides.put(id, ScenarioDisplayStatus.DISCARDED));
         }
         return ScenarioStatusRes.of(scenarioId, status, discardedScenarioIds);
-    }
-
-    public ScenarioBulkStatusRes bulkUpdateScenarioStatus(Long scenarioGroupId, ScenarioDisplayStatus status) {
-        ScenarioGroupDetailRes detail = groupDetailMap.get(scenarioGroupId);
-        if (detail == null || deletedGroupIds.contains(scenarioGroupId)) {
-            throw AppErrorException.of(ResultCode.Error.RSC_NOT_FOUND,
-                "Scenario group not found: " + scenarioGroupId);
-        }
-        // 그룹 전체 시나리오를 동일 상태로 일괄 변경 (mock: 변경분을 메모리에 저장, reset API로 초기화)
-        List<Long> scenarioIds = detail.scenarios().stream()
-            .map(ScenarioGroupDetailRowRes::scenarioId)
-            .toList();
-        scenarioIds.forEach(id -> statusOverrides.put(id, status));
-        return new ScenarioBulkStatusRes(status, status.getLabel(), scenarioIds.size(), scenarioIds);
     }
 
     public void deleteScenarioGroup(Long scenarioGroupId) {

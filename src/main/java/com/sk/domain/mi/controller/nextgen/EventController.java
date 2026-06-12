@@ -77,8 +77,9 @@ public class EventController {
              - eventStatus: 이벤트 상태 / 기본값 all / example - eventStatus=new, eventStatus=updated
              - sort: 정렬 기준 / 기본값 latest(최신순) / 최신 연관 레코드 최초 생성일시(latestRecordFirstCreated) 기준 정렬 / example - sort=latest, sort=oldest
              - eventTypeL1Id: 이벤트 유형 Lv1 ID 필터 (복수 가능) / example - eventTypeL1Id=1&eventTypeL1Id=2
-             - startDate: 커스텀 조회 시작일 / example - startDate=2025-09-01
-             - endDate: 커스텀 조회 종료일 / example - endDate=2026-02-28
+             - startDate: 커스텀 조회 시작일 / 최신 연관 레코드 최초 생성일시(latestRecordFirstCreated) 기준 / example - startDate=2025-09-01
+             - endDate: 커스텀 조회 종료일 / 최신 연관 레코드 최초 생성일시(latestRecordFirstCreated) 기준 / example - endDate=2026-02-28
+             - suggestedOnly: 시나리오화 추천 항목만 보기 / 기본값 false / example - suggestedOnly=true
              - keyword: 이벤트 제목 검색 키워드 / example - keyword=호르무즈
              - page: 기본값 1 / 1-based
              - size: 기본값 20
@@ -90,7 +91,7 @@ public class EventController {
             - `updated`: 갱신 이벤트
 
             <br><br>
-            ### events.detail 항목 필드
+            ### events.content 항목 필드
             - `eventId`: 이벤트 고유 식별자
             - `eventName`: 이벤트명
             - `eventTypeLv1` / `eventTypeLv1Label`: 이벤트 유형 Lv1 코드/라벨
@@ -101,7 +102,7 @@ public class EventController {
             - `signalType` / `signalTypeLabel`: 신호(`signal`) / 소음(`noise`)
             - `isScenarioSuggested`: 시나리오화 추천 여부
             - `scenarioSuggestReason`: 시나리오화 추천 근거
-            - `scenarioDesignStatus` / `scenarioDesignStatusLabel`: `designable`(생성가능) / `creating`(생성중) / `created`(생성완료)
+            - `scenarioDesignStatus` / `scenarioDesignStatusLabel`: `designable`(설계가능) / `creating`(설계중) / `created`(설계완료)
             - `scenarioGroupId`: 활성 시나리오 그룹 ID (없으면 null, `created`일 때 이동 대상)
             - `indexImpacts`: 인덱스별 영향도 — 단기/중장기 중 영향 강도가 더 큰 시점 1개만 표기 (강도가 같으면 단기).
               - `indexName` / `marketImpactLevel` / `marketImpactLevelLabel` / `direction` / `directionLabel` / `impactTerm` / `impactTermLabel`
@@ -112,8 +113,8 @@ public class EventController {
     )
     @Parameter(name = "eventStatus", description = "이벤트 상태 (`all` / `new` / `updated`, 대소문자 무관). 기본값 `all`")
     @Parameter(name = "eventTypeL1Id", description = "이벤트 유형 Lv1 ID. 복수 선택 가능")
-    @Parameter(name = "startDate", description = "조회 시작일 (yyyy-MM-dd)")
-    @Parameter(name = "endDate", description = "조회 종료일 (yyyy-MM-dd)")
+    @Parameter(name = "startDate", description = "조회 시작일 (yyyy-MM-dd, 최신 연관 레코드 최초 생성일시 기준)")
+    @Parameter(name = "endDate", description = "조회 종료일 (yyyy-MM-dd, 최신 연관 레코드 최초 생성일시 기준)")
     @Parameter(name = "sort", description = "정렬 기준 (`latest` / `oldest`, 대소문자 무관). 기본값 `latest`")
     @Parameter(name = "keyword", description = "이벤트 제목 검색 키워드")
     @Parameter(name = "suggestedOnly", description = "추천 항목만 보기. 기본값 false")
@@ -142,7 +143,7 @@ public class EventController {
             - `signalType` / `signalTypeLabel`: 신호(`signal`) / 소음(`noise`)
             - `isScenarioSuggested`: 시나리오화 추천 여부
             - `scenarioSuggestReason`: 시나리오화 추천 근거 (추천 아님일 때 null)
-            - `scenarioDesignStatus` / `scenarioDesignStatusLabel`: `designable`(생성가능) / `creating`(생성중) / `created`(생성완료)
+            - `scenarioDesignStatus` / `scenarioDesignStatusLabel`: `designable`(설계가능) / `creating`(설계중) / `created`(설계완료)
             - `eventTypeLv1` / `eventTypeLv1Label` / `eventTypeLv2` / `eventTypeLv2Label`
             - `createdAt`, `updatedAt`, `latestRecordFirstCreated`(최신 연관 레코드 최초 생성일시)
 
@@ -171,7 +172,8 @@ public class EventController {
 
             <br><br>
             ### relatedEventScenario 필드
-            이벤트에서 생성된 시나리오 그룹과 그 시나리오 표입니다.
+            이벤트에서 생성된 시나리오 그룹과 그 시나리오 표입니다. <br>
+            **활성 시나리오 그룹이 없으면 null**이며, 이때 화면은 시나리오 설계 버튼을 노출합니다.
             - `scenarioGroupId`, `groupName`
             - `dimensionColumns`: 동적 표 헤더 (key, label) — 시나리오 그룹 목록/상세와 동일 구조
             - `scenarios[]`: `scenarioId`, `scenarioName`, `baseCase`, `dimensions`(차원값, dimensionColumns 순서 매칭),
@@ -197,6 +199,7 @@ public class EventController {
         summary = "Event 기관 전망 조회 API (with pagination)",
         description = """
             Event 관련 기관별 시장 전망 정보를 페이징 조회합니다. <br>
+            전망 일자(`viewDate`) 내림차순으로 내려갑니다. <br>
 
             <br><br>
             ### 사용 가능한 파라미터
@@ -230,6 +233,7 @@ public class EventController {
         summary = "Event Records 조회 API (with pagination)",
         description = """
             Event에 매핑된 Record(뉴스/리포트) 목록을 페이징 조회합니다. <br>
+            발행 일시(`publishedAt`) 내림차순으로 내려갑니다. <br>
 
             <br><br>
             ### 사용 가능한 파라미터

@@ -1,12 +1,19 @@
 package com.sk.domain.mi.dto.response.nextgen;
 
+import com.sk.domain.shared.enums.nextgen.GraphPeriodUnit;
+import com.sk.domain.shared.enums.nextgen.IndexName;
+import com.sk.domain.shared.repository.master.tmd.projection.ScenarioPriceRow;
+import com.sk.domain.shared.repository.master.tmm.projection.ScenarioBaseRow;
 import io.swagger.v3.oas.annotations.media.ArraySchema;
 import io.swagger.v3.oas.annotations.media.Schema;
 import java.math.BigDecimal;
 import java.util.List;
+import java.util.Map;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 
 /**
- * 시나리오 그룹 펼침 그래프 데이터 (단일 인덱스).
+ * 시나리오 그룹 펼침 그래프 데이터 (단일 인덱스 × 단일 기간단위).
  */
 public record ScenarioGroupGraphRes(
 
@@ -16,25 +23,64 @@ public record ScenarioGroupGraphRes(
     @Schema(description = "인덱스명", example = "JKM")
     String indexName,
 
-    @Schema(description = "통화 (USD, EUR 등)", example = "USD")
+    @Schema(description = "기간 단위 (monthly/yearly)", example = "monthly")
+    GraphPeriodUnit periodUnit,
+
+    @Schema(description = "기간 단위 라벨", example = "월별")
+    String periodUnitLabel,
+
+    @Schema(description = "통화 (USD 고정)", example = "USD")
     String currency,
 
-    @Schema(description = "단위 (MMBtu, MWh 등)", example = "MMBtu")
+    @Schema(description = "단위 (MMBtu 고정)", example = "MMBtu")
     String unit,
 
     @ArraySchema(
-        arraySchema = @Schema(description = "x축 날짜 목록 (모든 시리즈 공유)"),
-        schema = @Schema(description = "날짜", example = "2025-12-01")
+        arraySchema = @Schema(description = "x축 기간 목록 (모든 시리즈 공유, 월별 yyyy-MM / 연도별 yyyy)"),
+        schema = @Schema(description = "기간", example = "2026-06")
     )
     List<String> dates,
 
-    @Schema(description = "기준선 시리즈 (CME, MI Base)")
+    @Schema(description = "기준선 시리즈 (CME, MI Base). 소스 확보 전까지 빈 배열")
     List<BaseSeries> baseSeries,
 
     @Schema(description = "시나리오별 예측 시리즈")
     List<ScenarioSeries> scenarioSeries
 
 ) {
+
+    private static final String CURRENCY = "USD";
+    private static final String UNIT = "MMBtu";
+
+    public static ScenarioGroupGraphRes of(Long scenarioGroupId, IndexName indexName, GraphPeriodUnit periodUnit, List<ScenarioBaseRow> scenarios, List<ScenarioPriceRow> prices) {
+
+        // x축 = 전 시나리오 기간키 union (시나리오마다 실행 시점이 달라 범위가 다를 수 있음 → 빠진 구간은 null 패딩)
+        List<String> periodKeys = prices.stream()
+            .map(ScenarioPriceRow::periodKey)
+            .distinct()
+            .sorted()
+            .toList();
+
+        Map<Long, Map<String, ScenarioPriceRow>> pricesByScenario = prices.stream()
+            .collect(Collectors.groupingBy(ScenarioPriceRow::scenarioId,
+                Collectors.toMap(ScenarioPriceRow::periodKey, Function.identity())));
+
+        List<ScenarioSeries> scenarioSeries = scenarios.stream()
+            .map(scenario -> ScenarioSeries.of(scenario, periodKeys, pricesByScenario.get(scenario.scenarioId())))
+            .toList();
+
+        return new ScenarioGroupGraphRes(
+            scenarioGroupId,
+            indexName.getCode(),
+            periodUnit,
+            periodUnit.getLabel(),
+            CURRENCY,
+            UNIT,
+            periodKeys.stream().map(periodUnit::formatPeriodKey).toList(),
+            List.of(),
+            scenarioSeries
+        );
+    }
 
     public record BaseSeries(
 
@@ -63,9 +109,35 @@ public record ScenarioGroupGraphRes(
         @Schema(description = "수급모델 실행 완료 여부", example = "true")
         boolean executed,
 
-        @Schema(description = "값 목록 (dates와 동일 순서). 실행 전이면 null", nullable = true)
-        List<BigDecimal> values
+        @Schema(description = "베이스케이스 가격 목록 (dates와 동일 순서, 빠진 구간 null). 미실행이면 null", nullable = true)
+        List<BigDecimal> baseCaseValues,
 
-    ) {}
+        @Schema(description = "사용자조정 가격 목록 (dates와 동일 순서, 빠진 구간 null). 미실행이면 null", nullable = true)
+        List<BigDecimal> userAdjustedValues
+
+    ) {
+
+        static ScenarioSeries of(ScenarioBaseRow scenario, List<String> periodKeys, Map<String, ScenarioPriceRow> priceByPeriodKey) {
+            boolean executed = priceByPeriodKey != null && !priceByPeriodKey.isEmpty();
+            return new ScenarioSeries(
+                scenario.scenarioId(),
+                scenario.title(),
+                Boolean.TRUE.equals(scenario.isBaseline()),
+                executed,
+                executed ? values(periodKeys, priceByPeriodKey, ScenarioPriceRow::baseCasePrice) : null,
+                executed ? values(periodKeys, priceByPeriodKey, ScenarioPriceRow::userAdjustedPrice) : null
+            );
+        }
+
+        private static List<BigDecimal> values(List<String> periodKeys, Map<String, ScenarioPriceRow> priceByPeriodKey, Function<ScenarioPriceRow, BigDecimal> extractor) {
+            return periodKeys.stream()
+                .map(periodKey -> {
+                    ScenarioPriceRow row = priceByPeriodKey.get(periodKey);
+                    return row == null ? null : extractor.apply(row);
+                })
+                .toList();
+        }
+
+    }
 
 }

@@ -8,7 +8,6 @@ import com.sk.common.model.BaseResponse;
 import com.sk.common.model.BaseResponseFactory;
 import com.sk.domain.mi.dto.request.nextgen.ScenarioGroupListReq;
 import com.sk.domain.mi.dto.request.nextgen.ScenarioStatusUpdateReq;
-import com.sk.domain.mi.dto.response.nextgen.ScenarioBulkStatusRes;
 import com.sk.domain.mi.dto.response.nextgen.ScenarioDetailViewRes;
 import com.sk.domain.mi.dto.response.nextgen.ScenarioGroupDetailRes;
 import com.sk.domain.mi.dto.response.nextgen.ScenarioGroupGraphRes;
@@ -19,6 +18,7 @@ import com.sk.domain.mi.service.nextgen.ScenarioGroupService;
 import com.sk.domain.mi.service.nextgen.mock.ScenarioGroupMockService;
 import com.sk.domain.shared.enums.PermissionCondition;
 import com.sk.domain.shared.enums.Role;
+import com.sk.domain.shared.enums.nextgen.GraphPeriodUnit;
 import com.sk.domain.shared.enums.nextgen.IndexName;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
@@ -81,7 +81,7 @@ public class ScenarioGroupController {
             - `summary`: 시나리오 그룹 요약
             - `scenarioCount`: 시나리오 수
             - `dimensionColumns`: 그룹별 동적 표 헤더 (key, label)
-            - `scenarios`: 그룹 내 시나리오 표 본문 (scenarioName, baseCase, dimensions, probability, adjustedProbability)
+            - `scenarios`: 그룹 내 시나리오 표 본문 (scenarioId, scenarioName, baseCase, dimensions, probability, adjustedProbability)
             """
     )
     @Parameter(name = "sort", description = "정렬 기준 (`latest` / `oldest`, 대소문자 무관). 기본값 `latest`")
@@ -146,10 +146,20 @@ public class ScenarioGroupController {
         summary = "Scenario Group 그래프 데이터 조회 API",
         description = """
             시나리오 그룹 펼침 시 '그래프' 뷰의 데이터입니다. <br>
-            `indexName`(기본 JKM)으로 **단일 인덱스**만 반환합니다. <br>
+            `indexName`(기본 JKM) × `periodUnit`(기본 monthly)으로 **단일 인덱스 × 단일 기간단위**만 반환합니다. <br>
+
+            <br><br>
+            ### 응답 필드
+            - `periodUnit` / `periodUnitLabel`: 기간 단위 (monthly:월별 / yearly:연도별)
+            - `dates`: x축 기간 목록 (월별 `yyyy-MM` / 연도별 `yyyy`)
+            - `baseSeries`: 기준선 (CME, MI Base) — **소스 확보 전까지 빈 배열**
+            - `scenarioSeries`: 시나리오별 시리즈
+              - `executed`: 수급모델 실행 완료 여부
+              - `baseCaseValues` / `userAdjustedValues`: 베이스케이스/사용자조정 가격
             """
     )
     @Parameter(name = "indexName", description = "조회 인덱스 (JKM / TTF / HH). 기본값 JKM")
+    @Parameter(name = "periodUnit", description = "기간 단위 (`monthly` / `yearly`, 대소문자 무관). 기본값 `monthly`")
     @ApiResponse(responseCode = "200", description = "조회 성공")
     @GetMapping("/{scenarioGroupId}/graph")
     @RequiredPermissionRules(rules = {
@@ -158,9 +168,10 @@ public class ScenarioGroupController {
     })
     public BaseResponse<ScenarioGroupGraphRes> getScenarioGroupGraph(
         @Parameter(description = "시나리오 그룹 ID", example = "1") @PathVariable Long scenarioGroupId,
-        @RequestParam(defaultValue = "JKM") IndexName indexName
+        @RequestParam(defaultValue = "JKM") IndexName indexName,
+        @RequestParam(defaultValue = "monthly") GraphPeriodUnit periodUnit
     ) {
-        return BaseResponseFactory.create(scenarioGroupService.getScenarioGroupGraph(scenarioGroupId, indexName));
+        return BaseResponseFactory.create(scenarioGroupService.getScenarioGroupGraph(scenarioGroupId, indexName, periodUnit));
     }
 
     @ApiOrder(4)
@@ -168,9 +179,11 @@ public class ScenarioGroupController {
         summary = "Scenario Group 그래프 엑셀 다운로드 API",
         description = """
             그래프 데이터를 엑셀(.xlsx)로 다운로드 합니다. <br>
-            **전 인덱스(JKM/TTF/HH)를 인덱스별 시트**로 묶어 한 파일로 내려줍니다.
+            **전 인덱스(JKM/TTF/HH)를 인덱스별 시트**로 묶어 한 파일로 내려줍니다. <br>
+            기간 단위는 `periodUnit`(기본 monthly) 하나만 적용되며, 시나리오별로 베이스케이스/사용자조정 2행씩 내려갑니다.
             """
     )
+    @Parameter(name = "periodUnit", description = "기간 단위 (`monthly` / `yearly`, 대소문자 무관). 기본값 `monthly`")
     @ApiResponse(responseCode = "200", description = "다운로드 성공")
     @GetMapping("/{scenarioGroupId}/graph/export")
     @RequiredPermissionRules(rules = {
@@ -178,11 +191,12 @@ public class ScenarioGroupController {
         @PermissionRule(role = Role.ADMIN, conditions = {PermissionCondition.THIRD_PARTY_ADMIN_ONLY})
     })
     public ResponseEntity<InputStreamResource> exportScenarioGroupGraph(
-        @Parameter(description = "시나리오 그룹 ID", example = "1") @PathVariable Long scenarioGroupId
+        @Parameter(description = "시나리오 그룹 ID", example = "1") @PathVariable Long scenarioGroupId,
+        @RequestParam(defaultValue = "monthly") GraphPeriodUnit periodUnit
     ) {
-        ByteArrayInputStream excel = scenarioGroupService.exportScenarioGroupGraph(scenarioGroupId);
+        ByteArrayInputStream excel = scenarioGroupService.exportScenarioGroupGraph(scenarioGroupId, periodUnit);
 
-        String filename = "scenario-group-%s-graph.xlsx".formatted(scenarioGroupId);
+        String filename = "scenario-group-%s-graph-%s.xlsx".formatted(scenarioGroupId, periodUnit.getCode());
         HttpHeaders headers = new HttpHeaders();
         headers.setContentType(MediaType.parseMediaType("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"));
         headers.setContentDisposition(ContentDisposition.attachment().filename(filename).build());
@@ -200,12 +214,12 @@ public class ScenarioGroupController {
             <br><br>
             ### 상위(top-level) 필드
             - `scenarioGroupId`, `groupName`, `createdAt`, `updatedAt`
-            - `baseEvent`: 기반 이벤트 (eventName, eventTypeLv1, eventTypeLv1Label, updatedAt) — 요약 탭
+            - `baseEvent`: 기반 이벤트 (eventId, eventName, eventTypeLv1, eventTypeLv1Label, updatedAt)
             - `summary`: 시나리오 그룹 설명 — 요약 탭
             - `scenarioCount`: 시나리오 수
             - `dimensionColumns`: 가정 표 동적 헤더 (key, label)
             - `scenarios`: 가정 및 실행 가능성 표 행 (dimensions, probability, adjustedProbability, status, statusLabel[대기/실현/폐기])
-            - `adjustedProbability`: 재분배 확률 — 폐기 제외 비례 재분배(활성 합 100, 폐기=0). 조회 시점 계산값(비영속)
+            - `scenarios[].adjustedProbability`: 재분배 확률 — 폐기 제외 비례 재분배(활성 합 100, 폐기=0). 조회 시점 계산값(비영속)
             """
     )
     @ApiResponse(responseCode = "200", description = "조회 성공")
@@ -259,8 +273,9 @@ public class ScenarioGroupController {
             대기(`pending`) -> 실현(`realized`) / 폐기(`discarded`). <br>
 
             <br>
-            **`realized`(실현)로 변경 시, 같은 그룹의 나머지 시나리오는 모두 `discarded`(폐기)로 자동 변경됩니다.** <br>
-            (그룹 내 실현 시나리오는 항상 1개)<br>
+            **`realized`(실현)로 변경 시, 같은 그룹의 나머지 시나리오는 모두 `discarded`(폐기)로 자동 변경됩니다.** (그룹 내 실현 시나리오는 항상 1개) <br>
+            시나리오 그룹 status는 매 변경마다 재도출됩니다 — 실현 시나리오가 있으면 `realized`, 실현을 되돌리면 `created`로 환원. <br>
+            (단, 실현 시 폐기로 캐스케이드된 나머지 시나리오는 되돌림 때 자동 복구되지 않습니다)<br>
 
             <br><br>
             ### 요청 본문
@@ -290,39 +305,6 @@ public class ScenarioGroupController {
 
     @ApiOrder(8)
     @Operation(
-        summary = "Scenario 상태 일괄 변경 API (모두 대기/실현/폐기)",
-        description = """
-            그룹 내 **모든 시나리오의 판정 상태를 한 번에** 변경합니다. (모두 대기/실현/폐기) <br>
-            대상은 path의 `scenarioGroupId` 그룹 전체이며, 요청 본문은 단건 변경과 동일하게 `status` 하나만 받습니다. <br>
-
-            <br><br>
-            ### 요청 본문
-            - `status`: 일괄 적용할 판정 상태 (`pending` / `realized` / `discarded`)
-
-            <br><br>
-            ### 응답 필드
-            - `status`, `statusLabel`(대기/실현/폐기)
-            - `updatedCount`: 변경된 시나리오 수
-            - `scenarioIds`: 변경된 시나리오 ID 목록
-            """
-    )
-    @ApiResponse(responseCode = "200", description = "변경 성공")
-    @PatchMapping("/{scenarioGroupId}/scenarios/status")
-    @RequiredPermissionRules(rules = {
-        @PermissionRule(role = Role.USER, conditions = {PermissionCondition.SKGAS_COMPANY_USER_ONLY}),
-        @PermissionRule(role = Role.ADMIN, conditions = {PermissionCondition.THIRD_PARTY_ADMIN_ONLY})
-    })
-    public BaseResponse<ScenarioBulkStatusRes> bulkUpdateScenarioStatus(
-        @Parameter(description = "시나리오 그룹 ID", example = "1") @PathVariable Long scenarioGroupId,
-        @Valid @RequestBody ScenarioStatusUpdateReq request
-    ) {
-        return BaseResponseFactory.create(
-            scenarioGroupService.bulkUpdateScenarioStatus(scenarioGroupId, request.status())
-        );
-    }
-
-    @ApiOrder(9)
-    @Operation(
         summary = "Scenario Group 삭제 API",
         description = """
             시나리오 그룹을 삭제합니다. <br>
@@ -350,7 +332,7 @@ public class ScenarioGroupController {
         return BaseResponseFactory.create(ResultCode.Success.OK);
     }
 
-    @ApiOrder(10)
+    @ApiOrder(9)
     @Operation(
         summary = "[mockapi 전용] 시나리오 상태/삭제 초기화 API",
         description = """

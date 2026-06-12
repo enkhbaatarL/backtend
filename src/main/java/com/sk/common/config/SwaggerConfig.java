@@ -30,6 +30,10 @@ import java.util.Map;
 @RequiredArgsConstructor
 public class SwaggerConfig {
 
+    // note: 안정화 후 투머치 문서 모두 삭제예정
+    private static final String SW_VERSION_BASE = "v1.2.3";
+    private static final DateTimeFormatter SW_DEPLOY_DATE_FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
+
     @Bean
     public OpenAPI customOpenAPI() {
         return new OpenAPI()
@@ -81,10 +85,6 @@ public class SwaggerConfig {
             .build();
     }
 
-    // note: 안정화 후 투머치 문서 모두 삭제예정
-    private static final String SW_VERSION_BASE = "v1.2.2";
-    private static final DateTimeFormatter SW_DEPLOY_DATE_FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
-
     @Bean
     public GroupedOpenApi nextGenApi(@Qualifier("sortPathsOpenApiCustomizer") OpenApiCustomizer sortPathsOpenApiCustomizer,
                                                @Qualifier("apiOrderOperationCustomizer") OperationCustomizer apiOrderOperationCustomizer,
@@ -122,7 +122,6 @@ public class SwaggerConfig {
   | 시나리오 그룹 상세 | %s |
   | 시나리오 상세 | %s |
   | 시나리오 상태 변경 | %s |
-  | 시나리오 상태 일괄 변경 | %s |
   | 시나리오 그룹 삭제 | %s |
   | **Model Execution** | |
   | 수급모델 실행 요청 | %s |
@@ -149,6 +148,16 @@ public class SwaggerConfig {
 
   ## 수정사항
   <details open>
+    <summary><strong>v1.2.3 (2026-06-11)</strong></summary>
+
+  - [Model Execution]
+    - Price chart에 monthly/yearly series 필드 분리 추가
+  - [Scenario Group]
+    - 시나리오 상태 변경 시 그룹 status 재도출 (실현 시나리오 존재 시 realized, 실현 되돌림 시 created 환원)
+
+  </details>
+
+  <details>
   <summary><strong>v1.2.2 (2026-06-11)</strong></summary>
 
   - [Scenario Group]
@@ -308,7 +317,6 @@ public class SwaggerConfig {
             label(mockProps.getScenarioGroups().getApi().isGetDetail()),
             label(mockProps.getScenarioGroups().getApi().isGetScenarioDetail()),
             label(mockProps.getScenarioGroups().getApi().isUpdateScenarioStatus()),
-            label(mockProps.getScenarioGroups().getApi().isBulkUpdateScenarioStatus()),
             label(mockProps.getScenarioGroups().getApi().isDeleteGroup()),
             label(mockProps.getModelExecutions().getApi().isGetParameters()),
             label(mockProps.getModelExecutions().getApi().isSubmit()),

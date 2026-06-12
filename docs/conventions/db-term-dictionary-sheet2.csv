@@ -379,3 +379,4 @@ No,단어종류,표준단어명,표준영문명,영문의미,설명,참고사항
 377,단일단어,행,ROW,ROW,표 또는 행렬에서 가로 방향 데이터 단위,결과 row key 명명용,Codex,등록
 378,단일단어,열,COL,COLUMN,표 또는 행렬에서 세로 방향 데이터 단위,결과 column/axis 명명용,Codex,등록
 379,단일단어,집계,AGGR,AGGREGATE,여러 값을 합산하거나 요약해 만든 결과 값,subtotal/total row 구분 명명용,Codex,등록
+380,단일단어,조정,ADJ,ADJUST,기준 값을 사용자가 임의로 조정/보정한 값,Price user adjusted price(user_adj_prc) 컬럼 명명용,Codex,등록

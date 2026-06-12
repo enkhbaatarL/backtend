@@ -421,8 +421,9 @@ public class FundamentalModelCaseMockService {
         volumesSeedStore = loadVolumesSeedData();
         tradeFlowsSeedStore = loadTradeFlowsSeedData();
         priceSeed = loadPriceSeedData();
-        log.info("[Mock] Fundamental model result mock data loaded: volumeSegments={}, tradeFlowsSelectors={}, priceSeriesSets={}",
-            volumesSeedStore.size(), tradeFlowsSeedStore.size(), priceSeed.chart().seriesSets().size());
+        log.info("[Mock] Fundamental model result mock data loaded: volumeSegments={}, tradeFlowsSelectors={}, priceMonthlySeriesSets={}, priceYearlySeriesSets={}",
+            volumesSeedStore.size(), tradeFlowsSeedStore.size(),
+            priceSeed.chart().monthlySeriesSets().size(), priceSeed.chart().yearlySeriesSets().size());
     }
 
     private Map<TradeFlowSelector, Map<Integer, FundamentalModelTradeFlowsSeed>> loadTradeFlowsSeedData() {
@@ -769,7 +770,7 @@ public class FundamentalModelCaseMockService {
                 FundamentalModelPriceRes.PriceTable.class
             );
             return new FundamentalModelPriceSeed(
-                chart == null ? new FundamentalModelPriceRes.PriceChart(Collections.emptyList()) : chart,
+                chart == null ? emptyPriceChart() : chart,
                 annualTable == null ? emptyPriceTable() : annualTable,
                 monthlyTable == null ? emptyPriceTable() : monthlyTable
             );
@@ -797,10 +798,14 @@ public class FundamentalModelCaseMockService {
 
     private FundamentalModelPriceSeed emptyPriceSeed() {
         return new FundamentalModelPriceSeed(
-            new FundamentalModelPriceRes.PriceChart(Collections.emptyList()),
+            emptyPriceChart(),
             emptyPriceTable(),
             emptyPriceTable()
         );
+    }
+
+    private FundamentalModelPriceRes.PriceChart emptyPriceChart() {
+        return new FundamentalModelPriceRes.PriceChart(Collections.emptyList(), Collections.emptyList());
     }
 
     private FundamentalModelPriceRes.PriceTable emptyPriceTable() {

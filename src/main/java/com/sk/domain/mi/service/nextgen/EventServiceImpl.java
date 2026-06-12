@@ -42,6 +42,9 @@ public class EventServiceImpl implements EventService {
     private final MiEventTypeL1Repository miEventTypeL1Repository;
     private final MiScenarioGroupRepository miScenarioGroupRepository;
 
+    /**
+     * [이벤트 유형 L1 목록]
+     */
     @Override
     public List<EventTypeL1Res> getEventTypesL1() {
         return miEventTypeL1Repository.findAllByIsDeletedFalseOrderByEventTypeL1IdAsc()
@@ -50,6 +53,13 @@ public class EventServiceImpl implements EventService {
             .toList();
     }
 
+    /**
+     * [이벤트 목록]
+     * - 최신순 정렬, 기간필터 latest_record_first_created 기준 (수정일시 아님 — 최신 연관 레코드의 최초 생성일시)
+     * - suggestedOnly=true면 시나리오화 추천 이벤트만 조회
+     * - scenarioDesignStatus는 이벤트:활성 그룹 = 1:1 left join에서 파생 — 그룹 없으면 designable(설계 버튼),
+     *   그룹 status creating이면 creating(생성 중), created/realized면 created(+ scenarioGroupId)
+     */
     @Override
     public EventListRes getEvents(EventListReq request) {
         return new EventListRes(
@@ -58,6 +68,11 @@ public class EventServiceImpl implements EventService {
         );
     }
 
+    /**
+     * [이벤트 상세]
+     * - relatedEventScenario(연관 시나리오)는 활성 시나리오 그룹이 없으면 null
+     * - scenarioDesignStatus 파생 규칙은 목록과 동일 (활성 그룹 status 기반)
+     */
     @Override
     public EventDetailRes getEventDetail(Long eventId) {
         EventDetailRow row = miEventRepository.findEventDetail(eventId)
@@ -66,6 +81,11 @@ public class EventServiceImpl implements EventService {
         return EventDetailRes.from(row, buildRelatedScenarios(row));
     }
 
+    /**
+     * 상세의 연관 시나리오 표 조립
+     * - 표 헤더/차원값은 시나리오 그룹 도메인과 동일하게 event_type_l2 template + dimension_selected 키로 구성
+     * - adjustedProbability도 그룹 도메인과 동일한 재분배 규칙 (조회 시점 계산, 비영속)
+     */
     private EventRelatedScenariosRes buildRelatedScenarios(EventDetailRow row) {
         ScenarioGroupBaseRow group = row.relatedScenarioGroup();
 
@@ -91,6 +111,10 @@ public class EventServiceImpl implements EventService {
         return EventRelatedScenariosRes.of(group, dimensionColumns, scenarios);
     }
 
+    /**
+     * [기관 전망 목록]
+     * - 전망 일자(view_date) 내림차순, 동일 일자는 ID 내림차순
+     */
     @Override
     public PaginationRes<EventInstitutionOutlookRes> getEventOutlooks(Long eventId, int page, int size) {
         return PaginationRes.toRes(
@@ -98,6 +122,10 @@ public class EventServiceImpl implements EventService {
         );
     }
 
+    /**
+     * [연관 레코드 목록]
+     * - 뉴스(NEWS)와 데이터 파일 요약(비NEWS) 두 소스를 UNION으로 합쳐 first_created 내림차순
+     */
     @Override
     public PaginationRes<EventRelatedRecordRes> getEventRecords(Long eventId, int page, int size) {
         return PaginationRes.toRes(

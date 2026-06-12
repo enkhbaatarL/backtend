@@ -78,7 +78,6 @@ mi:
           get-detail: true
           get-scenario-detail: true
           update-scenario-status: true
-          bulk-update-scenario-status: true
           delete-group: true
       model-executions:
         api:

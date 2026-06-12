@@ -9,11 +9,11 @@ import com.sk.domain.mi.dto.response.nextgen.ScenarioDetailViewRes;
 import com.sk.domain.mi.dto.response.nextgen.ScenarioGroupDetailRes;
 import com.sk.domain.mi.dto.response.nextgen.ScenarioGroupGraphRes;
 import com.sk.domain.mi.dto.response.nextgen.ScenarioGroupListRes;
-import com.sk.domain.mi.dto.response.nextgen.ScenarioBulkStatusRes;
 import com.sk.domain.mi.dto.response.nextgen.ScenarioIndividualListRes;
 import com.sk.domain.mi.dto.response.nextgen.ScenarioStatusRes;
 import com.sk.domain.mi.service.nextgen.ScenarioGroupService;
 import com.sk.domain.mi.service.nextgen.ScenarioGroupServiceImpl;
+import com.sk.domain.shared.enums.nextgen.GraphPeriodUnit;
 import com.sk.domain.shared.enums.nextgen.IndexName;
 import com.sk.domain.shared.enums.nextgen.ScenarioDisplayStatus;
 import java.io.ByteArrayInputStream;
@@ -44,17 +44,17 @@ public class ScenarioGroupServiceDelegator implements ScenarioGroupService {
     }
 
     @Override
-    public ScenarioGroupGraphRes getScenarioGroupGraph(Long scenarioGroupId, IndexName indexName) {
+    public ScenarioGroupGraphRes getScenarioGroupGraph(Long scenarioGroupId, IndexName indexName, GraphPeriodUnit periodUnit) {
         return mockProps.getScenarioGroups().getApi().isGetGraph()
-            ? mockService.getScenarioGroupGraph(scenarioGroupId, indexName)
-            : realService.getScenarioGroupGraph(scenarioGroupId, indexName);
+            ? mockService.getScenarioGroupGraph(scenarioGroupId, indexName, periodUnit)
+            : realService.getScenarioGroupGraph(scenarioGroupId, indexName, periodUnit);
     }
 
     @Override
-    public ByteArrayInputStream exportScenarioGroupGraph(Long scenarioGroupId) {
+    public ByteArrayInputStream exportScenarioGroupGraph(Long scenarioGroupId, GraphPeriodUnit periodUnit) {
         return mockProps.getScenarioGroups().getApi().isGetGraphExport()
-            ? mockService.exportScenarioGroupGraph(scenarioGroupId)
-            : realService.exportScenarioGroupGraph(scenarioGroupId);
+            ? mockService.exportScenarioGroupGraph(scenarioGroupId, periodUnit)
+            : realService.exportScenarioGroupGraph(scenarioGroupId, periodUnit);
     }
 
     @Override
@@ -76,13 +76,6 @@ public class ScenarioGroupServiceDelegator implements ScenarioGroupService {
         return mockProps.getScenarioGroups().getApi().isUpdateScenarioStatus()
             ? mockService.updateScenarioStatus(scenarioGroupId, scenarioId, status)
             : realService.updateScenarioStatus(scenarioGroupId, scenarioId, status);
-    }
-
-    @Override
-    public ScenarioBulkStatusRes bulkUpdateScenarioStatus(Long scenarioGroupId, ScenarioDisplayStatus status) {
-        return mockProps.getScenarioGroups().getApi().isBulkUpdateScenarioStatus()
-            ? mockService.bulkUpdateScenarioStatus(scenarioGroupId, status)
-            : realService.bulkUpdateScenarioStatus(scenarioGroupId, status);
     }
 
     @Override

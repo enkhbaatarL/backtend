@@ -254,7 +254,8 @@ public class FundamentalModelCaseController {
     @ApiOrder(11)
     @Operation(
         summary = "MI Fundamental Model Price 데이터 조회 API",
-        description = "COMPLETED 상태의 case에 대해 Price chart, annualTable, monthlyTable mock 데이터를 조회합니다."
+        description = "COMPLETED 상태의 case에 대해 Price chart, annualTable, monthlyTable mock 데이터를 조회합니다. "
+            + "chart는 그래프 우상단 granularity 드롭다운(Monthly/Yearly)에 대응하는 monthlySeriesSets/yearlySeriesSets를 모두 포함합니다."
     )
     @ApiResponse(responseCode = "200", description = "조회 성공")
     @GetMapping("/{caseId}/price")
