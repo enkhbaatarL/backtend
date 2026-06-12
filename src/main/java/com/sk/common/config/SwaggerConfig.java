@@ -34,6 +34,10 @@ import java.util.Map;
 @RequiredArgsConstructor
 public class SwaggerConfig {
 
+    // note: 안정화 후 투머치 문서 모두 삭제예정
+    private static final String SW_VERSION_BASE = "v1.2.3";
+    private static final DateTimeFormatter SW_DEPLOY_DATE_FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
+
     @Bean
     public OpenAPI customOpenAPI() {
         return new OpenAPI()
