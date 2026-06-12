@@ -49,7 +49,7 @@ public record EventListItemRes(
     @Schema(description = "시나리오화 추천 근거", example = "글로벌 공급 차질 가능성으로 시나리오화 검토 필요")
     String scenarioSuggestReason,
 
-    @Schema(description = "시나리오 디자인 상태 — designable(설계가능) / creating(생성중) / created(생성완료)", example = "designable")
+    @Schema(description = "시나리오 디자인 상태 — designable(설계가능) / creating(설계중) / created(설계완료)", example = "designable")
     ScenarioDesignDisplayStatus scenarioDesignStatus,
 
     @Schema(description = "시나리오 디자인 상태 라벨", example = "설계가능")

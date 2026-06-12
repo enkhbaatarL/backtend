@@ -81,7 +81,7 @@ public class ScenarioGroupController {
             - `summary`: 시나리오 그룹 요약
             - `scenarioCount`: 시나리오 수
             - `dimensionColumns`: 그룹별 동적 표 헤더 (key, label)
-            - `scenarios`: 그룹 내 시나리오 표 본문 (scenarioName, baseCase, dimensions, probability, adjustedProbability)
+            - `scenarios`: 그룹 내 시나리오 표 본문 (scenarioId, scenarioName, baseCase, dimensions, probability, adjustedProbability)
             """
     )
     @Parameter(name = "sort", description = "정렬 기준 (`latest` / `oldest`, 대소문자 무관). 기본값 `latest`")
@@ -214,12 +214,12 @@ public class ScenarioGroupController {
             <br><br>
             ### 상위(top-level) 필드
             - `scenarioGroupId`, `groupName`, `createdAt`, `updatedAt`
-            - `baseEvent`: 기반 이벤트 (eventName, eventTypeLv1, eventTypeLv1Label, updatedAt) — 요약 탭
+            - `baseEvent`: 기반 이벤트 (eventId, eventName, eventTypeLv1, eventTypeLv1Label, updatedAt)
             - `summary`: 시나리오 그룹 설명 — 요약 탭
             - `scenarioCount`: 시나리오 수
             - `dimensionColumns`: 가정 표 동적 헤더 (key, label)
             - `scenarios`: 가정 및 실행 가능성 표 행 (dimensions, probability, adjustedProbability, status, statusLabel[대기/실현/폐기])
-            - `adjustedProbability`: 재분배 확률 — 폐기 제외 비례 재분배(활성 합 100, 폐기=0). 조회 시점 계산값(비영속)
+            - `scenarios[].adjustedProbability`: 재분배 확률 — 폐기 제외 비례 재분배(활성 합 100, 폐기=0). 조회 시점 계산값(비영속)
             """
     )
     @ApiResponse(responseCode = "200", description = "조회 성공")
