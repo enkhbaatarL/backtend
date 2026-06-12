@@ -7,10 +7,10 @@
     "scenarioCount": 6,
     "baseEvent": {
       "eventId": 1,
-      "eventName": "카타르 Ras Laffan 피해 (전쟁)",
+      "eventName": "카타르 LNG 핵심 설비 공격, 공급 프리미엄 급등",
       "eventTypeLv1": "geopolitical_risk",
       "eventTypeLv1Label": "지정학적 리스크",
-      "updatedAt": "2026-06-01T23:22:00"
+      "updatedAt": "2026-05-12T15:08:34"
     },
     "summary": "미-이란 충돌의 지속 기간과 호르무즈 해협 봉쇄 강도, 지정학적 리스크 프리미엄, 주요 산유국의 공급 대응 방식에 따라 단기 일시 상승부터 장기 초강세까지 가격 경로가 갈린다. 부분 봉쇄·단기 충돌·구두 개입 조합에서는 상승이 제한되지만, 전면 봉쇄·장기화·실질적 공급 대응 부재가 겹치면 JKM/TTF가 급등한다. 반면 여러 Train의 동시 정지, 저장·선적 인프라 손상, 추가 군사 긴장이 함께 확인될 경우 카타르 LNG의 공급 신뢰도와 장기계약 이행 가능성이 재평가될 수 있다.",
     "dimensionColumns": [
@@ -63,8 +63,8 @@
           }
         ],
         "probability": 30,
-        "status": "realized",
-        "statusLabel": "실현"
+        "status": "pending",
+        "statusLabel": "대기"
       },
       {
         "scenarioId": 12,
@@ -245,11 +245,11 @@
     "updatedAt": "2026-05-30T11:02:00",
     "scenarioCount": 4,
     "baseEvent": {
-      "eventId": 2,
-      "eventName": "유럽 LNG 저장 재고 급감",
-      "eventTypeLv1": "supply_demand_imbalance",
-      "eventTypeLv1Label": "수급 불균형",
-      "updatedAt": "2026-06-02T10:00:00"
+      "eventId": 4,
+      "eventName": "유럽 저장률 29% 안팎, 재주입 LNG 수요 확대",
+      "eventTypeLv1": "supply_demand_balance",
+      "eventTypeLv1Label": "수급 밸런스",
+      "updatedAt": "2026-05-12T15:08:34"
     },
     "summary": "중동산 LNG 공급 차질로 유럽의 저장 재주입 수요가 맞물릴 경우, 유럽 주요 LNG 수입 터미널의 가동률이 빠르게 상승할 수 있다. 재고 수준과 동절기 기온, 산업 수요 회복 속도에 따라 TTF 가격의 경로가 갈린다.",
     "dimensionColumns": [
@@ -416,11 +416,11 @@
     "updatedAt": "2026-05-26T10:50:00",
     "scenarioCount": 3,
     "baseEvent": {
-      "eventId": 3,
-      "eventName": "아시아-유럽 LNG 확보 경쟁 심화",
-      "eventTypeLv1": "market_competition",
-      "eventTypeLv1Label": "시장 경쟁",
-      "updatedAt": "2026-05-29T09:30:00"
+      "eventId": 5,
+      "eventName": "JKM-TTF 스프레드 확대, 아시아향 유인 강화",
+      "eventTypeLv1": "market_trading_structure",
+      "eventTypeLv1Label": "시장 / 거래 구조",
+      "updatedAt": "2026-05-12T15:08:34"
     },
     "summary": "아시아와 유럽의 LNG 확보 경쟁이 동시에 강화되면 JKM과 TTF 간 가격 Spread가 큰 폭으로 흔들릴 수 있다. 아시아 구매자의 spot 확보 강도와 유럽의 재주입 수요 강도에 따라 spread 방향이 갈린다.",
     "dimensionColumns": [
@@ -531,11 +531,11 @@
     "updatedAt": "2026-06-03T09:30:00",
     "scenarioCount": 4,
     "baseEvent": {
-      "eventId": 4,
-      "eventName": "Freeport LNG Train 2 비상 정지",
-      "eventTypeLv1": "supply_disruption",
-      "eventTypeLv1Label": "공급 차질",
-      "updatedAt": "2026-06-06T08:00:00"
+      "eventId": 112,
+      "eventName": "Freeport LNG 비계획 정비로 미국 수출 3카고 취소",
+      "eventTypeLv1": "infrastructure_facility",
+      "eventTypeLv1Label": "인프라 / 설비",
+      "updatedAt": "2026-05-08T03:39:06"
     },
     "summary": "미국 Freeport LNG Train 2의 비상 정지로 Gulf Coast 수출 물량이 일부 중단됐다. 정지 기간과 가동 손실 규모, 유럽향 물량 전환 성공 여부에 따라 JKM·TTF 가격 경로가 갈린다. 단기 정지·부분 손실 조합에서는 상승이 제한되지만, 장기 정지와 연쇄 설비 정지가 겹치면 아시아 spot 확보 경쟁이 격화된다.",
     "dimensionColumns": [
@@ -622,8 +622,8 @@
           }
         ],
         "probability": 25,
-        "status": "pending",
-        "statusLabel": "대기"
+        "status": "discarded",
+        "statusLabel": "폐기"
       },
       {
         "scenarioId": 43,
@@ -656,8 +656,8 @@
           }
         ],
         "probability": 20,
-        "status": "pending",
-        "statusLabel": "대기"
+        "status": "discarded",
+        "statusLabel": "폐기"
       },
       {
         "scenarioId": 44,
@@ -690,8 +690,8 @@
           }
         ],
         "probability": 15,
-        "status": "pending",
-        "statusLabel": "대기"
+        "status": "discarded",
+        "statusLabel": "폐기"
       }
     ]
   },
@@ -702,11 +702,11 @@
     "updatedAt": "2026-06-05T14:20:00",
     "scenarioCount": 3,
     "baseEvent": {
-      "eventId": 5,
-      "eventName": "호주 Gorgon·Wheatstone 노조 파업 가결",
-      "eventTypeLv1": "supply_disruption",
-      "eventTypeLv1Label": "공급 차질",
-      "updatedAt": "2026-06-07T11:00:00"
+      "eventId": 128,
+      "eventName": "호주 동부 LNG 내수 의무화로 아시아 스팟 축소 우려",
+      "eventTypeLv1": "geopolitical_risk",
+      "eventTypeLv1Label": "지정학적 리스크",
+      "updatedAt": "2026-05-06T04:50:08"
     },
     "summary": "호주 Gorgon·Wheatstone LNG 설비 노조가 파업을 가결하며 아시아향 공급 불확실성이 커졌다. 파업 규모와 지속 기간, 아시아 시장 영향 정도에 따라 JKM 가격 경로가 갈린다. 부분·단기 파업에서는 영향이 제한되지만, 전면·장기 파업이 현실화되면 JKM이 급등한다.",
     "dimensionColumns": [
@@ -759,8 +759,8 @@
           }
         ],
         "probability": 48,
-        "status": "realized",
-        "statusLabel": "실현"
+        "status": "pending",
+        "statusLabel": "대기"
       },
       {
         "scenarioId": 52,

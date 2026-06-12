@@ -3,11 +3,7 @@ package com.sk.common.config;
 import com.sk.common.annotation.ApiOrder;
 import com.sk.domain.mi.config.FundamentalModelMockProperties;
 import com.sk.domain.mi.config.NextGenMockProperties;
-import io.swagger.v3.oas.models.Components;
-import io.swagger.v3.oas.models.OpenAPI;
-import io.swagger.v3.oas.models.Operation;
-import io.swagger.v3.oas.models.PathItem;
-import io.swagger.v3.oas.models.Paths;
+import io.swagger.v3.oas.models.*;
 import io.swagger.v3.oas.models.info.Info;
 import io.swagger.v3.oas.models.security.SecurityRequirement;
 import io.swagger.v3.oas.models.security.SecurityScheme;
@@ -156,6 +152,8 @@ public class SwaggerConfig {
 
   - [Model Execution]
     - Price chart에 monthly/yearly series 필드 분리 추가
+  - [Scenario Group]
+    - 시나리오 상태 변경 시 그룹 status 재도출 (실현 시나리오 존재 시 realized, 실현 되돌림 시 created 환원)
 
   </details>
 

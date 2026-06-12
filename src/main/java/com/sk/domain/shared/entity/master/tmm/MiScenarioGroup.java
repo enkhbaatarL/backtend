@@ -82,6 +82,14 @@ public class MiScenarioGroup extends BaseEntity {
     @Comment("요청자 사용자 ID")
     private Long requestUserId;
 
+    /**
+     * 시나리오 판정 결과로부터 그룹 status를 재도출한다. (불변식: 그룹 realized = 그룹 내 실현 시나리오 존재)
+     * 실현을 되돌리면 created로 환원한다. 판정은 생성이 끝난 그룹에서만 일어나므로 creating으로는 돌아가지 않는다.
+     */
+    public void deriveStatus(boolean anyScenarioRealized) {
+        this.status = anyScenarioRealized ? ScenarioGroupStatus.REALIZED : ScenarioGroupStatus.CREATED;
+    }
+
     @Builder
     public MiScenarioGroup(Long scenarioGroupId, MiEvent miEvent, MiEventTypeL2 eventTypeL2, String title,
                            String summary, String description, String dimensionSelected, Integer scenarioCount,

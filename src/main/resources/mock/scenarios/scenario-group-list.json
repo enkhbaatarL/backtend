@@ -57,7 +57,7 @@
             }
           ],
           "probability": 30,
-          "adjustedProbability": 30
+          "adjustedProbability": 32
         },
         {
           "scenarioId": 12,
@@ -90,7 +90,7 @@
             }
           ],
           "probability": 12,
-          "adjustedProbability": 12
+          "adjustedProbability": 13
         },
         {
           "scenarioId": 13,
@@ -156,7 +156,7 @@
             }
           ],
           "probability": 28,
-          "adjustedProbability": 28
+          "adjustedProbability": 29
         },
         {
           "scenarioId": 15,
@@ -189,7 +189,7 @@
             }
           ],
           "probability": 5,
-          "adjustedProbability": 5
+          "adjustedProbability": 0
         },
         {
           "scenarioId": 16,
@@ -222,7 +222,7 @@
             }
           ],
           "probability": 15,
-          "adjustedProbability": 15
+          "adjustedProbability": 16
         }
       ]
     },
@@ -548,7 +548,7 @@
             }
           ],
           "probability": 40,
-          "adjustedProbability": 40
+          "adjustedProbability": 100
         },
         {
           "scenarioId": 42,
@@ -581,7 +581,7 @@
             }
           ],
           "probability": 25,
-          "adjustedProbability": 25
+          "adjustedProbability": 0
         },
         {
           "scenarioId": 43,
@@ -614,7 +614,7 @@
             }
           ],
           "probability": 20,
-          "adjustedProbability": 20
+          "adjustedProbability": 0
         },
         {
           "scenarioId": 44,
@@ -647,7 +647,7 @@
             }
           ],
           "probability": 15,
-          "adjustedProbability": 15
+          "adjustedProbability": 0
         }
       ]
     },

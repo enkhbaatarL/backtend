@@ -10,4 +10,6 @@ public interface MiScenarioGroupRepository
 
     Optional<MiScenarioGroup> findByScenarioGroupIdAndIsDeletedFalse(Long scenarioGroupId);
 
+    boolean existsByScenarioGroupIdAndIsDeletedFalse(Long scenarioGroupId);
+
 }

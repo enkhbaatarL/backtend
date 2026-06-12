@@ -18,6 +18,7 @@ import com.sk.domain.mi.service.nextgen.ScenarioGroupService;
 import com.sk.domain.mi.service.nextgen.mock.ScenarioGroupMockService;
 import com.sk.domain.shared.enums.PermissionCondition;
 import com.sk.domain.shared.enums.Role;
+import com.sk.domain.shared.enums.nextgen.GraphPeriodUnit;
 import com.sk.domain.shared.enums.nextgen.IndexName;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
@@ -145,10 +146,20 @@ public class ScenarioGroupController {
         summary = "Scenario Group 그래프 데이터 조회 API",
         description = """
             시나리오 그룹 펼침 시 '그래프' 뷰의 데이터입니다. <br>
-            `indexName`(기본 JKM)으로 **단일 인덱스**만 반환합니다. <br>
+            `indexName`(기본 JKM) × `periodUnit`(기본 monthly)으로 **단일 인덱스 × 단일 기간단위**만 반환합니다. <br>
+
+            <br><br>
+            ### 응답 필드
+            - `periodUnit` / `periodUnitLabel`: 기간 단위 (monthly:월별 / yearly:연도별)
+            - `dates`: x축 기간 목록 (월별 `yyyy-MM` / 연도별 `yyyy`)
+            - `baseSeries`: 기준선 (CME, MI Base) — **소스 확보 전까지 빈 배열**
+            - `scenarioSeries`: 시나리오별 시리즈
+              - `executed`: 수급모델 실행 완료 여부
+              - `baseCaseValues` / `userAdjustedValues`: 베이스케이스/사용자조정 가격
             """
     )
     @Parameter(name = "indexName", description = "조회 인덱스 (JKM / TTF / HH). 기본값 JKM")
+    @Parameter(name = "periodUnit", description = "기간 단위 (`monthly` / `yearly`, 대소문자 무관). 기본값 `monthly`")
     @ApiResponse(responseCode = "200", description = "조회 성공")
     @GetMapping("/{scenarioGroupId}/graph")
     @RequiredPermissionRules(rules = {
@@ -157,9 +168,10 @@ public class ScenarioGroupController {
     })
     public BaseResponse<ScenarioGroupGraphRes> getScenarioGroupGraph(
         @Parameter(description = "시나리오 그룹 ID", example = "1") @PathVariable Long scenarioGroupId,
-        @RequestParam(defaultValue = "JKM") IndexName indexName
+        @RequestParam(defaultValue = "JKM") IndexName indexName,
+        @RequestParam(defaultValue = "monthly") GraphPeriodUnit periodUnit
     ) {
-        return BaseResponseFactory.create(scenarioGroupService.getScenarioGroupGraph(scenarioGroupId, indexName));
+        return BaseResponseFactory.create(scenarioGroupService.getScenarioGroupGraph(scenarioGroupId, indexName, periodUnit));
     }
 
     @ApiOrder(4)
@@ -167,9 +179,11 @@ public class ScenarioGroupController {
         summary = "Scenario Group 그래프 엑셀 다운로드 API",
         description = """
             그래프 데이터를 엑셀(.xlsx)로 다운로드 합니다. <br>
-            **전 인덱스(JKM/TTF/HH)를 인덱스별 시트**로 묶어 한 파일로 내려줍니다.
+            **전 인덱스(JKM/TTF/HH)를 인덱스별 시트**로 묶어 한 파일로 내려줍니다. <br>
+            기간 단위는 `periodUnit`(기본 monthly) 하나만 적용되며, 시나리오별로 베이스케이스/사용자조정 2행씩 내려갑니다.
             """
     )
+    @Parameter(name = "periodUnit", description = "기간 단위 (`monthly` / `yearly`, 대소문자 무관). 기본값 `monthly`")
     @ApiResponse(responseCode = "200", description = "다운로드 성공")
     @GetMapping("/{scenarioGroupId}/graph/export")
     @RequiredPermissionRules(rules = {
@@ -177,11 +191,12 @@ public class ScenarioGroupController {
         @PermissionRule(role = Role.ADMIN, conditions = {PermissionCondition.THIRD_PARTY_ADMIN_ONLY})
     })
     public ResponseEntity<InputStreamResource> exportScenarioGroupGraph(
-        @Parameter(description = "시나리오 그룹 ID", example = "1") @PathVariable Long scenarioGroupId
+        @Parameter(description = "시나리오 그룹 ID", example = "1") @PathVariable Long scenarioGroupId,
+        @RequestParam(defaultValue = "monthly") GraphPeriodUnit periodUnit
     ) {
-        ByteArrayInputStream excel = scenarioGroupService.exportScenarioGroupGraph(scenarioGroupId);
+        ByteArrayInputStream excel = scenarioGroupService.exportScenarioGroupGraph(scenarioGroupId, periodUnit);
 
-        String filename = "scenario-group-%s-graph.xlsx".formatted(scenarioGroupId);
+        String filename = "scenario-group-%s-graph-%s.xlsx".formatted(scenarioGroupId, periodUnit.getCode());
         HttpHeaders headers = new HttpHeaders();
         headers.setContentType(MediaType.parseMediaType("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"));
         headers.setContentDisposition(ContentDisposition.attachment().filename(filename).build());
@@ -258,8 +273,9 @@ public class ScenarioGroupController {
             대기(`pending`) -> 실현(`realized`) / 폐기(`discarded`). <br>
 
             <br>
-            **`realized`(실현)로 변경 시, 같은 그룹의 나머지 시나리오는 모두 `discarded`(폐기)로 자동 변경됩니다.** <br>
-            (그룹 내 실현 시나리오는 항상 1개)<br>
+            **`realized`(실현)로 변경 시, 같은 그룹의 나머지 시나리오는 모두 `discarded`(폐기)로 자동 변경됩니다.** (그룹 내 실현 시나리오는 항상 1개) <br>
+            시나리오 그룹 status는 매 변경마다 재도출됩니다 — 실현 시나리오가 있으면 `realized`, 실현을 되돌리면 `created`로 환원. <br>
+            (단, 실현 시 폐기로 캐스케이드된 나머지 시나리오는 되돌림 때 자동 복구되지 않습니다)<br>
 
             <br><br>
             ### 요청 본문

@@ -24,6 +24,8 @@ public interface CustomMiScenarioGroupRepository {
 
     List<ScenarioBaseRow> findScenariosByGroupIds(List<Long> scenarioGroupIds);
 
+    List<ScenarioBaseRow> findScenariosByGroupId(Long scenarioGroupId);
+
     List<ScenarioDimensionTemplateRow> findTemplatesByEventTypeL2Ids(List<Long> eventTypeL2Ids);
 
     Optional<ScenarioDetailBaseRow> findScenarioDetail(Long scenarioGroupId, Long scenarioId);

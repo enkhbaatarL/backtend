@@ -187,10 +187,10 @@ public class CustomMiEventRepositoryImpl implements CustomMiEventRepository {
 
     private void applyPeriodFilter(BooleanBuilder where, EventListReq request) {
         if (request.startDate() != null) {
-            where.and(miEvent.modifyDt.goe(request.startDate().atStartOfDay()));
+            where.and(miEvent.latestRecordFirstCreated.goe(request.startDate().atStartOfDay()));
         }
         if (request.endDate() != null) {
-            where.and(miEvent.modifyDt.lt(request.endDate().plusDays(1).atStartOfDay()));
+            where.and(miEvent.latestRecordFirstCreated.lt(request.endDate().plusDays(1).atStartOfDay()));
         }
     }
 

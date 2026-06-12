@@ -11,6 +11,7 @@ import static com.sk.domain.shared.entity.master.tmm.QMiSignpostEvent.miSignpost
 
 import com.querydsl.core.BooleanBuilder;
 import com.querydsl.core.types.OrderSpecifier;
+import com.querydsl.core.types.dsl.BooleanExpression;
 import com.querydsl.jpa.JPQLQuery;
 import com.querydsl.jpa.impl.JPAQueryFactory;
 import com.sk.domain.mi.dto.request.nextgen.ScenarioGroupListReq;
@@ -200,6 +201,15 @@ public class CustomMiScenarioGroupRepositoryImpl implements CustomMiScenarioGrou
         if (scenarioGroupIds == null || scenarioGroupIds.isEmpty()) {
             return List.of();
         }
+        return fetchScenarios(miScenario.scenarioGroup.scenarioGroupId.in(scenarioGroupIds));
+    }
+
+    @Override
+    public List<ScenarioBaseRow> findScenariosByGroupId(Long scenarioGroupId) {
+        return fetchScenarios(miScenario.scenarioGroup.scenarioGroupId.eq(scenarioGroupId));
+    }
+
+    private List<ScenarioBaseRow> fetchScenarios(BooleanExpression groupCondition) {
         return queryFactory
             .select(new QScenarioBaseRow(
                 miScenario.scenarioGroup.scenarioGroupId,
@@ -213,7 +223,7 @@ public class CustomMiScenarioGroupRepositoryImpl implements CustomMiScenarioGrou
             ))
             .from(miScenario)
             .where(
-                miScenario.scenarioGroup.scenarioGroupId.in(scenarioGroupIds),
+                groupCondition,
                 miScenario.isDeleted.isFalse()
             )
             .orderBy(
