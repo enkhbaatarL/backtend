@@ -9,7 +9,6 @@ import com.sk.domain.mi.dto.response.nextgen.ScenarioDetailViewRes;
 import com.sk.domain.mi.dto.response.nextgen.ScenarioGroupDetailRes;
 import com.sk.domain.mi.dto.response.nextgen.ScenarioGroupGraphRes;
 import com.sk.domain.mi.dto.response.nextgen.ScenarioGroupListRes;
-import com.sk.domain.mi.dto.response.nextgen.ScenarioBulkStatusRes;
 import com.sk.domain.mi.dto.response.nextgen.ScenarioIndividualListRes;
 import com.sk.domain.mi.dto.response.nextgen.ScenarioStatusRes;
 import com.sk.domain.mi.service.nextgen.ScenarioGroupService;
@@ -76,13 +75,6 @@ public class ScenarioGroupServiceDelegator implements ScenarioGroupService {
         return mockProps.getScenarioGroups().getApi().isUpdateScenarioStatus()
             ? mockService.updateScenarioStatus(scenarioGroupId, scenarioId, status)
             : realService.updateScenarioStatus(scenarioGroupId, scenarioId, status);
-    }
-
-    @Override
-    public ScenarioBulkStatusRes bulkUpdateScenarioStatus(Long scenarioGroupId, ScenarioDisplayStatus status) {
-        return mockProps.getScenarioGroups().getApi().isBulkUpdateScenarioStatus()
-            ? mockService.bulkUpdateScenarioStatus(scenarioGroupId, status)
-            : realService.bulkUpdateScenarioStatus(scenarioGroupId, status);
     }
 
     @Override

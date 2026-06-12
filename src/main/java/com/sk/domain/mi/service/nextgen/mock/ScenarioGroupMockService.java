@@ -15,7 +15,6 @@ import com.sk.domain.mi.dto.response.nextgen.ScenarioGroupDetailRes;
 import com.sk.domain.mi.dto.response.nextgen.ScenarioGroupDetailRowRes;
 import com.sk.domain.mi.dto.response.nextgen.ScenarioGroupGraphRes;
 import com.sk.domain.mi.dto.response.nextgen.ScenarioGroupListItemRes;
-import com.sk.domain.mi.dto.response.nextgen.ScenarioBulkStatusRes;
 import com.sk.domain.mi.dto.response.nextgen.ScenarioGroupListRes;
 import com.sk.domain.mi.dto.response.nextgen.ScenarioIndividualItemRes;
 import com.sk.domain.mi.dto.response.nextgen.ScenarioIndividualListRes;
@@ -311,20 +310,6 @@ public class ScenarioGroupMockService {
             discardedScenarioIds.forEach(id -> statusOverrides.put(id, ScenarioDisplayStatus.DISCARDED));
         }
         return ScenarioStatusRes.of(scenarioId, status, discardedScenarioIds);
-    }
-
-    public ScenarioBulkStatusRes bulkUpdateScenarioStatus(Long scenarioGroupId, ScenarioDisplayStatus status) {
-        ScenarioGroupDetailRes detail = groupDetailMap.get(scenarioGroupId);
-        if (detail == null || deletedGroupIds.contains(scenarioGroupId)) {
-            throw AppErrorException.of(ResultCode.Error.RSC_NOT_FOUND,
-                "Scenario group not found: " + scenarioGroupId);
-        }
-        // 그룹 전체 시나리오를 동일 상태로 일괄 변경 (mock: 변경분을 메모리에 저장, reset API로 초기화)
-        List<Long> scenarioIds = detail.scenarios().stream()
-            .map(ScenarioGroupDetailRowRes::scenarioId)
-            .toList();
-        scenarioIds.forEach(id -> statusOverrides.put(id, status));
-        return new ScenarioBulkStatusRes(status, status.getLabel(), scenarioIds.size(), scenarioIds);
     }
 
     public void deleteScenarioGroup(Long scenarioGroupId) {

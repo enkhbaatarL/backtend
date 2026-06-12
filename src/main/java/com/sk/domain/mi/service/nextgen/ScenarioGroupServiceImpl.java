@@ -4,7 +4,6 @@ import com.sk.common.enums.ResultCode;
 import com.sk.common.exception.AppErrorException;
 import com.sk.common.model.PaginationRes;
 import com.sk.domain.mi.dto.request.nextgen.ScenarioGroupListReq;
-import com.sk.domain.mi.dto.response.nextgen.ScenarioBulkStatusRes;
 import com.sk.domain.mi.dto.response.nextgen.ScenarioDetailViewRes;
 import com.sk.domain.mi.dto.response.nextgen.ScenarioDimensionColumnRes;
 import com.sk.domain.mi.dto.response.nextgen.ScenarioDimensionRes;
@@ -24,6 +23,7 @@ import com.sk.domain.mi.service.nextgen.support.ScenarioDimensionMapper;
 import com.sk.domain.mi.service.nextgen.support.ScenarioDimensionMapper.GroupDimensionTemplate;
 import com.sk.domain.mi.service.nextgen.support.ScenarioProbabilityAllocator;
 import com.sk.domain.shared.entity.master.tmm.MiScenario;
+import com.sk.domain.shared.entity.master.tmm.MiScenarioGroup;
 import com.sk.domain.shared.enums.nextgen.IndexName;
 import com.sk.domain.shared.enums.nextgen.ScenarioDisplayStatus;
 import com.sk.domain.shared.repository.master.tmm.MiScenarioGroupRepository;
@@ -223,15 +223,15 @@ public class ScenarioGroupServiceImpl implements ScenarioGroupService {
     }
 
     @Override
-    public ScenarioBulkStatusRes bulkUpdateScenarioStatus(Long scenarioGroupId, ScenarioDisplayStatus status) {
-        // TODO: DB 연동 구현
-        throw AppErrorException.of(ResultCode.Error.RSC_NOT_FOUND, "Scenario status 일괄 변경 DB 연동 미구현");
-    }
-
-    @Override
+    @Transactional
     public void deleteScenarioGroup(Long scenarioGroupId) {
-        // TODO: DB 연동 구현
-        throw AppErrorException.of(ResultCode.Error.RSC_NOT_FOUND, "Scenario group 삭제 DB 연동 미구현");
+
+        MiScenarioGroup group = scenarioGroupRepository.findByScenarioGroupIdAndIsDeletedFalse(scenarioGroupId)
+            .orElseThrow(() -> AppErrorException.of(ResultCode.Error.RSC_NOT_FOUND, "Scenario group not found: %d".formatted(scenarioGroupId)));
+
+        scenarioGroupRepository.findScenarioEntitiesByGroupId(scenarioGroupId).forEach(MiScenario::softDelete);
+        group.softDelete();
+
     }
 
 }
