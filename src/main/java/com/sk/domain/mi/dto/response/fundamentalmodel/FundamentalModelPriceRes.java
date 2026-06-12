@@ -10,7 +10,7 @@ public record FundamentalModelPriceRes(
     @Schema(description = "case ID", example = "106")
     Long caseId,
 
-    @Schema(description = "Monthly Futures Shoulder Chart용 라인 그래프 데이터", implementation = PriceChart.class)
+    @Schema(description = "Futures Simulation Chart용 라인 그래프 데이터. monthly/yearly 시리즈를 모두 포함합니다.", implementation = PriceChart.class)
     PriceChart chart,
 
     @Schema(description = "연간 가격 테이블", implementation = PriceTable.class)
@@ -23,15 +23,24 @@ public record FundamentalModelPriceRes(
 
     public record PriceChart(
 
-        @ArraySchema(schema = @Schema(implementation = PriceChartSeriesSet.class))
-        List<PriceChartSeriesSet> seriesSets
+        @ArraySchema(
+            arraySchema = @Schema(description = "Monthly granularity 라인 그래프 데이터. 우상단 드롭다운에서 Monthly 선택 시 사용합니다."),
+            schema = @Schema(implementation = PriceChartSeriesSet.class)
+        )
+        List<PriceChartSeriesSet> monthlySeriesSets,
+
+        @ArraySchema(
+            arraySchema = @Schema(description = "Yearly granularity 라인 그래프 데이터. 우상단 드롭다운에서 Yearly 선택 시 사용하며 각 point의 month는 null입니다."),
+            schema = @Schema(implementation = PriceChartSeriesSet.class)
+        )
+        List<PriceChartSeriesSet> yearlySeriesSets
 
     ) {
     }
 
     public record PriceChartSeriesSet(
 
-        @Schema(description = "가격 지역 구분", example = "East Asia Spot")
+        @Schema(description = "가격 지역 구분", example = "JKM")
         String priceRegion,
 
         @ArraySchema(schema = @Schema(implementation = PriceChartSeries.class))
@@ -59,7 +68,7 @@ public record FundamentalModelPriceRes(
         @Schema(description = "연도", example = "2026")
         Integer year,
 
-        @Schema(description = "월", example = "1")
+        @Schema(description = "월. yearlySeriesSets의 point에서는 null입니다.", example = "1")
         Integer month,
 
         @Schema(description = "가격 값", example = "8.51")
@@ -98,7 +107,7 @@ public record FundamentalModelPriceRes(
         @Schema(description = "월. annualTable에서는 null입니다.", example = "10")
         Integer month,
 
-        @Schema(description = "가격 지역", example = "East Asia Spot")
+        @Schema(description = "가격 지역", example = "JKM")
         String priceRegion,
 
         @Schema(description = "기준 가격 (US$/mmbtu)", example = "15.71")

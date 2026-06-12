@@ -1,193 +1,409 @@
 {
   "chart": {
-    "seriesSets": [
+    "monthlySeriesSets": [
       {
-        "priceRegion": "East Asia Spot",
+        "priceRegion": "JKM",
         "series": [
           {
             "seriesType": "BASE_CASE",
             "label": "Base case price",
             "points": [
-              { "year": 2023, "month": 10, "value": 15.71 },
-              { "year": 2023, "month": 11, "value": 14.59 },
-              { "year": 2023, "month": 12, "value": 14.01 },
-              { "year": 2024, "month": 1, "value": 9.95 },
-              { "year": 2024, "month": 2, "value": 9.95 },
-              { "year": 2024, "month": 3, "value": 9.95 },
-              { "year": 2024, "month": 4, "value": 9.95 },
-              { "year": 2024, "month": 5, "value": 9.95 },
-              { "year": 2024, "month": 6, "value": 9.95 },
-              { "year": 2024, "month": 7, "value": 9.95 },
-              { "year": 2024, "month": 8, "value": 9.95 },
-              { "year": 2024, "month": 9, "value": 9.95 },
-              { "year": 2024, "month": 10, "value": 9.95 },
-              { "year": 2024, "month": 11, "value": 9.95 },
-              { "year": 2024, "month": 12, "value": 9.95 },
-              { "year": 2025, "month": 1, "value": 9.95 },
-              { "year": 2025, "month": 2, "value": 9.95 },
-              { "year": 2025, "month": 3, "value": 9.95 },
-              { "year": 2025, "month": 4, "value": 9.95 },
-              { "year": 2025, "month": 5, "value": 9.95 },
-              { "year": 2025, "month": 6, "value": 9.95 },
-              { "year": 2025, "month": 7, "value": 9.95 },
-              { "year": 2025, "month": 8, "value": 9.95 },
-              { "year": 2025, "month": 9, "value": 9.95 },
-              { "year": 2025, "month": 10, "value": 9.95 },
-              { "year": 2025, "month": 11, "value": 9.95 },
-              { "year": 2025, "month": 12, "value": 9.95 },
-              { "year": 2026, "month": 1, "value": 9.95 },
-              { "year": 2026, "month": 2, "value": 9.95 },
-              { "year": 2026, "month": 3, "value": 9.95 },
-              { "year": 2026, "month": 4, "value": 9.95 },
-              { "year": 2026, "month": 5, "value": 9.95 },
-              { "year": 2026, "month": 6, "value": 9.95 },
-              { "year": 2026, "month": 7, "value": 9.95 },
-              { "year": 2026, "month": 8, "value": 9.95 },
-              { "year": 2026, "month": 9, "value": 9.95 },
-              { "year": 2026, "month": 10, "value": 9.95 },
-              { "year": 2026, "month": 11, "value": 9.95 },
-              { "year": 2026, "month": 12, "value": 9.95 },
-              { "year": 2027, "month": 1, "value": 9.95 },
-              { "year": 2027, "month": 2, "value": 9.95 },
-              { "year": 2027, "month": 3, "value": 9.95 },
-              { "year": 2027, "month": 4, "value": 9.95 },
-              { "year": 2027, "month": 5, "value": 9.95 },
-              { "year": 2027, "month": 6, "value": 9.95 },
-              { "year": 2027, "month": 7, "value": 9.95 },
-              { "year": 2027, "month": 8, "value": 9.95 },
-              { "year": 2027, "month": 9, "value": 9.95 },
-              { "year": 2027, "month": 10, "value": 9.95 },
-              { "year": 2027, "month": 11, "value": 9.95 },
-              { "year": 2027, "month": 12, "value": 9.95 },
-              { "year": 2028, "month": 1, "value": 9.95 },
-              { "year": 2028, "month": 2, "value": 9.95 },
-              { "year": 2028, "month": 3, "value": 9.95 },
-              { "year": 2028, "month": 4, "value": 9.95 },
-              { "year": 2028, "month": 5, "value": 9.95 },
-              { "year": 2028, "month": 6, "value": 9.95 },
-              { "year": 2028, "month": 7, "value": 9.95 },
-              { "year": 2028, "month": 8, "value": 9.95 },
-              { "year": 2028, "month": 9, "value": 9.95 },
-              { "year": 2028, "month": 10, "value": 9.95 },
-              { "year": 2028, "month": 11, "value": 9.95 },
-              { "year": 2028, "month": 12, "value": 9.95 },
-              { "year": 2029, "month": 1, "value": 9.95 },
-              { "year": 2029, "month": 2, "value": 9.95 },
-              { "year": 2029, "month": 3, "value": 9.95 },
-              { "year": 2029, "month": 4, "value": 9.95 },
-              { "year": 2029, "month": 5, "value": 9.95 },
-              { "year": 2029, "month": 6, "value": 9.95 },
-              { "year": 2029, "month": 7, "value": 9.95 },
-              { "year": 2029, "month": 8, "value": 9.95 },
-              { "year": 2029, "month": 9, "value": 9.95 },
-              { "year": 2029, "month": 10, "value": 9.95 },
-              { "year": 2029, "month": 11, "value": 9.95 },
-              { "year": 2029, "month": 12, "value": 9.95 },
-              { "year": 2030, "month": 1, "value": 9.95 },
-              { "year": 2030, "month": 2, "value": 9.95 },
-              { "year": 2030, "month": 3, "value": 9.95 },
-              { "year": 2030, "month": 4, "value": 9.95 },
-              { "year": 2030, "month": 5, "value": 9.95 },
-              { "year": 2030, "month": 6, "value": 9.95 },
-              { "year": 2030, "month": 7, "value": 9.95 },
-              { "year": 2030, "month": 8, "value": 9.95 },
-              { "year": 2030, "month": 9, "value": 9.95 },
-              { "year": 2030, "month": 10, "value": 9.95 },
-              { "year": 2030, "month": 11, "value": 9.95 },
-              { "year": 2030, "month": 12, "value": 9.95 }
+              {
+                "year": 2023,
+                "month": 10,
+                "value": 15.57
+              },
+              {
+                "year": 2023,
+                "month": 11,
+                "value": 17.01
+              },
+              {
+                "year": 2023,
+                "month": 12,
+                "value": 16.25
+              },
+              {
+                "year": 2024,
+                "month": 1,
+                "value": 18.69
+              },
+              {
+                "year": 2024,
+                "month": 2,
+                "value": 18.71
+              },
+              {
+                "year": 2024,
+                "month": 3,
+                "value": 15.39
+              },
+              {
+                "year": 2024,
+                "month": 4,
+                "value": 12.82
+              },
+              {
+                "year": 2024,
+                "month": 5,
+                "value": 11.94
+              },
+              {
+                "year": 2024,
+                "month": 6,
+                "value": 12.43
+              },
+              {
+                "year": 2024,
+                "month": 7,
+                "value": 12.8
+              },
+              {
+                "year": 2024,
+                "month": 8,
+                "value": 13.14
+              },
+              {
+                "year": 2024,
+                "month": 9,
+                "value": 13.57
+              },
+              {
+                "year": 2024,
+                "month": 10,
+                "value": 14.22
+              },
+              {
+                "year": 2024,
+                "month": 11,
+                "value": 15.41
+              },
+              {
+                "year": 2024,
+                "month": 12,
+                "value": 16.0
+              },
+              {
+                "year": 2025,
+                "month": 1,
+                "value": 18.34
+              },
+              {
+                "year": 2025,
+                "month": 2,
+                "value": 18.36
+              },
+              {
+                "year": 2025,
+                "month": 3,
+                "value": 15.1
+              },
+              {
+                "year": 2025,
+                "month": 4,
+                "value": 12.58
+              },
+              {
+                "year": 2025,
+                "month": 5,
+                "value": 11.72
+              },
+              {
+                "year": 2025,
+                "month": 6,
+                "value": 12.19
+              },
+              {
+                "year": 2025,
+                "month": 7,
+                "value": 12.56
+              },
+              {
+                "year": 2025,
+                "month": 8,
+                "value": 12.89
+              },
+              {
+                "year": 2025,
+                "month": 9,
+                "value": 13.31
+              },
+              {
+                "year": 2025,
+                "month": 10,
+                "value": 13.95
+              },
+              {
+                "year": 2025,
+                "month": 11,
+                "value": 15.12
+              },
+              {
+                "year": 2025,
+                "month": 12,
+                "value": 15.7
+              },
+              {
+                "year": 2026,
+                "month": 1,
+                "value": 13.28
+              },
+              {
+                "year": 2026,
+                "month": 2,
+                "value": 13.29
+              },
+              {
+                "year": 2026,
+                "month": 3,
+                "value": 10.94
+              },
+              {
+                "year": 2026,
+                "month": 4,
+                "value": 9.11
+              },
+              {
+                "year": 2026,
+                "month": 5,
+                "value": 8.49
+              },
+              {
+                "year": 2026,
+                "month": 6,
+                "value": 8.83
+              },
+              {
+                "year": 2026,
+                "month": 7,
+                "value": 9.09
+              },
+              {
+                "year": 2026,
+                "month": 8,
+                "value": 9.34
+              },
+              {
+                "year": 2026,
+                "month": 9,
+                "value": 9.64
+              },
+              {
+                "year": 2026,
+                "month": 10,
+                "value": 10.1
+              },
+              {
+                "year": 2026,
+                "month": 11,
+                "value": 10.95
+              },
+              {
+                "year": 2026,
+                "month": 12,
+                "value": 11.37
+              }
             ]
           },
           {
             "seriesType": "USER_ADJUSTED",
             "label": "User adjusted price",
             "points": [
-              { "year": 2023, "month": 10, "value": 15.71 },
-              { "year": 2023, "month": 11, "value": 14.59 },
-              { "year": 2023, "month": 12, "value": 14.01 },
-              { "year": 2024, "month": 1, "value": 9.95 },
-              { "year": 2024, "month": 2, "value": 9.95 },
-              { "year": 2024, "month": 3, "value": 9.95 },
-              { "year": 2024, "month": 4, "value": 9.95 },
-              { "year": 2024, "month": 5, "value": 9.95 },
-              { "year": 2024, "month": 6, "value": 9.95 },
-              { "year": 2024, "month": 7, "value": 9.95 },
-              { "year": 2024, "month": 8, "value": 9.95 },
-              { "year": 2024, "month": 9, "value": 9.95 },
-              { "year": 2024, "month": 10, "value": 9.95 },
-              { "year": 2024, "month": 11, "value": 9.95 },
-              { "year": 2024, "month": 12, "value": 9.95 },
-              { "year": 2025, "month": 1, "value": 9.95 },
-              { "year": 2025, "month": 2, "value": 9.95 },
-              { "year": 2025, "month": 3, "value": 9.95 },
-              { "year": 2025, "month": 4, "value": 9.95 },
-              { "year": 2025, "month": 5, "value": 9.95 },
-              { "year": 2025, "month": 6, "value": 9.95 },
-              { "year": 2025, "month": 7, "value": 9.95 },
-              { "year": 2025, "month": 8, "value": 9.95 },
-              { "year": 2025, "month": 9, "value": 9.95 },
-              { "year": 2025, "month": 10, "value": 9.95 },
-              { "year": 2025, "month": 11, "value": 9.95 },
-              { "year": 2025, "month": 12, "value": 9.95 },
-              { "year": 2026, "month": 1, "value": 9.95 },
-              { "year": 2026, "month": 2, "value": 9.95 },
-              { "year": 2026, "month": 3, "value": 9.95 },
-              { "year": 2026, "month": 4, "value": 9.95 },
-              { "year": 2026, "month": 5, "value": 9.95 },
-              { "year": 2026, "month": 6, "value": 9.95 },
-              { "year": 2026, "month": 7, "value": 9.95 },
-              { "year": 2026, "month": 8, "value": 9.95 },
-              { "year": 2026, "month": 9, "value": 9.95 },
-              { "year": 2026, "month": 10, "value": 9.95 },
-              { "year": 2026, "month": 11, "value": 9.95 },
-              { "year": 2026, "month": 12, "value": 9.95 },
-              { "year": 2027, "month": 1, "value": 9.95 },
-              { "year": 2027, "month": 2, "value": 9.95 },
-              { "year": 2027, "month": 3, "value": 9.95 },
-              { "year": 2027, "month": 4, "value": 9.95 },
-              { "year": 2027, "month": 5, "value": 9.95 },
-              { "year": 2027, "month": 6, "value": 9.95 },
-              { "year": 2027, "month": 7, "value": 9.95 },
-              { "year": 2027, "month": 8, "value": 9.95 },
-              { "year": 2027, "month": 9, "value": 9.95 },
-              { "year": 2027, "month": 10, "value": 9.95 },
-              { "year": 2027, "month": 11, "value": 9.95 },
-              { "year": 2027, "month": 12, "value": 9.95 },
-              { "year": 2028, "month": 1, "value": 9.95 },
-              { "year": 2028, "month": 2, "value": 9.95 },
-              { "year": 2028, "month": 3, "value": 9.95 },
-              { "year": 2028, "month": 4, "value": 9.95 },
-              { "year": 2028, "month": 5, "value": 9.95 },
-              { "year": 2028, "month": 6, "value": 9.95 },
-              { "year": 2028, "month": 7, "value": 9.95 },
-              { "year": 2028, "month": 8, "value": 9.95 },
-              { "year": 2028, "month": 9, "value": 9.95 },
-              { "year": 2028, "month": 10, "value": 9.95 },
-              { "year": 2028, "month": 11, "value": 9.95 },
-              { "year": 2028, "month": 12, "value": 9.95 },
-              { "year": 2029, "month": 1, "value": 9.95 },
-              { "year": 2029, "month": 2, "value": 9.95 },
-              { "year": 2029, "month": 3, "value": 9.95 },
-              { "year": 2029, "month": 4, "value": 9.95 },
-              { "year": 2029, "month": 5, "value": 9.95 },
-              { "year": 2029, "month": 6, "value": 9.95 },
-              { "year": 2029, "month": 7, "value": 9.95 },
-              { "year": 2029, "month": 8, "value": 9.95 },
-              { "year": 2029, "month": 9, "value": 9.95 },
-              { "year": 2029, "month": 10, "value": 9.95 },
-              { "year": 2029, "month": 11, "value": 9.95 },
-              { "year": 2029, "month": 12, "value": 9.95 },
-              { "year": 2030, "month": 1, "value": 9.95 },
-              { "year": 2030, "month": 2, "value": 9.95 },
-              { "year": 2030, "month": 3, "value": 9.95 },
-              { "year": 2030, "month": 4, "value": 9.95 },
-              { "year": 2030, "month": 5, "value": 9.95 },
-              { "year": 2030, "month": 6, "value": 9.95 },
-              { "year": 2030, "month": 7, "value": 9.95 },
-              { "year": 2030, "month": 8, "value": 9.95 },
-              { "year": 2030, "month": 9, "value": 9.95 },
-              { "year": 2030, "month": 10, "value": 9.95 },
-              { "year": 2030, "month": 11, "value": 9.95 },
-              { "year": 2030, "month": 12, "value": 9.95 }
+              {
+                "year": 2023,
+                "month": 10,
+                "value": 12.33
+              },
+              {
+                "year": 2023,
+                "month": 11,
+                "value": -24.31
+              },
+              {
+                "year": 2023,
+                "month": 12,
+                "value": -1.78
+              },
+              {
+                "year": 2024,
+                "month": 1,
+                "value": 25.25
+              },
+              {
+                "year": 2024,
+                "month": 2,
+                "value": 25.28
+              },
+              {
+                "year": 2024,
+                "month": 3,
+                "value": 20.79
+              },
+              {
+                "year": 2024,
+                "month": 4,
+                "value": 17.32
+              },
+              {
+                "year": 2024,
+                "month": 5,
+                "value": 16.14
+              },
+              {
+                "year": 2024,
+                "month": 6,
+                "value": 16.79
+              },
+              {
+                "year": 2024,
+                "month": 7,
+                "value": 17.29
+              },
+              {
+                "year": 2024,
+                "month": 8,
+                "value": 17.75
+              },
+              {
+                "year": 2024,
+                "month": 9,
+                "value": 18.33
+              },
+              {
+                "year": 2024,
+                "month": 10,
+                "value": 19.21
+              },
+              {
+                "year": 2024,
+                "month": 11,
+                "value": 20.82
+              },
+              {
+                "year": 2024,
+                "month": 12,
+                "value": 21.61
+              },
+              {
+                "year": 2025,
+                "month": 1,
+                "value": 16.51
+              },
+              {
+                "year": 2025,
+                "month": 2,
+                "value": 16.15
+              },
+              {
+                "year": 2025,
+                "month": 3,
+                "value": 15.01
+              },
+              {
+                "year": 2025,
+                "month": 4,
+                "value": 14.11
+              },
+              {
+                "year": 2025,
+                "month": 5,
+                "value": 13.98
+              },
+              {
+                "year": 2025,
+                "month": 6,
+                "value": 14.03
+              },
+              {
+                "year": 2025,
+                "month": 7,
+                "value": 14.17
+              },
+              {
+                "year": 2025,
+                "month": 8,
+                "value": 14.38
+              },
+              {
+                "year": 2025,
+                "month": 9,
+                "value": 14.74
+              },
+              {
+                "year": 2025,
+                "month": 10,
+                "value": 15.34
+              },
+              {
+                "year": 2025,
+                "month": 11,
+                "value": 15.97
+              },
+              {
+                "year": 2025,
+                "month": 12,
+                "value": 16.28
+              },
+              {
+                "year": 2026,
+                "month": 1,
+                "value": 12.51
+              },
+              {
+                "year": 2026,
+                "month": 2,
+                "value": 11.95
+              },
+              {
+                "year": 2026,
+                "month": 3,
+                "value": 10.59
+              },
+              {
+                "year": 2026,
+                "month": 4,
+                "value": 9.28
+              },
+              {
+                "year": 2026,
+                "month": 5,
+                "value": 8.87
+              },
+              {
+                "year": 2026,
+                "month": 6,
+                "value": 8.82
+              },
+              {
+                "year": 2026,
+                "month": 7,
+                "value": 8.86
+              },
+              {
+                "year": 2026,
+                "month": 8,
+                "value": 8.9
+              },
+              {
+                "year": 2026,
+                "month": 9,
+                "value": 9.03
+              },
+              {
+                "year": 2026,
+                "month": 10,
+                "value": 9.23
+              },
+              {
+                "year": 2026,
+                "month": 11,
+                "value": 9.93
+              },
+              {
+                "year": 2026,
+                "month": 12,
+                "value": 10.41
+              }
             ]
           }
         ]
@@ -199,186 +415,402 @@
             "seriesType": "BASE_CASE",
             "label": "Base case price",
             "points": [
-              { "year": 2023, "month": 10, "value": 9.95 },
-              { "year": 2023, "month": 11, "value": 9.95 },
-              { "year": 2023, "month": 12, "value": 9.95 },
-              { "year": 2024, "month": 1, "value": 9.95 },
-              { "year": 2024, "month": 2, "value": 9.95 },
-              { "year": 2024, "month": 3, "value": 9.95 },
-              { "year": 2024, "month": 4, "value": 9.95 },
-              { "year": 2024, "month": 5, "value": 9.95 },
-              { "year": 2024, "month": 6, "value": 9.95 },
-              { "year": 2024, "month": 7, "value": 9.95 },
-              { "year": 2024, "month": 8, "value": 9.95 },
-              { "year": 2024, "month": 9, "value": 9.95 },
-              { "year": 2024, "month": 10, "value": 9.95 },
-              { "year": 2024, "month": 11, "value": 9.95 },
-              { "year": 2024, "month": 12, "value": 9.95 },
-              { "year": 2025, "month": 1, "value": 9.95 },
-              { "year": 2025, "month": 2, "value": 9.95 },
-              { "year": 2025, "month": 3, "value": 9.95 },
-              { "year": 2025, "month": 4, "value": 9.95 },
-              { "year": 2025, "month": 5, "value": 9.95 },
-              { "year": 2025, "month": 6, "value": 9.95 },
-              { "year": 2025, "month": 7, "value": 9.95 },
-              { "year": 2025, "month": 8, "value": 9.95 },
-              { "year": 2025, "month": 9, "value": 9.95 },
-              { "year": 2025, "month": 10, "value": 9.95 },
-              { "year": 2025, "month": 11, "value": 9.95 },
-              { "year": 2025, "month": 12, "value": 9.95 },
-              { "year": 2026, "month": 1, "value": 9.95 },
-              { "year": 2026, "month": 2, "value": 9.95 },
-              { "year": 2026, "month": 3, "value": 9.95 },
-              { "year": 2026, "month": 4, "value": 9.95 },
-              { "year": 2026, "month": 5, "value": 9.95 },
-              { "year": 2026, "month": 6, "value": 9.95 },
-              { "year": 2026, "month": 7, "value": 9.95 },
-              { "year": 2026, "month": 8, "value": 9.95 },
-              { "year": 2026, "month": 9, "value": 9.95 },
-              { "year": 2026, "month": 10, "value": 9.95 },
-              { "year": 2026, "month": 11, "value": 9.95 },
-              { "year": 2026, "month": 12, "value": 9.95 },
-              { "year": 2027, "month": 1, "value": 9.95 },
-              { "year": 2027, "month": 2, "value": 9.95 },
-              { "year": 2027, "month": 3, "value": 9.95 },
-              { "year": 2027, "month": 4, "value": 9.95 },
-              { "year": 2027, "month": 5, "value": 9.95 },
-              { "year": 2027, "month": 6, "value": 9.95 },
-              { "year": 2027, "month": 7, "value": 9.95 },
-              { "year": 2027, "month": 8, "value": 9.95 },
-              { "year": 2027, "month": 9, "value": 9.95 },
-              { "year": 2027, "month": 10, "value": 9.95 },
-              { "year": 2027, "month": 11, "value": 9.95 },
-              { "year": 2027, "month": 12, "value": 9.95 },
-              { "year": 2028, "month": 1, "value": 9.95 },
-              { "year": 2028, "month": 2, "value": 9.95 },
-              { "year": 2028, "month": 3, "value": 9.95 },
-              { "year": 2028, "month": 4, "value": 9.95 },
-              { "year": 2028, "month": 5, "value": 9.95 },
-              { "year": 2028, "month": 6, "value": 9.95 },
-              { "year": 2028, "month": 7, "value": 9.95 },
-              { "year": 2028, "month": 8, "value": 9.95 },
-              { "year": 2028, "month": 9, "value": 9.95 },
-              { "year": 2028, "month": 10, "value": 9.95 },
-              { "year": 2028, "month": 11, "value": 9.95 },
-              { "year": 2028, "month": 12, "value": 9.95 },
-              { "year": 2029, "month": 1, "value": 9.95 },
-              { "year": 2029, "month": 2, "value": 9.95 },
-              { "year": 2029, "month": 3, "value": 9.95 },
-              { "year": 2029, "month": 4, "value": 9.95 },
-              { "year": 2029, "month": 5, "value": 9.95 },
-              { "year": 2029, "month": 6, "value": 9.95 },
-              { "year": 2029, "month": 7, "value": 9.95 },
-              { "year": 2029, "month": 8, "value": 9.95 },
-              { "year": 2029, "month": 9, "value": 9.95 },
-              { "year": 2029, "month": 10, "value": 9.95 },
-              { "year": 2029, "month": 11, "value": 9.95 },
-              { "year": 2029, "month": 12, "value": 9.95 },
-              { "year": 2030, "month": 1, "value": 9.95 },
-              { "year": 2030, "month": 2, "value": 9.95 },
-              { "year": 2030, "month": 3, "value": 9.95 },
-              { "year": 2030, "month": 4, "value": 9.95 },
-              { "year": 2030, "month": 5, "value": 9.95 },
-              { "year": 2030, "month": 6, "value": 9.95 },
-              { "year": 2030, "month": 7, "value": 9.95 },
-              { "year": 2030, "month": 8, "value": 9.95 },
-              { "year": 2030, "month": 9, "value": 9.95 },
-              { "year": 2030, "month": 10, "value": 9.95 },
-              { "year": 2030, "month": 11, "value": 9.95 },
-              { "year": 2030, "month": 12, "value": 9.95 }
+              {
+                "year": 2023,
+                "month": 10,
+                "value": 14.7
+              },
+              {
+                "year": 2023,
+                "month": 11,
+                "value": 14.54
+              },
+              {
+                "year": 2023,
+                "month": 12,
+                "value": 13.84
+              },
+              {
+                "year": 2024,
+                "month": 1,
+                "value": 16.97
+              },
+              {
+                "year": 2024,
+                "month": 2,
+                "value": 15.73
+              },
+              {
+                "year": 2024,
+                "month": 3,
+                "value": 14.94
+              },
+              {
+                "year": 2024,
+                "month": 4,
+                "value": 13.59
+              },
+              {
+                "year": 2024,
+                "month": 5,
+                "value": 13.55
+              },
+              {
+                "year": 2024,
+                "month": 6,
+                "value": 13.59
+              },
+              {
+                "year": 2024,
+                "month": 7,
+                "value": 13.35
+              },
+              {
+                "year": 2024,
+                "month": 8,
+                "value": 13.48
+              },
+              {
+                "year": 2024,
+                "month": 9,
+                "value": 13.31
+              },
+              {
+                "year": 2024,
+                "month": 10,
+                "value": 14.52
+              },
+              {
+                "year": 2024,
+                "month": 11,
+                "value": 15.45
+              },
+              {
+                "year": 2024,
+                "month": 12,
+                "value": 15.61
+              },
+              {
+                "year": 2025,
+                "month": 1,
+                "value": 16.18
+              },
+              {
+                "year": 2025,
+                "month": 2,
+                "value": 15.0
+              },
+              {
+                "year": 2025,
+                "month": 3,
+                "value": 14.25
+              },
+              {
+                "year": 2025,
+                "month": 4,
+                "value": 12.95
+              },
+              {
+                "year": 2025,
+                "month": 5,
+                "value": 12.92
+              },
+              {
+                "year": 2025,
+                "month": 6,
+                "value": 12.96
+              },
+              {
+                "year": 2025,
+                "month": 7,
+                "value": 12.73
+              },
+              {
+                "year": 2025,
+                "month": 8,
+                "value": 12.85
+              },
+              {
+                "year": 2025,
+                "month": 9,
+                "value": 12.69
+              },
+              {
+                "year": 2025,
+                "month": 10,
+                "value": 13.84
+              },
+              {
+                "year": 2025,
+                "month": 11,
+                "value": 14.73
+              },
+              {
+                "year": 2025,
+                "month": 12,
+                "value": 14.88
+              },
+              {
+                "year": 2026,
+                "month": 1,
+                "value": 12.1
+              },
+              {
+                "year": 2026,
+                "month": 2,
+                "value": 11.22
+              },
+              {
+                "year": 2026,
+                "month": 3,
+                "value": 10.65
+              },
+              {
+                "year": 2026,
+                "month": 4,
+                "value": 9.68
+              },
+              {
+                "year": 2026,
+                "month": 5,
+                "value": 9.66
+              },
+              {
+                "year": 2026,
+                "month": 6,
+                "value": 9.69
+              },
+              {
+                "year": 2026,
+                "month": 7,
+                "value": 9.52
+              },
+              {
+                "year": 2026,
+                "month": 8,
+                "value": 9.61
+              },
+              {
+                "year": 2026,
+                "month": 9,
+                "value": 9.49
+              },
+              {
+                "year": 2026,
+                "month": 10,
+                "value": 10.35
+              },
+              {
+                "year": 2026,
+                "month": 11,
+                "value": 11.01
+              },
+              {
+                "year": 2026,
+                "month": 12,
+                "value": 11.13
+              }
             ]
           },
           {
             "seriesType": "USER_ADJUSTED",
             "label": "User adjusted price",
             "points": [
-              { "year": 2023, "month": 10, "value": 9.95 },
-              { "year": 2023, "month": 11, "value": 9.95 },
-              { "year": 2023, "month": 12, "value": 9.95 },
-              { "year": 2024, "month": 1, "value": 9.95 },
-              { "year": 2024, "month": 2, "value": 9.95 },
-              { "year": 2024, "month": 3, "value": 9.95 },
-              { "year": 2024, "month": 4, "value": 9.95 },
-              { "year": 2024, "month": 5, "value": 9.95 },
-              { "year": 2024, "month": 6, "value": 9.95 },
-              { "year": 2024, "month": 7, "value": 9.95 },
-              { "year": 2024, "month": 8, "value": 9.95 },
-              { "year": 2024, "month": 9, "value": 9.95 },
-              { "year": 2024, "month": 10, "value": 9.95 },
-              { "year": 2024, "month": 11, "value": 9.95 },
-              { "year": 2024, "month": 12, "value": 9.95 },
-              { "year": 2025, "month": 1, "value": 9.95 },
-              { "year": 2025, "month": 2, "value": 9.95 },
-              { "year": 2025, "month": 3, "value": 9.95 },
-              { "year": 2025, "month": 4, "value": 9.95 },
-              { "year": 2025, "month": 5, "value": 9.95 },
-              { "year": 2025, "month": 6, "value": 9.95 },
-              { "year": 2025, "month": 7, "value": 9.95 },
-              { "year": 2025, "month": 8, "value": 9.95 },
-              { "year": 2025, "month": 9, "value": 9.95 },
-              { "year": 2025, "month": 10, "value": 9.95 },
-              { "year": 2025, "month": 11, "value": 9.95 },
-              { "year": 2025, "month": 12, "value": 9.95 },
-              { "year": 2026, "month": 1, "value": 9.95 },
-              { "year": 2026, "month": 2, "value": 9.95 },
-              { "year": 2026, "month": 3, "value": 9.95 },
-              { "year": 2026, "month": 4, "value": 9.95 },
-              { "year": 2026, "month": 5, "value": 9.95 },
-              { "year": 2026, "month": 6, "value": 9.95 },
-              { "year": 2026, "month": 7, "value": 9.95 },
-              { "year": 2026, "month": 8, "value": 9.95 },
-              { "year": 2026, "month": 9, "value": 9.95 },
-              { "year": 2026, "month": 10, "value": 9.95 },
-              { "year": 2026, "month": 11, "value": 9.95 },
-              { "year": 2026, "month": 12, "value": 9.95 },
-              { "year": 2027, "month": 1, "value": 9.95 },
-              { "year": 2027, "month": 2, "value": 9.95 },
-              { "year": 2027, "month": 3, "value": 9.95 },
-              { "year": 2027, "month": 4, "value": 9.95 },
-              { "year": 2027, "month": 5, "value": 9.95 },
-              { "year": 2027, "month": 6, "value": 9.95 },
-              { "year": 2027, "month": 7, "value": 9.95 },
-              { "year": 2027, "month": 8, "value": 9.95 },
-              { "year": 2027, "month": 9, "value": 9.95 },
-              { "year": 2027, "month": 10, "value": 9.95 },
-              { "year": 2027, "month": 11, "value": 9.95 },
-              { "year": 2027, "month": 12, "value": 9.95 },
-              { "year": 2028, "month": 1, "value": 9.95 },
-              { "year": 2028, "month": 2, "value": 9.95 },
-              { "year": 2028, "month": 3, "value": 9.95 },
-              { "year": 2028, "month": 4, "value": 9.95 },
-              { "year": 2028, "month": 5, "value": 9.95 },
-              { "year": 2028, "month": 6, "value": 9.95 },
-              { "year": 2028, "month": 7, "value": 9.95 },
-              { "year": 2028, "month": 8, "value": 9.95 },
-              { "year": 2028, "month": 9, "value": 9.95 },
-              { "year": 2028, "month": 10, "value": 9.95 },
-              { "year": 2028, "month": 11, "value": 9.95 },
-              { "year": 2028, "month": 12, "value": 9.95 },
-              { "year": 2029, "month": 1, "value": 9.95 },
-              { "year": 2029, "month": 2, "value": 9.95 },
-              { "year": 2029, "month": 3, "value": 9.95 },
-              { "year": 2029, "month": 4, "value": 9.95 },
-              { "year": 2029, "month": 5, "value": 9.95 },
-              { "year": 2029, "month": 6, "value": 9.95 },
-              { "year": 2029, "month": 7, "value": 9.95 },
-              { "year": 2029, "month": 8, "value": 9.95 },
-              { "year": 2029, "month": 9, "value": 9.95 },
-              { "year": 2029, "month": 10, "value": 9.95 },
-              { "year": 2029, "month": 11, "value": 9.95 },
-              { "year": 2029, "month": 12, "value": 9.95 },
-              { "year": 2030, "month": 1, "value": 9.95 },
-              { "year": 2030, "month": 2, "value": 9.95 },
-              { "year": 2030, "month": 3, "value": 9.95 },
-              { "year": 2030, "month": 4, "value": 9.95 },
-              { "year": 2030, "month": 5, "value": 9.95 },
-              { "year": 2030, "month": 6, "value": 9.95 },
-              { "year": 2030, "month": 7, "value": 9.95 },
-              { "year": 2030, "month": 8, "value": 9.95 },
-              { "year": 2030, "month": 9, "value": 9.95 },
-              { "year": 2030, "month": 10, "value": 9.95 },
-              { "year": 2030, "month": 11, "value": 9.95 },
-              { "year": 2030, "month": 12, "value": 9.95 }
+              {
+                "year": 2023,
+                "month": 10,
+                "value": -17.58
+              },
+              {
+                "year": 2023,
+                "month": 11,
+                "value": -23.61
+              },
+              {
+                "year": 2023,
+                "month": 12,
+                "value": -19.58
+              },
+              {
+                "year": 2024,
+                "month": 1,
+                "value": 23.47
+              },
+              {
+                "year": 2024,
+                "month": 2,
+                "value": 21.76
+              },
+              {
+                "year": 2024,
+                "month": 3,
+                "value": 20.67
+              },
+              {
+                "year": 2024,
+                "month": 4,
+                "value": 18.79
+              },
+              {
+                "year": 2024,
+                "month": 5,
+                "value": 18.75
+              },
+              {
+                "year": 2024,
+                "month": 6,
+                "value": 18.79
+              },
+              {
+                "year": 2024,
+                "month": 7,
+                "value": 18.47
+              },
+              {
+                "year": 2024,
+                "month": 8,
+                "value": 18.65
+              },
+              {
+                "year": 2024,
+                "month": 9,
+                "value": 18.41
+              },
+              {
+                "year": 2024,
+                "month": 10,
+                "value": 20.08
+              },
+              {
+                "year": 2024,
+                "month": 11,
+                "value": 21.36
+              },
+              {
+                "year": 2024,
+                "month": 12,
+                "value": 21.59
+              },
+              {
+                "year": 2025,
+                "month": 1,
+                "value": 16.09
+              },
+              {
+                "year": 2025,
+                "month": 2,
+                "value": 15.99
+              },
+              {
+                "year": 2025,
+                "month": 3,
+                "value": 15.71
+              },
+              {
+                "year": 2025,
+                "month": 4,
+                "value": 15.18
+              },
+              {
+                "year": 2025,
+                "month": 5,
+                "value": 14.95
+              },
+              {
+                "year": 2025,
+                "month": 6,
+                "value": 14.87
+              },
+              {
+                "year": 2025,
+                "month": 7,
+                "value": 14.94
+              },
+              {
+                "year": 2025,
+                "month": 8,
+                "value": 14.99
+              },
+              {
+                "year": 2025,
+                "month": 9,
+                "value": 15.1
+              },
+              {
+                "year": 2025,
+                "month": 10,
+                "value": 15.4
+              },
+              {
+                "year": 2025,
+                "month": 11,
+                "value": 15.77
+              },
+              {
+                "year": 2025,
+                "month": 12,
+                "value": 15.87
+              },
+              {
+                "year": 2026,
+                "month": 1,
+                "value": 13.06
+              },
+              {
+                "year": 2026,
+                "month": 2,
+                "value": 12.63
+              },
+              {
+                "year": 2026,
+                "month": 3,
+                "value": 11.41
+              },
+              {
+                "year": 2026,
+                "month": 4,
+                "value": 10.0
+              },
+              {
+                "year": 2026,
+                "month": 5,
+                "value": 9.42
+              },
+              {
+                "year": 2026,
+                "month": 6,
+                "value": 9.2
+              },
+              {
+                "year": 2026,
+                "month": 7,
+                "value": 9.13
+              },
+              {
+                "year": 2026,
+                "month": 8,
+                "value": 9.04
+              },
+              {
+                "year": 2026,
+                "month": 9,
+                "value": 9.11
+              },
+              {
+                "year": 2026,
+                "month": 10,
+                "value": 9.31
+              },
+              {
+                "year": 2026,
+                "month": 11,
+                "value": 9.96
+              },
+              {
+                "year": 2026,
+                "month": 12,
+                "value": 10.34
+              }
             ]
           }
         ]
@@ -390,186 +822,695 @@
             "seriesType": "BASE_CASE",
             "label": "Base case price",
             "points": [
-              { "year": 2023, "month": 10, "value": 9.95 },
-              { "year": 2023, "month": 11, "value": 9.95 },
-              { "year": 2023, "month": 12, "value": 9.95 },
-              { "year": 2024, "month": 1, "value": 9.95 },
-              { "year": 2024, "month": 2, "value": 9.95 },
-              { "year": 2024, "month": 3, "value": 9.95 },
-              { "year": 2024, "month": 4, "value": 9.95 },
-              { "year": 2024, "month": 5, "value": 9.95 },
-              { "year": 2024, "month": 6, "value": 9.95 },
-              { "year": 2024, "month": 7, "value": 9.95 },
-              { "year": 2024, "month": 8, "value": 9.95 },
-              { "year": 2024, "month": 9, "value": 9.95 },
-              { "year": 2024, "month": 10, "value": 9.95 },
-              { "year": 2024, "month": 11, "value": 9.95 },
-              { "year": 2024, "month": 12, "value": 9.95 },
-              { "year": 2025, "month": 1, "value": 9.95 },
-              { "year": 2025, "month": 2, "value": 9.95 },
-              { "year": 2025, "month": 3, "value": 9.95 },
-              { "year": 2025, "month": 4, "value": 9.95 },
-              { "year": 2025, "month": 5, "value": 9.95 },
-              { "year": 2025, "month": 6, "value": 9.95 },
-              { "year": 2025, "month": 7, "value": 9.95 },
-              { "year": 2025, "month": 8, "value": 9.95 },
-              { "year": 2025, "month": 9, "value": 9.95 },
-              { "year": 2025, "month": 10, "value": 9.95 },
-              { "year": 2025, "month": 11, "value": 9.95 },
-              { "year": 2025, "month": 12, "value": 9.95 },
-              { "year": 2026, "month": 1, "value": 9.95 },
-              { "year": 2026, "month": 2, "value": 9.95 },
-              { "year": 2026, "month": 3, "value": 9.95 },
-              { "year": 2026, "month": 4, "value": 9.95 },
-              { "year": 2026, "month": 5, "value": 9.95 },
-              { "year": 2026, "month": 6, "value": 9.95 },
-              { "year": 2026, "month": 7, "value": 9.95 },
-              { "year": 2026, "month": 8, "value": 9.95 },
-              { "year": 2026, "month": 9, "value": 9.95 },
-              { "year": 2026, "month": 10, "value": 9.95 },
-              { "year": 2026, "month": 11, "value": 9.95 },
-              { "year": 2026, "month": 12, "value": 9.95 },
-              { "year": 2027, "month": 1, "value": 9.95 },
-              { "year": 2027, "month": 2, "value": 9.95 },
-              { "year": 2027, "month": 3, "value": 9.95 },
-              { "year": 2027, "month": 4, "value": 9.95 },
-              { "year": 2027, "month": 5, "value": 9.95 },
-              { "year": 2027, "month": 6, "value": 9.95 },
-              { "year": 2027, "month": 7, "value": 9.95 },
-              { "year": 2027, "month": 8, "value": 9.95 },
-              { "year": 2027, "month": 9, "value": 9.95 },
-              { "year": 2027, "month": 10, "value": 9.95 },
-              { "year": 2027, "month": 11, "value": 9.95 },
-              { "year": 2027, "month": 12, "value": 9.95 },
-              { "year": 2028, "month": 1, "value": 9.95 },
-              { "year": 2028, "month": 2, "value": 9.95 },
-              { "year": 2028, "month": 3, "value": 9.95 },
-              { "year": 2028, "month": 4, "value": 9.95 },
-              { "year": 2028, "month": 5, "value": 9.95 },
-              { "year": 2028, "month": 6, "value": 9.95 },
-              { "year": 2028, "month": 7, "value": 9.95 },
-              { "year": 2028, "month": 8, "value": 9.95 },
-              { "year": 2028, "month": 9, "value": 9.95 },
-              { "year": 2028, "month": 10, "value": 9.95 },
-              { "year": 2028, "month": 11, "value": 9.95 },
-              { "year": 2028, "month": 12, "value": 9.95 },
-              { "year": 2029, "month": 1, "value": 9.95 },
-              { "year": 2029, "month": 2, "value": 9.95 },
-              { "year": 2029, "month": 3, "value": 9.95 },
-              { "year": 2029, "month": 4, "value": 9.95 },
-              { "year": 2029, "month": 5, "value": 9.95 },
-              { "year": 2029, "month": 6, "value": 9.95 },
-              { "year": 2029, "month": 7, "value": 9.95 },
-              { "year": 2029, "month": 8, "value": 9.95 },
-              { "year": 2029, "month": 9, "value": 9.95 },
-              { "year": 2029, "month": 10, "value": 9.95 },
-              { "year": 2029, "month": 11, "value": 9.95 },
-              { "year": 2029, "month": 12, "value": 9.95 },
-              { "year": 2030, "month": 1, "value": 9.95 },
-              { "year": 2030, "month": 2, "value": 9.95 },
-              { "year": 2030, "month": 3, "value": 9.95 },
-              { "year": 2030, "month": 4, "value": 9.95 },
-              { "year": 2030, "month": 5, "value": 9.95 },
-              { "year": 2030, "month": 6, "value": 9.95 },
-              { "year": 2030, "month": 7, "value": 9.95 },
-              { "year": 2030, "month": 8, "value": 9.95 },
-              { "year": 2030, "month": 9, "value": 9.95 },
-              { "year": 2030, "month": 10, "value": 9.95 },
-              { "year": 2030, "month": 11, "value": 9.95 },
-              { "year": 2030, "month": 12, "value": 9.95 }
+              {
+                "year": 2023,
+                "month": 10,
+                "value": 3.12
+              },
+              {
+                "year": 2023,
+                "month": 11,
+                "value": 3.08
+              },
+              {
+                "year": 2023,
+                "month": 12,
+                "value": 2.81
+              },
+              {
+                "year": 2024,
+                "month": 1,
+                "value": 3.48
+              },
+              {
+                "year": 2024,
+                "month": 2,
+                "value": 3.3
+              },
+              {
+                "year": 2024,
+                "month": 3,
+                "value": 2.79
+              },
+              {
+                "year": 2024,
+                "month": 4,
+                "value": 2.87
+              },
+              {
+                "year": 2024,
+                "month": 5,
+                "value": 2.85
+              },
+              {
+                "year": 2024,
+                "month": 6,
+                "value": 2.95
+              },
+              {
+                "year": 2024,
+                "month": 7,
+                "value": 3.11
+              },
+              {
+                "year": 2024,
+                "month": 8,
+                "value": 2.97
+              },
+              {
+                "year": 2024,
+                "month": 9,
+                "value": 3.02
+              },
+              {
+                "year": 2024,
+                "month": 10,
+                "value": 3.09
+              },
+              {
+                "year": 2024,
+                "month": 11,
+                "value": 2.95
+              },
+              {
+                "year": 2024,
+                "month": 12,
+                "value": 3.43
+              },
+              {
+                "year": 2025,
+                "month": 1,
+                "value": 4.07
+              },
+              {
+                "year": 2025,
+                "month": 2,
+                "value": 3.86
+              },
+              {
+                "year": 2025,
+                "month": 3,
+                "value": 3.27
+              },
+              {
+                "year": 2025,
+                "month": 4,
+                "value": 3.36
+              },
+              {
+                "year": 2025,
+                "month": 5,
+                "value": 3.33
+              },
+              {
+                "year": 2025,
+                "month": 6,
+                "value": 3.46
+              },
+              {
+                "year": 2025,
+                "month": 7,
+                "value": 3.64
+              },
+              {
+                "year": 2025,
+                "month": 8,
+                "value": 3.48
+              },
+              {
+                "year": 2025,
+                "month": 9,
+                "value": 3.54
+              },
+              {
+                "year": 2025,
+                "month": 10,
+                "value": 3.62
+              },
+              {
+                "year": 2025,
+                "month": 11,
+                "value": 3.45
+              },
+              {
+                "year": 2025,
+                "month": 12,
+                "value": 4.01
+              },
+              {
+                "year": 2026,
+                "month": 1,
+                "value": 4.44
+              },
+              {
+                "year": 2026,
+                "month": 2,
+                "value": 4.21
+              },
+              {
+                "year": 2026,
+                "month": 3,
+                "value": 3.57
+              },
+              {
+                "year": 2026,
+                "month": 4,
+                "value": 3.66
+              },
+              {
+                "year": 2026,
+                "month": 5,
+                "value": 3.63
+              },
+              {
+                "year": 2026,
+                "month": 6,
+                "value": 3.77
+              },
+              {
+                "year": 2026,
+                "month": 7,
+                "value": 3.97
+              },
+              {
+                "year": 2026,
+                "month": 8,
+                "value": 3.8
+              },
+              {
+                "year": 2026,
+                "month": 9,
+                "value": 3.86
+              },
+              {
+                "year": 2026,
+                "month": 10,
+                "value": 3.95
+              },
+              {
+                "year": 2026,
+                "month": 11,
+                "value": 3.77
+              },
+              {
+                "year": 2026,
+                "month": 12,
+                "value": 4.38
+              }
             ]
           },
           {
             "seriesType": "USER_ADJUSTED",
             "label": "User adjusted price",
             "points": [
-              { "year": 2023, "month": 10, "value": 9.95 },
-              { "year": 2023, "month": 11, "value": 9.95 },
-              { "year": 2023, "month": 12, "value": 9.95 },
-              { "year": 2024, "month": 1, "value": 9.95 },
-              { "year": 2024, "month": 2, "value": 9.95 },
-              { "year": 2024, "month": 3, "value": 9.95 },
-              { "year": 2024, "month": 4, "value": 9.95 },
-              { "year": 2024, "month": 5, "value": 9.95 },
-              { "year": 2024, "month": 6, "value": 9.95 },
-              { "year": 2024, "month": 7, "value": 9.95 },
-              { "year": 2024, "month": 8, "value": 9.95 },
-              { "year": 2024, "month": 9, "value": 9.95 },
-              { "year": 2024, "month": 10, "value": 9.95 },
-              { "year": 2024, "month": 11, "value": 9.95 },
-              { "year": 2024, "month": 12, "value": 9.95 },
-              { "year": 2025, "month": 1, "value": 9.95 },
-              { "year": 2025, "month": 2, "value": 9.95 },
-              { "year": 2025, "month": 3, "value": 9.95 },
-              { "year": 2025, "month": 4, "value": 9.95 },
-              { "year": 2025, "month": 5, "value": 9.95 },
-              { "year": 2025, "month": 6, "value": 9.95 },
-              { "year": 2025, "month": 7, "value": 9.95 },
-              { "year": 2025, "month": 8, "value": 9.95 },
-              { "year": 2025, "month": 9, "value": 9.95 },
-              { "year": 2025, "month": 10, "value": 9.95 },
-              { "year": 2025, "month": 11, "value": 9.95 },
-              { "year": 2025, "month": 12, "value": 9.95 },
-              { "year": 2026, "month": 1, "value": 9.95 },
-              { "year": 2026, "month": 2, "value": 9.95 },
-              { "year": 2026, "month": 3, "value": 9.95 },
-              { "year": 2026, "month": 4, "value": 9.95 },
-              { "year": 2026, "month": 5, "value": 9.95 },
-              { "year": 2026, "month": 6, "value": 9.95 },
-              { "year": 2026, "month": 7, "value": 9.95 },
-              { "year": 2026, "month": 8, "value": 9.95 },
-              { "year": 2026, "month": 9, "value": 9.95 },
-              { "year": 2026, "month": 10, "value": 9.95 },
-              { "year": 2026, "month": 11, "value": 9.95 },
-              { "year": 2026, "month": 12, "value": 9.95 },
-              { "year": 2027, "month": 1, "value": 9.95 },
-              { "year": 2027, "month": 2, "value": 9.95 },
-              { "year": 2027, "month": 3, "value": 9.95 },
-              { "year": 2027, "month": 4, "value": 9.95 },
-              { "year": 2027, "month": 5, "value": 9.95 },
-              { "year": 2027, "month": 6, "value": 9.95 },
-              { "year": 2027, "month": 7, "value": 9.95 },
-              { "year": 2027, "month": 8, "value": 9.95 },
-              { "year": 2027, "month": 9, "value": 9.95 },
-              { "year": 2027, "month": 10, "value": 9.95 },
-              { "year": 2027, "month": 11, "value": 9.95 },
-              { "year": 2027, "month": 12, "value": 9.95 },
-              { "year": 2028, "month": 1, "value": 9.95 },
-              { "year": 2028, "month": 2, "value": 9.95 },
-              { "year": 2028, "month": 3, "value": 9.95 },
-              { "year": 2028, "month": 4, "value": 9.95 },
-              { "year": 2028, "month": 5, "value": 9.95 },
-              { "year": 2028, "month": 6, "value": 9.95 },
-              { "year": 2028, "month": 7, "value": 9.95 },
-              { "year": 2028, "month": 8, "value": 9.95 },
-              { "year": 2028, "month": 9, "value": 9.95 },
-              { "year": 2028, "month": 10, "value": 9.95 },
-              { "year": 2028, "month": 11, "value": 9.95 },
-              { "year": 2028, "month": 12, "value": 9.95 },
-              { "year": 2029, "month": 1, "value": 9.95 },
-              { "year": 2029, "month": 2, "value": 9.95 },
-              { "year": 2029, "month": 3, "value": 9.95 },
-              { "year": 2029, "month": 4, "value": 9.95 },
-              { "year": 2029, "month": 5, "value": 9.95 },
-              { "year": 2029, "month": 6, "value": 9.95 },
-              { "year": 2029, "month": 7, "value": 9.95 },
-              { "year": 2029, "month": 8, "value": 9.95 },
-              { "year": 2029, "month": 9, "value": 9.95 },
-              { "year": 2029, "month": 10, "value": 9.95 },
-              { "year": 2029, "month": 11, "value": 9.95 },
-              { "year": 2029, "month": 12, "value": 9.95 },
-              { "year": 2030, "month": 1, "value": 9.95 },
-              { "year": 2030, "month": 2, "value": 9.95 },
-              { "year": 2030, "month": 3, "value": 9.95 },
-              { "year": 2030, "month": 4, "value": 9.95 },
-              { "year": 2030, "month": 5, "value": 9.95 },
-              { "year": 2030, "month": 6, "value": 9.95 },
-              { "year": 2030, "month": 7, "value": 9.95 },
-              { "year": 2030, "month": 8, "value": 9.95 },
-              { "year": 2030, "month": 9, "value": 9.95 },
-              { "year": 2030, "month": 10, "value": 9.95 },
-              { "year": 2030, "month": 11, "value": 9.95 },
-              { "year": 2030, "month": 12, "value": 9.95 }
+              {
+                "year": 2023,
+                "month": 10,
+                "value": 3.12
+              },
+              {
+                "year": 2023,
+                "month": 11,
+                "value": 3.08
+              },
+              {
+                "year": 2023,
+                "month": 12,
+                "value": 2.81
+              },
+              {
+                "year": 2024,
+                "month": 1,
+                "value": 3.48
+              },
+              {
+                "year": 2024,
+                "month": 2,
+                "value": 3.3
+              },
+              {
+                "year": 2024,
+                "month": 3,
+                "value": 2.79
+              },
+              {
+                "year": 2024,
+                "month": 4,
+                "value": 2.87
+              },
+              {
+                "year": 2024,
+                "month": 5,
+                "value": 2.85
+              },
+              {
+                "year": 2024,
+                "month": 6,
+                "value": 2.95
+              },
+              {
+                "year": 2024,
+                "month": 7,
+                "value": 3.11
+              },
+              {
+                "year": 2024,
+                "month": 8,
+                "value": 2.97
+              },
+              {
+                "year": 2024,
+                "month": 9,
+                "value": 3.02
+              },
+              {
+                "year": 2024,
+                "month": 10,
+                "value": 3.09
+              },
+              {
+                "year": 2024,
+                "month": 11,
+                "value": 2.95
+              },
+              {
+                "year": 2024,
+                "month": 12,
+                "value": 3.43
+              },
+              {
+                "year": 2025,
+                "month": 1,
+                "value": 3.9
+              },
+              {
+                "year": 2025,
+                "month": 2,
+                "value": 3.75
+              },
+              {
+                "year": 2025,
+                "month": 3,
+                "value": 3.41
+              },
+              {
+                "year": 2025,
+                "month": 4,
+                "value": 3.13
+              },
+              {
+                "year": 2025,
+                "month": 5,
+                "value": 3.18
+              },
+              {
+                "year": 2025,
+                "month": 6,
+                "value": 3.33
+              },
+              {
+                "year": 2025,
+                "month": 7,
+                "value": 3.45
+              },
+              {
+                "year": 2025,
+                "month": 8,
+                "value": 3.46
+              },
+              {
+                "year": 2025,
+                "month": 9,
+                "value": 3.42
+              },
+              {
+                "year": 2025,
+                "month": 10,
+                "value": 3.54
+              },
+              {
+                "year": 2025,
+                "month": 11,
+                "value": 3.89
+              },
+              {
+                "year": 2025,
+                "month": 12,
+                "value": 4.38
+              },
+              {
+                "year": 2026,
+                "month": 1,
+                "value": 4.51
+              },
+              {
+                "year": 2026,
+                "month": 2,
+                "value": 4.3
+              },
+              {
+                "year": 2026,
+                "month": 3,
+                "value": 3.85
+              },
+              {
+                "year": 2026,
+                "month": 4,
+                "value": 3.48
+              },
+              {
+                "year": 2026,
+                "month": 5,
+                "value": 3.5
+              },
+              {
+                "year": 2026,
+                "month": 6,
+                "value": 3.63
+              },
+              {
+                "year": 2026,
+                "month": 7,
+                "value": 3.78
+              },
+              {
+                "year": 2026,
+                "month": 8,
+                "value": 3.8
+              },
+              {
+                "year": 2026,
+                "month": 9,
+                "value": 3.81
+              },
+              {
+                "year": 2026,
+                "month": 10,
+                "value": 3.87
+              },
+              {
+                "year": 2026,
+                "month": 11,
+                "value": 4.14
+              },
+              {
+                "year": 2026,
+                "month": 12,
+                "value": 4.58
+              }
+            ]
+          }
+        ]
+      }
+    ],
+    "yearlySeriesSets": [
+      {
+        "priceRegion": "JKM",
+        "series": [
+          {
+            "seriesType": "BASE_CASE",
+            "label": "Base case price",
+            "points": [
+              {
+                "year": 2023,
+                "month": null,
+                "value": 15.71
+              },
+              {
+                "year": 2024,
+                "month": null,
+                "value": 14.59
+              },
+              {
+                "year": 2025,
+                "month": null,
+                "value": 14.32
+              },
+              {
+                "year": 2026,
+                "month": null,
+                "value": 10.37
+              },
+              {
+                "year": 2027,
+                "month": null,
+                "value": 9.95
+              },
+              {
+                "year": 2028,
+                "month": null,
+                "value": 9.21
+              },
+              {
+                "year": 2029,
+                "month": null,
+                "value": 8.69
+              },
+              {
+                "year": 2030,
+                "month": null,
+                "value": 8.21
+              }
+            ]
+          },
+          {
+            "seriesType": "USER_ADJUSTED",
+            "label": "User adjusted price",
+            "points": [
+              {
+                "year": 2023,
+                "month": null,
+                "value": 15.71
+              },
+              {
+                "year": 2024,
+                "month": null,
+                "value": 19.72
+              },
+              {
+                "year": 2025,
+                "month": null,
+                "value": 15.05
+              },
+              {
+                "year": 2026,
+                "month": null,
+                "value": 9.87
+              },
+              {
+                "year": 2027,
+                "month": null,
+                "value": 9.63
+              },
+              {
+                "year": 2028,
+                "month": null,
+                "value": 9.13
+              },
+              {
+                "year": 2029,
+                "month": null,
+                "value": 8.34
+              },
+              {
+                "year": 2030,
+                "month": null,
+                "value": 8.04
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "priceRegion": "TTF",
+        "series": [
+          {
+            "seriesType": "BASE_CASE",
+            "label": "Base case price",
+            "points": [
+              {
+                "year": 2023,
+                "month": null,
+                "value": 15.27
+              },
+              {
+                "year": 2024,
+                "month": null,
+                "value": 14.51
+              },
+              {
+                "year": 2025,
+                "month": null,
+                "value": 13.83
+              },
+              {
+                "year": 2026,
+                "month": null,
+                "value": 10.34
+              },
+              {
+                "year": 2027,
+                "month": null,
+                "value": 9.59
+              },
+              {
+                "year": 2028,
+                "month": null,
+                "value": 8.37
+              },
+              {
+                "year": 2029,
+                "month": null,
+                "value": 7.74
+              },
+              {
+                "year": 2030,
+                "month": null,
+                "value": 7.18
+              }
+            ]
+          },
+          {
+            "seriesType": "USER_ADJUSTED",
+            "label": "User adjusted price",
+            "points": [
+              {
+                "year": 2023,
+                "month": null,
+                "value": 15.27
+              },
+              {
+                "year": 2024,
+                "month": null,
+                "value": 20.07
+              },
+              {
+                "year": 2025,
+                "month": null,
+                "value": 15.4
+              },
+              {
+                "year": 2026,
+                "month": null,
+                "value": 10.22
+              },
+              {
+                "year": 2027,
+                "month": null,
+                "value": 9.33
+              },
+              {
+                "year": 2028,
+                "month": null,
+                "value": 8.31
+              },
+              {
+                "year": 2029,
+                "month": null,
+                "value": 7.74
+              },
+              {
+                "year": 2030,
+                "month": null,
+                "value": 7.22
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "priceRegion": "HH",
+        "series": [
+          {
+            "seriesType": "BASE_CASE",
+            "label": "Base case price",
+            "points": [
+              {
+                "year": 2023,
+                "month": null,
+                "value": 2.77
+              },
+              {
+                "year": 2024,
+                "month": null,
+                "value": 3.07
+              },
+              {
+                "year": 2025,
+                "month": null,
+                "value": 3.59
+              },
+              {
+                "year": 2026,
+                "month": null,
+                "value": 3.92
+              },
+              {
+                "year": 2027,
+                "month": null,
+                "value": 4.25
+              },
+              {
+                "year": 2028,
+                "month": null,
+                "value": 4.23
+              },
+              {
+                "year": 2029,
+                "month": null,
+                "value": 4.41
+              },
+              {
+                "year": 2030,
+                "month": null,
+                "value": 4.6
+              }
+            ]
+          },
+          {
+            "seriesType": "USER_ADJUSTED",
+            "label": "User adjusted price",
+            "points": [
+              {
+                "year": 2023,
+                "month": null,
+                "value": 2.77
+              },
+              {
+                "year": 2024,
+                "month": null,
+                "value": 3.07
+              },
+              {
+                "year": 2025,
+                "month": null,
+                "value": 3.57
+              },
+              {
+                "year": 2026,
+                "month": null,
+                "value": 3.94
+              },
+              {
+                "year": 2027,
+                "month": null,
+                "value": 4.27
+              },
+              {
+                "year": 2028,
+                "month": null,
+                "value": 4.2
+              },
+              {
+                "year": 2029,
+                "month": null,
+                "value": 4.41
+              },
+              {
+                "year": 2030,
+                "month": null,
+                "value": 4.53
+              }
             ]
           }
         ]
@@ -578,308 +1519,1013 @@
   },
   "annualTable": {
     "columns": [
-      { "key": "year", "label": "Year" },
-      { "key": "priceRegion", "label": "Price Region" },
-      { "key": "baseCasePrice", "label": "Base Case Price" },
-      { "key": "userAdjustedPrice", "label": "User Adjusted Price" }
+      {
+        "key": "year",
+        "label": "Year"
+      },
+      {
+        "key": "priceRegion",
+        "label": "Price Region"
+      },
+      {
+        "key": "baseCasePrice",
+        "label": "Base Case Price"
+      },
+      {
+        "key": "userAdjustedPrice",
+        "label": "User Adjusted Price"
+      }
     ],
     "rows": [
-      { "year": 2023, "priceRegion": "East Asia Spot", "baseCasePrice": 15.71, "userAdjustedPrice": 15.71 },
-      { "year": 2024, "priceRegion": "East Asia Spot", "baseCasePrice": 14.59, "userAdjustedPrice": 14.59 },
-      { "year": 2025, "priceRegion": "East Asia Spot", "baseCasePrice": 14.01, "userAdjustedPrice": 14.01 },
-      { "year": 2026, "priceRegion": "East Asia Spot", "baseCasePrice": 9.95, "userAdjustedPrice": 9.95 },
-      { "year": 2027, "priceRegion": "East Asia Spot", "baseCasePrice": 9.95, "userAdjustedPrice": 9.95 },
-      { "year": 2028, "priceRegion": "East Asia Spot", "baseCasePrice": 9.95, "userAdjustedPrice": 9.95 },
-      { "year": 2029, "priceRegion": "East Asia Spot", "baseCasePrice": 9.95, "userAdjustedPrice": 9.95 },
-      { "year": 2030, "priceRegion": "East Asia Spot", "baseCasePrice": 9.95, "userAdjustedPrice": 9.95 },
-      { "year": 2023, "priceRegion": "TTF", "baseCasePrice": 9.95, "userAdjustedPrice": 9.95 },
-      { "year": 2024, "priceRegion": "TTF", "baseCasePrice": 9.95, "userAdjustedPrice": 9.95 },
-      { "year": 2025, "priceRegion": "TTF", "baseCasePrice": 9.95, "userAdjustedPrice": 9.95 },
-      { "year": 2026, "priceRegion": "TTF", "baseCasePrice": 9.95, "userAdjustedPrice": 9.95 },
-      { "year": 2027, "priceRegion": "TTF", "baseCasePrice": 9.95, "userAdjustedPrice": 9.95 },
-      { "year": 2028, "priceRegion": "TTF", "baseCasePrice": 9.95, "userAdjustedPrice": 9.95 },
-      { "year": 2029, "priceRegion": "TTF", "baseCasePrice": 9.95, "userAdjustedPrice": 9.95 },
-      { "year": 2030, "priceRegion": "TTF", "baseCasePrice": 9.95, "userAdjustedPrice": 9.95 },
-      { "year": 2023, "priceRegion": "HH", "baseCasePrice": 9.95, "userAdjustedPrice": 9.95 },
-      { "year": 2024, "priceRegion": "HH", "baseCasePrice": 9.95, "userAdjustedPrice": 9.95 },
-      { "year": 2025, "priceRegion": "HH", "baseCasePrice": 9.95, "userAdjustedPrice": 9.95 },
-      { "year": 2026, "priceRegion": "HH", "baseCasePrice": 9.95, "userAdjustedPrice": 9.95 },
-      { "year": 2027, "priceRegion": "HH", "baseCasePrice": 9.95, "userAdjustedPrice": 9.95 },
-      { "year": 2028, "priceRegion": "HH", "baseCasePrice": 9.95, "userAdjustedPrice": 9.95 },
-      { "year": 2029, "priceRegion": "HH", "baseCasePrice": 9.95, "userAdjustedPrice": 9.95 },
-      { "year": 2030, "priceRegion": "HH", "baseCasePrice": 9.95, "userAdjustedPrice": 9.95 }
+      {
+        "year": 2023,
+        "priceRegion": "JKM",
+        "baseCasePrice": 15.71,
+        "userAdjustedPrice": 15.71
+      },
+      {
+        "year": 2024,
+        "priceRegion": "JKM",
+        "baseCasePrice": 14.59,
+        "userAdjustedPrice": 19.72
+      },
+      {
+        "year": 2025,
+        "priceRegion": "JKM",
+        "baseCasePrice": 14.32,
+        "userAdjustedPrice": 15.05
+      },
+      {
+        "year": 2026,
+        "priceRegion": "JKM",
+        "baseCasePrice": 10.37,
+        "userAdjustedPrice": 9.87
+      },
+      {
+        "year": 2027,
+        "priceRegion": "JKM",
+        "baseCasePrice": 9.95,
+        "userAdjustedPrice": 9.63
+      },
+      {
+        "year": 2028,
+        "priceRegion": "JKM",
+        "baseCasePrice": 9.21,
+        "userAdjustedPrice": 9.13
+      },
+      {
+        "year": 2029,
+        "priceRegion": "JKM",
+        "baseCasePrice": 8.69,
+        "userAdjustedPrice": 8.34
+      },
+      {
+        "year": 2030,
+        "priceRegion": "JKM",
+        "baseCasePrice": 8.21,
+        "userAdjustedPrice": 8.04
+      },
+      {
+        "year": 2023,
+        "priceRegion": "TTF",
+        "baseCasePrice": 15.27,
+        "userAdjustedPrice": 15.27
+      },
+      {
+        "year": 2024,
+        "priceRegion": "TTF",
+        "baseCasePrice": 14.51,
+        "userAdjustedPrice": 20.07
+      },
+      {
+        "year": 2025,
+        "priceRegion": "TTF",
+        "baseCasePrice": 13.83,
+        "userAdjustedPrice": 15.4
+      },
+      {
+        "year": 2026,
+        "priceRegion": "TTF",
+        "baseCasePrice": 10.34,
+        "userAdjustedPrice": 10.22
+      },
+      {
+        "year": 2027,
+        "priceRegion": "TTF",
+        "baseCasePrice": 9.59,
+        "userAdjustedPrice": 9.33
+      },
+      {
+        "year": 2028,
+        "priceRegion": "TTF",
+        "baseCasePrice": 8.37,
+        "userAdjustedPrice": 8.31
+      },
+      {
+        "year": 2029,
+        "priceRegion": "TTF",
+        "baseCasePrice": 7.74,
+        "userAdjustedPrice": 7.74
+      },
+      {
+        "year": 2030,
+        "priceRegion": "TTF",
+        "baseCasePrice": 7.18,
+        "userAdjustedPrice": 7.22
+      },
+      {
+        "year": 2023,
+        "priceRegion": "HH",
+        "baseCasePrice": 2.77,
+        "userAdjustedPrice": 2.77
+      },
+      {
+        "year": 2024,
+        "priceRegion": "HH",
+        "baseCasePrice": 3.07,
+        "userAdjustedPrice": 3.07
+      },
+      {
+        "year": 2025,
+        "priceRegion": "HH",
+        "baseCasePrice": 3.59,
+        "userAdjustedPrice": 3.57
+      },
+      {
+        "year": 2026,
+        "priceRegion": "HH",
+        "baseCasePrice": 3.92,
+        "userAdjustedPrice": 3.94
+      },
+      {
+        "year": 2027,
+        "priceRegion": "HH",
+        "baseCasePrice": 4.25,
+        "userAdjustedPrice": 4.27
+      },
+      {
+        "year": 2028,
+        "priceRegion": "HH",
+        "baseCasePrice": 4.23,
+        "userAdjustedPrice": 4.2
+      },
+      {
+        "year": 2029,
+        "priceRegion": "HH",
+        "baseCasePrice": 4.41,
+        "userAdjustedPrice": 4.41
+      },
+      {
+        "year": 2030,
+        "priceRegion": "HH",
+        "baseCasePrice": 4.6,
+        "userAdjustedPrice": 4.53
+      }
     ]
   },
   "monthlyTable": {
     "columns": [
-      { "key": "year", "label": "Year" },
-      { "key": "month", "label": "Month" },
-      { "key": "priceRegion", "label": "Price Region" },
-      { "key": "baseCasePrice", "label": "Base Case Price" },
-      { "key": "userAdjustedPrice", "label": "User Adjusted Price" }
+      {
+        "key": "year",
+        "label": "Year"
+      },
+      {
+        "key": "month",
+        "label": "Month"
+      },
+      {
+        "key": "priceRegion",
+        "label": "Price Region"
+      },
+      {
+        "key": "baseCasePrice",
+        "label": "Base Case Price"
+      },
+      {
+        "key": "userAdjustedPrice",
+        "label": "User Adjusted Price"
+      }
     ],
     "rows": [
-      { "year": 2023, "month": 10, "priceRegion": "East Asia Spot", "baseCasePrice": 15.71, "userAdjustedPrice": 15.71 },
-      { "year": 2023, "month": 11, "priceRegion": "East Asia Spot", "baseCasePrice": 14.59, "userAdjustedPrice": 14.59 },
-      { "year": 2023, "month": 12, "priceRegion": "East Asia Spot", "baseCasePrice": 14.01, "userAdjustedPrice": 14.01 },
-      { "year": 2024, "month": 1, "priceRegion": "East Asia Spot", "baseCasePrice": 9.95, "userAdjustedPrice": 9.95 },
-      { "year": 2024, "month": 2, "priceRegion": "East Asia Spot", "baseCasePrice": 9.95, "userAdjustedPrice": 9.95 },
-      { "year": 2024, "month": 3, "priceRegion": "East Asia Spot", "baseCasePrice": 9.95, "userAdjustedPrice": 9.95 },
-      { "year": 2024, "month": 4, "priceRegion": "East Asia Spot", "baseCasePrice": 9.95, "userAdjustedPrice": 9.95 },
-      { "year": 2024, "month": 5, "priceRegion": "East Asia Spot", "baseCasePrice": 9.95, "userAdjustedPrice": 9.95 },
-      { "year": 2024, "month": 6, "priceRegion": "East Asia Spot", "baseCasePrice": 9.95, "userAdjustedPrice": 9.95 },
-      { "year": 2024, "month": 7, "priceRegion": "East Asia Spot", "baseCasePrice": 9.95, "userAdjustedPrice": 9.95 },
-      { "year": 2024, "month": 8, "priceRegion": "East Asia Spot", "baseCasePrice": 9.95, "userAdjustedPrice": 9.95 },
-      { "year": 2024, "month": 9, "priceRegion": "East Asia Spot", "baseCasePrice": 9.95, "userAdjustedPrice": 9.95 },
-      { "year": 2024, "month": 10, "priceRegion": "East Asia Spot", "baseCasePrice": 9.95, "userAdjustedPrice": 9.95 },
-      { "year": 2024, "month": 11, "priceRegion": "East Asia Spot", "baseCasePrice": 9.95, "userAdjustedPrice": 9.95 },
-      { "year": 2024, "month": 12, "priceRegion": "East Asia Spot", "baseCasePrice": 9.95, "userAdjustedPrice": 9.95 },
-      { "year": 2025, "month": 1, "priceRegion": "East Asia Spot", "baseCasePrice": 9.95, "userAdjustedPrice": 9.95 },
-      { "year": 2025, "month": 2, "priceRegion": "East Asia Spot", "baseCasePrice": 9.95, "userAdjustedPrice": 9.95 },
-      { "year": 2025, "month": 3, "priceRegion": "East Asia Spot", "baseCasePrice": 9.95, "userAdjustedPrice": 9.95 },
-      { "year": 2025, "month": 4, "priceRegion": "East Asia Spot", "baseCasePrice": 9.95, "userAdjustedPrice": 9.95 },
-      { "year": 2025, "month": 5, "priceRegion": "East Asia Spot", "baseCasePrice": 9.95, "userAdjustedPrice": 9.95 },
-      { "year": 2025, "month": 6, "priceRegion": "East Asia Spot", "baseCasePrice": 9.95, "userAdjustedPrice": 9.95 },
-      { "year": 2025, "month": 7, "priceRegion": "East Asia Spot", "baseCasePrice": 9.95, "userAdjustedPrice": 9.95 },
-      { "year": 2025, "month": 8, "priceRegion": "East Asia Spot", "baseCasePrice": 9.95, "userAdjustedPrice": 9.95 },
-      { "year": 2025, "month": 9, "priceRegion": "East Asia Spot", "baseCasePrice": 9.95, "userAdjustedPrice": 9.95 },
-      { "year": 2025, "month": 10, "priceRegion": "East Asia Spot", "baseCasePrice": 9.95, "userAdjustedPrice": 9.95 },
-      { "year": 2025, "month": 11, "priceRegion": "East Asia Spot", "baseCasePrice": 9.95, "userAdjustedPrice": 9.95 },
-      { "year": 2025, "month": 12, "priceRegion": "East Asia Spot", "baseCasePrice": 9.95, "userAdjustedPrice": 9.95 },
-      { "year": 2026, "month": 1, "priceRegion": "East Asia Spot", "baseCasePrice": 9.95, "userAdjustedPrice": 9.95 },
-      { "year": 2026, "month": 2, "priceRegion": "East Asia Spot", "baseCasePrice": 9.95, "userAdjustedPrice": 9.95 },
-      { "year": 2026, "month": 3, "priceRegion": "East Asia Spot", "baseCasePrice": 9.95, "userAdjustedPrice": 9.95 },
-      { "year": 2026, "month": 4, "priceRegion": "East Asia Spot", "baseCasePrice": 9.95, "userAdjustedPrice": 9.95 },
-      { "year": 2026, "month": 5, "priceRegion": "East Asia Spot", "baseCasePrice": 9.95, "userAdjustedPrice": 9.95 },
-      { "year": 2026, "month": 6, "priceRegion": "East Asia Spot", "baseCasePrice": 9.95, "userAdjustedPrice": 9.95 },
-      { "year": 2026, "month": 7, "priceRegion": "East Asia Spot", "baseCasePrice": 9.95, "userAdjustedPrice": 9.95 },
-      { "year": 2026, "month": 8, "priceRegion": "East Asia Spot", "baseCasePrice": 9.95, "userAdjustedPrice": 9.95 },
-      { "year": 2026, "month": 9, "priceRegion": "East Asia Spot", "baseCasePrice": 9.95, "userAdjustedPrice": 9.95 },
-      { "year": 2026, "month": 10, "priceRegion": "East Asia Spot", "baseCasePrice": 9.95, "userAdjustedPrice": 9.95 },
-      { "year": 2026, "month": 11, "priceRegion": "East Asia Spot", "baseCasePrice": 9.95, "userAdjustedPrice": 9.95 },
-      { "year": 2026, "month": 12, "priceRegion": "East Asia Spot", "baseCasePrice": 9.95, "userAdjustedPrice": 9.95 },
-      { "year": 2027, "month": 1, "priceRegion": "East Asia Spot", "baseCasePrice": 9.95, "userAdjustedPrice": 9.95 },
-      { "year": 2027, "month": 2, "priceRegion": "East Asia Spot", "baseCasePrice": 9.95, "userAdjustedPrice": 9.95 },
-      { "year": 2027, "month": 3, "priceRegion": "East Asia Spot", "baseCasePrice": 9.95, "userAdjustedPrice": 9.95 },
-      { "year": 2027, "month": 4, "priceRegion": "East Asia Spot", "baseCasePrice": 9.95, "userAdjustedPrice": 9.95 },
-      { "year": 2027, "month": 5, "priceRegion": "East Asia Spot", "baseCasePrice": 9.95, "userAdjustedPrice": 9.95 },
-      { "year": 2027, "month": 6, "priceRegion": "East Asia Spot", "baseCasePrice": 9.95, "userAdjustedPrice": 9.95 },
-      { "year": 2027, "month": 7, "priceRegion": "East Asia Spot", "baseCasePrice": 9.95, "userAdjustedPrice": 9.95 },
-      { "year": 2027, "month": 8, "priceRegion": "East Asia Spot", "baseCasePrice": 9.95, "userAdjustedPrice": 9.95 },
-      { "year": 2027, "month": 9, "priceRegion": "East Asia Spot", "baseCasePrice": 9.95, "userAdjustedPrice": 9.95 },
-      { "year": 2027, "month": 10, "priceRegion": "East Asia Spot", "baseCasePrice": 9.95, "userAdjustedPrice": 9.95 },
-      { "year": 2027, "month": 11, "priceRegion": "East Asia Spot", "baseCasePrice": 9.95, "userAdjustedPrice": 9.95 },
-      { "year": 2027, "month": 12, "priceRegion": "East Asia Spot", "baseCasePrice": 9.95, "userAdjustedPrice": 9.95 },
-      { "year": 2028, "month": 1, "priceRegion": "East Asia Spot", "baseCasePrice": 9.95, "userAdjustedPrice": 9.95 },
-      { "year": 2028, "month": 2, "priceRegion": "East Asia Spot", "baseCasePrice": 9.95, "userAdjustedPrice": 9.95 },
-      { "year": 2028, "month": 3, "priceRegion": "East Asia Spot", "baseCasePrice": 9.95, "userAdjustedPrice": 9.95 },
-      { "year": 2028, "month": 4, "priceRegion": "East Asia Spot", "baseCasePrice": 9.95, "userAdjustedPrice": 9.95 },
-      { "year": 2028, "month": 5, "priceRegion": "East Asia Spot", "baseCasePrice": 9.95, "userAdjustedPrice": 9.95 },
-      { "year": 2028, "month": 6, "priceRegion": "East Asia Spot", "baseCasePrice": 9.95, "userAdjustedPrice": 9.95 },
-      { "year": 2028, "month": 7, "priceRegion": "East Asia Spot", "baseCasePrice": 9.95, "userAdjustedPrice": 9.95 },
-      { "year": 2028, "month": 8, "priceRegion": "East Asia Spot", "baseCasePrice": 9.95, "userAdjustedPrice": 9.95 },
-      { "year": 2028, "month": 9, "priceRegion": "East Asia Spot", "baseCasePrice": 9.95, "userAdjustedPrice": 9.95 },
-      { "year": 2028, "month": 10, "priceRegion": "East Asia Spot", "baseCasePrice": 9.95, "userAdjustedPrice": 9.95 },
-      { "year": 2028, "month": 11, "priceRegion": "East Asia Spot", "baseCasePrice": 9.95, "userAdjustedPrice": 9.95 },
-      { "year": 2028, "month": 12, "priceRegion": "East Asia Spot", "baseCasePrice": 9.95, "userAdjustedPrice": 9.95 },
-      { "year": 2029, "month": 1, "priceRegion": "East Asia Spot", "baseCasePrice": 9.95, "userAdjustedPrice": 9.95 },
-      { "year": 2029, "month": 2, "priceRegion": "East Asia Spot", "baseCasePrice": 9.95, "userAdjustedPrice": 9.95 },
-      { "year": 2029, "month": 3, "priceRegion": "East Asia Spot", "baseCasePrice": 9.95, "userAdjustedPrice": 9.95 },
-      { "year": 2029, "month": 4, "priceRegion": "East Asia Spot", "baseCasePrice": 9.95, "userAdjustedPrice": 9.95 },
-      { "year": 2029, "month": 5, "priceRegion": "East Asia Spot", "baseCasePrice": 9.95, "userAdjustedPrice": 9.95 },
-      { "year": 2029, "month": 6, "priceRegion": "East Asia Spot", "baseCasePrice": 9.95, "userAdjustedPrice": 9.95 },
-      { "year": 2029, "month": 7, "priceRegion": "East Asia Spot", "baseCasePrice": 9.95, "userAdjustedPrice": 9.95 },
-      { "year": 2029, "month": 8, "priceRegion": "East Asia Spot", "baseCasePrice": 9.95, "userAdjustedPrice": 9.95 },
-      { "year": 2029, "month": 9, "priceRegion": "East Asia Spot", "baseCasePrice": 9.95, "userAdjustedPrice": 9.95 },
-      { "year": 2029, "month": 10, "priceRegion": "East Asia Spot", "baseCasePrice": 9.95, "userAdjustedPrice": 9.95 },
-      { "year": 2029, "month": 11, "priceRegion": "East Asia Spot", "baseCasePrice": 9.95, "userAdjustedPrice": 9.95 },
-      { "year": 2029, "month": 12, "priceRegion": "East Asia Spot", "baseCasePrice": 9.95, "userAdjustedPrice": 9.95 },
-      { "year": 2030, "month": 1, "priceRegion": "East Asia Spot", "baseCasePrice": 9.95, "userAdjustedPrice": 9.95 },
-      { "year": 2030, "month": 2, "priceRegion": "East Asia Spot", "baseCasePrice": 9.95, "userAdjustedPrice": 9.95 },
-      { "year": 2030, "month": 3, "priceRegion": "East Asia Spot", "baseCasePrice": 9.95, "userAdjustedPrice": 9.95 },
-      { "year": 2030, "month": 4, "priceRegion": "East Asia Spot", "baseCasePrice": 9.95, "userAdjustedPrice": 9.95 },
-      { "year": 2030, "month": 5, "priceRegion": "East Asia Spot", "baseCasePrice": 9.95, "userAdjustedPrice": 9.95 },
-      { "year": 2030, "month": 6, "priceRegion": "East Asia Spot", "baseCasePrice": 9.95, "userAdjustedPrice": 9.95 },
-      { "year": 2030, "month": 7, "priceRegion": "East Asia Spot", "baseCasePrice": 9.95, "userAdjustedPrice": 9.95 },
-      { "year": 2030, "month": 8, "priceRegion": "East Asia Spot", "baseCasePrice": 9.95, "userAdjustedPrice": 9.95 },
-      { "year": 2030, "month": 9, "priceRegion": "East Asia Spot", "baseCasePrice": 9.95, "userAdjustedPrice": 9.95 },
-      { "year": 2030, "month": 10, "priceRegion": "East Asia Spot", "baseCasePrice": 9.95, "userAdjustedPrice": 9.95 },
-      { "year": 2030, "month": 11, "priceRegion": "East Asia Spot", "baseCasePrice": 9.95, "userAdjustedPrice": 9.95 },
-      { "year": 2030, "month": 12, "priceRegion": "East Asia Spot", "baseCasePrice": 9.95, "userAdjustedPrice": 9.95 },
-      { "year": 2023, "month": 10, "priceRegion": "TTF", "baseCasePrice": 9.95, "userAdjustedPrice": 9.95 },
-      { "year": 2023, "month": 11, "priceRegion": "TTF", "baseCasePrice": 9.95, "userAdjustedPrice": 9.95 },
-      { "year": 2023, "month": 12, "priceRegion": "TTF", "baseCasePrice": 9.95, "userAdjustedPrice": 9.95 },
-      { "year": 2024, "month": 1, "priceRegion": "TTF", "baseCasePrice": 9.95, "userAdjustedPrice": 9.95 },
-      { "year": 2024, "month": 2, "priceRegion": "TTF", "baseCasePrice": 9.95, "userAdjustedPrice": 9.95 },
-      { "year": 2024, "month": 3, "priceRegion": "TTF", "baseCasePrice": 9.95, "userAdjustedPrice": 9.95 },
-      { "year": 2024, "month": 4, "priceRegion": "TTF", "baseCasePrice": 9.95, "userAdjustedPrice": 9.95 },
-      { "year": 2024, "month": 5, "priceRegion": "TTF", "baseCasePrice": 9.95, "userAdjustedPrice": 9.95 },
-      { "year": 2024, "month": 6, "priceRegion": "TTF", "baseCasePrice": 9.95, "userAdjustedPrice": 9.95 },
-      { "year": 2024, "month": 7, "priceRegion": "TTF", "baseCasePrice": 9.95, "userAdjustedPrice": 9.95 },
-      { "year": 2024, "month": 8, "priceRegion": "TTF", "baseCasePrice": 9.95, "userAdjustedPrice": 9.95 },
-      { "year": 2024, "month": 9, "priceRegion": "TTF", "baseCasePrice": 9.95, "userAdjustedPrice": 9.95 },
-      { "year": 2024, "month": 10, "priceRegion": "TTF", "baseCasePrice": 9.95, "userAdjustedPrice": 9.95 },
-      { "year": 2024, "month": 11, "priceRegion": "TTF", "baseCasePrice": 9.95, "userAdjustedPrice": 9.95 },
-      { "year": 2024, "month": 12, "priceRegion": "TTF", "baseCasePrice": 9.95, "userAdjustedPrice": 9.95 },
-      { "year": 2025, "month": 1, "priceRegion": "TTF", "baseCasePrice": 9.95, "userAdjustedPrice": 9.95 },
-      { "year": 2025, "month": 2, "priceRegion": "TTF", "baseCasePrice": 9.95, "userAdjustedPrice": 9.95 },
-      { "year": 2025, "month": 3, "priceRegion": "TTF", "baseCasePrice": 9.95, "userAdjustedPrice": 9.95 },
-      { "year": 2025, "month": 4, "priceRegion": "TTF", "baseCasePrice": 9.95, "userAdjustedPrice": 9.95 },
-      { "year": 2025, "month": 5, "priceRegion": "TTF", "baseCasePrice": 9.95, "userAdjustedPrice": 9.95 },
-      { "year": 2025, "month": 6, "priceRegion": "TTF", "baseCasePrice": 9.95, "userAdjustedPrice": 9.95 },
-      { "year": 2025, "month": 7, "priceRegion": "TTF", "baseCasePrice": 9.95, "userAdjustedPrice": 9.95 },
-      { "year": 2025, "month": 8, "priceRegion": "TTF", "baseCasePrice": 9.95, "userAdjustedPrice": 9.95 },
-      { "year": 2025, "month": 9, "priceRegion": "TTF", "baseCasePrice": 9.95, "userAdjustedPrice": 9.95 },
-      { "year": 2025, "month": 10, "priceRegion": "TTF", "baseCasePrice": 9.95, "userAdjustedPrice": 9.95 },
-      { "year": 2025, "month": 11, "priceRegion": "TTF", "baseCasePrice": 9.95, "userAdjustedPrice": 9.95 },
-      { "year": 2025, "month": 12, "priceRegion": "TTF", "baseCasePrice": 9.95, "userAdjustedPrice": 9.95 },
-      { "year": 2026, "month": 1, "priceRegion": "TTF", "baseCasePrice": 9.95, "userAdjustedPrice": 9.95 },
-      { "year": 2026, "month": 2, "priceRegion": "TTF", "baseCasePrice": 9.95, "userAdjustedPrice": 9.95 },
-      { "year": 2026, "month": 3, "priceRegion": "TTF", "baseCasePrice": 9.95, "userAdjustedPrice": 9.95 },
-      { "year": 2026, "month": 4, "priceRegion": "TTF", "baseCasePrice": 9.95, "userAdjustedPrice": 9.95 },
-      { "year": 2026, "month": 5, "priceRegion": "TTF", "baseCasePrice": 9.95, "userAdjustedPrice": 9.95 },
-      { "year": 2026, "month": 6, "priceRegion": "TTF", "baseCasePrice": 9.95, "userAdjustedPrice": 9.95 },
-      { "year": 2026, "month": 7, "priceRegion": "TTF", "baseCasePrice": 9.95, "userAdjustedPrice": 9.95 },
-      { "year": 2026, "month": 8, "priceRegion": "TTF", "baseCasePrice": 9.95, "userAdjustedPrice": 9.95 },
-      { "year": 2026, "month": 9, "priceRegion": "TTF", "baseCasePrice": 9.95, "userAdjustedPrice": 9.95 },
-      { "year": 2026, "month": 10, "priceRegion": "TTF", "baseCasePrice": 9.95, "userAdjustedPrice": 9.95 },
-      { "year": 2026, "month": 11, "priceRegion": "TTF", "baseCasePrice": 9.95, "userAdjustedPrice": 9.95 },
-      { "year": 2026, "month": 12, "priceRegion": "TTF", "baseCasePrice": 9.95, "userAdjustedPrice": 9.95 },
-      { "year": 2027, "month": 1, "priceRegion": "TTF", "baseCasePrice": 9.95, "userAdjustedPrice": 9.95 },
-      { "year": 2027, "month": 2, "priceRegion": "TTF", "baseCasePrice": 9.95, "userAdjustedPrice": 9.95 },
-      { "year": 2027, "month": 3, "priceRegion": "TTF", "baseCasePrice": 9.95, "userAdjustedPrice": 9.95 },
-      { "year": 2027, "month": 4, "priceRegion": "TTF", "baseCasePrice": 9.95, "userAdjustedPrice": 9.95 },
-      { "year": 2027, "month": 5, "priceRegion": "TTF", "baseCasePrice": 9.95, "userAdjustedPrice": 9.95 },
-      { "year": 2027, "month": 6, "priceRegion": "TTF", "baseCasePrice": 9.95, "userAdjustedPrice": 9.95 },
-      { "year": 2027, "month": 7, "priceRegion": "TTF", "baseCasePrice": 9.95, "userAdjustedPrice": 9.95 },
-      { "year": 2027, "month": 8, "priceRegion": "TTF", "baseCasePrice": 9.95, "userAdjustedPrice": 9.95 },
-      { "year": 2027, "month": 9, "priceRegion": "TTF", "baseCasePrice": 9.95, "userAdjustedPrice": 9.95 },
-      { "year": 2027, "month": 10, "priceRegion": "TTF", "baseCasePrice": 9.95, "userAdjustedPrice": 9.95 },
-      { "year": 2027, "month": 11, "priceRegion": "TTF", "baseCasePrice": 9.95, "userAdjustedPrice": 9.95 },
-      { "year": 2027, "month": 12, "priceRegion": "TTF", "baseCasePrice": 9.95, "userAdjustedPrice": 9.95 },
-      { "year": 2028, "month": 1, "priceRegion": "TTF", "baseCasePrice": 9.95, "userAdjustedPrice": 9.95 },
-      { "year": 2028, "month": 2, "priceRegion": "TTF", "baseCasePrice": 9.95, "userAdjustedPrice": 9.95 },
-      { "year": 2028, "month": 3, "priceRegion": "TTF", "baseCasePrice": 9.95, "userAdjustedPrice": 9.95 },
-      { "year": 2028, "month": 4, "priceRegion": "TTF", "baseCasePrice": 9.95, "userAdjustedPrice": 9.95 },
-      { "year": 2028, "month": 5, "priceRegion": "TTF", "baseCasePrice": 9.95, "userAdjustedPrice": 9.95 },
-      { "year": 2028, "month": 6, "priceRegion": "TTF", "baseCasePrice": 9.95, "userAdjustedPrice": 9.95 },
-      { "year": 2028, "month": 7, "priceRegion": "TTF", "baseCasePrice": 9.95, "userAdjustedPrice": 9.95 },
-      { "year": 2028, "month": 8, "priceRegion": "TTF", "baseCasePrice": 9.95, "userAdjustedPrice": 9.95 },
-      { "year": 2028, "month": 9, "priceRegion": "TTF", "baseCasePrice": 9.95, "userAdjustedPrice": 9.95 },
-      { "year": 2028, "month": 10, "priceRegion": "TTF", "baseCasePrice": 9.95, "userAdjustedPrice": 9.95 },
-      { "year": 2028, "month": 11, "priceRegion": "TTF", "baseCasePrice": 9.95, "userAdjustedPrice": 9.95 },
-      { "year": 2028, "month": 12, "priceRegion": "TTF", "baseCasePrice": 9.95, "userAdjustedPrice": 9.95 },
-      { "year": 2029, "month": 1, "priceRegion": "TTF", "baseCasePrice": 9.95, "userAdjustedPrice": 9.95 },
-      { "year": 2029, "month": 2, "priceRegion": "TTF", "baseCasePrice": 9.95, "userAdjustedPrice": 9.95 },
-      { "year": 2029, "month": 3, "priceRegion": "TTF", "baseCasePrice": 9.95, "userAdjustedPrice": 9.95 },
-      { "year": 2029, "month": 4, "priceRegion": "TTF", "baseCasePrice": 9.95, "userAdjustedPrice": 9.95 },
-      { "year": 2029, "month": 5, "priceRegion": "TTF", "baseCasePrice": 9.95, "userAdjustedPrice": 9.95 },
-      { "year": 2029, "month": 6, "priceRegion": "TTF", "baseCasePrice": 9.95, "userAdjustedPrice": 9.95 },
-      { "year": 2029, "month": 7, "priceRegion": "TTF", "baseCasePrice": 9.95, "userAdjustedPrice": 9.95 },
-      { "year": 2029, "month": 8, "priceRegion": "TTF", "baseCasePrice": 9.95, "userAdjustedPrice": 9.95 },
-      { "year": 2029, "month": 9, "priceRegion": "TTF", "baseCasePrice": 9.95, "userAdjustedPrice": 9.95 },
-      { "year": 2029, "month": 10, "priceRegion": "TTF", "baseCasePrice": 9.95, "userAdjustedPrice": 9.95 },
-      { "year": 2029, "month": 11, "priceRegion": "TTF", "baseCasePrice": 9.95, "userAdjustedPrice": 9.95 },
-      { "year": 2029, "month": 12, "priceRegion": "TTF", "baseCasePrice": 9.95, "userAdjustedPrice": 9.95 },
-      { "year": 2030, "month": 1, "priceRegion": "TTF", "baseCasePrice": 9.95, "userAdjustedPrice": 9.95 },
-      { "year": 2030, "month": 2, "priceRegion": "TTF", "baseCasePrice": 9.95, "userAdjustedPrice": 9.95 },
-      { "year": 2030, "month": 3, "priceRegion": "TTF", "baseCasePrice": 9.95, "userAdjustedPrice": 9.95 },
-      { "year": 2030, "month": 4, "priceRegion": "TTF", "baseCasePrice": 9.95, "userAdjustedPrice": 9.95 },
-      { "year": 2030, "month": 5, "priceRegion": "TTF", "baseCasePrice": 9.95, "userAdjustedPrice": 9.95 },
-      { "year": 2030, "month": 6, "priceRegion": "TTF", "baseCasePrice": 9.95, "userAdjustedPrice": 9.95 },
-      { "year": 2030, "month": 7, "priceRegion": "TTF", "baseCasePrice": 9.95, "userAdjustedPrice": 9.95 },
-      { "year": 2030, "month": 8, "priceRegion": "TTF", "baseCasePrice": 9.95, "userAdjustedPrice": 9.95 },
-      { "year": 2030, "month": 9, "priceRegion": "TTF", "baseCasePrice": 9.95, "userAdjustedPrice": 9.95 },
-      { "year": 2030, "month": 10, "priceRegion": "TTF", "baseCasePrice": 9.95, "userAdjustedPrice": 9.95 },
-      { "year": 2030, "month": 11, "priceRegion": "TTF", "baseCasePrice": 9.95, "userAdjustedPrice": 9.95 },
-      { "year": 2030, "month": 12, "priceRegion": "TTF", "baseCasePrice": 9.95, "userAdjustedPrice": 9.95 },
-      { "year": 2023, "month": 10, "priceRegion": "HH", "baseCasePrice": 9.95, "userAdjustedPrice": 9.95 },
-      { "year": 2023, "month": 11, "priceRegion": "HH", "baseCasePrice": 9.95, "userAdjustedPrice": 9.95 },
-      { "year": 2023, "month": 12, "priceRegion": "HH", "baseCasePrice": 9.95, "userAdjustedPrice": 9.95 },
-      { "year": 2024, "month": 1, "priceRegion": "HH", "baseCasePrice": 9.95, "userAdjustedPrice": 9.95 },
-      { "year": 2024, "month": 2, "priceRegion": "HH", "baseCasePrice": 9.95, "userAdjustedPrice": 9.95 },
-      { "year": 2024, "month": 3, "priceRegion": "HH", "baseCasePrice": 9.95, "userAdjustedPrice": 9.95 },
-      { "year": 2024, "month": 4, "priceRegion": "HH", "baseCasePrice": 9.95, "userAdjustedPrice": 9.95 },
-      { "year": 2024, "month": 5, "priceRegion": "HH", "baseCasePrice": 9.95, "userAdjustedPrice": 9.95 },
-      { "year": 2024, "month": 6, "priceRegion": "HH", "baseCasePrice": 9.95, "userAdjustedPrice": 9.95 },
-      { "year": 2024, "month": 7, "priceRegion": "HH", "baseCasePrice": 9.95, "userAdjustedPrice": 9.95 },
-      { "year": 2024, "month": 8, "priceRegion": "HH", "baseCasePrice": 9.95, "userAdjustedPrice": 9.95 },
-      { "year": 2024, "month": 9, "priceRegion": "HH", "baseCasePrice": 9.95, "userAdjustedPrice": 9.95 },
-      { "year": 2024, "month": 10, "priceRegion": "HH", "baseCasePrice": 9.95, "userAdjustedPrice": 9.95 },
-      { "year": 2024, "month": 11, "priceRegion": "HH", "baseCasePrice": 9.95, "userAdjustedPrice": 9.95 },
-      { "year": 2024, "month": 12, "priceRegion": "HH", "baseCasePrice": 9.95, "userAdjustedPrice": 9.95 },
-      { "year": 2025, "month": 1, "priceRegion": "HH", "baseCasePrice": 9.95, "userAdjustedPrice": 9.95 },
-      { "year": 2025, "month": 2, "priceRegion": "HH", "baseCasePrice": 9.95, "userAdjustedPrice": 9.95 },
-      { "year": 2025, "month": 3, "priceRegion": "HH", "baseCasePrice": 9.95, "userAdjustedPrice": 9.95 },
-      { "year": 2025, "month": 4, "priceRegion": "HH", "baseCasePrice": 9.95, "userAdjustedPrice": 9.95 },
-      { "year": 2025, "month": 5, "priceRegion": "HH", "baseCasePrice": 9.95, "userAdjustedPrice": 9.95 },
-      { "year": 2025, "month": 6, "priceRegion": "HH", "baseCasePrice": 9.95, "userAdjustedPrice": 9.95 },
-      { "year": 2025, "month": 7, "priceRegion": "HH", "baseCasePrice": 9.95, "userAdjustedPrice": 9.95 },
-      { "year": 2025, "month": 8, "priceRegion": "HH", "baseCasePrice": 9.95, "userAdjustedPrice": 9.95 },
-      { "year": 2025, "month": 9, "priceRegion": "HH", "baseCasePrice": 9.95, "userAdjustedPrice": 9.95 },
-      { "year": 2025, "month": 10, "priceRegion": "HH", "baseCasePrice": 9.95, "userAdjustedPrice": 9.95 },
-      { "year": 2025, "month": 11, "priceRegion": "HH", "baseCasePrice": 9.95, "userAdjustedPrice": 9.95 },
-      { "year": 2025, "month": 12, "priceRegion": "HH", "baseCasePrice": 9.95, "userAdjustedPrice": 9.95 },
-      { "year": 2026, "month": 1, "priceRegion": "HH", "baseCasePrice": 9.95, "userAdjustedPrice": 9.95 },
-      { "year": 2026, "month": 2, "priceRegion": "HH", "baseCasePrice": 9.95, "userAdjustedPrice": 9.95 },
-      { "year": 2026, "month": 3, "priceRegion": "HH", "baseCasePrice": 9.95, "userAdjustedPrice": 9.95 },
-      { "year": 2026, "month": 4, "priceRegion": "HH", "baseCasePrice": 9.95, "userAdjustedPrice": 9.95 },
-      { "year": 2026, "month": 5, "priceRegion": "HH", "baseCasePrice": 9.95, "userAdjustedPrice": 9.95 },
-      { "year": 2026, "month": 6, "priceRegion": "HH", "baseCasePrice": 9.95, "userAdjustedPrice": 9.95 },
-      { "year": 2026, "month": 7, "priceRegion": "HH", "baseCasePrice": 9.95, "userAdjustedPrice": 9.95 },
-      { "year": 2026, "month": 8, "priceRegion": "HH", "baseCasePrice": 9.95, "userAdjustedPrice": 9.95 },
-      { "year": 2026, "month": 9, "priceRegion": "HH", "baseCasePrice": 9.95, "userAdjustedPrice": 9.95 },
-      { "year": 2026, "month": 10, "priceRegion": "HH", "baseCasePrice": 9.95, "userAdjustedPrice": 9.95 },
-      { "year": 2026, "month": 11, "priceRegion": "HH", "baseCasePrice": 9.95, "userAdjustedPrice": 9.95 },
-      { "year": 2026, "month": 12, "priceRegion": "HH", "baseCasePrice": 9.95, "userAdjustedPrice": 9.95 },
-      { "year": 2027, "month": 1, "priceRegion": "HH", "baseCasePrice": 9.95, "userAdjustedPrice": 9.95 },
-      { "year": 2027, "month": 2, "priceRegion": "HH", "baseCasePrice": 9.95, "userAdjustedPrice": 9.95 },
-      { "year": 2027, "month": 3, "priceRegion": "HH", "baseCasePrice": 9.95, "userAdjustedPrice": 9.95 },
-      { "year": 2027, "month": 4, "priceRegion": "HH", "baseCasePrice": 9.95, "userAdjustedPrice": 9.95 },
-      { "year": 2027, "month": 5, "priceRegion": "HH", "baseCasePrice": 9.95, "userAdjustedPrice": 9.95 },
-      { "year": 2027, "month": 6, "priceRegion": "HH", "baseCasePrice": 9.95, "userAdjustedPrice": 9.95 },
-      { "year": 2027, "month": 7, "priceRegion": "HH", "baseCasePrice": 9.95, "userAdjustedPrice": 9.95 },
-      { "year": 2027, "month": 8, "priceRegion": "HH", "baseCasePrice": 9.95, "userAdjustedPrice": 9.95 },
-      { "year": 2027, "month": 9, "priceRegion": "HH", "baseCasePrice": 9.95, "userAdjustedPrice": 9.95 },
-      { "year": 2027, "month": 10, "priceRegion": "HH", "baseCasePrice": 9.95, "userAdjustedPrice": 9.95 },
-      { "year": 2027, "month": 11, "priceRegion": "HH", "baseCasePrice": 9.95, "userAdjustedPrice": 9.95 },
-      { "year": 2027, "month": 12, "priceRegion": "HH", "baseCasePrice": 9.95, "userAdjustedPrice": 9.95 },
-      { "year": 2028, "month": 1, "priceRegion": "HH", "baseCasePrice": 9.95, "userAdjustedPrice": 9.95 },
-      { "year": 2028, "month": 2, "priceRegion": "HH", "baseCasePrice": 9.95, "userAdjustedPrice": 9.95 },
-      { "year": 2028, "month": 3, "priceRegion": "HH", "baseCasePrice": 9.95, "userAdjustedPrice": 9.95 },
-      { "year": 2028, "month": 4, "priceRegion": "HH", "baseCasePrice": 9.95, "userAdjustedPrice": 9.95 },
-      { "year": 2028, "month": 5, "priceRegion": "HH", "baseCasePrice": 9.95, "userAdjustedPrice": 9.95 },
-      { "year": 2028, "month": 6, "priceRegion": "HH", "baseCasePrice": 9.95, "userAdjustedPrice": 9.95 },
-      { "year": 2028, "month": 7, "priceRegion": "HH", "baseCasePrice": 9.95, "userAdjustedPrice": 9.95 },
-      { "year": 2028, "month": 8, "priceRegion": "HH", "baseCasePrice": 9.95, "userAdjustedPrice": 9.95 },
-      { "year": 2028, "month": 9, "priceRegion": "HH", "baseCasePrice": 9.95, "userAdjustedPrice": 9.95 },
-      { "year": 2028, "month": 10, "priceRegion": "HH", "baseCasePrice": 9.95, "userAdjustedPrice": 9.95 },
-      { "year": 2028, "month": 11, "priceRegion": "HH", "baseCasePrice": 9.95, "userAdjustedPrice": 9.95 },
-      { "year": 2028, "month": 12, "priceRegion": "HH", "baseCasePrice": 9.95, "userAdjustedPrice": 9.95 },
-      { "year": 2029, "month": 1, "priceRegion": "HH", "baseCasePrice": 9.95, "userAdjustedPrice": 9.95 },
-      { "year": 2029, "month": 2, "priceRegion": "HH", "baseCasePrice": 9.95, "userAdjustedPrice": 9.95 },
-      { "year": 2029, "month": 3, "priceRegion": "HH", "baseCasePrice": 9.95, "userAdjustedPrice": 9.95 },
-      { "year": 2029, "month": 4, "priceRegion": "HH", "baseCasePrice": 9.95, "userAdjustedPrice": 9.95 },
-      { "year": 2029, "month": 5, "priceRegion": "HH", "baseCasePrice": 9.95, "userAdjustedPrice": 9.95 },
-      { "year": 2029, "month": 6, "priceRegion": "HH", "baseCasePrice": 9.95, "userAdjustedPrice": 9.95 },
-      { "year": 2029, "month": 7, "priceRegion": "HH", "baseCasePrice": 9.95, "userAdjustedPrice": 9.95 },
-      { "year": 2029, "month": 8, "priceRegion": "HH", "baseCasePrice": 9.95, "userAdjustedPrice": 9.95 },
-      { "year": 2029, "month": 9, "priceRegion": "HH", "baseCasePrice": 9.95, "userAdjustedPrice": 9.95 },
-      { "year": 2029, "month": 10, "priceRegion": "HH", "baseCasePrice": 9.95, "userAdjustedPrice": 9.95 },
-      { "year": 2029, "month": 11, "priceRegion": "HH", "baseCasePrice": 9.95, "userAdjustedPrice": 9.95 },
-      { "year": 2029, "month": 12, "priceRegion": "HH", "baseCasePrice": 9.95, "userAdjustedPrice": 9.95 },
-      { "year": 2030, "month": 1, "priceRegion": "HH", "baseCasePrice": 9.95, "userAdjustedPrice": 9.95 },
-      { "year": 2030, "month": 2, "priceRegion": "HH", "baseCasePrice": 9.95, "userAdjustedPrice": 9.95 },
-      { "year": 2030, "month": 3, "priceRegion": "HH", "baseCasePrice": 9.95, "userAdjustedPrice": 9.95 },
-      { "year": 2030, "month": 4, "priceRegion": "HH", "baseCasePrice": 9.95, "userAdjustedPrice": 9.95 },
-      { "year": 2030, "month": 5, "priceRegion": "HH", "baseCasePrice": 9.95, "userAdjustedPrice": 9.95 },
-      { "year": 2030, "month": 6, "priceRegion": "HH", "baseCasePrice": 9.95, "userAdjustedPrice": 9.95 },
-      { "year": 2030, "month": 7, "priceRegion": "HH", "baseCasePrice": 9.95, "userAdjustedPrice": 9.95 },
-      { "year": 2030, "month": 8, "priceRegion": "HH", "baseCasePrice": 9.95, "userAdjustedPrice": 9.95 },
-      { "year": 2030, "month": 9, "priceRegion": "HH", "baseCasePrice": 9.95, "userAdjustedPrice": 9.95 },
-      { "year": 2030, "month": 10, "priceRegion": "HH", "baseCasePrice": 9.95, "userAdjustedPrice": 9.95 },
-      { "year": 2030, "month": 11, "priceRegion": "HH", "baseCasePrice": 9.95, "userAdjustedPrice": 9.95 },
-      { "year": 2030, "month": 12, "priceRegion": "HH", "baseCasePrice": 9.95, "userAdjustedPrice": 9.95 }
+      {
+        "year": 2023,
+        "month": 10,
+        "priceRegion": "JKM",
+        "baseCasePrice": 15.57,
+        "userAdjustedPrice": 12.33
+      },
+      {
+        "year": 2023,
+        "month": 11,
+        "priceRegion": "JKM",
+        "baseCasePrice": 17.01,
+        "userAdjustedPrice": -24.31
+      },
+      {
+        "year": 2023,
+        "month": 12,
+        "priceRegion": "JKM",
+        "baseCasePrice": 16.25,
+        "userAdjustedPrice": -1.78
+      },
+      {
+        "year": 2024,
+        "month": 1,
+        "priceRegion": "JKM",
+        "baseCasePrice": 18.69,
+        "userAdjustedPrice": 25.25
+      },
+      {
+        "year": 2024,
+        "month": 2,
+        "priceRegion": "JKM",
+        "baseCasePrice": 18.71,
+        "userAdjustedPrice": 25.28
+      },
+      {
+        "year": 2024,
+        "month": 3,
+        "priceRegion": "JKM",
+        "baseCasePrice": 15.39,
+        "userAdjustedPrice": 20.79
+      },
+      {
+        "year": 2024,
+        "month": 4,
+        "priceRegion": "JKM",
+        "baseCasePrice": 12.82,
+        "userAdjustedPrice": 17.32
+      },
+      {
+        "year": 2024,
+        "month": 5,
+        "priceRegion": "JKM",
+        "baseCasePrice": 11.94,
+        "userAdjustedPrice": 16.14
+      },
+      {
+        "year": 2024,
+        "month": 6,
+        "priceRegion": "JKM",
+        "baseCasePrice": 12.43,
+        "userAdjustedPrice": 16.79
+      },
+      {
+        "year": 2024,
+        "month": 7,
+        "priceRegion": "JKM",
+        "baseCasePrice": 12.8,
+        "userAdjustedPrice": 17.29
+      },
+      {
+        "year": 2024,
+        "month": 8,
+        "priceRegion": "JKM",
+        "baseCasePrice": 13.14,
+        "userAdjustedPrice": 17.75
+      },
+      {
+        "year": 2024,
+        "month": 9,
+        "priceRegion": "JKM",
+        "baseCasePrice": 13.57,
+        "userAdjustedPrice": 18.33
+      },
+      {
+        "year": 2024,
+        "month": 10,
+        "priceRegion": "JKM",
+        "baseCasePrice": 14.22,
+        "userAdjustedPrice": 19.21
+      },
+      {
+        "year": 2024,
+        "month": 11,
+        "priceRegion": "JKM",
+        "baseCasePrice": 15.41,
+        "userAdjustedPrice": 20.82
+      },
+      {
+        "year": 2024,
+        "month": 12,
+        "priceRegion": "JKM",
+        "baseCasePrice": 16.0,
+        "userAdjustedPrice": 21.61
+      },
+      {
+        "year": 2025,
+        "month": 1,
+        "priceRegion": "JKM",
+        "baseCasePrice": 18.34,
+        "userAdjustedPrice": 16.51
+      },
+      {
+        "year": 2025,
+        "month": 2,
+        "priceRegion": "JKM",
+        "baseCasePrice": 18.36,
+        "userAdjustedPrice": 16.15
+      },
+      {
+        "year": 2025,
+        "month": 3,
+        "priceRegion": "JKM",
+        "baseCasePrice": 15.1,
+        "userAdjustedPrice": 15.01
+      },
+      {
+        "year": 2025,
+        "month": 4,
+        "priceRegion": "JKM",
+        "baseCasePrice": 12.58,
+        "userAdjustedPrice": 14.11
+      },
+      {
+        "year": 2025,
+        "month": 5,
+        "priceRegion": "JKM",
+        "baseCasePrice": 11.72,
+        "userAdjustedPrice": 13.98
+      },
+      {
+        "year": 2025,
+        "month": 6,
+        "priceRegion": "JKM",
+        "baseCasePrice": 12.19,
+        "userAdjustedPrice": 14.03
+      },
+      {
+        "year": 2025,
+        "month": 7,
+        "priceRegion": "JKM",
+        "baseCasePrice": 12.56,
+        "userAdjustedPrice": 14.17
+      },
+      {
+        "year": 2025,
+        "month": 8,
+        "priceRegion": "JKM",
+        "baseCasePrice": 12.89,
+        "userAdjustedPrice": 14.38
+      },
+      {
+        "year": 2025,
+        "month": 9,
+        "priceRegion": "JKM",
+        "baseCasePrice": 13.31,
+        "userAdjustedPrice": 14.74
+      },
+      {
+        "year": 2025,
+        "month": 10,
+        "priceRegion": "JKM",
+        "baseCasePrice": 13.95,
+        "userAdjustedPrice": 15.34
+      },
+      {
+        "year": 2025,
+        "month": 11,
+        "priceRegion": "JKM",
+        "baseCasePrice": 15.12,
+        "userAdjustedPrice": 15.97
+      },
+      {
+        "year": 2025,
+        "month": 12,
+        "priceRegion": "JKM",
+        "baseCasePrice": 15.7,
+        "userAdjustedPrice": 16.28
+      },
+      {
+        "year": 2026,
+        "month": 1,
+        "priceRegion": "JKM",
+        "baseCasePrice": 13.28,
+        "userAdjustedPrice": 12.51
+      },
+      {
+        "year": 2026,
+        "month": 2,
+        "priceRegion": "JKM",
+        "baseCasePrice": 13.29,
+        "userAdjustedPrice": 11.95
+      },
+      {
+        "year": 2026,
+        "month": 3,
+        "priceRegion": "JKM",
+        "baseCasePrice": 10.94,
+        "userAdjustedPrice": 10.59
+      },
+      {
+        "year": 2026,
+        "month": 4,
+        "priceRegion": "JKM",
+        "baseCasePrice": 9.11,
+        "userAdjustedPrice": 9.28
+      },
+      {
+        "year": 2026,
+        "month": 5,
+        "priceRegion": "JKM",
+        "baseCasePrice": 8.49,
+        "userAdjustedPrice": 8.87
+      },
+      {
+        "year": 2026,
+        "month": 6,
+        "priceRegion": "JKM",
+        "baseCasePrice": 8.83,
+        "userAdjustedPrice": 8.82
+      },
+      {
+        "year": 2026,
+        "month": 7,
+        "priceRegion": "JKM",
+        "baseCasePrice": 9.09,
+        "userAdjustedPrice": 8.86
+      },
+      {
+        "year": 2026,
+        "month": 8,
+        "priceRegion": "JKM",
+        "baseCasePrice": 9.34,
+        "userAdjustedPrice": 8.9
+      },
+      {
+        "year": 2026,
+        "month": 9,
+        "priceRegion": "JKM",
+        "baseCasePrice": 9.64,
+        "userAdjustedPrice": 9.03
+      },
+      {
+        "year": 2026,
+        "month": 10,
+        "priceRegion": "JKM",
+        "baseCasePrice": 10.1,
+        "userAdjustedPrice": 9.23
+      },
+      {
+        "year": 2026,
+        "month": 11,
+        "priceRegion": "JKM",
+        "baseCasePrice": 10.95,
+        "userAdjustedPrice": 9.93
+      },
+      {
+        "year": 2026,
+        "month": 12,
+        "priceRegion": "JKM",
+        "baseCasePrice": 11.37,
+        "userAdjustedPrice": 10.41
+      },
+      {
+        "year": 2023,
+        "month": 10,
+        "priceRegion": "TTF",
+        "baseCasePrice": 14.7,
+        "userAdjustedPrice": -17.58
+      },
+      {
+        "year": 2023,
+        "month": 11,
+        "priceRegion": "TTF",
+        "baseCasePrice": 14.54,
+        "userAdjustedPrice": -23.61
+      },
+      {
+        "year": 2023,
+        "month": 12,
+        "priceRegion": "TTF",
+        "baseCasePrice": 13.84,
+        "userAdjustedPrice": -19.58
+      },
+      {
+        "year": 2024,
+        "month": 1,
+        "priceRegion": "TTF",
+        "baseCasePrice": 16.97,
+        "userAdjustedPrice": 23.47
+      },
+      {
+        "year": 2024,
+        "month": 2,
+        "priceRegion": "TTF",
+        "baseCasePrice": 15.73,
+        "userAdjustedPrice": 21.76
+      },
+      {
+        "year": 2024,
+        "month": 3,
+        "priceRegion": "TTF",
+        "baseCasePrice": 14.94,
+        "userAdjustedPrice": 20.67
+      },
+      {
+        "year": 2024,
+        "month": 4,
+        "priceRegion": "TTF",
+        "baseCasePrice": 13.59,
+        "userAdjustedPrice": 18.79
+      },
+      {
+        "year": 2024,
+        "month": 5,
+        "priceRegion": "TTF",
+        "baseCasePrice": 13.55,
+        "userAdjustedPrice": 18.75
+      },
+      {
+        "year": 2024,
+        "month": 6,
+        "priceRegion": "TTF",
+        "baseCasePrice": 13.59,
+        "userAdjustedPrice": 18.79
+      },
+      {
+        "year": 2024,
+        "month": 7,
+        "priceRegion": "TTF",
+        "baseCasePrice": 13.35,
+        "userAdjustedPrice": 18.47
+      },
+      {
+        "year": 2024,
+        "month": 8,
+        "priceRegion": "TTF",
+        "baseCasePrice": 13.48,
+        "userAdjustedPrice": 18.65
+      },
+      {
+        "year": 2024,
+        "month": 9,
+        "priceRegion": "TTF",
+        "baseCasePrice": 13.31,
+        "userAdjustedPrice": 18.41
+      },
+      {
+        "year": 2024,
+        "month": 10,
+        "priceRegion": "TTF",
+        "baseCasePrice": 14.52,
+        "userAdjustedPrice": 20.08
+      },
+      {
+        "year": 2024,
+        "month": 11,
+        "priceRegion": "TTF",
+        "baseCasePrice": 15.45,
+        "userAdjustedPrice": 21.36
+      },
+      {
+        "year": 2024,
+        "month": 12,
+        "priceRegion": "TTF",
+        "baseCasePrice": 15.61,
+        "userAdjustedPrice": 21.59
+      },
+      {
+        "year": 2025,
+        "month": 1,
+        "priceRegion": "TTF",
+        "baseCasePrice": 16.18,
+        "userAdjustedPrice": 16.09
+      },
+      {
+        "year": 2025,
+        "month": 2,
+        "priceRegion": "TTF",
+        "baseCasePrice": 15.0,
+        "userAdjustedPrice": 15.99
+      },
+      {
+        "year": 2025,
+        "month": 3,
+        "priceRegion": "TTF",
+        "baseCasePrice": 14.25,
+        "userAdjustedPrice": 15.71
+      },
+      {
+        "year": 2025,
+        "month": 4,
+        "priceRegion": "TTF",
+        "baseCasePrice": 12.95,
+        "userAdjustedPrice": 15.18
+      },
+      {
+        "year": 2025,
+        "month": 5,
+        "priceRegion": "TTF",
+        "baseCasePrice": 12.92,
+        "userAdjustedPrice": 14.95
+      },
+      {
+        "year": 2025,
+        "month": 6,
+        "priceRegion": "TTF",
+        "baseCasePrice": 12.96,
+        "userAdjustedPrice": 14.87
+      },
+      {
+        "year": 2025,
+        "month": 7,
+        "priceRegion": "TTF",
+        "baseCasePrice": 12.73,
+        "userAdjustedPrice": 14.94
+      },
+      {
+        "year": 2025,
+        "month": 8,
+        "priceRegion": "TTF",
+        "baseCasePrice": 12.85,
+        "userAdjustedPrice": 14.99
+      },
+      {
+        "year": 2025,
+        "month": 9,
+        "priceRegion": "TTF",
+        "baseCasePrice": 12.69,
+        "userAdjustedPrice": 15.1
+      },
+      {
+        "year": 2025,
+        "month": 10,
+        "priceRegion": "TTF",
+        "baseCasePrice": 13.84,
+        "userAdjustedPrice": 15.4
+      },
+      {
+        "year": 2025,
+        "month": 11,
+        "priceRegion": "TTF",
+        "baseCasePrice": 14.73,
+        "userAdjustedPrice": 15.77
+      },
+      {
+        "year": 2025,
+        "month": 12,
+        "priceRegion": "TTF",
+        "baseCasePrice": 14.88,
+        "userAdjustedPrice": 15.87
+      },
+      {
+        "year": 2026,
+        "month": 1,
+        "priceRegion": "TTF",
+        "baseCasePrice": 12.1,
+        "userAdjustedPrice": 13.06
+      },
+      {
+        "year": 2026,
+        "month": 2,
+        "priceRegion": "TTF",
+        "baseCasePrice": 11.22,
+        "userAdjustedPrice": 12.63
+      },
+      {
+        "year": 2026,
+        "month": 3,
+        "priceRegion": "TTF",
+        "baseCasePrice": 10.65,
+        "userAdjustedPrice": 11.41
+      },
+      {
+        "year": 2026,
+        "month": 4,
+        "priceRegion": "TTF",
+        "baseCasePrice": 9.68,
+        "userAdjustedPrice": 10.0
+      },
+      {
+        "year": 2026,
+        "month": 5,
+        "priceRegion": "TTF",
+        "baseCasePrice": 9.66,
+        "userAdjustedPrice": 9.42
+      },
+      {
+        "year": 2026,
+        "month": 6,
+        "priceRegion": "TTF",
+        "baseCasePrice": 9.69,
+        "userAdjustedPrice": 9.2
+      },
+      {
+        "year": 2026,
+        "month": 7,
+        "priceRegion": "TTF",
+        "baseCasePrice": 9.52,
+        "userAdjustedPrice": 9.13
+      },
+      {
+        "year": 2026,
+        "month": 8,
+        "priceRegion": "TTF",
+        "baseCasePrice": 9.61,
+        "userAdjustedPrice": 9.04
+      },
+      {
+        "year": 2026,
+        "month": 9,
+        "priceRegion": "TTF",
+        "baseCasePrice": 9.49,
+        "userAdjustedPrice": 9.11
+      },
+      {
+        "year": 2026,
+        "month": 10,
+        "priceRegion": "TTF",
+        "baseCasePrice": 10.35,
+        "userAdjustedPrice": 9.31
+      },
+      {
+        "year": 2026,
+        "month": 11,
+        "priceRegion": "TTF",
+        "baseCasePrice": 11.01,
+        "userAdjustedPrice": 9.96
+      },
+      {
+        "year": 2026,
+        "month": 12,
+        "priceRegion": "TTF",
+        "baseCasePrice": 11.13,
+        "userAdjustedPrice": 10.34
+      },
+      {
+        "year": 2023,
+        "month": 10,
+        "priceRegion": "HH",
+        "baseCasePrice": 3.12,
+        "userAdjustedPrice": 3.12
+      },
+      {
+        "year": 2023,
+        "month": 11,
+        "priceRegion": "HH",
+        "baseCasePrice": 3.08,
+        "userAdjustedPrice": 3.08
+      },
+      {
+        "year": 2023,
+        "month": 12,
+        "priceRegion": "HH",
+        "baseCasePrice": 2.81,
+        "userAdjustedPrice": 2.81
+      },
+      {
+        "year": 2024,
+        "month": 1,
+        "priceRegion": "HH",
+        "baseCasePrice": 3.48,
+        "userAdjustedPrice": 3.48
+      },
+      {
+        "year": 2024,
+        "month": 2,
+        "priceRegion": "HH",
+        "baseCasePrice": 3.3,
+        "userAdjustedPrice": 3.3
+      },
+      {
+        "year": 2024,
+        "month": 3,
+        "priceRegion": "HH",
+        "baseCasePrice": 2.79,
+        "userAdjustedPrice": 2.79
+      },
+      {
+        "year": 2024,
+        "month": 4,
+        "priceRegion": "HH",
+        "baseCasePrice": 2.87,
+        "userAdjustedPrice": 2.87
+      },
+      {
+        "year": 2024,
+        "month": 5,
+        "priceRegion": "HH",
+        "baseCasePrice": 2.85,
+        "userAdjustedPrice": 2.85
+      },
+      {
+        "year": 2024,
+        "month": 6,
+        "priceRegion": "HH",
+        "baseCasePrice": 2.95,
+        "userAdjustedPrice": 2.95
+      },
+      {
+        "year": 2024,
+        "month": 7,
+        "priceRegion": "HH",
+        "baseCasePrice": 3.11,
+        "userAdjustedPrice": 3.11
+      },
+      {
+        "year": 2024,
+        "month": 8,
+        "priceRegion": "HH",
+        "baseCasePrice": 2.97,
+        "userAdjustedPrice": 2.97
+      },
+      {
+        "year": 2024,
+        "month": 9,
+        "priceRegion": "HH",
+        "baseCasePrice": 3.02,
+        "userAdjustedPrice": 3.02
+      },
+      {
+        "year": 2024,
+        "month": 10,
+        "priceRegion": "HH",
+        "baseCasePrice": 3.09,
+        "userAdjustedPrice": 3.09
+      },
+      {
+        "year": 2024,
+        "month": 11,
+        "priceRegion": "HH",
+        "baseCasePrice": 2.95,
+        "userAdjustedPrice": 2.95
+      },
+      {
+        "year": 2024,
+        "month": 12,
+        "priceRegion": "HH",
+        "baseCasePrice": 3.43,
+        "userAdjustedPrice": 3.43
+      },
+      {
+        "year": 2025,
+        "month": 1,
+        "priceRegion": "HH",
+        "baseCasePrice": 4.07,
+        "userAdjustedPrice": 3.9
+      },
+      {
+        "year": 2025,
+        "month": 2,
+        "priceRegion": "HH",
+        "baseCasePrice": 3.86,
+        "userAdjustedPrice": 3.75
+      },
+      {
+        "year": 2025,
+        "month": 3,
+        "priceRegion": "HH",
+        "baseCasePrice": 3.27,
+        "userAdjustedPrice": 3.41
+      },
+      {
+        "year": 2025,
+        "month": 4,
+        "priceRegion": "HH",
+        "baseCasePrice": 3.36,
+        "userAdjustedPrice": 3.13
+      },
+      {
+        "year": 2025,
+        "month": 5,
+        "priceRegion": "HH",
+        "baseCasePrice": 3.33,
+        "userAdjustedPrice": 3.18
+      },
+      {
+        "year": 2025,
+        "month": 6,
+        "priceRegion": "HH",
+        "baseCasePrice": 3.46,
+        "userAdjustedPrice": 3.33
+      },
+      {
+        "year": 2025,
+        "month": 7,
+        "priceRegion": "HH",
+        "baseCasePrice": 3.64,
+        "userAdjustedPrice": 3.45
+      },
+      {
+        "year": 2025,
+        "month": 8,
+        "priceRegion": "HH",
+        "baseCasePrice": 3.48,
+        "userAdjustedPrice": 3.46
+      },
+      {
+        "year": 2025,
+        "month": 9,
+        "priceRegion": "HH",
+        "baseCasePrice": 3.54,
+        "userAdjustedPrice": 3.42
+      },
+      {
+        "year": 2025,
+        "month": 10,
+        "priceRegion": "HH",
+        "baseCasePrice": 3.62,
+        "userAdjustedPrice": 3.54
+      },
+      {
+        "year": 2025,
+        "month": 11,
+        "priceRegion": "HH",
+        "baseCasePrice": 3.45,
+        "userAdjustedPrice": 3.89
+      },
+      {
+        "year": 2025,
+        "month": 12,
+        "priceRegion": "HH",
+        "baseCasePrice": 4.01,
+        "userAdjustedPrice": 4.38
+      },
+      {
+        "year": 2026,
+        "month": 1,
+        "priceRegion": "HH",
+        "baseCasePrice": 4.44,
+        "userAdjustedPrice": 4.51
+      },
+      {
+        "year": 2026,
+        "month": 2,
+        "priceRegion": "HH",
+        "baseCasePrice": 4.21,
+        "userAdjustedPrice": 4.3
+      },
+      {
+        "year": 2026,
+        "month": 3,
+        "priceRegion": "HH",
+        "baseCasePrice": 3.57,
+        "userAdjustedPrice": 3.85
+      },
+      {
+        "year": 2026,
+        "month": 4,
+        "priceRegion": "HH",
+        "baseCasePrice": 3.66,
+        "userAdjustedPrice": 3.48
+      },
+      {
+        "year": 2026,
+        "month": 5,
+        "priceRegion": "HH",
+        "baseCasePrice": 3.63,
+        "userAdjustedPrice": 3.5
+      },
+      {
+        "year": 2026,
+        "month": 6,
+        "priceRegion": "HH",
+        "baseCasePrice": 3.77,
+        "userAdjustedPrice": 3.63
+      },
+      {
+        "year": 2026,
+        "month": 7,
+        "priceRegion": "HH",
+        "baseCasePrice": 3.97,
+        "userAdjustedPrice": 3.78
+      },
+      {
+        "year": 2026,
+        "month": 8,
+        "priceRegion": "HH",
+        "baseCasePrice": 3.8,
+        "userAdjustedPrice": 3.8
+      },
+      {
+        "year": 2026,
+        "month": 9,
+        "priceRegion": "HH",
+        "baseCasePrice": 3.86,
+        "userAdjustedPrice": 3.81
+      },
+      {
+        "year": 2026,
+        "month": 10,
+        "priceRegion": "HH",
+        "baseCasePrice": 3.95,
+        "userAdjustedPrice": 3.87
+      },
+      {
+        "year": 2026,
+        "month": 11,
+        "priceRegion": "HH",
+        "baseCasePrice": 3.77,
+        "userAdjustedPrice": 4.14
+      },
+      {
+        "year": 2026,
+        "month": 12,
+        "priceRegion": "HH",
+        "baseCasePrice": 4.38,
+        "userAdjustedPrice": 4.58
+      }
     ]
   }
 }

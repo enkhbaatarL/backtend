@@ -6,7 +6,7 @@
 - status: Superseded
 - canonical for: Reference only - historical Trade Flow header/flow persistence candidate
 - owner: platform BE
-- updated at: 2026-06-07
+- updated at: 2026-06-11 (Open Decisions 표에 현재 해소 상태 주석 추가; DDL 본문은 historical reference로 보존)
 - source documents:
   - mi-fundamental-model-mock-api-feature-spec.md
   - mi-fundamental-model-trade-flows-api-design.md
@@ -26,19 +26,19 @@
 
 2026-06-07 이후 Volumes / Trade Flows / Price output result persistence의 canonical source는 [mi-fundamental-model-output-result-persistence-design.md](mi-fundamental-model-output-result-persistence-design.md) 이다.
 
-특히 이 문서의 JSON header 후보(`from_countries_json`, `to_countries_json`)는 superseded되었다. Canonical 설계는 `tmd_scncaseh_trd_hdr_l` row table과 `tmd_scncaseh_trd_flw_l` sparse flow table을 사용한다.
+특히 이 문서의 JSON header 후보(`from_countries_json`, `to_countries_json`)는 superseded되었다. Canonical 설계는 `tmd_mdl_scnrcasetrdehdrl` row table과 `tmd_mdl_scnrcasetrdeflwl` sparse flow table을 사용한다.
 
 ## 1. 구조 개요
 
 ```
-tmd_scncasem (case)
-  └── tmd_scncaseh (run)
-        ├── tmd_scncaseh_trd_hdr  -- run × selector × year 단위 헤더 (country 목록)
-        └── tmd_scncaseh_trd      -- 실제 non-zero flow 값
+tmd_mdl_scnrcasem (case)
+  └── tmd_mdl_scnrcaseh (run)
+        ├── tmd_mdl_scnrcaseh_trd_hdr  -- run × selector × year 단위 헤더 (country 목록)
+        └── tmd_mdl_scnrcaseh_trd      -- 실제 non-zero flow 값
 ```
 
-- run 1건에 selector(LNG/PNG) × year 조합 수만큼 `tmd_scncaseh_trd_hdr` 행이 생긴다.
-- `tmd_scncaseh_trd_hdr` 1건에 해당하는 non-zero flow 값들이 `tmd_scncaseh_trd`에 저장된다.
+- run 1건에 selector(LNG/PNG) × year 조합 수만큼 `tmd_mdl_scnrcaseh_trd_hdr` 행이 생긴다.
+- `tmd_mdl_scnrcaseh_trd_hdr` 1건에 해당하는 non-zero flow 값들이 `tmd_mdl_scnrcaseh_trd`에 저장된다.
 - country 목록은 base 버전에 따라 달라질 수 있으나 가끔 변경되는 수준이므로 JSON 컬럼으로 관리한다.
 - API 응답의 `key`, `label`, `kind` 계약을 DB-backed 전환 후에도 유지하기 위해 header JSON에 동일한 식별/표시 메타데이터를 포함한다.
 - flow 행은 nullable `region/country` 조합 대신 non-null `from_country_key`, `to_country_key` 후보 컬럼으로 중복 방지한다.
@@ -48,15 +48,15 @@ tmd_scncasem (case)
 
 ## 2. Candidate DDL (Design Review Only — Not Rollout SQL)
 
-### 2.1 tmd_scncaseh_trd_hdr
+### 2.1 tmd_mdl_scnrcaseh_trd_hdr
 
 run × selector × year 조합별 헤더 테이블.
 from/to country 목록을 JSON으로 저장한다.
 
 ```sql
-CREATE TABLE tmd_scncaseh_trd_hdr (
+CREATE TABLE tmd_mdl_scnrcaseh_trd_hdr (
     trd_hdr_seq       BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY COMMENT 'Trade Flow 헤더 surrogate key',
-    run_seq           BIGINT UNSIGNED     NOT NULL                COMMENT 'tmd_scncaseh.run_seq FK',
+    run_seq           INT UNSIGNED        NOT NULL                COMMENT 'tmd_mdl_scnrcaseh.run_seq FK',
     selector_cd       VARCHAR(10)         NOT NULL                COMMENT 'LNG / PNG',
     base_year         SMALLINT UNSIGNED   NOT NULL                COMMENT '기준 연도 (예: 2026)',
     from_countries_json JSON              NOT NULL                COMMENT 'From country 목록 [{key,label,kind,region,country}]',
@@ -65,7 +65,7 @@ CREATE TABLE tmd_scncaseh_trd_hdr (
     mod_dtm           DATETIME            NOT NULL DEFAULT NOW()  COMMENT '수정일시',
 
     CONSTRAINT fk_trd_hdr_run FOREIGN KEY (run_seq)
-        REFERENCES tmd_scncaseh (run_seq),
+        REFERENCES tmd_mdl_scnrcaseh (run_seq),
 
     UNIQUE KEY uq_trd_hdr_run_selector_year (run_seq, selector_cd, base_year)
 ) COMMENT 'MI Fundamental Model Trade Flow 헤더 (run × selector × year)';
@@ -92,14 +92,14 @@ CREATE TABLE tmd_scncaseh_trd_hdr (
 
 ---
 
-### 2.2 tmd_scncaseh_trd
+### 2.2 tmd_mdl_scnrcaseh_trd
 
 non-zero flow 값 저장 테이블 (Sparse Matrix).
 
 ```sql
-CREATE TABLE tmd_scncaseh_trd (
+CREATE TABLE tmd_mdl_scnrcaseh_trd (
     trd_seq           BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY COMMENT 'Trade Flow surrogate key',
-    trd_hdr_seq       BIGINT UNSIGNED     NOT NULL                COMMENT 'tmd_scncaseh_trd_hdr.trd_hdr_seq FK',
+    trd_hdr_seq       BIGINT UNSIGNED     NOT NULL                COMMENT 'tmd_mdl_scnrcaseh_trd_hdr.trd_hdr_seq FK',
     from_country_key  VARCHAR(180)        NOT NULL                COMMENT 'From header key (from_countries_json.key)',
     to_country_key    VARCHAR(180)        NOT NULL                COMMENT 'To header key (to_countries_json.key)',
     from_region       VARCHAR(50)         NULL                    COMMENT 'From 지역 (region 집계 행이면 country=null)',
@@ -110,7 +110,7 @@ CREATE TABLE tmd_scncaseh_trd (
     crt_dtm           DATETIME            NOT NULL DEFAULT NOW()  COMMENT '생성일시',
 
     CONSTRAINT fk_trd_hdr FOREIGN KEY (trd_hdr_seq)
-        REFERENCES tmd_scncaseh_trd_hdr (trd_hdr_seq),
+        REFERENCES tmd_mdl_scnrcaseh_trd_hdr (trd_hdr_seq),
 
     UNIQUE KEY uq_trd_flow (trd_hdr_seq, from_country_key, to_country_key)
 ) COMMENT 'MI Fundamental Model Trade Flow 수치 (Sparse Matrix, non-zero only)';
@@ -126,28 +126,30 @@ CREATE TABLE tmd_scncaseh_trd (
 
 ```sql
 -- run 기준 조회 (가장 빈번)
-CREATE INDEX tmd_scncaseh_trd_hdr_ix01 ON tmd_scncaseh_trd_hdr (run_seq);
+CREATE INDEX tmd_mdl_scnrcaseh_trd_hdr_ix01 ON tmd_mdl_scnrcaseh_trd_hdr (run_seq);
 
 -- flow 조회 (hdr_seq 기준 — FK 인덱스로 커버 가능)
--- tmd_scncaseh_trd의 fk_trd_hdr가 인덱스 역할 수행
+-- tmd_mdl_scnrcaseh_trd의 fk_trd_hdr가 인덱스 역할 수행
 -- region 필터 조회 빈도가 높을 경우 아래 추가 검토
--- CREATE INDEX tmd_scncaseh_trd_ix01 ON tmd_scncaseh_trd (trd_hdr_seq, to_region);
--- CREATE INDEX tmd_scncaseh_trd_ix02 ON tmd_scncaseh_trd (trd_hdr_seq, from_region);
+-- CREATE INDEX tmd_mdl_scnrcaseh_trd_ix01 ON tmd_mdl_scnrcaseh_trd (trd_hdr_seq, to_region);
+-- CREATE INDEX tmd_mdl_scnrcaseh_trd_ix02 ON tmd_mdl_scnrcaseh_trd (trd_hdr_seq, from_region);
 ```
 
 ---
 
-## 4. Open Decisions (DBA Review 전 미결 항목)
+## 4. Open Decisions (해소 완료 — canonical 문서로 이관됨)
 
-| # | 항목 | 현재 방향 | 확인 필요 |
+> 이 표의 항목들은 작성 당시(2026-06-03)에는 미결이었으나, 현재는 대부분 [mi-fundamental-model-output-result-persistence-design.md](mi-fundamental-model-output-result-persistence-design.md)(status: Approved)에서 확정/superseded되었다. **이 표를 live action list로 사용하지 말 것.** 남아 있는 미결(precision, MTPA→BCM 변환 계수)은 canonical 문서의 open questions에서만 추적한다.
+
+| # | 항목 | 작성 당시 방향 | 현재 상태 (2026-06-11 기준) |
 |---|------|-----------|-----------|
-| 1 | `from_countries_json` / `to_countries_json` JSON 컬럼 | JSON 컬럼 채택 (country 변경 빈도 낮음) | DBA JSON 컬럼 정책 확인 |
-| 2 | `flow_value` 타입 | `DECIMAL(30,18)` 후보 | 실제 필요 정수부/소수부 자릿수 확인 후 최종 확정 |
-| 3 | 집계 행(region aggregate, Total) 저장 방식 | 엑셀 원본 그대로 저장 (파생값 미계산) | 엑셀 생성 측과 저장 범위 확인 |
-| 4 | region 필터 조회 빈도 | 미확인 | 빈번하면 `to_region` / `from_region` 인덱스 추가 필요 |
-| 5 | `tmd_scncaseh.run_seq` FK 타입 호환 | `BIGINT UNSIGNED` 기준 | `tcm_filel.file_rel_obj_dstg_no` 타입 호환 확인 (기존 ERD 참고) |
-| 6 | 저장 단위 / 응답 단위 | DB 저장은 MTPA 단일 기준 후보. API `unit=BCM`은 조회 시 변환 | MTPA→BCM 변환 계수, 반올림 규칙, 표시 정밀도 담당자 확인 |
-| 7 | header key / label / kind 저장 범위 | header JSON에 API 응답 메타데이터 포함. flow는 `from_country_key` / `to_country_key` non-null 저장 | DBA 물리명 표준, key 길이, label 원천 관리 방식 확인 |
+| 1 | `from_countries_json` / `to_countries_json` JSON 컬럼 | JSON 컬럼 채택 (country 변경 빈도 낮음) | **Superseded** — header는 JSON이 아니라 row table `tmd_mdl_scnrcasetrdehdrl`로 저장 (canonical Fixed Decision 5) |
+| 2 | `flow_value` 타입 | `DECIMAL(30,18)` 후보 | **Open (이관)** — canonical open questions의 numeric precision 항목으로 추적. 모델 output 자릿수 확인 후 확정 |
+| 3 | 집계 행(region aggregate, Total) 저장 방식 | 엑셀 원본 그대로 저장 (파생값 미계산) | **Resolved** — non-zero sparse 저장 + header `hdr_kind_cd`(REGION_TOTAL/GRAND_TOTAL)로 canonical 정의. 엑셀 원천 저장 범위만 모델팀 확인 |
+| 4 | region 필터 조회 빈도 | 미확인 | **Resolved** — canonical에 `tmd_mdl_scnrcasetrdeflwl_ix02 (…, to_rgn_cd)`, `ix03 (…, from_rgn_cd)` 정의됨 |
+| 5 | `tmd_mdl_scnrcaseh.run_seq` FK 타입 호환 | `INT UNSIGNED` 기준 | **Resolved** — `run_seq INT UNSIGNED` 확정, `tcm_filel.file_rel_obj_dstg_no INT UNSIGNED` 호환 확인 (case-erd-ddl draft) |
+| 6 | 저장 단위 / 응답 단위 | DB 저장은 MTPA 단일 기준 후보. API `unit=BCM`은 조회 시 변환 | **Partially resolved** — MTPA 저장 + 조회 시 변환 확정. 변환 계수·반올림·표시 정밀도는 service logic 미결 |
+| 7 | header key / label / kind 저장 범위 | header JSON에 API 응답 메타데이터 포함. flow는 `from_country_key` / `to_country_key` non-null 저장 | **Superseded** — row table 컬럼 `hdr_key` / `hdr_lbl_nm` / `hdr_kind_cd`로 확정 |
 
 ---
 
@@ -159,7 +161,7 @@ CREATE INDEX tmd_scncaseh_trd_hdr_ix01 ON tmd_scncaseh_trd_hdr (run_seq);
 -- 1. 헤더 조회 (country 목록 + 메타)
 SELECT trd_hdr_seq, selector_cd, base_year,
        from_countries_json, to_countries_json
-FROM tmd_scncaseh_trd_hdr
+FROM tmd_mdl_scnrcaseh_trd_hdr
 WHERE run_seq = :run_seq
   AND selector_cd = :selector
   AND base_year = :year;
@@ -167,7 +169,7 @@ WHERE run_seq = :run_seq
 -- 2. Flow 조회
 SELECT from_country_key, to_country_key,
        from_region, from_country, to_region, to_country, flow_value
-FROM tmd_scncaseh_trd
+FROM tmd_mdl_scnrcaseh_trd
 WHERE trd_hdr_seq = :trd_hdr_seq;
 ```
 
@@ -182,21 +184,21 @@ WHERE trd_hdr_seq = :trd_hdr_seq;
 ## 6. 관계도
 
 ```
-tmd_scncasem
+tmd_mdl_scnrcasem
   │  case_id (PK)
   │
-  └──< tmd_scncaseh
-         │  run_seq (PK, BIGINT UNSIGNED AUTO_INCREMENT)
+  └──< tmd_mdl_scnrcaseh
+         │  run_seq (PK, INT UNSIGNED AUTO_INCREMENT)
          │  run_id  (VARCHAR(20), UNIQUE)
          │
-         └──< tmd_scncaseh_trd_hdr
+         └──< tmd_mdl_scnrcaseh_trd_hdr
                 │  trd_hdr_seq (PK)
                 │  run_seq (FK)
                 │  selector_cd + base_year (UNIQUE with run_seq)
                 │  from_countries_json [{key,label,kind,region,country}]
                 │  to_countries_json   [{key,label,kind,region,country}]
                 │
-                └──< tmd_scncaseh_trd
+                └──< tmd_mdl_scnrcaseh_trd
                        trd_seq (PK)
                        trd_hdr_seq (FK)
                        from_country_key / to_country_key (UNIQUE with trd_hdr_seq)

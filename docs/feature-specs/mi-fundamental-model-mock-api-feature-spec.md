@@ -85,7 +85,7 @@ MI Fundamental Model의 1차 mock API는 MI Fundamental Model 화면에서 사�
 - Price 데이터 조회
   - `COMPLETED` case의 실행 결과 중 Price 뷰 반환
   - 필터 없음, segment 없음, granularity 없음
-  - 차트 데이터(Base case price / Last adjusted price) + Annual 테이블 + Monthly 테이블 동시 반환
+  - 차트 데이터(Base case price / User adjusted price) + Annual 테이블 + Monthly 테이블 동시 반환
   - 1차 mock은 json seed 기반 고정 응답
 
 ### Explicitly Not Implemented
@@ -509,7 +509,7 @@ Reset API 포함 판단:
 
 - `caseId`에 해당하는 case가 `COMPLETED` 상태여야 한다. 상태 조건은 §3.10과 동일하다.
 - 응답은 차트 데이터, Annual 테이블, Monthly 테이블을 단일 응답으로 동시에 반환한다.
-- 차트는 `BASE_CASE`와 `LAST_ADJUSTED` 두 series를 포함한다.
+- 차트는 `BASE_CASE`와 `USER_ADJUSTED` 두 series를 포함한다.
 - Annual 테이블과 Monthly 테이블의 행 `label`은 데이터 기반 동적 값이다. 서버가 고정 enum으로 강제하지 않는다.
 - 1차 mock에서는 json seed 파일 기반 고정 데이터를 반환한다.
 
@@ -1011,8 +1011,8 @@ FE는 `latestRun.startedAt`과 `latestRun.finishedAt`으로 소요시간을 계�
         ]
       },
       {
-        "seriesType": "LAST_ADJUSTED",
-        "label": "Last adjusted price",
+        "seriesType": "USER_ADJUSTED",
+        "label": "User adjusted price",
         "points": [
           { "year": 2023, "month": 1, "value": 9.02 },
           { "year": 2023, "month": 2, "value": 9.15 }
@@ -1055,13 +1055,13 @@ FE는 `latestRun.startedAt`과 `latestRun.finishedAt`으로 소요시간을 계�
 
 | 필드 | 타입 | 설명 |
 |---|---|---|
-| `series` | `List<PriceChartSeries>` | 차트 시리즈 목록. 항상 `BASE_CASE`, `LAST_ADJUSTED` 2개 |
+| `series` | `List<PriceChartSeries>` | 차트 시리즈 목록. 항상 `BASE_CASE`, `USER_ADJUSTED` 2개 |
 
 **`PriceChartSeries`:**
 
 | 필드 | 타입 | 설명 |
 |---|---|---|
-| `seriesType` | `PriceSeriesType` | `BASE_CASE` \| `LAST_ADJUSTED` |
+| `seriesType` | `PriceSeriesType` | `BASE_CASE` \| `USER_ADJUSTED` |
 | `label` | `String` | 범례 표시 이름 |
 | `points` | `List<PriceChartPoint>` | 시간 순서 데이터 포인트 |
 
@@ -1421,8 +1421,8 @@ src/main/resources/mock/fundamental-model/fundamental-model-price-data.json
         "points": [{ "year": 2023, "month": 1, "value": 8.51 }]
       },
       {
-        "seriesType": "LAST_ADJUSTED",
-        "label": "Last adjusted price",
+        "seriesType": "USER_ADJUSTED",
+        "label": "User adjusted price",
         "points": [{ "year": 2023, "month": 1, "value": 9.02 }]
       }
     ]
@@ -1443,7 +1443,7 @@ src/main/resources/mock/fundamental-model/fundamental-model-price-data.json
 ```
 
 - Price seed는 segment 구분 없이 단일 객체다.
-- `seriesType`은 `BASE_CASE` 또는 `LAST_ADJUSTED` 고정이다.
+- `seriesType`은 `BASE_CASE` 또는 `USER_ADJUSTED` 고정이다.
 - `annualTable.columns`의 `month`는 `null`, `periodLabel`은 `null`이다.
 - mock 서비스는 이 파일을 classpath resource로 읽어 `FundamentalModelPriceRes`로 변환해 반환한다.
 
@@ -1717,7 +1717,7 @@ phase 1 mock 시연 동선:
 1. `caseId`로 active case를 찾는다. 없거나 `delYn = Y`이면 `RSC_NOT_FOUND`.
 2. case status 조건은 §Volumes Data Query와 동일하게 처리한다.
 3. 쿼리 파라미터 없음. 요청 즉시 차트 + Annual 테이블 + Monthly 테이블을 구성해 단일 응답으로 반환한다.
-4. `chart.series`는 항상 `BASE_CASE`, `LAST_ADJUSTED` 두 시리즈를 포함한다. 데이터가 없으면 `points: []`로 반환한다.
+4. `chart.series`는 항상 `BASE_CASE`, `USER_ADJUSTED` 두 시리즈를 포함한다. 데이터가 없으면 `points: []`로 반환한다.
 5. `annualTable`과 `monthlyTable`의 행 `label`은 데이터 기반 동적 값으로, 서버가 고정 enum으로 강제하지 않는다.
 6. `annualTable.columns`의 `month`는 `null`이다.
 7. `monthlyTable.columns`의 `month`는 1~12 정수다.
@@ -1818,7 +1818,7 @@ phase 1 mock 시연 동선:
 - Mock 활성화: 신규 `FundamentalModelCaseServiceDelegator` (`@Service @Primary`) + `FundamentalModelMockProperties` 의 per-API flag (`get-volumes`, `get-trade-flows`, `get-price` flag 추가). 1차에는 모든 flag `true` 기본값, real 구현 추가 시 개별 flag `false` 로 전환. `reset` flag 는 Delegator 가 아닌 controller 에서 확인
 - Active-resource rule: `delYn = Y` case는 list에서 제외하고 detail/status/run/update/delete/volumes/price에서 `RSC_NOT_FOUND` 처리
 - Data state rule: volumes/price는 `COMPLETED` case만 허용. `PENDING`/`RUNNING`이면 `409 BIZ_RULE_VIOLATION`, `FAILED`이면 `404 RSC_NOT_FOUND`
-- 신규 enum: `FundamentalModelSegment` (`GLOBAL`, `LNG`, `TRADE` — `TRADE`는 `/volumes`에서 불허), `FundamentalModelDataType` (`DEMAND`, `PRODUCTION`, `LNG_IMPORTS`, `LNG_EXPORTS`, `PIPELINE_IMPORTS`, `PIPELINE_EXPORTS`), `FundamentalModelRegion` (`ASIA`, `EUROPE`, `NORTH_AMERICA`, `MIDDLE_EAST`, `AUSTRALIA`, `RUSSIA`, `AFRICA`, `SOUTH_AMERICA`), `FundamentalModelGranularity` (`MONTHLY`, `YEARLY`), `FundamentalModelVolumeUnit` (`MTPA`), `VolumesRowKind` (`COUNTRY`, `REGION_SUBTOTAL`, `TYPE_TOTAL`), `PriceSeriesType` (`BASE_CASE`, `LAST_ADJUSTED`), `TradeFlowSelector` (`LNG`, `PNG`), `TradeFlowUnit` (`MTPA`, `BCM`), `TradeFlowDirection` (`TO_COUNTRY`, `FROM_COUNTRY`), `TradeCountryHeaderKind` (`REGION_TOTAL`, `COUNTRY`, `GRAND_TOTAL`)
+- 신규 enum: `FundamentalModelSegment` (`GLOBAL`, `LNG`, `TRADE` — `TRADE`는 `/volumes`에서 불허), `FundamentalModelDataType` (`DEMAND`, `PRODUCTION`, `LNG_IMPORTS`, `LNG_EXPORTS`, `PIPELINE_IMPORTS`, `PIPELINE_EXPORTS`), `FundamentalModelRegion` (`ASIA`, `EUROPE`, `NORTH_AMERICA`, `MIDDLE_EAST`, `AUSTRALIA`, `RUSSIA`, `AFRICA`, `SOUTH_AMERICA`), `FundamentalModelGranularity` (`MONTHLY`, `YEARLY`), `FundamentalModelVolumeUnit` (`MTPA`), `VolumesRowKind` (`COUNTRY`, `REGION_SUBTOTAL`, `TYPE_TOTAL`), `PriceSeriesType` (`BASE_CASE`, `USER_ADJUSTED`), `TradeFlowSelector` (`LNG`, `PNG`), `TradeFlowUnit` (`MTPA`, `BCM`), `TradeFlowDirection` (`TO_COUNTRY`, `FROM_COUNTRY`), `TradeCountryHeaderKind` (`REGION_TOTAL`, `COUNTRY`, `GRAND_TOTAL`)
 - Status enum: `FundamentalModelCaseStatus` = `PENDING`, `RUNNING`, `COMPLETED`, `FAILED`. `FundamentalModelRunStatus` = `RUNNING`, `COMPLETED`, `FAILED` (분리 enum). `FundamentalModelCaseSearchType` = `TITLE`, `ASSIGNEE_NAME`
 - Failure reason candidates: `TIMEOUT`, `EXTERNAL_ERROR`, `UNKNOWN`
 - Base response: `BaseResponse<T>` via `BaseResponseFactory`
