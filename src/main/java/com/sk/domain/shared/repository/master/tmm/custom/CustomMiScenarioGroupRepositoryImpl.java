@@ -269,12 +269,14 @@ public class CustomMiScenarioGroupRepositoryImpl implements CustomMiScenarioGrou
                 miSignpost.label,
                 miSignpost.probabilityDirection,
                 miSignpost.probabilityImpactScore,
+                miSignpost.strength,
                 miSignpost.signpostReason
             ))
             .from(miSignpost)
             .where(
                 miSignpost.scenario.scenarioId.eq(scenarioId),
-                miSignpost.isDeleted.isFalse()
+                miSignpost.isDeleted.isFalse(),
+                miSignpost.isUsed.isTrue()
             )
             .orderBy(
                 miSignpost.displayOrder.asc(),

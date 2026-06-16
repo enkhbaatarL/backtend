@@ -14,7 +14,8 @@ public class ScenarioStatusConverter implements AttributeConverter<ScenarioStatu
 
     @Override
     public ScenarioStatus convertToEntityAttribute(String dbData) {
-        return dbData == null ? null : ScenarioStatus.from(dbData);
+        // 대소문자는 from()이 equalsIgnoreCase로 처리. 여기선 null/공백만 방어.
+        return (dbData == null || dbData.isBlank()) ? null : ScenarioStatus.from(dbData.trim());
     }
 
 }

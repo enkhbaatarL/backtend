@@ -249,7 +249,7 @@ public class ScenarioGroupController {
             - `probability`: 시나리오 발생 확률 (0~100, 원본)
             - `adjustedProbability`: 재분배 확률 — 그룹 내 폐기 제외 비례 재분배(활성 합 100, 폐기=0). 조회 시점 계산값(비영속)
             - `dimensions`: 주요 가정 (key, label, value, valueLabel)
-            - `signpostDefinitions`: Signpost 정의 (label, direction[sup], directionLabel[가능성강화], probabilityImpact(%), rationale)
+            - `signpostDefinitions`: Signpost 정의 (label, direction[sup], directionLabel[가능성강화], probabilityImpact(점수), strength[strong/medium/weak], strengthLabel[강함/보통/약함], rationale)
             - `signpostMonitorings`: Signpost 모니터링 이력 (updatedAt, eventSummary, probability, probabilityDelta, rationale)
             """
     )

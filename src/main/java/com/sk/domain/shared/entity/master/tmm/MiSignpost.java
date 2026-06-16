@@ -5,9 +5,12 @@ import java.math.BigDecimal;
 import org.hibernate.annotations.ColumnDefault;
 import org.hibernate.annotations.Comment;
 
+import com.sk.common.converter.BooleanToYNAttributeConverter;
 import com.sk.domain.shared.converter.ProbabilityDirectionConverter;
+import com.sk.domain.shared.converter.SignpostStrengthConverter;
 import com.sk.domain.shared.entity.base.BaseEntity;
 import com.sk.domain.shared.enums.nextgen.ProbabilityDirection;
+import com.sk.domain.shared.enums.nextgen.SignpostStrength;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Convert;
@@ -64,9 +67,21 @@ public class MiSignpost extends BaseEntity {
     @Comment("표시 순서")
     private Integer displayOrder;
 
+    @Convert(converter = SignpostStrengthConverter.class)
+    @Column(name = "strength", length = 50)
+    @Comment("Signpost 영향도 (STRONG/MEDIUM/WEAK)")
+    private SignpostStrength strength;
+
+    @Column(name = "use_yn", nullable = false, length = 1, columnDefinition = "char(1)")
+    @Comment("사용 여부")
+    @ColumnDefault("'Y'")
+    @Convert(converter = BooleanToYNAttributeConverter.class)
+    private Boolean isUsed;
+
     @Builder
     public MiSignpost(Long signpostId, MiScenario scenario, String label, ProbabilityDirection probabilityDirection,
-                      BigDecimal probabilityImpactScore, String signpostReason, Integer displayOrder) {
+                      BigDecimal probabilityImpactScore, String signpostReason, Integer displayOrder,
+                      SignpostStrength strength, Boolean isUsed) {
         this.signpostId = signpostId;
         this.scenario = scenario;
         this.label = label;
@@ -74,6 +89,8 @@ public class MiSignpost extends BaseEntity {
         this.probabilityImpactScore = probabilityImpactScore;
         this.signpostReason = signpostReason;
         this.displayOrder = displayOrder;
+        this.strength = strength;
+        this.isUsed = isUsed;
     }
 
 }
