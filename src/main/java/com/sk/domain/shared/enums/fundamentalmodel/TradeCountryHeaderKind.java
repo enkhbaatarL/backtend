@@ -10,7 +10,7 @@ import lombok.RequiredArgsConstructor;
 @RequiredArgsConstructor
 public enum TradeCountryHeaderKind {
 
-    REGION_TOTAL("REGION_TOTAL", "Region total"),
+    REGION_SUBTOTAL("REGION_SUBTOTAL", "Region subtotal"),
     COUNTRY("COUNTRY", "Country"),
     GRAND_TOTAL("GRAND_TOTAL", "Grand total");
 

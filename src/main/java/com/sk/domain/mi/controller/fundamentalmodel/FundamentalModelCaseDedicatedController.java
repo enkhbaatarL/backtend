@@ -5,7 +5,6 @@ import com.sk.common.annotation.PermissionRule;
 import com.sk.common.annotation.RequiredPermissionRules;
 import com.sk.common.model.BaseResponse;
 import com.sk.common.model.BaseResponseFactory;
-import com.sk.domain.mi.config.FundamentalModelMockProperties;
 import com.sk.domain.mi.dto.response.fundamentalmodel.FundamentalModelRunAcceptRes;
 import com.sk.domain.mi.service.fundamentalmodel.FundamentalModelCaseService;
 import com.sk.domain.shared.enums.PermissionCondition;
@@ -31,7 +30,6 @@ import org.springframework.web.bind.annotation.RestController;
 public class FundamentalModelCaseDedicatedController {
 
     private final FundamentalModelCaseService fundamentalModelCaseService;
-    private final FundamentalModelMockProperties mockProperties;
 
     @ApiOrder(6)
     @Operation(

@@ -75,17 +75,17 @@ CREATE TABLE tmd_mdl_scnrcaseh_trd_hdr (
 
 ```json
 [
-  { "key": "REGION:AFRICA", "label": "Africa", "kind": "REGION_TOTAL", "region": "AFRICA", "country": null },
+  { "key": "REGION:AFRICA", "label": "Africa", "kind": "REGION_SUBTOTAL", "region": "AFRICA", "country": null },
   { "key": "COUNTRY:AFRICA:Angola", "label": "Angola", "kind": "COUNTRY", "region": "AFRICA", "country": "Angola" },
   { "key": "COUNTRY:AFRICA:Algeria", "label": "Algeria", "kind": "COUNTRY", "region": "AFRICA", "country": "Algeria" },
-  { "key": "REGION:NORTH_AMERICA", "label": "America N", "kind": "REGION_TOTAL", "region": "NORTH_AMERICA", "country": null },
+  { "key": "REGION:NORTH_AMERICA", "label": "America N", "kind": "REGION_SUBTOTAL", "region": "NORTH_AMERICA", "country": null },
   { "key": "TOTAL", "label": "Total", "kind": "GRAND_TOTAL", "region": null, "country": "Total" }
 ]
 ```
 
 - `key`: API `fromCountries[].key`, `toCountries[].key`, `flows[].fromKey`, `flows[].toKey`와 동일한 응답 식별자
 - `label`: 화면 표시명. 예: `Africa`, `America N`, `Angola`, `Total`
-- `kind = REGION_TOTAL`: 지역 집계 행/열 (화면 볼드 처리)
+- `kind = REGION_SUBTOTAL`: 지역 집계 행/열 (화면 볼드 처리)
 - `kind = COUNTRY`: 개별 국가
 - `kind = GRAND_TOTAL`: 합계 행 (`to_countries_json` 마지막에만 위치)
 - `region` / `country`: region filter와 후속 조회 조건을 위한 원천 메타데이터
@@ -145,7 +145,7 @@ CREATE INDEX tmd_mdl_scnrcaseh_trd_hdr_ix01 ON tmd_mdl_scnrcaseh_trd_hdr (run_se
 |---|------|-----------|-----------|
 | 1 | `from_countries_json` / `to_countries_json` JSON 컬럼 | JSON 컬럼 채택 (country 변경 빈도 낮음) | **Superseded** — header는 JSON이 아니라 row table `tmd_mdl_scnrcasetrdehdrl`로 저장 (canonical Fixed Decision 5) |
 | 2 | `flow_value` 타입 | `DECIMAL(30,18)` 후보 | **Open (이관)** — canonical open questions의 numeric precision 항목으로 추적. 모델 output 자릿수 확인 후 확정 |
-| 3 | 집계 행(region aggregate, Total) 저장 방식 | 엑셀 원본 그대로 저장 (파생값 미계산) | **Resolved** — non-zero sparse 저장 + header `hdr_kind_cd`(REGION_TOTAL/GRAND_TOTAL)로 canonical 정의. 엑셀 원천 저장 범위만 모델팀 확인 |
+| 3 | 집계 행(region aggregate, Total) 저장 방식 | 엑셀 원본 그대로 저장 (파생값 미계산) | **Resolved** — non-zero sparse 저장 + header `hdr_kind_cd`(REGION_SUBTOTAL/GRAND_TOTAL)로 canonical 정의. 엑셀 원천 저장 범위만 모델팀 확인 |
 | 4 | region 필터 조회 빈도 | 미확인 | **Resolved** — canonical에 `tmd_mdl_scnrcasetrdeflwl_ix02 (…, to_rgn_cd)`, `ix03 (…, from_rgn_cd)` 정의됨 |
 | 5 | `tmd_mdl_scnrcaseh.run_seq` FK 타입 호환 | `INT UNSIGNED` 기준 | **Resolved** — `run_seq INT UNSIGNED` 확정, `tcm_filel.file_rel_obj_dstg_no INT UNSIGNED` 호환 확인 (case-erd-ddl draft) |
 | 6 | 저장 단위 / 응답 단위 | DB 저장은 MTPA 단일 기준 후보. API `unit=BCM`은 조회 시 변환 | **Partially resolved** — MTPA 저장 + 조회 시 변환 확정. 변환 계수·반올림·표시 정밀도는 service logic 미결 |

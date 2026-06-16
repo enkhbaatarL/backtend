@@ -6,7 +6,6 @@ import com.sk.common.annotation.RequiredPermissionRules;
 import com.sk.common.enums.ResultCode;
 import com.sk.common.model.BaseResponse;
 import com.sk.common.model.BaseResponseFactory;
-import com.sk.domain.mi.config.FundamentalModelMockProperties;
 import com.sk.domain.mi.dto.request.fundamentalmodel.FundamentalModelCaseListReq;
 import com.sk.domain.mi.dto.request.fundamentalmodel.FundamentalModelCaseUpdateReq;
 import com.sk.domain.mi.dto.request.fundamentalmodel.FundamentalModelTradeFlowsReq;
@@ -63,7 +62,6 @@ import org.springframework.web.multipart.MultipartFile;
 public class FundamentalModelCaseController {
 
     private final FundamentalModelCaseService fundamentalModelCaseService;
-    private final FundamentalModelMockProperties mockProperties;
 
     @ApiOrder(1)
     @Operation(
@@ -264,29 +262,8 @@ public class FundamentalModelCaseController {
         @PermissionRule(role = Role.ADMIN, conditions = {PermissionCondition.THIRD_PARTY_ADMIN_ONLY})
     })
     public BaseResponse<FundamentalModelPriceRes> getPrice(
-        @Parameter(description = "Scenario Case ID", example = "106") @PathVariable Long caseId
+        @Parameter(description = "Scenario Case ID", example = "2") @PathVariable Long caseId
     ) {
         return BaseResponseFactory.create(fundamentalModelCaseService.getPrice(caseId));
-    }
-
-    @ApiOrder(12)
-    @Operation(
-        summary = "[mockapi 전용] MI Fundamental Model Scenario Case 데이터 초기화 API",
-        description = "설정 flag가 활성화된 경우 mock case/run 데이터를 초기화합니다."
-    )
-    @ApiResponse(responseCode = "200", description = "초기화 성공")
-    @PostMapping("/reset")
-    @RequiredPermissionRules(rules = {
-        @PermissionRule(role = Role.USER, conditions = {PermissionCondition.SKGAS_COMPANY_USER_ONLY}),
-        @PermissionRule(role = Role.ADMIN, conditions = {PermissionCondition.THIRD_PARTY_ADMIN_ONLY})
-    })
-    public ResponseEntity<BaseResponse<Void>> reset() {
-        if (!mockProperties.getFundamentalModelCases().getApi().isReset()) {
-            return ResponseEntity.status(HttpStatus.NOT_FOUND)
-                .body(BaseResponseFactory.create(ResultCode.Error.RSC_NOT_FOUND));
-        }
-
-        fundamentalModelCaseService.reset();
-        return ResponseEntity.ok(BaseResponseFactory.create(ResultCode.Success.OK));
     }
 }
