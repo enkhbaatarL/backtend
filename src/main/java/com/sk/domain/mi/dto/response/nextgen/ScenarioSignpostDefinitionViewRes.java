@@ -22,7 +22,7 @@ public record ScenarioSignpostDefinitionViewRes(
     @Schema(description = "확률 변화 강도 (점수)", example = "54")
     Integer probabilityImpact,
 
-    @Schema(description = "Signpost 영향도 (strong/medium/weak)", example = "strong")
+    @Schema(description = "Signpost 영향도 (verystrong/strong/medium/weak/veryweak)", example = "strong")
     SignpostStrength strength,
 
     @Schema(description = "Signpost 영향도 라벨", example = "강함")

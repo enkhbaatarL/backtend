@@ -69,7 +69,7 @@ public class MiSignpost extends BaseEntity {
 
     @Convert(converter = SignpostStrengthConverter.class)
     @Column(name = "strength", length = 50)
-    @Comment("Signpost 영향도 (STRONG/MEDIUM/WEAK)")
+    @Comment("Signpost 영향도 (VERYSTRONG/STRONG/MEDIUM/WEAK/VERYWEAK)")
     private SignpostStrength strength;
 
     @Column(name = "use_yn", nullable = false, length = 1, columnDefinition = "char(1)")

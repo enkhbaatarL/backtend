@@ -9,7 +9,7 @@ public class SignpostStrengthConverter implements AttributeConverter<SignpostStr
 
     @Override
     public String convertToDatabaseColumn(SignpostStrength attribute) {
-        // DB 적재 코드는 대문자 (STRONG/MEDIUM/WEAK)
+        // DB 적재 코드는 대문자 (VERYSTRONG/STRONG/MEDIUM/WEAK/VERYWEAK)
         return attribute == null ? null : attribute.name();
     }
 

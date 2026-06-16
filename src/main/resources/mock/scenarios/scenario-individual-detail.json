@@ -41,7 +41,7 @@
         "directionLabel": "가능성강화",
         "probabilityImpact": 80,
         "strength": "strong",
-        "strengthLabel": "강함",
+        "strengthLabel": "높음",
         "rationale": "해협의 부분 봉쇄 상태가 확인되어, 시나리오 핵심 조건인 '부분 봉쇄' 상태를 직접 지지"
       },
       {
@@ -49,8 +49,8 @@
         "direction": "sup",
         "directionLabel": "가능성강화",
         "probabilityImpact": 60,
-        "strength": "medium",
-        "strengthLabel": "보통",
+        "strength": "weak",
+        "strengthLabel": "낮음",
         "rationale": "중동 LNG 공급이 절반 수준으로 회복되는 신호로, 제한적 공급 차질 시나리오를 직접 지지"
       },
       {
@@ -58,8 +58,8 @@
         "direction": "sup",
         "directionLabel": "가능성강화",
         "probabilityImpact": 50,
-        "strength": "weak",
-        "strengthLabel": "약함",
+        "strength": "veryweak",
+        "strengthLabel": "매우낮음",
         "rationale": "3개월 내 종료 가능성을 높이는 공식 외교 신호이지만, 협상 결과는 미확정이므로 강도는 중간으로 보는 것이 적절"
       }
     ],
@@ -121,8 +121,8 @@
         "direction": "sup",
         "directionLabel": "가능성강화",
         "probabilityImpact": 90,
-        "strength": "strong",
-        "strengthLabel": "강함",
+        "strength": "verystrong",
+        "strengthLabel": "매우높음",
         "rationale": "전면 봉쇄 조건을 직접 충족하는 강한 신호로, 시나리오 발생 확률을 크게 끌어올림"
       },
       {
@@ -187,7 +187,7 @@
         "directionLabel": "가능성강화",
         "probabilityImpact": 80,
         "strength": "strong",
-        "strengthLabel": "강함",
+        "strengthLabel": "높음",
         "rationale": "장기 폐쇄 조건을 충족하는 신호"
       },
       {
@@ -195,8 +195,8 @@
         "direction": "sup",
         "directionLabel": "가능성강화",
         "probabilityImpact": 50,
-        "strength": "weak",
-        "strengthLabel": "약함",
+        "strength": "veryweak",
+        "strengthLabel": "매우낮음",
         "rationale": "부분 방출 대응 조건과 일치하며, 공급 부족 지속을 시사"
       }
     ],
@@ -260,8 +260,8 @@
         "direction": "sup",
         "directionLabel": "가능성강화",
         "probabilityImpact": 60,
-        "strength": "medium",
-        "strengthLabel": "보통",
+        "strength": "weak",
+        "strengthLabel": "낮음",
         "rationale": "부분 봉쇄 지속 조건과 일치"
       }
     ],
@@ -316,8 +316,8 @@
         "direction": "sup",
         "directionLabel": "가능성강화",
         "probabilityImpact": 90,
-        "strength": "strong",
-        "strengthLabel": "강함",
+        "strength": "verystrong",
+        "strengthLabel": "매우높음",
         "rationale": "극단 시나리오의 핵심 조건을 모두 충족"
       }
     ],
@@ -364,8 +364,8 @@
         "direction": "sup",
         "directionLabel": "가능성강화",
         "probabilityImpact": 60,
-        "strength": "medium",
-        "strengthLabel": "보통",
+        "strength": "weak",
+        "strengthLabel": "낮음",
         "rationale": "전면 방출 대응이 급등을 완화하는 조건과 일치"
       }
     ],
@@ -420,8 +420,8 @@
         "direction": "sup",
         "directionLabel": "가능성강화",
         "probabilityImpact": 60,
-        "strength": "medium",
-        "strengthLabel": "보통",
+        "strength": "weak",
+        "strengthLabel": "낮음",
         "rationale": "재고가 평년대로 유지되면 완만한 재주입 시나리오를 지지"
       },
       {
@@ -429,8 +429,8 @@
         "direction": "sup",
         "directionLabel": "가능성강화",
         "probabilityImpact": 50,
-        "strength": "weak",
-        "strengthLabel": "약함",
+        "strength": "veryweak",
+        "strengthLabel": "매우낮음",
         "rationale": "난방 수요 급변 가능성이 낮아 안정 횡보를 뒷받침"
       }
     ],
@@ -486,7 +486,7 @@
         "directionLabel": "가능성강화",
         "probabilityImpact": 80,
         "strength": "strong",
-        "strengthLabel": "강함",
+        "strengthLabel": "높음",
         "rationale": "재고 저수준 조건을 직접 지지"
       },
       {
@@ -606,8 +606,8 @@
         "direction": "sup",
         "directionLabel": "가능성강화",
         "probabilityImpact": 90,
-        "strength": "strong",
-        "strengthLabel": "강함",
+        "strength": "verystrong",
+        "strengthLabel": "매우높음",
         "rationale": "위기 수준 재고 급감 조건을 직접 지지"
       }
     ],
@@ -657,7 +657,7 @@
         "directionLabel": "가능성강화",
         "probabilityImpact": 80,
         "strength": "strong",
-        "strengthLabel": "강함",
+        "strengthLabel": "높음",
         "rationale": "아시아 수요 강세를 지지해 JKM 프리미엄 확대 시나리오 강화"
       },
       {
@@ -665,8 +665,8 @@
         "direction": "sup",
         "directionLabel": "가능성강화",
         "probabilityImpact": 50,
-        "strength": "weak",
-        "strengthLabel": "약함",
+        "strength": "veryweak",
+        "strengthLabel": "매우낮음",
         "rationale": "유럽 수요가 과열되지 않아 spread 확대를 뒷받침"
       }
     ],
@@ -765,8 +765,8 @@
         "direction": "sup",
         "directionLabel": "가능성강화",
         "probabilityImpact": 60,
-        "strength": "medium",
-        "strengthLabel": "보통",
+        "strength": "weak",
+        "strengthLabel": "낮음",
         "rationale": "양 지역 동반 강세 조건을 지지"
       }
     ],
@@ -822,7 +822,7 @@
         "directionLabel": "가능성강화",
         "probabilityImpact": 80,
         "strength": "strong",
-        "strengthLabel": "강함",
+        "strengthLabel": "높음",
         "rationale": "단기 정지 시나리오의 핵심 조건인 '2~4주' 복구 일정을 직접 지지"
       },
       {
@@ -830,8 +830,8 @@
         "direction": "sup",
         "directionLabel": "가능성강화",
         "probabilityImpact": 60,
-        "strength": "medium",
-        "strengthLabel": "보통",
+        "strength": "weak",
+        "strengthLabel": "낮음",
         "rationale": "유럽향 물량 전환 성공 신호로 제한적 영향 시나리오를 뒷받침"
       }
     ],
@@ -887,7 +887,7 @@
         "directionLabel": "가능성강화",
         "probabilityImpact": 80,
         "strength": "strong",
-        "strengthLabel": "강함",
+        "strengthLabel": "높음",
         "rationale": "장기 정지 시나리오의 핵심 조건을 직접 지지"
       },
       {
@@ -1007,8 +1007,8 @@
         "direction": "sup",
         "directionLabel": "가능성강화",
         "probabilityImpact": 90,
-        "strength": "strong",
-        "strengthLabel": "강함",
+        "strength": "verystrong",
+        "strengthLabel": "매우높음",
         "rationale": "연쇄 정지 시나리오의 결정적 조건을 직접 지지"
       },
       {
@@ -1017,7 +1017,7 @@
         "directionLabel": "가능성강화",
         "probabilityImpact": 80,
         "strength": "strong",
-        "strengthLabel": "강함",
+        "strengthLabel": "높음",
         "rationale": "전면 공급 차질을 데이터로 확인"
       }
     ],
@@ -1081,8 +1081,8 @@
         "direction": "sup",
         "directionLabel": "가능성강화",
         "probabilityImpact": 60,
-        "strength": "medium",
-        "strengthLabel": "보통",
+        "strength": "weak",
+        "strengthLabel": "낮음",
         "rationale": "부분 파업에 따른 제한적 생산 차질을 확인"
       }
     ],
@@ -1137,8 +1137,8 @@
         "direction": "sup",
         "directionLabel": "가능성강화",
         "probabilityImpact": 90,
-        "strength": "strong",
-        "strengthLabel": "강함",
+        "strength": "verystrong",
+        "strengthLabel": "매우높음",
         "rationale": "전면 파업에 따른 공급 차질을 직접 지지"
       },
       {
@@ -1203,7 +1203,7 @@
         "directionLabel": "가능성강화",
         "probabilityImpact": 80,
         "strength": "strong",
-        "strengthLabel": "강함",
+        "strengthLabel": "높음",
         "rationale": "조기 타결 시나리오를 직접 지지하며 상승 압력 해소"
       }
     ],
