@@ -58,11 +58,13 @@ public class ScenarioCaseRunPrice extends BaseEntity {
     @Comment("가격지역명 (JKM / TTF / HH)")
     private String priceRegionName;
 
-    @Column(name = "base_case_prc", nullable = false, precision = 30, scale = 18)
+    @Column(name = "base_case_prc", nullable = false)
+    @JdbcTypeCode(SqlTypes.DOUBLE)
     @Comment("베이스케이스가격 (단위: USD/MMBtu 고정)")
     private BigDecimal baseCasePrice;
 
-    @Column(name = "user_adj_prc", nullable = false, precision = 30, scale = 18)
+    @Column(name = "user_adj_prc", nullable = false)
+    @JdbcTypeCode(SqlTypes.DOUBLE)
     @Comment("사용자조정가격 (단위: USD/MMBtu 고정)")
     private BigDecimal userAdjustedPrice;
 

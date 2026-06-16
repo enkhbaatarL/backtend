@@ -81,7 +81,7 @@ public class ScenarioGroupController {
             - `summary`: 시나리오 그룹 요약
             - `scenarioCount`: 시나리오 수
             - `dimensionColumns`: 그룹별 동적 표 헤더 (key, label)
-            - `scenarios`: 그룹 내 시나리오 표 본문 (scenarioId, scenarioName, baseCase, dimensions, probability, adjustedProbability)
+            - `scenarios`: 그룹 내 시나리오 표 본문 (scenarioId, scenarioName, baseCase, dimensions, probability, adjustedProbability, status, statusLabel[대기/실현/폐기])
             """
     )
     @Parameter(name = "sort", description = "정렬 기준 (`latest` / `oldest`, 대소문자 무관). 기본값 `latest`")
@@ -123,6 +123,7 @@ public class ScenarioGroupController {
             - `dimensions`: 차원값 목록
             - `probability`: 시나리오 발생 확률 (0~100 정수, 원본)
             - `adjustedProbability`: 재분배 확률 — 그룹 내 폐기 제외 비례 재분배(활성 합 100, 폐기=0). 조회 시점 계산값(비영속)
+            - `status` / `statusLabel`: 판정 상태 (pending/realized/discarded — 대기/실현/폐기)
             """
     )
     @Parameter(name = "sort", description = "정렬 기준 (`latest` / `oldest`, 대소문자 무관). 기본값 `latest`")
