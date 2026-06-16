@@ -57,7 +57,7 @@ public class ScenarioDesignSseRegistry {
             return;
         }
         for (SseEmitter emitter : set) {
-            if (!send(emitter, event.type(), event)) {
+            if (!send(emitter, event.type().getCode(), event)) {
                 remove(scenarioGroupId, emitter);
             }
         }
@@ -87,4 +87,5 @@ public class ScenarioDesignSseRegistry {
         Set<SseEmitter> set = emitters.get(scenarioGroupId);
         return set == null ? 0 : set.size();
     }
+
 }

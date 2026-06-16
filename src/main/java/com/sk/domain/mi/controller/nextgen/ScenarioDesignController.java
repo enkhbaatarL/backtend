@@ -40,6 +40,77 @@ public class ScenarioDesignController {
 
     private final ScenarioDesignSseRegistry sseRegistry;
 
+    @ApiOrder(0)
+    @Operation(
+        summary = "시나리오 설계 세션 SSE 구독 API",
+        description = """
+            설계 세션(scenarioGroupId)의 진행 이벤트를 SSE로 구독합니다. <br>
+            생성/검토/Signpost 콜백이 도착하면 "갱신됨" 신호(stage)를 푸시하며, **FE는 수신 후 세션 상태 조회 API로 재조회**합니다. <br>
+            연결 직후 `connected` 이벤트가 1회 전송됩니다. <br>
+
+            push 유실 대비: 재연결 시 재조회 + 폴백 폴링으로 수렴합니다. <br>
+
+            <br><br>
+            ### 전송 형식
+            `text/event-stream`. 각 프레임은 이벤트 이름(`event:`)과 JSON 페이로드(`data:`)로 구성됩니다. <br>
+
+            <br><br>
+            ### 이벤트 종류 & 페이로드
+            **(1) `connected`** — 연결 직후 1회. 핸드셰이크 신호이며 이때 FE는 최초 상태를 재조회합니다.
+            ```
+            event: connected
+            data: {"scenarioGroupId":12345}
+            ```
+
+            **(2) `generation`** — 생성 콜백 도착 (단계1 시나리오 생성 완료)
+            ```
+            event: generation
+            data: {"scenarioGroupId":12345,"type":"generation","stage":"scenario_created"}
+            ```
+
+            **(3) `validation`** — 검토 콜백 도착. **결과에 따라 `stage`가 분기됩니다.**
+            - 통과: `stage` = `scenario_validated`
+            - 실패: `stage` = `scenario_created`
+            ```
+            event: validation
+            data: {"scenarioGroupId":12345,"type":"validation","stage":"scenario_validated"}
+            ```
+            ```
+            event: validation
+            data: {"scenarioGroupId":12345,"type":"validation","stage":"scenario_created"}
+            ```
+
+            **(4) `signposts`** — Signpost 콜백 도착 (단계2 signpost 생성 완료)
+            ```
+            event: signposts
+            data: {"scenarioGroupId":12345,"type":"signposts","stage":"signpost_created"}
+            ```
+
+            <br><br>
+            ### 페이로드 필드
+            - `scenarioGroupId`(number): 설계 세션 식별자
+            - `type`(string): 트리거 콜백 종류 — `generation` / `validation` / `signposts`
+            - `stage`(string): stage 종류 — `scenario_created` / `scenario_validated` / `signpost_created`
+
+            <br><br>
+            ### 처리 가이드
+            - 페이로드는 **신호만** 담습니다. 수신 즉시 `GET /{scenarioGroupId}/design`로 재조회해 화면을 갱신합니다.
+            - 연결이 끊기면(타임아웃 30분 등) 재연결 후 `connected` 수신 시 다시 재조회합니다.
+            """
+    )
+    @ApiResponse(responseCode = "200", description = "SSE 연결 성공 (text/event-stream)")
+    @GetMapping(value = "/{scenarioGroupId}/design/stream", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
+    @RequiredPermissionRules(rules = {
+        @PermissionRule(role = Role.USER, conditions = {PermissionCondition.SKGAS_COMPANY_USER_ONLY}),
+        @PermissionRule(role = Role.ADMIN, conditions = {PermissionCondition.THIRD_PARTY_ADMIN_ONLY})
+    })
+    public SseEmitter streamScenarioDesign(
+        @Parameter(description = "시나리오 그룹 ID", example = "1") @PathVariable Long scenarioGroupId
+    ) {
+        return sseRegistry.connect(scenarioGroupId);
+    }
+
+
     @ApiOrder(1)
     @Operation(
         summary = "시나리오 설계 시작 API",
@@ -236,29 +307,6 @@ public class ScenarioDesignController {
     ) {
         // TODO: 검토 캐시(Redis 키) 삭제 + DB 기준 상태 반환 구현 예정
         return null;
-    }
-
-    @ApiOrder(8)
-    @Operation(
-        summary = "시나리오 설계 세션 SSE 구독 API",
-        description = """
-            설계 세션(scenarioGroupId)의 진행 이벤트를 SSE로 구독합니다. <br>
-            생성/검토/Signpost 콜백이 도착하면 "갱신됨" 신호(stage)를 푸시하며, **FE는 수신 후 세션 상태 조회 API로 재조회**합니다. (push는 신호만, 데이터는 진실원에서) <br>
-            연결 직후 `connected` 이벤트가 1회 전송됩니다. <br>
-            push 유실 대비: 재연결 시 재조회 + 폴백 폴링으로 수렴합니다. <br>
-            (멀티노드: 콜백이 다른 노드에 도착해도 Redis pub/sub으로 연결 보유 노드가 푸시) <br>
-            """
-    )
-    @ApiResponse(responseCode = "200", description = "SSE 연결 성공 (text/event-stream)")
-    @GetMapping(value = "/{scenarioGroupId}/design/stream", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
-    @RequiredPermissionRules(rules = {
-        @PermissionRule(role = Role.USER, conditions = {PermissionCondition.SKGAS_COMPANY_USER_ONLY}),
-        @PermissionRule(role = Role.ADMIN, conditions = {PermissionCondition.THIRD_PARTY_ADMIN_ONLY})
-    })
-    public SseEmitter streamScenarioDesign(
-        @Parameter(description = "시나리오 그룹 ID", example = "1") @PathVariable Long scenarioGroupId
-    ) {
-        return sseRegistry.connect(scenarioGroupId);
     }
 
 }
