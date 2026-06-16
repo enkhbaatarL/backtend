@@ -1,7 +1,6 @@
 package com.sk.common.config;
 
 import com.sk.common.annotation.ApiOrder;
-import com.sk.domain.mi.config.FundamentalModelMockProperties;
 import com.sk.domain.mi.config.NextGenMockProperties;
 import io.swagger.v3.oas.models.*;
 import io.swagger.v3.oas.models.info.Info;
