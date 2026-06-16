@@ -6,6 +6,7 @@ import com.sk.common.annotation.RequiredPermissionRules;
 import com.sk.common.model.BaseResponse;
 import com.sk.domain.mi.dto.request.nextgen.design.ScenarioConfirmationReq;
 import com.sk.domain.mi.dto.request.nextgen.design.ScenarioDesignStartReq;
+import com.sk.domain.mi.dto.request.nextgen.design.ScenarioSignpostsReq;
 import com.sk.domain.mi.dto.request.nextgen.design.ScenarioValidationReq;
 import com.sk.domain.mi.dto.response.nextgen.design.ScenarioDesignStageRes;
 import com.sk.domain.mi.dto.response.nextgen.design.ScenarioDesignStateRes;
@@ -113,7 +114,7 @@ public class ScenarioDesignController {
 
     @ApiOrder(1)
     @Operation(
-        summary = "시나리오 설계 시작 API",
+        summary = "시나리오 설계 시작 API (step1 진입)",
         description = """
             DESIGNABLE 상태인 이벤트에 대해 시나리오 설계(단계1)를 시작합니다. <br>
             요청 사용자가 해당 이벤트를 점유(lock)하며, Agent에 시나리오 그룹/시나리오 생성을 요청합니다. <br>
@@ -154,11 +155,17 @@ public class ScenarioDesignController {
             - 검토 결과(Agent 자동생성값 포함 table + isValid/reason) = **Redis 키(휘발, TTL)** — 있으면 step1을 오버레이, 없으면(미검토/초기화/만료) DB 생성 초기값
 
             <br><br>
-            ### 응답 필드
-            - `scenarioGroupId`, `status`, `stage` (`ready` / `scenario_created` / `scenario_validated` / `signpost_created` / `completed`)
+            ### 응답 필드 (기존 그룹 화면과 동일 컨벤션으로 변환해 내림)
+            - `scenarioGroupId`
+            - `status` + `statusLabel` (creating/created/realized)
+            - `stage` + `stageLabel` (ready / scenario_created / scenario_validated / signpost_created / completed)
             - `occupied` / `occupantUserId`: 점유 정보
-            - `step1`: 분기항목/분기기준/시나리오 표 (현 단계 해당분, 아니면 null)
-            - `step2`: One-view 데이터 (현 단계 해당분, 아니면 null)
+            - `step1`: 분기항목/시나리오 표 (현 단계 해당분, 아니면 null)
+              - `dimensionColumns[]`(key, label) + `scenarios[]`
+              - 행: `scenarioId`(신규면 null) / `isNew` / `scenarioName` / `baseCase` / `dimensions[]`(key, label, value, valueLabel) / `displayOrder`
+            - `step2`: One-view (현 단계 해당분, 아니면 null)
+              - `groupName` / `summary` / `description` + `table`(step1과 동일 구조)
+              - 행에 `probability` / `narrative` / `signposts[]`(label, direction+directionLabel, probabilityImpact, strength+strengthLabel, rationale) 추가 채움
             - `validation`: 검토 결과 (`isValid`, `reason`, 미수행 시 null)
             """
     )
@@ -209,9 +216,12 @@ public class ScenarioDesignController {
             검토 통과 시 stage가 `scenario_validated`로 전이되고, 실패 시 `scenario_created`를 유지하며 사유가 전달됩니다. <br>
 
             <br><br>
-            ### 요청 본문
-            - `table.headers[]`: 편집 후 분기항목 목록 (신규 분기항목은 cell 값 null -> Agent 자동생성)
-            - `table.rows[]`: 편집 후 최종 시나리오 집합 (미채번 행 = 신규 추가, 빠진 행 = 삭제)
+            ### 요청 본문 (조회 응답과 동일 FE 구조 / 이 단계 편집 가능 필드만)
+            - `table.dimensionColumns[]`: 편집 후 분기항목(헤더) 목록 (key, label)
+            - `table.scenarios[]`: 편집 후 최종 시나리오 집합
+              - 미채번 행(`scenarioId` null) = 신규 추가, 요청에서 빠진 행 = 삭제
+              - 행: `scenarioName` / `dimensions[]`(key, value) / `displayOrder` (신규 분기항목 셀은 value null -> Agent 자동생성)
+              - narrative/확률/baseCase/Signpost는 이 단계에서 받지 않음 (확정 단계 또는 Agent 산출)
             """
     )
     @ApiResponse(responseCode = "200", description = "검토 요청 접수")
@@ -230,7 +240,7 @@ public class ScenarioDesignController {
 
     @ApiOrder(5)
     @Operation(
-        summary = "시나리오 단계1 완료 / 단계2 진입 API (Signpost 생성)",
+        summary = "Signpost 생성 API (step2 진입)",
         description = """
             단계1을 종료하고 단계2(One-view 검토)로 진입합니다. <br>
             **편집본 전체 table을 Agent에 전달하며, 이 시점에 시나리오 그룹/시나리오가 DB에 영속화됩니다** (UPDATE / 신규 INSERT·scenarioId 채번 / 빠진 행 soft delete). <br>
@@ -238,8 +248,10 @@ public class ScenarioDesignController {
             산출 결과는 Signpost 콜백 후 SSE 푸시 -> 세션 조회로 받아갑니다. <br>
 
             <br><br>
-            ### 요청 본문
-            - `table`: 편집 후 최종 시나리오 표 (신규 시나리오는 `scenarioId` null)
+            ### 요청 본문 (검토와 동일한 편집 표 / 이 단계 편집 가능 필드만)
+            - `table.dimensionColumns[]` + `table.scenarios[]`: 편집 후 최종 시나리오 표
+              - 행: `scenarioName` / `dimensions[]` / `displayOrder` (검토 후 추가한 신규 시나리오는 `scenarioId` null, 빠진 행 = 삭제)
+              - narrative/확률/baseCase/Signpost는 받지 않음 (Agent 산출)
             """
     )
     @ApiResponse(responseCode = "200", description = "단계2 진입 요청 접수")
@@ -249,7 +261,8 @@ public class ScenarioDesignController {
         @PermissionRule(role = Role.ADMIN, conditions = {PermissionCondition.THIRD_PARTY_ADMIN_ONLY})
     })
     public BaseResponse<ScenarioDesignStageRes> createScenarioSignposts(
-        @Parameter(description = "시나리오 그룹 ID", example = "1") @PathVariable Long scenarioGroupId
+        @Parameter(description = "시나리오 그룹 ID", example = "1") @PathVariable Long scenarioGroupId,
+        @Valid @RequestBody ScenarioSignpostsReq request
     ) {
         // TODO: 단계1 완료/단계2 진입(편집본 영속화 + Signpost 산출 Agent 프록시) 구현 예정
         return null;
@@ -264,9 +277,11 @@ public class ScenarioDesignController {
             stage가 `completed`, status가 `created`로 변경되며, 단계별 스냅샷(초기값/최종값)이 저장됩니다. <br>
 
             <br><br>
-            ### 요청 본문
-            - `scenarioGroup`: 그룹 이름/요약/설명
-            - `table`: 시나리오 표 (행 + Signpost 포함)
+            ### 요청 본문 (full 편집 / 이 단계는 전부 편집 가능)
+            - `scenarioGroup`: 그룹 `title` / `summary` / `description` (확정에서만 편집)
+            - `table.dimensionColumns[]` + `table.scenarios[]`: full 표
+              - 행: `scenarioName` / `dimensions[]` / `displayOrder` + `baseCase` / `probability` / `narrative`
+              - `signposts[]`: `signpostId` / `label` / `direction` / `rationale` / `strength` / `displayOrder` / `used`(사용여부 토글)
             """
     )
     @ApiResponse(responseCode = "200", description = "확정 성공")

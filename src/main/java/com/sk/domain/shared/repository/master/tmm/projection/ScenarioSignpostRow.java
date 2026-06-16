@@ -6,11 +6,13 @@ import com.sk.domain.shared.enums.nextgen.SignpostStrength;
 import java.math.BigDecimal;
 
 public record ScenarioSignpostRow(
+    Long signpostId,
     String label,
     ProbabilityDirection probabilityDirection,
     BigDecimal probabilityImpactScore,
     SignpostStrength strength,
-    String signpostReason
+    String signpostReason,
+    Integer displayOrder
 ) {
 
     @QueryProjection

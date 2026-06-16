@@ -3,10 +3,13 @@ package com.sk.domain.mi.controller.nextgen;
 import com.sk.common.annotation.ApiOrder;
 import com.sk.common.annotation.PermissionRule;
 import com.sk.common.annotation.RequiredPermissionRules;
+import com.sk.common.enums.ResultCode;
 import com.sk.common.model.BaseResponse;
+import com.sk.common.model.BaseResponseFactory;
 import com.sk.domain.mi.dto.request.nextgen.design.ScenarioGenerationCallbackReq;
 import com.sk.domain.mi.dto.request.nextgen.design.ScenarioSignpostsCallbackReq;
 import com.sk.domain.mi.dto.request.nextgen.design.ScenarioValidationCallbackReq;
+import com.sk.domain.mi.service.nextgen.design.ScenarioDesignCallbackService;
 import com.sk.domain.shared.enums.PermissionCondition;
 import com.sk.domain.shared.enums.Role;
 import io.swagger.v3.oas.annotations.Operation;
@@ -36,6 +39,8 @@ import org.springframework.web.bind.annotation.RestController;
 @RequiredArgsConstructor
 public class ScenarioDesignCallbackController {
 
+    private final ScenarioDesignCallbackService callbackService;
+
     @ApiOrder(1)
     @Operation(
         summary = "[Agent 콜백] 시나리오 생성 완료 콜백 API",
@@ -45,6 +50,7 @@ public class ScenarioDesignCallbackController {
 
             <br><br>
             ### 요청 본문
+            - `result`: Agent 작업 성공 여부 (`success` / `failure`), `reason`: 실패 사유(N)
             - `scenarioGroup`: 그룹 메타 (`status`=creating, `stage`=scenario_created)
             - `table`: 분기항목(headers) + 시나리오(rows)
             """
@@ -62,8 +68,8 @@ public class ScenarioDesignCallbackController {
         @Parameter(description = "시나리오 그룹 ID", example = "1") @PathVariable Long scenarioGroupId,
         @Valid @RequestBody ScenarioGenerationCallbackReq request
     ) {
-        // TODO: 생성 완료 콜백 처리(stage 반영 + SSE 푸시) 구현 예정
-        return null;
+        callbackService.handleGeneration(scenarioGroupId, request);
+        return BaseResponseFactory.create(ResultCode.Success.OK);
     }
 
     @ApiOrder(2)
@@ -93,8 +99,8 @@ public class ScenarioDesignCallbackController {
         @Parameter(description = "시나리오 그룹 ID", example = "1") @PathVariable Long scenarioGroupId,
         @Valid @RequestBody ScenarioValidationCallbackReq request
     ) {
-        // TODO: 검토 완료 콜백 처리(Redis 임시 저장 + stage 반영 + SSE 푸시) 구현 예정
-        return null;
+        callbackService.handleValidation(scenarioGroupId, request);
+        return BaseResponseFactory.create(ResultCode.Success.OK);
     }
 
     @ApiOrder(3)
@@ -106,8 +112,9 @@ public class ScenarioDesignCallbackController {
 
             <br><br>
             ### 요청 본문
+            - `result`: Agent 작업 성공 여부 (`success` / `failure`), `reason`: 실패 사유(N)
             - `scenarioGroup`: 그룹 메타 (`stage`=signpost_created)
-            - `table`: 시나리오(rows) + 시나리오별 `signposts[]`
+            - `table`: 시나리오(rows) + 시나리오별 `signposts[]` (`metrics`, `narrative` 포함)
             """
     )
     @ApiResponse(responseCode = "200", description = "콜백 수신 성공")
@@ -123,8 +130,8 @@ public class ScenarioDesignCallbackController {
         @Parameter(description = "시나리오 그룹 ID", example = "1") @PathVariable Long scenarioGroupId,
         @Valid @RequestBody ScenarioSignpostsCallbackReq request
     ) {
-        // TODO: Signpost 생성 완료 콜백 처리(stage 반영 + SSE 푸시) 구현 예정
-        return null;
+        callbackService.handleSignposts(scenarioGroupId, request);
+        return BaseResponseFactory.create(ResultCode.Success.OK);
     }
 
 }

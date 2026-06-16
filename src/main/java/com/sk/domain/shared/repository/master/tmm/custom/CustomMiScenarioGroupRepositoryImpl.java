@@ -266,11 +266,13 @@ public class CustomMiScenarioGroupRepositoryImpl implements CustomMiScenarioGrou
     public List<ScenarioSignpostRow> findSignpostsByScenarioId(Long scenarioId) {
         return queryFactory
             .select(new QScenarioSignpostRow(
+                miSignpost.signpostId,
                 miSignpost.label,
                 miSignpost.probabilityDirection,
                 miSignpost.probabilityImpactScore,
                 miSignpost.strength,
-                miSignpost.signpostReason
+                miSignpost.signpostReason,
+                miSignpost.displayOrder
             ))
             .from(miSignpost)
             .where(
