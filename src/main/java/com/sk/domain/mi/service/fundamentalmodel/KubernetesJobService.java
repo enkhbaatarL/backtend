@@ -3,6 +3,8 @@ package com.sk.domain.mi.service.fundamentalmodel;
 import com.sk.domain.mi.dto.request.fundamentalmodel.FundamentalModelJobArgs;
 import io.fabric8.kubernetes.api.model.Container;
 import io.fabric8.kubernetes.api.model.ContainerBuilder;
+import io.fabric8.kubernetes.api.model.EnvFromSource;
+import io.fabric8.kubernetes.api.model.EnvFromSourceBuilder;
 import io.fabric8.kubernetes.api.model.batch.v1.Job;
 import io.fabric8.kubernetes.api.model.batch.v1.JobBuilder;
 import io.fabric8.kubernetes.client.KubernetesClient;
@@ -52,6 +54,42 @@ public class KubernetesJobService {
     // smoke용: "python3,-c" / 실제 모델 이미지 사용 시 비워둠
     @Value("${kubernetes.command:}")
     private String commandConfig;
+    @Value("${kubernetes.env-config-map-name:}")
+    private String envConfigMapName;
+    @Value("${kubernetes.env-secret-name:}")
+    private String envSecretName;
+
+    // k8s Job 생성 권한(RBAC) 검증 전용. 최소 Job을 동기 생성해 생성된 Job 이름을 반환한다.
+    // 이미지 pull 없이 create API 호출 자체로 권한이 검증되며, 실패 시 예외가 그대로 전파된다.
+    public String createPermissionTestJob() {
+        String jobName = "k8s-permission-test-" + System.currentTimeMillis();
+        Job job = new JobBuilder()
+            .withNewMetadata()
+                .withName(jobName)
+                .withNamespace(namespace)
+            .endMetadata()
+            .withNewSpec()
+                .withTtlSecondsAfterFinished(0)
+                .withNewTemplate()
+                    .withNewSpec()
+                        .addNewContainer()
+                            .withName("permission-test")
+                            .withImage(modelImage)
+                            .withCommand("sh", "-c", "echo k8s-permission-test-ok")
+                        .endContainer()
+                        .withRestartPolicy("Never")
+                    .endSpec()
+                .endTemplate()
+            .endSpec()
+            .build();
+
+        kubernetesClient.batch().v1().jobs()
+            .inNamespace(namespace)
+            .resource(job)
+            .create();
+
+        return jobName;
+    }
 
     @Async
     public CompletableFuture<Void> createFundamentalModelJob(FundamentalModelJobArgs args) {
@@ -93,6 +131,8 @@ public class KubernetesJobService {
             .withName("fundamental-model")
             .withImage(modelImage);
 
+        applyEnvFrom(builder);
+
         if (StringUtils.hasText(commandConfig)) {
             List<String> argsWithScript = new ArrayList<>();
             argsWithScript.add(SMOKE_SCRIPT);
@@ -104,5 +144,29 @@ public class KubernetesJobService {
         }
 
         return builder.build();
+    }
+
+    private void applyEnvFrom(ContainerBuilder builder) {
+        List<EnvFromSource> envFromSources = new ArrayList<>();
+
+        if (StringUtils.hasText(envConfigMapName)) {
+            envFromSources.add(new EnvFromSourceBuilder()
+                .withNewConfigMapRef()
+                    .withName(envConfigMapName)
+                .endConfigMapRef()
+                .build());
+        }
+
+        if (StringUtils.hasText(envSecretName)) {
+            envFromSources.add(new EnvFromSourceBuilder()
+                .withNewSecretRef()
+                    .withName(envSecretName)
+                .endSecretRef()
+                .build());
+        }
+
+        if (!envFromSources.isEmpty()) {
+            builder.withEnvFrom(envFromSources);
+        }
     }
 }

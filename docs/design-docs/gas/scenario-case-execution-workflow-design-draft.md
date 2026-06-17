@@ -71,6 +71,7 @@ tcm_filel (공통 파일 내역)
 - case에 연결된 업로드 파일은 `tmd_mdl_scnrcasem` 의 반복 컬럼이 아니라 기존 공통 파일 테이블 `tcm_filel` 에 저장한다.
 - 현재 제품 요구는 사실상 `case:execution = 1:1`에 가깝지만, 재실행 가능성을 고려해 물리적으로는 분리한다.
 - `tmd_mdl_scnrcasem` 은 `case_id`를 primary identity로 갖는다. MI Fundamental Model row는 `scnr_id = NULL`이고, MI 수급모델 row는 nullable `scnr_id`에 scenario 식별자를 저장한다. `scnr_id`는 `tmm_mi_scenario_m.scenario_id`(INT UNSIGNED)에 대한 application-validated 논리 참조이며 물리 FK는 두지 않는다.
+- 실행유형은 `exec_type_cd VARCHAR(20) DEFAULT 'INDEPENDENT' NOT NULL` 명시 컬럼으로 구분한다. 값은 `INDEPENDENT`(독립실행, MI Fundamental Model), `SCENARIO`(MI 수급모델 시나리오 실행), `MI_BASE`(MI Base 적재 데이터) 3종이다. `INDEPENDENT`/`MI_BASE` 는 둘 다 `scnr_id = NULL` 이라 `scnr_id` 만으로 구분되지 않으므로(2026-06-16 MI Base 적재 데이터를 실행 테이블에 두기로 결정) 명시 컬럼이 필요하다. `scnr_id` 와의 정합은 `tmd_mdl_scnrcasem_ck01 CHECK ((exec_type_cd = 'SCENARIO') = (scnr_id IS NOT NULL))` 로 DB 가 강제한다. `MI_BASE` 는 사용자 실행이 아니라 적재 데이터(admin `usr_no`)이며, 사용자 화면 목록/상세/ASSIGNEE 조회는 `exec_type_cd` 조건으로 `MI_BASE` 를 제외한다. "1건 유지" 는 강제하지 않고 조회 시 최신 1건(`exec_type_cd='MI_BASE' ORDER BY case_id DESC LIMIT 1`)을 선택한다. 물리 컬럼/제약/공통코드는 [scenario-case-execution-erd-ddl-draft.md](scenario-case-execution-erd-ddl-draft.md) 가 canonical source다.
 - ownership scope는 `usr_no`(업로더/소유자) only로 확정한다.
 
 ## Boundary Against Existing ScenarioModelExecution API
@@ -473,7 +474,7 @@ workflow 구현자는 아래 역할/연결 규칙만 참고하고, 물리 스키
 
 | 테이블 | 역할 | 핵심 보관 값 |
 |---|---|---|
-| `tmd_mdl_scnrcasem` | 업로드 단위 aggregate | `usr_no`, 제목/설명, 최신 상태, `last_run_id` |
+| `tmd_mdl_scnrcasem` | 업로드 단위 aggregate | `usr_no`, `exec_type_cd`(실행유형), `scnr_id`, 제목/설명, 최신 상태, `last_run_id` |
 | `tmd_mdl_scnrcaseh` | 실행 단위 history | `run_id` (PK), `run_seq` (UNIQUE, tcm_filel output 연결용), `case_id`, 실행 상태, 실패 사유, 오류 메시지, 시작/종료 시각 |
 | `tcm_filel` | 기존 공통 파일 내역 | 원본/저장 파일명, 저장 경로, 파일 크기, MIME, 관계 객체 구분/식별 번호 |
 
@@ -584,6 +585,7 @@ mi:
 - 외부 모델 완료 동기화 방식 (2026-05-19): polling 이 아니라 backend callback 호출 방식으로 확정. 자세한 흐름은 본문 §4 와 Callback Idempotency 섹션 참고.
 - ownership scope (2026-05-20): `usr_no` only로 확정. 조직/부서/tenant 정책 키는 본 모델에 추가하지 않는다.
 - `ASSIGNEE_NAME` JOIN boundary (2026-05-20): `tmd_mdl_scnrcasem.usr_no = tmd_usrm.usr_no`, 표시 컬럼은 `tmd_usrm.usr_nm`으로 확정.
+- 실행유형 명시 컬럼 (2026-06-16): 기존 `scnr_id` NULL 여부 기반 암묵 구분을 `exec_type_cd`(`INDEPENDENT`/`SCENARIO`/`MI_BASE`) 명시 컬럼으로 분리한다. 트리거는 `MI Base` 적재 데이터를 실행 테이블에 두기로 한 결정이며, `INDEPENDENT`/`MI_BASE` 가 동일 `scnr_id = NULL` 이라 `scnr_id` 만으로 구분 불가해졌다. `MI_BASE` 는 사용자 실행 흐름(`PENDING`→`RUNNING`→terminal)을 타지 않고, 적재 주체(배치/admin)가 case + `tmd_mdl_scnrcaseh` row 를 `COMPLETED` 로 직접 INSERT 해 Volumes/Price 결과를 `run_seq` 로 연결한다. 물리 스키마/공통코드/CHECK 는 [scenario-case-execution-erd-ddl-draft.md](scenario-case-execution-erd-ddl-draft.md) 가 canonical source다.
 - Volumes/Trade Flows/Price 결과 데이터 조회 API (2026-06-07): 결과 파일 다운로드와 분리하여 `GET /cases/{caseId}/volumes`, `GET /cases/{caseId}/volumes/trade`, `GET /cases/{caseId}/price`를 1차 mock scope에 포함. 상세 조회(`GET /cases/{caseId}`)는 metadata + files + latestRun만 반환하는 경계를 유지한다. 1차 mock은 json seed 기반 고정 데이터 반환. DB-backed 전환 시 parsed result table, key, partition/index, mock-to-real 경계는 [mi-fundamental-model-output-result-persistence-design.md](mi-fundamental-model-output-result-persistence-design.md)를 따른다.
 
 ## Completion Boundary

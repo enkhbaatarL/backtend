@@ -3,33 +3,38 @@
 ## Document Control
 
 - domain: gas
-- status: draft
-- canonical for: Volumes persistence candidate table/column/key/index/nullability and DBA rollout draft only
+- status: Superseded
+- canonical for: Reference only - historical Volumes persistence candidate based on `tmd_fm_vol_row` / `tmd_fm_vol_val`
 - owner: platform BE
-- updated at: 2026-06-04
+- updated at: 2026-06-10
 - source documents:
   - `docs/feature-specs/mi-fundamental-model-mock-api-feature-spec.md`
   - `docs/design-docs/gas/mi-fundamental-model-trade-flow-erd-ddl-draft.md`
+  - `docs/design-docs/gas/mi-fundamental-model-output-result-persistence-design.md`
 - depends on:
-  - Volumes API response contract in `mi-fundamental-model-mock-api-feature-spec.md`
-  - Scenario Case / Run persistence candidate tables `tmd_scncasem` and `tmd_scncaseh`
+  - Active Volumes API response contract in `mi-fundamental-model-mock-api-feature-spec.md`
+  - Active output result persistence design in `mi-fundamental-model-output-result-persistence-design.md`
+  - Scenario Case / Run tables `tmd_mdl_scnrcasem` and `tmd_mdl_scnrcaseh`
+- superseded by:
+  - `docs/design-docs/gas/mi-fundamental-model-output-result-persistence-design.md`
 - fixed decisions:
-  - Store only country-level leaf Volumes values.
-  - Do not store `REGION_SUBTOTAL`.
-  - Do not store `TYPE_TOTAL`.
-  - Generate `REGION_SUBTOTAL` and `TYPE_TOTAL` at query/response assembly time.
-  - Keep `contract_spt_cd` as a future-ready storage dimension for LNG Contracted/Uncontracted split.
-  - Current UI/API does not expose Contracted/Uncontracted, so response assembly aggregates across all `contract_spt_cd` values.
+  - 없음. Active Volumes persistence decisions moved to `mi-fundamental-model-output-result-persistence-design.md`.
 - open questions:
-  - Final physical table/column names after DBA dictionary review.
-  - Whether `run_seq` type is `BIGINT UNSIGNED` in the final Scenario Case Run DDL.
-  - Future API/display contract when UI starts exposing Contracted/Uncontracted split.
-  - Whether model output always provides monthly data. This draft assumes yearly response values are generated from monthly rows.
-  - Final `vol_val` precision after source data confirmation.
+  - 없음. Active open questions moved to `mi-fundamental-model-output-result-persistence-design.md`.
 
 ---
 
-## 1. Scope
+## Supersession Notice
+
+이 문서는 2026-06-04 시점의 Volumes 단독 ERD 후보를 보존하는 reference-only 문서다.
+
+2026-06-10 기준 Volumes / Trade Flows / Price output result persistence의 canonical source는 [mi-fundamental-model-output-result-persistence-design.md](mi-fundamental-model-output-result-persistence-design.md) 이다.
+
+Active Volumes persistence는 `tmd_mdl_scnrcaseh.run_seq`에 귀속되는 region-bucket JSON table `tmd_mdl_scnrcasevolrgnl`을 사용한다. `tmd_mdl_scnrcasevoll` atomic row 방향과 이 문서의 `tmd_fm_vol_row` / `tmd_fm_vol_val` 분리 구조, 인덱스, rollout SQL, verify SQL은 superseded 되었으며 DBA rollout 또는 구현 기준으로 사용하지 않는다.
+
+이 문서의 아래 본문과 canonical 문서가 충돌하면 항상 `mi-fundamental-model-output-result-persistence-design.md`를 따른다.
+
+## 1. Historical Scope (Superseded)
 
 This draft covers DB-backed persistence for:
 
@@ -37,23 +42,23 @@ This draft covers DB-backed persistence for:
 GET /api/v1/mi/fundamental-model/cases/{caseId}/volumes
 ```
 
-Supported API dimensions:
+Historical candidate supported API dimensions:
 
 - `segment`: `GLOBAL`, `LNG`
 - `types`: `DEMAND`, `PRODUCTION`, `LNG_IMPORTS`, `LNG_EXPORTS`, `PIPELINE_IMPORTS`, `PIPELINE_EXPORTS`
 - `regions`: `ASIA`, `EUROPE`, `NORTH_AMERICA`, `MIDDLE_EAST`, `AUSTRALIA`, `RUSSIA`, `AFRICA`, `SOUTH_AMERICA`
 - `granularity`: `MONTHLY`, `YEARLY`
 
-Trade Flow data is outside this draft and remains covered by `mi-fundamental-model-trade-flow-erd-ddl-draft.md`.
+Trade Flow data was outside this historical draft. Active Volumes/Trade Flows/Price persistence is now unified in `mi-fundamental-model-output-result-persistence-design.md`.
 
 ---
 
-## 2. Storage Model
+## 2. Historical Storage Model (Superseded)
 
-Recommended structure:
+Superseded candidate structure:
 
 ```text
-tmd_scncaseh
+tmd_mdl_scnrcaseh
   └──< tmd_fm_vol_val        -- run x leaf row x month value
           >── tmd_fm_vol_row -- reusable country-level row dimension
 ```
@@ -72,11 +77,11 @@ Generated rows:
 - Future Contracted/Uncontracted projection:
   - include `contract_spt_cd` in the grouping key and expose or map it through a future API/display contract
 
-This keeps subtotal data from becoming a second source of truth. If the source model emits subtotal values that intentionally differ from country sums, this decision must be revisited before rollout.
+This historical candidate kept subtotal data from becoming a second source of truth. Active rollout decisions are maintained in `mi-fundamental-model-output-result-persistence-design.md`.
 
 ---
 
-## 3. Candidate DDL
+## 3. Historical Candidate DDL (Not Rollout SQL)
 
 ### 3.1 `tmd_fm_vol_row`
 
@@ -131,7 +136,7 @@ Run-level monthly country value fact table.
 ```sql
 CREATE TABLE tmd_fm_vol_val (
     vol_val_seq       BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY COMMENT 'Volumes value surrogate key',
-    run_seq           BIGINT UNSIGNED  NOT NULL                  COMMENT 'tmd_scncaseh.run_seq FK',
+    run_seq           INT UNSIGNED     NOT NULL                  COMMENT 'tmd_mdl_scnrcaseh.run_seq FK',
     vol_row_seq       BIGINT UNSIGNED  NOT NULL                  COMMENT 'tmd_fm_vol_row.vol_row_seq FK',
     base_year         SMALLINT UNSIGNED NOT NULL                 COMMENT 'Base year',
     base_month        TINYINT UNSIGNED NOT NULL                  COMMENT 'Base month 1-12',
@@ -143,7 +148,7 @@ CREATE TABLE tmd_fm_vol_val (
     del_yn            CHAR(1)          NOT NULL DEFAULT 'N'      COMMENT 'Delete Y/N',
 
     CONSTRAINT tmd_fm_vol_val_fk01 FOREIGN KEY (run_seq)
-        REFERENCES tmd_scncaseh (run_seq),
+        REFERENCES tmd_mdl_scnrcaseh (run_seq),
     CONSTRAINT tmd_fm_vol_val_fk02 FOREIGN KEY (vol_row_seq)
         REFERENCES tmd_fm_vol_row (vol_row_seq),
 
@@ -178,7 +183,7 @@ Notes:
 
 ---
 
-## 4. Query Assembly Rules
+## 4. Historical Query Assembly Rules (Superseded)
 
 ### 4.1 Base country rows
 
@@ -225,7 +230,7 @@ Future UI/API support for Contracted/Uncontracted can include `contract_spt_cd` 
 
 ---
 
-## 5. ERD Review
+## 5. Historical ERD Review (Superseded)
 
 ### 5.1 Normalization
 
@@ -259,7 +264,7 @@ Future UI/API support for Contracted/Uncontracted can include `contract_spt_cd` 
 
 ---
 
-## 6. Code Impact Review
+## 6. Historical Code Impact Review (Superseded)
 
 - Controller/DTO contract still returns `COUNTRY`, `REGION_SUBTOTAL`, and `TYPE_TOTAL`; only DB persistence scope changes.
 - Service must resolve `caseId` to active completed case and target `run_seq`.
@@ -271,20 +276,22 @@ Future UI/API support for Contracted/Uncontracted can include `contract_spt_cd` 
 
 ---
 
-## 7. Rollout / Compatibility Review
+## 7. Historical Rollout / Compatibility Review (Not Rollout SQL)
+
+Do not use this section for DBA rollout. The active rollout SQL, verify SQL, rollback order, and partition/index strategy are defined in `mi-fundamental-model-output-result-persistence-design.md`.
 
 ### Pre-check
 
 ```sql
 SHOW TABLES LIKE 'tmd_fm_vol_row';
 SHOW TABLES LIKE 'tmd_fm_vol_val';
-SHOW TABLES LIKE 'tmd_scncaseh';
+SHOW TABLES LIKE 'tmd_mdl_scnrcaseh';
 ```
 
 Expected:
 
 - Volumes tables do not already exist, unless this draft is being revised.
-- `tmd_scncaseh` exists with compatible `run_seq` type.
+- `tmd_mdl_scnrcaseh` exists with compatible `run_seq` type.
 
 ### Apply
 
@@ -330,6 +337,6 @@ GROUP BY run_seq;
 
 ## 8. Implementation Readiness
 
-blocked by open questions
+superseded - not implementation input
 
-The main persistence direction is fixed: store country leaf values only and generate `REGION_SUBTOTAL` / `TYPE_TOTAL` at query time. The schema is future-ready for LNG Contracted/Uncontracted through `contract_spt_cd`, while the current API aggregates across that dimension. Rollout is blocked until physical naming, `run_seq` type, and precision are finalized.
+Do not implement from this document. Active Volumes persistence uses `tmd_mdl_scnrcasevolrgnl` as defined in `mi-fundamental-model-output-result-persistence-design.md`.

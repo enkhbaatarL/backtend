@@ -15,6 +15,7 @@ import com.sk.domain.shared.entity.master.tmd.QScenarioCaseRunHistory;
 import com.sk.domain.shared.enums.PeriodUnitSeparateCd;
 import com.sk.domain.shared.enums.fundamentalmodel.FundamentalModelCaseSearchType;
 import com.sk.domain.shared.enums.fundamentalmodel.FundamentalModelCaseStatus;
+import com.sk.domain.shared.enums.fundamentalmodel.FundamentalModelExecType;
 import com.sk.domain.shared.enums.fundamentalmodel.FundamentalModelRunStatus;
 import com.sk.domain.shared.enums.nextgen.IndexName;
 import com.sk.domain.shared.repository.master.tmd.projection.QScenarioPriceRow;
@@ -34,7 +35,8 @@ public class CustomScenarioCaseRepositoryImpl implements CustomScenarioCaseRepos
     @Override
     public List<ScenarioCaseListRow> findListRows(FundamentalModelCaseSearchType searchType, String keyword) {
         BooleanBuilder builder = new BooleanBuilder()
-            .and(scenarioCase.isDeleted.isFalse());
+            .and(scenarioCase.isDeleted.isFalse())
+            .and(scenarioCase.execType.eq(FundamentalModelExecType.INDEPENDENT));
 
         if (keyword != null && searchType != null) {
             String normalizedKeyword = keyword.toLowerCase(Locale.ROOT);
@@ -82,7 +84,8 @@ public class CustomScenarioCaseRepositoryImpl implements CustomScenarioCaseRepos
             .join(user).on(scenarioCase.userNo.eq(user.userNo))
             .where(
                 scenarioCase.caseId.eq(caseId),
-                scenarioCase.isDeleted.isFalse()
+                scenarioCase.isDeleted.isFalse(),
+                scenarioCase.execType.eq(FundamentalModelExecType.INDEPENDENT)
             )
             .fetchOne());
     }

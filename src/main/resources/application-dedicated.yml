@@ -31,3 +31,29 @@ spring:
 
 dedicated:
   company-no: 2013
+
+file:
+  encryption:
+    enabled-company-cds: SKGAS
+    target-extensions: xlsx,xls,xlsm,docx,doc,docm,pptx,ppt,pptm
+
+external:
+  file-crypto:
+    base-url: ${FILE_CRYPTO_BASE_URL}
+    upload-path: ${FILE_CRYPTO_UPLOAD_PATH}
+    encrypt-path: ${FILE_CRYPTO_ENCRYPT_PATH}
+    decrypt-path: ${FILE_CRYPTO_DECRYPT_PATH}
+    connection-timeout: ${FILE_CRYPTO_CONNECTION_TIMEOUT:3s}
+    read-timeout: ${FILE_CRYPTO_READ_TIMEOUT:30s}
+    retry-count: ${FILE_CRYPTO_RETRY_COUNT:1}
+    retry-backoff-ms: ${FILE_CRYPTO_RETRY_BACKOFF_MS:500}
+    pid: ${FILE_CRYPTO_PID}
+    label-id: ${FILE_CRYPTO_LABEL_ID}
+    user-id: ${FILE_CRYPTO_USER_ID}
+
+kubernetes:
+  namespace: ${MI_K8S_NAMESPACE:}
+  image: ${MI_K8S_IMAGE:}
+  command: ${MI_K8S_COMMAND:}  # smoke용: "python3,-c" / 실제 모델 이미지 사용 시 비워둠
+  env-config-map-name: ${MI_K8S_ENV_CONFIG_MAP_NAME:}
+  env-secret-name: ${MI_K8S_ENV_SECRET_NAME:}

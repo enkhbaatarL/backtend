@@ -35,6 +35,7 @@ import com.sk.domain.shared.enums.Role;
 import com.sk.domain.shared.enums.fundamentalmodel.FundamentalModelCaseSearchType;
 import com.sk.domain.shared.enums.fundamentalmodel.FundamentalModelCaseStatus;
 import com.sk.domain.shared.enums.fundamentalmodel.FundamentalModelDataType;
+import com.sk.domain.shared.enums.fundamentalmodel.FundamentalModelExecType;
 import com.sk.domain.shared.enums.fundamentalmodel.FundamentalModelGranularity;
 import com.sk.domain.shared.enums.fundamentalmodel.FundamentalModelRegion;
 import com.sk.domain.shared.enums.fundamentalmodel.FundamentalModelRunStatus;
@@ -43,6 +44,7 @@ import com.sk.domain.shared.enums.fundamentalmodel.FundamentalModelVolumeUnit;
 import com.sk.domain.shared.enums.fundamentalmodel.PriceSeriesType;
 import com.sk.domain.shared.enums.fundamentalmodel.TradeCountryHeaderKind;
 import com.sk.domain.shared.enums.fundamentalmodel.TradeFlowDirection;
+import com.sk.domain.shared.enums.fundamentalmodel.TradeFlowSelector;
 import com.sk.domain.shared.enums.fundamentalmodel.TradeFlowUnit;
 import com.sk.domain.shared.enums.fundamentalmodel.VolumesRowKind;
 import com.sk.domain.shared.repository.master.tcm.UploadedFileRepository;
@@ -389,11 +391,7 @@ public class FundamentalModelCaseServiceImpl implements FundamentalModelCaseServ
                 appliedRegions.stream().map(FundamentalModelRegion::getCode).toList()
             );
         if (bucketRows.isEmpty()) {
-            throw AppErrorException.of(
-                ResultCode.Error.BIZ_RULE_VIOLATION,
-                "fundamental model completed run has no volume bucket rows. caseId: %d, runId: %s"
-                    .formatted(caseId, latestRunHistory.getRunId())
-            );
+            return emptyVolumesResponse(caseId, request.segment(), granularity, appliedTypes, appliedRegions);
         }
 
         return buildVolumesResponse(
@@ -430,11 +428,7 @@ public class FundamentalModelCaseServiceImpl implements FundamentalModelCaseServ
                 request.year()
             );
         if (headerRows.isEmpty()) {
-            throw AppErrorException.of(
-                ResultCode.Error.BIZ_RULE_VIOLATION,
-                "fundamental model completed run has no trade flow header rows. caseId: %d, runId: %s"
-                    .formatted(caseId, latestRunHistory.getRunId())
-            );
+            return emptyTradeFlowsResponse(caseId, request.selector(), request.year(), unit, appliedTypes, appliedRegions);
         }
 
         List<ScenarioCaseTradeFlowRow> flowRows =
@@ -443,13 +437,6 @@ public class FundamentalModelCaseServiceImpl implements FundamentalModelCaseServ
                 request.selector().getCode(),
                 request.year()
             );
-        if (flowRows.isEmpty()) {
-            throw AppErrorException.of(
-                ResultCode.Error.BIZ_RULE_VIOLATION,
-                "fundamental model completed run has no trade flow rows. caseId: %d, runId: %s"
-                    .formatted(caseId, latestRunHistory.getRunId())
-            );
-        }
 
         TradeFlowHeaders headers = parseTradeFlowHeaders(headerRows);
         List<FundamentalModelTradeFlowsRes.TradeCountryHeader> filteredFrom =
@@ -484,13 +471,6 @@ public class FundamentalModelCaseServiceImpl implements FundamentalModelCaseServ
 
         ScenarioCaseRunHistory latestRunHistory = findCompletedLatestRunHistory(scenarioCase);
         List<ScenarioCasePriceRow> priceRows = scenarioCasePriceRepository.findRowsByRunSeq(latestRunHistory.getRunSeq());
-        if (priceRows.isEmpty()) {
-            throw AppErrorException.of(
-                ResultCode.Error.BIZ_RULE_VIOLATION,
-                "fundamental model completed run has no price rows. caseId: %d, runId: %s"
-                    .formatted(caseId, latestRunHistory.getRunId())
-            );
-        }
 
         return buildPriceResponse(caseId, priceRows);
     }
@@ -938,14 +918,12 @@ public class FundamentalModelCaseServiceImpl implements FundamentalModelCaseServ
 
         for (FundamentalModelDataType type : appliedTypes) {
             Map<String, Double> typeTotals = null;
+            boolean hasTypeRows = false;
 
             for (FundamentalModelRegion region : appliedRegions) {
                 ParsedVolumeBucket bucket = buckets.get(new VolumeBucketKey(type, region));
                 if (bucket == null) {
-                    throw invalidVolumeData(
-                        "fundamental model volume bucket is missing. type=%s, region=%s"
-                            .formatted(type.getCode(), region.getCode())
-                    );
+                    continue;
                 }
                 if (responsePeriodKeys == null) {
                     responsePeriodKeys = bucket.periodKeys();
@@ -977,11 +955,15 @@ public class FundamentalModelCaseServiceImpl implements FundamentalModelCaseServ
 
                 responseRows.add(toVolumeResponseRow(type, region, subtotalRow, responsePeriodKeys));
                 addValues(typeTotals, subtotalRow.values());
+                hasTypeRows = true;
                 for (ParsedVolumeRow countryRow : countryRows) {
                     responseRows.add(toVolumeResponseRow(type, region, countryRow, responsePeriodKeys));
                 }
             }
 
+            if (!hasTypeRows) {
+                continue;
+            }
             responseRows.add(new FundamentalModelVolumesRes.VolumesRow(
                 type,
                 type.getLabel(),
@@ -994,7 +976,7 @@ public class FundamentalModelCaseServiceImpl implements FundamentalModelCaseServ
         }
 
         if (responsePeriodKeys == null) {
-            throw invalidVolumeData("fundamental model volume bucket result is empty.");
+            return emptyVolumesResponse(caseId, segment, granularity, appliedTypes, appliedRegions);
         }
 
         return new FundamentalModelVolumesRes(
@@ -1005,6 +987,24 @@ public class FundamentalModelCaseServiceImpl implements FundamentalModelCaseServ
             new FundamentalModelVolumesRes.VolumesAppliedFilters(appliedTypes, appliedRegions),
             toVolumeColumns(granularity, responsePeriodKeys),
             List.copyOf(responseRows)
+        );
+    }
+
+    private FundamentalModelVolumesRes emptyVolumesResponse(
+        Long caseId,
+        FundamentalModelSegment segment,
+        FundamentalModelGranularity granularity,
+        List<FundamentalModelDataType> appliedTypes,
+        List<FundamentalModelRegion> appliedRegions
+    ) {
+        return new FundamentalModelVolumesRes(
+            caseId,
+            segment,
+            granularity,
+            FundamentalModelVolumeUnit.MTPA,
+            new FundamentalModelVolumesRes.VolumesAppliedFilters(appliedTypes, appliedRegions),
+            List.of(),
+            List.of()
         );
     }
 
@@ -1274,6 +1274,26 @@ public class FundamentalModelCaseServiceImpl implements FundamentalModelCaseServ
         return List.copyOf(totalFlows);
     }
 
+    private FundamentalModelTradeFlowsRes emptyTradeFlowsResponse(
+        Long caseId,
+        TradeFlowSelector selector,
+        Integer year,
+        TradeFlowUnit unit,
+        List<TradeFlowDirection> appliedTypes,
+        List<FundamentalModelRegion> appliedRegions
+    ) {
+        return new FundamentalModelTradeFlowsRes(
+            caseId,
+            selector,
+            year,
+            unit,
+            new FundamentalModelTradeFlowsRes.TradeFlowsAppliedFilters(appliedTypes, appliedRegions),
+            List.of(),
+            List.of(),
+            List.of()
+        );
+    }
+
     private AppErrorException invalidTradeFlowData(String message) {
         return AppErrorException.of(ResultCode.Error.BIZ_RULE_VIOLATION, message);
     }
@@ -1517,7 +1537,10 @@ public class FundamentalModelCaseServiceImpl implements FundamentalModelCaseServ
     }
 
     private ScenarioCase findActiveCase(Long caseId) {
+        // fundamental-model 엔드포인트는 독립 실행(INDEPENDENT)만 다룬다.
+        // SCENARIO / MI_BASE 케이스는 active resource hiding 규칙에 따라 404 처리한다.
         return scenarioCaseRepository.findByCaseIdAndIsDeletedFalse(caseId)
+            .filter(scenarioCase -> scenarioCase.getExecType() == FundamentalModelExecType.INDEPENDENT)
             .orElseThrow(() -> AppErrorException.of(
                 ResultCode.Error.RSC_NOT_FOUND,
                 "fundamental model case not found. caseId: %d".formatted(caseId)
