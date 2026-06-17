@@ -494,6 +494,7 @@ Reset API 포함 판단:
 - FE는 `rows`를 응답 순서 그대로 렌더링할 수 있다. 서버는 각 Type 안에서 Region별로 `REGION_SUBTOTAL` 행을 먼저 반환하고, 이어서 해당 Region의 `COUNTRY` 행들을 반환한다. Type의 마지막 행은 `TYPE_TOTAL`이다.
 - `granularity=YEARLY`이면 월별 데이터를 연간으로 집계해 반환한다. columns의 `month` 필드는 `null`이 된다.
 - `granularity=MONTHLY`이면 columns의 `month` 필드는 1~12 정수다.
+- 조회 조건에 매칭되는 실제 result row가 없으면 에러가 아니라 `200 OK`로 응답하고 `columns=[]`, `rows=[]`를 반환한다.
 - 1차 mock에서는 json seed 파일 기반 고정 데이터를 반환한다. 필터는 mock 데이터 내에서 적용한다.
 
 ### 3.12 Price 데이터 조회
@@ -513,6 +514,7 @@ Reset API 포함 판단:
 - 응답은 차트 데이터, Annual 테이블, Monthly 테이블을 단일 응답으로 동시에 반환한다.
 - 차트는 `BASE_CASE`와 `USER_ADJUSTED` 두 series를 포함한다.
 - Annual 테이블과 Monthly 테이블의 행 `label`은 데이터 기반 동적 값이다. 서버가 고정 enum으로 강제하지 않는다.
+- 실제 price result row가 없으면 에러가 아니라 `200 OK`로 응답하고 chart series와 table rows는 빈 배열로 반환한다. table columns는 유지한다.
 - 1차 mock에서는 json seed 파일 기반 고정 데이터를 반환한다.
 
 
@@ -546,6 +548,7 @@ Reset API 포함 판단:
   - `types=TO_COUNTRY,FROM_COUNTRY` + `regions=ASIA`: 양방향 모두 ASIA로 축소
 - `toRegion=null`인 Total 행 flows는 region 필터와 무관하게 항상 포함된다.
 - flows는 0이 아닌 값만 포함한다 (sparse). fromCountries × toCountries 매트릭스에서 값이 없는 셀은 프론트가 0(또는 `-`)으로 처리한다.
+- 조회 조건에 매칭되는 실제 trade result row가 없으면 에러가 아니라 `200 OK`로 응답하고 `fromCountries=[]`, `toCountries=[]`, `flows=[]`를 반환한다. header는 있으나 flow row만 없으면 header는 반환하고 `flows=[]`로 응답한다.
 - 1차 mock에서는 json seed 파일 기반 고정 데이터를 반환한다. `selector`/`year` 값은 응답에 echo하며 필터는 seed 데이터 내에서 적용한다.
 
 ## 4. Response DTO Draft
@@ -1237,7 +1240,7 @@ Controller tag 권장:
 ```text
 @Tag(
   name = "6. MI Fundamental Model Case API",
-  description = "MI Fundamental Model Scenario Case mock API입니다."
+  description = "MI Fundamental Model Scenario Case API입니다."
 )
 ```
 

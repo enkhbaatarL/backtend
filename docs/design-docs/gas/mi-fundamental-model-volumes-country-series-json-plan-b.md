@@ -1,35 +1,42 @@
-# MI Fundamental Model - Volumes Country Series JSON Plan B
+# MI Fundamental Model - Volumes Country Series JSON Superseded Candidate
 
 ## Document Control
 
-- status: Draft
-- canonical for: Reference only - Plan B schema candidate for Volumes country-series JSON persistence
+- status: Superseded
+- canonical for: Reference only - rejected/superseded Volumes country-series JSON candidate
 - owner: Shared BE/DBA
 - source documents:
+  - `docs/design-docs/gas/mi-fundamental-model-output-result-persistence-design.md`
+  - `docs/design-docs/gas/mi-fundamental-model-volumes-region-bucket-json-plan-b.md`
   - `docs/design-docs/gas/scenario-case-execution-workflow-design-draft.md`
-  - `docs/work-notes/2026/2026-06-12-volumes-region-bucket-json-plan-b.md`
   - `docs/conventions/db-object-naming-rules.md`
   - `docs/conventions/db-term-dictionary-sheet2.csv`
 - depends on:
   - `tmd_mdl_scnrcaseh.run_seq`
-  - Volumes API read-only query behavior
+  - Active Volumes API read-only query behavior
 - supersedes:
-  - `docs/design-docs/gas/mi-fundamental-model-volumes-region-bucket-json-plan-b.md` if that draft exists in the working branch
-- last synced: 2026-06-12
+  - 없음
+- superseded by:
+  - `docs/design-docs/gas/mi-fundamental-model-output-result-persistence-design.md`
+- last synced: 2026-06-17
 - open questions:
-  - DBA approval for JSON column usage as parsed result storage
-  - Final JSON array schema and loader-side validation responsibility
-  - Maximum expected JSON payload size per country/region subtotal row
+  - 없음. This candidate is not implementation input.
+
+## Supersession Notice
+
+2026-06-17 결정으로 Volumes persistence는 `tmd_mdl_scnrcasevolrgnl` region-bucket JSON table을 사용한다. 이 문서의 `tmd_mdl_scnrcasevolnatl` country-series JSON 후보는 superseded 되었으며 DBA rollout 또는 구현 기준으로 사용하지 않는다.
+
+Active DDL, query, rollout, verify SQL은 `docs/design-docs/gas/mi-fundamental-model-output-result-persistence-design.md`를 따른다.
 
 ## Purpose
 
-This draft refines the earlier region-bucket JSON Plan B for:
+This historical draft refined the earlier region-bucket JSON Plan B for:
 
 ```text
 GET /api/v1/mi/fundamental-model/cases/{caseId}/volumes
 ```
 
-The earlier Plan B grouped all countries under one `region` bucket. This document proposes a more intuitive storage key:
+The earlier Plan B grouped all countries under one `region` bucket. This document proposed a more intuitive storage key:
 
 ```text
 run_seq + segment + data_type_cd + region + country + perd_unit_spt_cd
@@ -39,7 +46,7 @@ The JSON payload then stores the period/value series for that country or region 
 
 ## Applicability Conditions
 
-Use this design only if these constraints remain true:
+This superseded design was considered only under these constraints:
 
 - `GET /cases/{caseId}/volumes` remains read-only.
 - Result rows are fully loaded before the run is marked `COMPLETED`.
@@ -47,7 +54,7 @@ Use this design only if these constraints remain true:
 - DB-side country search, value threshold filtering, and cell-level aggregation are not required.
 - `perd_key`, `attr_type_cd`, and `vol_val` are not direct SQL `WHERE` conditions.
 
-If future requirements need SQL filtering below country row level, use the atomic-row model instead.
+If future requirements need SQL filtering below country row level, perform a new ERD review instead of reviving this candidate directly.
 
 ## Proposed Storage Model
 
@@ -70,7 +77,7 @@ This removes `row_key` while avoiding MySQL nullable unique-key ambiguity.
 
 ## Candidate Table
 
-Candidate table name:
+Superseded candidate table name:
 
 - `tmd_mdl_scnrcasevolnatl`
 - Meaning: `TMD_시나리오케이스실행물량국가내역`
@@ -229,15 +236,11 @@ Compared with region-bucket JSON, this country-series design is easier to inspec
 
 ## Recommendation
 
-Use this country-series JSON design as the preferred Plan B for team review.
+Do not use this country-series JSON design for implementation.
 
-It is more intuitive than region-bucket JSON because each row maps to a single displayed country or region subtotal row. It still avoids the largest insert-volume problem by storing all periods for that row in one JSON array.
+It was more intuitive than region-bucket JSON because each row mapped to a single displayed country or region subtotal row, but the accepted 2026-06-17 direction is `tmd_mdl_scnrcasevolrgnl` region-bucket JSON.
 
-Do not implement until BE/DBA approve:
-
-- JSON array storage as parsed result persistence,
-- final validation ownership,
-- whether a short dual-load validation window is needed against the atomic-row shape.
+Do not implement this candidate unless a future ERD review explicitly supersedes `tmd_mdl_scnrcasevolrgnl`.
 
 ## Dictionary Updates
 
@@ -257,6 +260,6 @@ Terms already present and used:
 
 ## Implementation Readiness
 
-`blocked by open questions`
+`superseded - not implementation input`
 
-The schema direction is reviewable, but implementation must wait for BE/DBA agreement on JSON storage, sentinel policy, and loader/backend validation ownership.
+Use `mi-fundamental-model-output-result-persistence-design.md` for active Volumes persistence.

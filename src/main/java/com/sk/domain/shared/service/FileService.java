@@ -9,11 +9,13 @@ import com.sk.common.utils.PathUtil;
 import com.sk.common.utils.RoleUtil;
 import com.sk.domain.admin.dto.response.file.FileDownloadRes;
 import com.sk.domain.admin.dto.response.file.FileUploadRes;
+import com.sk.domain.shared.client.FileCryptoApiClient;
 import com.sk.domain.shared.dto.request.file.FileDownloadReq;
 import com.sk.domain.shared.entity.master.tcm.UploadedFile;
 import com.sk.domain.shared.enums.FileRelationshipObjectSeparateCode;
 import com.sk.domain.shared.enums.Role;
 import com.sk.domain.shared.repository.master.tcm.UploadedFileRepository;
+import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.net.MalformedURLException;
@@ -41,6 +43,8 @@ import org.springframework.web.multipart.MultipartFile;
 public class FileService {
     private final UploadedFileRepository uploadedFileRepository;
     private final ObjectStorageService objectStorageService;
+    private final FileEncryptionPolicy fileEncryptionPolicy;
+    private final FileCryptoApiClient fileCryptoApiClient;
 
     private final String TEMP_DIR = "TEMP";
 
@@ -217,7 +221,20 @@ public class FileService {
 
             // Object Storage 저장
             String fileName = PathUtil.IncludeTrailingPathDelimiter(separateCode) + storageFileNm;
-            String fileUrl = objectStorageService.uploadFile(file, bucketName, fileName, isPublic);
+            String fileUrl;
+            if (fileEncryptionPolicy.isEnabled(companyCd, originalFileNm)) {
+                byte[] decryptedFileData = fileCryptoApiClient.decrypt(file.getBytes(), originalFileNm);
+                fileSize = decryptedFileData.length;
+                fileUrl = objectStorageService.uploadFile(
+                        new ByteArrayInputStream(decryptedFileData),
+                        bucketName,
+                        fileName,
+                        isPublic,
+                        mimeTypeNm,
+                        fileSize);
+            } else {
+                fileUrl = objectStorageService.uploadFile(file, bucketName, fileName, isPublic);
+            }
             uploadedBucketName = bucketName;
             uploadedFileName = fileName;
 

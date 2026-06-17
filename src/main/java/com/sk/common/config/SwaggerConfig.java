@@ -330,7 +330,7 @@ public class SwaggerConfig {
             label(mockProps.getModelExecutions().getApi().isSubmit()),
             label(mockProps.getModelExecutions().getApi().isGetStatus()),
             label(mockProps.getModelExecutions().getApi().isCallback()),
-            label(true),
+            label(false),
             label(false),
             label(false),
             label(false),

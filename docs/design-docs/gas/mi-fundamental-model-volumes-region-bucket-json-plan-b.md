@@ -1,9 +1,9 @@
-# MI Fundamental Model - Volumes Region Bucket JSON Plan B
+# MI Fundamental Model - Volumes Region Bucket JSON Decision Reference
 
 ## Document Control
 
-- status: Draft
-- canonical for: Reference only - Plan B schema candidate for Volumes region-bucket JSON persistence
+- status: Superseded
+- canonical for: Reference only - accepted Volumes region-bucket JSON rationale folded into `mi-fundamental-model-output-result-persistence-design.md`
 - owner: Shared BE/DBA
 - source documents:
   - `docs/design-docs/gas/mi-fundamental-model-output-result-persistence-design.md`
@@ -14,27 +14,30 @@
 - depends on:
   - `tmd_mdl_scnrcaseh.run_seq`
   - Volumes API read-only query contract in `mi-fundamental-model-mock-api-feature-spec.md`
-  - Current approved atomic-row design in `mi-fundamental-model-output-result-persistence-design.md`
+  - Approved Volumes region-bucket JSON design in `mi-fundamental-model-output-result-persistence-design.md`
 - supersedes:
   - 없음
-- last synced: 2026-06-15
+- last synced: 2026-06-17
 - open questions:
-  - DBA approval for JSON column usage as canonical parsed result storage
-  - Final JSON schema and loader-side validation responsibility
-  - Whether to keep a temporary atomic staging table during model output load verification
-  - Maximum expected JSON payload size per `run_seq + sgmt_cd + perd_unit_spt_cd + data_type_cd + rgn_cd`
+  - 없음. Active schema and rollout questions, including maximum expected JSON payload size, moved to `mi-fundamental-model-output-result-persistence-design.md`.
+
+## Supersession Notice
+
+2026-06-17 결정으로 이 문서의 Plan B 방향은 승인되었고, active source of truth는 `docs/design-docs/gas/mi-fundamental-model-output-result-persistence-design.md`로 이관되었다.
+
+이 문서는 후보 검토 이력과 테스트 데이터 생성 배경을 보존하는 reference-only 문서다. `tmd_mdl_scnrcasevolrgnl`의 active DDL, query, rollout, verify SQL은 `mi-fundamental-model-output-result-persistence-design.md`를 따른다.
 
 ## Purpose
 
-This draft evaluates a Plan B persistence model for:
+This document records the Plan B review that led to the accepted persistence model for:
 
 ```text
 GET /api/v1/mi/fundamental-model/cases/{caseId}/volumes
 ```
 
-The current approved design stores one atomic row per Volumes row/period/value in `tmd_mdl_scnrcasevoll`. After checking generated `GLOBAL` monthly data, one model execution can require more than 20,000 Volumes inserts for only the Global monthly slice. Because the API is read-only and filters only by `segment`, `type`, `region`, and `granularity`, this draft proposes a region-bucket JSON table as an intentional denormalization candidate.
+The previous approved design stored one atomic row per Volumes row/period/value in `tmd_mdl_scnrcasevoll`. After checking generated `GLOBAL` monthly data, one model execution can require more than 20,000 Volumes inserts for only the Global monthly slice. Because the API is read-only and filters only by `segment`, `type`, `region`, and `granularity`, the team decided on 2026-06-17 to use `tmd_mdl_scnrcasevolrgnl` as the canonical Volumes persistence table.
 
-This document is not canonical rollout SQL until approved by BE/DBA. If accepted, `mi-fundamental-model-output-result-persistence-design.md` must be updated to supersede the atomic Volumes table decision.
+This document is not canonical rollout SQL. The accepted table decision has been folded into `mi-fundamental-model-output-result-persistence-design.md`.
 
 ## Source-of-Truth Boundaries
 
@@ -42,8 +45,8 @@ This document is not canonical rollout SQL until approved by BE/DBA. If accepted
 |---|---|
 | Endpoint/request/response/error contract | `docs/feature-specs/mi-fundamental-model-mock-api-feature-spec.md` |
 | Case/run lifecycle and `run_seq` result ownership | `docs/design-docs/gas/scenario-case-execution-workflow-design-draft.md` |
-| Current approved output result table set | `docs/design-docs/gas/mi-fundamental-model-output-result-persistence-design.md` |
-| This Plan B candidate | This document, reference-only until approved |
+| Approved output result table set | `docs/design-docs/gas/mi-fundamental-model-output-result-persistence-design.md` |
+| Plan B review history and generated test-data background | This document, reference-only |
 
 ## Applicability Conditions
 
@@ -53,10 +56,10 @@ The region-bucket JSON design is appropriate only if all conditions hold:
 - Result materialization is completed before callback transitions the run to `COMPLETED`.
 - Query filters remain limited to `segment`, `types`, `regions`, and `granularity`.
 - No DB-side country search, country sort, cell-level filter, or aggregate query is required.
-- `perd_key`, `attr_type_cd`, and `vol_val` are not used as direct SQL `WHERE` conditions.
+- period key, attrType, and volume value are not used as direct SQL `WHERE` conditions.
 - API response ordering is deterministic from JSON payload order plus enum/request filter order.
 
-If any condition changes, prefer the approved atomic-row design or introduce a separate normalized detail table.
+If any condition changes, introduce a separate normalized detail table or revisit the Volumes persistence design. Do not revive `tmd_mdl_scnrcasevoll` without a new ERD review.
 
 ## Proposed Storage Model
 
@@ -227,22 +230,22 @@ This design intentionally violates 1NF because `vol_data_json` contains repeated
 
 ## Rollout / Compatibility Review
 
-This is a redesign candidate, not a null-safe ALTER of the current approved table.
+This was a redesign, not a null-safe ALTER of the previous approved table.
 
-Recommended rollout if approved:
+Recommended rollout that was later folded into the canonical document:
 
 1. Create `tmd_mdl_scnrcasevolrgnl`.
 2. Update Python/model loader to insert region buckets instead of atomic Volumes rows.
 3. Add loader validation for JSON key alignment, row count, period count, and hash.
 4. Update Java DB-backed Volumes query to parse region buckets.
 5. During first rollout, optionally dual-load atomic rows and region buckets for one validation run only, then compare aggregates.
-6. Switch canonical design document from atomic `tmd_mdl_scnrcasevoll` to region-bucket JSON only after validation.
+6. Switch canonical design document from atomic `tmd_mdl_scnrcasevoll` to region-bucket JSON only after validation. This switch was recorded in `mi-fundamental-model-output-result-persistence-design.md` on 2026-06-17.
 
 No backfill is required unless historical completed runs must be served from DB. If backfill is required, create a separate import script and work note.
 
 ## DDL Draft Structure Recommendation
 
-When this candidate becomes approved, produce DBA handoff SQL with:
+The canonical document should keep DBA handoff SQL with:
 
 - pre-check:
   - `SHOW TABLES LIKE 'tmd_mdl_scnrcasevolrgnl';`
@@ -253,7 +256,7 @@ When this candidate becomes approved, produce DBA handoff SQL with:
 - backfill:
   - explicit "not needed" or one-off import plan
 - rollback:
-  - drop candidate table before application switch, or stop writes and retain table for investigation after application switch
+  - drop the region-bucket table before application switch, or stop writes and retain table for investigation after application switch
 - verify:
   - bucket count by `run_seq`, `sgmt_cd`, `perd_unit_spt_cd`, `data_type_cd`
   - JSON validity and schema version count
@@ -273,7 +276,7 @@ When this candidate becomes approved, produce DBA handoff SQL with:
 
 ## Recommendation
 
-Proceed with this Plan B as a team-review candidate.
+The Plan B direction was accepted on 2026-06-17 and folded into the canonical output persistence design.
 
 The design is reasonable under the confirmed constraints:
 
@@ -283,7 +286,7 @@ The design is reasonable under the confirmed constraints:
 - `perd_key`, `attr_type`, and `vol_val` are not SQL filter dimensions.
 - Observed atomic-row insert volume exceeds 20,000 rows for one `GLOBAL` monthly run slice.
 
-Do not implement until BE/DBA agree whether JSON bucket storage can replace `tmd_mdl_scnrcasevoll` as the canonical Volumes result table.
+Do not implement from this reference document directly. Use `mi-fundamental-model-output-result-persistence-design.md` for active DDL/query/rollout instructions.
 
 ## Dictionary Updates
 
@@ -313,6 +316,6 @@ Each file is idempotent: it first deletes its own `run_seq + sgmt_cd + perd_unit
 
 ## Implementation Readiness
 
-`blocked by open questions`
+`ready`
 
-Open questions are limited to team/DBA approval of JSON canonical storage, final JSON schema, and loader validation ownership. API behavior is not blocked.
+The direction is approved as of 2026-06-17. Active rollout risks are tracked in `mi-fundamental-model-output-result-persistence-design.md`.
