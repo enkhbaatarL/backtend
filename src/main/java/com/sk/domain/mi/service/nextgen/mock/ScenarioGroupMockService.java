@@ -31,6 +31,7 @@ import java.io.InputStream;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
@@ -146,6 +147,8 @@ public class ScenarioGroupMockService {
             .filter(g -> endDateTime == null || g.updatedAt().isBefore(endDateTime))
             .filter(g -> request.keyword().isEmpty() || g.groupName().contains(request.keyword()))
             .sorted(comparator)
+            // 임베드된 시나리오 표에도 상태변경/폐기 오버레이 + 재분배 확률 반영 (상세·그래프와 일관)
+            .map(this::overlayGroupScenarios)
             .toList();
 
         return new ScenarioGroupListRes(ScenarioGroupAppliedFilterRes.from(request), paginate(filtered, request));
@@ -161,8 +164,10 @@ public class ScenarioGroupMockService {
             if (group.scenarios() == null || deletedGroupIds.contains(group.scenarioGroupId())) {
                 continue;
             }
-            for (ScenarioRowRes row : group.scenarios()) {
-                all.add(ScenarioIndividualItemRes.of(group, row));
+            // 개별 행도 상태변경/폐기 오버레이된 시나리오에서 파생 (그룹 목록과 일관)
+            ScenarioGroupListItemRes overlaid = overlayGroupScenarios(group);
+            for (ScenarioRowRes row : overlaid.scenarios()) {
+                all.add(ScenarioIndividualItemRes.of(overlaid, row));
             }
         }
 
@@ -246,13 +251,26 @@ public class ScenarioGroupMockService {
     }
 
     public ByteArrayInputStream exportScenarioGroupGraph(Long scenarioGroupId, GraphPeriodUnit periodUnit) {
-        List<ScenarioGroupGraphRes> graphs = graphMap.get(scenarioGroupId);
-        if (graphs == null || deletedGroupIds.contains(scenarioGroupId)) {
+        if (deletedGroupIds.contains(scenarioGroupId)) {
             throw AppErrorException.of(ResultCode.Error.RSC_NOT_FOUND,
                 "Scenario group graph not found: " + scenarioGroupId);
         }
+        List<ScenarioGroupGraphRes> graphs = graphMap.get(scenarioGroupId);
+        if (graphs == null) {
+            // 설계 확정 등으로 생성됐으나 그래프 fixture 미보유(수급모델 미실행) → 빈 그래프로 내보냄(404 방지, 화면 그래프와 동일)
+            if (!groupDetailMap.containsKey(scenarioGroupId)) {
+                throw AppErrorException.of(ResultCode.Error.RSC_NOT_FOUND,
+                    "Scenario group graph not found: " + scenarioGroupId);
+            }
+            List<ScenarioGroupGraphRes> empties = Arrays.stream(IndexName.values())
+                .map(idx -> emptyGraph(scenarioGroupId, idx, periodUnit))
+                .toList();
+            return ScenarioGroupGraphExcelMapper.toExcel(empties);
+        }
+        // 화면 그래프와 동일하게 시나리오 판정 상태(상태변경/폐기)·실행중 표기를 오버레이해 내보낸다
         return ScenarioGroupGraphExcelMapper.toExcel(graphs.stream()
             .filter(g -> periodUnit == g.periodUnit())
+            .map(g -> applyScenarioStatusToGraph(scenarioGroupId, g))
             .toList());
     }
 
@@ -293,6 +311,44 @@ public class ScenarioGroupMockService {
     }
 
     private ScenarioDisplayStatus effectiveStatus(ScenarioGroupDetailRowRes row) {
+        ScenarioDisplayStatus override = statusOverrides.get(row.scenarioId());
+        if (override != null) {
+            return override;
+        }
+        return row.status() == null ? ScenarioDisplayStatus.PENDING : row.status();
+    }
+
+    /** 그룹 목록/개별 목록의 임베드 시나리오 표에 상태변경/폐기 오버레이 + 재분배 확률을 입힌 새 그룹 아이템을 만든다. */
+    private ScenarioGroupListItemRes overlayGroupScenarios(ScenarioGroupListItemRes group) {
+        List<ScenarioRowRes> scenarios = group.scenarios();
+        if (scenarios == null || scenarios.isEmpty()) {
+            return group;
+        }
+        Map<Long, Integer> adjusted = redistributeRowRes(scenarios);
+        List<ScenarioRowRes> rows = scenarios.stream()
+            .map(row -> {
+                ScenarioDisplayStatus status = effectiveStatus(row);
+                return new ScenarioRowRes(
+                    row.scenarioId(), row.scenarioName(), row.baseCase(),
+                    row.dimensions(), row.probability(), adjusted.get(row.scenarioId()),
+                    status, status.getLabel());
+            })
+            .toList();
+        return new ScenarioGroupListItemRes(
+            group.scenarioGroupId(), group.groupName(), group.createdAt(), group.updatedAt(),
+            group.summary(), group.scenarioCount(), group.dimensionColumns(), rows);
+    }
+
+    private Map<Long, Integer> redistributeRowRes(List<ScenarioRowRes> rows) {
+        return ScenarioProbabilityAllocator.redistribute(rows.stream()
+            .map(row -> new ScenarioProbabilityAllocator.Item(
+                row.scenarioId(),
+                row.probability() == null ? null : BigDecimal.valueOf(row.probability()),
+                effectiveStatus(row) == ScenarioDisplayStatus.DISCARDED))
+            .toList());
+    }
+
+    private ScenarioDisplayStatus effectiveStatus(ScenarioRowRes row) {
         ScenarioDisplayStatus override = statusOverrides.get(row.scenarioId());
         if (override != null) {
             return override;
@@ -354,8 +410,19 @@ public class ScenarioGroupMockService {
             && groups.stream().anyMatch(g -> g.scenarioGroupId().equals(scenarioGroupId));
         if (exists) {
             deletedGroupIds.add(scenarioGroupId);
+            // 삭제된 그룹 하위 시나리오의 실행중 표기도 함께 정리 (잔존 방지)
+            clearRunningMarks(scenarioGroupId);
         }
         return exists;
+    }
+
+    /** 그룹 삭제 시 하위 시나리오의 수급모델 실행중 표기를 제거한다. */
+    private void clearRunningMarks(Long scenarioGroupId) {
+        ScenarioGroupDetailRes detail = groupDetailMap.get(scenarioGroupId);
+        if (detail == null || detail.scenarios() == null) {
+            return;
+        }
+        detail.scenarios().forEach(s -> runningScenarioIds.remove(s.scenarioId()));
     }
 
     /** [mock 전용] 그룹이 soft delete 됐는지 — 이벤트 설계가능 판정에서 사용(삭제된 그룹의 이벤트는 다시 설계가능). */
