@@ -38,6 +38,8 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.stream.Collectors;
+
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.core.io.ClassPathResource;
@@ -306,6 +308,21 @@ public class ScenarioGroupMockService {
     public void resetScenarioStatus() {
         statusOverrides.clear();
         deletedGroupIds.clear();
+    }
+
+    /**
+     * [mock 전용] 설계 확정으로 생성된 그룹을 그룹 도메인에 등록한다.
+     * <p>
+     * 설계 mock의 confirm 시 호출 — 이후 목록/상세/개별상세 조회에 즉시 노출된다(실DB 착각용 상호작용).
+     * 그래프(가격 시리즈)는 수급모델 실행 전이라 없음.
+     */
+    public void registerGroup(ScenarioGroupListItemRes listItem, ScenarioGroupDetailRes detail,
+                              List<ScenarioDetailViewRes> scenarioDetails) {
+        groups.add(listItem);
+        groupDetailMap.put(listItem.scenarioGroupId(), detail);
+        scenarioDetails.forEach(d -> scenarioDetailMap.put(d.scenarioId(), d));
+        log.info("[Mock] designed group registered: groupId={}, scenarios={}",
+            listItem.scenarioGroupId(), scenarioDetails.size());
     }
 
     private <T> PaginationRes<T> paginate(List<T> items, ScenarioGroupListReq request) {

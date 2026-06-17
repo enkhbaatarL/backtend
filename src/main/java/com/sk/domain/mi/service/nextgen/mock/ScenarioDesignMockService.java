@@ -9,8 +9,14 @@ import com.sk.domain.mi.dto.request.nextgen.design.ScenarioConfirmationReq;
 import com.sk.domain.mi.dto.request.nextgen.design.ScenarioDesignStartReq;
 import com.sk.domain.mi.dto.request.nextgen.design.ScenarioSignpostsReq;
 import com.sk.domain.mi.dto.request.nextgen.design.ScenarioValidationReq;
+import com.sk.domain.mi.dto.response.nextgen.ScenarioBaseEventRes;
+import com.sk.domain.mi.dto.response.nextgen.ScenarioDetailViewRes;
 import com.sk.domain.mi.dto.response.nextgen.ScenarioDimensionColumnRes;
 import com.sk.domain.mi.dto.response.nextgen.ScenarioDimensionRes;
+import com.sk.domain.mi.dto.response.nextgen.ScenarioGroupDetailRes;
+import com.sk.domain.mi.dto.response.nextgen.ScenarioGroupDetailRowRes;
+import com.sk.domain.mi.dto.response.nextgen.ScenarioGroupListItemRes;
+import com.sk.domain.mi.dto.response.nextgen.ScenarioRowRes;
 import com.sk.domain.mi.dto.response.nextgen.ScenarioSignpostDefinitionViewRes;
 import com.sk.domain.mi.dto.response.nextgen.design.DesignConfirmTable;
 import com.sk.domain.mi.dto.response.nextgen.design.DesignEditTable;
@@ -22,12 +28,14 @@ import com.sk.domain.mi.dto.response.nextgen.design.ScenarioDesignStateRes;
 import com.sk.domain.mi.dto.response.nextgen.design.ScenarioDimensionTemplateRes;
 import com.sk.domain.mi.service.nextgen.sse.ScenarioDesignSseRegistry;
 import com.sk.domain.shared.enums.nextgen.ProbabilityDirection;
+import com.sk.domain.shared.enums.nextgen.ScenarioDisplayStatus;
 import com.sk.domain.shared.enums.nextgen.ScenarioGroupStage;
 import com.sk.domain.shared.enums.nextgen.ScenarioGroupStatus;
 import com.sk.domain.shared.enums.nextgen.SignpostStrength;
 import jakarta.annotation.PostConstruct;
 import java.io.IOException;
 import java.io.InputStream;
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
@@ -61,6 +69,7 @@ public class ScenarioDesignMockService {
     private final ObjectMapper objectMapper;
     private final ScenarioDesignSseRegistry sseRegistry;
     private final NextGenMockProperties mockProps;
+    private final ScenarioGroupMockService scenarioGroupMockService;
 
     private final Map<Long, Session> sessions = new ConcurrentHashMap<>();
     private final AtomicLong groupIdSeq = new AtomicLong(GROUP_ID_BASE);
@@ -77,22 +86,33 @@ public class ScenarioDesignMockService {
     /** event_type_l2_id → 분기항목 템플릿 (실DB 템플릿과 동일 데이터). */
     private Map<Long, ScenarioDimensionTemplateRes> templatesByEventType = Map.of();
 
+    /** miEventId → event_type_l2_id (이벤트 실제 유형 매핑, events mock의 L1 기반). */
+    private Map<Long, Long> eventTypeL2ByEvent = Map.of();
+
     public ScenarioDesignMockService(ObjectMapper objectMapper, ScenarioDesignSseRegistry sseRegistry,
-                                     NextGenMockProperties mockProps) {
+                                     NextGenMockProperties mockProps, ScenarioGroupMockService scenarioGroupMockService) {
         this.objectMapper = objectMapper;
         this.sseRegistry = sseRegistry;
         this.mockProps = mockProps;
+        this.scenarioGroupMockService = scenarioGroupMockService;
     }
 
     @PostConstruct
     void init() {
         try (InputStream is = new ClassPathResource("mock/design/dimension-templates.json").getInputStream()) {
             templatesByEventType = objectMapper.readValue(is, new TypeReference<Map<Long, ScenarioDimensionTemplateRes>>() {});
-            log.info("[Mock] Scenario design mock loaded: eventTypeTemplates={}", templatesByEventType.size());
         } catch (IOException e) {
-            log.error("[Mock] Failed to load scenario design mock data", e);
+            log.error("[Mock] Failed to load scenario design templates", e);
             templatesByEventType = Map.of();
         }
+        try (InputStream is = new ClassPathResource("mock/design/event-l2-mapping.json").getInputStream()) {
+            eventTypeL2ByEvent = objectMapper.readValue(is, new TypeReference<Map<Long, Long>>() {});
+        } catch (IOException e) {
+            log.warn("[Mock] Failed to load event→L2 mapping (fallback to hash): {}", e.getMessage());
+            eventTypeL2ByEvent = Map.of();
+        }
+        log.info("[Mock] Scenario design mock loaded: eventTypeTemplates={}, eventL2Mapping={}",
+            templatesByEventType.size(), eventTypeL2ByEvent.size());
     }
 
     // ===== API =====
@@ -138,10 +158,14 @@ public class ScenarioDesignMockService {
         return template != null ? template : new ScenarioDimensionTemplateRes(List.of());
     }
 
-    /** miEventId로 event_type 결정 (events 데이터 연동 전까지 결정적 분배). */
+    /** miEventId로 event_type 결정 — 이벤트 실제 유형 매핑 우선, 없으면 결정적 분배 폴백. */
     private Long pickEventType(Long miEventId) {
         if (templatesByEventType.isEmpty()) {
             return null;
+        }
+        Long mapped = miEventId == null ? null : eventTypeL2ByEvent.get(miEventId);
+        if (mapped != null && templatesByEventType.containsKey(mapped)) {
+            return mapped;
         }
         List<Long> ids = templatesByEventType.keySet().stream().sorted().toList();
         long key = miEventId == null ? 0L : miEventId;
@@ -220,8 +244,42 @@ public class ScenarioDesignMockService {
         session.stage = ScenarioGroupStage.COMPLETED;
         session.validationIsValid = null;
         session.validationReason = null;
+        materializeGroup(session); // 확정된 그룹을 그룹 도메인에 등록 → 목록/상세/개별상세 노출
         log.info("[Mock] design confirmed: groupId={}", scenarioGroupId);
         return stage(session);
+    }
+
+    /** 확정된 설계 세션(step2)을 그룹 도메인 DTO로 변환해 그룹 mock에 등록한다. */
+    private void materializeGroup(Session session) {
+        Long groupId = session.scenarioGroupId;
+        List<DesignScenarioRow> rows = session.step2 == null ? List.of() : session.step2;
+        LocalDateTime now = LocalDateTime.now();
+
+        List<ScenarioRowRes> listRows = rows.stream()
+            .map(r -> new ScenarioRowRes(r.scenarioId(), r.scenarioName(), r.baseCase(),
+                r.dimensions(), r.probability(), r.probability(),
+                ScenarioDisplayStatus.PENDING, ScenarioDisplayStatus.PENDING.getLabel()))
+            .toList();
+        ScenarioGroupListItemRes listItem = new ScenarioGroupListItemRes(
+            groupId, session.groupName, now, now, session.summary, rows.size(), session.columns, listRows);
+
+        ScenarioBaseEventRes baseEvent = new ScenarioBaseEventRes(session.miEventId, null, null, null, now);
+        List<ScenarioGroupDetailRowRes> detailRows = rows.stream()
+            .map(r -> new ScenarioGroupDetailRowRes(r.scenarioId(), r.scenarioName(), r.baseCase(),
+                r.dimensions(), r.probability(), r.probability(),
+                ScenarioDisplayStatus.PENDING, ScenarioDisplayStatus.PENDING.getLabel()))
+            .toList();
+        ScenarioGroupDetailRes detail = new ScenarioGroupDetailRes(
+            groupId, session.groupName, now, now, baseEvent, session.summary, rows.size(), session.columns, detailRows);
+
+        List<ScenarioDetailViewRes> scenarioDetails = rows.stream()
+            .map(r -> new ScenarioDetailViewRes(
+                r.scenarioId(), groupId, r.scenarioName(), r.baseCase(), now, now,
+                r.narrative(), r.probability(), r.probability(), r.dimensions(),
+                r.signposts() == null ? List.of() : r.signposts(), List.of()))
+            .toList();
+
+        scenarioGroupMockService.registerGroup(listItem, detail, scenarioDetails);
     }
 
     public ScenarioDesignStateRes reset(Long scenarioGroupId) {

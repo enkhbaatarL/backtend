@@ -164,8 +164,10 @@ public class EventMockService {
     }
 
     /**
-     * 이벤트 설계가능 상태 조회 — 설계 mock 세션과 연동한다.
-     * 세션 없음=설계가능, status=creating=설계중(점유), created/realized=설계완료. eventIds 미지정 시 전체 이벤트 대상.
+     * 이벤트 설계가능 상태 조회 — 라이브 설계 mock 세션 우선, 없으면 이벤트의 정적 상태(사전 그룹) 반영.
+     * <p>
+     * 라이브 세션: creating=설계중(점유) / created=설계완료. 세션 없음: event-list의 scenarioDesignStatus·scenarioGroupId
+     * 를 그대로 따른다(= created 이벤트는 created로 일관). eventIds 미지정 시 전체 이벤트 대상.
      */
     public List<EventDesignAvailabilityRes> getEventDesignAvailability(List<Long> eventIds) {
         List<Long> targets = (eventIds == null || eventIds.isEmpty())
@@ -175,14 +177,29 @@ public class EventMockService {
     }
 
     private EventDesignAvailabilityRes buildDesignAvailability(Long eventId) {
-        return designMockService.findSessionByEventId(eventId)
-            .map(info -> {
-                ScenarioDesignDisplayStatus status = ScenarioDesignDisplayStatus.of(info.status());
-                boolean occupied = info.status() == ScenarioGroupStatus.CREATING;
-                return EventDesignAvailabilityRes.of(
-                    eventId, status, occupied, occupied ? info.occupantUserId() : null, info.scenarioGroupId());
-            })
-            .orElseGet(() -> EventDesignAvailabilityRes.designable(eventId));
+        // ① 라이브 설계 세션이 있으면 그 상태(설계중/완료)를 우선 반영
+        var session = designMockService.findSessionByEventId(eventId);
+        if (session.isPresent()) {
+            ScenarioDesignMockService.DesignSessionInfo info = session.get();
+            ScenarioDesignDisplayStatus status = ScenarioDesignDisplayStatus.of(info.status());
+            boolean occupied = info.status() == ScenarioGroupStatus.CREATING;
+            return EventDesignAvailabilityRes.of(
+                eventId, status, occupied, occupied ? info.occupantUserId() : null, info.scenarioGroupId());
+        }
+        // ② 세션 없으면 이벤트의 정적 설계 상태(사전 그룹) — event-list와 일관
+        EventListItemRes event = eventById(eventId);
+        if (event == null || event.scenarioDesignStatus() == null) {
+            return EventDesignAvailabilityRes.designable(eventId);
+        }
+        return EventDesignAvailabilityRes.of(
+            eventId, event.scenarioDesignStatus(), false, null, event.scenarioGroupId());
+    }
+
+    private EventListItemRes eventById(Long eventId) {
+        return eventList.stream()
+            .filter(e -> eventId.equals(e.eventId()))
+            .findFirst()
+            .orElse(null);
     }
 
     private boolean matchesEventTypeFilter(String eventTypeCode, List<Long> filterIds) {
