@@ -45,6 +45,7 @@ import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.stream.Collectors;
@@ -192,12 +193,20 @@ public class ScenarioDesignMockService {
     public ScenarioDesignStageRes validate(Long scenarioGroupId, ScenarioValidationReq request) {
         Session session = getSession(scenarioGroupId);
         applyEdit(session, request.table());
-        // 접수 시점은 stage 유지(scenario_created). 검토 콜백 도착 시 scenario_validated 전이 + SSE.
+        // 접수 시점은 stage 유지(scenario_created). 검토 콜백 도착 시 결과에 따라 전이 + SSE.
+        // mock 한정: 50% 확률로 검증 실패를 시뮬레이션
         scheduleAgentCallback(() -> {
-            session.validationIsValid = true;
-            session.validationReason = "MECE 및 타당성 검증 통과 (mock)";
-            session.stage = ScenarioGroupStage.SCENARIO_VALIDATED;
-            emit(scenarioGroupId, ScenarioDesignSseEvent.Type.VALIDATION, ScenarioDesignSseEvent.Stage.SCENARIO_VALIDATED);
+            boolean valid = ThreadLocalRandom.current().nextBoolean();
+            session.validationIsValid = valid;
+            if (valid) {
+                session.validationReason = "MECE 및 타당성 검증 통과 (mock)";
+                session.stage = ScenarioGroupStage.SCENARIO_VALIDATED;
+                emit(scenarioGroupId, ScenarioDesignSseEvent.Type.VALIDATION, ScenarioDesignSseEvent.Stage.SCENARIO_VALIDATED);
+            } else {
+                session.validationReason = pickMockValidationFailReason();
+                // 실패 시 stage 미전이(scenario_created 유지) → 재편집 후 재검증 가능
+                emit(scenarioGroupId, ScenarioDesignSseEvent.Type.VALIDATION, ScenarioDesignSseEvent.Stage.SCENARIO_CREATED);
+            }
         });
         return stage(session);
     }
@@ -294,6 +303,23 @@ public class ScenarioDesignMockService {
         return buildState(session);
     }
 
+    /**
+     * [mock 전용] 설계 세션 제거 (그룹 삭제/취소 연동).
+     * <p>세션이 사라지면 해당 이벤트의 설계가능 판정이 다시 '설계가능'으로 풀린다(이벤트↔설계 유기적 연동).
+     * @return 제거된 세션이 있었으면 true
+     */
+    public boolean removeSessionByGroupId(Long scenarioGroupId) {
+        return scenarioGroupId != null && sessions.remove(scenarioGroupId) != null;
+    }
+
+    /** [mock 전용] 모든 설계 세션과 채번 카운터를 초기 상태로 되돌린다 (시나리오 상태/삭제 초기화 API에서 호출). */
+    public void resetSessions() {
+        sessions.clear();
+        groupIdSeq.set(GROUP_ID_BASE);
+        scenarioIdSeq.set(SCENARIO_ID_BASE);
+        signpostIdSeq.set(SIGNPOST_ID_BASE);
+    }
+
     // ===== 내부 =====
 
     private Session getSession(Long scenarioGroupId) {
@@ -371,20 +397,56 @@ public class ScenarioDesignMockService {
         if (template == null) {
             return List.of();
         }
-        return template.dimensions().stream()
+        return sessionDimensions(template).stream()
             .map(d -> new ScenarioDimensionColumnRes(d.dimKey(), d.label()))
             .toList();
+    }
+
+    /**
+     * 샘플 세션이 보유할 분기항목 부분집합(필수 항목만, displayOrder 순).
+     * <p>템플릿 조회 API는 전체 분기항목을 내려주므로, 세션은 일부만 들고 있어야
+     * '템플릿에서 분기항목 추가' 액션을 FE가 테스트할 수 있다.
+     * 필수가 없거나 전부 필수면 테스트 여지 확보를 위해 앞쪽 2개만 사용한다.
+     */
+    private List<ScenarioDimensionTemplateRes.Item> sessionDimensions(ScenarioDimensionTemplateRes template) {
+        List<ScenarioDimensionTemplateRes.Item> all = template.dimensions().stream()
+            .sorted(Comparator.comparing(d -> d.displayOrder() == null ? Integer.MAX_VALUE : d.displayOrder()))
+            .toList();
+        List<ScenarioDimensionTemplateRes.Item> required = all.stream()
+            .filter(d -> Boolean.TRUE.equals(d.required()))
+            .toList();
+        if (required.isEmpty() || required.size() == all.size()) {
+            return all.subList(0, Math.min(2, all.size()));
+        }
+        return required;
+    }
+
+    /** mock 검증 실패 시 내려줄 장난스러운 사유 풀 (mock 전용). */
+    private static final List<String> MOCK_VALIDATION_FAIL_REASONS = List.of(
+        "시나리오들이 서로 너무 사이좋아서 MECE가 깨졌습니다. 조금 다투게 해주세요 (mock)",
+        "3번 시나리오가 '저는 빼주세요'라며 손을 들었습니다. 상호배타성 위반 (mock)",
+        "확률 합이 100을 살짝 넘봤습니다. 욕심이 과했네요 (mock)",
+        "Agent가 박재현이랑 커피 마시다 검증 기준 한 줄을 놓쳤습니다. 다시 제출 부탁드려요 (mock)",
+        "분기기준값이 너무 애매해서 Agent가 고개를 갸웃거렸습니다 (mock)",
+        "시나리오 네이밍이 비장한데 내용이 평화로워서 톤 검증 실패 (mock)"
+    );
+
+    /** 실패 사유를 무작위로 하나 고른다 (mock 전용). */
+    private String pickMockValidationFailReason() {
+        return MOCK_VALIDATION_FAIL_REASONS.get(
+            ThreadLocalRandom.current().nextInt(MOCK_VALIDATION_FAIL_REASONS.size()));
     }
 
     private List<DesignScenarioRow> generateInitialScenarios(ScenarioDimensionTemplateRes template) {
         if (template == null) {
             return List.of();
         }
+        List<ScenarioDimensionTemplateRes.Item> dimensions = sessionDimensions(template);
         String[] titles = {"단기 외교적 해소", "공급 차질 장기화", "전면 봉쇄 심화", "점진적 정상화"};
         List<DesignScenarioRow> rows = new ArrayList<>();
         for (int i = 0; i < titles.length; i++) {
             List<ScenarioDimensionRes> dims = new ArrayList<>();
-            for (var dim : template.dimensions()) {
+            for (var dim : dimensions) {
                 List<String> enums = dim.valueEnums();
                 String value = (enums == null || enums.isEmpty()) ? null : enums.get(i % enums.size());
                 dims.add(new ScenarioDimensionRes(dim.dimKey(), dim.label(), value, value));

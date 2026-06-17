@@ -25,11 +25,13 @@ import com.sk.domain.mi.service.nextgen.support.ScenarioGroupGraphExcelMapper;
 import com.sk.domain.mi.service.nextgen.support.ScenarioProbabilityAllocator;
 import com.sk.domain.shared.entity.master.tmm.MiScenario;
 import com.sk.domain.shared.entity.master.tmm.MiScenarioGroup;
+import com.sk.domain.shared.entity.master.tmm.MiSignpost;
 import com.sk.domain.shared.enums.nextgen.GraphPeriodUnit;
 import com.sk.domain.shared.enums.nextgen.IndexName;
 import com.sk.domain.shared.enums.nextgen.ScenarioDisplayStatus;
 import com.sk.domain.shared.enums.nextgen.ScenarioStatus;
 import com.sk.domain.shared.repository.master.tmd.ScenarioCaseRepository;
+import com.sk.domain.shared.repository.master.tmd.projection.MiBasePriceRow;
 import com.sk.domain.shared.repository.master.tmd.projection.ScenarioPriceRow;
 import com.sk.domain.shared.repository.master.tmm.MiScenarioGroupRepository;
 import com.sk.domain.shared.repository.master.tmm.projection.ScenarioBaseRow;
@@ -185,7 +187,9 @@ public class ScenarioGroupServiceImpl implements ScenarioGroupService {
         List<ScenarioPriceRow> prices = scenarioCaseRepository.findLatestCompletedPricesByScenarioIds(scenarioIds, indexName, periodUnit.getDbUnit());
         // modelRunning = RUNNING 케이스 존재 (case_stat_cd=RUNNING). executed/값은 최신 완료 가격(prices)으로 판정.
         Set<Long> runningScenarioIds = Set.copyOf(scenarioCaseRepository.findRunningScenarioIds(scenarioIds));
-        return ScenarioGroupGraphRes.of(scenarioGroupId, indexName, periodUnit, scenarios, prices, runningScenarioIds);
+        // MI Base 기준선 = exec_type_cd=MI_BASE 최신 케이스의 가격 결과 (그룹 공통, scnr_id 없음)
+        List<MiBasePriceRow> miBasePrices = scenarioCaseRepository.findLatestMiBasePrices(indexName, periodUnit.getDbUnit());
+        return ScenarioGroupGraphRes.of(scenarioGroupId, indexName, periodUnit, scenarios, prices, runningScenarioIds, miBasePrices);
     }
 
     /**
@@ -295,7 +299,8 @@ public class ScenarioGroupServiceImpl implements ScenarioGroupService {
 
     /**
      * [그룹 삭제]
-     * - 그룹 + 하위 시나리오를 함께 del_yn 처리, 이후 모든 조회에서 제외
+     * - 그룹 + 하위 시나리오 + 하위 signpost를 함께 del_yn 처리, 이후 모든 조회에서 제외
+     * - signpost는 시나리오/그룹을 지우기 전에 먼저 조회해 soft-delete (삭제 후엔 join에서 빠지므로)
      * - 이벤트:활성 그룹 = 1:1이므로 삭제 시 해당 이벤트의 scenarioDesignStatus는 designable(재설계 가능)로 복귀
      */
     @Override
@@ -305,6 +310,7 @@ public class ScenarioGroupServiceImpl implements ScenarioGroupService {
         MiScenarioGroup group = scenarioGroupRepository.findByScenarioGroupIdAndIsDeletedFalse(scenarioGroupId)
             .orElseThrow(() -> AppErrorException.of(ResultCode.Error.RSC_NOT_FOUND, "Scenario group not found: %d".formatted(scenarioGroupId)));
 
+        scenarioGroupRepository.findSignpostEntitiesByGroupId(scenarioGroupId).forEach(MiSignpost::softDelete);
         scenarioGroupRepository.findScenarioEntitiesByGroupId(scenarioGroupId).forEach(MiScenario::softDelete);
         group.softDelete();
 

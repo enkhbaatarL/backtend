@@ -50,6 +50,7 @@ public class EventMockService {
 
     private final ObjectMapper objectMapper;
     private final ScenarioDesignMockService designMockService;
+    private final ScenarioGroupMockService scenarioGroupMockService;
 
     private List<EventListItemRes> eventList;
     private Map<Long, EventDetailRes> eventDetailMap;
@@ -127,7 +128,9 @@ public class EventMockService {
         int size = request.size();
         int fromIndex = Math.min((page - 1) * size, total);
         int toIndex = Math.min(fromIndex + size, total);
-        List<EventListItemRes> pageItems = filtered.subList(fromIndex, toIndex);
+        List<EventListItemRes> pageItems = filtered.subList(fromIndex, toIndex).stream()
+            .map(this::overlayLiveDesign)
+            .toList();
         int totalPages = total == 0 ? 0 : (int) Math.ceil((double) total / size);
 
         PaginationRes<EventListItemRes> pagination = PaginationRes.of(
@@ -150,7 +153,15 @@ public class EventMockService {
             throw AppErrorException.of(ResultCode.Error.RSC_NOT_FOUND,
                 "Event not found: " + eventId);
         }
-        return detail;
+        // 상세에는 scenarioGroupId 필드가 없어 그룹삭제 판정은 생략(목록에서 처리), 라이브 세션 상태만 반영
+        DesignDisplay design = resolveDesignDisplay(eventId, detail.scenarioDesignStatus(), null);
+        ScenarioDesignDisplayStatus status = design.status();
+        return new EventDetailRes(
+            detail.eventId(), detail.eventName(), detail.status(), detail.statusLabel(),
+            detail.createdAt(), detail.updatedAt(), detail.latestRecordFirstCreated(),
+            detail.signalType(), detail.signalTypeLabel(), detail.isScenarioSuggested(), detail.scenarioSuggestReason(),
+            status, status == null ? null : status.getLabel(),
+            detail.aiInsights(), detail.impactAnalysis(), detail.driverTreeScoreboard(), detail.relatedEventScenario());
     }
 
     public PaginationRes<EventRelatedRecordRes> getEventRecords(Long eventId, int page, int size) {
@@ -191,8 +202,44 @@ public class EventMockService {
         if (event == null || event.scenarioDesignStatus() == null) {
             return EventDesignAvailabilityRes.designable(eventId);
         }
+        // 그룹이 삭제됐으면 그 이벤트는 다시 설계가능 (그룹 삭제 ↔ 이벤트 가용성 유기적 연동)
+        if (scenarioGroupMockService.isGroupDeleted(event.scenarioGroupId())) {
+            return EventDesignAvailabilityRes.designable(eventId);
+        }
         return EventDesignAvailabilityRes.of(
             eventId, event.scenarioDesignStatus(), false, null, event.scenarioGroupId());
+    }
+
+    /**
+     * 이벤트의 라이브 설계 상태(목록/상세 표시용)를 계산한다.
+     * <p>① 라이브 설계 세션이 있으면 그 상태(설계중/완료)·그룹ID, ② 그룹이 삭제됐으면 설계가능,
+     * ③ 그 외엔 정적 fixture 값을 그대로 둔다. (이벤트↔설계↔그룹 유기적 연동)
+     */
+    private DesignDisplay resolveDesignDisplay(Long eventId, ScenarioDesignDisplayStatus staticStatus, Long staticGroupId) {
+        var session = designMockService.findSessionByEventId(eventId);
+        if (session.isPresent()) {
+            ScenarioDesignMockService.DesignSessionInfo info = session.get();
+            return new DesignDisplay(ScenarioDesignDisplayStatus.of(info.status()), info.scenarioGroupId());
+        }
+        if (scenarioGroupMockService.isGroupDeleted(staticGroupId)) {
+            return new DesignDisplay(ScenarioDesignDisplayStatus.DESIGNABLE, null);
+        }
+        return new DesignDisplay(staticStatus, staticGroupId);
+    }
+
+    private record DesignDisplay(ScenarioDesignDisplayStatus status, Long scenarioGroupId) {}
+
+    /** 목록 아이템에 라이브 설계 상태를 덮어쓴 새 아이템을 만든다 (DTO는 그대로, 조립은 mock에서). */
+    private EventListItemRes overlayLiveDesign(EventListItemRes item) {
+        DesignDisplay design = resolveDesignDisplay(item.eventId(), item.scenarioDesignStatus(), item.scenarioGroupId());
+        ScenarioDesignDisplayStatus status = design.status();
+        return new EventListItemRes(
+            item.eventId(), item.eventName(), item.status(), item.statusLabel(),
+            item.eventTypeLv1(), item.eventTypeLv1Label(), item.createdAt(), item.updatedAt(),
+            item.latestRecordFirstCreated(), item.signalType(), item.signalTypeLabel(),
+            item.isScenarioSuggested(), item.scenarioSuggestReason(),
+            status, status == null ? null : status.getLabel(),
+            design.scenarioGroupId(), item.indexImpacts());
     }
 
     private EventListItemRes eventById(Long eventId) {

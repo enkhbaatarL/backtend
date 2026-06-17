@@ -18,17 +18,23 @@ import com.sk.domain.mi.dto.response.nextgen.EventRelatedScenarioRes;
 import com.sk.domain.mi.dto.response.nextgen.EventRelatedScenariosRes;
 import com.sk.domain.mi.dto.response.nextgen.EventTypeL1Res;
 import com.sk.domain.mi.dto.response.nextgen.ScenarioDimensionColumnRes;
+import com.sk.domain.mi.dto.response.nextgen.design.EventDesignAvailabilityRes;
 import com.sk.domain.mi.service.nextgen.support.ScenarioDimensionMapper;
 import com.sk.domain.mi.service.nextgen.support.ScenarioDimensionMapper.GroupDimensionTemplate;
 import com.sk.domain.mi.service.nextgen.support.ScenarioProbabilityAllocator;
+import com.sk.domain.shared.enums.nextgen.ScenarioDesignDisplayStatus;
+import com.sk.domain.shared.enums.nextgen.ScenarioGroupStatus;
 import com.sk.domain.shared.repository.master.tmm.MiEventRepository;
 import com.sk.domain.shared.repository.master.tmm.MiEventTypeL1Repository;
 import com.sk.domain.shared.repository.master.tmm.MiScenarioGroupRepository;
+import com.sk.domain.shared.repository.master.tmm.projection.EventDesignAvailabilityRow;
 import com.sk.domain.shared.repository.master.tmm.projection.EventDetailRow;
 import com.sk.domain.shared.repository.master.tmm.projection.ScenarioGroupBaseRow;
 
 import java.util.List;
 import java.util.Map;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
@@ -133,9 +139,30 @@ public class EventServiceImpl implements EventService {
         );
     }
 
+    /**
+     * [이벤트 설계 점유/가능 상태] (이벤트 목록 폴링)
+     *  - 요청한 이벤트별로 활성 그룹 status에서 설계 상태를 파생한다 — 그룹 없음=designable, creating=설계중(점유), created/realized=설계완료.
+     *  - 점유 판정은 그룹 row 자체를 lock으로 처리
+     */
     @Override
-    public List<com.sk.domain.mi.dto.response.nextgen.design.EventDesignAvailabilityRes> getEventDesignAvailability(List<Long> eventIds) {
-        throw new UnsupportedOperationException("EventDesignAvailability 실 구현 미완성 — mi.next-gen.mock.events.api.design-availability 를 활성화");
+    public List<EventDesignAvailabilityRes> getEventDesignAvailability(List<Long> eventIds) {
+
+        if (eventIds == null || eventIds.isEmpty()) return List.of();
+
+        Map<Long, EventDesignAvailabilityRow> rowByEventId = miEventRepository.findDesignAvailability(eventIds).stream()
+            .collect(Collectors.toMap(EventDesignAvailabilityRow::miEventId, Function.identity()));
+
+        return eventIds.stream()
+            .distinct()
+            .map(eventId -> toAvailability(eventId, rowByEventId.get(eventId)))
+            .toList();
+    }
+
+    private EventDesignAvailabilityRes toAvailability(Long eventId, EventDesignAvailabilityRow row) {
+        if (row == null) return EventDesignAvailabilityRes.designable(eventId);
+        ScenarioDesignDisplayStatus status = ScenarioDesignDisplayStatus.of(row.scenarioGroupStatus());
+        boolean occupied = row.scenarioGroupStatus() == ScenarioGroupStatus.CREATING;
+        return EventDesignAvailabilityRes.of(eventId, status, occupied, occupied ? row.requestUserId() : null, row.scenarioGroupId());
     }
 
 }

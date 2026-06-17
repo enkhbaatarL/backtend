@@ -30,7 +30,7 @@ import java.util.Map;
 public class SwaggerConfig {
 
     // note: 안정화 후 투머치 문서 모두 삭제예정
-    private static final String SW_VERSION_BASE = "v1.2.4";
+    private static final String SW_VERSION_BASE = "v1.2.5";
     private static final DateTimeFormatter SW_DEPLOY_DATE_FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
 
     @Bean
@@ -112,6 +112,15 @@ public class SwaggerConfig {
   | 이벤트 상세 | %s |
   | 이벤트 관련 레코드 | %s |
   | 이벤트 기관전망 | %s |
+  | 이벤트 설계가능 조회 | %s |
+  | **시나리오 설계** | |
+  | 설계 시작 (step1 진입) | %s |
+  | 설계 상태 조회 | %s |
+  | 분기항목/분기기준 템플릿 조회 | %s |
+  | 변경사항 검토 요청 | %s |
+  | Signpost 생성 (step2 진입) | %s |
+  | 최종 확정 | %s |
+  | 설계 초기화 | %s |
   | **시나리오 그룹** | |
   | 시나리오 그룹 목록 | %s |
   | 시나리오 개별 목록 | %s |
@@ -122,6 +131,7 @@ public class SwaggerConfig {
   | 시나리오 상태 변경 | %s |
   | 시나리오 그룹 삭제 | %s |
   | **Model Execution** | |
+  | 수급모델 실행 파라미터 조회 | %s |
   | 수급모델 실행 요청 | %s |
   | 수급모델 실행 상태 조회 | %s |
   | 수급모델 실행 콜백 | %s |
@@ -145,6 +155,21 @@ public class SwaggerConfig {
 
   ## 수정사항
   <details open>
+    <summary><strong>v1.2.5 (2026-06-17)</strong></summary>
+
+  - [Scenario Group]
+    - 그룹 그래프에 MI Base 기준선(`baseSeries`) 추가 (`exec_type_cd=MI_BASE` 최신 케이스, run_seq 기준 최신 가격). CME 라인은 외부 DB 연동 후 추가 예정
+    - 그래프 시리즈에 `status`(판정상태/폐기여부) · `modelRunning`(수급모델 실행중) 필드 추가
+    - 그룹 삭제 시 하위 시나리오 + signpost 까지 함께 soft-delete (기존: signpost 제외)
+  - [Scenario Design — 신규 도메인]
+    - 설계 시작/상태 조회/분기항목 템플릿/검토 요청/Signpost 생성/확정/초기화 API 추가 (진행 단계 SSE 알림)
+    - 데이터 소스 현황에 시나리오 설계 섹션 추가
+  - [Event]
+    - 이벤트 설계가능 조회 API 추가, 목록/상세에 라이브 설계 상태(설계중/설계완료) 반영
+
+  </details>
+
+  <details>
     <summary><strong>v1.2.4 (2026-06-16)</strong></summary>
 
   - [Fundamental Model]
@@ -318,6 +343,14 @@ public class SwaggerConfig {
             label(mockProps.getEvents().getApi().isGetDetail()),
             label(mockProps.getEvents().getApi().isGetRecords()),
             label(mockProps.getEvents().getApi().isGetOutlooks()),
+            label(mockProps.getEvents().getApi().isDesignAvailability()),
+            label(mockProps.getDesign().getApi().isStart()),
+            label(mockProps.getDesign().getApi().isGetState()),
+            label(mockProps.getDesign().getApi().isGetDimensionTemplates()),
+            label(mockProps.getDesign().getApi().isValidate()),
+            label(mockProps.getDesign().getApi().isCreateSignposts()),
+            label(mockProps.getDesign().getApi().isConfirm()),
+            label(mockProps.getDesign().getApi().isReset()),
             label(mockProps.getScenarioGroups().getApi().isGetList()),
             label(mockProps.getScenarioGroups().getApi().isGetScenarios()),
             label(mockProps.getScenarioGroups().getApi().isGetGraph()),
