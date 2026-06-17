@@ -157,8 +157,8 @@ public class ScenarioGroupController {
             - `scenarioSeries`: 시나리오별 시리즈
               - `scenarioId` / `scenarioName` / `baseCase`
               - `status` / `statusLabel`: 판정 상태 (pending/realized/discarded — 폐기여부)
-              - `executed`: 수급모델 실행 완료 여부
-              - `modelRunning`: 수급모델 실행중 여부
+              - `executed`: 수급모델 실행 완료 여부 (최신 완료 실행의 가격 결과 존재)
+              - `modelRunning`: 수급모델 실행중 여부 (RUNNING 케이스 존재). executed와 독립 — 재실행 중엔 둘 다 true
               - `baseCaseValues` / `userAdjustedValues`: 베이스케이스/사용자조정 가격 (최신 완료 결과, 재실행 중에도 직전 결과 유지)
             """
     )

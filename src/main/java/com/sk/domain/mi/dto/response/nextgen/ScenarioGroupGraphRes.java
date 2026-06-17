@@ -54,7 +54,7 @@ public record ScenarioGroupGraphRes(
     private static final String CURRENCY = "USD";
     private static final String UNIT = "MMBtu";
 
-    public static ScenarioGroupGraphRes of(Long scenarioGroupId, IndexName indexName, GraphPeriodUnit periodUnit, List<ScenarioBaseRow> scenarios, List<ScenarioPriceRow> prices, Set<Long> executedScenarioIds, Set<Long> runningScenarioIds) {
+    public static ScenarioGroupGraphRes of(Long scenarioGroupId, IndexName indexName, GraphPeriodUnit periodUnit, List<ScenarioBaseRow> scenarios, List<ScenarioPriceRow> prices, Set<Long> runningScenarioIds) {
 
         // x축 = 전 시나리오 기간키 union (시나리오마다 실행 시점이 달라 범위가 다를 수 있음 → 빠진 구간은 null 패딩)
         List<String> periodKeys = prices.stream()
@@ -69,7 +69,6 @@ public record ScenarioGroupGraphRes(
 
         List<ScenarioSeries> scenarioSeries = scenarios.stream()
             .map(scenario -> ScenarioSeries.of(scenario, periodKeys, pricesByScenario.get(scenario.scenarioId()),
-                executedScenarioIds != null && executedScenarioIds.contains(scenario.scenarioId()),
                 runningScenarioIds != null && runningScenarioIds.contains(scenario.scenarioId())))
             .toList();
 
@@ -130,9 +129,9 @@ public record ScenarioGroupGraphRes(
 
     ) {
 
-        static ScenarioSeries of(ScenarioBaseRow scenario, List<String> periodKeys, Map<String, ScenarioPriceRow> priceByPeriodKey, boolean executed, boolean modelRunning) {
-            // executed/modelRunning은 최신 실행 상태(exec_stat_cd)로 판정. 그래프 값(line)은 최신 완료 가격이 있으면 표시(재실행 중에도 직전 결과 유지).
-            boolean hasPrices = priceByPeriodKey != null && !priceByPeriodKey.isEmpty();
+        static ScenarioSeries of(ScenarioBaseRow scenario, List<String> periodKeys, Map<String, ScenarioPriceRow> priceByPeriodKey, boolean modelRunning) {
+            // executed = 최신 완료 실행의 가격 결과 존재 / modelRunning = RUNNING 케이스 존재 (독립적, 재실행 중엔 둘 다 true 가능)
+            boolean executed = priceByPeriodKey != null && !priceByPeriodKey.isEmpty();
             ScenarioDisplayStatus status = ScenarioDisplayStatus.from(scenario.status());
             return new ScenarioSeries(
                 scenario.scenarioId(),
@@ -142,8 +141,8 @@ public record ScenarioGroupGraphRes(
                 modelRunning,
                 status,
                 status == null ? null : status.getLabel(),
-                hasPrices ? values(periodKeys, priceByPeriodKey, ScenarioPriceRow::baseCasePrice) : null,
-                hasPrices ? values(periodKeys, priceByPeriodKey, ScenarioPriceRow::userAdjustedPrice) : null
+                executed ? values(periodKeys, priceByPeriodKey, ScenarioPriceRow::baseCasePrice) : null,
+                executed ? values(periodKeys, priceByPeriodKey, ScenarioPriceRow::userAdjustedPrice) : null
             );
         }
 

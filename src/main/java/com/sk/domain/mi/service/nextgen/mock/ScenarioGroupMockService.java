@@ -202,11 +202,9 @@ public class ScenarioGroupMockService {
         List<ScenarioGroupGraphRes.ScenarioSeries> series = graph.scenarioSeries().stream()
             .map(s -> {
                 ScenarioDisplayStatus status = statusByScenario.getOrDefault(s.scenarioId(), ScenarioDisplayStatus.PENDING);
-                boolean running = runningScenarioIds.contains(s.scenarioId());
                 return new ScenarioGroupGraphRes.ScenarioSeries(
-                    s.scenarioId(), s.scenarioName(), s.baseCase(),
-                    s.executed() && !running, // 실행중(재실행)이면 executed=false, 직전 가격(values)은 그대로 유지
-                    running, status, status.getLabel(),
+                    s.scenarioId(), s.scenarioName(), s.baseCase(), s.executed(),
+                    runningScenarioIds.contains(s.scenarioId()), status, status.getLabel(),
                     s.baseCaseValues(), s.userAdjustedValues());
             })
             .toList();

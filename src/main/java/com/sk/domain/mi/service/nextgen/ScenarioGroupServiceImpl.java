@@ -29,10 +29,8 @@ import com.sk.domain.shared.enums.nextgen.GraphPeriodUnit;
 import com.sk.domain.shared.enums.nextgen.IndexName;
 import com.sk.domain.shared.enums.nextgen.ScenarioDisplayStatus;
 import com.sk.domain.shared.enums.nextgen.ScenarioStatus;
-import com.sk.domain.shared.enums.fundamentalmodel.FundamentalModelRunStatus;
 import com.sk.domain.shared.repository.master.tmd.ScenarioCaseRepository;
 import com.sk.domain.shared.repository.master.tmd.projection.ScenarioPriceRow;
-import com.sk.domain.shared.repository.master.tmd.projection.ScenarioRunStatusRow;
 import com.sk.domain.shared.repository.master.tmm.MiScenarioGroupRepository;
 import com.sk.domain.shared.repository.master.tmm.projection.ScenarioBaseRow;
 import com.sk.domain.shared.repository.master.tmm.projection.ScenarioDetailBaseRow;
@@ -185,16 +183,9 @@ public class ScenarioGroupServiceImpl implements ScenarioGroupService {
     private ScenarioGroupGraphRes buildGraph(Long scenarioGroupId, IndexName indexName, GraphPeriodUnit periodUnit, List<ScenarioBaseRow> scenarios) {
         List<Long> scenarioIds = scenarios.stream().map(ScenarioBaseRow::scenarioId).toList();
         List<ScenarioPriceRow> prices = scenarioCaseRepository.findLatestCompletedPricesByScenarioIds(scenarioIds, indexName, periodUnit.getDbUnit());
-
-        // 최신 케이스의 최신 실행 상태(exec_stat_cd)로 executed(COMPLETED)/modelRunning(RUNNING) 판정
-        Map<Long, FundamentalModelRunStatus> runStatusByScenario = scenarioCaseRepository.findLatestRunStatusByScenarioIds(scenarioIds).stream()
-            .collect(Collectors.toMap(ScenarioRunStatusRow::scenarioId, ScenarioRunStatusRow::runStatus, (a, b) -> a));
-        Set<Long> executedScenarioIds = runStatusByScenario.entrySet().stream()
-            .filter(e -> e.getValue() == FundamentalModelRunStatus.COMPLETED).map(Map.Entry::getKey).collect(Collectors.toSet());
-        Set<Long> runningScenarioIds = runStatusByScenario.entrySet().stream()
-            .filter(e -> e.getValue() == FundamentalModelRunStatus.RUNNING).map(Map.Entry::getKey).collect(Collectors.toSet());
-
-        return ScenarioGroupGraphRes.of(scenarioGroupId, indexName, periodUnit, scenarios, prices, executedScenarioIds, runningScenarioIds);
+        // modelRunning = RUNNING 케이스 존재 (case_stat_cd=RUNNING). executed/값은 최신 완료 가격(prices)으로 판정.
+        Set<Long> runningScenarioIds = Set.copyOf(scenarioCaseRepository.findRunningScenarioIds(scenarioIds));
+        return ScenarioGroupGraphRes.of(scenarioGroupId, indexName, periodUnit, scenarios, prices, runningScenarioIds);
     }
 
     /**

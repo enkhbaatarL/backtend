@@ -21,7 +21,6 @@ import com.sk.domain.shared.repository.master.tmd.projection.QScenarioPriceRow;
 import com.sk.domain.shared.repository.master.tmd.projection.ScenarioCaseDetailRow;
 import com.sk.domain.shared.repository.master.tmd.projection.ScenarioCaseListRow;
 import com.sk.domain.shared.repository.master.tmd.projection.ScenarioPriceRow;
-import com.sk.domain.shared.repository.master.tmd.projection.ScenarioRunStatusRow;
 import java.util.List;
 import java.util.Locale;
 import java.util.Optional;
@@ -107,7 +106,7 @@ public class CustomScenarioCaseRepositoryImpl implements CustomScenarioCaseRepos
             .innerJoin(scenarioCaseRunPrice).on(scenarioCaseRunPrice.runSeq.eq(scenarioCaseRunHistory.runSeq))
             .where(
                 scenarioCase.scenarioId.in(scenarioIds),
-                scenarioCase.caseId.eq(latestCompletedCaseId()),
+                scenarioCaseRunHistory.runSeq.eq(latestCompletedRunSeq()),
                 scenarioCaseRunPrice.priceRegionName.equalsIgnoreCase(indexName.getCode()),
                 scenarioCaseRunPrice.periodUnit.eq(periodUnit),
                 scenarioCaseRunPrice.isDeleted.isFalse()
@@ -120,47 +119,33 @@ public class CustomScenarioCaseRepositoryImpl implements CustomScenarioCaseRepos
     }
 
     @Override
-    public List<ScenarioRunStatusRow> findLatestRunStatusByScenarioIds(List<Long> scenarioIds) {
+    public List<Long> findRunningScenarioIds(List<Long> scenarioIds) {
         if (scenarioIds == null || scenarioIds.isEmpty()) {
             return List.of();
         }
-        // 시나리오별 최신 케이스 → last_run_id → 실행 상태(exec_stat_cd)
+        // 실행중 = RUNNING 케이스 존재 (case_stat_cd=RUNNING, actv_scnr_id unique로 시나리오당 1건)
         return queryFactory
-            .select(Projections.constructor(
-                ScenarioRunStatusRow.class,
-                scenarioCase.scenarioId,
-                scenarioCaseRunHistory.status
-            ))
+            .select(scenarioCase.scenarioId)
+            .distinct()
             .from(scenarioCase)
-            .innerJoin(scenarioCaseRunHistory).on(scenarioCaseRunHistory.runId.eq(scenarioCase.lastRunId))
             .where(
                 scenarioCase.scenarioId.in(scenarioIds),
-                scenarioCase.isDeleted.isFalse(),
-                scenarioCase.caseId.eq(latestCaseId()),
-                scenarioCaseRunHistory.isDeleted.isFalse()
+                scenarioCase.status.eq(FundamentalModelCaseStatus.RUNNING),
+                scenarioCase.isDeleted.isFalse()
             )
             .fetch();
     }
 
-    /** 시나리오의 최신 케이스 ID (재실행 포함 가장 최근 케이스, 삭제 제외) */
-    private JPQLSubQuery<Long> latestCaseId() {
-        QScenarioCase latestCase = new QScenarioCase("latestCaseForStatus");
-        return JPAExpressions
-            .select(latestCase.caseId.max())
-            .from(latestCase)
-            .where(
-                latestCase.scenarioId.eq(scenarioCase.scenarioId),
-                latestCase.isDeleted.isFalse()
-            );
-    }
-
-    /** 시나리오의 케이스 중 '케이스·마지막 실행이 모두 완료'된 최신 케이스 ID (재실행 실패/진행 중이면 직전 완료 케이스로 폴백) */
-    private JPQLSubQuery<Long> latestCompletedCaseId() {
+    /**
+     * 시나리오의 '케이스·마지막 실행이 모두 완료'된 실행 중 최신(run_seq 최대) 실행순번.
+     * <p>"최신"은 전역 증가값인 run_seq DESC 기준 (재실행 실패/진행 중이면 직전 완료 실행으로 폴백).
+     */
+    private JPQLSubQuery<Long> latestCompletedRunSeq() {
         QScenarioCase latestCase = new QScenarioCase("latestCase");
         QScenarioCaseRunHistory latestRun = new QScenarioCaseRunHistory("latestRun");
 
         return JPAExpressions
-            .select(latestCase.caseId.max())
+            .select(latestRun.runSeq.max())
             .from(latestCase)
             .innerJoin(latestRun).on(latestRun.runId.eq(latestCase.lastRunId))
             .where(
