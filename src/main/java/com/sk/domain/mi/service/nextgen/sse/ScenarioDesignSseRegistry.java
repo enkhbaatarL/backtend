@@ -7,6 +7,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
@@ -64,8 +65,19 @@ public class ScenarioDesignSseRegistry {
     }
 
     private boolean send(SseEmitter emitter, String eventName, Object data) {
+        return trySend(emitter, SseEmitter.event().name(eventName).data(data));
+    }
+
+    /**
+     * 단일 emitter에 한 프레임을 전송한다.
+     * 하트비트 스레드와 이벤트(Redis subscriber) 스레드가 같은 연결에 동시에 써서 프레임이 깨지는 것을 막는다.
+     * 전송 실패(끊긴 연결)면 false.
+     */
+    private boolean trySend(SseEmitter emitter, SseEmitter.SseEventBuilder event) {
         try {
-            emitter.send(SseEmitter.event().name(eventName).data(data));
+            synchronized (emitter) {
+                emitter.send(event);
+            }
             return true;
         } catch (IOException | IllegalStateException e) {
             log.debug("[Design SSE] send failed, dropping emitter: {}", e.getMessage());
@@ -86,6 +98,24 @@ public class ScenarioDesignSseRegistry {
     private int count(Long scenarioGroupId) {
         Set<SseEmitter> set = emitters.get(scenarioGroupId);
         return set == null ? 0 : set.size();
+    }
+
+    /**
+     * 설계 세션 SSE 연결에 주기적으로 keep-alive comment(:hb)를 전달
+     * idle 연결이 프록시/LB의 idle timeout에 끊기는 것을 막고, write 실패로 죽은 연결을 정리한다.
+     */
+    @Scheduled(fixedRateString = "${features.scheduling.scenario-design-sse.heartbeat-rate-ms:20000}", scheduler = "sseHeartbeatScheduler")
+    void heartbeat() {
+
+        if (emitters.isEmpty()) return;
+
+        emitters.forEach((groupId, set) -> {
+            for (SseEmitter emitter : set) {
+                if (!trySend(emitter, SseEmitter.event().comment("hb"))) {
+                    remove(groupId, emitter);
+                }
+            }
+        });
     }
 
 }
