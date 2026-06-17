@@ -126,15 +126,16 @@ public class CustomScenarioCaseRepositoryImpl implements CustomScenarioCaseRepos
         if (scenarioIds == null || scenarioIds.isEmpty()) {
             return List.of();
         }
-        // 실행중 = RUNNING 케이스 존재 (case_stat_cd=RUNNING, actv_scnr_id unique로 시나리오당 1건)
         return queryFactory
             .select(scenarioCase.scenarioId)
             .distinct()
             .from(scenarioCase)
+            .innerJoin(scenarioCaseRunHistory).on(scenarioCaseRunHistory.runId.eq(scenarioCase.lastRunId))
             .where(
                 scenarioCase.scenarioId.in(scenarioIds),
-                scenarioCase.status.eq(FundamentalModelCaseStatus.RUNNING),
-                scenarioCase.isDeleted.isFalse()
+                scenarioCase.isDeleted.isFalse(),
+                scenarioCaseRunHistory.isDeleted.isFalse(),
+                scenarioCaseRunHistory.status.eq(FundamentalModelRunStatus.RUNNING)
             )
             .fetch();
     }

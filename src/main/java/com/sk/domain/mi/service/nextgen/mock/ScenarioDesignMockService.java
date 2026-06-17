@@ -371,20 +371,40 @@ public class ScenarioDesignMockService {
         if (template == null) {
             return List.of();
         }
-        return template.dimensions().stream()
+        return sessionDimensions(template).stream()
             .map(d -> new ScenarioDimensionColumnRes(d.dimKey(), d.label()))
             .toList();
+    }
+
+    /**
+     * 샘플 세션이 보유할 분기항목 부분집합(필수 항목만, displayOrder 순).
+     * <p>템플릿 조회 API는 전체 분기항목을 내려주므로, 세션은 일부만 들고 있어야
+     * '템플릿에서 분기항목 추가' 액션을 FE가 테스트할 수 있다.
+     * 필수가 없거나 전부 필수면 테스트 여지 확보를 위해 앞쪽 2개만 사용한다.
+     */
+    private List<ScenarioDimensionTemplateRes.Item> sessionDimensions(ScenarioDimensionTemplateRes template) {
+        List<ScenarioDimensionTemplateRes.Item> all = template.dimensions().stream()
+            .sorted(Comparator.comparing(d -> d.displayOrder() == null ? Integer.MAX_VALUE : d.displayOrder()))
+            .toList();
+        List<ScenarioDimensionTemplateRes.Item> required = all.stream()
+            .filter(d -> Boolean.TRUE.equals(d.required()))
+            .toList();
+        if (required.isEmpty() || required.size() == all.size()) {
+            return all.subList(0, Math.min(2, all.size()));
+        }
+        return required;
     }
 
     private List<DesignScenarioRow> generateInitialScenarios(ScenarioDimensionTemplateRes template) {
         if (template == null) {
             return List.of();
         }
+        List<ScenarioDimensionTemplateRes.Item> dimensions = sessionDimensions(template);
         String[] titles = {"단기 외교적 해소", "공급 차질 장기화", "전면 봉쇄 심화", "점진적 정상화"};
         List<DesignScenarioRow> rows = new ArrayList<>();
         for (int i = 0; i < titles.length; i++) {
             List<ScenarioDimensionRes> dims = new ArrayList<>();
-            for (var dim : template.dimensions()) {
+            for (var dim : dimensions) {
                 List<String> enums = dim.valueEnums();
                 String value = (enums == null || enums.isEmpty()) ? null : enums.get(i % enums.size());
                 dims.add(new ScenarioDimensionRes(dim.dimKey(), dim.label(), value, value));
