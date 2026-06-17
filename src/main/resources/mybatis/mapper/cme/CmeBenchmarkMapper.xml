@@ -1,0 +1,58 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.sk.domain.shared.mapper.cme.CmeBenchmarkMapper">
+
+    <resultMap id="cmeBenchmarkPriceMap" type="com.sk.domain.shared.mapper.dto.CmeBenchmarkPriceRow">
+        <result column="value_month" property="valueMonth"/>
+        <result column="index_value" property="indexValue"/>
+    </resultMap>
+
+    <!--
+      기획서 "수급모델 > 시나리오 전망 벤치마크 차트" SQL 3단계를 union으로 통합.
+      벤치마크는 Future(index_div='F')만 사용. 기획서 step3 서브쿼리/조인에는 index_div 조건이 누락되어 있으나, F/S 혼재 시 중복 매칭을 막기 위해 전 구간 'F'로 통일한다.
+    -->
+    <select id="findBenchmarkMonthlyPrices" resultMap="cmeBenchmarkPriceMap">
+        SELECT u.value_month, u.index_value
+        FROM (
+            /* step2) 현재 기준 월물 — 최종 기준일(value_date 최대)의 미래 월물 */
+            SELECT o.value_month AS value_month, o.index_value AS index_value
+            FROM tif_skgas_odin o
+            WHERE o.index_id = #{indexId}
+              AND o.index_div = 'F'
+              AND o.value_date = (
+                  SELECT MAX(m.value_date) FROM tif_skgas_odin m
+                  WHERE m.index_id = #{indexId} AND m.index_div = 'F'
+              )
+              AND o.value_month &lt;= #{toMonth}
+
+            UNION
+
+            /* step3) 현재 기준 이전 월물 — value_month별 최신 기준일 값 */
+            SELECT o.value_month AS value_month, o.index_value AS index_value
+            FROM (
+                SELECT MAX(p.value_date) AS value_date, p.value_month AS value_month, p.index_id AS index_id
+                FROM tif_skgas_odin p
+                WHERE p.index_id = #{indexId}
+                  AND p.index_div = 'F'
+                  AND p.value_month &gt;= #{fromMonth}
+                  AND p.value_month &lt; (
+                      SELECT MIN(c.value_month) FROM tif_skgas_odin c
+                      WHERE c.index_id = #{indexId} AND c.index_div = 'F'
+                        AND c.value_date = (
+                            SELECT MAX(m.value_date) FROM tif_skgas_odin m
+                            WHERE m.index_id = #{indexId} AND m.index_div = 'F'
+                        )
+                  )
+                GROUP BY p.value_month, p.index_id
+            ) t
+            JOIN tif_skgas_odin o
+              ON o.value_date = t.value_date
+             AND o.value_month = t.value_month
+             AND o.index_id = t.index_id
+             AND o.index_div = 'F'
+        ) u
+        ORDER BY u.value_month ASC
+    </select>
+
+</mapper>
