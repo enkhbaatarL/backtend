@@ -5,6 +5,8 @@ import io.fabric8.kubernetes.api.model.Container;
 import io.fabric8.kubernetes.api.model.ContainerBuilder;
 import io.fabric8.kubernetes.api.model.EnvFromSource;
 import io.fabric8.kubernetes.api.model.EnvFromSourceBuilder;
+import io.fabric8.kubernetes.api.model.LocalObjectReference;
+import io.fabric8.kubernetes.api.model.LocalObjectReferenceBuilder;
 import io.fabric8.kubernetes.api.model.batch.v1.Job;
 import io.fabric8.kubernetes.api.model.batch.v1.JobBuilder;
 import io.fabric8.kubernetes.client.KubernetesClient;
@@ -58,9 +60,11 @@ public class KubernetesJobService {
     private String envConfigMapName;
     @Value("${kubernetes.env-secret-name:}")
     private String envSecretName;
+    @Value("${kubernetes.image-pull-secret-name:}")
+    private String imagePullSecretName;
 
     // k8s Job 생성 권한(RBAC) 검증 전용. 최소 Job을 동기 생성해 생성된 Job 이름을 반환한다.
-    // 이미지 pull 없이 create API 호출 자체로 권한이 검증되며, 실패 시 예외가 그대로 전파된다.
+    // 동기 응답은 create API 권한만 검증하며, 이미지 pull 결과는 생성된 pod 이벤트에서 확인한다.
     public String createPermissionTestJob() {
         String jobName = "k8s-permission-test-" + System.currentTimeMillis();
         Job job = new JobBuilder()
@@ -72,6 +76,7 @@ public class KubernetesJobService {
                 .withTtlSecondsAfterFinished(0)
                 .withNewTemplate()
                     .withNewSpec()
+                        .withImagePullSecrets(buildImagePullSecrets())
                         .addNewContainer()
                             .withName("permission-test")
                             .withImage(modelImage)
@@ -102,6 +107,7 @@ public class KubernetesJobService {
                 .withTtlSecondsAfterFinished(0)
                 .withNewTemplate()
                     .withNewSpec()
+                        .withImagePullSecrets(buildImagePullSecrets())
                         .withContainers(buildContainer(args))
                         .withRestartPolicy("Never")
                     .endSpec()
@@ -144,6 +150,16 @@ public class KubernetesJobService {
         }
 
         return builder.build();
+    }
+
+    private List<LocalObjectReference> buildImagePullSecrets() {
+        if (!StringUtils.hasText(imagePullSecretName)) {
+            return null;
+        }
+
+        return List.of(new LocalObjectReferenceBuilder()
+            .withName(imagePullSecretName)
+            .build());
     }
 
     private void applyEnvFrom(ContainerBuilder builder) {
