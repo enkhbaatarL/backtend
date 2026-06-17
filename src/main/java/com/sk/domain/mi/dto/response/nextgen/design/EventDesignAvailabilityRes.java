@@ -5,7 +5,6 @@ import io.swagger.v3.oas.annotations.media.Schema;
 
 /**
  * 이벤트별 시나리오 설계 점유/가능 상태 (이벤트 목록 폴링).
- * 도메인 컨벤션대로 상태는 enum + {@code ~Label}로 내린다.
  */
 public record EventDesignAvailabilityRes(
 
@@ -29,14 +28,13 @@ public record EventDesignAvailabilityRes(
 
 ) {
 
-    public static EventDesignAvailabilityRes of(Long eventId, ScenarioDesignDisplayStatus status,
-                                                boolean occupied, Long occupantUserId, Long scenarioGroupId) {
-        return new EventDesignAvailabilityRes(
-            eventId, status, status == null ? null : status.getLabel(), occupied, occupantUserId, scenarioGroupId);
+    public static EventDesignAvailabilityRes of(Long eventId, ScenarioDesignDisplayStatus status, boolean occupied, Long occupantUserId, Long scenarioGroupId) {
+        return new EventDesignAvailabilityRes(eventId, status, status == null ? null : status.getLabel(), occupied, occupantUserId, scenarioGroupId);
     }
 
     /** 설계 세션이 없는(설계 가능) 이벤트. */
     public static EventDesignAvailabilityRes designable(Long eventId) {
         return of(eventId, ScenarioDesignDisplayStatus.DESIGNABLE, false, null, null);
     }
+
 }
