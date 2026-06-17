@@ -8,6 +8,7 @@
 - source documents:
   - `docs/feature-specs/mi-fundamental-model-mock-api-feature-spec.md`
   - `docs/design-docs/gas/scenario-case-execution-erd-ddl-draft.md`
+  - `docs/design-docs/gas/mi-fundamental-model-volumes-region-bucket-json-plan-b.md`
   - `docs/design-docs/gas/mi-fundamental-model-trade-flow-erd-ddl-draft.md`
   - `docs/design-docs/gas/scenario-case-execution-workflow-design-draft.md`
 - depends on:
@@ -18,18 +19,20 @@
   - API response DTO contract in `docs/feature-specs/mi-fundamental-model-mock-api-feature-spec.md`
 - supersedes:
   - `docs/design-docs/gas/mi-fundamental-model-volumes-erd-ddl-draft.md` as canonical Volumes persistence design
+  - `docs/design-docs/gas/mi-fundamental-model-volumes-region-bucket-json-plan-b.md` as a separate Plan B candidate; the approved `tmd_mdl_scnrcasevolrgnl` decision is folded into this canonical document
   - `docs/design-docs/gas/mi-fundamental-model-trade-flow-erd-ddl-draft.md` as canonical Trade Flow persistence design
   - "DB-backed 전환 시 별도 ERD review 필요" notes for Volumes/Trade Flows/Price result data in older drafts
-- last synced: 2026-06-11
+- last synced: 2026-06-17
 - open questions:
   - DBA physical rollout window and target schema name
-  - final numeric precision if model output confirms a narrower or wider requirement than `DECIMAL(30, 18)`
+  - DBA confirmation of JSON column production policy and maximum expected `vol_data_json` payload size per Volumes bucket
+  - DBA physical drop/decommission timing if `tmd_mdl_scnrcasevoll` was already created in any environment
   - result retention policy: keep latest N runs per case, keep runs for M months, or archive by explicit DBA operation
   - DBA confirmation of the initial no-partition recommendation
   - DBA confirmation of future partition objective: query pruning only vs retention/archive management
   - Price 물리명 사전 정합성 (2026-06-11 ERD review, 해소됨): `granularity_cd` → `perd_unit_spt_cd`(기간단위구분코드, enum `PeriodUnitSeparateCd`) 재사용, `period_key` → `perd_key`(표준 약어 `PERD` + 기존 `_key` 패밀리), `user_adj_prc`의 `조정/ADJ`는 용어사전(`db-term-dictionary-sheet2.csv` id 380)에 등록 완료. Price 결과테이블 물리명은 모두 사전 정합.
   - Price series 라벨 단일화 (2026-06-11 ERD review, 해소됨): API series 코드는 `BASE_CASE` / `USER_ADJUSTED`로 통일했다. 코드 enum `PriceSeriesType`·mock seed에 맞춰 feature spec의 `LAST_ADJUSTED` 표기(토큰 8곳 + 라벨 문자열 3곳)를 `USER_ADJUSTED` / `User adjusted price`로 정렬 완료.
-  - Price `unit` 상수 필드 (2026-06-11 ERD review): feature spec은 Price 응답에 `unit: "USD/mmbtu"` 상수 필드를 정의하지만 현재 `FundamentalModelPriceRes`에는 해당 필드가 없다. ERD가 단위 컬럼을 두지 않는 결정은 유효하나 DB-backed 전환 전 DTO/spec 정합성을 확정해야 한다.
+  - Price `unit` 상수 필드 (2026-06-15 해소): Price 응답은 `unit: "USD/mmbtu"` 고정 상수 필드를 반환한다. ERD는 단위 컬럼을 두지 않고 API 조립 시 상수로 채운다.
 
 ## Purpose
 
@@ -56,7 +59,7 @@ API path, request/response field, validation, error mapping은 feature spec이 c
 
 2. raw output file과 parsed result data를 분리한다.
    - raw output file metadata: `tcm_filel(file_rel_obj_spt_cd = 'SCNRCASEH', file_rel_obj_dstg_no = run_seq)`
-   - parsed Volumes rows: `tmd_mdl_scnrcasevoll`
+   - parsed Volumes region-bucket rows: `tmd_mdl_scnrcasevolrgnl`
    - parsed Trade Flow header axis rows: `tmd_mdl_scnrcasetrdehdrl`
    - parsed Trade Flow sparse flow rows: `tmd_mdl_scnrcasetrdeflwl`
    - parsed Price rows: `tmd_mdl_scnrcaseprcl`
@@ -84,26 +87,37 @@ API path, request/response field, validation, error mapping은 feature spec이 c
 7. Volumes와 Price annual/monthly 값은 모두 저장할 수 있다.
    - annual 값은 monthly 값에서 자동 집계한다고 가정하지 않는다.
    - source output이 annual table과 monthly table을 별도로 제공할 수 있으므로 `perd_unit_spt_cd`와 `perd_key`로 기간을 표현한다.
-   - `perd_unit_spt_cd + perd_key`는 엄밀히는 의도적 중복이다. `perd_key = '2026'`이면 `Y`, `perd_key = '202601'`이면 `M`을 추론할 수 있지만, `base_mnth = 0` 같은 sentinel 방식보다 도메인 의미가 명확하므로 Volumes/Price에는 명시 컬럼을 둔다.
-   - `perd_unit_spt_cd`는 조회 분류용이며, 기간 식별의 유일성은 `perd_key`가 담당한다. 따라서 UK에는 가능한 한 `perd_unit_spt_cd`를 넣지 않는다.
+   - Volumes는 relational column `perd_unit_spt_cd`로 bucket granularity를 구분하고, 실제 기간 목록은 `vol_data_json.periodKeys`에 저장한다.
+   - Price는 relational columns `perd_unit_spt_cd` + `perd_key`로 기간을 표현한다.
+   - Price의 `perd_unit_spt_cd + perd_key`는 엄밀히는 의도적 중복이다. `perd_key = '2026'`이면 `Y`, `perd_key = '202601'`이면 `M`을 추론할 수 있지만, `base_mnth = 0` 같은 sentinel 방식보다 도메인 의미가 명확하므로 명시 컬럼을 둔다.
+   - Price의 `perd_unit_spt_cd`는 조회 분류용이며, 기간 식별의 유일성은 `perd_key`가 담당한다. 따라서 Price UK에는 가능한 한 `perd_unit_spt_cd`를 넣지 않는다.
 
-8. Price 단위는 `USD/mmbtu` 고정이며 `tmd_mdl_scnrcaseprcl`에 단위 컬럼을 저장하지 않는다.
+8. Volumes는 atomic row table `tmd_mdl_scnrcasevoll`을 사용하지 않고 region-bucket JSON table `tmd_mdl_scnrcasevolrgnl`에 저장한다.
+   - 승인 결정일: 2026-06-17.
+   - Python/model loader target table도 `tmd_mdl_scnrcasevolrgnl`로 협의 완료(2026-06-17).
+   - 저장 단위는 `run_seq + sgmt_cd + perd_unit_spt_cd + data_type_cd + rgn_cd` 1 row다.
+   - `vol_data_json`은 해당 region/type/granularity의 `periodKeys`와 row/value 배열을 담는다.
+   - API filter floor가 region이고 country/value 단위 DB 검색이 필요 없다는 조건에 근거한 의도적 denormalization이다.
+   - `TYPE_TOTAL`은 bucket마다 저장하지 않고 선택된 region subtotal을 서비스에서 합산한다.
+   - `attrType`은 JSON row 내부 필드다. 현재 API는 `TOTAL`만 노출하므로 Java/backend는 `TOTAL` row만 응답에 사용하고, `CONTRACTED` / `UNCONTRACTED`는 향후 LNG breakdown 확장 시 JSON 내부에서 처리한다.
+
+9. Price 단위는 `USD/mmbtu` 고정이며 `tmd_mdl_scnrcaseprcl`에 단위 컬럼을 저장하지 않는다.
    - 모델 output이 항상 USD/mmbtu 단위로 출력하는 불변 계약이다.
    - API response는 `unit: "USD/mmbtu"` 상수 필드로 반환한다.
    - 모델 output 스펙이 변경되어 단위가 run마다 달라지는 경우 `prc_unit_cd VARCHAR(20)` 컬럼 추가와 마이그레이션이 필요하다.
 
-9. external reference sync:
+10. external reference sync:
    - 2026-06-10: Notion reference pages `결과 저장 테이블 초안`, `상세 컬럼표와 적재 규칙` 에 남아 있던 구 physical name `tmd_mdl_scncase*` / `scn_id` 는 superseded다.
-   - canonical physical names are `tmd_mdl_scnrcasem`, `tmd_mdl_scnrcaseh`, `tmd_mdl_scnrcasevoll`, `tmd_mdl_scnrcasetrdehdrl`, `tmd_mdl_scnrcasetrdeflwl`, `tmd_mdl_scnrcaseprcl`, and `scnr_id`.
+   - canonical physical names are `tmd_mdl_scnrcasem`, `tmd_mdl_scnrcaseh`, `tmd_mdl_scnrcasevolrgnl`, `tmd_mdl_scnrcasetrdehdrl`, `tmd_mdl_scnrcasetrdeflwl`, `tmd_mdl_scnrcaseprcl`, and `scnr_id`.
    - naming authority는 `ScenarioCase` / `ScenarioCaseRunHistory` entity와 `scenario-case-execution-erd-ddl-draft.md` 의 rollout naming이다.
    - 2026-06-11: Notion pages `MI Fundamental Model`, `결과 저장 테이블 초안`, and `상세 컬럼표와 적재 규칙` were rechecked as external evidence.
    - Confirmed evidence: Python/model side stores parsed output rows under `run_seq`, commits result rows before callback, and does not require a separate result status table.
    - Superseded or narrowed evidence: Notion's remaining `base_year` partitioning question does not define the retention strategy. This document is canonical: initial rollout is no partition, and future retention/archive partitioning should use `run_seq` RANGE if approved.
-   - Numeric precision remains open as `DECIMAL(30, 18)` until model output confirms a narrower requirement; do not switch to floating-point storage from Notion discussion alone.
+   - Volumes atomic numeric precision is no longer a physical column decision because Volumes values are stored inside `tmd_mdl_scnrcasevolrgnl.vol_data_json`. Trade Flow 컬럼(`flow_val`)과 Price 컬럼(`base_case_prc` / `user_adj_prc`)은 2026-06-15 기준 모델 부동소수 산출물 보존을 위해 `DOUBLE`로 확정했다.
 
-10. Result row accumulation is governed by `run_seq`.
+11. Result row accumulation is governed by `run_seq`.
    - Every completed model execution creates a new result snapshot under one `run_seq`.
-   - Trade Flow `base_year` and Volumes/Price `perd_key` are data period dimensions, not lifecycle or retention dimensions.
+   - Trade Flow `base_year`, Volumes `vol_data_json.periodKeys`, and Price `perd_key` are data period dimensions, not lifecycle or retention dimensions.
    - Retention/archive policy must be expressed in terms of runs, for example latest N runs per case or runs older than M months.
    - Until a retention policy is approved, result rows are preserved and no automated purge is assumed.
 
@@ -113,7 +127,7 @@ API path, request/response field, validation, error mapping은 feature spec이 c
 tmd_mdl_scnrcasem (case)
   └── tmd_mdl_scnrcaseh (run, run_seq)
         ├── tcm_filel (SCNRCASEH + run_seq, raw output files)
-        ├── tmd_mdl_scnrcasevoll (Volumes annual/monthly atomic rows)
+        ├── tmd_mdl_scnrcasevolrgnl (Volumes annual/monthly region-bucket JSON rows)
         ├── tmd_mdl_scnrcasetrdehdrl (Trade Flow FROM/TO axis headers)
         ├── tmd_mdl_scnrcasetrdeflwl (Trade Flow sparse non-zero values)
         └── tmd_mdl_scnrcaseprcl (Price annual/monthly rows)
@@ -125,74 +139,73 @@ tmd_mdl_scnrcasem (case)
 
 Recommended lookup flow:
 
-1. `tmd_mdl_scnrcasem`에서 `case_id = :case_id`, `usr_no = :usr_no`, `del_yn = 'N'`을 조회한다.
+1. `tmd_mdl_scnrcasem`에서 `case_id = :case_id`, `del_yn = 'N'`을 조회한다.
 2. `case_stat_cd = 'COMPLETED'`이고 `last_run_id IS NOT NULL`인지 확인한다.
 3. `tmd_mdl_scnrcaseh.run_id = tmd_mdl_scnrcasem.last_run_id`로 latest run을 조회한다.
 4. latest run의 `exec_stat_cd = 'COMPLETED'`인지 확인한다.
 5. latest run의 `run_seq`로 각 result table을 조회한다.
 6. result row가 없으면 DB-backed 전환 시점의 API는 data integrity mismatch로 보고 `409 BIZ_RULE_VIOLATION` 또는 운영 표준 오류로 처리한다. 정상 운영에서는 Python insert commit 후 callback이 호출되므로 이 상태가 노출되지 않아야 한다.
 
+Result 조회 API는 다른 사용자가 실행한 case 결과도 볼 수 있는 read model이다. 따라서 `caseId -> latest run -> result` 해석을 위한 active case 검증은 `usr_no` 소유자 검증과 분리한다. endpoint 접근 가능 여부는 controller permission rule로 판단하고, update/delete 같은 소유자 변경 작업에만 `usr_no` ownership predicate를 적용한다.
+
 Historical run result 조회가 필요하면 `runId` 기반 API를 별도 feature spec으로 추가한다. 이 문서는 `caseId -> latest run -> result`만 canonical 범위로 둔다.
 
 ## Canonical Table Set
 
-### `tmd_mdl_scnrcasevoll`
+### `tmd_mdl_scnrcasevolrgnl`
 
-Volumes Global/LNG annual/monthly atomic rows. YEARLY API 응답은 source annual rows를 우선 사용하고, source가 annual rows를 제공하지 않는 경우에만 별도 서비스 집계 정책을 feature spec/implementation에서 확정한다.
+Volumes Global/LNG annual/monthly region-bucket JSON rows. The old atomic-row table `tmd_mdl_scnrcasevoll` is no longer an active rollout target.
+
+YEARLY API 응답은 source yearly buckets를 우선 사용한다. source가 yearly buckets를 제공하지 않는 경우에만 별도 서비스 집계 정책을 feature spec/implementation에서 확정한다.
 
 ```sql
-CREATE TABLE tmd_mdl_scnrcasevoll
+CREATE TABLE tmd_mdl_scnrcasevolrgnl
 (
-    vol_seq         BIGINT UNSIGNED AUTO_INCREMENT COMMENT '물량순번'
+    vol_rgn_seq      BIGINT UNSIGNED AUTO_INCREMENT COMMENT '물량지역순번'
         PRIMARY KEY,
-    run_seq         INT UNSIGNED                          NOT NULL COMMENT '실행순번',
-    crt_usr_logn_id VARCHAR(50) DEFAULT 'SYSTEM'          NOT NULL COMMENT '생성사용자로그인ID',
-    crt_dtm         DATETIME    DEFAULT CURRENT_TIMESTAMP NOT NULL COMMENT '생성일시',
-    mod_usr_logn_id VARCHAR(50) DEFAULT 'SYSTEM'          NOT NULL COMMENT '수정사용자로그인ID',
-    mod_dtm         DATETIME    DEFAULT CURRENT_TIMESTAMP NOT NULL COMMENT '수정일시',
-    del_yn          CHAR(1)     DEFAULT 'N'               NOT NULL COMMENT '삭제여부',
-    sgmt_cd         VARCHAR(20)                           NOT NULL COMMENT '세그먼트코드 (GLOBAL/LNG)',
-    data_type_cd    VARCHAR(30)                           NOT NULL COMMENT '데이터타입코드',
-    row_kind_cd     VARCHAR(30)                           NOT NULL COMMENT '행구분코드',
-    row_key         VARCHAR(220)                          NOT NULL COMMENT '행키값',
-    rgn_cd          VARCHAR(50)                           NULL COMMENT '지역코드',
-    nat_nm          VARCHAR(120)                          NULL COMMENT '국가명',
-    perd_unit_spt_cd VARCHAR(2)                           NOT NULL COMMENT '기간단위구분코드 (Y:년/M:월, PeriodUnitSeparateCd)',
-    perd_key        VARCHAR(6)                            NOT NULL COMMENT '기간키값 (YYYY 또는 YYYYMM)',
-    vol_val         DECIMAL(30, 18)                       NOT NULL COMMENT '물량값',
-    CONSTRAINT tmd_mdl_scnrcasevoll_fk01
+    run_seq          INT UNSIGNED                          NOT NULL COMMENT '실행순번',
+    crt_usr_logn_id  VARCHAR(50) DEFAULT 'SYSTEM'          NOT NULL COMMENT '생성사용자로그인ID',
+    crt_dtm          DATETIME    DEFAULT CURRENT_TIMESTAMP NOT NULL COMMENT '생성일시',
+    mod_usr_logn_id  VARCHAR(50) DEFAULT 'SYSTEM'          NOT NULL COMMENT '수정사용자로그인ID',
+    mod_dtm          DATETIME    DEFAULT CURRENT_TIMESTAMP NOT NULL COMMENT '수정일시',
+    del_yn           CHAR(1)     DEFAULT 'N'               NOT NULL COMMENT '삭제여부',
+    sgmt_cd          VARCHAR(20)                           NOT NULL COMMENT '세그먼트코드 (GLOBAL/LNG)',
+    data_type_cd     VARCHAR(30)                           NOT NULL COMMENT '데이터타입코드',
+    rgn_cd           VARCHAR(50)                           NOT NULL COMMENT '지역코드',
+    perd_unit_spt_cd VARCHAR(2)                            NOT NULL COMMENT '기간단위구분코드 (Y:년/M:월, PeriodUnitSeparateCd)',
+    json_schm_ver    SMALLINT UNSIGNED DEFAULT 1           NOT NULL COMMENT 'JSON스키마버전',
+    vol_data_json    JSON                                  NOT NULL COMMENT '물량데이터JSON',
+    CONSTRAINT tmd_mdl_scnrcasevolrgnl_fk01
         FOREIGN KEY (run_seq) REFERENCES tmd_mdl_scnrcaseh (run_seq),
-    CONSTRAINT tmd_mdl_scnrcasevoll_ux01
-        UNIQUE (run_seq, sgmt_cd, data_type_cd, row_key, perd_key),
-    CONSTRAINT tmd_mdl_scnrcasevoll_ck01
-        CHECK (
-            (perd_unit_spt_cd = 'Y'
-             AND perd_key REGEXP '^[0-9]{4}$')
-         OR (perd_unit_spt_cd = 'M'
-             AND perd_key REGEXP '^[0-9]{6}$'
-             AND CAST(SUBSTRING(perd_key, 5, 2) AS UNSIGNED) BETWEEN 1 AND 12)
-        )
+    CONSTRAINT tmd_mdl_scnrcasevolrgnl_ux01
+        UNIQUE (run_seq, sgmt_cd, data_type_cd, rgn_cd, perd_unit_spt_cd),
+    CONSTRAINT tmd_mdl_scnrcasevolrgnl_ck01
+        CHECK (perd_unit_spt_cd IN ('Y', 'M')),
+    CONSTRAINT tmd_mdl_scnrcasevolrgnl_ck02
+        CHECK (JSON_VALID(vol_data_json))
 )
-    COMMENT 'TMD_시나리오케이스실행물량내역';
-
-CREATE INDEX tmd_mdl_scnrcasevoll_ix01
-    ON tmd_mdl_scnrcasevoll (run_seq, sgmt_cd, data_type_cd, rgn_cd, perd_unit_spt_cd, perd_key);
+    COMMENT 'TMD_시나리오케이스실행물량지역내역';
 ```
 
 Rules:
 
 - `sgmt_cd = 'TRADE'` is not allowed in this table. Trade Flows use dedicated tables.
-- `row_key` is non-null to avoid MySQL unique-key ambiguity with nullable `rgn_cd`/`nat_nm`.
+- One row represents one bucket: `run_seq + sgmt_cd + perd_unit_spt_cd + data_type_cd + rgn_cd`.
+- `rgn_cd` is `NOT NULL` because every bucket belongs to exactly one region.
+- `ux01` is the required access path and duplicate guard for the only expected read path. Do not add a secondary index until DBA verifies an `EXPLAIN` gap.
 - `perd_unit_spt_cd`는 enum `PeriodUnitSeparateCd` 코드값을 쓰며 Volumes는 `Y`(연) / `M`(월) subset만 사용한다.
-- `perd_unit_spt_cd = 'Y'`: `perd_key = YYYY` (4자리).
-- `perd_unit_spt_cd = 'M'`: `perd_key = YYYYMM` (6자리 zero-padded).
-- `perd_key`가 기간 식별을 담당하므로 `tmd_mdl_scnrcasevoll_ux01`에는 `perd_unit_spt_cd`를 넣지 않는다. `perd_unit_spt_cd`는 조회/응답 분류와 validation 명확성을 위한 컬럼이다.
-- `perd_key` 무결성은 `tmd_mdl_scnrcasevoll_ck01` CHECK로 숫자 포맷과 월 범위까지 검증한다. DBA 정책상 CHECK 제약을 운영 DB에 적용하지 않는다면 동일 조건을 Python/model loader와 Java/backend validation에서 강제해야 한다.
-- Recommended `row_key` examples:
-  - `COUNTRY:ASIA:China`
-  - `REGION_SUBTOTAL:ASIA`
-  - `TYPE_TOTAL`
-- `TYPE_TOTAL` may be stored if the source output provides it. If not stored, service may derive it from `REGION_SUBTOTAL` rows. The storage decision must be consistent per `run_seq`.
+- `vol_data_json.periodKeys` carries period identity:
+  - `periodUnit = 'Y'`: every period key is `YYYY` (4자리).
+  - `periodUnit = 'M'`: every period key is `YYYYMM` (6자리 zero-padded).
+- Top-level JSON `segment`, `periodUnit`, `dataType`, and `region` must match the relational key columns.
+- `periodKeys` must be non-empty and sorted ascending.
+- Every JSON row `values` array must have exactly the same length as `periodKeys`; `values[i]` maps to `periodKeys[i]`.
+- `rows[0]` must be the region subtotal row (`country == null`) for deterministic response assembly.
+- Country rows must have non-null, non-blank `country`.
+- Current API exposes only `TOTAL` attribute rows. Java/backend must ignore or filter out non-`TOTAL` rows until the API contract exposes breakdown filtering.
+- Planned LNG extension: `CONTRACTED` / `UNCONTRACTED` can appear inside JSON for `sgmt_cd = 'LNG'` and `data_type_cd IN ('LNG_IMPORTS', 'LNG_EXPORTS')`. A country's `TOTAL` should equal `CONTRACTED + UNCONTRACTED` per period when both breakdown rows exist.
+- `TYPE_TOTAL` is not stored in each bucket. Service computes it by summing selected region subtotal rows per period.
+- DBA policy상 `CHECK` 제약을 운영 DB에 적용하지 않는다면 동일 조건을 Python/model loader와 Java/backend validation에서 강제해야 한다.
 
 ### `tmd_mdl_scnrcasetrdehdrl`
 
@@ -232,7 +245,7 @@ CREATE INDEX tmd_mdl_scnrcasetrdehdrl_ix01
 Rules:
 
 - `axis_cd`: `FROM`, `TO`
-- `hdr_kind_cd`: `REGION_TOTAL`, `COUNTRY`, `GRAND_TOTAL`
+- `hdr_kind_cd`: `REGION_SUBTOTAL`, `COUNTRY`, `GRAND_TOTAL`
 - `hdr_key` maps directly to API `fromCountries[].key`, `toCountries[].key`, `flows[].fromKey`, `flows[].toKey`.
 - `hdr_ord` preserves FE display order from the output file.
 - `GRAND_TOTAL` is valid only for the TO axis unless a future API contract adds FROM total.
@@ -260,7 +273,7 @@ CREATE TABLE tmd_mdl_scnrcasetrdeflwl
     from_nat_nm     VARCHAR(120)                          NULL COMMENT 'From 국가명',
     to_rgn_cd       VARCHAR(50)                           NULL COMMENT 'To 지역코드',
     to_nat_nm       VARCHAR(120)                          NULL COMMENT 'To 국가명',
-    flow_val        DECIMAL(30, 18)                       NOT NULL COMMENT '흐름값 (MTPA 기준)',
+    flow_val        DOUBLE                                NOT NULL COMMENT '흐름값 (MTPA 기준)',
     CONSTRAINT tmd_mdl_scnrcasetrdeflwl_fk01
         FOREIGN KEY (run_seq) REFERENCES tmd_mdl_scnrcaseh (run_seq),
     CONSTRAINT tmd_mdl_scnrcasetrdeflwl_ux01
@@ -281,7 +294,7 @@ CREATE INDEX tmd_mdl_scnrcasetrdeflwl_ix03
 Rules:
 
 - Store MTPA only. API `unit=BCM` conversion is query/service logic.
-- Store only non-zero values. Missing cells are interpreted as `0` by the API/FE contract.
+- Store only non-zero val[04_incremental_apply_v2.sql](../../../../../../Downloads/04_incremental_apply_v2.sql)ues. Missing cells are interpreted as `0` by the API/FE contract.
 - `from_hdr_key` and `to_hdr_key` must exist in `tmd_mdl_scnrcasetrdehdrl` for the same `run_seq`, `selector_cd`, and `base_year`. Enforce by application validation or by DBA-approved composite FK if rollout complexity is acceptable.
 - Region columns are duplicated for filter performance and operational inspection. Header rows remain canonical for display label/order.
 
@@ -303,8 +316,8 @@ CREATE TABLE tmd_mdl_scnrcaseprcl
     perd_unit_spt_cd VARCHAR(2)                           NOT NULL COMMENT '기간단위구분코드 (M:월/Y:년, PeriodUnitSeparateCd)',
     perd_key        VARCHAR(6)                            NOT NULL COMMENT '기간키값 (YYYY 또는 YYYYMM)',
     prc_rgn_nm      VARCHAR(200)                          NOT NULL COMMENT '가격지역명',
-    base_case_prc   DECIMAL(30, 18)                       NOT NULL COMMENT '베이스케이스가격 (단위: USD/mmbtu 고정)',
-    user_adj_prc    DECIMAL(30, 18)                       NOT NULL COMMENT '사용자조정가격 (단위: USD/mmbtu 고정)',
+    base_case_prc   DOUBLE                                NOT NULL COMMENT '베이스케이스가격 (단위: USD/mmbtu 고정)',
+    user_adj_prc    DOUBLE                                NOT NULL COMMENT '사용자조정가격 (단위: USD/mmbtu 고정)',
     CONSTRAINT tmd_mdl_scnrcaseprcl_fk01
         FOREIGN KEY (run_seq) REFERENCES tmd_mdl_scnrcaseh (run_seq),
     CONSTRAINT tmd_mdl_scnrcaseprcl_ux01
@@ -329,7 +342,7 @@ Rules:
 - `perd_unit_spt_cd = 'M'`: `perd_key = YYYYMM` (6자리 zero-padded).
 - `perd_unit_spt_cd = 'Y'`: `perd_key = YYYY` (4자리).
 - 연/월 row의 기간 정보는 `perd_key` 하나로 식별하고, 연/월 구분은 `perd_unit_spt_cd`로 명시한다. API DTO의 `year` / `month` int 값은 서비스가 `perd_key`를 파싱해 채운다(Y → `year`만, M → 앞 4자리 `year` + 뒤 2자리 `month`).
-- `perd_unit_spt_cd + perd_key`는 의도적 중복이다. `perd_key` 길이로 `Y`/`M`을 추론할 수 있지만, sentinel 월 값보다 도메인 의미가 명확하고 응답 분류도 단순해지므로 Volumes/Price에 같은 정책을 적용한다.
+- `perd_unit_spt_cd + perd_key`는 의도적 중복이다. `perd_key` 길이로 `Y`/`M`을 추론할 수 있지만, sentinel 월 값보다 도메인 의미가 명확하고 응답 분류도 단순해지므로 Price에는 명시 컬럼을 둔다. Volumes는 같은 기간 정책을 JSON `periodKeys` validation으로 적용한다.
 - `perd_key` 무결성은 `tmd_mdl_scnrcaseprcl_ck01` CHECK로 숫자 포맷과 월 범위까지 검증한다. DBA 정책상 CHECK 제약을 운영 DB에 적용하지 않는다면 동일 조건을 Python/model loader와 Java/backend validation에서 강제해야 한다. `YYYYMM` zero-padding 덕분에 문자열 정렬이 곧 시간순 정렬이다.
 - `prc_rgn_nm` is dynamic output data, not a fixed enum.
 - `BASE_CASE` and `USER_ADJUSTED` API series labels are derived from `base_case_prc` and `user_adj_prc`.
@@ -344,7 +357,7 @@ Rules:
 
 | Table | Main query | Required index |
 |---|---|---|
-| `tmd_mdl_scnrcasevoll` | run + segment + type/region + period unit/order | `ix01 (run_seq, sgmt_cd, data_type_cd, rgn_cd, perd_unit_spt_cd, perd_key)` |
+| `tmd_mdl_scnrcasevolrgnl` | run + segment + period unit + type/region bucket lookup | `ux01 (run_seq, sgmt_cd, data_type_cd, rgn_cd, perd_unit_spt_cd)` covers duplicate prevention and expected lookup. No secondary index initially. |
 | `tmd_mdl_scnrcasetrdehdrl` | run + selector + year + axis display order | `ix01 (run_seq, selector_cd, base_year, axis_cd, hdr_ord)` |
 | `tmd_mdl_scnrcasetrdeflwl` | run + selector + year sparse matrix | `ix01 (run_seq, selector_cd, base_year)` |
 | `tmd_mdl_scnrcasetrdeflwl` | TO region filter | `ix02 (run_seq, selector_cd, base_year, to_rgn_cd)` |
@@ -374,7 +387,7 @@ Period-column partitioning is not the recommended retention strategy.
 Future partition-ready rule:
 
 - If partitioning is needed for retention/archive, prefer RANGE partitioning by `run_seq` on large result row tables:
-  - `tmd_mdl_scnrcasevoll`
+  - `tmd_mdl_scnrcasevolrgnl`
   - `tmd_mdl_scnrcasetrdehdrl`
   - `tmd_mdl_scnrcasetrdeflwl`
   - `tmd_mdl_scnrcaseprcl`
@@ -388,17 +401,22 @@ Future partition-ready rule:
 ### Volumes
 
 ```sql
-SELECT data_type_cd, row_kind_cd, row_key, rgn_cd, nat_nm,
-       perd_unit_spt_cd, perd_key, vol_val
-FROM tmd_mdl_scnrcasevoll
+SELECT data_type_cd, rgn_cd, json_schm_ver, vol_data_json
+FROM tmd_mdl_scnrcasevolrgnl
 WHERE del_yn = 'N'
   AND run_seq = :run_seq
   AND sgmt_cd = :segment
-  AND data_type_cd IN (:types)
   AND perd_unit_spt_cd = :period_unit
-  AND (rgn_cd IN (:regions) OR row_kind_cd = 'TYPE_TOTAL')
-ORDER BY data_type_cd, row_kind_cd, rgn_cd, nat_nm, perd_unit_spt_cd, perd_key;
+  AND data_type_cd IN (:types)
+  AND rgn_cd IN (:regions)
+ORDER BY data_type_cd, rgn_cd;
 ```
+
+Current API compatibility rule:
+
+- Until the feature spec exposes an attribute filter, parse only JSON rows with `attrType = 'TOTAL'`.
+- If a future API exposes `TOTAL` / `CONTRACTED` / `UNCONTRACTED`, keep the SQL bucket lookup unchanged and filter/assemble the requested attribute rows from `vol_data_json`.
+- `TYPE_TOTAL` is computed in service from selected region subtotal rows, not read from SQL.
 
 ### Trade Flows
 
@@ -444,7 +462,7 @@ ORDER BY
 
 | Table | Assessment |
 |---|---|
-| `tmd_mdl_scnrcasevoll` | Atomic annual/monthly value per run/segment/type/row/period. `row_key` prevents nullable unique-key ambiguity. 기간 식별은 non-null `perd_key`가 담당하고, `perd_unit_spt_cd`는 분류/validation 명확성을 위한 의도적 중복이다. |
+| `tmd_mdl_scnrcasevolrgnl` | Intentionally denormalized region-bucket JSON table. Relational key columns identify one `run_seq + segment + period unit + type + region` bucket, while `vol_data_json` holds period keys and row values. This violates 1NF by design to avoid excessive atomic inserts and matches the read-only API filter floor. |
 | `tmd_mdl_scnrcasetrdehdrl` | Header metadata normalized as rows instead of JSON arrays. Header order/label/kind are axis attributes. |
 | `tmd_mdl_scnrcasetrdeflwl` | Sparse flow values separated from header metadata. Region/name columns are intentional denormalization for filter speed and DBA inspection. |
 | `tmd_mdl_scnrcaseprcl` | Price values are atomic by run/granularity/region/period. 기간 식별은 non-null `perd_key`가 담당하고, `perd_unit_spt_cd`는 분류/validation 명확성을 위한 의도적 중복이다. |
@@ -452,7 +470,9 @@ ORDER BY
 Intentional denormalization:
 
 - Trade Flow `from_*`/`to_*` region/name columns duplicate header metadata to avoid repeated joins for region filtering and operational checks.
-- Volumes/Price `perd_unit_spt_cd` duplicates information inferable from `perd_key` length, but it is retained to make domain granularity explicit and avoid sentinel month values.
+- Volumes `vol_data_json` stores repeated row/value groups inside one bucket. This is accepted only while the API remains read-only and does not require DB-side country search, country filtering, or value threshold filtering.
+- Volumes/Price `perd_unit_spt_cd` duplicates information inferable from period-key length, but it is retained to make domain granularity explicit and avoid sentinel month values.
+- Volumes LNG `TOTAL` JSON rows may duplicate values mathematically comparable to `CONTRACTED + UNCONTRACTED`, but `TOTAL` is treated as source output to preserve rounding/unclassified differences and avoid query-time reconstruction.
 - Price stores base and adjusted values in one row because the API always returns both series together for the same period/region.
 
 ## Rollout Draft Structure
@@ -463,7 +483,7 @@ Intentional denormalization:
 SHOW CREATE TABLE tmd_mdl_scnrcaseh;
 SHOW INDEX FROM tmd_mdl_scnrcaseh;
 
-SHOW TABLES LIKE 'tmd_mdl_scnrcasevoll';
+SHOW TABLES LIKE 'tmd_mdl_scnrcasevolrgnl';
 SHOW TABLES LIKE 'tmd_mdl_scnrcasetrdehdrl';
 SHOW TABLES LIKE 'tmd_mdl_scnrcasetrdeflwl';
 SHOW TABLES LIKE 'tmd_mdl_scnrcaseprcl';
@@ -486,12 +506,19 @@ Expected:
 
 Apply order:
 
-1. `tmd_mdl_scnrcasevoll`
+1. `tmd_mdl_scnrcasevolrgnl`
 2. `tmd_mdl_scnrcasetrdehdrl`
 3. `tmd_mdl_scnrcasetrdeflwl`
 4. `tmd_mdl_scnrcaseprcl`
 5. Secondary indexes
 6. Optional partitions only if DBA approves physical partition rollout
+
+If `tmd_mdl_scnrcasetrdeflwl` was already created with `flow_val DECIMAL(30, 18)`, apply the following DBA-approved compatibility DDL instead of recreating the table:
+
+```sql
+ALTER TABLE tmd_mdl_scnrcasetrdeflwl
+    MODIFY flow_val DOUBLE NOT NULL COMMENT '흐름값 (MTPA 기준)';
+```
 
 ### Backfill
 
@@ -513,7 +540,7 @@ Rollback order:
 DROP TABLE tmd_mdl_scnrcaseprcl;
 DROP TABLE tmd_mdl_scnrcasetrdeflwl;
 DROP TABLE tmd_mdl_scnrcasetrdehdrl;
-DROP TABLE tmd_mdl_scnrcasevoll;
+DROP TABLE tmd_mdl_scnrcasevolrgnl;
 ```
 
 Rollback rules:
@@ -529,14 +556,14 @@ Required verification after DDL and before enabling real result APIs:
 ```sql
 EXPLAIN
 SELECT *
-FROM tmd_mdl_scnrcasevoll
+FROM tmd_mdl_scnrcasevolrgnl
 WHERE del_yn = 'N'
   AND run_seq = :run_seq
   AND sgmt_cd = 'GLOBAL'
-  AND data_type_cd IN ('DEMAND')
   AND perd_unit_spt_cd = 'M'
+  AND data_type_cd IN ('DEMAND')
   AND rgn_cd IN ('ASIA')
-ORDER BY data_type_cd, row_kind_cd, rgn_cd, nat_nm, perd_unit_spt_cd, perd_key;
+ORDER BY data_type_cd, rgn_cd;
 
 EXPLAIN
 SELECT *
@@ -576,21 +603,34 @@ Expected:
 Data verification:
 
 ```sql
-SELECT COUNT(*) FROM tmd_mdl_scnrcasevoll WHERE run_seq = :run_seq AND del_yn = 'N';
+SELECT COUNT(*) FROM tmd_mdl_scnrcasevolrgnl WHERE run_seq = :run_seq AND del_yn = 'N';
 SELECT COUNT(*) FROM tmd_mdl_scnrcasetrdehdrl WHERE run_seq = :run_seq AND del_yn = 'N';
 SELECT COUNT(*) FROM tmd_mdl_scnrcasetrdeflwl WHERE run_seq = :run_seq AND del_yn = 'N';
 SELECT COUNT(*) FROM tmd_mdl_scnrcaseprcl WHERE run_seq = :run_seq AND del_yn = 'N';
 
-SELECT COUNT(*) AS invalid_period_rows
-FROM tmd_mdl_scnrcasevoll
+SELECT COUNT(*) AS invalid_volume_bucket_rows
+FROM tmd_mdl_scnrcasevolrgnl
 WHERE run_seq = :run_seq
   AND del_yn = 'N'
-  AND NOT (
-      (perd_unit_spt_cd = 'Y'
-       AND perd_key REGEXP '^[0-9]{4}$')
-   OR (perd_unit_spt_cd = 'M'
-       AND perd_key REGEXP '^[0-9]{6}$'
-       AND CAST(SUBSTRING(perd_key, 5, 2) AS UNSIGNED) BETWEEN 1 AND 12)
+  AND (
+      perd_unit_spt_cd NOT IN ('Y', 'M')
+   OR JSON_VALID(vol_data_json) = 0
+   OR JSON_UNQUOTE(JSON_EXTRACT(vol_data_json, '$.schemaVersion')) <> CAST(json_schm_ver AS CHAR)
+   OR JSON_UNQUOTE(JSON_EXTRACT(vol_data_json, '$.segment')) <> sgmt_cd
+   OR JSON_UNQUOTE(JSON_EXTRACT(vol_data_json, '$.periodUnit')) <> perd_unit_spt_cd
+   OR JSON_UNQUOTE(JSON_EXTRACT(vol_data_json, '$.dataType')) <> data_type_cd
+   OR JSON_UNQUOTE(JSON_EXTRACT(vol_data_json, '$.region')) <> rgn_cd
+  );
+
+SELECT COUNT(*) AS invalid_volume_bucket_shape_rows
+FROM tmd_mdl_scnrcasevolrgnl
+WHERE run_seq = :run_seq
+  AND del_yn = 'N'
+  AND (
+      JSON_TYPE(JSON_EXTRACT(vol_data_json, '$.periodKeys')) <> 'ARRAY'
+   OR JSON_LENGTH(JSON_EXTRACT(vol_data_json, '$.periodKeys')) = 0
+   OR JSON_TYPE(JSON_EXTRACT(vol_data_json, '$.rows')) <> 'ARRAY'
+   OR JSON_LENGTH(JSON_EXTRACT(vol_data_json, '$.rows')) = 0
   );
 
 SELECT COUNT(*) AS invalid_period_rows
@@ -606,7 +646,7 @@ WHERE run_seq = :run_seq
   );
 ```
 
-Expected `invalid_period_rows = 0`. If DBA policy does not apply CHECK constraints in production, this same validation condition is mandatory in Python/model loader and Java/backend validation before a run can be marked `COMPLETED`.
+Expected invalid count values are `0`. If DBA policy does not apply CHECK constraints in production, this same validation condition is mandatory in Python/model loader and Java/backend validation before a run can be marked `COMPLETED`. Deep JSON validation such as sorted `periodKeys`, per-row `values` length, first-row subtotal, and `TOTAL` attr handling remains application/loader responsibility because MySQL JSON SQL is awkward for nested array validation.
 
 ## Mock to Real Transition Boundary
 
@@ -623,7 +663,7 @@ DB-backed real:
 - result API flags in `FundamentalModelMockProperties` switch from mock service to real service per API.
 - real service must not read mock JSON.
 - real service reads only latest completed run result tables through `caseId -> last_run_id -> run_seq`.
-- Python/model side must commit result table inserts before invoking success callback.
+- Python/model side must insert Volumes into `tmd_mdl_scnrcasevolrgnl` and commit result table inserts before invoking success callback.
 - Java/backend must not set `exec_stat_cd = 'COMPLETED'` unless callback validation and result row existence checks pass.
 - `tcm_filel(SCNRCASEH + run_seq)` remains the source for raw output file metadata, not for chart/table API rows.
 
@@ -642,7 +682,7 @@ Transition checklist:
 - Confirm whether CHECK constraints are applied in production. If not, require the same period-key validation in Python/model loader and Java/backend validation.
 - Define result retention policy: latest N runs per case, M-month retention, or manual archive only.
 - If partitioning is required later, confirm `run_seq` RANGE partition design and FK policy.
-- Confirm `DECIMAL(30, 18)` is acceptable for Volumes/Trade/Price values.
+- Confirm JSON column production policy and maximum expected `vol_data_json` payload size for `tmd_mdl_scnrcasevolrgnl`. Trade Flow `flow_val` and Price values are `DOUBLE` as of 2026-06-15.
 - Confirm secondary index count against insert volume and model output size.
 
 ## Implementation Readiness
@@ -650,4 +690,4 @@ Transition checklist:
 ready after minor cleanup
 
 - The data model, run linkage, key strategy, mock-to-real boundary, and DBA verification shape are fixed enough for implementation planning.
-- Physical rollout remains blocked until DBA confirms retention policy, partition/FK policy, and numeric precision, but those decisions do not change the API contract or case/run ownership model.
+- Physical rollout remains blocked until DBA confirms retention policy, partition/FK policy, and remaining Volumes numeric precision, but those decisions do not change the API contract or case/run ownership model.

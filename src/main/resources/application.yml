@@ -65,10 +65,11 @@ mi:
     mock:
       events:
         api:
-          get-list: false
-          get-detail: false
-          get-records: false
-          get-outlooks: false
+          get-list: true
+          get-detail: true
+          get-records: true
+          get-outlooks: true
+          design-availability: true
       scenario-groups:
         api:
           get-list: true
@@ -89,18 +90,13 @@ mi:
           dispatch-success: true
           running-timeout-minutes: 10
           auto-complete-seconds: 5
-  fundamental-model:
-    mock:
-      fundamental-model-cases:
+      design:
+        callback-delay-seconds: 15
         api:
-          list-cases: false
-          create-case: false
-          get-detail: false
-          update: false
-          delete: false
-          run: false
-          get-status: false
+          start: true
+          get-state: true
+          get-dimension-templates: true
+          validate: true
+          create-signposts: true
+          confirm: true
           reset: true
-      fundamental-model-runs:
-        api:
-          callback: false

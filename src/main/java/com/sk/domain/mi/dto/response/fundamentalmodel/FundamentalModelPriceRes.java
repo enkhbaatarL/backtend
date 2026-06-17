@@ -10,6 +10,9 @@ public record FundamentalModelPriceRes(
     @Schema(description = "case ID", example = "106")
     Long caseId,
 
+    @Schema(description = "가격 단위. 모델 output 불변 계약으로 고정값입니다.", example = "USD/mmbtu")
+    String unit,
+
     @Schema(description = "Futures Simulation Chart용 라인 그래프 데이터. monthly/yearly 시리즈를 모두 포함합니다.", implementation = PriceChart.class)
     PriceChart chart,
 
@@ -20,6 +23,8 @@ public record FundamentalModelPriceRes(
     PriceTable monthlyTable
 
 ) {
+
+    public static final String FIXED_UNIT = "USD/mmbtu";
 
     public record PriceChart(
 

@@ -116,6 +116,7 @@ public class CustomMiScenarioGroupRepositoryImpl implements CustomMiScenarioGrou
                 miScenario.title,
                 miScenario.isBaseline,
                 miScenario.probabilityScore,
+                miScenario.status,
                 miScenario.dimensionValues,
                 miScenario.createDt,
                 miScenario.modifyDt,
@@ -265,15 +266,19 @@ public class CustomMiScenarioGroupRepositoryImpl implements CustomMiScenarioGrou
     public List<ScenarioSignpostRow> findSignpostsByScenarioId(Long scenarioId) {
         return queryFactory
             .select(new QScenarioSignpostRow(
+                miSignpost.signpostId,
                 miSignpost.label,
                 miSignpost.probabilityDirection,
                 miSignpost.probabilityImpactScore,
-                miSignpost.signpostReason
+                miSignpost.strength,
+                miSignpost.signpostReason,
+                miSignpost.displayOrder
             ))
             .from(miSignpost)
             .where(
                 miSignpost.scenario.scenarioId.eq(scenarioId),
-                miSignpost.isDeleted.isFalse()
+                miSignpost.isDeleted.isFalse(),
+                miSignpost.isUsed.isTrue()
             )
             .orderBy(
                 miSignpost.displayOrder.asc(),

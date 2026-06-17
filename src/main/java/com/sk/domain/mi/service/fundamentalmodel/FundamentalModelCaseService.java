@@ -47,6 +47,4 @@ public interface FundamentalModelCaseService {
     FundamentalModelPriceRes getPrice(Long caseId);
 
     FundamentalModelRunCallbackRes handleCallback(String runId, FundamentalModelRunCallbackReq request);
-
-    void reset();
 }

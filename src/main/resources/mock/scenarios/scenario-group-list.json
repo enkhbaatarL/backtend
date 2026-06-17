@@ -57,7 +57,9 @@
             }
           ],
           "probability": 30,
-          "adjustedProbability": 32
+          "adjustedProbability": 32,
+          "status": "pending",
+          "statusLabel": "대기"
         },
         {
           "scenarioId": 12,
@@ -90,7 +92,9 @@
             }
           ],
           "probability": 12,
-          "adjustedProbability": 13
+          "adjustedProbability": 13,
+          "status": "pending",
+          "statusLabel": "대기"
         },
         {
           "scenarioId": 13,
@@ -123,7 +127,9 @@
             }
           ],
           "probability": 10,
-          "adjustedProbability": 10
+          "adjustedProbability": 10,
+          "status": "pending",
+          "statusLabel": "대기"
         },
         {
           "scenarioId": 14,
@@ -156,7 +162,9 @@
             }
           ],
           "probability": 28,
-          "adjustedProbability": 29
+          "adjustedProbability": 29,
+          "status": "pending",
+          "statusLabel": "대기"
         },
         {
           "scenarioId": 15,
@@ -189,7 +197,9 @@
             }
           ],
           "probability": 5,
-          "adjustedProbability": 0
+          "adjustedProbability": 0,
+          "status": "discarded",
+          "statusLabel": "폐기"
         },
         {
           "scenarioId": 16,
@@ -222,7 +232,9 @@
             }
           ],
           "probability": 15,
-          "adjustedProbability": 16
+          "adjustedProbability": 16,
+          "status": "pending",
+          "statusLabel": "대기"
         }
       ]
     },
@@ -283,7 +295,9 @@
             }
           ],
           "probability": 45,
-          "adjustedProbability": 45
+          "adjustedProbability": 45,
+          "status": "pending",
+          "statusLabel": "대기"
         },
         {
           "scenarioId": 22,
@@ -316,7 +330,9 @@
             }
           ],
           "probability": 22,
-          "adjustedProbability": 22
+          "adjustedProbability": 22,
+          "status": "pending",
+          "statusLabel": "대기"
         },
         {
           "scenarioId": 23,
@@ -349,7 +365,9 @@
             }
           ],
           "probability": 20,
-          "adjustedProbability": 20
+          "adjustedProbability": 20,
+          "status": "pending",
+          "statusLabel": "대기"
         },
         {
           "scenarioId": 24,
@@ -382,7 +400,9 @@
             }
           ],
           "probability": 13,
-          "adjustedProbability": 13
+          "adjustedProbability": 13,
+          "status": "pending",
+          "statusLabel": "대기"
         }
       ]
     },
@@ -433,7 +453,9 @@
             }
           ],
           "probability": 50,
-          "adjustedProbability": 50
+          "adjustedProbability": 50,
+          "status": "pending",
+          "statusLabel": "대기"
         },
         {
           "scenarioId": 32,
@@ -460,7 +482,9 @@
             }
           ],
           "probability": 30,
-          "adjustedProbability": 30
+          "adjustedProbability": 30,
+          "status": "pending",
+          "statusLabel": "대기"
         },
         {
           "scenarioId": 33,
@@ -487,7 +511,9 @@
             }
           ],
           "probability": 20,
-          "adjustedProbability": 20
+          "adjustedProbability": 20,
+          "status": "pending",
+          "statusLabel": "대기"
         }
       ]
     },
@@ -548,7 +574,9 @@
             }
           ],
           "probability": 40,
-          "adjustedProbability": 100
+          "adjustedProbability": 100,
+          "status": "realized",
+          "statusLabel": "실현"
         },
         {
           "scenarioId": 42,
@@ -581,7 +609,9 @@
             }
           ],
           "probability": 25,
-          "adjustedProbability": 0
+          "adjustedProbability": 0,
+          "status": "discarded",
+          "statusLabel": "폐기"
         },
         {
           "scenarioId": 43,
@@ -614,7 +644,9 @@
             }
           ],
           "probability": 20,
-          "adjustedProbability": 0
+          "adjustedProbability": 0,
+          "status": "discarded",
+          "statusLabel": "폐기"
         },
         {
           "scenarioId": 44,
@@ -647,7 +679,9 @@
             }
           ],
           "probability": 15,
-          "adjustedProbability": 0
+          "adjustedProbability": 0,
+          "status": "discarded",
+          "statusLabel": "폐기"
         }
       ]
     },
@@ -708,7 +742,9 @@
             }
           ],
           "probability": 48,
-          "adjustedProbability": 48
+          "adjustedProbability": 48,
+          "status": "pending",
+          "statusLabel": "대기"
         },
         {
           "scenarioId": 52,
@@ -741,7 +777,9 @@
             }
           ],
           "probability": 32,
-          "adjustedProbability": 32
+          "adjustedProbability": 32,
+          "status": "pending",
+          "statusLabel": "대기"
         },
         {
           "scenarioId": 53,
@@ -774,7 +812,9 @@
             }
           ],
           "probability": 20,
-          "adjustedProbability": 20
+          "adjustedProbability": 20,
+          "status": "pending",
+          "statusLabel": "대기"
         }
       ]
     }

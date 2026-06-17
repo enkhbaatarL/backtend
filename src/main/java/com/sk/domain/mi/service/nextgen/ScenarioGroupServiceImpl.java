@@ -42,6 +42,7 @@ import java.util.Arrays;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -182,7 +183,9 @@ public class ScenarioGroupServiceImpl implements ScenarioGroupService {
     private ScenarioGroupGraphRes buildGraph(Long scenarioGroupId, IndexName indexName, GraphPeriodUnit periodUnit, List<ScenarioBaseRow> scenarios) {
         List<Long> scenarioIds = scenarios.stream().map(ScenarioBaseRow::scenarioId).toList();
         List<ScenarioPriceRow> prices = scenarioCaseRepository.findLatestCompletedPricesByScenarioIds(scenarioIds, indexName, periodUnit.getDbUnit());
-        return ScenarioGroupGraphRes.of(scenarioGroupId, indexName, periodUnit, scenarios, prices);
+        // modelRunning = RUNNING 케이스 존재 (case_stat_cd=RUNNING). executed/값은 최신 완료 가격(prices)으로 판정.
+        Set<Long> runningScenarioIds = Set.copyOf(scenarioCaseRepository.findRunningScenarioIds(scenarioIds));
+        return ScenarioGroupGraphRes.of(scenarioGroupId, indexName, periodUnit, scenarios, prices, runningScenarioIds);
     }
 
     /**

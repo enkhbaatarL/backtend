@@ -11,6 +11,7 @@ import com.sk.domain.mi.dto.response.nextgen.EventInstitutionOutlookRes;
 import com.sk.domain.mi.dto.response.nextgen.EventListRes;
 import com.sk.domain.mi.dto.response.nextgen.EventRelatedRecordRes;
 import com.sk.domain.mi.dto.response.nextgen.EventTypeL1Res;
+import com.sk.domain.mi.dto.response.nextgen.design.EventDesignAvailabilityRes;
 import com.sk.domain.mi.service.nextgen.EventService;
 import com.sk.domain.mi.service.nextgen.EventServiceImpl;
 
@@ -58,6 +59,13 @@ public class EventServiceDelegator implements EventService {
         return mockProps.getEvents().getApi().isGetOutlooks()
             ? mockService.getEventOutlooks(eventId, page, size)
             : realService.getEventOutlooks(eventId, page, size);
+    }
+
+    @Override
+    public List<EventDesignAvailabilityRes> getEventDesignAvailability(List<Long> eventIds) {
+        return mockProps.getEvents().getApi().isDesignAvailability()
+            ? mockService.getEventDesignAvailability(eventIds)
+            : realService.getEventDesignAvailability(eventIds);
     }
 
 }

@@ -24,7 +24,7 @@
 - MI Fundamental Model은 MI Scenario Workbench와 동급 메뉴다. `Scenario Case` 명칭은 현업 용어로 유지하지만, API parent가 `Scenario` 또는 Scenario Workbench라는 뜻은 아니다.
 - canonical API path family는 `/api/v1/mi/fundamental-model/**` 이다. 기존 `/api/v1/mi/scenario-workbench/**/fundamental-*` 및 `/api/v1/mi/scenario-workbench/scenarios/{scenarioId}/fundamental-model-cases/**` 형태는 superseded contract이며 이 문서의 workflow는 해당 hierarchy를 전제로 하지 않는다.
 - 상위 도메인 흐름은 [gas-event-scenario-supply-model-linkage.md](gas-event-scenario-supply-model-linkage.md) 를 따른다.
-- DB rollout SQL 초안은 [scenario-case-execution-erd-ddl-draft.md](scenario-case-execution-erd-ddl-draft.md) 에서 관리한다. 현재는 template / not rollout-ready 상태이며, `scenario_id` 전제는 proposed model에서 제거되었다. 과거 전제는 change note로만 유지하고 ownership/permission scope와 list index 선택은 후속 ERD/DBA review에서 확정한다.
+- DB rollout SQL 초안은 [scenario-case-execution-erd-ddl-draft.md](scenario-case-execution-erd-ddl-draft.md) 에서 관리한다. 현재는 template / not rollout-ready 상태이며, 과거 `scenario_id` 컬럼명/물리 FK 전제는 제거되었다. 현재 proposed model은 nullable `scnr_id`로 MI 수급모델의 scenario 식별자를 논리 참조한다.
 - 실행 이력과 검증 기록은 [2026-04-28-scenario-case-execution-db-design.md](../../work-notes/2026/2026-04-28-scenario-case-execution-db-design.md) 에 남긴다.
 
 ## 범위
@@ -55,22 +55,23 @@
 MI Fundamental Model (Scenario Workbench와 동급 메뉴)
     └── Scenario Case aggregate (현업 용어)
             └── 1:N
-                └── tmd_scncasem (Scenario Case Master)
+                └── tmd_mdl_scnrcasem (Scenario Case Master)
                         └── 1:N
-                            └── tmd_scncaseh (Scenario Case History)
+                            └── tmd_mdl_scnrcaseh (Scenario Case History)
 
 tcm_filel (공통 파일 내역)
-    └── file_rel_obj_spt_cd = 'SCNCASE'
-    └── file_rel_obj_dstg_no = tmd_scncasem.case_id
+    └── file_rel_obj_spt_cd = 'SCNRCASE'
+    └── file_rel_obj_dstg_no = tmd_mdl_scnrcasem.case_id
 ```
 
 - `Scenario Case`는 현업 용어다. API hierarchy상 `Scenario` 또는 Scenario Workbench 하위 resource라는 의미가 아니다.
 - 2026-05-20 canonical feature spec 기준으로 1차 mock API는 `scenarioId` path/query/body/response 필드를 사용하지 않는다.
 - 업로드 요청 단위의 case는 `caseId`로 식별하고, 실행 요청 단위의 execution history는 `runId`로 식별한다.
 - case 1개는 실행 요청 단위의 execution history를 여러 개 가질 수 있다.
-- case에 연결된 업로드 파일은 `tmd_scncasem` 의 반복 컬럼이 아니라 기존 공통 파일 테이블 `tcm_filel` 에 저장한다.
+- case에 연결된 업로드 파일은 `tmd_mdl_scnrcasem` 의 반복 컬럼이 아니라 기존 공통 파일 테이블 `tcm_filel` 에 저장한다.
 - 현재 제품 요구는 사실상 `case:execution = 1:1`에 가깝지만, 재실행 가능성을 고려해 물리적으로는 분리한다.
-- `tmd_scncasem` 은 `case_id`를 primary identity로 갖는 독립 aggregate다. `tmm_scenariom` parent FK/논리참조와 `scenario_id` 컬럼 전제는 현재 proposed model에서 제거한다.
+- `tmd_mdl_scnrcasem` 은 `case_id`를 primary identity로 갖는다. MI Fundamental Model row는 `scnr_id = NULL`이고, MI 수급모델 row는 nullable `scnr_id`에 scenario 식별자를 저장한다. `scnr_id`는 `tmm_mi_scenario_m.scenario_id`(INT UNSIGNED)에 대한 application-validated 논리 참조이며 물리 FK는 두지 않는다.
+- 실행유형은 `exec_type_cd VARCHAR(20) DEFAULT 'INDEPENDENT' NOT NULL` 명시 컬럼으로 구분한다. 값은 `INDEPENDENT`(독립실행, MI Fundamental Model), `SCENARIO`(MI 수급모델 시나리오 실행), `MI_BASE`(MI Base 적재 데이터) 3종이다. `INDEPENDENT`/`MI_BASE` 는 둘 다 `scnr_id = NULL` 이라 `scnr_id` 만으로 구분되지 않으므로(2026-06-16 MI Base 적재 데이터를 실행 테이블에 두기로 결정) 명시 컬럼이 필요하다. `scnr_id` 와의 정합은 `tmd_mdl_scnrcasem_ck01 CHECK ((exec_type_cd = 'SCENARIO') = (scnr_id IS NOT NULL))` 로 DB 가 강제한다. `MI_BASE` 는 사용자 실행이 아니라 적재 데이터(admin `usr_no`)이며, 사용자 화면 목록/상세/ASSIGNEE 조회는 `exec_type_cd` 조건으로 `MI_BASE` 를 제외한다. "1건 유지" 는 강제하지 않고 조회 시 최신 1건(`exec_type_cd='MI_BASE' ORDER BY case_id DESC LIMIT 1`)을 선택한다. 물리 컬럼/제약/공통코드는 [scenario-case-execution-erd-ddl-draft.md](scenario-case-execution-erd-ddl-draft.md) 가 canonical source다.
 - ownership scope는 `usr_no`(업로더/소유자) only로 확정한다.
 
 ## Boundary Against Existing ScenarioModelExecution API
@@ -126,13 +127,14 @@ tcm_filel (공통 파일 내역)
 
 ### 2. 최신 상태의 이중 보관
 
-- `tmd_scncasem.case_stat_cd` 에 최신 상태를 둔다.
-- `tmd_scncasem.last_run_id` 에 최신 실행 `run_id` pointer를 둔다. `tmd_scncaseh.run_id` 에 대한 application-validated 논리 참조이며 물리 FK 는 걸지 않는다.
-- 상세 실행 기록은 `tmd_scncaseh` 에 남긴다.
+- `tmd_mdl_scnrcasem.case_stat_cd` 에 최신 상태를 둔다.
+- `tmd_mdl_scnrcasem.last_run_id` 에 최신 실행 `run_id` pointer를 둔다. `tmd_mdl_scnrcaseh.run_id` 에 대한 application-validated 논리 참조이며 물리 FK 는 걸지 않는다.
+- 상세 실행 기록은 `tmd_mdl_scnrcaseh` 에 남긴다.
 - 이유:
   - 프론트 목록/상세 조회 시 최신 상태와 최신 실행을 단일 row 조회로 단순화할 수 있다.
   - 이력은 별도 테이블에 남겨 재실행/운영 추적을 지원할 수 있다.
-- invariant: `case_stat_cd` 와 `last_run_id` 가 가리키는 `tmd_scncaseh.exec_stat_cd` 는 항상 같은 terminal/RUNNING 상태여야 한다. 갱신 순서는 execution → case 또는 conditional case update 후 execution insert 로 한 transaction 안에서 보장한다.
+- invariant: `case_stat_cd` 와 `last_run_id` 가 가리키는 `tmd_mdl_scnrcaseh.exec_stat_cd` 는 항상 같은 terminal/RUNNING 상태여야 한다. 갱신 순서는 execution → case 또는 conditional case update 후 execution insert 로 한 transaction 안에서 보장한다.
+- invariant (2026-06-10 추가, 2026-06-10 generated column 으로 변경): scenario 당 active 실행 1건은 `actv_scnr_id INT UNSIGNED AS (IF(case_stat_cd = 'RUNNING', scnr_id, NULL)) STORED` generated column 과 `tmd_mdl_scnrcasem_uq01 UNIQUE (actv_scnr_id)` 가 DB 레벨에서 보장한다. helper 는 `case_stat_cd`/`scnr_id` 에서 DB 가 자동 파생하므로 `case_stat_cd` 를 바꾸는 INSERT/UPDATE 가 별도로 helper 를 동기화할 필요가 없다(수동 컬럼 시절의 drift 위험 제거). fundamental row 는 `scnr_id = NULL` → `actv_scnr_id = NULL` 이라 unique 가 바인딩되지 않으므로 본 문서의 case 단위 가드에는 영향이 없다.
 
 ### 3. `run_id`의 역할
 
@@ -140,7 +142,7 @@ tcm_filel (공통 파일 내역)
 - backend가 `yyyymmdd_hhmmss_XXXX` 포맷의 값을 생성해 Kubernetes Job/pod에 전달하는 것으로 확정한다.
 - `yyyymmdd_hhmmss` 는 실행 요청 시각 기준이며, `XXXX` 는 같은 초 안의 충돌을 방지하기 위한 4자리 suffix다.
 - 예: `20260521_143500_a1b2`
-- `run_id` 는 `tmd_scncaseh` 에 unique로 저장한다.
+- `run_id` 는 `tmd_mdl_scnrcaseh` 에 unique로 저장한다.
 
 ### 4. Kubernetes Job 실행 및 완료 동기화 방식
 
@@ -163,13 +165,13 @@ tcm_filel (공통 파일 내역)
 ### 5. 중복 실행 방지
 
 - 동일 case에 대해 `RUNNING` 상태가 있으면 새 실행을 차단한다.
-- DB-backed 구현 권장안은 `tmd_scncasem` conditional update를 먼저 성공시킨 뒤, 같은 transaction에서 `tmd_scncaseh` row를 insert하는 방식이다.
+- DB-backed 구현 권장안은 `tmd_mdl_scnrcasem` conditional update를 먼저 성공시킨 뒤, 같은 transaction에서 `tmd_mdl_scnrcaseh` row를 insert하는 방식이다.
 - `run_id` 는 실행 요청마다 새로 생성되는 unique key이므로, `run_id + exec_stat_cd` 조합만으로는 동일 case에 서로 다른 `run_id` 를 가진 `RUNNING` row 2개가 생기는 것을 막을 수 없다.
 - `UNIQUE (case_id, exec_stat_cd)` 는 `RUNNING` 중복은 막을 수 있지만 과거 `COMPLETED`/`FAILED` 이력도 case당 1건으로 제한하므로 이력 테이블에는 부적합하다.
 - 권장 선점 update 예시는 다음과 같다.
 
 ```sql
-UPDATE tmd_scncasem
+UPDATE tmd_mdl_scnrcasem
 SET case_stat_cd = 'RUNNING',
     last_run_id = :run_id,
     mod_dtm = NOW(),
@@ -177,12 +179,14 @@ SET case_stat_cd = 'RUNNING',
 WHERE case_id = :case_id
   AND del_yn = 'N'
   AND case_stat_cd IN ('PENDING', 'COMPLETED', 'FAILED');
+-- actv_scnr_id 는 generated column 이라 case_stat_cd='RUNNING' 전이 시 자동으로 scnr_id(또는 fundamental 은 NULL)로 채워진다. 별도 SET 불필요.
 ```
 
-- affected row count가 `1` 이면 해당 요청이 실행을 선점한 것이므로 `tmd_scncaseh` 에 `RUNNING` row를 insert한다.
+- affected row count가 `1` 이면 해당 요청이 실행을 선점한 것이므로 `tmd_mdl_scnrcaseh` 에 `RUNNING` row를 insert한다.
 - affected row count가 `0` 이면 case 없음 또는 이미 `RUNNING` 인 상태이므로 `caseId` 단독 재조회 후 `404` 또는 `409` 로 분기한다.
 - `last_run_id` 는 late callback이 이전 실행의 결과로 case 최신 상태를 덮어쓰지 않도록 하는 latest execution pointer로 사용한다.
-- `SELECT ... FOR UPDATE` 와 nullable `actv_exec_token` unique 방식은 대안으로 남기되, 현재 권장안은 conditional master update다.
+- `SELECT ... FOR UPDATE` 방식은 대안으로 남기되, 현재 권장안은 conditional master update다.
+- (2026-06-10) scenario 단위(`MI 수급모델 실행`) 중복 실행 방지는 본 case 단위 가드와 별개로 `actv_scnr_id` generated column unique(`tmd_mdl_scnrcasem_uq01`)가 담당한다. 수급모델 실행 접수는 새 case row INSERT 이므로 conditional update 가 아니라 INSERT 시 unique 충돌 → 409 매핑으로 막는다. 자세한 흐름은 [mi-scenario-model-execution-workflow-design.md](mi-scenario-model-execution-workflow-design.md) 참고.
 
 ### 6. timeout 처리
 
@@ -192,15 +196,15 @@ WHERE case_id = :case_id
 
 ### 7. 파일 저장은 `tcm_filel` 재사용
 
-- `tmd_scncasem` 에 `file_path_1`, `file_path_2`, `file_path_3` 같은 반복 파일 경로 컬럼을 두지 않는다.
+- `tmd_mdl_scnrcasem` 에 `file_path_1`, `file_path_2`, `file_path_3` 같은 반복 파일 경로 컬럼을 두지 않는다.
 - 업로드 파일은 기존 기능과 동일하게 `tcm_filel` 에 저장한다.
 - case와 파일의 연결은 다음 값으로 표현한다.
-  - `tcm_filel.file_rel_obj_spt_cd = 'SCNCASE'`
-  - `tcm_filel.file_rel_obj_dstg_no = tmd_scncasem.case_id`
-- `tcm_filel.file_rel_obj_dstg_no` 가 `INT UNSIGNED` 이므로 `tmd_scncasem.case_id` 도 `INT UNSIGNED` 로 맞추는 안을 기본으로 둔다.
-- `SCNCASE` 코드는 `file_rel_obj_spt_cd` 공통코드에 등록해야 한다.
-- 2026-05-19 확인 기준으로 target 공통코드에는 `SCNCASE` 중복 등록이 없다.
-- DB-backed `createCase()` 구현에서는 공용 `FileService`의 기본 `TEMP/0` 임시 업로드 흐름을 표준 경로로 사용하지 않는다. case row 생성으로 `case_id`를 먼저 확보한 뒤, 업로드 파일 3개를 `SCNCASE + case_id` relation으로 직접 저장하는 전용 업로드 메서드를 사용한다.
+  - `tcm_filel.file_rel_obj_spt_cd = 'SCNRCASE'`
+  - `tcm_filel.file_rel_obj_dstg_no = tmd_mdl_scnrcasem.case_id`
+- `tcm_filel.file_rel_obj_dstg_no` 가 `INT UNSIGNED` 이므로 `tmd_mdl_scnrcasem.case_id` 도 `INT UNSIGNED` 로 맞추는 안을 기본으로 둔다.
+- `SCNRCASE` 코드는 `file_rel_obj_spt_cd` 공통코드에 등록해야 한다.
+- 2026-05-19 확인 기준으로 target 공통코드에는 `SCNRCASE` 중복 등록이 없다.
+- DB-backed `createCase()` 구현에서는 공용 `FileService`의 기본 `TEMP/0` 임시 업로드 흐름을 표준 경로로 사용하지 않는다. case row 생성으로 `case_id`를 먼저 확보한 뒤, 업로드 파일 3개를 `SCNRCASE + case_id` relation으로 직접 저장하는 전용 업로드 메서드를 사용한다.
 - 업로드 3개는 하나의 case aggregate를 구성하므로 all-or-nothing으로 처리한다. 3개 중 1개라도 실패하면 API 전체를 실패로 보고, 이미 성공한 업로드 분은 service 계층이 보상 삭제를 호출해 정리한다.
 - 보상 삭제 orchestration 책임은 `createCase()` application service에 둔다. `FileService`는 relation-aware upload/delete primitive만 제공하고, 어떤 업로드를 되돌릴지 판단하는 aggregate 문맥은 갖지 않는다.
 
@@ -211,8 +215,8 @@ WHERE case_id = :case_id
 1. 사용자가 파일 3개와 제목/설명을 입력한다.
 2. backend는 파일 3개의 파일명을 검증한다. `DEMAND`, `SUPPLY`, `TRADE` 키워드가 각각 정확히 1개씩 포함되어야 한다. 키워드 비교는 대소문자 무관. 조건 불충족 시 `400` 반환.
 3. backend는 필요 시 파일 복호화를 수행한다.
-4. backend는 `tmd_scncasem` 에 `PENDING` case row를 먼저 생성해 `case_id`를 확보한다.
-5. 확보한 `case_id`를 사용해 파일 3개를 object storage와 `tcm_filel`에 업로드한다. 이때 각 file row는 생성 시점부터 `file_rel_obj_spt_cd = 'SCNCASE'`, `file_rel_obj_dstg_no = case_id` 로 직접 저장한다.
+4. backend는 `tmd_mdl_scnrcasem` 에 `PENDING` case row를 먼저 생성해 `case_id`를 확보한다.
+5. 확보한 `case_id`를 사용해 파일 3개를 object storage와 `tcm_filel`에 업로드한다. 이때 각 file row는 생성 시점부터 `file_rel_obj_spt_cd = 'SCNRCASE'`, `file_rel_obj_dstg_no = case_id` 로 직접 저장한다.
 6. 파일 3개 중 하나라도 업로드 또는 `tcm_filel` 저장에 실패하면 API 전체를 실패로 처리한다. 이미 성공한 업로드가 있으면 `createCase()` service가 성공분 file primitive를 호출해 보상 삭제를 수행한 뒤 예외를 재던진다.
 7. 생성 직후 case 상태는 `PENDING` 이다.
 
@@ -220,13 +224,14 @@ WHERE case_id = :case_id
 
 1. 사용자가 특정 case 실행을 요청한다.
 2. backend는 `run_id` 를 먼저 생성한다.
-3. 같은 transaction에서 `tmd_scncasem` conditional update를 수행해 실행 권한을 선점한다.
+3. backend는 `case_id`, `usr_no` ownership scope, `del_yn = 'N'` 기준으로 active owned case인지 확인한다. 소유자가 아니면 active resource hiding 규칙에 따라 `404 RSC_NOT_FOUND`로 처리한다.
+4. 같은 transaction에서 `tmd_mdl_scnrcasem` conditional update를 수행해 실행 권한을 선점한다.
    - 조건: `case_id`, `del_yn = 'N'`, `case_stat_cd IN ('PENDING', 'COMPLETED', 'FAILED')`
    - update 값: `case_stat_cd = 'RUNNING'`, `last_run_id = :run_id`
-4. affected row count가 `0` 이면 case 없음 또는 이미 `RUNNING` 인 상태이므로 `caseId` 단독 재조회 후 `404` 또는 `409` 로 분기한다.
-5. affected row count가 `1` 이면 해당 요청이 실행을 선점한 것이므로 `tmd_scncaseh` 에 `RUNNING` 상태 row를 생성한다.
-6. `tcm_filel` 에서 case에 연결된 파일 정보를 조회하고, 파일명의 `DEMAND`/`SUPPLY`/`TRADE` 키워드로 각 파일 경로를 매핑한다.
-7. Kubernetes Job을 생성한다. Job pod의 기본 실행 command는 아래와 같다.
+5. affected row count가 `0` 이면 case 없음 또는 이미 `RUNNING` 인 상태이므로 `caseId` 단독 재조회 후 `404` 또는 `409` 로 분기한다.
+6. affected row count가 `1` 이면 해당 요청이 실행을 선점한 것이므로 `tmd_mdl_scnrcaseh` 에 `RUNNING` 상태 row를 생성한다.
+7. `tcm_filel` 에서 case에 연결된 파일 정보를 조회하고, 파일명의 `DEMAND`/`SUPPLY`/`TRADE` 키워드로 각 파일 경로를 매핑한다.
+8. Kubernetes Job을 생성한다. Job pod의 기본 실행 command는 아래와 같다.
    ```
    python engine/run_all_parallel.py \
      --run-id {run_id} \
@@ -237,7 +242,7 @@ WHERE case_id = :case_id
      --callback-url {backend_host}/api/v1/mi/fundamental-model/runs/{run_id}/callback
    ```
    - callback URL은 `--callback-url` arg로 전달하며, backend가 `run_id`를 포함한 전체 URL을 생성해 Job 생성 시점에 주입한다.
-   - `--run-seq`는 `tmd_scncaseh.run_seq` 값이다. pod가 실행 완료 후 output 파일을 S3에 업로드하고 `tcm_filel`에 직접 INSERT할 때 `file_rel_obj_spt_cd = 'SCNCASEH'`, `file_rel_obj_dstg_no = run_seq`로 사용한다. pod는 이미 DB 접근 권한을 가지며, arg로 받아 추가 조회 없이 사용한다.
+   - `--run-seq`는 `tmd_mdl_scnrcaseh.run_seq` 값이다. pod가 실행 완료 후 output 파일을 S3에 업로드하고 `tcm_filel`에 직접 INSERT할 때 `file_rel_obj_spt_cd = 'SCNRCASEH'`, `file_rel_obj_dstg_no = run_seq`로 사용한다. pod는 이미 DB 접근 권한을 가지며, arg로 받아 추가 조회 없이 사용한다.
    - 모델 이미지는 모델팀이 Dockerfile 기반으로 제공하며, 위 스크립트, 실행 의존성, backend callback 호출 로직을 포함해야 한다.
    - pod stdout/stderr는 Kubernetes log로 남기며 backend application log 직접 소비는 필수 전제가 아니다.
 8. Job 생성 요청에 성공하면 backend는 클라이언트에 `202 Accepted` 수준의 비동기 시작 응답을 반환한다.
@@ -248,7 +253,7 @@ WHERE case_id = :case_id
 1. pod 또는 pod 내부 Python 프로세스가 실행을 완료하거나 실패하면 backend callback API를 호출한다.
 2. backend는 `run_id` 로 execution row를 찾는다.
 3. execution이 아직 `RUNNING` 인 경우에만 compare-and-set 조건으로 terminal 상태와 종료 시각, 실패 사유/오류 메시지를 갱신한다.
-4. case 최신 상태는 callback 대상 execution이 현재 case의 latest/active execution과 일치할 때만 (`tmd_scncasem.last_run_id = :run_id` 조건) 반영한다. `last_run_id` 자체는 변경하지 않고 그대로 두어 terminal 결과가 어느 run의 결과인지 보존한다.
+4. case 최신 상태는 callback 대상 execution이 현재 case의 latest/active execution과 일치할 때만 (`tmd_mdl_scnrcasem.last_run_id = :run_id` 조건) 반영한다. `case_stat_cd` 를 terminal 로 바꾸면 `actv_scnr_id` generated column 이 자동으로 NULL 로 풀려 active 점유가 해제되므로 helper 를 따로 해제할 필요가 없다. `last_run_id` 자체는 변경하지 않고 그대로 두어 terminal 결과가 어느 run의 결과인지 보존한다.
 5. 이미 terminal 상태인 execution에 도착한 callback은 상태를 덮어쓰지 않고 idempotent no-op으로 처리한다.
 6. timeout 또는 재실행 이후 늦게 도착한 이전 `run_id` callback은 case 최신 상태를 바꾸지 않고 성공 ack와 로그만 남긴다.
 
@@ -274,7 +279,7 @@ WHERE case_id = :case_id
 
 1. 사용자가 case 상세 화면에서 제목 또는 설명을 수정한다.
 2. backend는 `caseId` 기준 active case를 조회한다.
-3. 수정 대상은 `tmd_scncasem.case_titl_nm`, `tmd_scncasem.case_expn`에 해당하는 metadata뿐이다.
+3. 수정 대상은 `tmd_mdl_scnrcasem.case_titl_nm`, `tmd_mdl_scnrcasem.case_expn`에 해당하는 metadata뿐이다.
 4. `title`은 trim 후 1-200자 필수로 검증한다.
 5. `description`은 nullable/optional로 받고 `case_expn`에 반영한다.
 6. files, latestRun pointer, execution history, status, result payload/download 정보는 수정하지 않는다.
@@ -284,7 +289,7 @@ WHERE case_id = :case_id
 DB-backed 전환 시 권장 update shape:
 
 ```sql
-UPDATE tmd_scncasem
+UPDATE tmd_mdl_scnrcasem
 SET case_titl_nm = :title,
     case_expn = :description,
     mod_dtm = NOW(),
@@ -300,8 +305,8 @@ affected row count가 `0`이면 case 없음, ownership 불일치, 또는 이미 
 
 1. 사용자가 case 삭제를 요청한다.
 2. backend는 `caseId` 기준 active case를 조회한다.
-3. 삭제는 physical delete가 아니라 `tmd_scncasem.del_yn = 'Y'` soft delete다.
-4. 삭제 시 `tcm_filel` 업로드 파일, `tmd_scncaseh` 실행 이력, latestRun/result payload는 물리 삭제하지 않는다.
+3. 삭제는 physical delete가 아니라 `tmd_mdl_scnrcasem.del_yn = 'Y'` soft delete다.
+4. 삭제 시 `tcm_filel` 업로드 파일, `tmd_mdl_scnrcaseh` 실행 이력, latestRun/result payload는 물리 삭제하지 않는다.
 5. 삭제된 case는 list에서 제외된다.
 6. 삭제된 case는 detail/status/run/update/delete에서 active resource가 아니므로 `404 RSC_NOT_FOUND`로 처리한다.
 7. 반복 delete도 active resource가 아니므로 `404 RSC_NOT_FOUND`로 처리한다.
@@ -309,7 +314,7 @@ affected row count가 `0`이면 case 없음, ownership 불일치, 또는 이미 
 DB-backed 전환 시 권장 delete shape:
 
 ```sql
-UPDATE tmd_scncasem
+UPDATE tmd_mdl_scnrcasem
 SET del_yn = 'Y',
     mod_dtm = NOW(),
     mod_usr_logn_id = :actor
@@ -325,7 +330,7 @@ affected row count가 `0`이면 case 없음, ownership 불일치, 또는 이미 
 1. scheduler가 주기적으로 장시간 `RUNNING` execution을 조회한다.
 2. 임계치 초과 건은 execution을 `FAILED` 로 전환한다.
 3. `fail_rsn_cd = TIMEOUT` 과 `exec_end_dtm` 을 함께 기록한다.
-4. `tmd_scncasem.case_stat_cd` 를 `FAILED` 로 동기화한다. `last_run_id` 는 그대로 두어 어떤 run이 timeout 되었는지 추적할 수 있게 한다. case update 는 callback 흐름과 동일하게 `last_run_id = :run_id` 조건을 사용해, 사용자가 이미 재실행한 경우에는 case 최신 상태를 덮어쓰지 않는다.
+4. `tmd_mdl_scnrcasem.case_stat_cd` 를 `FAILED` 로 동기화한다. `actv_scnr_id` generated column 이 자동으로 NULL 로 풀려 active 점유가 해제되므로 helper 를 따로 해제할 필요가 없다. `last_run_id` 는 그대로 두어 어떤 run이 timeout 되었는지 추적할 수 있게 한다. case update 는 callback 흐름과 동일하게 `last_run_id = :run_id` 조건을 사용해, 사용자가 이미 재실행한 경우에는 case 최신 상태를 덮어쓰지 않는다.
 
 ## 상태 전이
 
@@ -355,10 +360,10 @@ stateDiagram-v2
 
 ### 2. case 최신 상태 보호
 
-- `tmd_scncasem.case_stat_cd` 는 latest execution projection cache이므로, history update와 같은 transaction 안에서 갱신한다.
+- `tmd_mdl_scnrcasem.case_stat_cd` 는 latest execution projection cache이므로, history update와 같은 transaction 안에서 갱신한다.
 - 단, callback 대상 execution이 해당 case의 현재 latest/active execution일 때만 case 최신 상태를 바꾼다.
-- latest execution pointer는 `tmd_scncasem.last_run_id VARCHAR(20)` 로 둔다.
-- `last_run_id` 는 `tmd_scncaseh.run_id` 에 FK를 걸지 않는 application-validated pointer로 관리한다.
+- latest execution pointer는 `tmd_mdl_scnrcasem.last_run_id VARCHAR(20)` 로 둔다.
+- `last_run_id` 는 `tmd_mdl_scnrcaseh.run_id` 에 FK를 걸지 않는 application-validated pointer로 관리한다.
   - 이유: 현재 권장 실행 선점 흐름은 case master의 `last_run_id` 를 먼저 갱신한 뒤 history row를 insert하므로 FK를 걸면 생성 순서가 불필요하게 복잡해진다.
 - callback 대상이 case 최신 실행인지 확인할 때 case update 조건은 callback `run_id` 와 `last_run_id` 가 일치해야 한다.
   - 예: `WHERE case_id = ? AND last_run_id = ?`
@@ -374,7 +379,7 @@ stateDiagram-v2
 ### 4. timeout 후 late callback
 
 - timeout scheduler가 execution을 `FAILED/TIMEOUT` 으로 전이한 뒤 도착한 late success callback은 `FAILED -> COMPLETED` 로 되돌리지 않는다.
-- 해당 late callback이 이전 `run_id` 에 대한 것이고 사용자가 이미 재실행해 새 execution이 latest가 된 경우에도 `tmd_scncasem.case_stat_cd` 를 바꾸지 않는다.
+- 해당 late callback이 이전 `run_id` 에 대한 것이고 사용자가 이미 재실행해 새 execution이 latest가 된 경우에도 `tmd_mdl_scnrcasem.case_stat_cd` 를 바꾸지 않는다.
 - 운영 추적을 위해 애플리케이션 로그에 `LATE_CALLBACK_IGNORED` 성격의 이벤트를 남긴다.
 - 이 처리는 상태 전이가 아니며, `exec_stat_cd`, `case_stat_cd`, `exec_end_dtm` 을 변경하지 않는다.
 
@@ -398,10 +403,11 @@ sequenceDiagram
     FE->>BE: POST /upload
     BE->>BE: 파일명 검증 (DEMAND/SUPPLY/TRADE)
     BE->>BE: 파일 복호화
-    BE->>S3: 파일 업로드
-    S3-->>BE: 저장 파일명/경로 반환
     BE->>DB: case INSERT (PENDING)
-    BE->>DB: tcm_filel INSERT (SCNCASE + case_id)
+    DB-->>BE: case_id 반환
+    BE->>S3: 파일 업로드 (case_id 기준)
+    S3-->>BE: 저장 파일명/경로 반환
+    BE->>DB: tcm_filel INSERT (SCNRCASE + case_id)
     BE-->>FE: case_id 반환
 
     Note over User,POD: 2단계 - 실행
@@ -452,114 +458,25 @@ flowchart TD
     D -- "0" --> E["case 재조회"]
     E --> F["404 case 없음\n또는 409 이미 RUNNING"]
     D -- "1" --> G["execution INSERT\nRUNNING"]
-    G --> H["tcm_filel 조회\nSCNCASE + case_id"]
+    G --> H["tcm_filel 조회\nSCNRCASE + case_id"]
     H --> I["Kubernetes Job 생성\nmodel image pod 실행"]
 ```
 
-## Candidate DDL - Not Rollout SQL / Persistence 영향 초안
+## Persistence Source-of-Truth / DDL 경계
 
-이 섹션의 SQL은 workflow와 future DB mapping 검토를 위한 candidate DDL이다. DBA rollout 가능한 canonical SQL은 [scenario-case-execution-erd-ddl-draft.md](scenario-case-execution-erd-ddl-draft.md) 에서 별도 관리한다.
+이 문서는 workflow/domain semantics만 관리한다. `tmd_mdl_scnrcasem` / `tmd_mdl_scnrcaseh` 의 table, column, key, index, rollout SQL, verify SQL은 [scenario-case-execution-erd-ddl-draft.md](scenario-case-execution-erd-ddl-draft.md) 가 canonical source다.
 
-구현자는 이 섹션의 SQL을 운영 DB 적용 스크립트로 복사하지 않는다.
+혼선을 막기 위해 이 문서에는 case/run `CREATE TABLE` 후보 DDL, timeout 후보 SQL, 후보 인덱스 SQL을 두지 않는다. 과거 이 섹션에 있던 중복 물리 DDL 잔재는 2026-06-10에 제거했다.
 
-2026-05-20 정합성 메모:
+workflow 구현자는 아래 역할/연결 규칙만 참고하고, 물리 스키마와 DBA rollout은 반드시 canonical ERD/DDL 문서를 따른다.
 
-- MI Fundamental Model 1차 mock API canonical contract에는 `scenarioId`가 없다.
-- 이 섹션의 candidate DDL은 `scenario_id` 컬럼/인덱스/목록 query shape를 포함하지 않는다.
-- 기존 `scenario_id` 전제는 "Scenario Workbench 하위 리소스" 해석에서 출발한 superseded 가정이며, 본 문서는 독립 Scenario Case aggregate 모델로 정리한다.
-
-### 테이블 역할
+### 테이블 역할 요약
 
 | 테이블 | 역할 | 핵심 보관 값 |
 |---|---|---|
-| `tmd_scncasem` | 업로드 단위 aggregate | `usr_no`, 제목/설명, 최신 상태, `last_run_id` |
-| `tmd_scncaseh` | 실행 단위 history | `run_id` (PK), `run_seq` (UNIQUE, tcm_filel output 연결용), `case_id`, 실행 상태, 실패 사유, 오류 메시지, 시작/종료 시각 |
+| `tmd_mdl_scnrcasem` | 업로드 단위 aggregate | `usr_no`, `exec_type_cd`(실행유형), `scnr_id`, 제목/설명, 최신 상태, `last_run_id` |
+| `tmd_mdl_scnrcaseh` | 실행 단위 history | `run_id` (PK), `run_seq` (UNIQUE, tcm_filel output 연결용), `case_id`, 실행 상태, 실패 사유, 오류 메시지, 시작/종료 시각 |
 | `tcm_filel` | 기존 공통 파일 내역 | 원본/저장 파일명, 저장 경로, 파일 크기, MIME, 관계 객체 구분/식별 번호 |
-
-### 물리 모델 초안
-
-주의:
-- 아래 DDL은 design draft다.
-- DBA rollout 가능한 canonical DDL은 [scenario-case-execution-erd-ddl-draft.md](scenario-case-execution-erd-ddl-draft.md) 에서 별도 관리한다.
-- 결과 payload/pointer 저장은 phase 1 scope에서 제외하기로 결정했다. 결과 조회 spec이 별도로 확정되면 그때 재도입을 검토한다.
-- ownership scope는 `usr_no` only로 확정하며, 본 모델에는 조직/부서/tenant 정책 키를 추가하지 않는다.
-- change note: v0.2.5 검토 시점의 `tmm_scenariom` parent 전제 및 `scenario_id` 단일 FK 검토는 superseded 이력으로만 유지한다.
-
-#### `tmd_scncasem`
-
-```sql
-CREATE TABLE tmd_scncasem
-(
-    case_id          INT UNSIGNED AUTO_INCREMENT COMMENT '시나리오케이스ID'
-        PRIMARY KEY,
-    crt_usr_logn_id  VARCHAR(50) DEFAULT 'SYSTEM'          NOT NULL COMMENT '생성사용자로그인ID',
-    crt_dtm          DATETIME    DEFAULT CURRENT_TIMESTAMP NOT NULL COMMENT '생성일시',
-    mod_usr_logn_id  VARCHAR(50) DEFAULT 'SYSTEM'          NOT NULL COMMENT '수정사용자로그인ID',
-    mod_dtm          DATETIME    DEFAULT CURRENT_TIMESTAMP NOT NULL COMMENT '수정일시',
-    del_yn           CHAR(1)     DEFAULT 'N'               NOT NULL COMMENT '삭제여부',
-
-    usr_no           INT UNSIGNED                          NOT NULL COMMENT '사용자번호',
-    case_titl_nm     VARCHAR(200)                          NOT NULL COMMENT '케이스제목명',
-    case_expn        TEXT                                  NULL     COMMENT '케이스설명',
-    case_stat_cd     VARCHAR(20) DEFAULT 'PENDING'         NOT NULL COMMENT '케이스상태코드',
-    last_run_id      VARCHAR(20)                           NULL     COMMENT '최신실행ID (tmd_scncaseh.run_id 논리참조, 물리 FK 없음)'
-
-)
-    COMMENT 'TMD_시나리오케이스마스터';
-
-CREATE INDEX tmd_scncasem_ix01
-    ON tmd_scncasem (del_yn, crt_dtm);
-
--- Feature spec canonical 목록 계약(1차 mock): no scenarioId, optional searchType/keyword pair, ORDER BY createdAt DESC
--- 목록 API는 전체 목록을 반환하며 usr_no 필터를 사용하지 않는다.
--- usr_no는 assigneeName 표시용 tmd_usrm JOIN 전용이며 WHERE 조건에 포함되지 않는다.
--- DB-backed 목록 query 후보 (기본 목록)
--- WHERE del_yn = 'N'
--- ORDER BY crt_dtm DESC
--- -> ix01 사용
--- 상태 탭/필터 인덱스(del_yn, case_stat_cd, crt_dtm)는 1차 API 목록 계약에 해당 필터가 없으므로 미포함. 추후 필터 추가 시 재검토.
-```
-
-#### `tmd_scncaseh`
-
-```sql
-CREATE TABLE tmd_scncaseh
-(
-    crt_usr_logn_id  VARCHAR(50) DEFAULT 'SYSTEM'          NOT NULL COMMENT '생성사용자로그인ID',
-    crt_dtm          DATETIME    DEFAULT CURRENT_TIMESTAMP NOT NULL COMMENT '생성일시',
-    mod_usr_logn_id  VARCHAR(50) DEFAULT 'SYSTEM'          NOT NULL COMMENT '수정사용자로그인ID',
-    mod_dtm          DATETIME    DEFAULT CURRENT_TIMESTAMP NOT NULL COMMENT '수정일시',
-    del_yn           CHAR(1)     DEFAULT 'N'               NOT NULL COMMENT '삭제여부',
-
-    run_id           VARCHAR(20)                           NOT NULL COMMENT '실행ID (yyyymmdd_hhmmss_XXXX)'
-        PRIMARY KEY,
-    run_seq          BIGINT UNSIGNED                       NOT NULL AUTO_INCREMENT UNIQUE COMMENT '실행순번 (tcm_filel output 파일 연결용 INT 식별자)',
-    case_id          INT UNSIGNED                          NOT NULL COMMENT '시나리오케이스ID',
-    exec_stat_cd     VARCHAR(20) DEFAULT 'RUNNING'         NOT NULL COMMENT '실행상태코드',
-    fail_rsn_cd      VARCHAR(20)                           NULL     COMMENT '실패사유코드',
-    err_msg_cntt     VARCHAR(2000)                         NULL     COMMENT '오류메시지내용',
-    exec_bgn_dtm     DATETIME                              NULL     COMMENT '실행시작일시',
-    exec_end_dtm     DATETIME                              NULL     COMMENT '실행종료일시',
-
-    CONSTRAINT tmd_scncaseh_fk01
-        FOREIGN KEY (case_id) REFERENCES tmd_scncasem (case_id)
-)
-    COMMENT 'TMD_시나리오케이스이력';
-
-CREATE INDEX tmd_scncaseh_ix01
-    ON tmd_scncaseh (exec_stat_cd, exec_bgn_dtm);
-```
-
-`tmd_scncaseh_ix01` 은 아직 구현된 scheduler SQL에 대한 확정 인덱스가 아니라, 아래 예상 조회 조건을 기준으로 둔 후보 인덱스다. DB-backed timeout scheduler 구현 시 실제 SQL에 `EXPLAIN` 을 수행해 `key = tmd_scncaseh_ix01` 사용 여부와 full scan 여부를 검증한다.
-
-`(case_id, exec_stat_cd)` 인덱스는 1차 phase에 runs history 목록 API가 없으므로 미포함. runs list API 추가 시 함께 검토한다.
-
-```sql
-SELECT exec_id, case_id, run_id
-FROM tmd_scncaseh
-WHERE exec_stat_cd = 'RUNNING'
-  AND exec_bgn_dtm < DATE_SUB(NOW(), INTERVAL 5 MINUTE);
-```
 
 #### `tcm_filel` 연결 방식
 
@@ -567,26 +484,27 @@ WHERE exec_stat_cd = 'RUNNING'
 
 | 구분 | `file_rel_obj_spt_cd` | `file_rel_obj_dstg_no` | 설명 |
 |---|---|---|---|
-| 업로드 입력 파일 | `SCNCASE` | `tmd_scncasem.case_id` | DEMAND/SUPPLY/TRADE 파일 3개 |
-| 모델 실행 output 파일 | `SCNCASEH` | `tmd_scncaseh.run_seq` | run 단위 결과 파일, callback 수신 후 backend가 insert |
+| 업로드 입력 파일 | `SCNRCASE` | `tmd_mdl_scnrcasem.case_id` | DEMAND/SUPPLY/TRADE 파일 3개 |
+| 모델 실행 output 파일 | `SCNRCASEH` | `tmd_mdl_scnrcaseh.run_seq` | run 단위 결과 파일, pod/python script가 직접 insert |
 
 ```sql
 -- 업로드 입력 파일 조회
 SELECT *
 FROM tcm_filel
 WHERE del_yn = 'N'
-  AND file_rel_obj_spt_cd = 'SCNCASE'
+  AND file_rel_obj_spt_cd = 'SCNRCASE'
   AND file_rel_obj_dstg_no = :case_id;
 
 -- 특정 run의 output 파일 조회
 SELECT *
 FROM tcm_filel
 WHERE del_yn = 'N'
-  AND file_rel_obj_spt_cd = 'SCNCASEH'
+  AND file_rel_obj_spt_cd = 'SCNRCASEH'
   AND file_rel_obj_dstg_no = :run_seq;
 ```
 
-- output 파일은 model pod가 S3에 저장한 뒤 backend callback API를 호출하면, backend가 callback payload의 결과 파일 경로를 받아 `tcm_filel`에 insert한다.
+- output 파일은 model pod가 S3에 저장한 뒤 pod/python script가 `tcm_filel`에 직접 insert한다.
+- backend callback API는 output 파일 metadata를 저장하지 않고, execution/case 상태를 terminal 상태로 전이하는 책임만 가진다.
 - output 파일은 `run_seq`에 귀속되므로 재실행 시 이전 run의 output 파일과 독립적으로 존재한다. soft-delete 없이 run별로 결과 파일 추적이 가능하다.
 - `run_seq`는 `file_rel_obj_dstg_no`(`INT UNSIGNED` 계열) 저장 요건을 충족하기 위한 surrogate key다. `run_id`(`VARCHAR(20)`)는 model pod 연동 키로 그대로 유지한다.
 
@@ -599,7 +517,7 @@ INSERT INTO tcm_commcdd (
     use_bgn_dt, use_end_dt, use_yn, high_cd_grp_id, high_cd_id
 )
 VALUES (
-    'file_rel_obj_spt_cd', 'SCNCASE', '시나리오 케이스', '5', '시나리오 케이스 업로드 파일',
+    'file_rel_obj_spt_cd', 'SCNRCASE', '시나리오 케이스', '5', '시나리오 케이스 업로드 파일',
     '20260518', '99991231', 'Y', NULL, NULL
 );
 
@@ -609,7 +527,7 @@ INSERT INTO tcm_commcdd (
     use_bgn_dt, use_end_dt, use_yn, high_cd_grp_id, high_cd_id
 )
 VALUES (
-    'file_rel_obj_spt_cd', 'SCNCASEH', '시나리오 케이스 실행 이력', '6', '시나리오 케이스 모델 실행 output 파일',
+    'file_rel_obj_spt_cd', 'SCNRCASEH', '시나리오 케이스 실행 이력', '6', '시나리오 케이스 모델 실행 output 파일',
     '20260518', '99991231', 'Y', NULL, NULL
 );
 ```
@@ -620,12 +538,12 @@ VALUES (
 |---|---|---|
 | 필수 파일 수 | 현재 UI는 3개 기준 | 파일 수 검증은 `tcm_filel` 연결 row 수로 판단 |
 | 파일명 규칙 | `DEMAND`, `SUPPLY`, `TRADE` 키워드 각 1개씩 포함 | 업로드 시점 검증. 대소문자 무관(`toUpperCase` 비교). 조건 불충족 시 `400` 반환 |
-| 파일 저장 | `tcm_filel` 재사용 | `file_rel_obj_spt_cd = 'SCNCASE'`, `file_rel_obj_dstg_no = case_id` |
-| 중복 실행 | 동일 case의 `RUNNING` 차단 | 판단 키는 `case_stat_cd`. DB-backed 권장안은 conditional master update + affected-row check. `last_run_id` 는 차단 조건이 아닌 latest pointer 용도다 |
+| 파일 저장 | `tcm_filel` 재사용 | `file_rel_obj_spt_cd = 'SCNRCASE'`, `file_rel_obj_dstg_no = case_id` |
+| 중복 실행 | 동일 case의 `RUNNING` 차단 + 동일 scenario의 active 실행 1건 제한 | case 단위: conditional master update + affected-row check. scenario 단위(수급모델): `actv_scnr_id` generated column + `tmd_mdl_scnrcasem_uq01 UNIQUE (actv_scnr_id)` 로 INSERT 충돌 시 409 매핑. `last_run_id` 는 차단 조건이 아닌 latest pointer 용도다 |
 | 상태 정합성 | execution 완료/실패 시 case 최신 상태도 동기화 | callback 대상이 latest/active execution (`last_run_id = :run_id`) 일 때만 case 최신 상태 갱신 |
-| `last_run_id` invariant | `case_stat_cd` 와 `last_run_id` 가 가리키는 `tmd_scncaseh.exec_stat_cd` 는 항상 같은 terminal/RUNNING 상태여야 한다 | 갱신은 한 transaction 안에서 수행. terminal/timeout 동기화 시 `last_run_id` 자체는 변경하지 않는다 |
+| `last_run_id` invariant | `case_stat_cd` 와 `last_run_id` 가 가리키는 `tmd_mdl_scnrcaseh.exec_stat_cd` 는 항상 같은 terminal/RUNNING 상태여야 한다 | 갱신은 한 transaction 안에서 수행. terminal/timeout 동기화 시 `last_run_id` 자체는 변경하지 않는다 |
 | 실패 추적 | `fail_rsn_cd`, `err_msg_cntt` 기록 | 운영 추적 목적 |
-| soft delete | case delete는 `tmd_scncasem.del_yn = 'Y'`만 갱신 | phase-1 및 future DB-backed 기본 semantics. `tmd_scncaseh` / `tcm_filel`은 물리 삭제하지 않는다 |
+| soft delete | case delete는 `tmd_mdl_scnrcasem.del_yn = 'Y'`만 갱신 | phase-1 및 future DB-backed 기본 semantics. `tmd_mdl_scnrcaseh` / `tcm_filel`은 물리 삭제하지 않는다 |
 
 ## Kubernetes Job 실행 설정
 
@@ -647,8 +565,8 @@ mi:
 
 ## Open Questions
 
-- 현재 문서 기준 테이블명은 `tmd_scncasem`, `tmd_scncaseh` 로 확정했다. 실제 배포 전 DBA 검토는 별도로 필요하다.
-- `SCNCASE` 공통코드는 target 중복 없음이 확인되었다. 단, `cd_nm`, `cd_rnk`, `cd_expn` 최종 값은 운영 공통코드 관리 기준에 맞춰 DBA/공통코드 owner가 확정한다.
+- 현재 문서 기준 테이블명은 `tmd_mdl_scnrcasem`, `tmd_mdl_scnrcaseh` 로 확정했다. 실제 배포 전 DBA 검토는 별도로 필요하다.
+- `SCNRCASE` 공통코드는 target 중복 없음이 확인되었다. 단, `cd_nm`, `cd_rnk`, `cd_expn` 최종 값은 운영 공통코드 관리 기준에 맞춰 DBA/공통코드 owner가 확정한다.
 - timeout 5분을 고정값으로 둘지 운영 설정값으로 노출할지 미정이다.
 - soft-deleted case의 보존 기간, audit 조회, 복구 정책은 정해지지 않았다.
 - 재실행 시 별도 retry count 컬럼이 필요한지는 추후 운영 운영 모니터링/SLA 요구가 들어오면 재검토한다.
@@ -656,9 +574,9 @@ mi:
 ### Closed Decisions
 
 - 결과 payload/pointer 저장 (2026-05-19): phase 1 scope에서 제외. `req_param_json`, `rslt_ref_json` 컬럼을 DDL에서 제거했다. 요청 정보는 case metadata + `tcm_filel`, 결과 payload/파일은 model pod가 S3/object storage에 저장/관리한다. 결과 조회/download spec이 별도로 확정되면 그때 재도입을 검토한다.
-- run_id format (2026-05-21): backend 생성 포맷은 `yyyymmdd_hhmmss_XXXX` 로 확정한다. `tmd_scncaseh.run_id` 는 `VARCHAR(20) PRIMARY KEY` 로 사용하며, `tmd_scncasem.last_run_id` 는 `VARCHAR(20)` 기준으로 설계한다.
-- run_seq surrogate key (2026-05-22): `tmd_scncaseh`에 `run_seq BIGINT UNSIGNED AUTO_INCREMENT UNIQUE` 를 추가한다. `file_rel_obj_dstg_no`가 `INT UNSIGNED` 계열이므로 `run_id`(`VARCHAR(20)`)를 직접 저장할 수 없는 제약을 해결하기 위한 surrogate key다. output 파일은 `SCNCASEH` / `run_seq` 로 `tcm_filel`에 연결한다. `run_id`는 model pod 연동 키로 그대로 유지한다. 이전 "surrogate key를 두지 않는다" 결정은 output 파일 run 단위 추적 요건으로 인해 superseded된다.
-- latest execution pointer (2026-05-19, 2026-05-21 length updated): `tmd_scncasem.last_run_id VARCHAR(20) NULL` 컬럼으로 도입. `tmd_scncaseh.run_id` 에 대한 logical reference 이며 물리 FK 는 걸지 않고 애플리케이션이 갱신 순서와 invariant 를 보장한다.
+- run_id format (2026-05-21): backend 생성 포맷은 `yyyymmdd_hhmmss_XXXX` 로 확정한다. `tmd_mdl_scnrcaseh.run_id` 는 `VARCHAR(20) PRIMARY KEY` 로 사용하며, `tmd_mdl_scnrcasem.last_run_id` 는 `VARCHAR(20)` 기준으로 설계한다.
+- run_seq surrogate key (2026-05-22, type fixed 2026-06-11): `tmd_mdl_scnrcaseh`에 `run_seq INT UNSIGNED AUTO_INCREMENT UNIQUE` 를 추가한다. `file_rel_obj_dstg_no`가 `INT UNSIGNED` 계열이므로 `run_id`(`VARCHAR(20)`)를 직접 저장할 수 없는 제약을 해결하기 위한 surrogate key다. output 파일은 `SCNRCASEH` / `run_seq` 로 `tcm_filel`에 연결한다. `run_id`는 model pod 연동 키로 그대로 유지한다. Java/JPA는 insert 직후 엔티티 필드 자동 반영을 가정하지 않고, flush 후 `run_id` 기준으로 `run_seq`를 재조회해 Kubernetes Job arg로 사용한다. 이전 "surrogate key를 두지 않는다" 결정과 `BIGINT UNSIGNED` 후보는 superseded된다.
+- latest execution pointer (2026-05-19, 2026-05-21 length updated): `tmd_mdl_scnrcasem.last_run_id VARCHAR(20) NULL` 컬럼으로 도입. `tmd_mdl_scnrcaseh.run_id` 에 대한 logical reference 이며 물리 FK 는 걸지 않고 애플리케이션이 갱신 순서와 invariant 를 보장한다.
 - `run_id` callback 전달 방식 (2026-05-21): callback URL path에 `runId` 를 포함하는 방식으로 확정 (`POST /api/v1/mi/fundamental-model/runs/{runId}/callback`). payload에 별도로 포함하지 않는다.
 - 실행 방식 (2026-05-21): 외부 model API 호출에서 Python `ProcessBuilder` 직접 실행으로 변경. 이 결정은 2026-05-22 k8s Job 방식으로 superseded 되었다.
 - 실행 방식 (2026-05-22): backend는 Kubernetes Job 생성 요청으로 모델 이미지 pod를 실행한다. pod 내부에서 `python engine/run_all_parallel.py` 를 실행하고, 결과를 S3/object storage에 저장한 뒤 backend callback API를 호출한다.
@@ -666,12 +584,13 @@ mi:
 - 파일 타입 구분 방식 (2026-05-21): `tcm_filel`에 별도 파일 타입 컬럼 없음. 파일명의 `DEMAND`/`SUPPLY`/`TRADE` 키워드로 구분. 업로드 시점 검증 추가.
 - 외부 모델 완료 동기화 방식 (2026-05-19): polling 이 아니라 backend callback 호출 방식으로 확정. 자세한 흐름은 본문 §4 와 Callback Idempotency 섹션 참고.
 - ownership scope (2026-05-20): `usr_no` only로 확정. 조직/부서/tenant 정책 키는 본 모델에 추가하지 않는다.
-- `ASSIGNEE_NAME` JOIN boundary (2026-05-20): `tmd_scncasem.usr_no = tmd_usrm.usr_no`, 표시 컬럼은 `tmd_usrm.usr_nm`으로 확정.
+- `ASSIGNEE_NAME` JOIN boundary (2026-05-20): `tmd_mdl_scnrcasem.usr_no = tmd_usrm.usr_no`, 표시 컬럼은 `tmd_usrm.usr_nm`으로 확정.
+- 실행유형 명시 컬럼 (2026-06-16): 기존 `scnr_id` NULL 여부 기반 암묵 구분을 `exec_type_cd`(`INDEPENDENT`/`SCENARIO`/`MI_BASE`) 명시 컬럼으로 분리한다. 트리거는 `MI Base` 적재 데이터를 실행 테이블에 두기로 한 결정이며, `INDEPENDENT`/`MI_BASE` 가 동일 `scnr_id = NULL` 이라 `scnr_id` 만으로 구분 불가해졌다. `MI_BASE` 는 사용자 실행 흐름(`PENDING`→`RUNNING`→terminal)을 타지 않고, 적재 주체(배치/admin)가 case + `tmd_mdl_scnrcaseh` row 를 `COMPLETED` 로 직접 INSERT 해 Volumes/Price 결과를 `run_seq` 로 연결한다. 물리 스키마/공통코드/CHECK 는 [scenario-case-execution-erd-ddl-draft.md](scenario-case-execution-erd-ddl-draft.md) 가 canonical source다.
 - Volumes/Trade Flows/Price 결과 데이터 조회 API (2026-06-07): 결과 파일 다운로드와 분리하여 `GET /cases/{caseId}/volumes`, `GET /cases/{caseId}/volumes/trade`, `GET /cases/{caseId}/price`를 1차 mock scope에 포함. 상세 조회(`GET /cases/{caseId}`)는 metadata + files + latestRun만 반환하는 경계를 유지한다. 1차 mock은 json seed 기반 고정 데이터 반환. DB-backed 전환 시 parsed result table, key, partition/index, mock-to-real 경계는 [mi-fundamental-model-output-result-persistence-design.md](mi-fundamental-model-output-result-persistence-design.md)를 따른다.
 
 ## Completion Boundary
 
 - 이 문서는 Scenario Case 실행 workflow와 persistence 초안까지만 다룬다.
 - endpoint path, request/response field contract는 [mi-fundamental-model-mock-api-feature-spec.md](../../feature-specs/mi-fundamental-model-mock-api-feature-spec.md) 를 따른다.
-- DBA rollout 가능한 DDL/ERD는 별도 artifact로 분리한다. `scenario_id` 전제는 제거되었고, ownership scope는 `usr_no` only로 확정했다. index 선택은 후속 ERD/DBA review 대상이다.
+- DBA rollout 가능한 DDL/ERD는 별도 artifact로 분리한다. 과거 `scenario_id` 컬럼명/물리 FK 전제는 제거되었고, 현재 모델은 nullable `scnr_id` 논리 참조를 사용한다. ownership scope와 `scnr_id` 기반 active-run guard/index 선택은 후속 ERD/DBA review 대상이다.
 - model pod callback payload contract는 Python/model 팀과의 협의에서 확정한다.

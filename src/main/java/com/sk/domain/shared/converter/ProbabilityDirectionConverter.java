@@ -15,7 +15,8 @@ public class ProbabilityDirectionConverter implements AttributeConverter<Probabi
 
     @Override
     public ProbabilityDirection convertToEntityAttribute(String dbData) {
-        return dbData == null ? null : ProbabilityDirection.from(dbData);
+        // 대소문자는 from()이 equalsIgnoreCase로 처리. 여기선 null/공백만 방어.
+        return (dbData == null || dbData.isBlank()) ? null : ProbabilityDirection.from(dbData.trim());
     }
 
 }

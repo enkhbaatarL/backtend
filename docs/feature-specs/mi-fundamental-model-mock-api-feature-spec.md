@@ -157,7 +157,7 @@ MI Fundamental Model의 1차 mock API는 MI Fundamental Model 화면에서 사�
 | 운영 Kubernetes Job dispatch | phase 1 제외 | external model interface spec + workflow design |
 | callback 인증/서명/재시도 | mock 구현 밖의 운영 정책 | security/integration design + feature spec update |
 | DB persistence / DDL (volumes/trade flows/price 포함) | phase 1 제외. mock은 json seed | case/run DDL은 `scenario-case-execution-erd-ddl-draft.md`, output result data persistence는 `mi-fundamental-model-output-result-persistence-design.md` |
-| Ownership scope | DB-backed 확정 사항 | `usr_no` only로 확정. 조직/부서/tenant 정책 키는 본 모델에 추가하지 않는다 |
+| Ownership scope | DB-backed 확정 사항 | owner-scoped mutation(run/update/delete 등)은 `usr_no` only로 확정. 조직/부서/tenant 정책 키는 본 모델에 추가하지 않는다. Volumes/Trade Flows/Price result read는 다른 사용자가 실행한 결과도 조회 가능한 shared read model이므로 `usr_no` owner predicate를 적용하지 않는다 |
 | `ASSIGNEE_NAME` DB 검색 경계 | DB-backed 확정 사항 + 검증 필요 | `tmd_mdl_scnrcasem.usr_no = tmd_usrm.usr_no` JOIN, 표시값 `tmd_usrm.usr_nm` 사용. rollout 전 JOIN 양측 인덱스 EXPLAIN 검증 필요 |
 | timeout scheduler | phase 1 제외 | DB-backed scheduler design + query/EXPLAIN verification |
 | Volumes/Price 필터 저장 (Save 토글) | phase 1 제외. FE 로컬 상태로 관리 | user preference API feature spec + DB 테이블 설계 |
@@ -301,6 +301,8 @@ createCase(
 1차 기본 동작은 실행 요청 직후 상태를 `RUNNING`으로 두고 자동 완료시키지 않는다. 데모에서 완료/실패 전환이 필요하면 phase 1에 포함된 callback endpoint를 호출해 terminal 상태로 전이한다. 자동 완료 모드 (`AUTO_COMPLETE`, `AUTO_FAIL`) 같은 데모 편의 옵션은 1차 scope에서 제외한다.
 
 실제 연동에서는 backend가 Kubernetes Job을 생성할 때 `runId`, 입력 파일 storage path 3개, output storage prefix, callback URL/auth 정보를 함께 전달한다. Kubernetes API의 Job 생성 성공은 장시간 실행 결과가 아니라 dispatch 접수 성공 여부만 표현한다. 접수 성공이면 backend는 case/run 상태를 `RUNNING`으로 유지하고 클라이언트에 `202 Accepted`를 반환한다. pod 내부 실행 완료 또는 실패는 pod 또는 실행 프로세스가 backend callback API를 호출해 terminal 상태로 전이한다. backend가 pod 내부 Python 완료 여부를 주기적으로 polling 하는 방식은 채택하지 않는다.
+
+실행 요청은 case 상태를 변경하고 새 run을 생성하는 owner-scoped mutation이다. DB-backed 구현은 `case_id + usr_no ownership + del_yn = 'N'` 기준으로 active owned case인지 확인한 뒤 실행 선점/상태 전이를 수행한다. 소유자가 아닌 사용자가 실행을 요청하면 active resource hiding 규칙에 따라 `RSC_NOT_FOUND`로 처리한다.
 
 ### 3.4 Scenario Case 상세 조회
 
@@ -492,6 +494,7 @@ Reset API 포함 판단:
 - FE는 `rows`를 응답 순서 그대로 렌더링할 수 있다. 서버는 각 Type 안에서 Region별로 `REGION_SUBTOTAL` 행을 먼저 반환하고, 이어서 해당 Region의 `COUNTRY` 행들을 반환한다. Type의 마지막 행은 `TYPE_TOTAL`이다.
 - `granularity=YEARLY`이면 월별 데이터를 연간으로 집계해 반환한다. columns의 `month` 필드는 `null`이 된다.
 - `granularity=MONTHLY`이면 columns의 `month` 필드는 1~12 정수다.
+- 조회 조건에 매칭되는 실제 result row가 없으면 에러가 아니라 `200 OK`로 응답하고 `columns=[]`, `rows=[]`를 반환한다.
 - 1차 mock에서는 json seed 파일 기반 고정 데이터를 반환한다. 필터는 mock 데이터 내에서 적용한다.
 
 ### 3.12 Price 데이터 조회
@@ -511,6 +514,7 @@ Reset API 포함 판단:
 - 응답은 차트 데이터, Annual 테이블, Monthly 테이블을 단일 응답으로 동시에 반환한다.
 - 차트는 `BASE_CASE`와 `USER_ADJUSTED` 두 series를 포함한다.
 - Annual 테이블과 Monthly 테이블의 행 `label`은 데이터 기반 동적 값이다. 서버가 고정 enum으로 강제하지 않는다.
+- 실제 price result row가 없으면 에러가 아니라 `200 OK`로 응답하고 chart series와 table rows는 빈 배열로 반환한다. table columns는 유지한다.
 - 1차 mock에서는 json seed 파일 기반 고정 데이터를 반환한다.
 
 
@@ -544,6 +548,7 @@ Reset API 포함 판단:
   - `types=TO_COUNTRY,FROM_COUNTRY` + `regions=ASIA`: 양방향 모두 ASIA로 축소
 - `toRegion=null`인 Total 행 flows는 region 필터와 무관하게 항상 포함된다.
 - flows는 0이 아닌 값만 포함한다 (sparse). fromCountries × toCountries 매트릭스에서 값이 없는 셀은 프론트가 0(또는 `-`)으로 처리한다.
+- 조회 조건에 매칭되는 실제 trade result row가 없으면 에러가 아니라 `200 OK`로 응답하고 `fromCountries=[]`, `toCountries=[]`, `flows=[]`를 반환한다. header는 있으나 flow row만 없으면 header는 반환하고 `flows=[]`로 응답한다.
 - 1차 mock에서는 json seed 파일 기반 고정 데이터를 반환한다. `selector`/`year` 값은 응답에 echo하며 필터는 seed 데이터 내에서 적용한다.
 
 ## 4. Response DTO Draft
@@ -1109,15 +1114,15 @@ FE는 `latestRun.startedAt`과 `latestRun.finishedAt`으로 소요시간을 계�
     "regions": ["ASIA", "AFRICA"]
   },
   "fromCountries": [
-    { "key": "REGION:AFRICA", "label": "Africa", "kind": "REGION_TOTAL", "region": "AFRICA", "country": null },
+    { "key": "REGION:AFRICA", "label": "Africa", "kind": "REGION_SUBTOTAL", "region": "AFRICA", "country": null },
     { "key": "COUNTRY:AFRICA:Angola", "label": "Angola", "kind": "COUNTRY", "region": "AFRICA", "country": "Angola" },
-    { "key": "REGION:NORTH_AMERICA", "label": "America N", "kind": "REGION_TOTAL", "region": "NORTH_AMERICA", "country": null },
+    { "key": "REGION:NORTH_AMERICA", "label": "America N", "kind": "REGION_SUBTOTAL", "region": "NORTH_AMERICA", "country": null },
     { "key": "COUNTRY:NORTH_AMERICA:United States", "label": "United States", "kind": "COUNTRY", "region": "NORTH_AMERICA", "country": "United States" }
   ],
   "toCountries": [
-    { "key": "REGION:AFRICA", "label": "Africa", "kind": "REGION_TOTAL", "region": "AFRICA", "country": null },
+    { "key": "REGION:AFRICA", "label": "Africa", "kind": "REGION_SUBTOTAL", "region": "AFRICA", "country": null },
     { "key": "COUNTRY:AFRICA:Senegal", "label": "Senegal", "kind": "COUNTRY", "region": "AFRICA", "country": "Senegal" },
-    { "key": "REGION:ASIA", "label": "Asia", "kind": "REGION_TOTAL", "region": "ASIA", "country": null },
+    { "key": "REGION:ASIA", "label": "Asia", "kind": "REGION_SUBTOTAL", "region": "ASIA", "country": null },
     { "key": "COUNTRY:ASIA:Bangladesh", "label": "Bangladesh", "kind": "COUNTRY", "region": "ASIA", "country": "Bangladesh" },
     { "key": "TOTAL", "label": "Total", "kind": "GRAND_TOTAL", "region": null, "country": "Total" }
   ],
@@ -1146,12 +1151,12 @@ FE는 `latestRun.startedAt`과 `latestRun.finishedAt`으로 소요시간을 계�
 |---|---|---|
 | `key` | `String` | 행/열 식별자. FE lookup key로 사용한다. 예: `REGION:AFRICA`, `COUNTRY:AFRICA:Angola`, `TOTAL` |
 | `label` | `String` | 화면 표시명. 지역 집계는 region label, 개별 국가는 country, 합계는 `Total` |
-| `kind` | `TradeCountryHeaderKind` | 헤더 유형. `REGION_TOTAL`, `COUNTRY`, `GRAND_TOTAL` |
+| `kind` | `TradeCountryHeaderKind` | 헤더 유형. `REGION_SUBTOTAL`, `COUNTRY`, `GRAND_TOTAL` |
 | `region` | `FundamentalModelRegion` | 지역. `null`이면 Total 행을 나타낸다 |
 | `country` | `String` | 국가명. `null`이면 해당 지역의 집계 행/열이다 |
 
 프론트 렌더링 규칙:
-- `kind == "REGION_TOTAL"` → **볼드** 지역 집계 행/열 (예: "Africa")
+- `kind == "REGION_SUBTOTAL"` → **볼드** 지역 집계 행/열 (예: "Africa")
 - `kind == "COUNTRY"` → 개별 국가 행/열 (예: "Angola")
 - `kind == "GRAND_TOTAL"` → Total 합계 행 (항상 toCountries 마지막)
 - 셀 lookup은 `flows`를 `(fromKey, toKey)` 기준으로 map 구성하고, 누락 셀은 0으로 처리한다
@@ -1176,7 +1181,7 @@ FE는 `latestRun.startedAt`과 `latestRun.finishedAt`으로 소요시간을 계�
 
 **`TradeFlowDirection`:** `TO_COUNTRY`, `FROM_COUNTRY`
 
-**`TradeCountryHeaderKind`:** `REGION_TOTAL`, `COUNTRY`, `GRAND_TOTAL`
+**`TradeCountryHeaderKind`:** `REGION_SUBTOTAL`, `COUNTRY`, `GRAND_TOTAL`
 
 ## 5. Representative Error Scenarios
 
@@ -1235,7 +1240,7 @@ Controller tag 권장:
 ```text
 @Tag(
   name = "6. MI Fundamental Model Case API",
-  description = "MI Fundamental Model Scenario Case mock API입니다."
+  description = "MI Fundamental Model Scenario Case API입니다."
 )
 ```
 
@@ -1635,12 +1640,13 @@ phase 1 mock 시연 동선:
 
 1. `caseId`로 active case를 찾는다.
 2. case가 없거나 `delYn = Y`이면 `RSC_NOT_FOUND`.
-3. case status가 `RUNNING`이면 `409 + BIZ_RULE_VIOLATION` 후보로 거절한다.
-4. 실행 가능 상태는 `PENDING`, `COMPLETED`, `FAILED`다.
-5. `runId`는 `yyyymmdd_hhmmss_XXXX` 포맷으로 생성한다. `yyyymmdd_hhmmss`는 실행 요청 시각 기준이고, `XXXX`는 같은 초 안의 충돌을 방지하는 4자리 suffix다.
-6. run record를 `RUNNING`으로 생성한다.
-7. case 최신 상태를 `RUNNING`으로 변경하고 `latestRunId`를 갱신한다.
-8. `FundamentalModelRunAcceptRes`를 `202 Accepted`로 반환한다.
+3. case owner가 현재 사용자와 다르면 `RSC_NOT_FOUND`.
+4. case status가 `RUNNING`이면 `409 + BIZ_RULE_VIOLATION` 후보로 거절한다.
+5. 실행 가능 상태는 `PENDING`, `COMPLETED`, `FAILED`다.
+6. `runId`는 `yyyymmdd_hhmmss_XXXX` 포맷으로 생성한다. `yyyymmdd_hhmmss`는 실행 요청 시각 기준이고, `XXXX`는 같은 초 안의 충돌을 방지하는 4자리 suffix다.
+7. run record를 `RUNNING`으로 생성한다.
+8. case 최신 상태를 `RUNNING`으로 변경하고 `latestRunId`를 갱신한다.
+9. `FundamentalModelRunAcceptRes`를 `202 Accepted`로 반환한다.
 
 ### Status Query
 
@@ -1722,6 +1728,7 @@ phase 1 mock 시연 동선:
 6. `annualTable.columns`의 `month`는 `null`이다.
 7. `monthlyTable.columns`의 `month`는 1~12 정수다.
 8. 1차 mock에서는 json seed 파일 기반 고정 데이터를 반환한다.
+9. DB-backed 전환 시 Price 조회는 `caseId -> active case -> last_run_id -> run_seq`로 latest result를 해석한다. Price result read는 다른 사용자가 실행한 결과도 로그인 사용자가 조회할 수 있는 shared read model이므로 `usr_no` owner predicate를 적용하지 않는다. endpoint 권한은 controller permission rule로 처리하고, `usr_no` ownership predicate는 update/delete처럼 소유자 변경 작업에 적용한다.
 
 ## 11. Risks / Open Questions
 
@@ -1735,7 +1742,7 @@ phase 1 mock 시연 동선:
 - timeout은 설계 문서에서 5분 가정이 있으나 1차 mock에서는 scheduler를 구현하지 않는다.
 - 운영 입력 파일명에는 `DEMAND`/`SUPPLY`/`TRADE` 키워드가 포함되는 것으로 확정한다. DB-backed run dispatch 전환 시 backend는 `SCNRCASE + caseId` 파일 목록에서 파일명 키워드로 입력 파일 역할을 매핑한다.
 - mock store의 런타임 변경분은 서버 재시작 또는 reset 시 유실되고 seed json 기준으로 복원된다. 개발/시연 전용으로만 사용한다.
-- `caseId`를 path에 노출하므로 후속 DB 전환 시 case ownership과 권한 검증이 필수다.
+- `caseId`를 path에 노출하므로 후속 DB 전환 시 case 접근 정책과 권한 검증이 필수다. Price read의 active case/latest-run 검증과 `usr_no` 소유자 검증은 분리한다.
 - DB-backed update/delete 전환 시 predicate는 `case_id + usr_no ownership + del_yn = 'N'`을 포함해야 한다.
 - workflow/ERD draft/ERD draft의 `scenario_id` 상태 해석은 §7.2 Future DB Mapping Notes의 superseded note를 따른다.
 
@@ -1818,7 +1825,7 @@ phase 1 mock 시연 동선:
 - Mock 활성화: 신규 `FundamentalModelCaseServiceDelegator` (`@Service @Primary`) + `FundamentalModelMockProperties` 의 per-API flag (`get-volumes`, `get-trade-flows`, `get-price` flag 추가). 1차에는 모든 flag `true` 기본값, real 구현 추가 시 개별 flag `false` 로 전환. `reset` flag 는 Delegator 가 아닌 controller 에서 확인
 - Active-resource rule: `delYn = Y` case는 list에서 제외하고 detail/status/run/update/delete/volumes/price에서 `RSC_NOT_FOUND` 처리
 - Data state rule: volumes/price는 `COMPLETED` case만 허용. `PENDING`/`RUNNING`이면 `409 BIZ_RULE_VIOLATION`, `FAILED`이면 `404 RSC_NOT_FOUND`
-- 신규 enum: `FundamentalModelSegment` (`GLOBAL`, `LNG`, `TRADE` — `TRADE`는 `/volumes`에서 불허), `FundamentalModelDataType` (`DEMAND`, `PRODUCTION`, `LNG_IMPORTS`, `LNG_EXPORTS`, `PIPELINE_IMPORTS`, `PIPELINE_EXPORTS`), `FundamentalModelRegion` (`ASIA`, `EUROPE`, `NORTH_AMERICA`, `MIDDLE_EAST`, `AUSTRALIA`, `RUSSIA`, `AFRICA`, `SOUTH_AMERICA`), `FundamentalModelGranularity` (`MONTHLY`, `YEARLY`), `FundamentalModelVolumeUnit` (`MTPA`), `VolumesRowKind` (`COUNTRY`, `REGION_SUBTOTAL`, `TYPE_TOTAL`), `PriceSeriesType` (`BASE_CASE`, `USER_ADJUSTED`), `TradeFlowSelector` (`LNG`, `PNG`), `TradeFlowUnit` (`MTPA`, `BCM`), `TradeFlowDirection` (`TO_COUNTRY`, `FROM_COUNTRY`), `TradeCountryHeaderKind` (`REGION_TOTAL`, `COUNTRY`, `GRAND_TOTAL`)
+- 신규 enum: `FundamentalModelSegment` (`GLOBAL`, `LNG`, `TRADE` — `TRADE`는 `/volumes`에서 불허), `FundamentalModelDataType` (`DEMAND`, `PRODUCTION`, `LNG_IMPORTS`, `LNG_EXPORTS`, `PIPELINE_IMPORTS`, `PIPELINE_EXPORTS`), `FundamentalModelRegion` (`ASIA`, `EUROPE`, `NORTH_AMERICA`, `MIDDLE_EAST`, `AUSTRALIA`, `RUSSIA`, `AFRICA`, `SOUTH_AMERICA`), `FundamentalModelGranularity` (`MONTHLY`, `YEARLY`), `FundamentalModelVolumeUnit` (`MTPA`), `VolumesRowKind` (`COUNTRY`, `REGION_SUBTOTAL`, `TYPE_TOTAL`), `PriceSeriesType` (`BASE_CASE`, `USER_ADJUSTED`), `TradeFlowSelector` (`LNG`, `PNG`), `TradeFlowUnit` (`MTPA`, `BCM`), `TradeFlowDirection` (`TO_COUNTRY`, `FROM_COUNTRY`), `TradeCountryHeaderKind` (`REGION_SUBTOTAL`, `COUNTRY`, `GRAND_TOTAL`)
 - Status enum: `FundamentalModelCaseStatus` = `PENDING`, `RUNNING`, `COMPLETED`, `FAILED`. `FundamentalModelRunStatus` = `RUNNING`, `COMPLETED`, `FAILED` (분리 enum). `FundamentalModelCaseSearchType` = `TITLE`, `ASSIGNEE_NAME`
 - Failure reason candidates: `TIMEOUT`, `EXTERNAL_ERROR`, `UNKNOWN`
 - Base response: `BaseResponse<T>` via `BaseResponseFactory`

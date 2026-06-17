@@ -1,16 +1,23 @@
 package com.sk.domain.shared.client.config;
 
 import com.sk.common.http.RestClientBuilder;
+import com.sk.common.http.RestClientDefaultConfig;
 import com.sk.domain.shared.client.AuthTokenApi;
 import com.sk.domain.shared.client.AxPlatformApi;
 import com.sk.domain.shared.client.ModelAgentApi;
 import com.sk.domain.shared.client.service.InMemoryTokenProvider;
+import com.sk.domain.shared.config.FileCryptoApiProperties;
+import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.time.Clock;
+import java.time.Duration;
+import org.apache.commons.io.IOUtils;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-
-import java.time.Duration;
+import org.springframework.http.HttpStatusCode;
+import org.springframework.http.client.HttpComponentsClientHttpRequestFactory;
+import org.springframework.web.client.RestClient;
 
 @Configuration
 public class RestClientHttpApiConfig {
@@ -82,5 +89,31 @@ public class RestClientHttpApiConfig {
             .readTimeout(readTimeout)
             .requestInterceptor(new AuthRetry401Interceptor(tokenProvider, 5))
             .build(AxPlatformApi.class);
+    }
+
+    @Bean
+    public RestClient fileCryptoRestClient(FileCryptoApiProperties properties) {
+        HttpComponentsClientHttpRequestFactory requestFactory = new HttpComponentsClientHttpRequestFactory();
+        requestFactory.setConnectTimeout(properties.getConnectionTimeout());
+        requestFactory.setReadTimeout(properties.getReadTimeout());
+        requestFactory.setConnectionRequestTimeout(properties.getReadTimeout());
+
+        return RestClient.builder()
+            .requestFactory(requestFactory)
+            .defaultStatusHandler(
+                HttpStatusCode::isError,
+                (request, response) -> {
+                    throw com.sk.common.exception.ApiErrorException.of(
+                        response.getStatusCode().value(),
+                        readBody(response.getBody()));
+                })
+            .messageConverters(converters ->
+                converters.add(new org.springframework.http.converter.json.MappingJackson2HttpMessageConverter(
+                    RestClientDefaultConfig.httpObjectMapper())))
+            .build();
+    }
+
+    private String readBody(java.io.InputStream body) throws IOException {
+        return IOUtils.toString(body, StandardCharsets.UTF_8);
     }
 }

@@ -1,7 +1,6 @@
 package com.sk.common.config;
 
 import com.sk.common.annotation.ApiOrder;
-import com.sk.domain.mi.config.FundamentalModelMockProperties;
 import com.sk.domain.mi.config.NextGenMockProperties;
 import io.swagger.v3.oas.models.*;
 import io.swagger.v3.oas.models.info.Info;
@@ -31,7 +30,7 @@ import java.util.Map;
 public class SwaggerConfig {
 
     // note: 안정화 후 투머치 문서 모두 삭제예정
-    private static final String SW_VERSION_BASE = "v1.2.3";
+    private static final String SW_VERSION_BASE = "v1.2.4";
     private static final DateTimeFormatter SW_DEPLOY_DATE_FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
 
     @Bean
@@ -88,8 +87,7 @@ public class SwaggerConfig {
     @Bean
     public GroupedOpenApi nextGenApi(@Qualifier("sortPathsOpenApiCustomizer") OpenApiCustomizer sortPathsOpenApiCustomizer,
                                                @Qualifier("apiOrderOperationCustomizer") OperationCustomizer apiOrderOperationCustomizer,
-                                               NextGenMockProperties mockProps,
-                                               FundamentalModelMockProperties fundamentalModelMockProps) {
+                                               NextGenMockProperties mockProps) {
 
         String swDeployDate = LocalDateTime.now().format(SW_DEPLOY_DATE_FORMATTER);
 
@@ -140,7 +138,6 @@ public class SwaggerConfig {
   | Fundamental Model Volumes 데이터 조회 | %s |
   | Fundamental Model Trade Flows 데이터 조회 | %s |
   | Fundamental Model Price 데이터 조회 | %s |
-  | Fundamental Model Case 데이터 초기화 | %s |
   | **Fundamental Model Run** | |
   | Fundamental Model Run 콜백 | %s |
 
@@ -148,7 +145,18 @@ public class SwaggerConfig {
 
   ## 수정사항
   <details open>
-    <summary><strong>v1.2.3 (2026-06-11)</strong></summary>
+    <summary><strong>v1.2.4 (2026-06-16)</strong></summary>
+
+  - [Fundamental Model]
+    - Mock 인프라 전체 철거: 모든 Fundamental Model Case/Run API를 DB(real) 구현으로 단일화
+    - Mock 서비스(`FundamentalModelCaseMockService`) · 라우팅 델리게이터(`FundamentalModelCaseServiceDelegator`) · Mock 토글 설정(`FundamentalModelMockProperties`, `mi.fundamental-model.mock.*`) 제거
+    - [Mock 전용] Case 데이터 초기화 API(`POST .../fundamental-model/cases/reset`) 삭제 (데이터 소스 현황에서도 제외)
+    - 앱 기동 시 mock seed 로딩 제거
+
+  </details>
+
+  <details>
+  <summary><strong>v1.2.3 (2026-06-11)</strong></summary>
 
   - [Model Execution]
     - Price chart에 monthly/yearly series 필드 분리 추가
@@ -322,20 +330,19 @@ public class SwaggerConfig {
             label(mockProps.getModelExecutions().getApi().isSubmit()),
             label(mockProps.getModelExecutions().getApi().isGetStatus()),
             label(mockProps.getModelExecutions().getApi().isCallback()),
-            label(true),
-            label(fundamentalModelMockProps.getFundamentalModelCases().getApi().isListCases()),
-            label(fundamentalModelMockProps.getFundamentalModelCases().getApi().isCreateCase()),
-            label(fundamentalModelMockProps.getFundamentalModelCases().getApi().isGetDetail()),
-            label(fundamentalModelMockProps.getFundamentalModelCases().getApi().isUpdate()),
-            label(fundamentalModelMockProps.getFundamentalModelCases().getApi().isDelete()),
-            label(fundamentalModelMockProps.getFundamentalModelCases().getApi().isRun()),
-            label(fundamentalModelMockProps.getFundamentalModelCases().getApi().isGetStatus()),
-            label(true),
-            label(fundamentalModelMockProps.getFundamentalModelCases().getApi().isGetVolumes()),
-            label(fundamentalModelMockProps.getFundamentalModelCases().getApi().isGetTradeFlows()),
-            label(fundamentalModelMockProps.getFundamentalModelCases().getApi().isGetPrice()),
-            label(fundamentalModelMockProps.getFundamentalModelCases().getApi().isReset()),
-            label(fundamentalModelMockProps.getFundamentalModelRuns().getApi().isCallback())
+            label(false),
+            label(false),
+            label(false),
+            label(false),
+            label(false),
+            label(false),
+            label(false),
+            label(false),
+            label(false),
+            label(false),
+            label(false),
+            label(false),
+            label(false)
         );
 
         return GroupedOpenApi.builder()

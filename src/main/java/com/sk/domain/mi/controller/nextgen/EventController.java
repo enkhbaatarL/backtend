@@ -12,6 +12,7 @@ import com.sk.domain.mi.dto.response.nextgen.EventInstitutionOutlookRes;
 import com.sk.domain.mi.dto.response.nextgen.EventListRes;
 import com.sk.domain.mi.dto.response.nextgen.EventRelatedRecordRes;
 import com.sk.domain.mi.dto.response.nextgen.EventTypeL1Res;
+import com.sk.domain.mi.dto.response.nextgen.design.EventDesignAvailabilityRes;
 import com.sk.domain.mi.service.nextgen.EventService;
 import com.sk.domain.shared.enums.PermissionCondition;
 import com.sk.domain.shared.enums.Role;
@@ -264,6 +265,38 @@ public class EventController {
         @Parameter(description = "페이지당 항목 수", example = "10") @RequestParam(defaultValue = "10") @Min(1) int size
     ) {
         return BaseResponseFactory.create(eventService.getEventRecords(eventId, page, size));
+    }
+
+    @ApiOrder(6)
+    @Operation(
+        summary = "이벤트 시나리오 설계 가능 상태 조회 API (폴링)",
+        description = """
+            이벤트 목록 화면에서 이벤트별 시나리오 설계 점유/가능 상태를 폴링 조회합니다. <br>
+            사용자가 설계 중인 이벤트는 점유(lock)되어 다른 사용자의 설계가 불가합니다. <br>
+
+            <br><br>
+            ### 사용 가능한 파라미터
+             - eventIds: 상태를 조회할 이벤트 ID 목록 (복수 가능) / example - eventIds=1&eventIds=2
+
+            <br><br>
+            ### content 항목 필드 (예정)
+            - `eventId`: 이벤트 ID
+            - `scenarioDesignStatus` / `scenarioDesignStatusLabel`: `designable`(설계가능) / `creating`(설계중) / `created`(설계완료)
+            - `occupied`: 점유 여부 / `occupantUserId`: 점유 사용자 ID (없으면 null)
+            - `scenarioGroupId`: 활성 시나리오 그룹 ID (없으면 null)
+            """
+    )
+    @Parameter(name = "eventIds", description = "조회할 이벤트 ID 목록 (복수 가능)")
+    @ApiResponse(responseCode = "200", description = "조회 성공")
+    @GetMapping("/design-availability")
+    @RequiredPermissionRules(rules = {
+        @PermissionRule(role = Role.USER, conditions = {PermissionCondition.SKGAS_COMPANY_USER_ONLY}),
+        @PermissionRule(role = Role.ADMIN, conditions = {PermissionCondition.THIRD_PARTY_ADMIN_ONLY})
+    })
+    public BaseResponse<List<EventDesignAvailabilityRes>> getEventDesignAvailability(
+        @Parameter(description = "조회할 이벤트 ID 목록", example = "1") @RequestParam(required = false) List<Long> eventIds
+    ) {
+        return BaseResponseFactory.create(eventService.getEventDesignAvailability(eventIds));
     }
 
 }

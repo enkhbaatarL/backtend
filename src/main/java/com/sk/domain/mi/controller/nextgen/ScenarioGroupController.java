@@ -81,7 +81,7 @@ public class ScenarioGroupController {
             - `summary`: 시나리오 그룹 요약
             - `scenarioCount`: 시나리오 수
             - `dimensionColumns`: 그룹별 동적 표 헤더 (key, label)
-            - `scenarios`: 그룹 내 시나리오 표 본문 (scenarioId, scenarioName, baseCase, dimensions, probability, adjustedProbability)
+            - `scenarios`: 그룹 내 시나리오 표 본문 (scenarioId, scenarioName, baseCase, dimensions, probability, adjustedProbability, status, statusLabel[대기/실현/폐기])
             """
     )
     @Parameter(name = "sort", description = "정렬 기준 (`latest` / `oldest`, 대소문자 무관). 기본값 `latest`")
@@ -123,6 +123,7 @@ public class ScenarioGroupController {
             - `dimensions`: 차원값 목록
             - `probability`: 시나리오 발생 확률 (0~100 정수, 원본)
             - `adjustedProbability`: 재분배 확률 — 그룹 내 폐기 제외 비례 재분배(활성 합 100, 폐기=0). 조회 시점 계산값(비영속)
+            - `status` / `statusLabel`: 판정 상태 (pending/realized/discarded — 대기/실현/폐기)
             """
     )
     @Parameter(name = "sort", description = "정렬 기준 (`latest` / `oldest`, 대소문자 무관). 기본값 `latest`")
@@ -154,8 +155,11 @@ public class ScenarioGroupController {
             - `dates`: x축 기간 목록 (월별 `yyyy-MM` / 연도별 `yyyy`)
             - `baseSeries`: 기준선 (CME, MI Base) — **소스 확보 전까지 빈 배열**
             - `scenarioSeries`: 시나리오별 시리즈
-              - `executed`: 수급모델 실행 완료 여부
-              - `baseCaseValues` / `userAdjustedValues`: 베이스케이스/사용자조정 가격
+              - `scenarioId` / `scenarioName` / `baseCase`
+              - `status` / `statusLabel`: 판정 상태 (pending/realized/discarded — 폐기여부)
+              - `executed`: 수급모델 실행 완료 여부 (최신 완료 실행의 가격 결과 존재)
+              - `modelRunning`: 수급모델 실행중 여부 (RUNNING 케이스 존재). executed와 독립 — 재실행 중엔 둘 다 true
+              - `baseCaseValues` / `userAdjustedValues`: 베이스케이스/사용자조정 가격 (최신 완료 결과, 재실행 중에도 직전 결과 유지)
             """
     )
     @Parameter(name = "indexName", description = "조회 인덱스 (JKM / TTF / HH). 기본값 JKM")
@@ -248,7 +252,7 @@ public class ScenarioGroupController {
             - `probability`: 시나리오 발생 확률 (0~100, 원본)
             - `adjustedProbability`: 재분배 확률 — 그룹 내 폐기 제외 비례 재분배(활성 합 100, 폐기=0). 조회 시점 계산값(비영속)
             - `dimensions`: 주요 가정 (key, label, value, valueLabel)
-            - `signpostDefinitions`: Signpost 정의 (label, direction[sup], directionLabel[가능성강화], probabilityImpact(%), rationale)
+            - `signpostDefinitions`: Signpost 정의 (signpostId, label, direction[sup], directionLabel[가능성강화], probabilityImpact(점수), strength[verystrong/strong/medium/weak/veryweak], strengthLabel[매우높음/높음/보통/낮음/매우낮음], rationale, displayOrder)
             - `signpostMonitorings`: Signpost 모니터링 이력 (updatedAt, eventSummary, probability, probabilityDelta, rationale)
             """
     )

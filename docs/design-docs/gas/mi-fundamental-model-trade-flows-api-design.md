@@ -57,14 +57,14 @@ Trade Flow는 본질적으로 From country(열) × To country(행) 매트릭스�
 ### 2.2 fromCountries / toCountries 구조
 
 ```json
-{ "key": "REGION:AFRICA", "label": "Africa", "kind": "REGION_TOTAL", "region": "AFRICA", "country": null }
+{ "key": "REGION:AFRICA", "label": "Africa", "kind": "REGION_SUBTOTAL", "region": "AFRICA", "country": null }
 { "key": "COUNTRY:AFRICA:Angola", "label": "Angola", "kind": "COUNTRY", "region": "AFRICA", "country": "Angola" }
 { "key": "TOTAL", "label": "Total", "kind": "GRAND_TOTAL", "region": null, "country": "Total" }
 ```
 
 - `key`: 행/열 식별자. `flows[].fromKey`, `flows[].toKey`가 참조한다
 - `label`: 화면 표시명. 지역 집계는 region label, 개별 국가는 country, 합계는 `Total`
-- `kind == REGION_TOTAL`: 지역 집계. 화면에서 **볼드** 처리
+- `kind == REGION_SUBTOTAL`: 지역 집계. 화면에서 **볼드** 처리
 - `kind == COUNTRY`: 개별 국가
 - `kind == GRAND_TOTAL`: 합계 행. `toCountries` 마지막에만 위치
 - 기존 `region`, `country`는 필터링과 후속 DB 전환 시 region/country 조건 조회를 위해 유지한다

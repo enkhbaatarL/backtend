@@ -5,9 +5,9 @@ import com.sk.common.annotation.PermissionRule;
 import com.sk.common.annotation.RequiredPermissionRules;
 import com.sk.common.model.BaseResponse;
 import com.sk.common.model.BaseResponseFactory;
-import com.sk.domain.mi.config.FundamentalModelMockProperties;
 import com.sk.domain.mi.dto.response.fundamentalmodel.FundamentalModelRunAcceptRes;
 import com.sk.domain.mi.service.fundamentalmodel.FundamentalModelCaseService;
+import com.sk.domain.mi.service.fundamentalmodel.KubernetesJobService;
 import com.sk.domain.shared.enums.PermissionCondition;
 import com.sk.domain.shared.enums.Role;
 import io.swagger.v3.oas.annotations.Operation;
@@ -31,7 +31,7 @@ import org.springframework.web.bind.annotation.RestController;
 public class FundamentalModelCaseDedicatedController {
 
     private final FundamentalModelCaseService fundamentalModelCaseService;
-    private final FundamentalModelMockProperties mockProperties;
+    private final KubernetesJobService kubernetesJobService;
 
     @ApiOrder(6)
     @Operation(
@@ -49,6 +49,17 @@ public class FundamentalModelCaseDedicatedController {
     ) {
         FundamentalModelRunAcceptRes response = fundamentalModelCaseService.runCase(caseId);
         return ResponseEntity.status(HttpStatus.ACCEPTED).body(BaseResponseFactory.create(response));
+    }
+
+    @ApiOrder(99)
+    @Operation(
+        summary = "[TEST] k8s Job 생성 권한 검증 API",
+        description = "최소 k8s Job을 생성하여 백엔드의 Job 생성 권한(RBAC)을 검증합니다. 생성된 Job 이름을 반환하며, 권한이 없으면 에러가 발생합니다."
+    )
+    @ApiResponse(responseCode = "200", description = "Job 생성 성공 (생성된 Job 이름 반환)")
+    @PostMapping("/test/k8s-job")
+    public BaseResponse<String> testK8sJobCreation() {
+        return BaseResponseFactory.create(kubernetesJobService.createPermissionTestJob());
     }
 
 }

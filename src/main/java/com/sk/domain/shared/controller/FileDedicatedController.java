@@ -1,10 +1,33 @@
 package com.sk.domain.shared.controller;
 
+import com.sk.common.annotation.ApiOrder;
+import com.sk.common.annotation.RequiredPermission;
+import com.sk.common.enums.ResultCode;
+import com.sk.common.exception.AppErrorException;
+import com.sk.common.model.BaseResponse;
+import com.sk.common.model.BaseResponseFactory;
+import com.sk.common.utils.DateUtil;
+import com.sk.domain.admin.dto.request.file.FileUpdateReq;
+import com.sk.domain.admin.dto.response.file.FileDownloadRes;
+import com.sk.domain.admin.dto.response.file.FileUploadRes;
+import com.sk.domain.shared.dto.request.file.FileDownloadReq;
+import com.sk.domain.shared.entity.master.tmd.CustomerCompany;
+import com.sk.domain.shared.enums.Role;
+import com.sk.domain.shared.repository.master.tmd.CustomerCompanyRepository;
+import com.sk.domain.shared.service.FileDownloadEncryptor;
+import com.sk.domain.shared.service.FileService;
+import com.sk.domain.shared.service.permissions.AuthorizationService;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.validation.Valid;
+import jakarta.validation.constraints.Min;
 import java.io.UnsupportedEncodingException;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
-
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
@@ -21,31 +44,6 @@ import org.springframework.web.bind.annotation.RequestPart;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
 
-import com.sk.common.annotation.ApiOrder;
-import com.sk.common.annotation.RequiredPermission;
-import com.sk.common.enums.ResultCode;
-import com.sk.common.exception.AppErrorException;
-import com.sk.common.model.BaseResponse;
-import com.sk.common.model.BaseResponseFactory;
-import com.sk.common.utils.DateUtil;
-import com.sk.domain.admin.dto.request.file.FileUpdateReq;
-import com.sk.domain.admin.dto.response.file.FileDownloadRes;
-import com.sk.domain.admin.dto.response.file.FileUploadRes;
-import com.sk.domain.shared.dto.request.file.FileDownloadReq;
-import com.sk.domain.shared.entity.master.tmd.CustomerCompany;
-import com.sk.domain.shared.enums.Role;
-import com.sk.domain.shared.repository.master.tmd.CustomerCompanyRepository;
-import com.sk.domain.shared.service.FileService;
-import com.sk.domain.shared.service.permissions.AuthorizationService;
-
-import io.swagger.v3.oas.annotations.Operation;
-import io.swagger.v3.oas.annotations.responses.ApiResponse;
-import io.swagger.v3.oas.annotations.tags.Tag;
-import jakarta.validation.Valid;
-import jakarta.validation.constraints.Min;
-import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
-
 @Tag(name = "10. File API", description = "파일 관리 API 입니다.")
 @Slf4j
 @RestController
@@ -54,6 +52,7 @@ import lombok.extern.slf4j.Slf4j;
 public class FileDedicatedController {
     private final AuthorizationService authorizationService;
     private final FileService fileService;
+    private final FileDownloadEncryptor fileDownloadEncryptor;
     private final CustomerCompanyRepository customerCompanyRepository;
 
     // @ApiOrder(1)
@@ -96,22 +95,18 @@ public class FileDedicatedController {
 
         FileDownloadRes fileDownloadRes = fileService.downloadFile(body);
 
-        if (!fileDownloadRes.fileNm().equals(fileDownloadRes.fileNm())) {
-            throw AppErrorException.of(ResultCode.Error.FILE_ACCESS_DENIED);
-        }
-
-        if (!fileDownloadRes.fileSize().equals(fileDownloadRes.fileSize())) {
-            throw AppErrorException.of(ResultCode.Error.FILE_ACCESS_DENIED);
-        }
+        // 외부 클라이언트 전달 경계: 특정 고객사 대상 파일은 평문 저장본을 나가기 직전에 재암호화한다.
+        byte[] responseData = fileDownloadEncryptor.encryptForDownloadIfRequired(
+                fileDownloadRes.fileNm(), fileDownloadRes.fileData());
 
         String encodedFileName = URLEncoder.encode(fileDownloadRes.fileNm(), StandardCharsets.UTF_8.toString()).replace("+", "%20");
 
         HttpHeaders httpHeaders = new HttpHeaders();
         httpHeaders.setContentType(MediaType.APPLICATION_OCTET_STREAM);
-        httpHeaders.setContentLength(fileDownloadRes.fileData().length);
+        httpHeaders.setContentLength(responseData.length);
         httpHeaders.add("Content-Disposition", "attachment; filename*=UTF-8''" + encodedFileName);
 
-        return new ResponseEntity<>(fileDownloadRes.fileData(), httpHeaders, HttpStatus.OK);
+        return new ResponseEntity<>(responseData, httpHeaders, HttpStatus.OK);
     }
 
     @ApiOrder(4)

@@ -17,4 +17,6 @@ public interface CustomScenarioCaseRepository {
 
     List<ScenarioPriceRow> findLatestCompletedPricesByScenarioIds(List<Long> scenarioIds, IndexName indexName, PeriodUnitSeparateCd periodUnit);
 
+    List<Long> findRunningScenarioIds(List<Long> scenarioIds);
+
 }

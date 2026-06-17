@@ -38,6 +38,8 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.stream.Collectors;
+
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.core.io.ClassPathResource;
@@ -60,6 +62,23 @@ public class ScenarioGroupMockService {
 
     /** [mock 전용] soft delete 된 시나리오 그룹 ID. 그룹 삭제 시 그룹 + 하위 시나리오가 조회에서 제외된다. reset API로 초기화. */
     private final Set<Long> deletedGroupIds = ConcurrentHashMap.newKeySet();
+
+    /** [mock 전용] 수급모델 실행중 시나리오 ID. 모델실행 mock(submit→RUNNING/완료→idle)이 갱신, 그래프 modelRunning 표기. */
+    private final Set<Long> runningScenarioIds = ConcurrentHashMap.newKeySet();
+
+    /** [mock 전용] 수급모델 실행중 표기 (모델실행 mock에서 호출). */
+    public void markModelRunning(Long scenarioId) {
+        if (scenarioId != null) {
+            runningScenarioIds.add(scenarioId);
+        }
+    }
+
+    /** [mock 전용] 수급모델 실행중 해제 (모델실행 mock에서 호출). */
+    public void markModelIdle(Long scenarioId) {
+        if (scenarioId != null) {
+            runningScenarioIds.remove(scenarioId);
+        }
+    }
 
     @PostConstruct
     void init() {
@@ -164,12 +183,35 @@ public class ScenarioGroupMockService {
             throw AppErrorException.of(ResultCode.Error.RSC_NOT_FOUND,
                 "Scenario group graph not found: " + scenarioGroupId);
         }
-        return graphs.stream()
+        ScenarioGroupGraphRes graph = graphs.stream()
             .filter(g -> indexName.getCode().equalsIgnoreCase(g.indexName()))
             .filter(g -> periodUnit == g.periodUnit())
             .findFirst()
             .orElseThrow(() -> AppErrorException.of(ResultCode.Error.RSC_NOT_FOUND,
                 "Scenario group graph not found: scenarioGroupId=" + scenarioGroupId + ", indexName=" + indexName));
+        return applyScenarioStatusToGraph(scenarioGroupId, graph);
+    }
+
+    /** 그래프 시리즈에 시나리오 판정 상태를 오버레이 (그룹 상세의 effectiveStatus = 상태변경/폐기 반영, list/detail과 일관). */
+    private ScenarioGroupGraphRes applyScenarioStatusToGraph(Long scenarioGroupId, ScenarioGroupGraphRes graph) {
+        ScenarioGroupDetailRes detail = groupDetailMap.get(scenarioGroupId);
+        Map<Long, ScenarioDisplayStatus> statusByScenario = detail == null ? Map.of()
+            : detail.scenarios().stream()
+                .collect(Collectors.toMap(ScenarioGroupDetailRowRes::scenarioId, this::effectiveStatus));
+
+        List<ScenarioGroupGraphRes.ScenarioSeries> series = graph.scenarioSeries().stream()
+            .map(s -> {
+                ScenarioDisplayStatus status = statusByScenario.getOrDefault(s.scenarioId(), ScenarioDisplayStatus.PENDING);
+                return new ScenarioGroupGraphRes.ScenarioSeries(
+                    s.scenarioId(), s.scenarioName(), s.baseCase(), s.executed(),
+                    runningScenarioIds.contains(s.scenarioId()), status, status.getLabel(),
+                    s.baseCaseValues(), s.userAdjustedValues());
+            })
+            .toList();
+
+        return new ScenarioGroupGraphRes(
+            graph.scenarioGroupId(), graph.indexName(), graph.periodUnit(), graph.periodUnitLabel(),
+            graph.currency(), graph.unit(), graph.dates(), graph.baseSeries(), series);
     }
 
     public ByteArrayInputStream exportScenarioGroupGraph(Long scenarioGroupId, GraphPeriodUnit periodUnit) {
@@ -284,6 +326,22 @@ public class ScenarioGroupMockService {
     public void resetScenarioStatus() {
         statusOverrides.clear();
         deletedGroupIds.clear();
+        runningScenarioIds.clear();
+    }
+
+    /**
+     * [mock 전용] 설계 확정으로 생성된 그룹을 그룹 도메인에 등록한다.
+     * <p>
+     * 설계 mock의 confirm 시 호출 — 이후 목록/상세/개별상세 조회에 즉시 노출된다(실DB 착각용 상호작용).
+     * 그래프(가격 시리즈)는 수급모델 실행 전이라 없음.
+     */
+    public void registerGroup(ScenarioGroupListItemRes listItem, ScenarioGroupDetailRes detail,
+                              List<ScenarioDetailViewRes> scenarioDetails) {
+        groups.add(listItem);
+        groupDetailMap.put(listItem.scenarioGroupId(), detail);
+        scenarioDetails.forEach(d -> scenarioDetailMap.put(d.scenarioId(), d));
+        log.info("[Mock] designed group registered: groupId={}, scenarios={}",
+            listItem.scenarioGroupId(), scenarioDetails.size());
     }
 
     private <T> PaginationRes<T> paginate(List<T> items, ScenarioGroupListReq request) {

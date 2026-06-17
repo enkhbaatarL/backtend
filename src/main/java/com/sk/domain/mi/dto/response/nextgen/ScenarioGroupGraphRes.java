@@ -2,6 +2,7 @@ package com.sk.domain.mi.dto.response.nextgen;
 
 import com.sk.domain.shared.enums.nextgen.GraphPeriodUnit;
 import com.sk.domain.shared.enums.nextgen.IndexName;
+import com.sk.domain.shared.enums.nextgen.ScenarioDisplayStatus;
 import com.sk.domain.shared.repository.master.tmd.projection.ScenarioPriceRow;
 import com.sk.domain.shared.repository.master.tmm.projection.ScenarioBaseRow;
 import io.swagger.v3.oas.annotations.media.ArraySchema;
@@ -9,6 +10,7 @@ import io.swagger.v3.oas.annotations.media.Schema;
 import java.math.BigDecimal;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
@@ -52,7 +54,7 @@ public record ScenarioGroupGraphRes(
     private static final String CURRENCY = "USD";
     private static final String UNIT = "MMBtu";
 
-    public static ScenarioGroupGraphRes of(Long scenarioGroupId, IndexName indexName, GraphPeriodUnit periodUnit, List<ScenarioBaseRow> scenarios, List<ScenarioPriceRow> prices) {
+    public static ScenarioGroupGraphRes of(Long scenarioGroupId, IndexName indexName, GraphPeriodUnit periodUnit, List<ScenarioBaseRow> scenarios, List<ScenarioPriceRow> prices, Set<Long> runningScenarioIds) {
 
         // x축 = 전 시나리오 기간키 union (시나리오마다 실행 시점이 달라 범위가 다를 수 있음 → 빠진 구간은 null 패딩)
         List<String> periodKeys = prices.stream()
@@ -66,7 +68,8 @@ public record ScenarioGroupGraphRes(
                 Collectors.toMap(ScenarioPriceRow::periodKey, Function.identity())));
 
         List<ScenarioSeries> scenarioSeries = scenarios.stream()
-            .map(scenario -> ScenarioSeries.of(scenario, periodKeys, pricesByScenario.get(scenario.scenarioId())))
+            .map(scenario -> ScenarioSeries.of(scenario, periodKeys, pricesByScenario.get(scenario.scenarioId()),
+                runningScenarioIds != null && runningScenarioIds.contains(scenario.scenarioId())))
             .toList();
 
         return new ScenarioGroupGraphRes(
@@ -109,6 +112,15 @@ public record ScenarioGroupGraphRes(
         @Schema(description = "수급모델 실행 완료 여부", example = "true")
         boolean executed,
 
+        @Schema(description = "수급모델 실행중 여부", example = "false")
+        boolean modelRunning,
+
+        @Schema(description = "판정 상태 (pending/realized/discarded)", example = "pending")
+        ScenarioDisplayStatus status,
+
+        @Schema(description = "판정 상태 라벨 (대기/실현/폐기)", example = "대기")
+        String statusLabel,
+
         @Schema(description = "베이스케이스 가격 목록 (dates와 동일 순서, 빠진 구간 null). 미실행이면 null", nullable = true)
         List<BigDecimal> baseCaseValues,
 
@@ -117,13 +129,18 @@ public record ScenarioGroupGraphRes(
 
     ) {
 
-        static ScenarioSeries of(ScenarioBaseRow scenario, List<String> periodKeys, Map<String, ScenarioPriceRow> priceByPeriodKey) {
+        static ScenarioSeries of(ScenarioBaseRow scenario, List<String> periodKeys, Map<String, ScenarioPriceRow> priceByPeriodKey, boolean modelRunning) {
+            // executed = 최신 완료 실행의 가격 결과 존재 / modelRunning = RUNNING 케이스 존재 (독립적, 재실행 중엔 둘 다 true 가능)
             boolean executed = priceByPeriodKey != null && !priceByPeriodKey.isEmpty();
+            ScenarioDisplayStatus status = ScenarioDisplayStatus.from(scenario.status());
             return new ScenarioSeries(
                 scenario.scenarioId(),
                 scenario.title(),
                 Boolean.TRUE.equals(scenario.isBaseline()),
                 executed,
+                modelRunning,
+                status,
+                status == null ? null : status.getLabel(),
                 executed ? values(periodKeys, priceByPeriodKey, ScenarioPriceRow::baseCasePrice) : null,
                 executed ? values(periodKeys, priceByPeriodKey, ScenarioPriceRow::userAdjustedPrice) : null
             );
