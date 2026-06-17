@@ -45,6 +45,7 @@ import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.stream.Collectors;
@@ -192,12 +193,20 @@ public class ScenarioDesignMockService {
     public ScenarioDesignStageRes validate(Long scenarioGroupId, ScenarioValidationReq request) {
         Session session = getSession(scenarioGroupId);
         applyEdit(session, request.table());
-        // 접수 시점은 stage 유지(scenario_created). 검토 콜백 도착 시 scenario_validated 전이 + SSE.
+        // 접수 시점은 stage 유지(scenario_created). 검토 콜백 도착 시 결과에 따라 전이 + SSE.
+        // mock 한정: 50% 확률로 검증 실패를 시뮬레이션
         scheduleAgentCallback(() -> {
-            session.validationIsValid = true;
-            session.validationReason = "MECE 및 타당성 검증 통과 (mock)";
-            session.stage = ScenarioGroupStage.SCENARIO_VALIDATED;
-            emit(scenarioGroupId, ScenarioDesignSseEvent.Type.VALIDATION, ScenarioDesignSseEvent.Stage.SCENARIO_VALIDATED);
+            boolean valid = ThreadLocalRandom.current().nextBoolean();
+            session.validationIsValid = valid;
+            if (valid) {
+                session.validationReason = "MECE 및 타당성 검증 통과 (mock)";
+                session.stage = ScenarioGroupStage.SCENARIO_VALIDATED;
+                emit(scenarioGroupId, ScenarioDesignSseEvent.Type.VALIDATION, ScenarioDesignSseEvent.Stage.SCENARIO_VALIDATED);
+            } else {
+                session.validationReason = pickMockValidationFailReason();
+                // 실패 시 stage 미전이(scenario_created 유지) → 재편집 후 재검증 가능
+                emit(scenarioGroupId, ScenarioDesignSseEvent.Type.VALIDATION, ScenarioDesignSseEvent.Stage.SCENARIO_CREATED);
+            }
         });
         return stage(session);
     }
@@ -393,6 +402,22 @@ public class ScenarioDesignMockService {
             return all.subList(0, Math.min(2, all.size()));
         }
         return required;
+    }
+
+    /** mock 검증 실패 시 내려줄 장난스러운 사유 풀 (mock 전용). */
+    private static final List<String> MOCK_VALIDATION_FAIL_REASONS = List.of(
+        "시나리오들이 서로 너무 사이좋아서 MECE가 깨졌습니다. 조금 다투게 해주세요 (mock)",
+        "3번 시나리오가 '저는 빼주세요'라며 손을 들었습니다. 상호배타성 위반 (mock)",
+        "확률 합이 100을 살짝 넘봤습니다. 욕심이 과했네요 (mock)",
+        "Agent가 박재현이랑 커피 마시다 검증 기준 한 줄을 놓쳤습니다. 다시 제출 부탁드려요 (mock)",
+        "분기기준값이 너무 애매해서 Agent가 고개를 갸웃거렸습니다 (mock)",
+        "시나리오 네이밍이 비장한데 내용이 평화로워서 톤 검증 실패 (mock)"
+    );
+
+    /** 실패 사유를 무작위로 하나 고른다 (mock 전용). */
+    private String pickMockValidationFailReason() {
+        return MOCK_VALIDATION_FAIL_REASONS.get(
+            ThreadLocalRandom.current().nextInt(MOCK_VALIDATION_FAIL_REASONS.size()));
     }
 
     private List<DesignScenarioRow> generateInitialScenarios(ScenarioDimensionTemplateRes template) {
