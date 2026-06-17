@@ -2,6 +2,7 @@ package com.sk.domain.mi.dto.response.nextgen;
 
 import com.sk.domain.shared.enums.nextgen.GraphPeriodUnit;
 import com.sk.domain.shared.enums.nextgen.IndexName;
+import com.sk.domain.shared.enums.nextgen.ScenarioDisplayStatus;
 import com.sk.domain.shared.repository.master.tmd.projection.ScenarioPriceRow;
 import com.sk.domain.shared.repository.master.tmm.projection.ScenarioBaseRow;
 import io.swagger.v3.oas.annotations.media.ArraySchema;
@@ -109,6 +110,12 @@ public record ScenarioGroupGraphRes(
         @Schema(description = "수급모델 실행 완료 여부", example = "true")
         boolean executed,
 
+        @Schema(description = "판정 상태 (pending/realized/discarded)", example = "pending")
+        ScenarioDisplayStatus status,
+
+        @Schema(description = "판정 상태 라벨 (대기/실현/폐기)", example = "대기")
+        String statusLabel,
+
         @Schema(description = "베이스케이스 가격 목록 (dates와 동일 순서, 빠진 구간 null). 미실행이면 null", nullable = true)
         List<BigDecimal> baseCaseValues,
 
@@ -119,11 +126,14 @@ public record ScenarioGroupGraphRes(
 
         static ScenarioSeries of(ScenarioBaseRow scenario, List<String> periodKeys, Map<String, ScenarioPriceRow> priceByPeriodKey) {
             boolean executed = priceByPeriodKey != null && !priceByPeriodKey.isEmpty();
+            ScenarioDisplayStatus status = ScenarioDisplayStatus.from(scenario.status());
             return new ScenarioSeries(
                 scenario.scenarioId(),
                 scenario.title(),
                 Boolean.TRUE.equals(scenario.isBaseline()),
                 executed,
+                status,
+                status == null ? null : status.getLabel(),
                 executed ? values(periodKeys, priceByPeriodKey, ScenarioPriceRow::baseCasePrice) : null,
                 executed ? values(periodKeys, priceByPeriodKey, ScenarioPriceRow::userAdjustedPrice) : null
             );

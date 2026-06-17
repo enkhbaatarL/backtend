@@ -14,6 +14,27 @@ public class NextGenMockProperties {
     private Events events = new Events();
     private ScenarioGroups scenarioGroups = new ScenarioGroups();
     private ModelExecutions modelExecutions = new ModelExecutions();
+    private Design design = new Design();
+
+    @Getter
+    @Setter
+    public static class Design {
+        private Api api = new Api();
+        /** Agent 콜백(생성/검토/Signpost) 도착까지의 시뮬레이션 지연(초). 0이면 즉시(동기). */
+        private long callbackDelaySeconds = 15;
+
+        @Getter
+        @Setter
+        public static class Api {
+            private boolean start = false;
+            private boolean getState = false;
+            private boolean getDimensionTemplates = false;
+            private boolean validate = false;
+            private boolean createSignposts = false;
+            private boolean confirm = false;
+            private boolean reset = false;
+        }
+    }
 
     @Getter
     @Setter
@@ -27,6 +48,7 @@ public class NextGenMockProperties {
             private boolean getDetail = false;
             private boolean getRecords = false;
             private boolean getOutlooks = false;
+            private boolean designAvailability = false;
         }
     }
 

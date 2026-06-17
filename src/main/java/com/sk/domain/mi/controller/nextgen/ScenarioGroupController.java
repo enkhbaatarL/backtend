@@ -155,6 +155,8 @@ public class ScenarioGroupController {
             - `dates`: x축 기간 목록 (월별 `yyyy-MM` / 연도별 `yyyy`)
             - `baseSeries`: 기준선 (CME, MI Base) — **소스 확보 전까지 빈 배열**
             - `scenarioSeries`: 시나리오별 시리즈
+              - `scenarioId` / `scenarioName` / `baseCase`
+              - `status` / `statusLabel`: 판정 상태 (pending/realized/discarded — 폐기여부)
               - `executed`: 수급모델 실행 완료 여부
               - `baseCaseValues` / `userAdjustedValues`: 베이스케이스/사용자조정 가격
             """

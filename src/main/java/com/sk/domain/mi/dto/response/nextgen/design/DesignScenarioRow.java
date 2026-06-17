@@ -7,9 +7,7 @@ import java.util.List;
 
 /**
  * 설계 세션 시나리오 표의 한 행 (FE 컨벤션). 조회 응답과 편집 요청(검토/단계2/확정)이 동일 구조로 공유한다.
- * <p>
  * step1/step2 공용 — 단계 진행에 따라 채워지는 필드가 늘어난다(step1은 narrative/probability/signposts가 null).
- * 신규 추가 행은 {@code scenarioId}=null({@code isNew}=true), 빠진 행은 요청에서 누락으로 표현한다.
  */
 public record DesignScenarioRow(
 

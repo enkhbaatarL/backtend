@@ -57,9 +57,11 @@ public record ScenarioDesignStateRes(
         DesignTable table
 
     ) {
+
         public static OneView of(String groupName, String summary, String description, DesignTable table) {
             return new OneView(groupName, summary, description, table);
         }
+
     }
 
     /** 검토 결과 (검토 미수행 시 null). */

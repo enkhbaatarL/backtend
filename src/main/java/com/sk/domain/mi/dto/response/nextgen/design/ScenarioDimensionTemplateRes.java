@@ -18,4 +18,5 @@ public record ScenarioDimensionTemplateRes(
         Integer displayOrder,
         List<String> valueEnums
     ) {}
+
 }

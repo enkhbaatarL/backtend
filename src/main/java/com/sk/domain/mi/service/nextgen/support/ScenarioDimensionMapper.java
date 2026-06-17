@@ -5,6 +5,7 @@ import com.fasterxml.jackson.core.type.TypeReference;
 import com.sk.common.utils.JsonUtil;
 import com.sk.domain.mi.dto.response.nextgen.ScenarioDimensionColumnRes;
 import com.sk.domain.mi.dto.response.nextgen.ScenarioDimensionRes;
+import com.sk.domain.mi.dto.response.nextgen.design.ScenarioDimensionTemplateRes;
 import com.sk.domain.shared.repository.master.tmm.projection.ScenarioDimensionTemplateRow;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -54,6 +55,30 @@ public final class ScenarioDimensionMapper {
             return keys == null ? List.of() : keys;
         } catch (Exception e) {
             log.warn("dimension_selected 파싱 실패: {}", e.getMessage());
+            return List.of();
+        }
+    }
+
+    /**
+     * event_type_l2 template_json → 분기항목 템플릿 Item 전체 목록(dimKey/label/required/displayOrder/valueEnums).
+     * 분기항목/분기기준 템플릿 조회 API에서 사용한다.
+     */
+    public static List<ScenarioDimensionTemplateRes.Item> parseTemplateItems(String templateJson) {
+        if (templateJson == null || templateJson.isBlank()) {
+            return List.of();
+        }
+        try {
+            List<DimTemplate> parsed = JsonUtil.fromJson(templateJson, new TypeReference<List<DimTemplate>>() {});
+            if (parsed == null) {
+                return List.of();
+            }
+            return parsed.stream()
+                .filter(t -> t != null && t.dimKey() != null)
+                .map(t -> new ScenarioDimensionTemplateRes.Item(
+                    t.dimKey(), t.label(), t.required(), t.displayOrder(), t.valueEnums()))
+                .toList();
+        } catch (Exception e) {
+            log.warn("template_json items 파싱 실패: {}", e.getMessage());
             return List.of();
         }
     }

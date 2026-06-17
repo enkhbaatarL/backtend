@@ -164,12 +164,34 @@ public class ScenarioGroupMockService {
             throw AppErrorException.of(ResultCode.Error.RSC_NOT_FOUND,
                 "Scenario group graph not found: " + scenarioGroupId);
         }
-        return graphs.stream()
+        ScenarioGroupGraphRes graph = graphs.stream()
             .filter(g -> indexName.getCode().equalsIgnoreCase(g.indexName()))
             .filter(g -> periodUnit == g.periodUnit())
             .findFirst()
             .orElseThrow(() -> AppErrorException.of(ResultCode.Error.RSC_NOT_FOUND,
                 "Scenario group graph not found: scenarioGroupId=" + scenarioGroupId + ", indexName=" + indexName));
+        return applyScenarioStatusToGraph(scenarioGroupId, graph);
+    }
+
+    /** 그래프 시리즈에 시나리오 판정 상태를 오버레이 (그룹 상세의 effectiveStatus = 상태변경/폐기 반영, list/detail과 일관). */
+    private ScenarioGroupGraphRes applyScenarioStatusToGraph(Long scenarioGroupId, ScenarioGroupGraphRes graph) {
+        ScenarioGroupDetailRes detail = groupDetailMap.get(scenarioGroupId);
+        Map<Long, ScenarioDisplayStatus> statusByScenario = detail == null ? Map.of()
+            : detail.scenarios().stream()
+                .collect(Collectors.toMap(ScenarioGroupDetailRowRes::scenarioId, this::effectiveStatus));
+
+        List<ScenarioGroupGraphRes.ScenarioSeries> series = graph.scenarioSeries().stream()
+            .map(s -> {
+                ScenarioDisplayStatus status = statusByScenario.getOrDefault(s.scenarioId(), ScenarioDisplayStatus.PENDING);
+                return new ScenarioGroupGraphRes.ScenarioSeries(
+                    s.scenarioId(), s.scenarioName(), s.baseCase(), s.executed(),
+                    status, status.getLabel(), s.baseCaseValues(), s.userAdjustedValues());
+            })
+            .toList();
+
+        return new ScenarioGroupGraphRes(
+            graph.scenarioGroupId(), graph.indexName(), graph.periodUnit(), graph.periodUnitLabel(),
+            graph.currency(), graph.unit(), graph.dates(), graph.baseSeries(), series);
     }
 
     public ByteArrayInputStream exportScenarioGroupGraph(Long scenarioGroupId, GraphPeriodUnit periodUnit) {

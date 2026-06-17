@@ -7,6 +7,7 @@ import com.sk.domain.mi.dto.response.nextgen.EventInstitutionOutlookRes;
 import com.sk.domain.mi.dto.response.nextgen.EventListRes;
 import com.sk.domain.mi.dto.response.nextgen.EventRelatedRecordRes;
 import com.sk.domain.mi.dto.response.nextgen.EventTypeL1Res;
+import com.sk.domain.mi.dto.response.nextgen.design.EventDesignAvailabilityRes;
 
 import java.util.List;
 
@@ -21,5 +22,7 @@ public interface EventService {
     PaginationRes<EventInstitutionOutlookRes> getEventOutlooks(Long eventId, int page, int size);
 
     List<EventTypeL1Res> getEventTypesL1();
+
+    List<EventDesignAvailabilityRes> getEventDesignAvailability(List<Long> eventIds);
 
 }

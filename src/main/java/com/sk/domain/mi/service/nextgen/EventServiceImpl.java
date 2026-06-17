@@ -133,4 +133,9 @@ public class EventServiceImpl implements EventService {
         );
     }
 
+    @Override
+    public List<com.sk.domain.mi.dto.response.nextgen.design.EventDesignAvailabilityRes> getEventDesignAvailability(List<Long> eventIds) {
+        throw new UnsupportedOperationException("EventDesignAvailability 실 구현 미완성 — mi.next-gen.mock.events.api.design-availability 를 활성화");
+    }
+
 }

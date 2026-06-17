@@ -69,6 +69,7 @@ mi:
           get-detail: true
           get-records: true
           get-outlooks: true
+          design-availability: true
       scenario-groups:
         api:
           get-list: true
@@ -89,3 +90,13 @@ mi:
           dispatch-success: true
           running-timeout-minutes: 10
           auto-complete-seconds: 5
+      design:
+        callback-delay-seconds: 15
+        api:
+          start: true
+          get-state: true
+          get-dimension-templates: true
+          validate: true
+          create-signposts: true
+          confirm: true
+          reset: true

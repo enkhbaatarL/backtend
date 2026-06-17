@@ -13,8 +13,11 @@ import com.sk.domain.mi.dto.response.nextgen.EventInstitutionOutlookRes;
 import com.sk.domain.mi.dto.response.nextgen.EventListItemRes;
 import com.sk.domain.mi.dto.response.nextgen.EventListRes;
 import com.sk.domain.mi.dto.response.nextgen.EventRelatedRecordRes;
+import com.sk.domain.mi.dto.response.nextgen.design.EventDesignAvailabilityRes;
 import com.sk.domain.shared.enums.nextgen.ContentStatus;
 import com.sk.domain.shared.enums.nextgen.EventSignalType;
+import com.sk.domain.shared.enums.nextgen.ScenarioDesignDisplayStatus;
+import com.sk.domain.shared.enums.nextgen.ScenarioGroupStatus;
 import com.sk.domain.shared.enums.nextgen.SortOrder;
 import jakarta.annotation.PostConstruct;
 import java.io.IOException;
@@ -46,6 +49,7 @@ public class EventMockService {
     );
 
     private final ObjectMapper objectMapper;
+    private final ScenarioDesignMockService designMockService;
 
     private List<EventListItemRes> eventList;
     private Map<Long, EventDetailRes> eventDetailMap;
@@ -157,6 +161,28 @@ public class EventMockService {
     public PaginationRes<EventInstitutionOutlookRes> getEventOutlooks(Long eventId, int page, int size) {
         List<EventInstitutionOutlookRes> outlooks = eventOutlooksMap.getOrDefault(eventId, Collections.emptyList());
         return paginate(outlooks, page, size);
+    }
+
+    /**
+     * 이벤트 설계가능 상태 조회 — 설계 mock 세션과 연동한다.
+     * 세션 없음=설계가능, status=creating=설계중(점유), created/realized=설계완료. eventIds 미지정 시 전체 이벤트 대상.
+     */
+    public List<EventDesignAvailabilityRes> getEventDesignAvailability(List<Long> eventIds) {
+        List<Long> targets = (eventIds == null || eventIds.isEmpty())
+            ? eventList.stream().map(EventListItemRes::eventId).toList()
+            : eventIds;
+        return targets.stream().map(this::buildDesignAvailability).toList();
+    }
+
+    private EventDesignAvailabilityRes buildDesignAvailability(Long eventId) {
+        return designMockService.findSessionByEventId(eventId)
+            .map(info -> {
+                ScenarioDesignDisplayStatus status = ScenarioDesignDisplayStatus.of(info.status());
+                boolean occupied = info.status() == ScenarioGroupStatus.CREATING;
+                return EventDesignAvailabilityRes.of(
+                    eventId, status, occupied, occupied ? info.occupantUserId() : null, info.scenarioGroupId());
+            })
+            .orElseGet(() -> EventDesignAvailabilityRes.designable(eventId));
     }
 
     private boolean matchesEventTypeFilter(String eventTypeCode, List<Long> filterIds) {

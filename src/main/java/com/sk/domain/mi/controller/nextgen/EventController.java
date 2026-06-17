@@ -296,8 +296,7 @@ public class EventController {
     public BaseResponse<List<EventDesignAvailabilityRes>> getEventDesignAvailability(
         @Parameter(description = "조회할 이벤트 ID 목록", example = "1") @RequestParam(required = false) List<Long> eventIds
     ) {
-        // TODO: 시나리오 설계 점유/가능 상태 조회 구현 예정
-        return null;
+        return BaseResponseFactory.create(eventService.getEventDesignAvailability(eventIds));
     }
 
 }
