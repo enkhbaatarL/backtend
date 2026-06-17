@@ -46,7 +46,7 @@ public record ScenarioGroupGraphRes(
     )
     List<String> dates,
 
-    @Schema(description = "기준선 시리즈 (CME, MI Base). 소스 확보 전까지 빈 배열")
+    @Schema(description = "기준선 시리즈 (MI Base)")
     List<BaseSeries> baseSeries,
 
     @Schema(description = "시나리오별 예측 시리즈")
@@ -91,7 +91,7 @@ public record ScenarioGroupGraphRes(
         );
     }
 
-    /** 기준선 시리즈 구성 — 현재 MI Base만 (CME는 외부 DB 소스 확보 후 추가). */
+    /** 기준선 시리즈 구성 — MI Base. */
     private static List<BaseSeries> buildBaseSeries(List<String> periodKeys, List<MiBasePriceRow> miBasePrices) {
         List<BaseSeries> baseSeries = new ArrayList<>();
         if (miBasePrices != null && !miBasePrices.isEmpty()) {
@@ -105,10 +105,10 @@ public record ScenarioGroupGraphRes(
 
     public record BaseSeries(
 
-        @Schema(description = "시리즈 식별자", example = "CME")
+        @Schema(description = "시리즈 식별자", example = "MI_BASE")
         String seriesId,
 
-        @Schema(description = "시리즈명", example = "CME")
+        @Schema(description = "시리즈명", example = "MI Base")
         String seriesName,
 
         @Schema(description = "값 목록 (dates와 동일 순서)")
