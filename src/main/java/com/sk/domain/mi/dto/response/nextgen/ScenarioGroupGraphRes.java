@@ -10,6 +10,7 @@ import io.swagger.v3.oas.annotations.media.Schema;
 import java.math.BigDecimal;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
@@ -53,7 +54,7 @@ public record ScenarioGroupGraphRes(
     private static final String CURRENCY = "USD";
     private static final String UNIT = "MMBtu";
 
-    public static ScenarioGroupGraphRes of(Long scenarioGroupId, IndexName indexName, GraphPeriodUnit periodUnit, List<ScenarioBaseRow> scenarios, List<ScenarioPriceRow> prices) {
+    public static ScenarioGroupGraphRes of(Long scenarioGroupId, IndexName indexName, GraphPeriodUnit periodUnit, List<ScenarioBaseRow> scenarios, List<ScenarioPriceRow> prices, Set<Long> executedScenarioIds, Set<Long> runningScenarioIds) {
 
         // x축 = 전 시나리오 기간키 union (시나리오마다 실행 시점이 달라 범위가 다를 수 있음 → 빠진 구간은 null 패딩)
         List<String> periodKeys = prices.stream()
@@ -67,7 +68,9 @@ public record ScenarioGroupGraphRes(
                 Collectors.toMap(ScenarioPriceRow::periodKey, Function.identity())));
 
         List<ScenarioSeries> scenarioSeries = scenarios.stream()
-            .map(scenario -> ScenarioSeries.of(scenario, periodKeys, pricesByScenario.get(scenario.scenarioId())))
+            .map(scenario -> ScenarioSeries.of(scenario, periodKeys, pricesByScenario.get(scenario.scenarioId()),
+                executedScenarioIds != null && executedScenarioIds.contains(scenario.scenarioId()),
+                runningScenarioIds != null && runningScenarioIds.contains(scenario.scenarioId())))
             .toList();
 
         return new ScenarioGroupGraphRes(
@@ -110,6 +113,9 @@ public record ScenarioGroupGraphRes(
         @Schema(description = "수급모델 실행 완료 여부", example = "true")
         boolean executed,
 
+        @Schema(description = "수급모델 실행중 여부", example = "false")
+        boolean modelRunning,
+
         @Schema(description = "판정 상태 (pending/realized/discarded)", example = "pending")
         ScenarioDisplayStatus status,
 
@@ -124,18 +130,20 @@ public record ScenarioGroupGraphRes(
 
     ) {
 
-        static ScenarioSeries of(ScenarioBaseRow scenario, List<String> periodKeys, Map<String, ScenarioPriceRow> priceByPeriodKey) {
-            boolean executed = priceByPeriodKey != null && !priceByPeriodKey.isEmpty();
+        static ScenarioSeries of(ScenarioBaseRow scenario, List<String> periodKeys, Map<String, ScenarioPriceRow> priceByPeriodKey, boolean executed, boolean modelRunning) {
+            // executed/modelRunning은 최신 실행 상태(exec_stat_cd)로 판정. 그래프 값(line)은 최신 완료 가격이 있으면 표시(재실행 중에도 직전 결과 유지).
+            boolean hasPrices = priceByPeriodKey != null && !priceByPeriodKey.isEmpty();
             ScenarioDisplayStatus status = ScenarioDisplayStatus.from(scenario.status());
             return new ScenarioSeries(
                 scenario.scenarioId(),
                 scenario.title(),
                 Boolean.TRUE.equals(scenario.isBaseline()),
                 executed,
+                modelRunning,
                 status,
                 status == null ? null : status.getLabel(),
-                executed ? values(periodKeys, priceByPeriodKey, ScenarioPriceRow::baseCasePrice) : null,
-                executed ? values(periodKeys, priceByPeriodKey, ScenarioPriceRow::userAdjustedPrice) : null
+                hasPrices ? values(periodKeys, priceByPeriodKey, ScenarioPriceRow::baseCasePrice) : null,
+                hasPrices ? values(periodKeys, priceByPeriodKey, ScenarioPriceRow::userAdjustedPrice) : null
             );
         }
 

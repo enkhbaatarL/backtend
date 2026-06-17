@@ -257,6 +257,7 @@ public class ScenarioModelExecutionMockService {
             pendingExecution.files()
         );
         executionStore.put(pendingExecution.executionId(), runningExecution);
+        scenarioGroupMockService.markModelRunning(runningExecution.scenarioId()); // 그래프 mock 실행중 표기 연동
         scheduleAutoComplete(runningExecution);
     }
 
@@ -277,6 +278,7 @@ public class ScenarioModelExecutionMockService {
                     current.files()
                 );
                 executionStore.put(current.executionId(), completed);
+                scenarioGroupMockService.markModelIdle(current.scenarioId());
                 log.info("[Mock] Auto-completed model execution: executionId={}, scenarioId={}",
                     current.executionId(), current.scenarioId());
             }
@@ -307,6 +309,7 @@ public class ScenarioModelExecutionMockService {
             execution.files()
         );
         executionStore.put(execution.executionId(), timedOutExecution);
+        scenarioGroupMockService.markModelIdle(execution.scenarioId());
         return timedOutExecution;
     }
 

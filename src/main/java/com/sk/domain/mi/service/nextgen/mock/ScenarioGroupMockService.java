@@ -63,6 +63,23 @@ public class ScenarioGroupMockService {
     /** [mock 전용] soft delete 된 시나리오 그룹 ID. 그룹 삭제 시 그룹 + 하위 시나리오가 조회에서 제외된다. reset API로 초기화. */
     private final Set<Long> deletedGroupIds = ConcurrentHashMap.newKeySet();
 
+    /** [mock 전용] 수급모델 실행중 시나리오 ID. 모델실행 mock(submit→RUNNING/완료→idle)이 갱신, 그래프 modelRunning 표기. */
+    private final Set<Long> runningScenarioIds = ConcurrentHashMap.newKeySet();
+
+    /** [mock 전용] 수급모델 실행중 표기 (모델실행 mock에서 호출). */
+    public void markModelRunning(Long scenarioId) {
+        if (scenarioId != null) {
+            runningScenarioIds.add(scenarioId);
+        }
+    }
+
+    /** [mock 전용] 수급모델 실행중 해제 (모델실행 mock에서 호출). */
+    public void markModelIdle(Long scenarioId) {
+        if (scenarioId != null) {
+            runningScenarioIds.remove(scenarioId);
+        }
+    }
+
     @PostConstruct
     void init() {
         try {
@@ -185,9 +202,12 @@ public class ScenarioGroupMockService {
         List<ScenarioGroupGraphRes.ScenarioSeries> series = graph.scenarioSeries().stream()
             .map(s -> {
                 ScenarioDisplayStatus status = statusByScenario.getOrDefault(s.scenarioId(), ScenarioDisplayStatus.PENDING);
+                boolean running = runningScenarioIds.contains(s.scenarioId());
                 return new ScenarioGroupGraphRes.ScenarioSeries(
-                    s.scenarioId(), s.scenarioName(), s.baseCase(), s.executed(),
-                    status, status.getLabel(), s.baseCaseValues(), s.userAdjustedValues());
+                    s.scenarioId(), s.scenarioName(), s.baseCase(),
+                    s.executed() && !running, // 실행중(재실행)이면 executed=false, 직전 가격(values)은 그대로 유지
+                    running, status, status.getLabel(),
+                    s.baseCaseValues(), s.userAdjustedValues());
             })
             .toList();
 
@@ -308,6 +328,7 @@ public class ScenarioGroupMockService {
     public void resetScenarioStatus() {
         statusOverrides.clear();
         deletedGroupIds.clear();
+        runningScenarioIds.clear();
     }
 
     /**

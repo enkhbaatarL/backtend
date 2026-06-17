@@ -32,7 +32,7 @@ import org.springframework.web.bind.annotation.RestController;
  * 콜백 수신 시 stage 반영 + (검토는 Redis 임시 저장) + 설계 세션 SSE 푸시를 트리거한다.
  */
 @Profile("!dedicated")
-@Tag(name = "03-1. Next Gen MI Scenario Design Callback API", description = "Next Gen MI 시나리오 설계 Agent 콜백 수신 API입니다. (Agent → B.E)")
+@Tag(name = "03-2. Next Gen MI Scenario Design Callback API", description = "Next Gen MI 시나리오 설계 Agent 콜백 수신 API입니다. (Agent → B.E)")
 @Slf4j
 @RestController
 @RequestMapping("/api/v1/mi/next-gen/scenario-groups")
