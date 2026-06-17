@@ -5,6 +5,7 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.data.redis.connection.RedisConnectionFactory;
 import org.springframework.data.redis.listener.PatternTopic;
 import org.springframework.data.redis.listener.RedisMessageListenerContainer;
+import org.springframework.scheduling.concurrent.ThreadPoolTaskScheduler;
 
 /**
  * 설계 세션 SSE 멀티노드 팬아웃을 위한 Redis Pub/Sub 설정.
@@ -20,4 +21,14 @@ public class ScenarioDesignSsePubSubConfig {
         container.addMessageListener(subscriber, new PatternTopic(ScenarioDesignEventPublisher.CHANNEL_PATTERN));
         return container;
     }
+
+    @Bean
+    public ThreadPoolTaskScheduler sseHeartbeatScheduler() {
+        ThreadPoolTaskScheduler scheduler = new ThreadPoolTaskScheduler();
+        scheduler.setPoolSize(1);
+        scheduler.setThreadNamePrefix("sse-design-hb-");
+        scheduler.setRemoveOnCancelPolicy(true);
+        return scheduler;
+    }
+
 }

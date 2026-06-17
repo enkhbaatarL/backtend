@@ -3,6 +3,8 @@ package com.sk.domain.mi.service.nextgen.mock;
 import org.springframework.context.annotation.Primary;
 import org.springframework.stereotype.Service;
 
+import com.sk.common.enums.ResultCode;
+import com.sk.common.exception.AppErrorException;
 import com.sk.domain.mi.config.NextGenMockProperties;
 import com.sk.domain.mi.dto.request.nextgen.ScenarioGroupListReq;
 import com.sk.domain.mi.dto.response.nextgen.ScenarioDetailViewRes;
@@ -27,6 +29,7 @@ public class ScenarioGroupServiceDelegator implements ScenarioGroupService {
 
     private final ScenarioGroupServiceImpl realService;
     private final ScenarioGroupMockService mockService;
+    private final ScenarioDesignMockService designMockService;
     private final NextGenMockProperties mockProps;
 
     @Override
@@ -81,7 +84,15 @@ public class ScenarioGroupServiceDelegator implements ScenarioGroupService {
     @Override
     public void deleteScenarioGroup(Long scenarioGroupId) {
         if (mockProps.getScenarioGroups().getApi().isDeleteGroup()) {
-            mockService.deleteScenarioGroup(scenarioGroupId);
+            // mock: 그룹 soft delete + 설계 세션 제거를 함께 수행한다.
+            // 세션 제거 → 해당 이벤트가 다시 '설계가능'으로 풀린다(이벤트↔그룹↔설계 유기적 연동).
+            // 미확정 설계 취소(그룹 미생성, 세션만 존재)도 같은 삭제 API로 들어오므로 둘 중 하나만 있어도 성공 처리한다.
+            boolean sessionRemoved = designMockService.removeSessionByGroupId(scenarioGroupId);
+            boolean groupRemoved = mockService.deleteScenarioGroupIfPresent(scenarioGroupId);
+            if (!sessionRemoved && !groupRemoved) {
+                throw AppErrorException.of(ResultCode.Error.RSC_NOT_FOUND,
+                    "Scenario group not found: " + scenarioGroupId);
+            }
         } else {
             realService.deleteScenarioGroup(scenarioGroupId);
         }

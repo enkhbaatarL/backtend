@@ -3,16 +3,19 @@ package com.sk.domain.mi.dto.response.nextgen;
 import com.sk.domain.shared.enums.nextgen.GraphPeriodUnit;
 import com.sk.domain.shared.enums.nextgen.IndexName;
 import com.sk.domain.shared.enums.nextgen.ScenarioDisplayStatus;
+import com.sk.domain.shared.repository.master.tmd.projection.MiBasePriceRow;
 import com.sk.domain.shared.repository.master.tmd.projection.ScenarioPriceRow;
 import com.sk.domain.shared.repository.master.tmm.projection.ScenarioBaseRow;
 import io.swagger.v3.oas.annotations.media.ArraySchema;
 import io.swagger.v3.oas.annotations.media.Schema;
 import java.math.BigDecimal;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.function.Function;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 /**
  * 시나리오 그룹 펼침 그래프 데이터 (단일 인덱스 × 단일 기간단위).
@@ -53,12 +56,15 @@ public record ScenarioGroupGraphRes(
 
     private static final String CURRENCY = "USD";
     private static final String UNIT = "MMBtu";
+    private static final String MI_BASE_SERIES_ID = "MI_BASE";
+    private static final String MI_BASE_SERIES_NAME = "MI Base";
 
-    public static ScenarioGroupGraphRes of(Long scenarioGroupId, IndexName indexName, GraphPeriodUnit periodUnit, List<ScenarioBaseRow> scenarios, List<ScenarioPriceRow> prices, Set<Long> runningScenarioIds) {
+    public static ScenarioGroupGraphRes of(Long scenarioGroupId, IndexName indexName, GraphPeriodUnit periodUnit, List<ScenarioBaseRow> scenarios, List<ScenarioPriceRow> prices, Set<Long> runningScenarioIds, List<MiBasePriceRow> miBasePrices) {
 
-        // x축 = 전 시나리오 기간키 union (시나리오마다 실행 시점이 달라 범위가 다를 수 있음 → 빠진 구간은 null 패딩)
-        List<String> periodKeys = prices.stream()
-            .map(ScenarioPriceRow::periodKey)
+        // x축 = 시나리오 + MI Base 기간키 union (실행 시점이 달라 범위가 다를 수 있음 → 빠진 구간은 null 패딩)
+        List<String> periodKeys = Stream.concat(
+                prices.stream().map(ScenarioPriceRow::periodKey),
+                miBasePrices == null ? Stream.empty() : miBasePrices.stream().map(MiBasePriceRow::periodKey))
             .distinct()
             .sorted()
             .toList();
@@ -80,9 +86,21 @@ public record ScenarioGroupGraphRes(
             CURRENCY,
             UNIT,
             periodKeys.stream().map(periodUnit::formatPeriodKey).toList(),
-            List.of(),
+            buildBaseSeries(periodKeys, miBasePrices),
             scenarioSeries
         );
+    }
+
+    /** 기준선 시리즈 구성 — 현재 MI Base만 (CME는 외부 DB 소스 확보 후 추가). */
+    private static List<BaseSeries> buildBaseSeries(List<String> periodKeys, List<MiBasePriceRow> miBasePrices) {
+        List<BaseSeries> baseSeries = new ArrayList<>();
+        if (miBasePrices != null && !miBasePrices.isEmpty()) {
+            Map<String, BigDecimal> valueByPeriodKey = miBasePrices.stream()
+                .collect(Collectors.toMap(MiBasePriceRow::periodKey, MiBasePriceRow::baseCasePrice, (a, b) -> a));
+            List<BigDecimal> values = periodKeys.stream().map(valueByPeriodKey::get).toList();
+            baseSeries.add(new BaseSeries(MI_BASE_SERIES_ID, MI_BASE_SERIES_NAME, values));
+        }
+        return baseSeries;
     }
 
     public record BaseSeries(

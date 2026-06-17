@@ -30,6 +30,7 @@ import com.sk.domain.shared.enums.nextgen.ContentStatus;
 import com.sk.domain.shared.enums.nextgen.IndexName;
 import com.sk.domain.shared.enums.nextgen.TargetType;
 import com.sk.domain.shared.repository.master.tmm.projection.DriverTagScoreboardRow;
+import com.sk.domain.shared.repository.master.tmm.projection.EventDesignAvailabilityRow;
 import com.sk.domain.shared.repository.master.tmm.projection.EventDetailBaseRow;
 import com.sk.domain.shared.repository.master.tmm.projection.EventDetailRow;
 import com.sk.domain.shared.repository.master.tmm.projection.EventIndexImpactRow;
@@ -37,6 +38,7 @@ import com.sk.domain.shared.repository.master.tmm.projection.EventListBaseRow;
 import com.sk.domain.shared.repository.master.tmm.projection.EventListRow;
 import com.sk.domain.shared.repository.master.tmm.projection.EventOutlookRow;
 import com.sk.domain.shared.repository.master.tmm.projection.QDriverTagScoreboardRow;
+import com.sk.domain.shared.repository.master.tmm.projection.QEventDesignAvailabilityRow;
 import com.sk.domain.shared.repository.master.tmm.projection.QEventDetailBaseRow;
 import com.sk.domain.shared.repository.master.tmm.projection.QEventIndexImpactRow;
 import com.sk.domain.shared.repository.master.tmm.projection.QEventListBaseRow;
@@ -140,6 +142,24 @@ public class CustomMiEventRepositoryImpl implements CustomMiEventRepository {
             .toList();
 
         return PageableExecutionUtils.getPage(rows, pageable, countQuery::fetchOne);
+    }
+
+    /**
+     * 이벤트별 설계 점유/가능 상태 조회.
+     */
+    @Override
+    public List<EventDesignAvailabilityRow> findDesignAvailability(List<Long> eventIds) {
+        return queryFactory
+            .select(new QEventDesignAvailabilityRow(
+                miEvent.miEventId,
+                miScenarioGroup.scenarioGroupId,
+                miScenarioGroup.status,
+                miScenarioGroup.requestUserId
+            ))
+            .from(miEvent)
+            .leftJoin(miScenarioGroup).on(miScenarioGroup.miEvent.eq(miEvent), miScenarioGroup.isDeleted.isFalse())
+            .where(miEvent.isDeleted.isFalse(), miEvent.miEventId.in(eventIds))
+            .fetch();
     }
 
     private BooleanBuilder buildEventWhere(EventListReq request) {

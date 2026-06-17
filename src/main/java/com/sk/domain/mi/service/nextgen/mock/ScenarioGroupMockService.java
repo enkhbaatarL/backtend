@@ -31,6 +31,7 @@ import java.io.InputStream;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
@@ -83,10 +84,7 @@ public class ScenarioGroupMockService {
     @PostConstruct
     void init() {
         try {
-            loadGroups();
-            loadGraphs();
-            loadGroupDetails();
-            loadScenarioDetails();
+            reload();
             log.info("[Mock] Scenario group mock data loaded: groups={}, graphs={}, groupDetails={}, scenarioDetails={}",
                 groups.size(), graphMap.size(), groupDetailMap.size(), scenarioDetailMap.size());
         } catch (IOException e) {
@@ -96,6 +94,14 @@ public class ScenarioGroupMockService {
             groupDetailMap = Collections.emptyMap();
             scenarioDetailMap = Collections.emptyMap();
         }
+    }
+
+    /** fixture 초기 데이터셋을 재적재한다 (init + reset 공용). 설계 확정으로 추가된 그룹 등 메모리 변경분이 모두 제거된다. */
+    private void reload() throws IOException {
+        loadGroups();
+        loadGraphs();
+        loadGroupDetails();
+        loadScenarioDetails();
     }
 
     private void loadGroupDetails() throws IOException {
@@ -141,6 +147,8 @@ public class ScenarioGroupMockService {
             .filter(g -> endDateTime == null || g.updatedAt().isBefore(endDateTime))
             .filter(g -> request.keyword().isEmpty() || g.groupName().contains(request.keyword()))
             .sorted(comparator)
+            // 임베드된 시나리오 표에도 상태변경/폐기 오버레이 + 재분배 확률 반영 (상세·그래프와 일관)
+            .map(this::overlayGroupScenarios)
             .toList();
 
         return new ScenarioGroupListRes(ScenarioGroupAppliedFilterRes.from(request), paginate(filtered, request));
@@ -156,8 +164,10 @@ public class ScenarioGroupMockService {
             if (group.scenarios() == null || deletedGroupIds.contains(group.scenarioGroupId())) {
                 continue;
             }
-            for (ScenarioRowRes row : group.scenarios()) {
-                all.add(ScenarioIndividualItemRes.of(group, row));
+            // 개별 행도 상태변경/폐기 오버레이된 시나리오에서 파생 (그룹 목록과 일관)
+            ScenarioGroupListItemRes overlaid = overlayGroupScenarios(group);
+            for (ScenarioRowRes row : overlaid.scenarios()) {
+                all.add(ScenarioIndividualItemRes.of(overlaid, row));
             }
         }
 
@@ -178,8 +188,16 @@ public class ScenarioGroupMockService {
     }
 
     public ScenarioGroupGraphRes getScenarioGroupGraph(Long scenarioGroupId, IndexName indexName, GraphPeriodUnit periodUnit) {
+        if (deletedGroupIds.contains(scenarioGroupId)) {
+            throw AppErrorException.of(ResultCode.Error.RSC_NOT_FOUND,
+                "Scenario group graph not found: " + scenarioGroupId);
+        }
         List<ScenarioGroupGraphRes> graphs = graphMap.get(scenarioGroupId);
-        if (graphs == null || deletedGroupIds.contains(scenarioGroupId)) {
+        if (graphs == null) {
+            // 설계 확정 등으로 생성됐으나 그래프 fixture 미보유(수급모델 미실행) → 빈 그래프 반환(404 방지)
+            if (groupDetailMap.containsKey(scenarioGroupId)) {
+                return emptyGraph(scenarioGroupId, indexName, periodUnit);
+            }
             throw AppErrorException.of(ResultCode.Error.RSC_NOT_FOUND,
                 "Scenario group graph not found: " + scenarioGroupId);
         }
@@ -214,14 +232,45 @@ public class ScenarioGroupMockService {
             graph.currency(), graph.unit(), graph.dates(), graph.baseSeries(), series);
     }
 
+    /** 그래프 fixture가 없는 그룹(설계 확정 직후 등)용 빈 그래프 — 시나리오는 미실행 시리즈로만 노출. */
+    private ScenarioGroupGraphRes emptyGraph(Long scenarioGroupId, IndexName indexName, GraphPeriodUnit periodUnit) {
+        ScenarioGroupDetailRes detail = groupDetailMap.get(scenarioGroupId);
+        List<ScenarioGroupGraphRes.ScenarioSeries> series = detail == null ? List.of()
+            : detail.scenarios().stream()
+                .map(row -> {
+                    ScenarioDisplayStatus status = effectiveStatus(row);
+                    return new ScenarioGroupGraphRes.ScenarioSeries(
+                        row.scenarioId(), row.scenarioName(), Boolean.TRUE.equals(row.baseCase()),
+                        false, runningScenarioIds.contains(row.scenarioId()),
+                        status, status.getLabel(), null, null);
+                })
+                .toList();
+        return new ScenarioGroupGraphRes(
+            scenarioGroupId, indexName.getCode(), periodUnit, periodUnit.getLabel(),
+            "USD", "MMBtu", List.of(), List.of(), series);
+    }
+
     public ByteArrayInputStream exportScenarioGroupGraph(Long scenarioGroupId, GraphPeriodUnit periodUnit) {
-        List<ScenarioGroupGraphRes> graphs = graphMap.get(scenarioGroupId);
-        if (graphs == null || deletedGroupIds.contains(scenarioGroupId)) {
+        if (deletedGroupIds.contains(scenarioGroupId)) {
             throw AppErrorException.of(ResultCode.Error.RSC_NOT_FOUND,
                 "Scenario group graph not found: " + scenarioGroupId);
         }
+        List<ScenarioGroupGraphRes> graphs = graphMap.get(scenarioGroupId);
+        if (graphs == null) {
+            // 설계 확정 등으로 생성됐으나 그래프 fixture 미보유(수급모델 미실행) → 빈 그래프로 내보냄(404 방지, 화면 그래프와 동일)
+            if (!groupDetailMap.containsKey(scenarioGroupId)) {
+                throw AppErrorException.of(ResultCode.Error.RSC_NOT_FOUND,
+                    "Scenario group graph not found: " + scenarioGroupId);
+            }
+            List<ScenarioGroupGraphRes> empties = Arrays.stream(IndexName.values())
+                .map(idx -> emptyGraph(scenarioGroupId, idx, periodUnit))
+                .toList();
+            return ScenarioGroupGraphExcelMapper.toExcel(empties);
+        }
+        // 화면 그래프와 동일하게 시나리오 판정 상태(상태변경/폐기)·실행중 표기를 오버레이해 내보낸다
         return ScenarioGroupGraphExcelMapper.toExcel(graphs.stream()
             .filter(g -> periodUnit == g.periodUnit())
+            .map(g -> applyScenarioStatusToGraph(scenarioGroupId, g))
             .toList());
     }
 
@@ -262,6 +311,44 @@ public class ScenarioGroupMockService {
     }
 
     private ScenarioDisplayStatus effectiveStatus(ScenarioGroupDetailRowRes row) {
+        ScenarioDisplayStatus override = statusOverrides.get(row.scenarioId());
+        if (override != null) {
+            return override;
+        }
+        return row.status() == null ? ScenarioDisplayStatus.PENDING : row.status();
+    }
+
+    /** 그룹 목록/개별 목록의 임베드 시나리오 표에 상태변경/폐기 오버레이 + 재분배 확률을 입힌 새 그룹 아이템을 만든다. */
+    private ScenarioGroupListItemRes overlayGroupScenarios(ScenarioGroupListItemRes group) {
+        List<ScenarioRowRes> scenarios = group.scenarios();
+        if (scenarios == null || scenarios.isEmpty()) {
+            return group;
+        }
+        Map<Long, Integer> adjusted = redistributeRowRes(scenarios);
+        List<ScenarioRowRes> rows = scenarios.stream()
+            .map(row -> {
+                ScenarioDisplayStatus status = effectiveStatus(row);
+                return new ScenarioRowRes(
+                    row.scenarioId(), row.scenarioName(), row.baseCase(),
+                    row.dimensions(), row.probability(), adjusted.get(row.scenarioId()),
+                    status, status.getLabel());
+            })
+            .toList();
+        return new ScenarioGroupListItemRes(
+            group.scenarioGroupId(), group.groupName(), group.createdAt(), group.updatedAt(),
+            group.summary(), group.scenarioCount(), group.dimensionColumns(), rows);
+    }
+
+    private Map<Long, Integer> redistributeRowRes(List<ScenarioRowRes> rows) {
+        return ScenarioProbabilityAllocator.redistribute(rows.stream()
+            .map(row -> new ScenarioProbabilityAllocator.Item(
+                row.scenarioId(),
+                row.probability() == null ? null : BigDecimal.valueOf(row.probability()),
+                effectiveStatus(row) == ScenarioDisplayStatus.DISCARDED))
+            .toList());
+    }
+
+    private ScenarioDisplayStatus effectiveStatus(ScenarioRowRes row) {
         ScenarioDisplayStatus override = statusOverrides.get(row.scenarioId());
         if (override != null) {
             return override;
@@ -312,21 +399,47 @@ public class ScenarioGroupMockService {
         return ScenarioStatusRes.of(scenarioId, status, discardedScenarioIds);
     }
 
-    public void deleteScenarioGroup(Long scenarioGroupId) {
-        boolean exists = groups.stream().anyMatch(g -> g.scenarioGroupId().equals(scenarioGroupId));
-        if (!exists || deletedGroupIds.contains(scenarioGroupId)) {
-            throw AppErrorException.of(ResultCode.Error.RSC_NOT_FOUND,
-                "Scenario group not found: " + scenarioGroupId);
+    /**
+     * [mock 전용] 그룹 + 하위 시나리오 soft delete. 예외를 던지지 않고 존재 여부를 반환한다.
+     * <p>미확정 설계(그룹 미materialize, 세션만 존재) 취소도 같은 삭제 API로 처리되므로,
+     * 그룹이 없으면 조용히 false를 반환하고 호출측(delegator)이 세션 제거 여부와 함께 404를 판단한다.
+     * @return 실제로 삭제된 그룹이 있었으면 true
+     */
+    public boolean deleteScenarioGroupIfPresent(Long scenarioGroupId) {
+        boolean exists = !deletedGroupIds.contains(scenarioGroupId)
+            && groups.stream().anyMatch(g -> g.scenarioGroupId().equals(scenarioGroupId));
+        if (exists) {
+            deletedGroupIds.add(scenarioGroupId);
+            // 삭제된 그룹 하위 시나리오의 실행중 표기도 함께 정리 (잔존 방지)
+            clearRunningMarks(scenarioGroupId);
         }
-        // 그룹 + 그룹 내 모든 시나리오 soft delete (mock: 메모리에 삭제 그룹 기록 → 조회 제외, reset API로 초기화)
-        deletedGroupIds.add(scenarioGroupId);
+        return exists;
     }
 
-    /** [mock 전용] 상태 변경분과 그룹 삭제분을 모두 초기 설정값으로 되돌린다. */
+    /** 그룹 삭제 시 하위 시나리오의 수급모델 실행중 표기를 제거한다. */
+    private void clearRunningMarks(Long scenarioGroupId) {
+        ScenarioGroupDetailRes detail = groupDetailMap.get(scenarioGroupId);
+        if (detail == null || detail.scenarios() == null) {
+            return;
+        }
+        detail.scenarios().forEach(s -> runningScenarioIds.remove(s.scenarioId()));
+    }
+
+    /** [mock 전용] 그룹이 soft delete 됐는지 — 이벤트 설계가능 판정에서 사용(삭제된 그룹의 이벤트는 다시 설계가능). */
+    public boolean isGroupDeleted(Long scenarioGroupId) {
+        return scenarioGroupId != null && deletedGroupIds.contains(scenarioGroupId);
+    }
+
+    /** [mock 전용] 상태 변경분·그룹 삭제분·실행중 표기·설계 확정으로 추가된 그룹을 모두 초기 fixture로 되돌린다. */
     public void resetScenarioStatus() {
         statusOverrides.clear();
         deletedGroupIds.clear();
         runningScenarioIds.clear();
+        try {
+            reload(); // materialize된 그룹 등 메모리 변경분 제거 → fixture 초기값 복원
+        } catch (IOException e) {
+            log.error("[Mock] Failed to reload scenario group mock data on reset", e);
+        }
     }
 
     /**

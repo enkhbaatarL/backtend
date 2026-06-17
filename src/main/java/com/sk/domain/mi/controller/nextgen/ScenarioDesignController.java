@@ -57,6 +57,7 @@ public class ScenarioDesignController {
             <br><br>
             ### 전송 형식
             `text/event-stream`. 각 프레임은 이벤트 이름(`event:`)과 JSON 페이로드(`data:`)로 구성됩니다. <br>
+            연결 유지를 위해 서버가 약 20초마다 keep-alive 주석 프레임(`:hb`)을 보냅니다. 주석 프레임이므로 `EventSource` 핸들러는 무시하며 FE에서 별도 처리할 필요가 없습니다. <br>
 
             <br><br>
             ### 이벤트 종류 & 페이로드
