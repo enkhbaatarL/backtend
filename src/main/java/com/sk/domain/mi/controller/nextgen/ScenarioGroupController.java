@@ -15,6 +15,7 @@ import com.sk.domain.mi.dto.response.nextgen.ScenarioGroupListRes;
 import com.sk.domain.mi.dto.response.nextgen.ScenarioIndividualListRes;
 import com.sk.domain.mi.dto.response.nextgen.ScenarioStatusRes;
 import com.sk.domain.mi.service.nextgen.ScenarioGroupService;
+import com.sk.domain.mi.service.nextgen.mock.ScenarioDesignMockService;
 import com.sk.domain.mi.service.nextgen.mock.ScenarioGroupMockService;
 import com.sk.domain.shared.enums.PermissionCondition;
 import com.sk.domain.shared.enums.Role;
@@ -56,6 +57,7 @@ public class ScenarioGroupController {
 
     private final ScenarioGroupService scenarioGroupService;
     private final ScenarioGroupMockService scenarioGroupMockService;
+    private final ScenarioDesignMockService scenarioDesignMockService;
 
     @ApiOrder(1)
     @Operation(
@@ -153,7 +155,8 @@ public class ScenarioGroupController {
             ### 응답 필드
             - `periodUnit` / `periodUnitLabel`: 기간 단위 (monthly:월별 / yearly:연도별)
             - `dates`: x축 기간 목록 (월별 `yyyy-MM` / 연도별 `yyyy`)
-            - `baseSeries`: 기준선 (CME, MI Base) — **소스 확보 전까지 빈 배열**
+            - `baseSeries`: 기준선 — `MI Base`(exec_type_cd=MI_BASE 최신 케이스 가격) 제공, `CME`는 외부 DB 소스 확보 후 추가
+              - `seriesId` / `seriesName` / `values`(dates와 동일 순서, 빠진 구간 null)
             - `scenarioSeries`: 시나리오별 시리즈
               - `scenarioId` / `scenarioName` / `baseCase`
               - `status` / `statusLabel`: 판정 상태 (pending/realized/discarded — 폐기여부)
@@ -351,7 +354,8 @@ public class ScenarioGroupController {
         @PermissionRule(role = Role.ADMIN, conditions = {PermissionCondition.THIRD_PARTY_ADMIN_ONLY})
     })
     public BaseResponse<Void> resetScenarioStatus() {
-        scenarioGroupMockService.resetScenarioStatus();
+        scenarioGroupMockService.resetScenarioStatus(); // 상태/삭제/실행중 + materialize된 그룹 → fixture 복원
+        scenarioDesignMockService.resetSessions();      // 설계 세션 초기화 → 이벤트 가용성까지 처음 상태로
         return BaseResponseFactory.create(ResultCode.Success.OK);
     }
 

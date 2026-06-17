@@ -50,6 +50,7 @@ public class EventMockService {
 
     private final ObjectMapper objectMapper;
     private final ScenarioDesignMockService designMockService;
+    private final ScenarioGroupMockService scenarioGroupMockService;
 
     private List<EventListItemRes> eventList;
     private Map<Long, EventDetailRes> eventDetailMap;
@@ -189,6 +190,10 @@ public class EventMockService {
         // ② 세션 없으면 이벤트의 정적 설계 상태(사전 그룹) — event-list와 일관
         EventListItemRes event = eventById(eventId);
         if (event == null || event.scenarioDesignStatus() == null) {
+            return EventDesignAvailabilityRes.designable(eventId);
+        }
+        // 그룹이 삭제됐으면 그 이벤트는 다시 설계가능 (그룹 삭제 ↔ 이벤트 가용성 유기적 연동)
+        if (scenarioGroupMockService.isGroupDeleted(event.scenarioGroupId())) {
             return EventDesignAvailabilityRes.designable(eventId);
         }
         return EventDesignAvailabilityRes.of(

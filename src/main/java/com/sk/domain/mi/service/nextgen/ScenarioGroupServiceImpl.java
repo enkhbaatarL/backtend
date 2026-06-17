@@ -30,6 +30,7 @@ import com.sk.domain.shared.enums.nextgen.IndexName;
 import com.sk.domain.shared.enums.nextgen.ScenarioDisplayStatus;
 import com.sk.domain.shared.enums.nextgen.ScenarioStatus;
 import com.sk.domain.shared.repository.master.tmd.ScenarioCaseRepository;
+import com.sk.domain.shared.repository.master.tmd.projection.MiBasePriceRow;
 import com.sk.domain.shared.repository.master.tmd.projection.ScenarioPriceRow;
 import com.sk.domain.shared.repository.master.tmm.MiScenarioGroupRepository;
 import com.sk.domain.shared.repository.master.tmm.projection.ScenarioBaseRow;
@@ -185,7 +186,9 @@ public class ScenarioGroupServiceImpl implements ScenarioGroupService {
         List<ScenarioPriceRow> prices = scenarioCaseRepository.findLatestCompletedPricesByScenarioIds(scenarioIds, indexName, periodUnit.getDbUnit());
         // modelRunning = RUNNING 케이스 존재 (case_stat_cd=RUNNING). executed/값은 최신 완료 가격(prices)으로 판정.
         Set<Long> runningScenarioIds = Set.copyOf(scenarioCaseRepository.findRunningScenarioIds(scenarioIds));
-        return ScenarioGroupGraphRes.of(scenarioGroupId, indexName, periodUnit, scenarios, prices, runningScenarioIds);
+        // MI Base 기준선 = exec_type_cd=MI_BASE 최신 케이스의 가격 결과 (그룹 공통, scnr_id 없음)
+        List<MiBasePriceRow> miBasePrices = scenarioCaseRepository.findLatestMiBasePrices(indexName, periodUnit.getDbUnit());
+        return ScenarioGroupGraphRes.of(scenarioGroupId, indexName, periodUnit, scenarios, prices, runningScenarioIds, miBasePrices);
     }
 
     /**

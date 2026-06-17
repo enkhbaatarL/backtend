@@ -303,6 +303,23 @@ public class ScenarioDesignMockService {
         return buildState(session);
     }
 
+    /**
+     * [mock 전용] 설계 세션 제거 (그룹 삭제/취소 연동).
+     * <p>세션이 사라지면 해당 이벤트의 설계가능 판정이 다시 '설계가능'으로 풀린다(이벤트↔설계 유기적 연동).
+     * @return 제거된 세션이 있었으면 true
+     */
+    public boolean removeSessionByGroupId(Long scenarioGroupId) {
+        return scenarioGroupId != null && sessions.remove(scenarioGroupId) != null;
+    }
+
+    /** [mock 전용] 모든 설계 세션과 채번 카운터를 초기 상태로 되돌린다 (시나리오 상태/삭제 초기화 API에서 호출). */
+    public void resetSessions() {
+        sessions.clear();
+        groupIdSeq.set(GROUP_ID_BASE);
+        scenarioIdSeq.set(SCENARIO_ID_BASE);
+        signpostIdSeq.set(SIGNPOST_ID_BASE);
+    }
+
     // ===== 내부 =====
 
     private Session getSession(Long scenarioGroupId) {

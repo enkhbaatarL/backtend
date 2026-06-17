@@ -83,10 +83,7 @@ public class ScenarioGroupMockService {
     @PostConstruct
     void init() {
         try {
-            loadGroups();
-            loadGraphs();
-            loadGroupDetails();
-            loadScenarioDetails();
+            reload();
             log.info("[Mock] Scenario group mock data loaded: groups={}, graphs={}, groupDetails={}, scenarioDetails={}",
                 groups.size(), graphMap.size(), groupDetailMap.size(), scenarioDetailMap.size());
         } catch (IOException e) {
@@ -96,6 +93,14 @@ public class ScenarioGroupMockService {
             groupDetailMap = Collections.emptyMap();
             scenarioDetailMap = Collections.emptyMap();
         }
+    }
+
+    /** fixture 초기 데이터셋을 재적재한다 (init + reset 공용). 설계 확정으로 추가된 그룹 등 메모리 변경분이 모두 제거된다. */
+    private void reload() throws IOException {
+        loadGroups();
+        loadGraphs();
+        loadGroupDetails();
+        loadScenarioDetails();
     }
 
     private void loadGroupDetails() throws IOException {
@@ -178,8 +183,16 @@ public class ScenarioGroupMockService {
     }
 
     public ScenarioGroupGraphRes getScenarioGroupGraph(Long scenarioGroupId, IndexName indexName, GraphPeriodUnit periodUnit) {
+        if (deletedGroupIds.contains(scenarioGroupId)) {
+            throw AppErrorException.of(ResultCode.Error.RSC_NOT_FOUND,
+                "Scenario group graph not found: " + scenarioGroupId);
+        }
         List<ScenarioGroupGraphRes> graphs = graphMap.get(scenarioGroupId);
-        if (graphs == null || deletedGroupIds.contains(scenarioGroupId)) {
+        if (graphs == null) {
+            // 설계 확정 등으로 생성됐으나 그래프 fixture 미보유(수급모델 미실행) → 빈 그래프 반환(404 방지)
+            if (groupDetailMap.containsKey(scenarioGroupId)) {
+                return emptyGraph(scenarioGroupId, indexName, periodUnit);
+            }
             throw AppErrorException.of(ResultCode.Error.RSC_NOT_FOUND,
                 "Scenario group graph not found: " + scenarioGroupId);
         }
@@ -212,6 +225,24 @@ public class ScenarioGroupMockService {
         return new ScenarioGroupGraphRes(
             graph.scenarioGroupId(), graph.indexName(), graph.periodUnit(), graph.periodUnitLabel(),
             graph.currency(), graph.unit(), graph.dates(), graph.baseSeries(), series);
+    }
+
+    /** 그래프 fixture가 없는 그룹(설계 확정 직후 등)용 빈 그래프 — 시나리오는 미실행 시리즈로만 노출. */
+    private ScenarioGroupGraphRes emptyGraph(Long scenarioGroupId, IndexName indexName, GraphPeriodUnit periodUnit) {
+        ScenarioGroupDetailRes detail = groupDetailMap.get(scenarioGroupId);
+        List<ScenarioGroupGraphRes.ScenarioSeries> series = detail == null ? List.of()
+            : detail.scenarios().stream()
+                .map(row -> {
+                    ScenarioDisplayStatus status = effectiveStatus(row);
+                    return new ScenarioGroupGraphRes.ScenarioSeries(
+                        row.scenarioId(), row.scenarioName(), Boolean.TRUE.equals(row.baseCase()),
+                        false, runningScenarioIds.contains(row.scenarioId()),
+                        status, status.getLabel(), null, null);
+                })
+                .toList();
+        return new ScenarioGroupGraphRes(
+            scenarioGroupId, indexName.getCode(), periodUnit, periodUnit.getLabel(),
+            "USD", "MMBtu", List.of(), List.of(), series);
     }
 
     public ByteArrayInputStream exportScenarioGroupGraph(Long scenarioGroupId, GraphPeriodUnit periodUnit) {
@@ -312,21 +343,36 @@ public class ScenarioGroupMockService {
         return ScenarioStatusRes.of(scenarioId, status, discardedScenarioIds);
     }
 
-    public void deleteScenarioGroup(Long scenarioGroupId) {
-        boolean exists = groups.stream().anyMatch(g -> g.scenarioGroupId().equals(scenarioGroupId));
-        if (!exists || deletedGroupIds.contains(scenarioGroupId)) {
-            throw AppErrorException.of(ResultCode.Error.RSC_NOT_FOUND,
-                "Scenario group not found: " + scenarioGroupId);
+    /**
+     * [mock 전용] 그룹 + 하위 시나리오 soft delete. 예외를 던지지 않고 존재 여부를 반환한다.
+     * <p>미확정 설계(그룹 미materialize, 세션만 존재) 취소도 같은 삭제 API로 처리되므로,
+     * 그룹이 없으면 조용히 false를 반환하고 호출측(delegator)이 세션 제거 여부와 함께 404를 판단한다.
+     * @return 실제로 삭제된 그룹이 있었으면 true
+     */
+    public boolean deleteScenarioGroupIfPresent(Long scenarioGroupId) {
+        boolean exists = !deletedGroupIds.contains(scenarioGroupId)
+            && groups.stream().anyMatch(g -> g.scenarioGroupId().equals(scenarioGroupId));
+        if (exists) {
+            deletedGroupIds.add(scenarioGroupId);
         }
-        // 그룹 + 그룹 내 모든 시나리오 soft delete (mock: 메모리에 삭제 그룹 기록 → 조회 제외, reset API로 초기화)
-        deletedGroupIds.add(scenarioGroupId);
+        return exists;
     }
 
-    /** [mock 전용] 상태 변경분과 그룹 삭제분을 모두 초기 설정값으로 되돌린다. */
+    /** [mock 전용] 그룹이 soft delete 됐는지 — 이벤트 설계가능 판정에서 사용(삭제된 그룹의 이벤트는 다시 설계가능). */
+    public boolean isGroupDeleted(Long scenarioGroupId) {
+        return scenarioGroupId != null && deletedGroupIds.contains(scenarioGroupId);
+    }
+
+    /** [mock 전용] 상태 변경분·그룹 삭제분·실행중 표기·설계 확정으로 추가된 그룹을 모두 초기 fixture로 되돌린다. */
     public void resetScenarioStatus() {
         statusOverrides.clear();
         deletedGroupIds.clear();
         runningScenarioIds.clear();
+        try {
+            reload(); // materialize된 그룹 등 메모리 변경분 제거 → fixture 초기값 복원
+        } catch (IOException e) {
+            log.error("[Mock] Failed to reload scenario group mock data on reset", e);
+        }
     }
 
     /**

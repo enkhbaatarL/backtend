@@ -18,6 +18,7 @@ import com.sk.domain.shared.enums.fundamentalmodel.FundamentalModelCaseStatus;
 import com.sk.domain.shared.enums.fundamentalmodel.FundamentalModelExecType;
 import com.sk.domain.shared.enums.fundamentalmodel.FundamentalModelRunStatus;
 import com.sk.domain.shared.enums.nextgen.IndexName;
+import com.sk.domain.shared.repository.master.tmd.projection.MiBasePriceRow;
 import com.sk.domain.shared.repository.master.tmd.projection.QScenarioPriceRow;
 import com.sk.domain.shared.repository.master.tmd.projection.ScenarioCaseDetailRow;
 import com.sk.domain.shared.repository.master.tmd.projection.ScenarioCaseListRow;
@@ -138,6 +139,43 @@ public class CustomScenarioCaseRepositoryImpl implements CustomScenarioCaseRepos
                 scenarioCaseRunHistory.status.eq(FundamentalModelRunStatus.RUNNING)
             )
             .fetch();
+    }
+
+    @Override
+    public List<MiBasePriceRow> findLatestMiBasePrices(IndexName indexName, PeriodUnitSeparateCd periodUnit) {
+        return queryFactory
+            .select(Projections.constructor(
+                MiBasePriceRow.class,
+                scenarioCaseRunPrice.periodKey,
+                scenarioCaseRunPrice.baseCasePrice,
+                scenarioCaseRunPrice.userAdjustedPrice
+            ))
+            .from(scenarioCase)
+            .innerJoin(scenarioCaseRunHistory).on(scenarioCaseRunHistory.runId.eq(scenarioCase.lastRunId))
+            .innerJoin(scenarioCaseRunPrice).on(scenarioCaseRunPrice.runSeq.eq(scenarioCaseRunHistory.runSeq))
+            .where(
+                scenarioCase.caseId.eq(latestMiBaseCaseId()),
+                scenarioCaseRunPrice.priceRegionName.equalsIgnoreCase(indexName.getCode()),
+                scenarioCaseRunPrice.periodUnit.eq(periodUnit),
+                scenarioCaseRunPrice.isDeleted.isFalse()
+            )
+            .orderBy(scenarioCaseRunPrice.periodKey.asc())
+            .fetch();
+    }
+
+    /**
+     * exec_type_cd=MI_BASE 케이스 중 최신 1건의 case_id (case_id 최대).
+     * <p>보통 1건이지만 새 baseline이 새 세트로 INSERT되므로 최신 케이스를 선택한다.
+     */
+    private JPQLSubQuery<Long> latestMiBaseCaseId() {
+        QScenarioCase miBaseCase = new QScenarioCase("miBaseCase");
+        return JPAExpressions
+            .select(miBaseCase.caseId.max())
+            .from(miBaseCase)
+            .where(
+                miBaseCase.execType.eq(FundamentalModelExecType.MI_BASE),
+                miBaseCase.isDeleted.isFalse()
+            );
     }
 
     /**
