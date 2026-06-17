@@ -29,8 +29,10 @@ import com.sk.domain.shared.enums.nextgen.GraphPeriodUnit;
 import com.sk.domain.shared.enums.nextgen.IndexName;
 import com.sk.domain.shared.enums.nextgen.ScenarioDisplayStatus;
 import com.sk.domain.shared.enums.nextgen.ScenarioStatus;
+import com.sk.domain.shared.enums.fundamentalmodel.FundamentalModelRunStatus;
 import com.sk.domain.shared.repository.master.tmd.ScenarioCaseRepository;
 import com.sk.domain.shared.repository.master.tmd.projection.ScenarioPriceRow;
+import com.sk.domain.shared.repository.master.tmd.projection.ScenarioRunStatusRow;
 import com.sk.domain.shared.repository.master.tmm.MiScenarioGroupRepository;
 import com.sk.domain.shared.repository.master.tmm.projection.ScenarioBaseRow;
 import com.sk.domain.shared.repository.master.tmm.projection.ScenarioDetailBaseRow;
@@ -42,6 +44,7 @@ import java.util.Arrays;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -182,7 +185,16 @@ public class ScenarioGroupServiceImpl implements ScenarioGroupService {
     private ScenarioGroupGraphRes buildGraph(Long scenarioGroupId, IndexName indexName, GraphPeriodUnit periodUnit, List<ScenarioBaseRow> scenarios) {
         List<Long> scenarioIds = scenarios.stream().map(ScenarioBaseRow::scenarioId).toList();
         List<ScenarioPriceRow> prices = scenarioCaseRepository.findLatestCompletedPricesByScenarioIds(scenarioIds, indexName, periodUnit.getDbUnit());
-        return ScenarioGroupGraphRes.of(scenarioGroupId, indexName, periodUnit, scenarios, prices);
+
+        // 최신 케이스의 최신 실행 상태(exec_stat_cd)로 executed(COMPLETED)/modelRunning(RUNNING) 판정
+        Map<Long, FundamentalModelRunStatus> runStatusByScenario = scenarioCaseRepository.findLatestRunStatusByScenarioIds(scenarioIds).stream()
+            .collect(Collectors.toMap(ScenarioRunStatusRow::scenarioId, ScenarioRunStatusRow::runStatus, (a, b) -> a));
+        Set<Long> executedScenarioIds = runStatusByScenario.entrySet().stream()
+            .filter(e -> e.getValue() == FundamentalModelRunStatus.COMPLETED).map(Map.Entry::getKey).collect(Collectors.toSet());
+        Set<Long> runningScenarioIds = runStatusByScenario.entrySet().stream()
+            .filter(e -> e.getValue() == FundamentalModelRunStatus.RUNNING).map(Map.Entry::getKey).collect(Collectors.toSet());
+
+        return ScenarioGroupGraphRes.of(scenarioGroupId, indexName, periodUnit, scenarios, prices, executedScenarioIds, runningScenarioIds);
     }
 
     /**

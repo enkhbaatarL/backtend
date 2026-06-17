@@ -158,7 +158,8 @@ public class ScenarioGroupController {
               - `scenarioId` / `scenarioName` / `baseCase`
               - `status` / `statusLabel`: 판정 상태 (pending/realized/discarded — 폐기여부)
               - `executed`: 수급모델 실행 완료 여부
-              - `baseCaseValues` / `userAdjustedValues`: 베이스케이스/사용자조정 가격
+              - `modelRunning`: 수급모델 실행중 여부
+              - `baseCaseValues` / `userAdjustedValues`: 베이스케이스/사용자조정 가격 (최신 완료 결과, 재실행 중에도 직전 결과 유지)
             """
     )
     @Parameter(name = "indexName", description = "조회 인덱스 (JKM / TTF / HH). 기본값 JKM")

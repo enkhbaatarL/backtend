@@ -34,7 +34,7 @@ import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
 @Profile("!dedicated")
-@Tag(name = "03. Next Gen MI Scenario Design API", description = "Next Gen MI 시나리오 설계 파이프라인 API입니다.")
+@Tag(name = "03-1. Next Gen MI Scenario Design API", description = "Next Gen MI 시나리오 설계 파이프라인 API입니다.")
 @Slf4j
 @RestController
 @RequestMapping("/api/v1/mi/next-gen/scenario-groups")
