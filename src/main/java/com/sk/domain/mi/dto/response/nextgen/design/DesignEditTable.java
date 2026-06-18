@@ -5,8 +5,7 @@ import io.swagger.v3.oas.annotations.media.Schema;
 import java.util.List;
 
 /**
- * 설계 편집 표 (검토 / Signpost 생성 요청). 조회 응답({@link DesignTable})과 동일 구조이되,
- * 행은 편집 가능 부분집합({@link DesignEditRow})만 받는다.
+ * 설계 편집 표 (검토 / Signpost 생성 요청). 조회 응답({@link DesignTable})과 동일 구조
  */
 public record DesignEditTable(
 

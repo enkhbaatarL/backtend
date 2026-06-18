@@ -5,11 +5,7 @@ import io.swagger.v3.oas.annotations.media.Schema;
 import java.util.List;
 
 /**
- * 설계 편집 표의 한 행 (검토 / Signpost 생성 요청).
- * <p>
- * 이 단계에서 사용자가 편집 가능한 필드만 받는다 — 시나리오명 / 분기기준값(dimensions) / 순서.
- * narrative · 확률 · baseCase · signposts는 확정 단계 또는 Agent 산출이라 여기선 받지 않는다.
- * 응답({@link DesignScenarioRow})과 동일한 필드명을 쓰며, 편집 가능 부분집합이다.
+ * 설계 편집 표의 한 행 (검토 / Signpost 생성 요청)
  */
 public record DesignEditRow(
 

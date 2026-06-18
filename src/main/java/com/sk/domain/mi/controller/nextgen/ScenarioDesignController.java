@@ -88,18 +88,26 @@ public class ScenarioDesignController {
             **(4) `signposts`** — Signpost 콜백 도착 (단계2 signpost 생성 완료)
             ```
             event: signposts
-            data: {"scenarioGroupId":12345,"type":"signposts","stage":"signpost_created"}
+            data: {"scenarioGroupId":12345,"type":"signposts","stage":"signpost_created","result":"success"}
+            ```
+
+            **(5) 실패** — Agent 작업 실패 시. **이벤트 이름은 실패한 단계(generation/validation/signposts)와 동일**하되 `result=failure` + `reason`이 실린다. (stage 없음 — DB 미전이)
+            ```
+            event: generation
+            data: {"scenarioGroupId":12345,"type":"generation","result":"failure","reason":"<에러 메시지>"}
             ```
 
             <br><br>
             ### 페이로드 필드
             - `scenarioGroupId`(number): 설계 세션 식별자
             - `type`(string): 트리거 콜백 종류 — `generation` / `validation` / `signposts`
-            - `stage`(string): stage 종류 — `scenario_created` / `scenario_validated` / `signpost_created`
+            - `stage`(string): stage 종류 — `scenario_created` / `scenario_validated` / `signpost_created` (실패 시 없음)
+            - `result`(string): `success` / `failure`
+            - `reason`(string): 실패 사유 (`result=failure`일 때만)
 
             <br><br>
             ### 처리 가이드
-            - 페이로드는 **신호만** 담습니다. 수신 즉시 `GET /{scenarioGroupId}/design`로 재조회해 화면을 갱신합니다.
+            - 성공 페이로드는 **신호만** 담습니다. 수신 즉시 `GET /{scenarioGroupId}/design`로 재조회해 화면을 갱신합니다.
             - 연결이 끊기면(타임아웃 30분 등) 재연결 후 `connected` 수신 시 다시 재조회합니다.
             """
     )
@@ -231,7 +239,7 @@ public class ScenarioDesignController {
         @Parameter(description = "시나리오 그룹 ID", example = "1") @PathVariable Long scenarioGroupId,
         @Valid @RequestBody ScenarioValidationReq request
     ) {
-        return BaseResponseFactory.create(scenarioDesignService.validate(scenarioGroupId, request));
+        return BaseResponseFactory.create(scenarioDesignService.validateDesign(scenarioGroupId, request));
     }
 
     @ApiOrder(5)
@@ -289,7 +297,7 @@ public class ScenarioDesignController {
         @Parameter(description = "시나리오 그룹 ID", example = "1") @PathVariable Long scenarioGroupId,
         @Valid @RequestBody ScenarioConfirmationReq request
     ) {
-        return BaseResponseFactory.create(scenarioDesignService.confirm(scenarioGroupId, request));
+        return BaseResponseFactory.create(scenarioDesignService.confirmDesign(scenarioGroupId, request));
     }
 
     @ApiOrder(7)
