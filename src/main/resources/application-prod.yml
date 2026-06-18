@@ -186,3 +186,11 @@ chart-capture:
   frontend-base-url: ${MI_DOMAIN:https://mi.sk.com}
   jwt-ttl-seconds: 300
   capture-timeout-ms: 30000
+
+kubernetes:
+  namespace: ${MI_K8S_NAMESPACE:}
+  image: ${MI_K8S_IMAGE:}
+  command: ${MI_K8S_COMMAND:}  # smoke용: "python3,-c" / 실제 모델 이미지 사용 시 비워둠
+  env-config-map-name: ${MI_K8S_ENV_CONFIG_MAP_NAME:}
+  env-secret-name: ${MI_K8S_ENV_SECRET_NAME:}
+  image-pull-secret-name: ${MI_K8S_IMAGE_PULL_SECRET_NAME:}
