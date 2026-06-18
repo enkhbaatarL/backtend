@@ -231,7 +231,7 @@ public class ScenarioDesignController {
         @Parameter(description = "시나리오 그룹 ID", example = "1") @PathVariable Long scenarioGroupId,
         @Valid @RequestBody ScenarioValidationReq request
     ) {
-        return BaseResponseFactory.create(scenarioDesignService.validate(scenarioGroupId, request));
+        return BaseResponseFactory.create(scenarioDesignService.validateDesign(scenarioGroupId, request));
     }
 
     @ApiOrder(5)
@@ -289,7 +289,7 @@ public class ScenarioDesignController {
         @Parameter(description = "시나리오 그룹 ID", example = "1") @PathVariable Long scenarioGroupId,
         @Valid @RequestBody ScenarioConfirmationReq request
     ) {
-        return BaseResponseFactory.create(scenarioDesignService.confirm(scenarioGroupId, request));
+        return BaseResponseFactory.create(scenarioDesignService.confirmDesign(scenarioGroupId, request));
     }
 
     @ApiOrder(7)
