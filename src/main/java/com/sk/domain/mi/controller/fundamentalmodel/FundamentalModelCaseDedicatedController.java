@@ -5,6 +5,7 @@ import com.sk.common.annotation.PermissionRule;
 import com.sk.common.annotation.RequiredPermissionRules;
 import com.sk.common.model.BaseResponse;
 import com.sk.common.model.BaseResponseFactory;
+import com.sk.domain.mi.dto.response.fundamentalmodel.FundamentalModelCaseCreateRes;
 import com.sk.domain.mi.dto.response.fundamentalmodel.FundamentalModelRunAcceptRes;
 import com.sk.domain.mi.service.fundamentalmodel.FundamentalModelCaseService;
 import com.sk.domain.mi.service.fundamentalmodel.KubernetesJobService;
@@ -14,14 +15,19 @@ import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import java.util.List;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RequestPart;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.multipart.MultipartFile;
 
 @Tag(name = "6. MI Fundamental Model Case API", description = "MI Fundamental Model Scenario Case mock API입니다.")
 @Slf4j
@@ -32,6 +38,31 @@ public class FundamentalModelCaseDedicatedController {
 
     private final FundamentalModelCaseService fundamentalModelCaseService;
     private final KubernetesJobService kubernetesJobService;
+
+    @ApiOrder(2)
+    @Operation(
+        summary = "MI Fundamental Model Scenario Case 업로드 API",
+        description = "파일 3개와 metadata를 업로드해 PENDING 상태의 Fundamental Model case를 생성합니다."
+    )
+    @ApiResponse(responseCode = "201", description = "생성 성공")
+    @PostMapping(consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    @RequiredPermissionRules(rules = {
+        @PermissionRule(role = Role.USER, conditions = {PermissionCondition.SKGAS_COMPANY_USER_ONLY}),
+        @PermissionRule(role = Role.ADMIN, conditions = {PermissionCondition.THIRD_PARTY_ADMIN_ONLY})
+    })
+    public ResponseEntity<BaseResponse<FundamentalModelCaseCreateRes>> createCase(
+        @Parameter(description = "Scenario Case 제목", example = "JKM price upside case") @RequestParam("title") String title,
+        @Parameter(description = "Scenario Case 설명", example = "May demand shock scenario case")
+        @RequestParam(value = "description", required = false) String description,
+        @Parameter(description = "모델 실행 입력 파일 3개") @RequestPart("files") List<MultipartFile> files
+    ) {
+        FundamentalModelCaseCreateRes response = fundamentalModelCaseService.createCase(
+            title,
+            description,
+            files
+        );
+        return ResponseEntity.status(HttpStatus.CREATED).body(BaseResponseFactory.create(response));
+    }
 
     @ApiOrder(6)
     @Operation(
