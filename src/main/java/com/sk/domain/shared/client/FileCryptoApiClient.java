@@ -4,10 +4,14 @@ import com.sk.common.enums.ResultCode;
 import com.sk.common.exception.AppErrorException;
 import com.sk.domain.shared.client.dto.request.FileCryptoDecryptReq;
 import com.sk.domain.shared.client.dto.request.FileCryptoEncryptReq;
+import com.sk.domain.shared.client.dto.request.FileCryptoStatusReq;
 import com.sk.domain.shared.client.dto.response.FileCryptoDecryptRes;
 import com.sk.domain.shared.client.dto.response.FileCryptoEncryptRes;
+import com.sk.domain.shared.client.dto.response.FileCryptoStatusRes;
 import com.sk.domain.shared.client.dto.response.FileCryptoUploadRes;
 import com.sk.domain.shared.config.FileCryptoApiProperties;
+import java.util.Locale;
+import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Qualifier;
@@ -33,22 +37,42 @@ public class FileCryptoApiClient {
     private final FileCryptoApiProperties properties;
 
     public byte[] encrypt(byte[] plainBytes, String originalFileName) {
+        log.info("File crypto encrypt flow started. inputBytes={}, fileExt={}",
+                plainBytes.length, extensionForLog(originalFileName));
         FileCryptoUploadRes uploaded = upload(plainBytes, originalFileName);
+        if (isEncrypted(uploaded.fid(), properties.getPid())) {
+            log.info("File crypto encrypt skipped. reason=already-encrypted, fid={}, outputBytes={}",
+                    fidForLog(uploaded.fid()), plainBytes.length);
+            return plainBytes;
+        }
         FileCryptoEncryptRes encrypted = encrypt(new FileCryptoEncryptReq(
                 properties.getUserId(),
                 properties.getLabelId(),
                 uploaded.fid(),
                 properties.getPid()));
-        return downloadAndVerify("encrypt", encrypted.outputFilePath(), encrypted.dataSize());
+        byte[] result = downloadAndVerify("encrypt", encrypted.outputFilePath(), encrypted.dataSize());
+        log.info("File crypto encrypt flow completed. fid={}, outputBytes={}",
+                fidForLog(uploaded.fid()), result.length);
+        return result;
     }
 
     public byte[] decrypt(byte[] encryptedBytes, String originalFileName) {
+        log.info("File crypto decrypt flow started. inputBytes={}, fileExt={}",
+                encryptedBytes.length, extensionForLog(originalFileName));
         FileCryptoUploadRes uploaded = upload(encryptedBytes, originalFileName);
+        if (!isEncrypted(uploaded.fid(), properties.getPid())) {
+            log.info("File crypto decrypt skipped. reason=not-encrypted, fid={}, outputBytes={}",
+                    fidForLog(uploaded.fid()), encryptedBytes.length);
+            return encryptedBytes;
+        }
         FileCryptoDecryptRes decrypted = decrypt(new FileCryptoDecryptReq(
                 properties.getUserId(),
                 uploaded.fid(),
                 properties.getPid()));
-        return downloadAndVerify("decrypt", decrypted.outputFilePath(), decrypted.dataSize());
+        byte[] result = downloadAndVerify("decrypt", decrypted.outputFilePath(), decrypted.dataSize());
+        log.info("File crypto decrypt flow completed. fid={}, outputBytes={}",
+                fidForLog(uploaded.fid()), result.length);
+        return result;
     }
 
     // 암복호화 서비스가 보고한 산출물 크기(dataSize)와 실제 다운로드 바이트 수를 교차검증해 잘림/손상을 탐지한다.
@@ -59,6 +83,8 @@ public class FileCryptoApiClient {
             throw cryptoFailure(operation,
                     "산출물 크기 불일치 (expected=%d, actual=%d)".formatted(expectedSize, data.length));
         }
+        log.info("File crypto API {} download verified. expectedBytes={}, actualBytes={}",
+                operation, expectedSize, data.length);
         return data;
     }
 
@@ -78,7 +104,27 @@ public class FileCryptoApiClient {
                     || StringUtils.hasText(response.errorMsg())) {
                 throw cryptoFailure("upload", response == null ? null : response.errorMsg());
             }
+            log.info("File crypto API upload response accepted. fid={}, inputBytes={}, result={}",
+                    fidForLog(response.fid()), fileBytes.length, response.result());
             return response;
+        });
+    }
+
+    boolean isEncrypted(UUID fid, String pid) {
+        return executeWithRetry("status", () -> {
+            FileCryptoStatusRes response = restClient.post()
+                    .uri(cryptoUri(properties.getStatusPath()))
+                    .contentType(MediaType.APPLICATION_FORM_URLENCODED)
+                    .body(new FileCryptoStatusReq(fid, pid).toFormData())
+                    .retrieve()
+                    .body(FileCryptoStatusRes.class);
+
+            if (response == null || response.result() == null || StringUtils.hasText(response.errorMsg())) {
+                throw cryptoFailure("status", response == null ? null : response.errorMsg());
+            }
+            log.info("File crypto API status response accepted. fid={}, encrypted={}",
+                    fidForLog(fid), response.result());
+            return response.result();
         });
     }
 
@@ -95,6 +141,9 @@ public class FileCryptoApiClient {
                     || StringUtils.hasText(response.errorMsg()) || !StringUtils.hasText(response.outputFilePath())) {
                 throw cryptoFailure("encrypt", response == null ? null : response.errorMsg());
             }
+            log.info("File crypto API encrypt response accepted. fid={}, status={}, outputPathPresent={}, dataSize={}",
+                    fidForLog(response.fid()), response.status(), StringUtils.hasText(response.outputFilePath()),
+                    response.dataSize());
             return response;
         });
     }
@@ -112,6 +161,9 @@ public class FileCryptoApiClient {
                     || StringUtils.hasText(response.errorMsg()) || !StringUtils.hasText(response.outputFilePath())) {
                 throw cryptoFailure("decrypt", response == null ? null : response.errorMsg());
             }
+            log.info("File crypto API decrypt response accepted. fid={}, status={}, outputPathPresent={}, dataSize={}",
+                    fidForLog(response.fid()), response.status(), StringUtils.hasText(response.outputFilePath()),
+                    response.dataSize());
             return response;
         });
     }
@@ -126,6 +178,7 @@ public class FileCryptoApiClient {
             if (response == null) {
                 throw cryptoFailure("download", null);
             }
+            log.info("File crypto API download response accepted. outputBytes={}", response.length);
             return response;
         });
     }
@@ -135,14 +188,22 @@ public class FileCryptoApiClient {
         RuntimeException lastException = null;
 
         for (int attempt = 1; attempt <= maxAttempts; attempt++) {
+            long startedAt = System.nanoTime();
+            log.info("File crypto API {} request started. attempt={}/{}", operation, attempt, maxAttempts);
             try {
-                return call.execute();
+                T result = call.execute();
+                log.info("File crypto API {} request succeeded. attempt={}/{}, elapsedMs={}",
+                        operation, attempt, maxAttempts, elapsedMs(startedAt));
+                return result;
             } catch (RuntimeException e) {
                 lastException = e;
                 if (attempt >= maxAttempts || e instanceof AppErrorException) {
+                    log.warn("File crypto API {} request failed. attempt={}/{}, elapsedMs={}, retryable=false, error={}",
+                            operation, attempt, maxAttempts, elapsedMs(startedAt), e.toString());
                     throw e;
                 }
-                log.warn("File crypto API {} failed. retry={}/{}", operation, attempt, properties.getRetryCount());
+                log.warn("File crypto API {} request failed. attempt={}/{}, elapsedMs={}, retryable=true, error={}",
+                        operation, attempt, maxAttempts, elapsedMs(startedAt), e.toString());
                 sleepBeforeRetry();
             }
         }
@@ -182,6 +243,29 @@ public class FileCryptoApiClient {
                 ? properties.getBaseUrl().substring(0, properties.getBaseUrl().length() - 1)
                 : properties.getBaseUrl();
         return baseUrl + normalizePath(path);
+    }
+
+    private long elapsedMs(long startedAt) {
+        return (System.nanoTime() - startedAt) / 1_000_000;
+    }
+
+    private String fidForLog(UUID fid) {
+        if (fid == null) {
+            return "null";
+        }
+        String value = fid.toString();
+        return value.length() <= 8 ? value : value.substring(0, 8);
+    }
+
+    private String extensionForLog(String fileName) {
+        if (!StringUtils.hasText(fileName)) {
+            return "unknown";
+        }
+        int dot = fileName.lastIndexOf('.');
+        if (dot < 0 || dot == fileName.length() - 1) {
+            return "none";
+        }
+        return fileName.substring(dot + 1).toLowerCase(Locale.ROOT);
     }
 
     private interface CryptoCall<T> {

@@ -14,6 +14,8 @@ public class FileCryptoApiProperties {
 
     private String uploadPath;
 
+    private String statusPath;
+
     private String encryptPath;
 
     private String decryptPath;
