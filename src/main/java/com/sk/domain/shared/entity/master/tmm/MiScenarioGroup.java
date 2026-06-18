@@ -36,7 +36,7 @@ public class MiScenarioGroup extends BaseEntity {
     private Long scenarioGroupId;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "mi_event_id", nullable = false, unique = true)
+    @JoinColumn(name = "mi_event_id", nullable = false)
     @Comment("MI 이벤트 ID (1:1 기준 키)")
     private MiEvent miEvent;
 

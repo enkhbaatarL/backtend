@@ -56,4 +56,5 @@ public class ScenarioDesignValidationStore {
         stringRedisTemplate.delete(key(scenarioGroupId));
         log.debug("[Design Validation] cache deleted: groupId={}", scenarioGroupId);
     }
+
 }
