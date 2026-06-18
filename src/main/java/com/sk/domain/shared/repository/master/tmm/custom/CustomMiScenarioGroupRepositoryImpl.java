@@ -17,6 +17,8 @@ import com.querydsl.jpa.impl.JPAQueryFactory;
 import com.sk.domain.mi.dto.request.nextgen.ScenarioGroupListReq;
 import com.sk.domain.shared.entity.master.tmm.MiScenario;
 import com.sk.domain.shared.entity.master.tmm.MiSignpost;
+import com.sk.domain.shared.enums.nextgen.ScenarioGroupStatus;
+import com.sk.domain.shared.enums.nextgen.ScenarioStatus;
 import com.sk.domain.shared.repository.master.tmm.projection.QScenarioBaseRow;
 import com.sk.domain.shared.repository.master.tmm.projection.QScenarioDetailBaseRow;
 import com.sk.domain.shared.repository.master.tmm.projection.QScenarioDimensionTemplateRow;
@@ -87,6 +89,8 @@ public class CustomMiScenarioGroupRepositoryImpl implements CustomMiScenarioGrou
     private BooleanBuilder buildGroupWhere(ScenarioGroupListReq request) {
         BooleanBuilder where = new BooleanBuilder();
         where.and(miScenarioGroup.isDeleted.isFalse());
+        // 설계(생성) 진행 중인 그룹은 목록에서 제외 — 생성 완료(created)/실현(realized)만 노출
+        where.and(miScenarioGroup.status.ne(ScenarioGroupStatus.CREATING));
 
         if (request.startDate() != null) {
             where.and(miScenarioGroup.modifyDt.goe(request.startDate().atStartOfDay()));
@@ -153,6 +157,10 @@ public class CustomMiScenarioGroupRepositoryImpl implements CustomMiScenarioGrou
     private BooleanBuilder buildScenarioWhere(ScenarioGroupListReq request) {
         BooleanBuilder where = new BooleanBuilder();
         where.and(miScenario.isDeleted.isFalse());
+        // 생성 진행 중인 시나리오는 목록에서 제외 — 생성 완료 이후(created/realized/discarded)만 노출
+        where.and(miScenario.status.ne(ScenarioStatus.CREATING));
+        // "설계중"은 그룹 라이프사이클 상태이므로 그룹 status도 함께 제외 (그룹↔시나리오 스큐 방어)
+        where.and(miScenarioGroup.status.ne(ScenarioGroupStatus.CREATING));
 
         if (request.startDate() != null) {
             where.and(miScenario.modifyDt.goe(request.startDate().atStartOfDay()));
