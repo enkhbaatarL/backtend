@@ -49,7 +49,6 @@ public record ScenarioDesignTable(
         Long signpostId,
         String label,
         String probabilityDirectionCode,
-        BigDecimal probabilityImpactScore,
         String signpostReason,
         Integer displayOrder,
         String strength,

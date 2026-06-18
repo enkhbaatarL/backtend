@@ -19,7 +19,7 @@ import java.util.Map;
 
 /**
  * FE 설계 표 ↔ Agent 계약 표({@link ScenarioDesignTable}: headers + rows.cells) 변환기.
- * <p>조회(step1) 오버레이는 Agent→FE({@link #toDesignTable}), 검토/Signpost/확정 요청 프록시는 FE→Agent({@link #toAgentTable}).
+ * 조회(step1) 오버레이는 Agent→FE({@link #toDesignTable}), 검토/Signpost/확정 요청 프록시는 FE→Agent({@link #toAgentTable}).
  */
 public final class ScenarioDesignTableMapper {
 
@@ -47,12 +47,10 @@ public final class ScenarioDesignTableMapper {
                 Map<String, String> cells = new LinkedHashMap<>();
                 if (r.dimensions() != null) {
                     for (ScenarioDimensionRes d : r.dimensions()) {
-                        cells.put(d.key(), d.value()); // value=null → Agent 자동생성
+                        cells.put(d.key(), d.value()); // value=null -> Agent 자동생성
                     }
                 }
-                return new ScenarioDesignTable.Row(
-                    r.scenarioId(), r.displayOrder(), r.scenarioName(),
-                    null, cells, null, null, null);
+                return new ScenarioDesignTable.Row(r.scenarioId(), r.displayOrder(), r.scenarioName(), null, cells, null, null, null);
             })
             .toList();
 
@@ -61,8 +59,6 @@ public final class ScenarioDesignTableMapper {
 
     /**
      * FE 확정 표 → Agent 표(확정 요청 프록시용). 검토 변환에 더해 narrative·확률(metrics)·baseCase·Signpost까지 채운다.
-     * 방향/강도 코드는 명세 형식으로 보낸다(direction=소문자 code "sup", strength=대문자 코드 "STRONG").
-     * 확률영향점수(probabilityImpactScore)는 Agent 산출이라 확정 요청에선 비운다.
      */
     public static ScenarioDesignTable toAgentConfirmTable(DesignConfirmTable table) {
         if (table == null) {
@@ -83,13 +79,9 @@ public final class ScenarioDesignTableMapper {
                         cells.put(d.key(), d.value());
                     }
                 }
-                ScenarioDesignTable.Metrics metrics = new ScenarioDesignTable.Metrics(
-                    r.probability() == null ? null : BigDecimal.valueOf(r.probability()), null);
-                List<ScenarioDesignTable.Signpost> signposts = r.signposts() == null ? List.of()
-                    : r.signposts().stream().map(ScenarioDesignTableMapper::toAgentSignpost).toList();
-                return new ScenarioDesignTable.Row(
-                    r.scenarioId(), r.displayOrder(), r.scenarioName(), r.narrative(),
-                    cells, metrics, r.baseCase() ? "Y" : "N", signposts);
+                ScenarioDesignTable.Metrics metrics = new ScenarioDesignTable.Metrics(r.probability() == null ? null : BigDecimal.valueOf(r.probability()), null);
+                List<ScenarioDesignTable.Signpost> signposts = r.signposts() == null ? List.of() : r.signposts().stream().map(ScenarioDesignTableMapper::toAgentSignpost).toList();
+                return new ScenarioDesignTable.Row(r.scenarioId(), r.displayOrder(), r.scenarioName(), r.narrative(), cells, metrics, r.baseCase() ? "Y" : "N", signposts);
             })
             .toList();
 
@@ -100,11 +92,10 @@ public final class ScenarioDesignTableMapper {
         return new ScenarioDesignTable.Signpost(
             sp.signpostId(),
             sp.label(),
-            sp.direction() == null ? null : sp.direction().getCode(),   // "sup"
-            null,                                                        // probabilityImpactScore: Agent 산출
+            sp.direction() == null ? null : sp.direction().name(), // SUP 단일 값
             sp.rationale(),
             sp.displayOrder(),
-            sp.strength() == null ? null : sp.strength().name(),         // "STRONG" (DB/Agent 대문자 코드)
+            sp.strength() == null ? null : sp.strength().name(), // "STRONG" etc...
             sp.used() ? "Y" : "N");
     }
 
@@ -114,7 +105,8 @@ public final class ScenarioDesignTableMapper {
             return DesignTable.of(List.of(), List.of());
         }
 
-        List<ScenarioDesignTable.Header> headers = agentTable.headers() == null ? List.of()
+        List<ScenarioDesignTable.Header> headers = agentTable.headers() == null
+            ? List.of()
             : agentTable.headers().stream()
                 .sorted(Comparator.comparing(h -> h.displayOrder() == null ? Integer.MAX_VALUE : h.displayOrder()))
                 .toList();
