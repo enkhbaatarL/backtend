@@ -19,6 +19,7 @@ import com.sk.domain.shared.enums.fundamentalmodel.FundamentalModelExecType;
 import com.sk.domain.shared.enums.fundamentalmodel.FundamentalModelRunStatus;
 import com.sk.domain.shared.enums.nextgen.IndexName;
 import com.sk.domain.shared.repository.master.tmd.projection.MiBasePriceRow;
+import com.sk.domain.shared.repository.master.tmd.projection.QMiBasePriceRow;
 import com.sk.domain.shared.repository.master.tmd.projection.QScenarioPriceRow;
 import com.sk.domain.shared.repository.master.tmd.projection.ScenarioCaseDetailRow;
 import com.sk.domain.shared.repository.master.tmd.projection.ScenarioCaseListRow;
@@ -144,8 +145,7 @@ public class CustomScenarioCaseRepositoryImpl implements CustomScenarioCaseRepos
     @Override
     public List<MiBasePriceRow> findLatestMiBasePrices(IndexName indexName, PeriodUnitSeparateCd periodUnit) {
         return queryFactory
-            .select(Projections.constructor(
-                MiBasePriceRow.class,
+            .select(new QMiBasePriceRow(
                 scenarioCaseRunPrice.periodKey,
                 scenarioCaseRunPrice.baseCasePrice,
                 scenarioCaseRunPrice.userAdjustedPrice

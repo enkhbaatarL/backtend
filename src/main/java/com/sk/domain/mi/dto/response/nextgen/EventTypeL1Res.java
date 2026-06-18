@@ -8,10 +8,10 @@ public record EventTypeL1Res(
     @Schema(description = "이벤트 유형 L1 ID", example = "1")
     Long eventTypeL1Id,
 
-    @Schema(description = "이벤트 유형 L1 코드", example = "geopolitical_risk")
+    @Schema(description = "이벤트 유형 L1 코드", example = "supply")
     String code,
 
-    @Schema(description = "이벤트 유형 L1 라벨", example = "지정학적 리스크")
+    @Schema(description = "이벤트 유형 L1 라벨", example = "공급")
     String label
 
 ) {

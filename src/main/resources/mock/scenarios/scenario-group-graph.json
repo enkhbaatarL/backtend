@@ -19,20 +19,6 @@
       ],
       "baseSeries": [
         {
-          "seriesId": "CME",
-          "seriesName": "CME",
-          "values": [
-            73.0,
-            73.5,
-            74.1,
-            73.8,
-            74.5,
-            75.0,
-            74.7,
-            75.2
-          ]
-        },
-        {
           "seriesId": "MI_BASE",
           "seriesName": "MI Base",
           "values": [
@@ -168,17 +154,6 @@
       ],
       "baseSeries": [
         {
-          "seriesId": "CME",
-          "seriesName": "CME",
-          "values": [
-            74.22,
-            75.32,
-            76.42,
-            77.53,
-            78.62
-          ]
-        },
-        {
           "seriesId": "MI_BASE",
           "seriesName": "MI Base",
           "values": [
@@ -295,20 +270,6 @@
         "2026-12"
       ],
       "baseSeries": [
-        {
-          "seriesId": "CME",
-          "seriesName": "CME",
-          "values": [
-            31.0,
-            31.2,
-            31.5,
-            31.3,
-            31.8,
-            32.0,
-            31.9,
-            32.2
-          ]
-        },
         {
           "seriesId": "MI_BASE",
           "seriesName": "MI Base",
@@ -445,17 +406,6 @@
       ],
       "baseSeries": [
         {
-          "seriesId": "CME",
-          "seriesName": "CME",
-          "values": [
-            31.61,
-            32.21,
-            32.81,
-            33.41,
-            34.01
-          ]
-        },
-        {
           "seriesId": "MI_BASE",
           "seriesName": "MI Base",
           "values": [
@@ -572,20 +522,6 @@
         "2026-12"
       ],
       "baseSeries": [
-        {
-          "seriesId": "CME",
-          "seriesName": "CME",
-          "values": [
-            3.8,
-            3.82,
-            3.85,
-            3.83,
-            3.88,
-            3.9,
-            3.89,
-            3.92
-          ]
-        },
         {
           "seriesId": "MI_BASE",
           "seriesName": "MI Base",
@@ -722,17 +658,6 @@
       ],
       "baseSeries": [
         {
-          "seriesId": "CME",
-          "seriesName": "CME",
-          "values": [
-            3.86,
-            3.92,
-            3.98,
-            4.04,
-            4.1
-          ]
-        },
-        {
           "seriesId": "MI_BASE",
           "seriesName": "MI Base",
           "values": [
@@ -852,20 +777,6 @@
       ],
       "baseSeries": [
         {
-          "seriesId": "CME",
-          "seriesName": "CME",
-          "values": [
-            73.0,
-            73.5,
-            74.1,
-            73.8,
-            74.5,
-            75.0,
-            74.7,
-            75.2
-          ]
-        },
-        {
           "seriesId": "MI_BASE",
           "seriesName": "MI Base",
           "values": [
@@ -967,17 +878,6 @@
       ],
       "baseSeries": [
         {
-          "seriesId": "CME",
-          "seriesName": "CME",
-          "values": [
-            74.22,
-            75.32,
-            76.42,
-            77.53,
-            78.62
-          ]
-        },
-        {
           "seriesId": "MI_BASE",
           "seriesName": "MI Base",
           "values": [
@@ -1066,20 +966,6 @@
         "2026-12"
       ],
       "baseSeries": [
-        {
-          "seriesId": "CME",
-          "seriesName": "CME",
-          "values": [
-            31.0,
-            31.2,
-            31.5,
-            31.3,
-            31.8,
-            32.0,
-            31.9,
-            32.2
-          ]
-        },
         {
           "seriesId": "MI_BASE",
           "seriesName": "MI Base",
@@ -1182,17 +1068,6 @@
       ],
       "baseSeries": [
         {
-          "seriesId": "CME",
-          "seriesName": "CME",
-          "values": [
-            31.61,
-            32.21,
-            32.81,
-            33.41,
-            34.01
-          ]
-        },
-        {
           "seriesId": "MI_BASE",
           "seriesName": "MI Base",
           "values": [
@@ -1281,20 +1156,6 @@
         "2026-12"
       ],
       "baseSeries": [
-        {
-          "seriesId": "CME",
-          "seriesName": "CME",
-          "values": [
-            3.8,
-            3.82,
-            3.85,
-            3.83,
-            3.88,
-            3.9,
-            3.89,
-            3.92
-          ]
-        },
         {
           "seriesId": "MI_BASE",
           "seriesName": "MI Base",
@@ -1397,17 +1258,6 @@
       ],
       "baseSeries": [
         {
-          "seriesId": "CME",
-          "seriesName": "CME",
-          "values": [
-            3.86,
-            3.92,
-            3.98,
-            4.04,
-            4.1
-          ]
-        },
-        {
           "seriesId": "MI_BASE",
           "seriesName": "MI Base",
           "values": [
@@ -1498,20 +1348,6 @@
         "2026-12"
       ],
       "baseSeries": [
-        {
-          "seriesId": "CME",
-          "seriesName": "CME",
-          "values": [
-            73.0,
-            73.5,
-            74.1,
-            73.8,
-            74.5,
-            75.0,
-            74.7,
-            75.2
-          ]
-        },
         {
           "seriesId": "MI_BASE",
           "seriesName": "MI Base",
@@ -1606,17 +1442,6 @@
       ],
       "baseSeries": [
         {
-          "seriesId": "CME",
-          "seriesName": "CME",
-          "values": [
-            74.22,
-            75.32,
-            76.42,
-            77.53,
-            78.62
-          ]
-        },
-        {
           "seriesId": "MI_BASE",
           "seriesName": "MI Base",
           "values": [
@@ -1697,20 +1522,6 @@
         "2026-12"
       ],
       "baseSeries": [
-        {
-          "seriesId": "CME",
-          "seriesName": "CME",
-          "values": [
-            31.0,
-            31.2,
-            31.5,
-            31.3,
-            31.8,
-            32.0,
-            31.9,
-            32.2
-          ]
-        },
         {
           "seriesId": "MI_BASE",
           "seriesName": "MI Base",
@@ -1805,17 +1616,6 @@
       ],
       "baseSeries": [
         {
-          "seriesId": "CME",
-          "seriesName": "CME",
-          "values": [
-            31.61,
-            32.21,
-            32.81,
-            33.41,
-            34.01
-          ]
-        },
-        {
           "seriesId": "MI_BASE",
           "seriesName": "MI Base",
           "values": [
@@ -1896,20 +1696,6 @@
         "2026-12"
       ],
       "baseSeries": [
-        {
-          "seriesId": "CME",
-          "seriesName": "CME",
-          "values": [
-            3.8,
-            3.82,
-            3.85,
-            3.83,
-            3.88,
-            3.9,
-            3.89,
-            3.92
-          ]
-        },
         {
           "seriesId": "MI_BASE",
           "seriesName": "MI Base",
@@ -2004,17 +1790,6 @@
       ],
       "baseSeries": [
         {
-          "seriesId": "CME",
-          "seriesName": "CME",
-          "values": [
-            3.86,
-            3.92,
-            3.98,
-            4.04,
-            4.1
-          ]
-        },
-        {
           "seriesId": "MI_BASE",
           "seriesName": "MI Base",
           "values": [
@@ -2097,20 +1872,6 @@
         "2026-12"
       ],
       "baseSeries": [
-        {
-          "seriesId": "CME",
-          "seriesName": "CME",
-          "values": [
-            74.49,
-            74.3,
-            73.95,
-            74.47,
-            74.92,
-            75.36,
-            75.83,
-            76.2
-          ]
-        },
         {
           "seriesId": "MI_BASE",
           "seriesName": "MI Base",
@@ -2213,17 +1974,6 @@
       ],
       "baseSeries": [
         {
-          "seriesId": "CME",
-          "seriesName": "CME",
-          "values": [
-            74.94,
-            75.8,
-            76.65,
-            77.51,
-            78.36
-          ]
-        },
-        {
           "seriesId": "MI_BASE",
           "seriesName": "MI Base",
           "values": [
@@ -2312,20 +2062,6 @@
         "2026-12"
       ],
       "baseSeries": [
-        {
-          "seriesId": "CME",
-          "seriesName": "CME",
-          "values": [
-            44.75,
-            44.75,
-            44.92,
-            44.84,
-            44.44,
-            44.47,
-            44.2,
-            43.93
-          ]
-        },
         {
           "seriesId": "MI_BASE",
           "seriesName": "MI Base",
@@ -2428,17 +2164,6 @@
       ],
       "baseSeries": [
         {
-          "seriesId": "CME",
-          "seriesName": "CME",
-          "values": [
-            44.54,
-            44.13,
-            43.72,
-            43.31,
-            42.9
-          ]
-        },
-        {
           "seriesId": "MI_BASE",
           "seriesName": "MI Base",
           "values": [
@@ -2527,20 +2252,6 @@
         "2026-12"
       ],
       "baseSeries": [
-        {
-          "seriesId": "CME",
-          "seriesName": "CME",
-          "values": [
-            3.93,
-            4.2,
-            3.86,
-            4.0,
-            4.1,
-            4.21,
-            4.05,
-            4.33
-          ]
-        },
         {
           "seriesId": "MI_BASE",
           "seriesName": "MI Base",
@@ -2643,17 +2354,6 @@
       ],
       "baseSeries": [
         {
-          "seriesId": "CME",
-          "seriesName": "CME",
-          "values": [
-            4.08,
-            4.29,
-            4.48,
-            4.68,
-            4.88
-          ]
-        },
-        {
           "seriesId": "MI_BASE",
           "seriesName": "MI Base",
           "values": [
@@ -2744,20 +2444,6 @@
         "2026-12"
       ],
       "baseSeries": [
-        {
-          "seriesId": "CME",
-          "seriesName": "CME",
-          "values": [
-            74.48,
-            74.36,
-            74.43,
-            75.07,
-            75.17,
-            75.21,
-            75.49,
-            75.32
-          ]
-        },
         {
           "seriesId": "MI_BASE",
           "seriesName": "MI Base",
@@ -2852,17 +2538,6 @@
       ],
       "baseSeries": [
         {
-          "seriesId": "CME",
-          "seriesName": "CME",
-          "values": [
-            74.94,
-            75.36,
-            75.78,
-            76.2,
-            76.62
-          ]
-        },
-        {
           "seriesId": "MI_BASE",
           "seriesName": "MI Base",
           "values": [
@@ -2943,20 +2618,6 @@
         "2026-12"
       ],
       "baseSeries": [
-        {
-          "seriesId": "CME",
-          "seriesName": "CME",
-          "values": [
-            44.84,
-            44.63,
-            44.6,
-            44.21,
-            44.69,
-            44.27,
-            44.7,
-            44.41
-          ]
-        },
         {
           "seriesId": "MI_BASE",
           "seriesName": "MI Base",
@@ -3051,17 +2712,6 @@
       ],
       "baseSeries": [
         {
-          "seriesId": "CME",
-          "seriesName": "CME",
-          "values": [
-            44.54,
-            44.33,
-            44.11,
-            43.9,
-            43.68
-          ]
-        },
-        {
           "seriesId": "MI_BASE",
           "seriesName": "MI Base",
           "values": [
@@ -3142,20 +2792,6 @@
         "2026-12"
       ],
       "baseSeries": [
-        {
-          "seriesId": "CME",
-          "seriesName": "CME",
-          "values": [
-            3.46,
-            3.73,
-            3.93,
-            4.46,
-            4.49,
-            5.0,
-            4.93,
-            5.02
-          ]
-        },
         {
           "seriesId": "MI_BASE",
           "seriesName": "MI Base",
@@ -3249,17 +2885,6 @@
         "2030"
       ],
       "baseSeries": [
-        {
-          "seriesId": "CME",
-          "seriesName": "CME",
-          "values": [
-            4.38,
-            5.16,
-            5.94,
-            6.72,
-            7.5
-          ]
-        },
         {
           "seriesId": "MI_BASE",
           "seriesName": "MI Base",

@@ -96,7 +96,8 @@ public class CustomMiEventRepositoryImpl implements CustomMiEventRepository {
                 miEvent.modifyDt,
                 miEvent.latestRecordFirstCreated,
                 miScenarioGroup.scenarioGroupId,
-                miScenarioGroup.status
+                miScenarioGroup.status,
+                miScenarioGroup.requestUserId
             ))
             .from(miEvent)
             .innerJoin(miEvent.eventTypeL2, miEventTypeL2).on(miEventTypeL2.isDeleted.isFalse())
@@ -137,6 +138,7 @@ public class CustomMiEventRepositoryImpl implements CustomMiEventRepository {
                 base.latestRecordFirstCreated(),
                 base.scenarioGroupId(),
                 base.scenarioGroupStatus(),
+                base.requestUserId(),
                 impactsByEventId.getOrDefault(base.miEventId(), List.of())
             ))
             .toList();

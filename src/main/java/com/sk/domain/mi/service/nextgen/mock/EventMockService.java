@@ -38,14 +38,10 @@ import org.springframework.stereotype.Component;
 public class EventMockService {
 
     private static final Map<String, Long> EVENT_TYPE_CODE_TO_ID = Map.of(
-        "geopolitical_risk", 1L,
-        "weather_climate", 2L,
-        "infrastructure_facility", 3L,
-        "supply_demand_balance", 4L,
-        "logistics_shipping", 5L,
-        "energy_mix_transition", 6L,
-        "macroeconomy_policy", 7L,
-        "market_trading_structure", 8L
+        "supply", 1L,
+        "demand", 2L,
+        "inventory_logistics", 3L,
+        "exogenous_shock", 4L
     );
 
     private final ObjectMapper objectMapper;
@@ -219,27 +215,32 @@ public class EventMockService {
         var session = designMockService.findSessionByEventId(eventId);
         if (session.isPresent()) {
             ScenarioDesignMockService.DesignSessionInfo info = session.get();
-            return new DesignDisplay(ScenarioDesignDisplayStatus.of(info.status()), info.scenarioGroupId());
+            ScenarioDesignDisplayStatus status = ScenarioDesignDisplayStatus.of(info.status());
+            // 점유 = 설계중(creating). 점유자는 세션의 실제 시작 사용자.
+            Long occupant = status == ScenarioDesignDisplayStatus.CREATING ? info.occupantUserId() : null;
+            return new DesignDisplay(status, info.scenarioGroupId(), occupant);
         }
         if (scenarioGroupMockService.isGroupDeleted(staticGroupId)) {
-            return new DesignDisplay(ScenarioDesignDisplayStatus.DESIGNABLE, null);
+            return new DesignDisplay(ScenarioDesignDisplayStatus.DESIGNABLE, null, null);
         }
-        return new DesignDisplay(staticStatus, staticGroupId);
+        // 정적 fixture는 점유자 정보가 없음 — 라이브 세션이 있을 때만 점유자를 안다.
+        return new DesignDisplay(staticStatus, staticGroupId, null);
     }
 
-    private record DesignDisplay(ScenarioDesignDisplayStatus status, Long scenarioGroupId) {}
+    private record DesignDisplay(ScenarioDesignDisplayStatus status, Long scenarioGroupId, Long occupantUserId) {}
 
-    /** 목록 아이템에 라이브 설계 상태를 덮어쓴 새 아이템을 만든다 (DTO는 그대로, 조립은 mock에서). */
+    /** 목록 아이템에 라이브 설계 상태(상태/그룹/점유)를 덮어쓴 새 아이템을 만든다 (DTO는 그대로, 조립은 mock에서). */
     private EventListItemRes overlayLiveDesign(EventListItemRes item) {
         DesignDisplay design = resolveDesignDisplay(item.eventId(), item.scenarioDesignStatus(), item.scenarioGroupId());
         ScenarioDesignDisplayStatus status = design.status();
+        boolean occupied = status == ScenarioDesignDisplayStatus.CREATING;
         return new EventListItemRes(
             item.eventId(), item.eventName(), item.status(), item.statusLabel(),
             item.eventTypeLv1(), item.eventTypeLv1Label(), item.createdAt(), item.updatedAt(),
             item.latestRecordFirstCreated(), item.signalType(), item.signalTypeLabel(),
             item.isScenarioSuggested(), item.scenarioSuggestReason(),
             status, status == null ? null : status.getLabel(),
-            design.scenarioGroupId(), item.indexImpacts());
+            design.scenarioGroupId(), occupied, design.occupantUserId(), item.indexImpacts());
     }
 
     private EventListItemRes eventById(Long eventId) {

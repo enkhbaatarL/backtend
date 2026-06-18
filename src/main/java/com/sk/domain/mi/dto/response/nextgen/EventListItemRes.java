@@ -3,6 +3,7 @@ package com.sk.domain.mi.dto.response.nextgen;
 import com.sk.domain.shared.enums.nextgen.ContentStatus;
 import com.sk.domain.shared.enums.nextgen.EventSignalType;
 import com.sk.domain.shared.enums.nextgen.ScenarioDesignDisplayStatus;
+import com.sk.domain.shared.enums.nextgen.ScenarioGroupStatus;
 import com.sk.domain.shared.repository.master.tmm.projection.EventListRow;
 import io.swagger.v3.oas.annotations.media.Schema;
 import java.time.LocalDateTime;
@@ -22,10 +23,10 @@ public record EventListItemRes(
     @Schema(description = "상태 라벨", example = "신규")
     String statusLabel,
 
-    @Schema(description = "이벤트 유형 Lv1", example = "geopolitical_risk")
+    @Schema(description = "이벤트 유형 Lv1", example = "supply")
     String eventTypeLv1,
 
-    @Schema(description = "이벤트 유형 Lv1 라벨", example = "지정학적 리스크")
+    @Schema(description = "이벤트 유형 Lv1 라벨", example = "공급")
     String eventTypeLv1Label,
 
     @Schema(description = "생성일시")
@@ -58,6 +59,12 @@ public record EventListItemRes(
     @Schema(description = "활성 시나리오 그룹 ID (없으면 null, created일 때 이동 대상)", example = "1", nullable = true)
     Long scenarioGroupId,
 
+    @Schema(description = "설계 점유 여부 (설계중이면 true)", example = "false")
+    boolean occupied,
+
+    @Schema(description = "점유 사용자 ID (점유 중이 아니면 null)", example = "10001", nullable = true)
+    Long occupantUserId,
+
     @Schema(description = "인덱스별 영향도 (JKM, TTF, HH)")
     List<EventImpactIndexRes> indexImpacts
 
@@ -67,6 +74,8 @@ public record EventListItemRes(
         ContentStatus status = Boolean.TRUE.equals(row.isNew()) ? ContentStatus.NEW : ContentStatus.UPDATED;
         EventSignalType signalType = Boolean.TRUE.equals(row.isSignal()) ? EventSignalType.SIGNAL : EventSignalType.NOISE;
         ScenarioDesignDisplayStatus designStatus = ScenarioDesignDisplayStatus.of(row.scenarioGroupStatus());
+        // 점유 = 활성 그룹이 creating(설계중)인 상태. 점유자는 그룹 요청자(request_usr_id).
+        boolean occupied = row.scenarioGroupStatus() == ScenarioGroupStatus.CREATING;
 
         return new EventListItemRes(
             row.miEventId(),
@@ -85,6 +94,8 @@ public record EventListItemRes(
             designStatus,
             designStatus.getLabel(),
             row.scenarioGroupId(),
+            occupied,
+            occupied ? row.requestUserId() : null,
             row.indexImpacts().stream().map(EventImpactIndexRes::fromRow).toList()
         );
     }

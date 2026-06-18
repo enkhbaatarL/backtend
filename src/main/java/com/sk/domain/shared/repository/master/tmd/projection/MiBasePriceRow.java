@@ -1,5 +1,6 @@
 package com.sk.domain.shared.repository.master.tmd.projection;
 
+import com.querydsl.core.annotations.QueryProjection;
 import java.math.BigDecimal;
 
 /**
@@ -10,4 +11,9 @@ public record MiBasePriceRow(
     BigDecimal baseCasePrice,
     BigDecimal userAdjustedPrice
 ) {
+
+    @QueryProjection
+    public MiBasePriceRow {
+    }
+
 }
