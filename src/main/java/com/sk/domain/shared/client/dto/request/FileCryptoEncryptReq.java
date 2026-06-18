@@ -12,8 +12,8 @@ public record FileCryptoEncryptReq(
 
     public MultiValueMap<String, String> toFormData() {
         MultiValueMap<String, String> formData = new LinkedMultiValueMap<>();
-        formData.add("operationUserId", operationUserId);
-        formData.add("LableID", labelId);
+        formData.add("OperationUserID", operationUserId);
+        formData.add("LabelID", labelId);
         formData.add("FID", fid.toString());
         formData.add("PID", pid);
         return formData;
