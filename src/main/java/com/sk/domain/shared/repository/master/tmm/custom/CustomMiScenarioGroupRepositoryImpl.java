@@ -159,7 +159,7 @@ public class CustomMiScenarioGroupRepositoryImpl implements CustomMiScenarioGrou
         where.and(miScenario.isDeleted.isFalse());
         // 생성 진행 중인 시나리오는 목록에서 제외 — 생성 완료 이후(created/realized/discarded)만 노출
         where.and(miScenario.status.ne(ScenarioStatus.CREATING));
-        // "설계중"은 그룹 라이프사이클 상태이므로 그룹 status도 함께 제외 (그룹↔시나리오 스큐 방어)
+        // "설계중"은 그룹 라이프사이클 상태이므로 그룹 status도 함께 제외
         where.and(miScenarioGroup.status.ne(ScenarioGroupStatus.CREATING));
 
         if (request.startDate() != null) {
