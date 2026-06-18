@@ -30,7 +30,7 @@ import org.springframework.web.bind.annotation.RestController;
  * {@code dedicated} 프로필에서만 동작한다. MI Base/시나리오 시리즈는 기존 그래프 API를 그대로 사용하고,
  * 프론트는 본 엔드포인트(customBaseUrl)를 호출해 CME 기준선을 차트에 머지한다.
  */
-@Profile("dedicated")
+@Profile(value = {"dedicated","testdb"})
 @Tag(name = "02. Next Gen MI Scenario Group API (Dedicated)", description = "Next Gen MI Scenario Group 전용 API입니다.")
 @Slf4j
 @RestController

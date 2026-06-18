@@ -11,6 +11,9 @@
     <!--
       기획서 "수급모델 > 시나리오 전망 벤치마크 차트" SQL 3단계를 union으로 통합.
       벤치마크는 Future(index_div='F')만 사용. 기획서 step3 서브쿼리/조인에는 index_div 조건이 누락되어 있으나, F/S 혼재 시 중복 매칭을 막기 위해 전 구간 'F'로 통일한다.
+      del_yn='N'(soft-delete 제외)도 전 구간 통일 — 기획서엔 없으나 테이블에 del_yn 컬럼이 있어 표준 컨벤션을 따른다.
+      index_id는 VARCHAR 컬럼이라 String 바인딩(#{indexId})으로 비교 — 숫자 리터럴 비교 시 암시변환·인덱스 미사용을 피한다.
+      value_month는 'YYYY-MM' 포맷이라 fromMonth/toMonth도 'YYYY-MM' — 고정폭 zero-pad라 사전식 비교가 곧 시간순.
     -->
     <select id="findBenchmarkMonthlyPrices" resultMap="cmeBenchmarkPriceMap">
         SELECT u.value_month, u.index_value
@@ -20,9 +23,10 @@
             FROM tif_skgas_odin o
             WHERE o.index_id = #{indexId}
               AND o.index_div = 'F'
+              AND o.del_yn = 'N'
               AND o.value_date = (
                   SELECT MAX(m.value_date) FROM tif_skgas_odin m
-                  WHERE m.index_id = #{indexId} AND m.index_div = 'F'
+                  WHERE m.index_id = #{indexId} AND m.index_div = 'F' AND m.del_yn = 'N'
               )
               AND o.value_month &lt;= #{toMonth}
 
@@ -35,13 +39,14 @@
                 FROM tif_skgas_odin p
                 WHERE p.index_id = #{indexId}
                   AND p.index_div = 'F'
+                  AND p.del_yn = 'N'
                   AND p.value_month &gt;= #{fromMonth}
                   AND p.value_month &lt; (
                       SELECT MIN(c.value_month) FROM tif_skgas_odin c
-                      WHERE c.index_id = #{indexId} AND c.index_div = 'F'
+                      WHERE c.index_id = #{indexId} AND c.index_div = 'F' AND c.del_yn = 'N'
                         AND c.value_date = (
                             SELECT MAX(m.value_date) FROM tif_skgas_odin m
-                            WHERE m.index_id = #{indexId} AND m.index_div = 'F'
+                            WHERE m.index_id = #{indexId} AND m.index_div = 'F' AND m.del_yn = 'N'
                         )
                   )
                 GROUP BY p.value_month, p.index_id
@@ -51,6 +56,7 @@
              AND o.value_month = t.value_month
              AND o.index_id = t.index_id
              AND o.index_div = 'F'
+             AND o.del_yn = 'N'
         ) u
         ORDER BY u.value_month ASC
     </select>

@@ -30,7 +30,7 @@ import java.util.Map;
 public class SwaggerConfig {
 
     // note: 안정화 후 투머치 문서 모두 삭제예정
-    private static final String SW_VERSION_BASE = "v1.2.5";
+    private static final String SW_VERSION_BASE = "v1.2.6";
     private static final DateTimeFormatter SW_DEPLOY_DATE_FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
 
     @Bean
@@ -130,6 +130,7 @@ public class SwaggerConfig {
   | 시나리오 상세 | %s |
   | 시나리오 상태 변경 | %s |
   | 시나리오 그룹 삭제 | %s |
+  | 시나리오 그룹 CME 벤치마크 그래프 (dedicated 전용) | %s |
   | **Model Execution** | |
   | 수급모델 실행 파라미터 조회 | %s |
   | 수급모델 실행 요청 | %s |
@@ -155,6 +156,18 @@ public class SwaggerConfig {
 
   ## 수정사항
   <details open>
+    <summary><strong>v1.2.6 (2026-06-18)</strong></summary>
+
+  - [Event]
+    - 이벤트 목록에 `occupied`(설계 점유 여부) · `occupantUserId`(점유자) 추가
+  - [Scenario Design]
+    - 설계 세션 SSE에 keep-alive 하트비트(`:hb`, 약 20초 주기) 추가 — 연결 유지용, FE 처리 불필요
+  - [Scenario Group]
+    - CME 벤치마크 그래프 조회 API 추가 (dedicated 전용, `GET .../scenario-groups/graph/cme-benchmark`)
+
+  </details>
+
+  <details>
     <summary><strong>v1.2.5 (2026-06-17)</strong></summary>
 
   - [Scenario Group]
@@ -359,6 +372,7 @@ public class SwaggerConfig {
             label(mockProps.getScenarioGroups().getApi().isGetScenarioDetail()),
             label(mockProps.getScenarioGroups().getApi().isUpdateScenarioStatus()),
             label(mockProps.getScenarioGroups().getApi().isDeleteGroup()),
+            label(false), // CME 벤치마크 — 항상 실 DB(midb-skgas), mock 없음
             label(mockProps.getModelExecutions().getApi().isGetParameters()),
             label(mockProps.getModelExecutions().getApi().isSubmit()),
             label(mockProps.getModelExecutions().getApi().isGetStatus()),

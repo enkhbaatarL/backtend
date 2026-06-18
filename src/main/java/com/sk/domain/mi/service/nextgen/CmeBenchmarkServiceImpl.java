@@ -43,25 +43,26 @@ public class CmeBenchmarkServiceImpl implements CmeBenchmarkService {
         CmeBenchmarkIndex benchmarkIndex = CmeBenchmarkIndex.from(indexName);
 
         int currentYear = LocalDate.now().getYear();
-        String fromMonth = "%d01".formatted(currentYear);
-        String toMonth = "%d12".formatted(END_YEAR);
+        // value_month는 실DB가 'YYYY-MM' 포맷(예: '2026-01')으로 적재 — 경계도 동일 포맷이어야 사전식 비교가 맞는다.
+        String fromMonth = "%d-01".formatted(currentYear);
+        String toMonth = "%d-12".formatted(END_YEAR);
 
         List<CmeBenchmarkPriceRow> rows = queryOnDedicatedDataSource(benchmarkIndex.getIndexId(), fromMonth, toMonth);
 
-        // value_month(YYYYMM) → 기간키. 연도별이면 연 단위 월평균으로 집계.
+        // value_month(YYYY-MM) → 기간키. 연도별이면 연 단위 월평균으로 집계.
         Map<String, BigDecimal> valueByPeriodKey = periodUnit == GraphPeriodUnit.YEARLY
             ? aggregateYearly(rows)
             : toMonthlyMap(rows);
 
-        List<String> periodKeys = new ArrayList<>(valueByPeriodKey.keySet());
-        List<String> dates = periodKeys.stream().map(periodUnit::formatPeriodKey).toList();
-        List<BigDecimal> values = periodKeys.stream().map(valueByPeriodKey::get).toList();
+        // 기간키가 곧 응답 날짜 표기: 월별 'YYYY-MM' / 연별 'YYYY' 모두 그대로 사용 (별도 포맷 변환 불필요).
+        List<String> dates = new ArrayList<>(valueByPeriodKey.keySet());
+        List<BigDecimal> values = dates.stream().map(valueByPeriodKey::get).toList();
 
         return CmeBenchmarkGraphRes.of(indexName, periodUnit, dates, values);
     }
 
     /** 전용 테넌트 데이터소스로 라우팅하여 매퍼 조회 */
-    private List<CmeBenchmarkPriceRow> queryOnDedicatedDataSource(long indexId, String fromMonth, String toMonth) {
+    private List<CmeBenchmarkPriceRow> queryOnDedicatedDataSource(String indexId, String fromMonth, String toMonth) {
         try {
             DataSourceContextHolder.setDataSourceKey(cmeDataSourceKey);
             return cmeBenchmarkMapper.findBenchmarkMonthlyPrices(indexId, fromMonth, toMonth);
@@ -70,7 +71,7 @@ public class CmeBenchmarkServiceImpl implements CmeBenchmarkService {
         }
     }
 
-    /** 월별 — value_month(YYYYMM) 그대로 기간키. SQL이 이미 오름차순. */
+    /** 월별 — value_month(YYYY-MM) 그대로 기간키. SQL이 이미 오름차순. */
     private Map<String, BigDecimal> toMonthlyMap(List<CmeBenchmarkPriceRow> rows) {
         Map<String, BigDecimal> map = new LinkedHashMap<>();
         for (CmeBenchmarkPriceRow row : rows) {

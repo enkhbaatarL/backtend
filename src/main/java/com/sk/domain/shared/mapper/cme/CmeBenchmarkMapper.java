@@ -19,13 +19,13 @@ public interface CmeBenchmarkMapper {
      *  - 현재 기준 월물 — 최종 기준일의 (미래) 월물
      *  - 현재 기준 이전 월물 — value_month별 최신 기준일 값
      *
-     * @param indexId   대상 인덱스 ID (CmeBenchmarkIndex 매핑)
-     * @param fromMonth 표출 시작 월 (현재 연도 1월, YYYYMM)
-     * @param toMonth   표출 종료 월 (2030년 12월, YYYYMM)
+     * @param indexId   대상 인덱스 ID (CmeBenchmarkIndex 매핑, VARCHAR 컬럼이라 String)
+     * @param fromMonth 표출 시작 월 (현재 연도 1월, YYYY-MM)
+     * @param toMonth   표출 종료 월 (2030년 12월, YYYY-MM)
      * @return value_month 오름차순 월별 (value_month, index_value) 목록
      */
     List<CmeBenchmarkPriceRow> findBenchmarkMonthlyPrices(
-        @Param("indexId") long indexId,
+        @Param("indexId") String indexId,
         @Param("fromMonth") String fromMonth,
         @Param("toMonth") String toMonth
     );

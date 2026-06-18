@@ -4,7 +4,6 @@ import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.sk.common.enums.ResultCode;
 import com.sk.common.exception.AppErrorException;
-import com.sk.common.utils.SecurityUtil;
 import com.sk.domain.mi.config.NextGenMockProperties;
 import com.sk.domain.mi.dto.request.nextgen.design.ScenarioConfirmationReq;
 import com.sk.domain.mi.dto.request.nextgen.design.ScenarioDesignStartReq;
@@ -33,6 +32,7 @@ import com.sk.domain.shared.enums.nextgen.ScenarioDisplayStatus;
 import com.sk.domain.shared.enums.nextgen.ScenarioGroupStage;
 import com.sk.domain.shared.enums.nextgen.ScenarioGroupStatus;
 import com.sk.domain.shared.enums.nextgen.SignpostStrength;
+import com.sk.domain.shared.service.permissions.AuthorizationService;
 import jakarta.annotation.PostConstruct;
 import java.io.IOException;
 import java.io.InputStream;
@@ -66,12 +66,12 @@ public class ScenarioDesignMockService {
     private static final long GROUP_ID_BASE = 900_000L;
     private static final long SCENARIO_ID_BASE = 950_000L;
     private static final long SIGNPOST_ID_BASE = 970_000L;
-    private static final Long MOCK_OCCUPANT_USER_ID = 10001L;
 
     private final ObjectMapper objectMapper;
     private final ScenarioDesignSseRegistry sseRegistry;
     private final NextGenMockProperties mockProps;
     private final ScenarioGroupMockService scenarioGroupMockService;
+    private final AuthorizationService authorizationService;
 
     private final Map<Long, Session> sessions = new ConcurrentHashMap<>();
     private final AtomicLong groupIdSeq = new AtomicLong(GROUP_ID_BASE);
@@ -92,11 +92,13 @@ public class ScenarioDesignMockService {
     private Map<Long, Long> eventTypeL2ByEvent = Map.of();
 
     public ScenarioDesignMockService(ObjectMapper objectMapper, ScenarioDesignSseRegistry sseRegistry,
-                                     NextGenMockProperties mockProps, ScenarioGroupMockService scenarioGroupMockService) {
+                                     NextGenMockProperties mockProps, ScenarioGroupMockService scenarioGroupMockService,
+                                     AuthorizationService authorizationService) {
         this.objectMapper = objectMapper;
         this.sseRegistry = sseRegistry;
         this.mockProps = mockProps;
         this.scenarioGroupMockService = scenarioGroupMockService;
+        this.authorizationService = authorizationService;
     }
 
     @PostConstruct
@@ -135,8 +137,8 @@ public class ScenarioDesignMockService {
         List<ScenarioDimensionColumnRes> columns = buildColumns(template);
         List<DesignScenarioRow> step1 = generateInitialScenarios(template);
 
-        // 점유자 = 설계를 시작한 실제 로그인 사용자(JWT user_no). 인증 컨텍스트가 없으면(테스트 등) mock 기본값으로 폴백.
-        Long occupantUserId = SecurityUtil.currentUserNo().orElse(MOCK_OCCUPANT_USER_ID);
+        // 점유자 = 설계를 시작한 실제 로그인 사용자(JWT user_no).
+        Long occupantUserId = authorizationService.getUserNo().longValue();
 
         // 접수 시점은 ready(생성 대기). Agent 생성 콜백이 도착하면 scenario_created로 전이 + SSE.
         Session session = new Session(groupId, request.miEventId(), eventTypeL2Id, occupantUserId, columns, step1);

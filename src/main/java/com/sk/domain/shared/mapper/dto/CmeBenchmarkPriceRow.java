@@ -13,7 +13,7 @@ import lombok.Setter;
 @NoArgsConstructor
 public class CmeBenchmarkPriceRow {
 
-    /** 차트 X축 월 (value_month). 포맷 YYYYMM */
+    /** 차트 X축 월 (value_month). 포맷 YYYY-MM (실DB 적재 형식, 예: '2026-01') */
     private String valueMonth;
 
     /** 차트 Y축 값 (index_value). */

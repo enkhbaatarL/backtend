@@ -12,12 +12,13 @@ import lombok.RequiredArgsConstructor;
 @RequiredArgsConstructor
 public enum CmeBenchmarkIndex {
 
-    HH(IndexName.HH, 1020031L, "CME_NG_FUTURES"),
-    JKM(IndexName.JKM, 1020432L, "JKM_Futures"),
-    TTF(IndexName.TTF, 1020809L, "CME_TTF_USD");
+    HH(IndexName.HH, "1020031", "CME_NG_FUTURES"),
+    JKM(IndexName.JKM, "1020432", "JKM_Futures"),
+    TTF(IndexName.TTF, "1020809", "CME_TTF_USD");
 
     private final IndexName indexName;
-    private final long indexId;
+    /** tif_skgas_odin.index_id (VARCHAR). 실DB가 문자열로 적재 — 숫자 비교 시 암시변환·인덱스 미사용 회피. */
+    private final String indexId;
     private final String cmeIndexName;
 
     public static CmeBenchmarkIndex from(IndexName indexName) {
