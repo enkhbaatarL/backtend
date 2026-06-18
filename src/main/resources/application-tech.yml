@@ -118,6 +118,10 @@ api:
     url: https://devadxp.adotbiz.ai
     connection-timeout: 1s
     read-timeout: 20s
+  scenario-design-agent:
+    url: http://40.82.137.178:8001
+    connection-timeout: 1s
+    read-timeout: 60s
 
 mail:
   smtp:

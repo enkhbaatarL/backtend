@@ -8,10 +8,6 @@ import com.sk.domain.mi.dto.response.nextgen.design.ScenarioDesignStageRes;
 import com.sk.domain.mi.dto.response.nextgen.design.ScenarioDesignStateRes;
 import com.sk.domain.mi.dto.response.nextgen.design.ScenarioDimensionTemplateRes;
 
-/**
- * 시나리오 설계 파이프라인 (FE-facing). 시작 → 검토 → Signpost 생성 → 확정.
- * 실 구현은 Agent 프록시, mock 구현은 인메모리 세션 시뮬레이션이며 {@link com.sk.domain.mi.config.NextGenMockProperties}로 라우팅된다.
- */
 public interface ScenarioDesignService {
 
     /** 설계 시작 (점유 + Agent 시나리오 생성 요청). */

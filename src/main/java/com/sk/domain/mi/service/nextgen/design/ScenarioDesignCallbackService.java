@@ -60,13 +60,15 @@ public class ScenarioDesignCallbackService {
     }
 
     /**
-     * Agent 작업 실패(result=failure) 여부. 실패면 푸시를 스킵하고 로깅만 한다.
+     * Agent 작업 실패(result=failure) 여부. 실패면 실패 SSE(reason 포함)를 발행하고 true를 반환한다.
      * <p>
-     * (실패 전용 신호 체계는 아직 미정 — 우선 로깅. 검토 정합성 실패(isValid=false)는 작업 성공의 정상 경로로 별도 처리)
+     * 실패는 DB가 갱신되지 않아 FE 재조회로 알 수 없으므로 reason을 그대로 푸시한다. FE는 에러 표시 후 잠금 해제.
+     * (검토 정합성 실패 isValid=false는 작업 성공의 정상 경로라 여기 해당하지 않음)
      */
     private boolean jobFailed(Long scenarioGroupId, Type type, AgentCallbackResult result, String reason) {
         if (result != null && result.isSuccess()) return false;
         log.warn("[Design Callback] agent job failed: type={}, groupId={}, reason={}", type.getCode(), scenarioGroupId, reason);
+        eventPublisher.publish(ScenarioDesignSseEvent.failure(scenarioGroupId, type, reason));
         return true;
     }
 
