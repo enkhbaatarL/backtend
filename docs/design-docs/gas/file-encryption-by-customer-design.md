@@ -172,8 +172,8 @@ byte[] result = fileCryptoApiClient.decrypt(fileBytes, originalFileName);
 | --- | --- |
 | method | `POST` |
 | configured path | `external.file-crypto.status-path` (`FILE_CRYPTO_STATUS_PATH`) |
-| Content-Type | `application/x-www-form-urlencoded` |
-| request fields | `fID`, `pID` |
+| effective path | `{status-path}/{fID}/{pID}` |
+| request fields | 없음 (`fID`, `pID`는 path segment로 전달) |
 | response fields | `result`, `ErrorMsag` |
 
 Response fields:
@@ -301,7 +301,7 @@ if (policy.isEnabled(companyCd, uploadedFile.getOriginalFileNm())) {
 
 1. **암복호화 서비스 API 세부 계약**
    암호화와 복호화 모두 `암복호화 서비스 upload API → status API → 필요한 경우 encrypt/decrypt API → 필요한 경우 암복호화 서비스 download API` 순서로 호출한다.
-   → Upload API는 `POST` + `FILE_CRYPTO_UPLOAD_PATH/{FILE_CRYPTO_PID}` + `multipart/form-data` + multipart file field `file` + 응답 필드 `result:int`/`errorMsg:string`/`fid:UUID(guid)`로 확정이며 성공은 `result=1`, 실패는 `result=2`다. Status API는 `POST` + `FILE_CRYPTO_STATUS_PATH` + `application/x-www-form-urlencoded` + request `fID`, `pID` + response `result:boolean`, `ErrorMsag:string`으로 확정이며 `result=true`는 암호화됨, `result=false`는 암호화되지 않음을 의미한다. Encrypt API는 `POST` + `application/x-www-form-urlencoded` + request `operationUserId`, `LableID`, `FID`, `PID` + response `OutputFilePath`, `DataSize`, `Status`, `ErrorMsg:string`, `OperationUserId`, `FID`, `LabelID`로 확정이며 성공은 `Status=0`, 실패는 `Status=1`이다. Decrypt API는 `POST` + `application/x-www-form-urlencoded` + request `UserID`, `FID`, `PID` + response `OutputFilePath`, `DataSize`, `OperationUserId`, `Status`, `ErrorMsg:string`, `FID`로 확정이며 성공은 `Status=4`, 실패는 `Status=5`다. 결과 파일 다운로드는 `GET` + `base-url + OutputFilePath` + response `content:bytearray`로 확정이다. 현재 확보한 curl 예시 기준으로는 별도 인증 header 없이 호출한다. 업로드 파일과 결과 파일은 당일에만 사용 가능하므로, MI Platform은 같은 요청 흐름에서 후속 호출을 즉시 완료해야 한다.
+   → Upload API는 `POST` + `FILE_CRYPTO_UPLOAD_PATH/{FILE_CRYPTO_PID}` + `multipart/form-data` + multipart file field `file` + 응답 필드 `result:int`/`errorMsg:string`/`fid:UUID(guid)`로 확정이며 성공은 `result=1`, 실패는 `result=2`다. Status API는 `POST` + `FILE_CRYPTO_STATUS_PATH/{fID}/{pID}` + response `result:boolean`, `ErrorMsag:string`으로 확정이며 `result=true`는 암호화됨, `result=false`는 암호화되지 않음을 의미한다. Encrypt API는 `POST` + `application/x-www-form-urlencoded` + request `operationUserId`, `LableID`, `FID`, `PID` + response `OutputFilePath`, `DataSize`, `Status`, `ErrorMsg:string`, `OperationUserId`, `FID`, `LabelID`로 확정이며 성공은 `Status=0`, 실패는 `Status=1`이다. Decrypt API는 `POST` + `application/x-www-form-urlencoded` + request `UserID`, `FID`, `PID` + response `OutputFilePath`, `DataSize`, `OperationUserId`, `Status`, `ErrorMsg:string`, `FID`로 확정이며 성공은 `Status=4`, 실패는 `Status=5`다. 결과 파일 다운로드는 `GET` + `base-url + OutputFilePath` + response `content:bytearray`로 확정이다. 현재 확보한 curl 예시 기준으로는 별도 인증 header 없이 호출한다. 업로드 파일과 결과 파일은 당일에만 사용 가능하므로, MI Platform은 같은 요청 흐름에서 후속 호출을 즉시 완료해야 한다.
 
 2. **암복호화 서비스 파일 수명/정리 정책**
    암복호화 서비스 upload/download API가 임시 파일을 관리하며, 업로드 파일과 결과 파일은 **당일에만 사용 가능**하다. 따라서 MI Platform은 upload -> status -> 필요한 경우 encrypt/decrypt -> 필요한 경우 download를 하나의 요청 흐름 안에서 즉시 수행해야 하며, 다음 날 재사용이나 지연 처리 전제를 두면 안 된다.
