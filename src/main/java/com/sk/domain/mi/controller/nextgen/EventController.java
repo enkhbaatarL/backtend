@@ -105,6 +105,8 @@ public class EventController {
             - `scenarioSuggestReason`: 시나리오화 추천 근거
             - `scenarioDesignStatus` / `scenarioDesignStatusLabel`: `designable`(설계가능) / `creating`(설계중) / `created`(설계완료)
             - `scenarioGroupId`: 활성 시나리오 그룹 ID (없으면 null, `created`일 때 이동 대상)
+            - `occupied`: 설계 점유 여부 (설계중이면 true)
+            - `occupantUserId`: 점유 사용자 ID (점유 중이 아니면 null)
             - `indexImpacts`: 인덱스별 영향도 — 단기/중장기 중 영향 강도가 더 큰 시점 1개만 표기 (강도가 같으면 단기).
               - `indexName` / `marketImpactLevel` / `marketImpactLevelLabel` / `direction` / `directionLabel` / `impactTerm` / `impactTermLabel`
               - `impactTerm`: `short` 단기 / `mid_long` 중장기

@@ -15,10 +15,10 @@ public record ScenarioBaseEventRes(
     @Schema(description = "이벤트명", example = "카타르 Ras Laffan 피해 (전쟁)")
     String eventName,
 
-    @Schema(description = "이벤트 유형 Lv1", example = "geopolitical_risk")
+    @Schema(description = "이벤트 유형 Lv1", example = "exogenous_shock")
     String eventTypeLv1,
 
-    @Schema(description = "이벤트 유형 Lv1 라벨", example = "지정학적 리스크")
+    @Schema(description = "이벤트 유형 Lv1 라벨", example = "외생충격")
     String eventTypeLv1Label,
 
     @Schema(description = "업데이트 일시")

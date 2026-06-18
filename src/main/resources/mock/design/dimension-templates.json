@@ -1,5 +1,5 @@
 {
-  "2": {
+  "16": {
     "dimensions": [
       {
         "dimKey": "period",
@@ -75,62 +75,7 @@
       }
     ]
   },
-  "3": {
-    "dimensions": [
-      {
-        "dimKey": "cod_timing",
-        "label": "COD 시점",
-        "required": true,
-        "displayOrder": 1,
-        "valueEnums": [
-          "지연 없음",
-          "3개월 지연",
-          "6개월 지연",
-          "1년 지연",
-          "1년 초과 지연",
-          "FID 무산"
-        ]
-      },
-      {
-        "dimKey": "ramp_up_completion_timing",
-        "label": "Ramp-up 완료 시점",
-        "required": true,
-        "displayOrder": 2,
-        "valueEnums": [
-          "3개월",
-          "6개월",
-          "1년",
-          "1년 초과",
-          "N/A (FID 무산)"
-        ]
-      },
-      {
-        "dimKey": "ramp_up_pattern",
-        "label": "Ramp-up 패턴",
-        "required": false,
-        "displayOrder": 3,
-        "valueEnums": [
-          "Step",
-          "Gradual",
-          "None (FID 무산)"
-        ]
-      },
-      {
-        "dimKey": "target_utilization_at_ramp_up",
-        "label": "Ramp-up 완료 시 도달 가동률 (Nameplate Capa 대비)",
-        "required": false,
-        "displayOrder": 4,
-        "valueEnums": [
-          "100%",
-          "90%",
-          "75%",
-          "50%",
-          "FID 무산 (0%)"
-        ]
-      }
-    ]
-  },
-  "6": {
+  "7": {
     "dimensions": [
       {
         "dimKey": "period",
@@ -196,84 +141,7 @@
       }
     ]
   },
-  "7": {
-    "dimensions": [
-      {
-        "dimKey": "period_label",
-        "label": "기간",
-        "required": true,
-        "displayOrder": 1,
-        "valueEnums": [
-          "2주 이하",
-          "1개월",
-          "2개월",
-          "3개월 이상",
-          "종료 미정"
-        ]
-      },
-      {
-        "dimKey": "heatwave_intensity",
-        "label": "폭염 강도",
-        "required": true,
-        "displayOrder": 2,
-        "valueEnums": [
-          "약 (+1~+2°C)",
-          "중 (+2~+3°C)",
-          "강 (+3°C 이상)"
-        ]
-      },
-      {
-        "dimKey": "eu_gas_inventory",
-        "label": "유럽 가스 재고 (평년 대비, 봄 진입 시)",
-        "required": false,
-        "displayOrder": 3,
-        "valueEnums": [
-          "+20%↑",
-          "+5%~+20%",
-          "±5%",
-          "-5%~-20%",
-          "-20%↓"
-        ]
-      },
-      {
-        "dimKey": "injection_pattern",
-        "label": "Injection 패턴",
-        "required": false,
-        "displayOrder": 4,
-        "valueEnums": [
-          "적극",
-          "정상",
-          "지연"
-        ]
-      },
-      {
-        "dimKey": "alt_energy_absorption",
-        "label": "타 에너지원 흡수 가능성",
-        "required": false,
-        "displayOrder": 5,
-        "valueEnums": [
-          "100%",
-          "75%",
-          "50%",
-          "25%",
-          "0%"
-        ]
-      },
-      {
-        "dimKey": "peak_timing",
-        "label": "Peak 시점·패턴",
-        "required": false,
-        "displayOrder": 6,
-        "valueEnums": [
-          "전체 균등",
-          "6월 Peak",
-          "7월 Peak",
-          "8월 Peak"
-        ]
-      }
-    ]
-  },
-  "8": {
+  "4": {
     "dimensions": [
       {
         "dimKey": "affected_period",
@@ -350,83 +218,6 @@
     ]
   },
   "9": {
-    "dimensions": [
-      {
-        "dimKey": "affected_period",
-        "label": "영향 기간",
-        "required": true,
-        "displayOrder": 1,
-        "valueEnums": [
-          "1개월 이하",
-          "3개월",
-          "6개월",
-          "1년",
-          "1년 초과",
-          "구조적/영구 (회복 불가)",
-          "종료 미정"
-        ]
-      },
-      {
-        "dimKey": "capacity_change_scale",
-        "label": "Capacity 변화 규모",
-        "required": true,
-        "displayOrder": 2,
-        "valueEnums": [
-          "단발: ±20% 이내",
-          "단발: ±20~50%",
-          "단발: ±50% 초과",
-          "구조적: ±1 GW 미만",
-          "구조적: ±1 GW 이상"
-        ]
-      },
-      {
-        "dimKey": "structural_change_yn",
-        "label": "구조적 변동 여부",
-        "required": false,
-        "displayOrder": 3,
-        "valueEnums": [
-          "단발적",
-          "구조적"
-        ]
-      },
-      {
-        "dimKey": "alt_energy_absorption",
-        "label": "타 에너지원 흡수 가능성",
-        "required": false,
-        "displayOrder": 4,
-        "valueEnums": [
-          "100%",
-          "75%",
-          "50%",
-          "25%",
-          "0%"
-        ]
-      },
-      {
-        "dimKey": "ramp_down_pattern",
-        "label": "Ramp-down 패턴",
-        "required": false,
-        "displayOrder": 5,
-        "valueEnums": [
-          "Step",
-          "Gradual",
-          "None (Capa 증가 시)"
-        ]
-      },
-      {
-        "dimKey": "ramp_up_pattern",
-        "label": "Ramp-up 패턴",
-        "required": false,
-        "displayOrder": 6,
-        "valueEnums": [
-          "Step",
-          "Gradual",
-          "None (회복 불가)"
-        ]
-      }
-    ]
-  },
-  "10": {
     "dimensions": [
       {
         "dimKey": "affected_period",
@@ -562,7 +353,7 @@
       }
     ]
   },
-  "17": {
+  "18": {
     "dimensions": [
       {
         "dimKey": "period",
@@ -660,7 +451,7 @@
       }
     ]
   },
-  "18": {
+  "14": {
     "dimensions": [
       {
         "dimKey": "period",

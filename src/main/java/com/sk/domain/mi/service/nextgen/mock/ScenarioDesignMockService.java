@@ -4,6 +4,7 @@ import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.sk.common.enums.ResultCode;
 import com.sk.common.exception.AppErrorException;
+import com.sk.common.utils.SecurityUtil;
 import com.sk.domain.mi.config.NextGenMockProperties;
 import com.sk.domain.mi.dto.request.nextgen.design.ScenarioConfirmationReq;
 import com.sk.domain.mi.dto.request.nextgen.design.ScenarioDesignStartReq;
@@ -134,8 +135,11 @@ public class ScenarioDesignMockService {
         List<ScenarioDimensionColumnRes> columns = buildColumns(template);
         List<DesignScenarioRow> step1 = generateInitialScenarios(template);
 
+        // 점유자 = 설계를 시작한 실제 로그인 사용자(JWT user_no). 인증 컨텍스트가 없으면(테스트 등) mock 기본값으로 폴백.
+        Long occupantUserId = SecurityUtil.currentUserNo().orElse(MOCK_OCCUPANT_USER_ID);
+
         // 접수 시점은 ready(생성 대기). Agent 생성 콜백이 도착하면 scenario_created로 전이 + SSE.
-        Session session = new Session(groupId, request.miEventId(), eventTypeL2Id, columns, step1);
+        Session session = new Session(groupId, request.miEventId(), eventTypeL2Id, occupantUserId, columns, step1);
         session.stage = ScenarioGroupStage.READY;
         sessions.put(groupId, session);
         log.info("[Mock] design started: groupId={}, miEventId={}, eventTypeL2Id={}",
@@ -499,7 +503,7 @@ public class ScenarioDesignMockService {
         final Long scenarioGroupId;
         final Long miEventId;
         final Long eventTypeL2Id;
-        final Long occupantUserId = MOCK_OCCUPANT_USER_ID;
+        final Long occupantUserId;
         final List<ScenarioDimensionColumnRes> initialColumns;
         final List<DesignScenarioRow> initialStep1;
 
@@ -514,11 +518,12 @@ public class ScenarioDesignMockService {
         String summary = "호르무즈 해협 통항 제한에 따른 LNG 공급 차질 시나리오 (mock)";
         String description = "Agent 생성 초기값 기반 설계 세션 (mock)";
 
-        Session(Long scenarioGroupId, Long miEventId, Long eventTypeL2Id,
+        Session(Long scenarioGroupId, Long miEventId, Long eventTypeL2Id, Long occupantUserId,
                 List<ScenarioDimensionColumnRes> columns, List<DesignScenarioRow> step1) {
             this.scenarioGroupId = scenarioGroupId;
             this.miEventId = miEventId;
             this.eventTypeL2Id = eventTypeL2Id;
+            this.occupantUserId = occupantUserId;
             this.initialColumns = columns;
             this.initialStep1 = step1;
             this.columns = columns;

@@ -63,10 +63,10 @@
         }
       ],
       "analysisText": "카타르 Ras Laffan 및 Mesaieed 공격은 중동 LNG 공급 차질과 호르무즈 통항 리스크를 동시에 키우는 대형 bullish 이벤트다. 글로벌 공급의 20~25%와 연결된 위험이 부각되면서 JKM에는 극단적 위험 프리미엄이 붙고, TTF도 대체 LNG 확보 경쟁으로 지지된다. HH는 미국 내 가스 수급에 대한 직접 연결성이 낮아 영향이 제한적이다.",
-      "eventTypeLv1": "geopolitical_risk",
-      "eventTypeLv1Label": "지정학적 리스크",
-      "eventTypeLv2": "war_military_conflict",
-      "eventTypeLv2Label": "전쟁 / 군사 분쟁",
+      "eventTypeLv1": "exogenous_shock",
+      "eventTypeLv1Label": "외생충격",
+      "eventTypeLv2": "geopolitical_tension_war",
+      "eventTypeLv2Label": "지정학적 긴장 및 전쟁·군사분쟁",
       "sources": [
         "Reuters"
       ]
@@ -482,10 +482,10 @@
         }
       ],
       "analysisText": "호르무즈 통항 차질은 단순 운임 이슈가 아니라 중동산 LNG 선적 안정성과 목적지 유연성을 흔드는 물류 충격이다. 유럽행 카고의 아시아 전환은 JKM 프리미엄이 실물 흐름을 바꿀 정도로 강해졌음을 의미한다. TTF는 카고 이탈 우려로 지지되지만, 가격 충격의 중심은 아시아 현물 시장이다.",
-      "eventTypeLv1": "logistics_shipping",
-      "eventTypeLv1Label": "물류 / 해운",
-      "eventTypeLv2": "cargo_flow_change_port_canal_disruption",
-      "eventTypeLv2Label": "화물 흐름 변화 / 항만·운하 차질",
+      "eventTypeLv1": "inventory_logistics",
+      "eventTypeLv1Label": "재고/운송/시장",
+      "eventTypeLv2": "supply_chain_cargo_flow",
+      "eventTypeLv2Label": "공급망 및 화물 흐름",
       "sources": [
         "Reuters"
       ]
@@ -669,10 +669,10 @@
         }
       ],
       "analysisText": "카타르 공급 차질 이후 남아시아와 동남아 구매자가 근월 현물 조달에 나선 것은 JKM에 직접적인 bullish 수요 충격이다. 일본·한국의 관망 가능성이 일부 완충하지만, 방글라데시·인도·태국의 긴급 수요가 현물 가격 하방을 지지한다. 유럽도 낮은 재고로 동일 카고를 경쟁해야 하므로 TTF에도 중간 수준의 지지 효과가 있다.",
-      "eventTypeLv1": "supply_demand_balance",
-      "eventTypeLv1Label": "수급 밸런스",
-      "eventTypeLv2": "regional_demand_competition",
-      "eventTypeLv2Label": "지역간 수요 경쟁 (유럽 vs. 아시아)",
+      "eventTypeLv1": "inventory_logistics",
+      "eventTypeLv1Label": "재고/운송/시장",
+      "eventTypeLv2": "supply_chain_cargo_flow",
+      "eventTypeLv2Label": "공급망 및 화물 흐름",
       "sources": [
         "Reuters"
       ]
@@ -835,10 +835,10 @@
         }
       ],
       "analysisText": "유럽 저장률 29% 안팎은 TTF에 가장 직접적인 bullish 재주입 수요 신호다. JKM 입장에서는 유럽이 같은 유연 LNG 카고를 흡수하려는 경쟁자로 부상한다는 점에서 중간 수준의 상승 압력이 발생한다. 다만 이벤트의 중심은 유럽 재고 부족이므로 JKM 영향은 카타르·호르무즈 리스크와 결합될 때 더 커진다.",
-      "eventTypeLv1": "supply_demand_balance",
-      "eventTypeLv1Label": "수급 밸런스",
-      "eventTypeLv2": "inventory_storage_level",
-      "eventTypeLv2Label": "재고 / 저장 수준",
+      "eventTypeLv1": "inventory_logistics",
+      "eventTypeLv1Label": "재고/운송/시장",
+      "eventTypeLv2": "inventory_level",
+      "eventTypeLv2Label": "재고 수준",
       "sources": [
         "Reuters"
       ]
@@ -1164,10 +1164,10 @@
         }
       ],
       "analysisText": "JKM-TTF 및 JKM-NWE 스프레드 확대는 아시아 프리미엄이 실물 카고 배분을 좌우하는 단계임을 보여준다. 판매자와 포트폴리오 플레이어는 유럽보다 아시아 인도 옵션을 선호하게 되고, 이는 JKM 강세를 자기강화적으로 지지한다. 동시에 유럽은 카고 이탈 우려로 TTF 하방이 제한된다.",
-      "eventTypeLv1": "market_trading_structure",
-      "eventTypeLv1Label": "시장 / 거래 구조",
-      "eventTypeLv2": "inter_index_spread_gap",
-      "eventTypeLv2Label": "인덱스별 스프레드 Gap",
+      "eventTypeLv1": "inventory_logistics",
+      "eventTypeLv1Label": "재고/운송/시장",
+      "eventTypeLv2": "index_spread",
+      "eventTypeLv2Label": "인덱스 Spread",
       "sources": [
         "Reuters"
       ]
@@ -1436,10 +1436,10 @@
         }
       ],
       "analysisText": "동북아 완충 재고는 중동발 공급 프리미엄을 일부 상쇄하는 JKM bearish 요인이다. 일본과 한국의 주요 구매자가 관망할 수 있으면 근월 현물 입찰 압력이 줄어 JKM 상승 속도가 둔화된다. 다만 이 효과는 단기적이며, 호르무즈 리스크 장기화나 기온 상승 시 다시 매수세가 나타날 수 있다.",
-      "eventTypeLv1": "supply_demand_balance",
-      "eventTypeLv1Label": "수급 밸런스",
-      "eventTypeLv2": "inventory_storage_level",
-      "eventTypeLv2Label": "재고 / 저장 수준",
+      "eventTypeLv1": "inventory_logistics",
+      "eventTypeLv1Label": "재고/운송/시장",
+      "eventTypeLv2": "inventory_level",
+      "eventTypeLv2Label": "재고 수준",
       "sources": [
         "Reuters"
       ]
@@ -1602,10 +1602,10 @@
         }
       ],
       "analysisText": "Plaquemines 수출한도 확대는 글로벌 LNG 시장에 중기 공급 완화 신호를 주는 bearish 이벤트다. 미국산 LNG는 목적지 유연성이 높아 JKM과 TTF 모두에 공급 완충재로 작동할 수 있다. 다만 허가 확대와 실제 선적 증가는 다르므로 가격 영향은 즉각적 급락보다 기대 조정에 가깝다.",
-      "eventTypeLv1": "infrastructure_facility",
-      "eventTypeLv1Label": "인프라 / 설비",
-      "eventTypeLv2": "liquefaction_terminal_facility_capacity_utilization_change",
-      "eventTypeLv2Label": "액화 / 터미널 시설 Capa/가동률 변화",
+      "eventTypeLv1": "supply",
+      "eventTypeLv1Label": "공급",
+      "eventTypeLv2": "terminal_utilization_change",
+      "eventTypeLv2Label": "터미널 Utilization 변동",
       "sources": [
         "Reuters"
       ]
@@ -1789,10 +1789,10 @@
         }
       ],
       "analysisText": "CP2와 Golden Pass 기대는 단기 선적 증가보다 미국 LNG 공급 포트폴리오 확대라는 중장기 bearish 신호가 핵심이다. 아시아와 유럽 구매자는 더 많은 HH 연동·목적지 유연 물량을 확보할 수 있어 JKM과 TTF 전망이 완화된다. 반면 미국 내에서는 액화용 피드가스 수요 증가 기대가 HH를 지지할 수 있다.",
-      "eventTypeLv1": "infrastructure_facility",
-      "eventTypeLv1Label": "인프라 / 설비",
-      "eventTypeLv2": "liquefaction_terminal_facility_capacity_utilization_change",
-      "eventTypeLv2Label": "액화 / 터미널 시설 Capa/가동률 변화",
+      "eventTypeLv1": "supply",
+      "eventTypeLv1Label": "공급",
+      "eventTypeLv2": "terminal_utilization_change",
+      "eventTypeLv2Label": "터미널 Utilization 변동",
       "sources": [
         "Reuters"
       ]
@@ -1976,10 +1976,10 @@
         }
       ],
       "analysisText": "LNG Canada의 비계획 정지는 북미 LNG 공급 확대 기대가 실제 선적으로 반영되는 속도에 대한 경계감을 높인다. 태평양 권역 공급 완충력이 약해져 JKM에는 단기 상방 압력이 발생하지만, 구조적 장기 공급 손실보다는 일시적 가동 차질 성격이 강하다. TTF와 HH 영향은 각각 글로벌 유연 물량 감소와 북미 가스 연계 측면에서 제한적이다.",
-      "eventTypeLv1": "infrastructure_facility",
-      "eventTypeLv1Label": "인프라 / 설비",
-      "eventTypeLv2": "liquefaction_terminal_facility_capacity_utilization_change",
-      "eventTypeLv2Label": "액화 / 터미널 시설 Capa/가동률 변화",
+      "eventTypeLv1": "supply",
+      "eventTypeLv1Label": "공급",
+      "eventTypeLv2": "terminal_utilization_change",
+      "eventTypeLv2Label": "터미널 Utilization 변동",
       "sources": [
         "Reuters"
       ]
@@ -2116,10 +2116,10 @@
         }
       ],
       "analysisText": "한국의 석탄·원전 활용 확대는 전력용 LNG 수요를 정책적으로 낮추는 이벤트다. 동북아 핵심 구매자인 한국의 현물 조달 필요가 줄어 JKM에는 중간 수준의 약세 압력이 발생한다. 다만 중동 공급 차질이나 남아시아 긴급 조달이 강할 경우 전체 JKM 강세를 완전히 상쇄하기는 어렵다.",
-      "eventTypeLv1": "infrastructure_facility",
-      "eventTypeLv1Label": "인프라 / 설비",
-      "eventTypeLv2": "power_plant_facility_capacity_utilization_change",
-      "eventTypeLv2Label": "발전소 (원전, 화력) 설비 Capa/가동률 변화",
+      "eventTypeLv1": "demand",
+      "eventTypeLv1Label": "수요",
+      "eventTypeLv2": "power_plant_utilization_change",
+      "eventTypeLv2Label": "발전소 Utilization 변동",
       "sources": [
         "Reuters"
       ]
@@ -2256,10 +2256,10 @@
         }
       ],
       "analysisText": "러시아 제재 면제와 미중 관세 변화는 단일한 실물 공급 충격이라기보다 지역 간 LNG 배분 기대를 흔드는 정책 변수다. JKM은 중국의 미국산 LNG 수입 재개 가능성으로 아시아향 물량·수요 내러티브가 강화될 수 있으나, 러시아 완화가 유럽 조달 압력을 낮추는 반대 효과도 존재한다. 따라서 가격 영향은 낮고 방향성의 확실성도 제한적이다.",
-      "eventTypeLv1": "geopolitical_risk",
-      "eventTypeLv1Label": "지정학적 리스크",
+      "eventTypeLv1": "exogenous_shock",
+      "eventTypeLv1Label": "외생충격",
       "eventTypeLv2": "economic_sanctions_trade_restrictions",
-      "eventTypeLv2Label": "경제 제재 / 무역 제한",
+      "eventTypeLv2Label": "경제 제재 및 무역 제한",
       "sources": [
         "Reuters"
       ]
@@ -2396,10 +2396,10 @@
         }
       ],
       "analysisText": "LNG 용선료 하락은 장거리 LNG 조달 비용을 낮춰 아시아 도착 물량의 경제성을 개선한다. 이는 JKM 상승 압력을 완화하는 약세 요인이지만, 차익거래 개방 여부는 JKM-TTF 스프레드와 항로 리스크, 선박 가용성까지 함께 결정된다. 따라서 방향은 약세이나 영향은 중간 이하의 점진적 성격이다.",
-      "eventTypeLv1": "logistics_shipping",
-      "eventTypeLv1Label": "물류 / 해운",
-      "eventTypeLv2": "ocean_freight_charter_rate_change",
-      "eventTypeLv2Label": "해상 운임 / 용선료 변동",
+      "eventTypeLv1": "inventory_logistics",
+      "eventTypeLv1Label": "재고/운송/시장",
+      "eventTypeLv2": "ocean_freight",
+      "eventTypeLv2Label": "해상 운임",
       "sources": [
         "Reuters"
       ]
@@ -2510,10 +2510,10 @@
         }
       ],
       "analysisText": "Alaska LNG의 오프테이크 부족은 동북아 장기 공급 확대 기대가 아직 조건부임을 보여준다. 2,000만tpa 규모는 잠재적으로 크지만 FID와 2029년 이후 가스 공급 일정이 핵심 제약이어서 근월 JKM 영향은 낮다. 현재로서는 신규 공급 확정이 지연될 수 있다는 점이 장기 JKM에 약한 상방 리스크로 작용한다.",
-      "eventTypeLv1": "infrastructure_facility",
-      "eventTypeLv1Label": "인프라 / 설비",
-      "eventTypeLv2": "liquefaction_terminal_facility_capacity_utilization_change",
-      "eventTypeLv2Label": "액화 / 터미널 시설 Capa/가동률 변화",
+      "eventTypeLv1": "supply",
+      "eventTypeLv1Label": "공급",
+      "eventTypeLv2": "terminal_utilization_change",
+      "eventTypeLv2Label": "터미널 Utilization 변동",
       "sources": [
         "Reuters"
       ]
@@ -2624,10 +2624,10 @@
         }
       ],
       "analysisText": "우크라이나 에너지 인프라 공습은 TTF 중심의 지정학적 리스크 프리미엄을 유지시키는 이벤트다. 직접적인 LNG 생산·수입 설비 피해가 없기 때문에 JKM에는 유럽과의 카고 경쟁 심리를 통한 낮은 수준의 간접 상방 압력만 발생한다. HH 영향은 사실상 제한적이다.",
-      "eventTypeLv1": "geopolitical_risk",
-      "eventTypeLv1Label": "지정학적 리스크",
-      "eventTypeLv2": "war_military_conflict",
-      "eventTypeLv2Label": "전쟁 / 군사 분쟁",
+      "eventTypeLv1": "exogenous_shock",
+      "eventTypeLv1Label": "외생충격",
+      "eventTypeLv2": "geopolitical_tension_war",
+      "eventTypeLv2Label": "지정학적 긴장 및 전쟁·군사분쟁",
       "sources": [
         "Reuters"
       ]
@@ -2738,10 +2738,10 @@
         }
       ],
       "analysisText": "르완다군 철수 가능성과 카보델가도 보안 불확실성은 Mozambique LNG의 개발·재개 일정 리스크를 키운다. 현재 선적 차질이 아니라 미래 공급 지연 가능성이 핵심이므로 JKM과 TTF의 근월 영향은 낮다. 다만 장기 공급 포트폴리오 관점에서는 글로벌 LNG 공급 기대를 약화시키는 상방 리스크다.",
-      "eventTypeLv1": "geopolitical_risk",
-      "eventTypeLv1Label": "지정학적 리스크",
-      "eventTypeLv2": "war_military_conflict",
-      "eventTypeLv2Label": "전쟁 / 군사 분쟁",
+      "eventTypeLv1": "exogenous_shock",
+      "eventTypeLv1Label": "외생충격",
+      "eventTypeLv2": "geopolitical_tension_war",
+      "eventTypeLv2Label": "지정학적 긴장 및 전쟁·군사분쟁",
       "sources": [
         "Reuters"
       ]
@@ -2852,10 +2852,10 @@
         }
       ],
       "analysisText": "카타르 LNG 장기 중단은 입력 이벤트 중 가장 큰 단기 공급 충격이다. 글로벌 LNG 공급의 약 20%가 제약된 것으로 제시되어 아시아와 유럽 구매자가 동시에 대체 카고를 찾는 구조가 형성된다. 특히 장기계약 수요처의 긴급 현물 조달 필요가 JKM 프리미엄을 급격히 확대하며, TTF도 같은 방향으로 강한 상승 압력을 받는다.",
-      "eventTypeLv1": "infrastructure_facility",
-      "eventTypeLv1Label": "인프라 / 설비",
-      "eventTypeLv2": "liquefaction_terminal_facility_capacity_utilization_change",
-      "eventTypeLv2Label": "액화 / 터미널 시설 Capa/가동률 변화",
+      "eventTypeLv1": "supply",
+      "eventTypeLv1Label": "공급",
+      "eventTypeLv2": "terminal_utilization_change",
+      "eventTypeLv2Label": "터미널 Utilization 변동",
       "sources": [
         "Reuters"
       ]
@@ -3017,10 +3017,10 @@
         }
       ],
       "analysisText": "호르무즈 회피는 생산 중단이 아니더라도 도착 지연, 선복 제약, 보험료 상승을 통해 JKM에 강한 상방 프리미엄을 만든다. 특히 중동 LNG 의존도가 높은 아시아에서는 동일 물량이라도 인도 신뢰성이 낮아지며 긴급 조달 압력이 커진다. 유럽도 재주입 시즌 물량 확보 리스크를 반영해 TTF가 동반 상승할 수 있으나, HH 영향은 간접적이다.",
-      "eventTypeLv1": "logistics_shipping",
-      "eventTypeLv1Label": "물류 / 해운",
-      "eventTypeLv2": "cargo_flow_change_port_canal_disruption",
-      "eventTypeLv2Label": "화물 흐름 변화 / 항만·운하 차질",
+      "eventTypeLv1": "inventory_logistics",
+      "eventTypeLv1Label": "재고/운송/시장",
+      "eventTypeLv2": "supply_chain_cargo_flow",
+      "eventTypeLv2Label": "공급망 및 화물 흐름",
       "sources": [
         "Reuters"
       ]
@@ -3203,10 +3203,10 @@
         }
       ],
       "analysisText": "아시아와 유럽의 대체 LNG 확보 경쟁은 JKM 현물 가격 발견 기능을 강하게 자극하는 이벤트다. 남아시아·동남아 지표가 JKM과 패리티에 도달한 것은 아시아 내부 수요 경쟁이 넓어졌음을 의미한다. 중국의 가격 민감도와 저장 여력은 일부 완충 요인이지만, 근월 백워데이션 확대는 단기 상방 압력이 우세함을 보여준다.",
-      "eventTypeLv1": "supply_demand_balance",
-      "eventTypeLv1Label": "수급 밸런스",
-      "eventTypeLv2": "regional_demand_competition",
-      "eventTypeLv2Label": "지역간 수요 경쟁 (유럽 vs. 아시아)",
+      "eventTypeLv1": "inventory_logistics",
+      "eventTypeLv1Label": "재고/운송/시장",
+      "eventTypeLv2": "supply_chain_cargo_flow",
+      "eventTypeLv2Label": "공급망 및 화물 흐름",
       "sources": [
         "Reuters"
       ]
@@ -3389,10 +3389,10 @@
         }
       ],
       "analysisText": "North Field 확장 지연 우려는 단기 생산 이슈를 넘어 글로벌 LNG 공급 완화 내러티브를 약화시키는 신호다. 카타르 국내 산업에 대한 가스 배분 압박은 명목 설비 복구 이후에도 수출 정상화가 더딜 수 있음을 시사한다. JKM에는 원월 중심의 상방 압력이 크고, 단기 현물 영향은 기존 생산 차질 이슈와 중첩된다.",
-      "eventTypeLv1": "infrastructure_facility",
-      "eventTypeLv1Label": "인프라 / 설비",
-      "eventTypeLv2": "liquefaction_terminal_facility_capacity_utilization_change",
-      "eventTypeLv2Label": "액화 / 터미널 시설 Capa/가동률 변화",
+      "eventTypeLv1": "supply",
+      "eventTypeLv1Label": "공급",
+      "eventTypeLv2": "terminal_utilization_change",
+      "eventTypeLv2Label": "터미널 Utilization 변동",
       "sources": [
         "Reuters"
       ]
@@ -3554,10 +3554,10 @@
         }
       ],
       "analysisText": "LNG Canada 플레어링은 이미 중동 리스크로 타이트해진 JKM 시장에서 태평양 공급 신뢰성에 대한 추가 우려를 만든다. 그러나 생산 중단이나 선적 취소가 확인되지 않았고 정상 화물 흐름 정보도 있어 가격 영향은 심리적·단기 운용 리스크에 가깝다. 설비 정상화가 지연될 경우에만 JKM 영향이 더 커질 수 있다.",
-      "eventTypeLv1": "infrastructure_facility",
-      "eventTypeLv1Label": "인프라 / 설비",
-      "eventTypeLv2": "liquefaction_terminal_facility_capacity_utilization_change",
-      "eventTypeLv2Label": "액화 / 터미널 시설 Capa/가동률 변화",
+      "eventTypeLv1": "supply",
+      "eventTypeLv1Label": "공급",
+      "eventTypeLv2": "terminal_utilization_change",
+      "eventTypeLv2Label": "터미널 Utilization 변동",
       "sources": [
         "Reuters"
       ]
@@ -3694,10 +3694,10 @@
         }
       ],
       "analysisText": "러시아 제재 LNG의 중국 유입은 중동 차질로 높아진 JKM 상방 압력을 일부 상쇄하는 공급 완충 요인이다. 중국이 제재 물량을 반복적으로 수입하면 동북아 현물 조달 필요가 줄어들 수 있다. 그러나 제재 리스크로 인해 일반 상업 물량처럼 안정적으로 가격 하방을 만들기는 어렵다.",
-      "eventTypeLv1": "geopolitical_risk",
-      "eventTypeLv1Label": "지정학적 리스크",
+      "eventTypeLv1": "exogenous_shock",
+      "eventTypeLv1Label": "외생충격",
       "eventTypeLv2": "economic_sanctions_trade_restrictions",
-      "eventTypeLv2Label": "경제 제재 / 무역 제한",
+      "eventTypeLv2Label": "경제 제재 및 무역 제한",
       "sources": [
         "Reuters"
       ]
@@ -3859,8 +3859,8 @@
         }
       ],
       "analysisText": "미국 한파 전망은 HH에 직접적인 bullish 신호이며, JKM에는 미국산 LNG 원가 상승이라는 간접 경로로만 작용한다. 수출 포함 미국 가스 수요가 125bcfd로 제시된 점은 단기 수요 강도를 확인시킨다. 다만 재고 인출이 예상보다 작아 글로벌 LNG 가격으로 전이되는 강도는 낮다.",
-      "eventTypeLv1": "weather_climate",
-      "eventTypeLv1Label": "기상 / 기후",
+      "eventTypeLv1": "demand",
+      "eventTypeLv1Label": "수요",
       "eventTypeLv2": "winter_cold_wave",
       "eventTypeLv2Label": "겨울 한파",
       "sources": [
@@ -3945,8 +3945,8 @@
         }
       ],
       "analysisText": "온화한 미국 3월 예보는 HH에 직접적인 하방 압력을 주는 이벤트다. LNG 시장에서는 미국산 FOB 원가 하락을 통해 JKM·TTF에 약한 bearish 경로가 생기지만, 글로벌 물리 밸런스 변화는 제한적이다. 따라서 JKM 기준으로 driver_scoreboard에 포함할 만큼 강한 직접 driver는 없다.",
-      "eventTypeLv1": "weather_climate",
-      "eventTypeLv1Label": "기상 / 기후",
+      "eventTypeLv1": "demand",
+      "eventTypeLv1Label": "수요",
       "eventTypeLv2": "winter_cold_wave",
       "eventTypeLv2Label": "겨울 한파",
       "sources": [
@@ -4031,10 +4031,10 @@
         }
       ],
       "analysisText": "미국 리그·생산 증가는 HH에 직접적인 공급 부담을 만드는 bearish 이벤트다. 그러나 JKM 관점에서는 낮아진 미국 원가가 bearish인 반면 LNG feedgas 감소는 수출 물량 측면에서 반대 신호를 줄 수 있어 순효과가 약하다. 따라서 글로벌 LNG 현물보다 미국 내 가스 밸런스에 더 중요한 이벤트로 평가된다.",
-      "eventTypeLv1": "infrastructure_facility",
-      "eventTypeLv1Label": "인프라 / 설비",
-      "eventTypeLv2": "upstream_production_facility_capacity_utilization_change",
-      "eventTypeLv2Label": "상류 생산 시설 Capa/가동률 변화",
+      "eventTypeLv1": "supply",
+      "eventTypeLv1Label": "공급",
+      "eventTypeLv2": "upstream_utilization_change",
+      "eventTypeLv2Label": "Upstream Utilization 변동",
       "sources": [
         "Reuters"
       ]
@@ -4118,10 +4118,10 @@
         }
       ],
       "analysisText": "퍼미안 병목은 미국 가스 공급이 풍부하더라도 LNG 수출 터미널로의 이동성이 항상 보장되지 않음을 보여준다. JKM 관점에서는 HH 연동 가격 자체보다 향후 미국 feedgas 공급 신뢰성과 생산 증가율 둔화 가능성이 더 중요하다. 단기 현물 JKM을 크게 움직일 사안은 아니지만, 미국 LNG 공급 기대에는 낮은 수준의 bullish 리스크로 반영된다.",
-      "eventTypeLv1": "infrastructure_facility",
-      "eventTypeLv1Label": "인프라 / 설비",
-      "eventTypeLv2": "pipeline_transport_infrastructure_capacity_utilization_change",
-      "eventTypeLv2Label": "파이프라인/수송 인프라 Capa/가동률 변화",
+      "eventTypeLv1": "supply",
+      "eventTypeLv1Label": "공급",
+      "eventTypeLv2": "pipeline_utilization_change",
+      "eventTypeLv2Label": "파이프라인 Utilization 변동",
       "sources": [
         "Reuters"
       ]
@@ -4258,10 +4258,10 @@
         }
       ],
       "analysisText": "데이터센터 전력수요 증가는 LNG 현물 밸런스보다 미국 내 가스 수요곡선에 더 직접적인 이벤트다. JKM에는 HH 기반 미국 LNG 조달비 상승 가능성을 통해 낮은 수준의 bullish 압력을 준다. 영향의 핵심은 단기 카고 부족이 아니라 장기적으로 미국 내수와 LNG 수출이 동일한 가스 공급을 두고 경쟁할 수 있다는 점이다.",
-      "eventTypeLv1": "supply_demand_balance",
-      "eventTypeLv1Label": "수급 밸런스",
-      "eventTypeLv2": "regional_demand_competition",
-      "eventTypeLv2Label": "지역간 수요 경쟁 (유럽 vs. 아시아)",
+      "eventTypeLv1": "inventory_logistics",
+      "eventTypeLv1Label": "재고/운송/시장",
+      "eventTypeLv2": "supply_chain_cargo_flow",
+      "eventTypeLv2Label": "공급망 및 화물 흐름",
       "sources": [
         "Reuters"
       ]
@@ -4397,10 +4397,10 @@
         }
       ],
       "analysisText": "Rio Grande 4·5호기 승인은 즉각적인 현물 공급 증가는 아니지만, 글로벌 LNG 원월 공급 기대를 완화하는 이벤트다. 1,200만 톤/년은 JKM 장기 가격과 구매자 협상력에 반영될 수 있는 의미 있는 규모다. 따라서 JKM에는 근월보다 중장기 구간에서 medium 수준의 bearish 영향으로 평가된다.",
-      "eventTypeLv1": "infrastructure_facility",
-      "eventTypeLv1Label": "인프라 / 설비",
-      "eventTypeLv2": "liquefaction_terminal_facility_capacity_utilization_change",
-      "eventTypeLv2Label": "액화 / 터미널 시설 Capa/가동률 변화",
+      "eventTypeLv1": "supply",
+      "eventTypeLv1Label": "공급",
+      "eventTypeLv2": "terminal_utilization_change",
+      "eventTypeLv2Label": "터미널 Utilization 변동",
       "sources": [
         "Reuters"
       ]
@@ -4536,10 +4536,10 @@
         }
       ],
       "analysisText": "Arctic Metagaz 표류는 단일 선박 이슈이지만, 전쟁·제재 환경에서 LNG 운송 자산의 취약성을 부각한다. JKM에는 러시아 대체 물량의 신뢰성 저하와 운송 프리미엄을 통해 낮은 수준의 bullish 영향을 준다. 영향의 중심은 아시아보다는 유럽이며, 글로벌 물리적 공급 차질로 확대되었다는 증거는 아직 제한적이다.",
-      "eventTypeLv1": "logistics_shipping",
-      "eventTypeLv1Label": "물류 / 해운",
-      "eventTypeLv2": "cargo_flow_change_port_canal_disruption",
-      "eventTypeLv2Label": "화물 흐름 변화 / 항만·운하 차질",
+      "eventTypeLv1": "inventory_logistics",
+      "eventTypeLv1Label": "재고/운송/시장",
+      "eventTypeLv2": "supply_chain_cargo_flow",
+      "eventTypeLv2Label": "공급망 및 화물 흐름",
       "sources": [
         "Reuters"
       ]
@@ -4675,10 +4675,10 @@
         }
       ],
       "analysisText": "세네갈 계약 재검토는 단기 LNG 현물 부족을 만드는 이벤트는 아니다. 그러나 GTA와 Yakaar-Teranga 같은 서아프리카 공급원의 일정 불확실성이 커지면 장기 글로벌 공급 완화 기대가 일부 약해진다. JKM 영향은 원월 중심의 low bullish로 제한된다.",
-      "eventTypeLv1": "infrastructure_facility",
-      "eventTypeLv1Label": "인프라 / 설비",
-      "eventTypeLv2": "upstream_production_facility_capacity_utilization_change",
-      "eventTypeLv2Label": "상류 생산 시설 Capa/가동률 변화",
+      "eventTypeLv1": "supply",
+      "eventTypeLv1Label": "공급",
+      "eventTypeLv2": "upstream_utilization_change",
+      "eventTypeLv2Label": "Upstream Utilization 변동",
       "sources": [
         "Reuters"
       ]
@@ -4814,10 +4814,10 @@
         }
       ],
       "analysisText": "러시아 원유 제재 유예는 LNG 물리적 수급이 아니라 에너지 복합시장 심리와 대체연료 가용성을 통해 작용한다. JKM에는 중동·호르무즈 리스크로 높아진 프리미엄의 일부를 완화하는 low bearish 요인이다. 실제 LNG 카고 공급 증가가 아니므로 하방 영향은 제한적이다.",
-      "eventTypeLv1": "geopolitical_risk",
-      "eventTypeLv1Label": "지정학적 리스크",
+      "eventTypeLv1": "exogenous_shock",
+      "eventTypeLv1Label": "외생충격",
       "eventTypeLv2": "economic_sanctions_trade_restrictions",
-      "eventTypeLv2Label": "경제 제재 / 무역 제한",
+      "eventTypeLv2Label": "경제 제재 및 무역 제한",
       "sources": [
         "Reuters"
       ]
@@ -4953,10 +4953,10 @@
         }
       ],
       "analysisText": "중동 전쟁 확산은 LNG 생산시설 리스크, 해상운송 리스크, 보험료, 구매자 재고확보 심리를 동시에 자극하는 복합 이벤트다. JKM은 카타르와 UAE 물량의 공급 안정성에 직접 노출되어 high 수준의 bullish 영향을 받는다. 실제 물리적 차질이 아직 확정되지 않았더라도, 시장은 선제적으로 긴급 조달과 리스크 프리미엄을 가격에 반영하기 쉽다.",
-      "eventTypeLv1": "geopolitical_risk",
-      "eventTypeLv1Label": "지정학적 리스크",
-      "eventTypeLv2": "war_military_conflict",
-      "eventTypeLv2Label": "전쟁 / 군사 분쟁",
+      "eventTypeLv1": "exogenous_shock",
+      "eventTypeLv1Label": "외생충격",
+      "eventTypeLv2": "geopolitical_tension_war",
+      "eventTypeLv2Label": "지정학적 긴장 및 전쟁·군사분쟁",
       "sources": [
         "Reuters"
       ]
@@ -5139,10 +5139,10 @@
         }
       ],
       "analysisText": "호르무즈 사실상 폐쇄는 단순한 운임 상승이 아니라 페르시아만 LNG 수출의 핵심 병목이 막히는 사건이다. JKM은 카타르 및 중동 LNG 의존도와 대체 카고 확보 경쟁 때문에 extreme bullish 영향을 받는다. TTF도 글로벌 LNG 조달 경쟁을 통해 강한 상방 압력을 받지만, 지역적 직접성은 JKM이 더 크다.",
-      "eventTypeLv1": "logistics_shipping",
-      "eventTypeLv1Label": "물류 / 해운",
-      "eventTypeLv2": "cargo_flow_change_port_canal_disruption",
-      "eventTypeLv2Label": "화물 흐름 변화 / 항만·운하 차질",
+      "eventTypeLv1": "inventory_logistics",
+      "eventTypeLv1Label": "재고/운송/시장",
+      "eventTypeLv2": "supply_chain_cargo_flow",
+      "eventTypeLv2Label": "공급망 및 화물 흐름",
       "sources": [
         "Reuters"
       ]
@@ -5367,10 +5367,10 @@
         }
       ],
       "analysisText": "카타르 LNG 생산·선적 차질 가능성은 아시아와 유럽 모두에 공급안보 프리미엄을 부여하지만, 장기계약 의존도가 높은 아시아 구매자의 현물 대체 조달 가능성 때문에 JKM 영향이 더 크다. Platts 오퍼 게시 제한까지 더해지며 가격발견 불확실성이 확대되고, 이는 현물 구매 경쟁을 심화시키는 방향이다. HH는 미국 내 수급과 직접 연결되지 않아 영향이 미미하다.",
-      "eventTypeLv1": "infrastructure_facility",
-      "eventTypeLv1Label": "인프라 / 설비",
-      "eventTypeLv2": "liquefaction_terminal_facility_capacity_utilization_change",
-      "eventTypeLv2Label": "액화 / 터미널 시설 Capa/가동률 변화",
+      "eventTypeLv1": "supply",
+      "eventTypeLv1Label": "공급",
+      "eventTypeLv2": "terminal_utilization_change",
+      "eventTypeLv2Label": "터미널 Utilization 변동",
       "sources": [
         "Reuters"
       ]
@@ -5532,10 +5532,10 @@
         }
       ],
       "analysisText": "대서양 LNG의 아시아 전환은 단기적으로 JKM을 가장 직접적으로 지지하는 물류 이벤트다. 운임 급등과 항로 우회는 단순 비용 상승을 넘어 차익거래 가능 물량을 줄여 아시아 도착 물량의 희소성을 높인다. 유럽도 카고 이탈과 확보비용 상승으로 TTF 하방이 제한되지만, HH 영향은 거의 없다.",
-      "eventTypeLv1": "logistics_shipping",
-      "eventTypeLv1Label": "물류 / 해운",
-      "eventTypeLv2": "cargo_flow_change_port_canal_disruption",
-      "eventTypeLv2Label": "화물 흐름 변화 / 항만·운하 차질",
+      "eventTypeLv1": "inventory_logistics",
+      "eventTypeLv1Label": "재고/운송/시장",
+      "eventTypeLv2": "supply_chain_cargo_flow",
+      "eventTypeLv2Label": "공급망 및 화물 흐름",
       "sources": [
         "Reuters"
       ]
@@ -5718,10 +5718,10 @@
         }
       ],
       "analysisText": "유럽 저장률 저위는 TTF에 가장 직접적인 강세 요인이며, 여름 주입 수요가 가격 하방을 제한한다. 글로벌 LNG 관점에서는 유럽의 재충전 수요가 아시아와 유연 물량 경쟁을 만들 수 있어 JKM에도 중간 수준의 강세 압력이 발생한다. 다만 높은 기온과 산업수요 부진은 단기 강세 폭을 일부 제한한다.",
-      "eventTypeLv1": "supply_demand_balance",
-      "eventTypeLv1Label": "수급 밸런스",
-      "eventTypeLv2": "inventory_storage_level",
-      "eventTypeLv2Label": "재고 / 저장 수준",
+      "eventTypeLv1": "inventory_logistics",
+      "eventTypeLv1Label": "재고/운송/시장",
+      "eventTypeLv2": "inventory_level",
+      "eventTypeLv2Label": "재고 수준",
       "sources": [
         "Reuters"
       ]
@@ -5857,10 +5857,10 @@
         }
       ],
       "analysisText": "방글라데시의 고가 현물 3카고 구매는 아시아 수요자가 가격 부담에도 필수 전력·산업 수요를 충족하기 위해 현물 시장에 진입하고 있음을 보여준다. QatarEnergy 장기계약 차질 이후의 대체 조달이라는 점에서 JKM에는 중간 수준의 강세 신호다. 물량 규모가 글로벌 전체를 흔들 정도는 아니므로 TTF와 HH 영향은 제한적이다.",
-      "eventTypeLv1": "supply_demand_balance",
-      "eventTypeLv1Label": "수급 밸런스",
-      "eventTypeLv2": "regional_demand_competition",
-      "eventTypeLv2Label": "지역간 수요 경쟁 (유럽 vs. 아시아)",
+      "eventTypeLv1": "inventory_logistics",
+      "eventTypeLv1Label": "재고/운송/시장",
+      "eventTypeLv2": "supply_chain_cargo_flow",
+      "eventTypeLv2Label": "공급망 및 화물 흐름",
       "sources": [
         "Reuters"
       ]
@@ -6022,10 +6022,10 @@
         }
       ],
       "analysisText": "EU의 러시아 가스·LNG 퇴출 의무화는 단기 물리 차질보다 유럽 조달 구조 변화에 의미가 크다. TTF에는 구조적 강세 프리미엄을 부여하고, 유럽의 비러시아 LNG 확보가 확대되면 아시아와 장기·현물 물량 경쟁이 커져 JKM에도 중간 수준의 상방 압력이 전이된다. HH는 미국 LNG 수출 기대를 통해 낮은 수준의 강세 요인을 갖는다.",
-      "eventTypeLv1": "geopolitical_risk",
-      "eventTypeLv1Label": "지정학적 리스크",
+      "eventTypeLv1": "exogenous_shock",
+      "eventTypeLv1Label": "외생충격",
       "eventTypeLv2": "economic_sanctions_trade_restrictions",
-      "eventTypeLv2Label": "경제 제재 / 무역 제한",
+      "eventTypeLv2Label": "경제 제재 및 무역 제한",
       "sources": [
         "Reuters"
       ]
@@ -6161,10 +6161,10 @@
         }
       ],
       "analysisText": "TurkStream 연계시설 공격은 실제 물리적 차질이 없더라도 유럽 잔존 러시아 공급 경로의 신뢰성을 낮추는 이벤트다. TTF에는 직접적인 공급안보 프리미엄이 붙을 수 있으며, 유럽의 LNG 대체수요 기대를 통해 JKM에도 낮은 수준의 상방 압력이 전이된다. HH는 지역적으로 분리되어 영향이 거의 없다.",
-      "eventTypeLv1": "infrastructure_facility",
-      "eventTypeLv1Label": "인프라 / 설비",
-      "eventTypeLv2": "pipeline_transport_infrastructure_capacity_utilization_change",
-      "eventTypeLv2Label": "파이프라인/수송 인프라 Capa/가동률 변화",
+      "eventTypeLv1": "supply",
+      "eventTypeLv1Label": "공급",
+      "eventTypeLv2": "pipeline_utilization_change",
+      "eventTypeLv2Label": "파이프라인 Utilization 변동",
       "sources": [
         "Reuters"
       ]
@@ -6300,10 +6300,10 @@
         }
       ],
       "analysisText": "Freeport LNG 전 트레인 재가동은 글로벌 LNG 공급 완충 요인으로, JKM과 TTF의 지정학적 공급 프리미엄을 낮추는 방향이다. 미국산 LNG는 유럽과 아시아 모두로 이동 가능한 유연 공급원이므로 현물 시장의 대체 가능 물량을 늘린다. 반대로 미국 내에서는 피드가스 수요 증가로 HH에 중간 수준의 강세 압력이 발생한다.",
-      "eventTypeLv1": "infrastructure_facility",
-      "eventTypeLv1Label": "인프라 / 설비",
-      "eventTypeLv2": "liquefaction_terminal_facility_capacity_utilization_change",
-      "eventTypeLv2Label": "액화 / 터미널 시설 Capa/가동률 변화",
+      "eventTypeLv1": "supply",
+      "eventTypeLv1Label": "공급",
+      "eventTypeLv2": "terminal_utilization_change",
+      "eventTypeLv2Label": "터미널 Utilization 변동",
       "sources": [
         "Reuters"
       ]
@@ -6465,10 +6465,10 @@
         }
       ],
       "analysisText": "와하 허브 마이너스 가격은 미국 가스 생산의 풍부함과 퍼미안 수송 병목을 동시에 보여준다. LNG 수입지 관점에서는 낮은 원료가스 가격이 미국 LNG 수출 경제성을 높여 JKM과 TTF에 약한 약세 요인이지만, 병목이 실제 액화터미널 공급 확대를 제한할 수 있어 영향은 낮다. HH에는 미국 내 공급과잉 심리로 중간 수준의 약세 압력이 전이된다.",
-      "eventTypeLv1": "infrastructure_facility",
-      "eventTypeLv1Label": "인프라 / 설비",
-      "eventTypeLv2": "pipeline_transport_infrastructure_capacity_utilization_change",
-      "eventTypeLv2Label": "파이프라인/수송 인프라 Capa/가동률 변화",
+      "eventTypeLv1": "supply",
+      "eventTypeLv1Label": "공급",
+      "eventTypeLv2": "pipeline_utilization_change",
+      "eventTypeLv2Label": "파이프라인 Utilization 변동",
       "sources": [
         "Reuters"
       ]
@@ -6604,10 +6604,10 @@
         }
       ],
       "analysisText": "EU의 원산지 규정 유연화는 유럽 LNG 통관 병목을 완화해 TTF의 단기 공급 리스크 프리미엄을 낮추는 요인이다. JKM에는 유럽발 긴급 조달 경쟁과 선박 대기 리스크가 일부 줄어드는 약한 약세요인으로 작용한다. 다만 러시아산 가스 퇴출이라는 구조적 조달 압력은 남아 있어 글로벌 가격 하락 효과는 제한적이다.",
-      "eventTypeLv1": "geopolitical_risk",
-      "eventTypeLv1Label": "지정학적 리스크",
+      "eventTypeLv1": "exogenous_shock",
+      "eventTypeLv1Label": "외생충격",
       "eventTypeLv2": "economic_sanctions_trade_restrictions",
-      "eventTypeLv2Label": "경제 제재 / 무역 제한",
+      "eventTypeLv2Label": "경제 제재 및 무역 제한",
       "sources": [
         "Reuters"
       ]
@@ -6743,10 +6743,10 @@
         }
       ],
       "analysisText": "EU의 에너지 비용 완화책은 유럽 산업 수요 파괴를 줄여 TTF에 완만한 강세 압력을 줄 수 있다. 유럽이 LNG 수입 수요를 유지하면 아시아와의 현물 카고 경쟁이 완전히 해소되지 않아 JKM에도 약한 강세요인이다. 다만 가격상한제는 거래가격 신호를 왜곡할 수 있어 실제 물리 수요 증가 폭은 정책 설계에 좌우된다.",
-      "eventTypeLv1": "market_trading_structure",
-      "eventTypeLv1Label": "시장 / 거래 구조",
-      "eventTypeLv2": "transaction_hedging_cost_change",
-      "eventTypeLv2Label": "거래 / 헷징 비용 변동",
+      "eventTypeLv1": "inventory_logistics",
+      "eventTypeLv1Label": "재고/운송/시장",
+      "eventTypeLv2": "transaction_hedging",
+      "eventTypeLv2Label": "거래 및 헷징",
       "sources": [
         "Reuters"
       ]
@@ -6882,10 +6882,10 @@
         }
       ],
       "analysisText": "Argent LNG의 2,500만 톤 프로젝트 신청은 중장기 글로벌 LNG 공급 확대 가능성을 보여주는 약세요인이다. JKM과 TTF에는 미래 공급곡선 완화로 작용하지만, 단기 현물 가격에는 승인과 건설 리드타임 때문에 영향이 작다. 반대로 HH에는 장래 피드가스 수요 증가 기대를 통해 약한 강세요인으로 해석된다.",
-      "eventTypeLv1": "infrastructure_facility",
-      "eventTypeLv1Label": "인프라 / 설비",
-      "eventTypeLv2": "liquefaction_terminal_facility_capacity_utilization_change",
-      "eventTypeLv2Label": "액화 / 터미널 시설 Capa/가동률 변화",
+      "eventTypeLv1": "supply",
+      "eventTypeLv1Label": "공급",
+      "eventTypeLv2": "terminal_utilization_change",
+      "eventTypeLv2Label": "터미널 Utilization 변동",
       "sources": [
         "Reuters"
       ]
@@ -7047,10 +7047,10 @@
         }
       ],
       "analysisText": "유럽의 온화한 기온과 약한 산업활동은 TTF의 단기 수요 압력을 낮추는 약세요인이다. JKM도 일본 전력 LNG 재고가 높은 상태라 동북아 근월 구매 필요가 줄어드는 영향을 받는다. 다만 유럽의 낮은 저장률과 여름 주입 수요가 남아 있어 구조적 하락보다는 상승세를 완충하는 성격이 강하다.",
-      "eventTypeLv1": "infrastructure_facility",
-      "eventTypeLv1Label": "인프라 / 설비",
-      "eventTypeLv2": "pipeline_transport_infrastructure_capacity_utilization_change",
-      "eventTypeLv2Label": "파이프라인/수송 인프라 Capa/가동률 변화",
+      "eventTypeLv1": "supply",
+      "eventTypeLv1Label": "공급",
+      "eventTypeLv2": "pipeline_utilization_change",
+      "eventTypeLv2Label": "파이프라인 Utilization 변동",
       "sources": [
         "Reuters"
       ]
@@ -7233,10 +7233,10 @@
         }
       ],
       "analysisText": "남아시아의 가스 배급과 대체연료 확대는 고가 LNG 환경에서 신흥국 수요가 빠르게 조정될 수 있음을 보여준다. 방글라데시와 인도의 현물 조달 필요는 남아 있지만, 발전·산업 부문 소비 통제가 실제 LNG 수요를 제한해 JKM에는 중간 수준의 약세요인이다. TTF에는 아시아 경쟁 완화라는 간접 경로만 존재한다.",
-      "eventTypeLv1": "infrastructure_facility",
-      "eventTypeLv1Label": "인프라 / 설비",
-      "eventTypeLv2": "liquefaction_terminal_facility_capacity_utilization_change",
-      "eventTypeLv2Label": "액화 / 터미널 시설 Capa/가동률 변화",
+      "eventTypeLv1": "supply",
+      "eventTypeLv1Label": "공급",
+      "eventTypeLv2": "terminal_utilization_change",
+      "eventTypeLv2Label": "터미널 Utilization 변동",
       "sources": [
         "Reuters"
       ]
@@ -7419,10 +7419,10 @@
         }
       ],
       "analysisText": "카타르 불가항력은 글로벌 LNG 공급의 약 20%에 해당하는 물량 리스크로, JKM과 TTF 모두에 극단적인 공급 프리미엄을 부여한다. 제한된 대체 액화능력 때문에 아시아와 유럽은 같은 현물 물량을 두고 경쟁하게 된다. 호르무즈 통항 불확실성까지 결합되어 단순 생산 차질이 아니라 공급·물류 복합 충격으로 작용한다.",
-      "eventTypeLv1": "infrastructure_facility",
-      "eventTypeLv1Label": "인프라 / 설비",
-      "eventTypeLv2": "liquefaction_terminal_facility_capacity_utilization_change",
-      "eventTypeLv2Label": "액화 / 터미널 시설 Capa/가동률 변화",
+      "eventTypeLv1": "supply",
+      "eventTypeLv1Label": "공급",
+      "eventTypeLv2": "terminal_utilization_change",
+      "eventTypeLv2Label": "터미널 Utilization 변동",
       "sources": [
         "Reuters"
       ]
@@ -7626,10 +7626,10 @@
         }
       ],
       "analysisText": "호르무즈 통항 급감은 글로벌 LNG의 약 20%가 지나는 핵심 경로의 기능 저하를 의미해 JKM에 매우 강한 물류·공급 리스크를 부여한다. 일본 선사 통항 중단과 인도향 불가항력 통지는 아시아 구매자의 물리적 수급 불안을 직접 키운다. 미국산 카고의 아시아 전환은 JKM 프리미엄이 실제 화물 흐름을 바꿀 만큼 강하다는 신호이며, 유럽에는 공급 손실 압력으로 작용한다.",
-      "eventTypeLv1": "logistics_shipping",
-      "eventTypeLv1Label": "물류 / 해운",
-      "eventTypeLv2": "cargo_flow_change_port_canal_disruption",
-      "eventTypeLv2Label": "화물 흐름 변화 / 항만·운하 차질",
+      "eventTypeLv1": "inventory_logistics",
+      "eventTypeLv1Label": "재고/운송/시장",
+      "eventTypeLv2": "supply_chain_cargo_flow",
+      "eventTypeLv2Label": "공급망 및 화물 흐름",
       "sources": [
         "Reuters"
       ]
@@ -7833,10 +7833,10 @@
         }
       ],
       "analysisText": "JKM-NWE 스프레드 확대는 아시아 시장이 유럽보다 높은 가격으로 LNG 카고를 끌어오는 강한 신호다. 대서양권 화물의 동진은 JKM의 현재 강세를 확인하는 동시에, 시간이 지나면 아시아 공급을 일부 보강해 상승폭을 완충할 수 있다. 유럽은 낮은 저장률 때문에 물량을 잃지 않기 위해 TTF와 DES NWE 가격을 방어해야 하는 압력을 받는다.",
-      "eventTypeLv1": "market_trading_structure",
-      "eventTypeLv1Label": "시장 / 거래 구조",
-      "eventTypeLv2": "inter_index_spread_gap",
-      "eventTypeLv2Label": "인덱스별 스프레드 Gap",
+      "eventTypeLv1": "inventory_logistics",
+      "eventTypeLv1Label": "재고/운송/시장",
+      "eventTypeLv2": "index_spread",
+      "eventTypeLv2Label": "인덱스 Spread",
       "sources": [
         "Reuters"
       ]
@@ -8019,10 +8019,10 @@
         }
       ],
       "analysisText": "유럽과 영국의 저재고는 여름 주입기 LNG 수요를 강화해 TTF에 가장 강한 상승 압력을 준다. JKM도 유럽과의 카고 경쟁 때문에 지지되지만, 일본 재고가 높은 점이 동북아 긴급 조달 압력을 낮춰 상승폭을 제한한다. HH는 미국 내 생산·날씨 요인이 더 중요해 영향이 작다.",
-      "eventTypeLv1": "supply_demand_balance",
-      "eventTypeLv1Label": "수급 밸런스",
-      "eventTypeLv2": "inventory_storage_level",
-      "eventTypeLv2Label": "재고 / 저장 수준",
+      "eventTypeLv1": "inventory_logistics",
+      "eventTypeLv1Label": "재고/운송/시장",
+      "eventTypeLv2": "inventory_level",
+      "eventTypeLv2Label": "재고 수준",
       "sources": [
         "Reuters"
       ]
@@ -8158,10 +8158,10 @@
         }
       ],
       "analysisText": "Nyhamna 압축기 고장은 유럽 파이프라인 공급을 직접 축소해 TTF에 강한 상승 압력을 준다. 유럽이 부족분을 LNG로 대체하려 할 경우 아시아 현물 카고 경쟁이 커져 JKM도 중간 수준으로 지지된다. HH는 지역적 연결성이 약해 영향이 거의 없다.",
-      "eventTypeLv1": "infrastructure_facility",
-      "eventTypeLv1Label": "인프라 / 설비",
-      "eventTypeLv2": "pipeline_transport_infrastructure_capacity_utilization_change",
-      "eventTypeLv2Label": "파이프라인/수송 인프라 Capa/가동률 변화",
+      "eventTypeLv1": "supply",
+      "eventTypeLv1Label": "공급",
+      "eventTypeLv2": "pipeline_utilization_change",
+      "eventTypeLv2Label": "파이프라인 Utilization 변동",
       "sources": [
         "Reuters"
       ]
@@ -8297,10 +8297,10 @@
         }
       ],
       "analysisText": "아시아 구매자들의 현물 조달 확대는 JKM에 직접적인 강세 요인이다. 대만·인도·태국 수요가 동시에 나타나면 가용 카고가 빠르게 흡수되어 공급 차질 국면의 가격 상승을 증폭시킬 수 있다. 유럽에도 간접적으로 LNG 확보 비용을 높이는 압력이 생기지만, HH 영향은 작다.",
-      "eventTypeLv1": "supply_demand_balance",
-      "eventTypeLv1Label": "수급 밸런스",
-      "eventTypeLv2": "regional_demand_competition",
-      "eventTypeLv2Label": "지역간 수요 경쟁 (유럽 vs. 아시아)",
+      "eventTypeLv1": "inventory_logistics",
+      "eventTypeLv1Label": "재고/운송/시장",
+      "eventTypeLv2": "supply_chain_cargo_flow",
+      "eventTypeLv2Label": "공급망 및 화물 흐름",
       "sources": [
         "Reuters"
       ]
@@ -8462,10 +8462,10 @@
         }
       ],
       "analysisText": "우크라이나 가스시설 공격은 물리적 차질 규모보다 유럽 전쟁 리스크 프리미엄을 확대하는 성격이 강하다. TTF는 저재고·노르웨이 차질과 결합해 중간 수준의 상승 압력을 받을 수 있다. JKM은 유럽의 LNG 경쟁 심리 경로로 낮은 수준의 강세 영향을 받으며, HH 영향은 미미하다.",
-      "eventTypeLv1": "infrastructure_facility",
-      "eventTypeLv1Label": "인프라 / 설비",
-      "eventTypeLv2": "upstream_production_facility_capacity_utilization_change",
-      "eventTypeLv2Label": "상류 생산 시설 Capa/가동률 변화",
+      "eventTypeLv1": "supply",
+      "eventTypeLv1Label": "공급",
+      "eventTypeLv2": "upstream_utilization_change",
+      "eventTypeLv2Label": "Upstream Utilization 변동",
       "sources": [
         "Reuters"
       ]
@@ -8575,10 +8575,10 @@
         }
       ],
       "analysisText": "Freeport의 빠른 재가동은 미국 LNG 공급 불안을 낮춰 JKM과 TTF에 약세 압력을 준다. 그러나 피드가스가 아직 완전 정상 수준은 아니며, 더 큰 지정학·물류 리스크가 남아 있어 약세 효과는 부분적이다. HH에는 수출 설비의 피드가스 수요 회복으로 소폭 강세 요인이 된다.",
-      "eventTypeLv1": "infrastructure_facility",
-      "eventTypeLv1Label": "인프라 / 설비",
-      "eventTypeLv2": "liquefaction_terminal_facility_capacity_utilization_change",
-      "eventTypeLv2Label": "액화 / 터미널 시설 Capa/가동률 변화",
+      "eventTypeLv1": "supply",
+      "eventTypeLv1Label": "공급",
+      "eventTypeLv2": "terminal_utilization_change",
+      "eventTypeLv2Label": "터미널 Utilization 변동",
       "sources": [
         "Reuters"
       ]
@@ -8714,10 +8714,10 @@
         }
       ],
       "analysisText": "LNG Canada의 최대가동에 가까운 생산은 아시아향 공급을 늘려 JKM에 약세·완충 효과를 준다. 일본, 한국, 필리핀으로 향하는 태평양 Basin 물량은 중동 물류 리스크가 부각된 상황에서 조달 안정성을 높인다. 다만 연 1,400만 톤 규모만으로 대형 공급 차질을 완전히 상쇄하기는 어렵다.",
-      "eventTypeLv1": "infrastructure_facility",
-      "eventTypeLv1Label": "인프라 / 설비",
-      "eventTypeLv2": "liquefaction_terminal_facility_capacity_utilization_change",
-      "eventTypeLv2Label": "액화 / 터미널 시설 Capa/가동률 변화",
+      "eventTypeLv1": "supply",
+      "eventTypeLv1Label": "공급",
+      "eventTypeLv2": "terminal_utilization_change",
+      "eventTypeLv2Label": "터미널 Utilization 변동",
       "sources": [
         "Reuters"
       ]
@@ -8853,8 +8853,8 @@
         }
       ],
       "analysisText": "미국의 온화한 예보와 높은 생산은 HH에 직접적인 약세 요인이다. 그러나 미국 내 가격 약세가 LNG 수출 확대를 통해 JKM이나 TTF로 즉시 전달되기에는 액화설비 병목이 존재한다. 따라서 글로벌 LNG 지표에는 영향이 제한적이고 HH와 JKM·TTF 간 괴리가 커질 수 있다.",
-      "eventTypeLv1": "weather_climate",
-      "eventTypeLv1Label": "기상 / 기후",
+      "eventTypeLv1": "demand",
+      "eventTypeLv1Label": "수요",
       "eventTypeLv2": "winter_cold_wave",
       "eventTypeLv2Label": "겨울 한파",
       "sources": [
@@ -8939,10 +8939,10 @@
         }
       ],
       "analysisText": "EIA의 미국 생산 최고 전망은 HH에 중기 약세 요인으로 가장 직접적으로 작용한다. JKM과 TTF에는 낮은 미국 원료가스 비용이 LNG 수출 경쟁력을 높이는 경로로 약세 압력을 줄 수 있지만, 실제 영향은 액화설비 확장과 수출 가능 물량에 달려 있다. 따라서 글로벌 LNG 가격 영향은 낮은 수준의 중기 공급 완화 신호로 해석된다.",
-      "eventTypeLv1": "infrastructure_facility",
-      "eventTypeLv1Label": "인프라 / 설비",
-      "eventTypeLv2": "upstream_production_facility_capacity_utilization_change",
-      "eventTypeLv2Label": "상류 생산 시설 Capa/가동률 변화",
+      "eventTypeLv1": "supply",
+      "eventTypeLv1Label": "공급",
+      "eventTypeLv2": "upstream_utilization_change",
+      "eventTypeLv2Label": "Upstream Utilization 변동",
       "sources": [
         "Reuters"
       ]
@@ -9052,10 +9052,10 @@
         }
       ],
       "analysisText": "일본 원전 재가동은 동북아 LNG 수요의 구조적 약세 요인으로, JKM에는 중기 bearish 압력을 준다. 전력 피크 시 LNG 화력의 역할이 줄어들면 일본의 현물 구매 필요성이 낮아져 아시아 수급 타이트닝을 완화한다. 다만 현재의 카타르·호르무즈 관련 단기 공급 리스크가 더 크기 때문에 가격 하락 압력은 중기 상단 제한 성격이 강하다.",
-      "eventTypeLv1": "energy_mix_transition",
-      "eventTypeLv1Label": "에너지 믹스 전환",
-      "eventTypeLv2": "nuclear_power_expansion_reduction",
-      "eventTypeLv2Label": "원자력 발전 확대 / 축소",
+      "eventTypeLv1": "demand",
+      "eventTypeLv1Label": "수요",
+      "eventTypeLv2": "nuclear_power",
+      "eventTypeLv2Label": "원자력 발전",
       "sources": [
         "Reuters"
       ]
@@ -9191,10 +9191,10 @@
         }
       ],
       "analysisText": "EU 메탄 규제는 물리적 생산 감소보다는 거래 가능 공급 풀과 비용 구조를 바꾸는 정책 리스크다. JKM 관점에서는 유럽이 규정 적합 LNG를 선점하면 아시아 구매자와의 경쟁이 커질 수 있어 중기 bullish 요인이다. 반면 규제 미충족 물량이 아시아로 우회될 가능성도 있어 JKM 영향은 TTF보다 작다.",
-      "eventTypeLv1": "geopolitical_risk",
-      "eventTypeLv1Label": "지정학적 리스크",
+      "eventTypeLv1": "exogenous_shock",
+      "eventTypeLv1Label": "외생충격",
       "eventTypeLv2": "economic_sanctions_trade_restrictions",
-      "eventTypeLv2Label": "경제 제재 / 무역 제한",
+      "eventTypeLv2Label": "경제 제재 및 무역 제한",
       "sources": [
         "Reuters"
       ]
@@ -9330,10 +9330,10 @@
         }
       ],
       "analysisText": "스페인 수입 증가는 유럽이 여름 주입기 전 LNG 확보를 지속해야 함을 보여준다. JKM 관점에서는 유럽의 대서양 화물 방어 수요가 아시아향 전환을 어렵게 만들어 현물 경쟁을 높이는 요인이다. 단일 국가 수입 증가에 기반한 이벤트이므로 JKM 가격 영향은 medium 수준으로 평가된다.",
-      "eventTypeLv1": "supply_demand_balance",
-      "eventTypeLv1Label": "수급 밸런스",
-      "eventTypeLv2": "regional_demand_competition",
-      "eventTypeLv2Label": "지역간 수요 경쟁 (유럽 vs. 아시아)",
+      "eventTypeLv1": "inventory_logistics",
+      "eventTypeLv1Label": "재고/운송/시장",
+      "eventTypeLv2": "supply_chain_cargo_flow",
+      "eventTypeLv2Label": "공급망 및 화물 흐름",
       "sources": [
         "Reuters"
       ]
@@ -9495,10 +9495,10 @@
         }
       ],
       "analysisText": "태평양 운임 급등은 JKM 착지비를 직접 끌어올리는 물류발 bullish 요인이다. 높은 운임은 일부 차익거래를 억제하지만, 공급 불안이 큰 상황에서는 아시아 구매자가 더 높은 DES 비용을 수용할 가능성이 크다. 따라서 JKM 프리미엄 지속에 기여하며 TTF에는 보다 간접적인 비용 상승 압력을 준다.",
-      "eventTypeLv1": "logistics_shipping",
-      "eventTypeLv1Label": "물류 / 해운",
-      "eventTypeLv2": "cargo_flow_change_port_canal_disruption",
-      "eventTypeLv2Label": "화물 흐름 변화 / 항만·운하 차질",
+      "eventTypeLv1": "inventory_logistics",
+      "eventTypeLv1Label": "재고/운송/시장",
+      "eventTypeLv2": "supply_chain_cargo_flow",
+      "eventTypeLv2Label": "공급망 및 화물 흐름",
       "sources": [
         "Reuters"
       ]
@@ -9660,10 +9660,10 @@
         }
       ],
       "analysisText": "카타르 LNG 불가항력은 개별 카고 지연을 넘어 글로벌 LNG 가용 물량을 급격히 줄이는 공급 쇼크다. JKM 관점에서는 아시아 장기계약 의존국과 현물 구매자가 대체 물량을 동시에 찾으면서 긴급 조달 프리미엄이 확대된다. 유럽도 같은 대체 공급 풀에 진입하기 때문에 JKM과 TTF가 동반 강세를 보일 가능성이 높다.",
-      "eventTypeLv1": "infrastructure_facility",
-      "eventTypeLv1Label": "인프라 / 설비",
-      "eventTypeLv2": "liquefaction_terminal_facility_capacity_utilization_change",
-      "eventTypeLv2Label": "액화 / 터미널 시설 Capa/가동률 변화",
+      "eventTypeLv1": "supply",
+      "eventTypeLv1Label": "공급",
+      "eventTypeLv2": "terminal_utilization_change",
+      "eventTypeLv2Label": "터미널 Utilization 변동",
       "sources": [
         "Reuters"
       ]
@@ -9846,10 +9846,10 @@
         }
       ],
       "analysisText": "Ras Laffan·Mesaieed 공격은 카타르 LNG 차질의 물리적 원인으로, 글로벌 LNG 공급 안정성에 대한 신뢰를 크게 훼손한다. JKM 관점에서는 일본과 남아시아 구매자가 장기계약 인도 리스크에 노출되며 현물 대체 조달 압력이 커진다. 공격 재발 가능성은 실제 공급 감소와 지정학 프리미엄을 동시에 키운다.",
-      "eventTypeLv1": "geopolitical_risk",
-      "eventTypeLv1Label": "지정학적 리스크",
-      "eventTypeLv2": "war_military_conflict",
-      "eventTypeLv2Label": "전쟁 / 군사 분쟁",
+      "eventTypeLv1": "exogenous_shock",
+      "eventTypeLv1Label": "외생충격",
+      "eventTypeLv2": "geopolitical_tension_war",
+      "eventTypeLv2Label": "지정학적 긴장 및 전쟁·군사분쟁",
       "sources": [
         "Reuters"
       ]
@@ -10032,10 +10032,10 @@
         }
       ],
       "analysisText": "호르무즈 리스크는 물리적 생산 차질이 없더라도 선박 가용성, 운임, 보험료를 통해 JKM에 즉시 반영될 수 있는 물류 충격이다. 카타르·UAE LNG의 핵심 병목이 흔들리면 아시아 구매자는 대서양 화물을 유인하기 위해 더 높은 가격을 제시해야 한다. 유럽도 중동 카고 부족과 대체 조달 비용 상승을 반영하므로 TTF 역시 강세 압력을 받는다.",
-      "eventTypeLv1": "logistics_shipping",
-      "eventTypeLv1Label": "물류 / 해운",
-      "eventTypeLv2": "ocean_freight_charter_rate_change",
-      "eventTypeLv2Label": "해상 운임 / 용선료 변동",
+      "eventTypeLv1": "inventory_logistics",
+      "eventTypeLv1Label": "재고/운송/시장",
+      "eventTypeLv2": "ocean_freight",
+      "eventTypeLv2Label": "해상 운임",
       "sources": [
         "Reuters"
       ]
@@ -10218,10 +10218,10 @@
         }
       ],
       "analysisText": "카타르발 유럽향 LNG 지연은 생산 차질이 실제 장기계약 인도 일정으로 전이된 사례다. JKM 관점에서는 유럽이 대체 카고를 확보하는 과정에서 아시아와 동일한 현물 풀을 두고 경쟁하게 되는 점이 중요하다. 직접 충격은 TTF에 더 크지만, 현물 LNG 경쟁 심화는 JKM에도 중간 수준의 bullish 압력을 준다.",
-      "eventTypeLv1": "logistics_shipping",
-      "eventTypeLv1Label": "물류 / 해운",
-      "eventTypeLv2": "cargo_flow_change_port_canal_disruption",
-      "eventTypeLv2Label": "화물 흐름 변화 / 항만·운하 차질",
+      "eventTypeLv1": "inventory_logistics",
+      "eventTypeLv1Label": "재고/운송/시장",
+      "eventTypeLv2": "supply_chain_cargo_flow",
+      "eventTypeLv2Label": "공급망 및 화물 흐름",
       "sources": [
         "Reuters"
       ]
@@ -10383,10 +10383,10 @@
         }
       ],
       "analysisText": "유럽 저재고는 TTF에 가장 직접적인 강세 요인이며, 여름 주입수요가 앞당겨지면 유럽의 LNG 유입 경쟁이 커진다. JKM은 아시아 자체 수요 변화가 아니라 유럽과의 카고 경쟁을 통해 중간 수준의 상승 압력을 받을 수 있다. HH로의 전이는 미국 LNG 수출능력 제약 때문에 제한적이다.",
-      "eventTypeLv1": "supply_demand_balance",
-      "eventTypeLv1Label": "수급 밸런스",
-      "eventTypeLv2": "inventory_storage_level",
-      "eventTypeLv2Label": "재고 / 저장 수준",
+      "eventTypeLv1": "inventory_logistics",
+      "eventTypeLv1Label": "재고/운송/시장",
+      "eventTypeLv2": "inventory_level",
+      "eventTypeLv2Label": "재고 수준",
       "sources": [
         "Reuters"
       ]
@@ -10522,10 +10522,10 @@
         }
       ],
       "analysisText": "이 이벤트의 중심은 유럽의 조달 포트폴리오 변화로, TTF에 가장 큰 강세 영향을 준다. JKM은 유럽의 비러시아 LNG 확보 경쟁으로 상승 압력을 받지만, 러시아 물량의 아시아 전환 가능성이 이를 일부 완화한다. 따라서 JKM 영향은 방향은 다소 강세이나 순강도는 낮다.",
-      "eventTypeLv1": "geopolitical_risk",
-      "eventTypeLv1Label": "지정학적 리스크",
+      "eventTypeLv1": "exogenous_shock",
+      "eventTypeLv1Label": "외생충격",
       "eventTypeLv2": "economic_sanctions_trade_restrictions",
-      "eventTypeLv2Label": "경제 제재 / 무역 제한",
+      "eventTypeLv2Label": "경제 제재 및 무역 제한",
       "sources": [
         "Reuters"
       ]
@@ -10661,10 +10661,10 @@
         }
       ],
       "analysisText": "방글라데시의 고가 현물 매수는 장기계약 차질이 아시아 스팟 수요로 전환되는 직접적인 JKM 강세 이벤트다. 2카고 규모 자체는 제한적이지만, 남아시아 구매자의 추가 긴급 조달 가능성을 자극해 동북아 구매자와의 경쟁을 심화시킨다. TTF와 HH 영향은 각각 글로벌 카고 배분 및 미국 수출 경로를 통한 간접 효과에 그친다.",
-      "eventTypeLv1": "supply_demand_balance",
-      "eventTypeLv1Label": "수급 밸런스",
-      "eventTypeLv2": "regional_demand_competition",
-      "eventTypeLv2Label": "지역간 수요 경쟁 (유럽 vs. 아시아)",
+      "eventTypeLv1": "inventory_logistics",
+      "eventTypeLv1Label": "재고/운송/시장",
+      "eventTypeLv2": "supply_chain_cargo_flow",
+      "eventTypeLv2Label": "공급망 및 화물 흐름",
       "sources": [
         "Reuters"
       ]
@@ -10800,10 +10800,10 @@
         }
       ],
       "analysisText": "이번 이벤트는 미국 국내 천연가스 수요 전망 변화가 핵심이므로 HH에 가장 직접적이다. JKM과 TTF는 미국 LNG 수출 여력의 간접 경로를 통해서만 영향을 받을 수 있지만, 수출 설비와 피드가스 흐름 제약 때문에 가격 영향은 미미하다. JKM 기준으로 강한 관련 driver는 확인되지 않는다.",
-      "eventTypeLv1": "supply_demand_balance",
-      "eventTypeLv1Label": "수급 밸런스",
-      "eventTypeLv2": "regional_demand_competition",
-      "eventTypeLv2Label": "지역간 수요 경쟁 (유럽 vs. 아시아)",
+      "eventTypeLv1": "inventory_logistics",
+      "eventTypeLv1Label": "재고/운송/시장",
+      "eventTypeLv2": "supply_chain_cargo_flow",
+      "eventTypeLv2Label": "공급망 및 화물 흐름",
       "sources": [
         "Reuters"
       ]
@@ -10886,10 +10886,10 @@
         }
       ],
       "analysisText": "페루 TGP 가스관 파열은 지역적 공급 차질이지만 산업·발전 연료 부족과 수입 필요성을 통해 대서양권 LNG 카고 경쟁을 조금 높일 수 있다. JKM에는 직접 충격이 아니라 남미의 추가 조달이 글로벌 카고 배분을 타이트하게 만드는 간접 경로로 작용한다. 따라서 JKM과 TTF 모두 낮은 수준의 강세 요인에 그친다.",
-      "eventTypeLv1": "infrastructure_facility",
-      "eventTypeLv1Label": "인프라 / 설비",
-      "eventTypeLv2": "pipeline_transport_infrastructure_capacity_utilization_change",
-      "eventTypeLv2Label": "파이프라인/수송 인프라 Capa/가동률 변화",
+      "eventTypeLv1": "supply",
+      "eventTypeLv1Label": "공급",
+      "eventTypeLv2": "pipeline_utilization_change",
+      "eventTypeLv2Label": "파이프라인 Utilization 변동",
       "sources": [
         "Reuters"
       ]
@@ -11025,10 +11025,10 @@
         }
       ],
       "analysisText": "이번 공습은 물리적 LNG 공급 손실보다 유럽 에너지 안보 심리를 자극하는 이벤트다. TTF에는 위험 프리미엄이 중간 수준으로 반영될 수 있고, JKM은 유럽의 조달 민감도 상승을 통해 낮은 수준의 강세 영향을 받을 수 있다. 직접 LNG 인프라 피해가 없다는 점이 글로벌 가격 충격을 제한한다.",
-      "eventTypeLv1": "geopolitical_risk",
-      "eventTypeLv1Label": "지정학적 리스크",
-      "eventTypeLv2": "war_military_conflict",
-      "eventTypeLv2Label": "전쟁 / 군사 분쟁",
+      "eventTypeLv1": "exogenous_shock",
+      "eventTypeLv1Label": "외생충격",
+      "eventTypeLv2": "geopolitical_tension_war",
+      "eventTypeLv2Label": "지정학적 긴장 및 전쟁·군사분쟁",
       "sources": [
         "Reuters"
       ]
@@ -11138,10 +11138,10 @@
         }
       ],
       "analysisText": "고운임은 LNG 시장에서 거리와 선박 가용성의 가격 영향을 키우며, 특히 아시아가 대서양 물량을 끌어오기 위한 비용을 높인다. 이 때문에 JKM은 JKM-NWE 스프레드와 차익거래 경제성 조정을 통해 강한 상승 압력을 받는다. 반면 유럽은 일부 대서양 물량 잔류 효과가 있어 TTF 영향은 작고 혼재적이다.",
-      "eventTypeLv1": "logistics_shipping",
-      "eventTypeLv1Label": "물류 / 해운",
-      "eventTypeLv2": "ocean_freight_charter_rate_change",
-      "eventTypeLv2Label": "해상 운임 / 용선료 변동",
+      "eventTypeLv1": "inventory_logistics",
+      "eventTypeLv1Label": "재고/운송/시장",
+      "eventTypeLv2": "ocean_freight",
+      "eventTypeLv2Label": "해상 운임",
       "sources": [
         "Reuters"
       ]
@@ -11277,10 +11277,10 @@
         }
       ],
       "analysisText": "Arctic LNG 2 선박의 우회는 러시아 LNG의 물류 신뢰성과 도착 시점에 대한 불확실성을 높인다. JKM에는 러시아 물량을 안정적 공급원으로 보기 어려워지는 경로로 낮은 수준의 강세 영향을 준다. 제재 대상 물량이라는 특성상 즉각적인 글로벌 공급 손실은 제한적이다.",
-      "eventTypeLv1": "logistics_shipping",
-      "eventTypeLv1Label": "물류 / 해운",
-      "eventTypeLv2": "cargo_flow_change_port_canal_disruption",
-      "eventTypeLv2Label": "화물 흐름 변화 / 항만·운하 차질",
+      "eventTypeLv1": "inventory_logistics",
+      "eventTypeLv1Label": "재고/운송/시장",
+      "eventTypeLv2": "supply_chain_cargo_flow",
+      "eventTypeLv2Label": "공급망 및 화물 흐름",
       "sources": [
         "Reuters"
       ]
@@ -11442,10 +11442,10 @@
         }
       ],
       "analysisText": "이번 이벤트는 유럽 전력계통의 단기 가스발전 수요를 지지하는 요인으로 TTF에는 bullish하다. 그러나 JKM 관점에서는 유럽 내부 수요 변화의 간접 파급에 그치며, 프랑스 원전 가용률이 높은 점도 LNG 시장 전반의 충격을 완화한다. HH 영향은 사실상 미미하다.",
-      "eventTypeLv1": "energy_mix_transition",
-      "eventTypeLv1Label": "에너지 믹스 전환",
-      "eventTypeLv2": "renewable_power_expansion_reduction",
-      "eventTypeLv2Label": "재생에너지 발전 확대 / 축소",
+      "eventTypeLv1": "demand",
+      "eventTypeLv1Label": "수요",
+      "eventTypeLv2": "renewable_energy",
+      "eventTypeLv2Label": "재생에너지",
       "sources": [
         "Reuters"
       ]
@@ -11528,10 +11528,10 @@
         }
       ],
       "analysisText": "CP2 비용 증가는 즉각적인 공급 차질은 아니지만, 대형 미국 LNG 프로젝트의 경제성과 공급 개시 신뢰도를 낮추는 요인이다. JKM에는 장기 신규 공급 확대 기대가 약해지는 방향으로 작용해 완만한 bullish 리스크를 만든다. TTF도 유사하게 장기 조달 프리미엄이 커질 수 있고, HH는 수출 수요 기대 약화로 소폭 bearish하다.",
-      "eventTypeLv1": "infrastructure_facility",
-      "eventTypeLv1Label": "인프라 / 설비",
-      "eventTypeLv2": "liquefaction_terminal_facility_capacity_utilization_change",
-      "eventTypeLv2Label": "액화 / 터미널 시설 Capa/가동률 변화",
+      "eventTypeLv1": "supply",
+      "eventTypeLv1Label": "공급",
+      "eventTypeLv2": "terminal_utilization_change",
+      "eventTypeLv2Label": "터미널 Utilization 변동",
       "sources": [
         "Reuters"
       ]
@@ -11667,10 +11667,10 @@
         }
       ],
       "analysisText": "Uniper의 캐나다 LNG 협의는 유럽의 장기 조달 다변화와 북미 LNG 물량 경쟁을 상징한다. JKM에는 유럽 구매자가 북미 기반 포트폴리오 물량을 선점하려는 움직임이 장기 경쟁을 키우는 낮은 수준의 bullish 요인이다. 단기적으로는 캐나다 동부 LNG 수출 인프라 병목 때문에 실제 물량 변화가 제한된다.",
-      "eventTypeLv1": "supply_demand_balance",
-      "eventTypeLv1Label": "수급 밸런스",
-      "eventTypeLv2": "regional_demand_competition",
-      "eventTypeLv2Label": "지역간 수요 경쟁 (유럽 vs. 아시아)",
+      "eventTypeLv1": "inventory_logistics",
+      "eventTypeLv1Label": "재고/운송/시장",
+      "eventTypeLv2": "supply_chain_cargo_flow",
+      "eventTypeLv2Label": "공급망 및 화물 흐름",
       "sources": [
         "Reuters"
       ]
@@ -11806,10 +11806,10 @@
         }
       ],
       "analysisText": "카타르 LNG 생산 중단은 글로벌 LNG 수출의 약 20%에 해당하는 핵심 공급원 신뢰를 훼손하는 이벤트다. JKM은 아시아 장기계약 노출과 대체 현물 조달 압력 때문에 가장 강한 bullish 반응이 예상된다. TTF도 유럽의 대체 LNG 확보 경쟁으로 급등 압력을 받으며, HH는 미국 LNG 수출 기대를 통해 중간 수준으로 지지된다.",
-      "eventTypeLv1": "infrastructure_facility",
-      "eventTypeLv1Label": "인프라 / 설비",
-      "eventTypeLv2": "liquefaction_terminal_facility_capacity_utilization_change",
-      "eventTypeLv2Label": "액화 / 터미널 시설 Capa/가동률 변화",
+      "eventTypeLv1": "supply",
+      "eventTypeLv1Label": "공급",
+      "eventTypeLv2": "terminal_utilization_change",
+      "eventTypeLv2Label": "터미널 Utilization 변동",
       "sources": [
         "Reuters"
       ]
@@ -11993,10 +11993,10 @@
         }
       ],
       "analysisText": "중동 군사충돌 확대는 실물 차질 여부와 별개로 LNG 시장의 전쟁 프리미엄을 높이는 이벤트다. JKM은 카타르·걸프 물량에 대한 아시아 의존도와 항로 안전성 우려를 반영해 강한 bullish 압력을 받는다. TTF도 대체 LNG 조달 경쟁과 보험·운임 상승으로 지지되며, HH는 간접적인 수출 기대 경로에 그친다.",
-      "eventTypeLv1": "geopolitical_risk",
-      "eventTypeLv1Label": "지정학적 리스크",
-      "eventTypeLv2": "war_military_conflict",
-      "eventTypeLv2Label": "전쟁 / 군사 분쟁",
+      "eventTypeLv1": "exogenous_shock",
+      "eventTypeLv1Label": "외생충격",
+      "eventTypeLv2": "geopolitical_tension_war",
+      "eventTypeLv2Label": "지정학적 긴장 및 전쟁·군사분쟁",
       "sources": [
         "Reuters"
       ]
@@ -12180,10 +12180,10 @@
         }
       ],
       "analysisText": "호르무즈 통항 차질은 생산시설 사고가 아니어도 LNG 공급 차질과 유사한 가격 효과를 만든다. 글로벌 LNG 공급의 약 20%가 통과하는 병목이 흔들리면 아시아 도착 일정과 카타르 의존 물량의 안정성이 훼손되어 JKM에 극단적인 bullish 요인이 된다. TTF도 대체 조달 비용 상승을 반영하고, HH는 미국 LNG 대체 수요 기대를 통해 간접 지지를 받는다.",
-      "eventTypeLv1": "logistics_shipping",
-      "eventTypeLv1Label": "물류 / 해운",
-      "eventTypeLv2": "cargo_flow_change_port_canal_disruption",
-      "eventTypeLv2Label": "화물 흐름 변화 / 항만·운하 차질",
+      "eventTypeLv1": "inventory_logistics",
+      "eventTypeLv1Label": "재고/운송/시장",
+      "eventTypeLv2": "supply_chain_cargo_flow",
+      "eventTypeLv2Label": "공급망 및 화물 흐름",
       "sources": [
         "Reuters"
       ]
@@ -12388,10 +12388,10 @@
         }
       ],
       "analysisText": "운임·보험료 급등은 단순 비용 상승을 넘어 가격 신호와 실제 물류 흐름을 분리시키는 이벤트다. JKM이 높아도 선박 확보와 전쟁위험 비용 때문에 아시아향 카고 전환이 제한되어 JKM 강세가 유지될 수 있다. TTF도 조달 비용과 물량 이탈 우려로 지지되지만, HH 영향은 낮은 간접 경로에 머문다.",
-      "eventTypeLv1": "infrastructure_facility",
-      "eventTypeLv1Label": "인프라 / 설비",
-      "eventTypeLv2": "upstream_production_facility_capacity_utilization_change",
-      "eventTypeLv2Label": "상류 생산 시설 Capa/가동률 변화",
+      "eventTypeLv1": "supply",
+      "eventTypeLv1Label": "공급",
+      "eventTypeLv2": "upstream_utilization_change",
+      "eventTypeLv2Label": "Upstream Utilization 변동",
       "sources": [
         "Reuters"
       ]
@@ -12575,10 +12575,10 @@
         }
       ],
       "analysisText": "JKM-NWE 스프레드 급확대는 단순 가격 차이가 아니라 지역별 공급 접근성과 리스크 프리미엄의 차별화를 보여준다. JKM은 아시아의 강한 물량 유인력과 제한된 차익거래 때문에 높은 프리미엄을 유지할 가능성이 크다. TTF는 물량 이탈 방어와 delivered LNG 비용 상승을 일부 반영하고, HH는 미국 LNG 수출 경제성 기대를 통해 낮게 지지된다.",
-      "eventTypeLv1": "market_trading_structure",
-      "eventTypeLv1Label": "시장 / 거래 구조",
-      "eventTypeLv2": "inter_index_spread_gap",
-      "eventTypeLv2Label": "인덱스별 스프레드 Gap",
+      "eventTypeLv1": "inventory_logistics",
+      "eventTypeLv1Label": "재고/운송/시장",
+      "eventTypeLv2": "index_spread",
+      "eventTypeLv2Label": "인덱스 Spread",
       "sources": [
         "Reuters"
       ]
@@ -12762,10 +12762,10 @@
         }
       ],
       "analysisText": "EU의 낮은 저장률은 핵심적으로 TTF를 지지하는 이벤트이며, 주입 시즌 조달 수요를 통해 유럽 LNG 프리미엄을 높일 수 있다. JKM에는 유럽과 아시아 간 현물 카고 경쟁이 커지는 경로로 중간 수준의 bullish 압력이 발생한다. HH는 미국 내 수급 이벤트가 아니므로 영향이 제한적이다.",
-      "eventTypeLv1": "supply_demand_balance",
-      "eventTypeLv1Label": "수급 밸런스",
-      "eventTypeLv2": "inventory_storage_level",
-      "eventTypeLv2Label": "재고 / 저장 수준",
+      "eventTypeLv1": "inventory_logistics",
+      "eventTypeLv1Label": "재고/운송/시장",
+      "eventTypeLv2": "inventory_level",
+      "eventTypeLv2Label": "재고 수준",
       "sources": [
         "Reuters"
       ]
@@ -12928,8 +12928,8 @@
         }
       ],
       "analysisText": "미국 한파 예보는 HH에 가장 직접적인 bullish 이벤트이며, 난방 수요 증가가 단기 가격을 지지한다. JKM과 TTF에는 미국 LNG FOB 원가 상승이라는 비용 전가 경로로 낮은 수준의 상승 압력이 발생한다. 물리적 LNG 공급 차질은 아니므로 글로벌 LNG 가격 영향은 HH 대비 제한적이다.",
-      "eventTypeLv1": "weather_climate",
-      "eventTypeLv1Label": "기상 / 기후",
+      "eventTypeLv1": "demand",
+      "eventTypeLv1Label": "수요",
       "eventTypeLv2": "winter_cold_wave",
       "eventTypeLv2Label": "겨울 한파",
       "sources": [
@@ -13068,10 +13068,10 @@
         }
       ],
       "analysisText": "미국 주간 재고의 예상 초과 인출은 HH에 명확한 단기 bullish 신호다. JKM과 TTF에는 미국 LNG 원가 상승 경로로만 낮은 수준의 간접 영향이 있다. 높은 미국 재고 절대 수준과 생산 증가가 글로벌 LNG 가격으로의 전이를 완충한다.",
-      "eventTypeLv1": "supply_demand_balance",
-      "eventTypeLv1Label": "수급 밸런스",
-      "eventTypeLv2": "inventory_storage_level",
-      "eventTypeLv2Label": "재고 / 저장 수준",
+      "eventTypeLv1": "inventory_logistics",
+      "eventTypeLv1Label": "재고/운송/시장",
+      "eventTypeLv2": "inventory_level",
+      "eventTypeLv2Label": "재고 수준",
       "sources": [
         "Reuters"
       ]
@@ -13182,10 +13182,10 @@
         }
       ],
       "analysisText": "페루 TGP 가스관 파열은 글로벌 LNG 공급 충격으로는 작지만, 태평양권 현물 가용성을 줄이는 요인이다. JKM에는 대체 공급 선택지가 일부 축소되는 경로로 낮은 수준의 bullish 압력이 발생한다. TTF 영향은 제한적이며 HH와의 직접 연결성은 거의 없다.",
-      "eventTypeLv1": "infrastructure_facility",
-      "eventTypeLv1Label": "인프라 / 설비",
-      "eventTypeLv2": "pipeline_transport_infrastructure_capacity_utilization_change",
-      "eventTypeLv2Label": "파이프라인/수송 인프라 Capa/가동률 변화",
+      "eventTypeLv1": "supply",
+      "eventTypeLv1Label": "공급",
+      "eventTypeLv2": "pipeline_utilization_change",
+      "eventTypeLv2Label": "파이프라인 Utilization 변동",
       "sources": [
         "Reuters"
       ]
@@ -13322,10 +13322,10 @@
         }
       ],
       "analysisText": "일본 LNG 재고 증가는 JKM에 직접적인 bearish 완충 요인이다. 충분한 재고는 중동 공급 리스크가 있어도 일본 구매자가 단기 현물 시장에서 공격적으로 조달할 필요를 낮춘다. 다만 공급 리스크가 장기화되면 재고 소진 이후 구매 압력이 다시 커질 수 있다.",
-      "eventTypeLv1": "supply_demand_balance",
-      "eventTypeLv1Label": "수급 밸런스",
-      "eventTypeLv2": "inventory_storage_level",
-      "eventTypeLv2Label": "재고 / 저장 수준",
+      "eventTypeLv1": "inventory_logistics",
+      "eventTypeLv1Label": "재고/운송/시장",
+      "eventTypeLv2": "inventory_level",
+      "eventTypeLv2Label": "재고 수준",
       "sources": [
         "Reuters"
       ]
@@ -13488,10 +13488,10 @@
         }
       ],
       "analysisText": "남아시아 이벤트는 JKM에 단일 방향보다는 변동성을 키우는 성격이 강하다. 방글라데시의 현물 구매 재개는 카고 경쟁을 높이는 반면, 인도의 산업용 RLNG 축소는 고가격 구간의 수요파괴를 보여준다. 두 힘이 상쇄되면서 순방향성은 제한적이나 가격 민감도는 높아진다.",
-      "eventTypeLv1": "energy_mix_transition",
-      "eventTypeLv1Label": "에너지 믹스 전환",
-      "eventTypeLv2": "nuclear_power_expansion_reduction",
-      "eventTypeLv2Label": "원자력 발전 확대 / 축소",
+      "eventTypeLv1": "demand",
+      "eventTypeLv1Label": "수요",
+      "eventTypeLv2": "nuclear_power",
+      "eventTypeLv2Label": "원자력 발전",
       "sources": [
         "Reuters"
       ]
@@ -13654,10 +13654,10 @@
         }
       ],
       "analysisText": "Arctic Metagaz 침몰은 글로벌 LNG 수급량을 크게 바꾸는 사건은 아니며, JKM에 대한 직접성은 낮다. 영향은 주로 지중해와 유럽 인근 운송 리스크 프리미엄을 통해 TTF에 낮은 수준으로 반영된다. 단일 선박 사고이므로 광범위한 가격 충격으로 보기는 어렵다.",
-      "eventTypeLv1": "logistics_shipping",
-      "eventTypeLv1Label": "물류 / 해운",
-      "eventTypeLv2": "cargo_flow_change_port_canal_disruption",
-      "eventTypeLv2Label": "화물 흐름 변화 / 항만·운하 차질",
+      "eventTypeLv1": "inventory_logistics",
+      "eventTypeLv1Label": "재고/운송/시장",
+      "eventTypeLv2": "supply_chain_cargo_flow",
+      "eventTypeLv2Label": "공급망 및 화물 흐름",
       "sources": [
         "Reuters"
       ]
@@ -13768,10 +13768,10 @@
         }
       ],
       "analysisText": "Cameron LNG 재가동은 글로벌 LNG 공급 가용성을 일부 회복시키는 완화 신호다. JKM과 TTF에는 미국산 대체 공급 증가를 통해 낮은 수준의 bearish 압력이 발생한다. 반대로 HH에는 LNG 피드가스 수요 회복으로 낮은 수준의 bullish 영향이 있다.",
-      "eventTypeLv1": "infrastructure_facility",
-      "eventTypeLv1Label": "인프라 / 설비",
-      "eventTypeLv2": "liquefaction_terminal_facility_capacity_utilization_change",
-      "eventTypeLv2Label": "액화 / 터미널 시설 Capa/가동률 변화",
+      "eventTypeLv1": "supply",
+      "eventTypeLv1Label": "공급",
+      "eventTypeLv2": "terminal_utilization_change",
+      "eventTypeLv2Label": "터미널 Utilization 변동",
       "sources": [
         "Reuters"
       ]
@@ -13908,10 +13908,10 @@
         }
       ],
       "analysisText": "일본 원전 재가동 확대는 일본 발전용 LNG 수요의 구조적 대체 요인으로 JKM에 bearish하게 작용한다. 단기 현물시장에서는 중동 공급 차질과 운송 리스크가 더 강한 상방 요인이지만, 장기 수요 프리미엄은 낮아질 수 있다. TTF와 HH에는 직접적인 수급 연결성이 낮아 영향은 제한적이다.",
-      "eventTypeLv1": "energy_mix_transition",
-      "eventTypeLv1Label": "에너지 믹스 전환",
-      "eventTypeLv2": "nuclear_power_expansion_reduction",
-      "eventTypeLv2Label": "원자력 발전 확대 / 축소",
+      "eventTypeLv1": "demand",
+      "eventTypeLv1Label": "수요",
+      "eventTypeLv2": "nuclear_power",
+      "eventTypeLv2Label": "원자력 발전",
       "sources": [
         "Reuters"
       ]
@@ -14048,10 +14048,10 @@
         }
       ],
       "analysisText": "Dragon 가스전 협정은 즉각적인 LNG 공급 증가가 아니라 중장기 Atlantic Basin 공급 옵션 확대 신호다. 트리니다드의 feedgas 제약이 완화될 경우 글로벌 LNG 공급 기대가 높아져 JKM에는 낮은 수준의 bearish 압력이 생긴다. 제재, 허가, 정치 리스크가 남아 있어 단기 가격 반응은 제한적이다.",
-      "eventTypeLv1": "infrastructure_facility",
-      "eventTypeLv1Label": "인프라 / 설비",
-      "eventTypeLv2": "upstream_production_facility_capacity_utilization_change",
-      "eventTypeLv2Label": "상류 생산 시설 Capa/가동률 변화",
+      "eventTypeLv1": "supply",
+      "eventTypeLv1Label": "공급",
+      "eventTypeLv2": "upstream_utilization_change",
+      "eventTypeLv2Label": "Upstream Utilization 변동",
       "sources": [
         "Reuters"
       ]
@@ -14214,10 +14214,10 @@
         }
       ],
       "analysisText": "카타르 LNG 생산중단은 글로벌 LNG 기준 공급원에 대한 충격으로 JKM과 TTF 모두에 extreme 수준의 bullish 이벤트다. 동북아와 유럽 구매자가 동시에 대체 물량을 찾게 되며, 현물 조달 경쟁과 리스크 프리미엄이 급격히 확대될 수 있다. HH는 미국 LNG의 콜옵션 가치 상승을 통해 낮은 수준의 지지를 받을 수 있으나 직접 영향은 제한적이다.",
-      "eventTypeLv1": "infrastructure_facility",
-      "eventTypeLv1Label": "인프라 / 설비",
-      "eventTypeLv2": "liquefaction_terminal_facility_capacity_utilization_change",
-      "eventTypeLv2Label": "액화 / 터미널 시설 Capa/가동률 변화",
+      "eventTypeLv1": "supply",
+      "eventTypeLv1Label": "공급",
+      "eventTypeLv2": "terminal_utilization_change",
+      "eventTypeLv2Label": "터미널 Utilization 변동",
       "sources": [
         "Reuters"
       ]
@@ -14400,10 +14400,10 @@
         }
       ],
       "analysisText": "호르무즈 LNG 통항 차질은 생산 여부와 별개로 물량의 도착 가능성을 흔드는 고강도 물류 충격이다. 중동 LNG 의존도가 높은 아시아 시장에서는 운임, 보험료, 선복, 일정 리스크가 모두 JKM에 반영될 가능성이 크다. TTF도 대체 화물 경쟁을 통해 강세 압력을 받지만, HH 영향은 상대적으로 낮다.",
-      "eventTypeLv1": "logistics_shipping",
-      "eventTypeLv1Label": "물류 / 해운",
-      "eventTypeLv2": "cargo_flow_change_port_canal_disruption",
-      "eventTypeLv2Label": "화물 흐름 변화 / 항만·운하 차질",
+      "eventTypeLv1": "inventory_logistics",
+      "eventTypeLv1Label": "재고/운송/시장",
+      "eventTypeLv2": "supply_chain_cargo_flow",
+      "eventTypeLv2Label": "공급망 및 화물 흐름",
       "sources": [
         "Reuters"
       ]
@@ -14608,10 +14608,10 @@
         }
       ],
       "analysisText": "아시아·유럽 대체 조달 경쟁은 공급 차질이 현물 가격으로 전이되는 핵심 경로다. 중동 공급 신뢰도가 낮아진 상태에서 양 지역이 미국·대서양 화물을 두고 경쟁하면 JKM과 TTF 모두 높은 수준의 bullish 압력을 받는다. 다만 인도 등 가격 민감 수요처의 수요파괴는 JKM 상승 속도를 일부 제한할 수 있다.",
-      "eventTypeLv1": "supply_demand_balance",
-      "eventTypeLv1Label": "수급 밸런스",
-      "eventTypeLv2": "regional_demand_competition",
-      "eventTypeLv2Label": "지역간 수요 경쟁 (유럽 vs. 아시아)",
+      "eventTypeLv1": "inventory_logistics",
+      "eventTypeLv1Label": "재고/운송/시장",
+      "eventTypeLv2": "supply_chain_cargo_flow",
+      "eventTypeLv2Label": "공급망 및 화물 흐름",
       "sources": [
         "Reuters"
       ]
@@ -14794,10 +14794,10 @@
         }
       ],
       "analysisText": "LNG선 운임·전쟁보험료 급등은 공급량 자체보다 도착 기준 비용을 끌어올리는 충격이다. 특히 장거리 아시아향 카고는 운송비 민감도가 높아 JKM의 delivered price 상승 압력이 크다. TTF도 미국 화물 확보 경쟁과 선복 부족을 반영하지만, HH에는 직접 영향이 제한적이다.",
-      "eventTypeLv1": "logistics_shipping",
-      "eventTypeLv1Label": "물류 / 해운",
-      "eventTypeLv2": "ocean_freight_charter_rate_change",
-      "eventTypeLv2Label": "해상 운임 / 용선료 변동",
+      "eventTypeLv1": "inventory_logistics",
+      "eventTypeLv1Label": "재고/운송/시장",
+      "eventTypeLv2": "ocean_freight",
+      "eventTypeLv2Label": "해상 운임",
       "sources": [
         "Reuters"
       ]
@@ -14959,10 +14959,10 @@
         }
       ],
       "analysisText": "EU 저장률 30% 안팎은 유럽 재주입 수요를 강화해 TTF에 직접적인 bullish 요인이다. 유럽이 대서양 Basin LNG를 더 적극적으로 확보하면 아시아와의 화물 경쟁이 심화되어 JKM도 중간 수준의 지지를 받는다. HH 영향은 미국 LNG 수출 수요 기대를 통한 낮은 수준에 그친다.",
-      "eventTypeLv1": "supply_demand_balance",
-      "eventTypeLv1Label": "수급 밸런스",
-      "eventTypeLv2": "inventory_storage_level",
-      "eventTypeLv2Label": "재고 / 저장 수준",
+      "eventTypeLv1": "inventory_logistics",
+      "eventTypeLv1Label": "재고/운송/시장",
+      "eventTypeLv2": "inventory_level",
+      "eventTypeLv2Label": "재고 수준",
       "sources": [
         "Reuters"
       ]
@@ -15124,10 +15124,10 @@
         }
       ],
       "analysisText": "EU 러시아 가스 금수 승인은 즉각적인 물량 중단보다는 유럽 LNG 조달 구조를 바꾸는 중기 이벤트다. 유럽이 미국·카타르·아프리카 LNG 확보를 확대하면 TTF의 위험 프리미엄이 높아지고, JKM도 대체 화물 경쟁을 통해 bullish 영향을 받는다. HH는 미국 LNG 수출 기대 경로로 낮은 수준의 지지를 받을 수 있다.",
-      "eventTypeLv1": "geopolitical_risk",
-      "eventTypeLv1Label": "지정학적 리스크",
+      "eventTypeLv1": "exogenous_shock",
+      "eventTypeLv1Label": "외생충격",
       "eventTypeLv2": "economic_sanctions_trade_restrictions",
-      "eventTypeLv2Label": "경제 제재 / 무역 제한",
+      "eventTypeLv2Label": "경제 제재 및 무역 제한",
       "sources": [
         "Reuters"
       ]
@@ -15289,10 +15289,10 @@
         }
       ],
       "analysisText": "이스라엘 가스 생산·수출 차질은 이집트의 LNG 긴급 조달 수요를 확대시키며 글로벌 현물 카고 경쟁을 강화한다. 유럽 인접 수요라는 점에서 TTF 민감도가 가장 크지만, 대서양 물량 흡수는 JKM에도 중간 수준의 강세 압력으로 전이된다. 부분 재개는 상승폭을 일부 제한하나 여름 약 20카고 조달 가능성은 가격 하방을 지지한다.",
-      "eventTypeLv1": "infrastructure_facility",
-      "eventTypeLv1Label": "인프라 / 설비",
-      "eventTypeLv2": "pipeline_transport_infrastructure_capacity_utilization_change",
-      "eventTypeLv2Label": "파이프라인/수송 인프라 Capa/가동률 변화",
+      "eventTypeLv1": "supply",
+      "eventTypeLv1Label": "공급",
+      "eventTypeLv2": "pipeline_utilization_change",
+      "eventTypeLv2Label": "파이프라인 Utilization 변동",
       "sources": [
         "Reuters"
       ]
@@ -15454,10 +15454,10 @@
         }
       ],
       "analysisText": "Cameron LNG 피드가스 급감은 단기 설비 이슈이나, 미국 LNG가 유럽·아시아의 핵심 대체 공급원으로 인식되는 시점에 발생했다는 점이 중요하다. 복구가 예정대로 진행되면 가격 영향은 중간 이하로 제한되지만, 지연 시 JKM과 TTF 모두 대체 조달 프리미엄이 확대될 수 있다. HH에는 피드가스 수요 감소를 통해 일시적 약세 압력이 작용한다.",
-      "eventTypeLv1": "infrastructure_facility",
-      "eventTypeLv1Label": "인프라 / 설비",
-      "eventTypeLv2": "liquefaction_terminal_facility_capacity_utilization_change",
-      "eventTypeLv2Label": "액화 / 터미널 시설 Capa/가동률 변화",
+      "eventTypeLv1": "supply",
+      "eventTypeLv1Label": "공급",
+      "eventTypeLv2": "terminal_utilization_change",
+      "eventTypeLv2Label": "터미널 Utilization 변동",
       "sources": [
         "Reuters"
       ]
@@ -15593,10 +15593,10 @@
         }
       ],
       "analysisText": "미국 2월 LNG 수출 급증은 글로벌 LNG 시장의 가장 명확한 공급 완충 요인이다. 유럽향 물량 증가가 TTF를 직접 안정시키고, 아시아에도 미국산 화물 재배치 가능성을 통해 JKM 하방 압력을 제공한다. 다만 운임과 리스크 프리미엄이 높으면 FOB 공급 증가가 DES 가격 안정으로 완전히 전달되지는 않을 수 있다.",
-      "eventTypeLv1": "infrastructure_facility",
-      "eventTypeLv1Label": "인프라 / 설비",
-      "eventTypeLv2": "liquefaction_terminal_facility_capacity_utilization_change",
-      "eventTypeLv2Label": "액화 / 터미널 시설 Capa/가동률 변화",
+      "eventTypeLv1": "supply",
+      "eventTypeLv1Label": "공급",
+      "eventTypeLv2": "terminal_utilization_change",
+      "eventTypeLv2Label": "터미널 Utilization 변동",
       "sources": [
         "Reuters"
       ]
@@ -15758,10 +15758,10 @@
         }
       ],
       "analysisText": "걸프코스트 LNG 증설 기대는 당일 현물 시장보다 중기 가격 기대에 영향을 주는 이벤트이다. Plaquemines, Rio Grande 등 신규 프로젝트와 장기 계약 확대는 미래 LNG 공급 부족 우려를 낮춰 JKM과 TTF 곡선의 리스크 프리미엄을 줄인다. 반면 미국 내에서는 장기 피드가스 수요 증가를 통해 HH에 지지 요인으로 작용한다.",
-      "eventTypeLv1": "infrastructure_facility",
-      "eventTypeLv1Label": "인프라 / 설비",
-      "eventTypeLv2": "liquefaction_terminal_facility_capacity_utilization_change",
-      "eventTypeLv2Label": "액화 / 터미널 시설 Capa/가동률 변화",
+      "eventTypeLv1": "supply",
+      "eventTypeLv1Label": "공급",
+      "eventTypeLv2": "terminal_utilization_change",
+      "eventTypeLv2Label": "터미널 Utilization 변동",
       "sources": [
         "Reuters"
       ]
@@ -15923,10 +15923,10 @@
         }
       ],
       "analysisText": "인도 폭염 전망은 아시아 LNG 수요의 계절적 상방 리스크를 높인다. 냉방 전력 피크가 강해지고 석탄·재생에너지로 충분히 대응하지 못할 경우 LNG 발전 수요가 늘어 JKM을 지지한다. 다만 인도는 가격 탄력성이 높아 고가 구간에서는 실제 구매 강도가 둔화될 수 있다.",
-      "eventTypeLv1": "weather_climate",
-      "eventTypeLv1Label": "기상 / 기후",
+      "eventTypeLv1": "demand",
+      "eventTypeLv1Label": "수요",
       "eventTypeLv2": "summer_heat_wave",
-      "eventTypeLv2Label": "여름 고온",
+      "eventTypeLv2Label": "여름 폭염",
       "sources": [
         "Reuters"
       ]
@@ -16088,10 +16088,10 @@
         }
       ],
       "analysisText": "TurkStream 공급 감소는 절대 규모가 크지 않아 단독 가격 충격은 제한적이다. 그러나 우크라이나 경유 공급이 제한된 이후 남은 러시아산 유럽 공급 통로의 신뢰성이 흔들린다는 점에서 TTF에는 중간 수준의 강세 신호다. JKM에는 유럽 LNG 대체 조달이 아시아 카고 경쟁을 높이는 간접 경로로 낮은 강세 영향이 나타난다.",
-      "eventTypeLv1": "infrastructure_facility",
-      "eventTypeLv1Label": "인프라 / 설비",
-      "eventTypeLv2": "pipeline_transport_infrastructure_capacity_utilization_change",
-      "eventTypeLv2Label": "파이프라인/수송 인프라 Capa/가동률 변화",
+      "eventTypeLv1": "supply",
+      "eventTypeLv1Label": "공급",
+      "eventTypeLv2": "pipeline_utilization_change",
+      "eventTypeLv2Label": "파이프라인 Utilization 변동",
       "sources": [
         "Reuters"
       ]
@@ -16227,10 +16227,10 @@
         }
       ],
       "analysisText": "우크라이나 가스시설 피격은 실제 손실 규모보다 유럽 에너지 인프라가 계속 공격 대상이 될 수 있다는 리스크 프리미엄 측면에서 중요하다. TTF는 전쟁 리스크와 역내 공급 불안에 더 민감하게 반응할 가능성이 높다. JKM에는 유럽의 LNG 대체조달 확대 가능성을 통해 간접적인 강세 압력이 전이된다.",
-      "eventTypeLv1": "geopolitical_risk",
-      "eventTypeLv1Label": "지정학적 리스크",
-      "eventTypeLv2": "war_military_conflict",
-      "eventTypeLv2Label": "전쟁 / 군사 분쟁",
+      "eventTypeLv1": "exogenous_shock",
+      "eventTypeLv1Label": "외생충격",
+      "eventTypeLv2": "geopolitical_tension_war",
+      "eventTypeLv2Label": "지정학적 긴장 및 전쟁·군사분쟁",
       "sources": [
         "Reuters"
       ]
@@ -16366,10 +16366,10 @@
         }
       ],
       "analysisText": "인도 산업 수요파괴는 고가 LNG가 수요 측 저항을 만들고 있음을 보여준다. 일부 산업 고객이 LPG, 나프타 등 대체연료로 전환하거나 생산을 줄이면 아시아 현물 구매 강도가 낮아져 JKM 상승폭이 제한된다. 이는 공급 쇼크의 강세 구조를 제거하기보다는 고가 구간에서 가격 상단을 형성하는 조정 요인이다.",
-      "eventTypeLv1": "weather_climate",
-      "eventTypeLv1Label": "기상 / 기후",
+      "eventTypeLv1": "demand",
+      "eventTypeLv1Label": "수요",
       "eventTypeLv2": "summer_heat_wave",
-      "eventTypeLv2Label": "여름 고온",
+      "eventTypeLv2Label": "여름 폭염",
       "sources": [
         "Reuters"
       ]
@@ -16531,10 +16531,10 @@
         }
       ],
       "analysisText": "이번 이벤트는 JKM 관련 파생 MOC의 주문 증분 및 체결 환경을 조정하는 시장 미시구조 변화로, 실물 LNG 수급을 직접 변화시키지는 않는다. JKM에는 단기적으로 헤지 비용, 호가 간격, 가격발견 속도에 영향을 줄 수 있지만 방향성 있는 가격 충격보다는 변동성·유동성 관리 성격이 강하다. TTF와 HH는 대상 시장이 아니며 직접 영향은 미미하다.",
-      "eventTypeLv1": "market_trading_structure",
-      "eventTypeLv1Label": "시장 / 거래 구조",
-      "eventTypeLv2": "transaction_hedging_cost_change",
-      "eventTypeLv2Label": "거래 / 헷징 비용 변동",
+      "eventTypeLv1": "inventory_logistics",
+      "eventTypeLv1Label": "재고/운송/시장",
+      "eventTypeLv2": "transaction_hedging",
+      "eventTypeLv2Label": "거래 및 헷징",
       "sources": [
         "Reuters"
       ]
@@ -16670,10 +16670,10 @@
         }
       ],
       "analysisText": "카타르 설비 손상과 이탈리아향 카고 취소는 단순 운송 리스크가 아니라 액화·수출능력 감소 가능성을 포함해 JKM과 TTF 모두에 강한 상방 압력을 준다. 유럽 구매자의 대체 조달은 대서양 및 중동 카고 경쟁을 심화시켜 아시아 현물가에도 파급될 수 있다. HH는 글로벌 LNG 가격과 미국 수출 기대를 통한 간접 영향만 있어 강도는 낮다.",
-      "eventTypeLv1": "infrastructure_facility",
-      "eventTypeLv1Label": "인프라 / 설비",
-      "eventTypeLv2": "liquefaction_terminal_facility_capacity_utilization_change",
-      "eventTypeLv2Label": "액화 / 터미널 시설 Capa/가동률 변화",
+      "eventTypeLv1": "supply",
+      "eventTypeLv1Label": "공급",
+      "eventTypeLv2": "terminal_utilization_change",
+      "eventTypeLv2Label": "터미널 Utilization 변동",
       "sources": [
         "Reuters"
       ]
@@ -16857,10 +16857,10 @@
         }
       ],
       "analysisText": "호르무즈 사실상 폐쇄 우려는 카타르 LNG 수송 안정성을 직접 훼손하는 중대한 해상물류 이벤트다. 물리적 폐쇄가 완전히 확인되지 않아도 기뢰, 호위, 탱커 피격 보도는 운임과 보험료를 끌어올려 JKM과 TTF에 높은 리스크 프리미엄을 부여한다. HH 영향은 글로벌 LNG 가격 경로를 통한 간접 효과에 머문다.",
-      "eventTypeLv1": "logistics_shipping",
-      "eventTypeLv1Label": "물류 / 해운",
-      "eventTypeLv2": "cargo_flow_change_port_canal_disruption",
-      "eventTypeLv2Label": "화물 흐름 변화 / 항만·운하 차질",
+      "eventTypeLv1": "inventory_logistics",
+      "eventTypeLv1Label": "재고/운송/시장",
+      "eventTypeLv2": "supply_chain_cargo_flow",
+      "eventTypeLv2Label": "공급망 및 화물 흐름",
       "sources": [
         "Reuters"
       ]
@@ -17064,10 +17064,10 @@
         }
       ],
       "analysisText": "미·이란 교전 재점화는 호르무즈 통항 불확실성을 높여 물리적 차질 전에도 LNG 시장의 위험 회피와 헤지 수요를 자극한다. JKM은 중동 공급 비중과 아시아 구매자의 조달 민감도 때문에 가장 크게 반응할 가능성이 높다. TTF도 글로벌 카고 경쟁 경로로 강세 압력을 받지만, HH 영향은 낮은 수준의 간접 효과다.",
-      "eventTypeLv1": "geopolitical_risk",
-      "eventTypeLv1Label": "지정학적 리스크",
-      "eventTypeLv2": "war_military_conflict",
-      "eventTypeLv2Label": "전쟁 / 군사 분쟁",
+      "eventTypeLv1": "exogenous_shock",
+      "eventTypeLv1Label": "외생충격",
+      "eventTypeLv2": "geopolitical_tension_war",
+      "eventTypeLv2Label": "지정학적 긴장 및 전쟁·군사분쟁",
       "sources": [
         "Reuters"
       ]
@@ -17250,10 +17250,10 @@
         }
       ],
       "analysisText": "미국-이란 충돌 지속은 호르무즈 공급 불안이 장기화될 수 있다는 신호로, 이미 형성된 JKM과 TTF 리스크 프리미엄을 유지시키는 요인이다. 실제 해협 폐쇄나 카타르 LNG 선적 중단이 확인되지 않아 영향은 설비 차질 이벤트보다 낮다. HH는 글로벌 LNG 가격 경로 외 직접 연결성이 작다.",
-      "eventTypeLv1": "geopolitical_risk",
-      "eventTypeLv1Label": "지정학적 리스크",
-      "eventTypeLv2": "war_military_conflict",
-      "eventTypeLv2Label": "전쟁 / 군사 분쟁",
+      "eventTypeLv1": "exogenous_shock",
+      "eventTypeLv1Label": "외생충격",
+      "eventTypeLv2": "geopolitical_tension_war",
+      "eventTypeLv2Label": "지정학적 긴장 및 전쟁·군사분쟁",
       "sources": [
         "Reuters"
       ]
@@ -17436,10 +17436,10 @@
         }
       ],
       "analysisText": "호르무즈 인근 상선 공격과 유조선 나포는 LNG선 직접 피해 없이도 선사와 화주의 운항 의사결정을 보수적으로 만든다. 운임, 보험료, 회항·대기 리스크는 단기 현물 LNG 가격에 빠르게 전가될 수 있으며 특히 JKM에 민감하다. TTF도 글로벌 카고 경쟁을 통해 강세 압력을 받지만 HH 영향은 미미하다.",
-      "eventTypeLv1": "logistics_shipping",
-      "eventTypeLv1Label": "물류 / 해운",
-      "eventTypeLv2": "cargo_flow_change_port_canal_disruption",
-      "eventTypeLv2Label": "화물 흐름 변화 / 항만·운하 차질",
+      "eventTypeLv1": "inventory_logistics",
+      "eventTypeLv1Label": "재고/운송/시장",
+      "eventTypeLv2": "supply_chain_cargo_flow",
+      "eventTypeLv2Label": "공급망 및 화물 흐름",
       "sources": [
         "Reuters"
       ]
@@ -17622,10 +17622,10 @@
         }
       ],
       "analysisText": "카타르 도하 인근 화물선 피격은 LNG 설비 피해가 아니지만 위치적으로 카타르 에너지 인프라 주변의 운항 리스크를 재평가하게 만든다. 확인된 항만 폐쇄나 화물 지연이 없기 때문에 단독 영향은 크지 않다. 다만 호르무즈 관련 충돌 뉴스와 결합될 경우 JKM과 TTF의 단기 리스크 프리미엄을 보강한다.",
-      "eventTypeLv1": "geopolitical_risk",
-      "eventTypeLv1Label": "지정학적 리스크",
-      "eventTypeLv2": "geopolitical_tension_instability",
-      "eventTypeLv2Label": "지정학적 긴장 / 불안정",
+      "eventTypeLv1": "exogenous_shock",
+      "eventTypeLv1Label": "외생충격",
+      "eventTypeLv2": "geopolitical_tension_war",
+      "eventTypeLv2Label": "지정학적 긴장 및 전쟁·군사분쟁",
       "sources": [
         "Reuters"
       ]
@@ -17787,10 +17787,10 @@
         }
       ],
       "analysisText": "Freeport LNG 비계획 정비는 미국산 LNG 수출 카고를 줄여 JKM과 TTF에는 글로벌 현물 공급 감소 요인으로 작용한다. 취소 물량이 포트폴리오 물량이면 다른 지역 카고 재배치와 스팟 보충 수요가 발생할 수 있다. 반대로 HH에는 LNG 수출용 feedgas 수요 감소가 직접 약세 요인이다.",
-      "eventTypeLv1": "infrastructure_facility",
-      "eventTypeLv1Label": "인프라 / 설비",
-      "eventTypeLv2": "liquefaction_terminal_facility_capacity_utilization_change",
-      "eventTypeLv2Label": "액화 / 터미널 시설 Capa/가동률 변화",
+      "eventTypeLv1": "supply",
+      "eventTypeLv1Label": "공급",
+      "eventTypeLv2": "terminal_utilization_change",
+      "eventTypeLv2Label": "터미널 Utilization 변동",
       "sources": [
         "Reuters"
       ]
@@ -18136,10 +18136,10 @@
         }
       ],
       "analysisText": "이란 제재 확대와 통항 경고는 물리적 폐쇄가 아니라 금융, 보험, 선박 운영 의사결정을 통해 LNG 시장에 영향을 주는 이벤트다. 카타르 LNG 자체가 제재 대상은 아니지만 선박 국적, 결제, 보험 리스크가 커지면 중동 카고 이동 속도와 거래 유동성이 낮아질 수 있다. 따라서 JKM과 TTF에는 중간 수준의 리스크 프리미엄이, HH에는 거의 영향이 없다.",
-      "eventTypeLv1": "geopolitical_risk",
-      "eventTypeLv1Label": "지정학적 리스크",
+      "eventTypeLv1": "exogenous_shock",
+      "eventTypeLv1Label": "외생충격",
       "eventTypeLv2": "economic_sanctions_trade_restrictions",
-      "eventTypeLv2Label": "경제 제재 / 무역 제한",
+      "eventTypeLv2Label": "경제 제재 및 무역 제한",
       "sources": [
         "Reuters"
       ]
@@ -18322,10 +18322,10 @@
         }
       ],
       "analysisText": "이 이벤트는 LNG 자체 제재보다 선사·화주·은행의 이란 관련 결제 회피를 통해 중동 LNG 운송 프리미엄을 높이는 성격이다. 호르무즈 통항이 물리적으로 가능하더라도 결제 승인, 보험, 법무 검토가 지연되면 JKM과 TTF에는 리스크 프리미엄이 붙는다. 미국 내 가스 가격인 HH에는 직접 수급 영향이 거의 없다.",
-      "eventTypeLv1": "geopolitical_risk",
-      "eventTypeLv1Label": "지정학적 리스크",
+      "eventTypeLv1": "exogenous_shock",
+      "eventTypeLv1Label": "외생충격",
       "eventTypeLv2": "economic_sanctions_trade_restrictions",
-      "eventTypeLv2Label": "경제 제재 / 무역 제한",
+      "eventTypeLv2Label": "경제 제재 및 무역 제한",
       "sources": [
         "Reuters"
       ]
@@ -18508,10 +18508,10 @@
         }
       ],
       "analysisText": "카타르 LNG선의 실제 이동은 시장이 우려하던 호르무즈발 공급 전면 중단 시나리오를 완화하는 신호다. 다만 이란 승인 또는 지정 항로 준수가 조건으로 거론되는 만큼 정상 상업 운항의 완전 복귀라기보다는 관리된 통항에 가깝다. 따라서 JKM에는 리스크 프리미엄 일부 되돌림이 나타나고, TTF에는 낮은 수준의 약세 요인으로 작용한다.",
-      "eventTypeLv1": "logistics_shipping",
-      "eventTypeLv1Label": "물류 / 해운",
-      "eventTypeLv2": "cargo_flow_change_port_canal_disruption",
-      "eventTypeLv2Label": "화물 흐름 변화 / 항만·운하 차질",
+      "eventTypeLv1": "inventory_logistics",
+      "eventTypeLv1Label": "재고/운송/시장",
+      "eventTypeLv2": "supply_chain_cargo_flow",
+      "eventTypeLv2Label": "공급망 및 화물 흐름",
       "sources": [
         "Reuters"
       ]
@@ -18673,10 +18673,10 @@
         }
       ],
       "analysisText": "호르무즈 통항 허용이 종전 논의의 핵심 요소로 제시된 것은 LNG 시장의 최악 시나리오를 일부 제거하는 완화 신호다. 카타르발 물량의 핵심 항로가 외교적으로 보장될 가능성이 높아지면 JKM과 TTF의 중동 공급 리스크 프리미엄이 하락할 수 있다. 다만 답변 제출은 최종 합의가 아니며 현장 충돌과 제재 이슈가 남아 있어 약세 효과는 확인된 통항 정상화 전까지 제한된다.",
-      "eventTypeLv1": "geopolitical_risk",
-      "eventTypeLv1Label": "지정학적 리스크",
-      "eventTypeLv2": "war_military_conflict",
-      "eventTypeLv2Label": "전쟁 / 군사 분쟁",
+      "eventTypeLv1": "exogenous_shock",
+      "eventTypeLv1Label": "외생충격",
+      "eventTypeLv2": "geopolitical_tension_war",
+      "eventTypeLv2Label": "지정학적 긴장 및 전쟁·군사분쟁",
       "sources": [
         "Reuters"
       ]
@@ -18838,10 +18838,10 @@
         }
       ],
       "analysisText": "평화협상 난항은 앞선 종전안 관련 완화 재료를 일부 되돌리는 이벤트다. 호르무즈 항행 안전이 의제에 남아 있음에도 미국 측의 수용 불가 평가와 드론·군함 배치 가능성이 함께 언급되면서 JKM과 TTF에는 소폭 강세 압력이 발생한다. 다만 카타르와 파키스탄을 통한 중재 채널이 유지되어 전면적 차질로 단정하기는 어렵다.",
-      "eventTypeLv1": "geopolitical_risk",
-      "eventTypeLv1Label": "지정학적 리스크",
-      "eventTypeLv2": "geopolitical_tension_instability",
-      "eventTypeLv2Label": "지정학적 긴장 / 불안정",
+      "eventTypeLv1": "exogenous_shock",
+      "eventTypeLv1Label": "외생충격",
+      "eventTypeLv2": "geopolitical_tension_war",
+      "eventTypeLv2Label": "지정학적 긴장 및 전쟁·군사분쟁",
       "sources": [
         "Reuters"
       ]
@@ -19003,10 +19003,10 @@
         }
       ],
       "analysisText": "미국 생산 감소와 재고 초과 축소는 HH 가격의 하방을 제한하는 핵심 재료다. 낮은 가격에 대응한 생산자 감산이 확인되면 시장은 공급 탄력성이 작동한다고 해석하고, 기온 상승 전망은 냉방용 전력 수요 기대를 더한다. 반면 LNG feedgas 감소는 미국 내 수요에는 약세이나 글로벌 LNG 공급에는 소폭 강세로 작용해 JKM과 TTF를 제한적으로 지지한다.",
-      "eventTypeLv1": "infrastructure_facility",
-      "eventTypeLv1Label": "인프라 / 설비",
-      "eventTypeLv2": "upstream_production_facility_capacity_utilization_change",
-      "eventTypeLv2Label": "상류 생산 시설 Capa/가동률 변화",
+      "eventTypeLv1": "supply",
+      "eventTypeLv1Label": "공급",
+      "eventTypeLv2": "upstream_utilization_change",
+      "eventTypeLv2Label": "Upstream Utilization 변동",
       "sources": [
         "Reuters"
       ]
@@ -19211,10 +19211,10 @@
         }
       ],
       "analysisText": "터키의 알제리 LNG 장기계약 확대 협상은 단기 카고 차질보다 유럽 주변부 조달 구조 변화에 가깝다. 장기 물량이 터키에 더 많이 배정되고 동남유럽으로 재공급될 경우 알제리 LNG의 스팟 가용성은 줄어들 수 있다. 따라서 TTF에는 완만한 강세 요인이지만 JKM과 HH에 대한 직접 영향은 제한적이다.",
-      "eventTypeLv1": "supply_demand_balance",
-      "eventTypeLv1Label": "수급 밸런스",
-      "eventTypeLv2": "regional_demand_competition",
-      "eventTypeLv2Label": "지역간 수요 경쟁 (유럽 vs. 아시아)",
+      "eventTypeLv1": "inventory_logistics",
+      "eventTypeLv1Label": "재고/운송/시장",
+      "eventTypeLv2": "supply_chain_cargo_flow",
+      "eventTypeLv2Label": "공급망 및 화물 흐름",
       "sources": [
         "Reuters"
       ]
@@ -19350,10 +19350,10 @@
         }
       ],
       "analysisText": "ASEAN의 연료공유 논의는 LNG 실물 구매 확대보다 중동 리스크가 아시아 에너지안보 의제로 확산되고 있음을 보여주는 정책 신호다. 단기적으로 특정 카고 확보나 수요 증가가 확인되지 않아 가격 영향은 제한적이다. 그러나 호르무즈 위기가 길어질 경우 동남아 구매자들의 선제 조달 경쟁으로 JKM 프리미엄을 지지할 수 있다.",
-      "eventTypeLv1": "supply_demand_balance",
-      "eventTypeLv1Label": "수급 밸런스",
-      "eventTypeLv2": "regional_demand_competition",
-      "eventTypeLv2Label": "지역간 수요 경쟁 (유럽 vs. 아시아)",
+      "eventTypeLv1": "inventory_logistics",
+      "eventTypeLv1Label": "재고/운송/시장",
+      "eventTypeLv2": "supply_chain_cargo_flow",
+      "eventTypeLv2Label": "공급망 및 화물 흐름",
       "sources": [
         "Reuters"
       ]
@@ -19515,10 +19515,10 @@
         }
       ],
       "analysisText": "호르무즈 통항 중단 보도는 지정학적 심리 재료를 넘어 실제 LNG 물류 차질로 전환될 수 있는 고강도 이벤트다. 카타르·UAE 등 걸프 LNG 수출의 핵심 병목이 막히면 선박 대기, 보험료 상승, 운임 급등, 대체 카고 조달 경쟁이 동시에 발생한다. 이 영향은 중동 LNG 의존도가 높은 JKM에 가장 크고, 유럽 TTF에도 글로벌 LNG 수급 경색 경로로 강하게 전이된다.",
-      "eventTypeLv1": "logistics_shipping",
-      "eventTypeLv1Label": "물류 / 해운",
-      "eventTypeLv2": "cargo_flow_change_port_canal_disruption",
-      "eventTypeLv2Label": "화물 흐름 변화 / 항만·운하 차질",
+      "eventTypeLv1": "inventory_logistics",
+      "eventTypeLv1Label": "재고/운송/시장",
+      "eventTypeLv2": "supply_chain_cargo_flow",
+      "eventTypeLv2Label": "공급망 및 화물 흐름",
       "sources": [
         "Reuters"
       ]
@@ -19743,10 +19743,10 @@
         }
       ],
       "analysisText": "이번 이벤트는 카타르 LNG 공급 신뢰도 저하가 특정 유럽 구매자 카고 취소로 현실화된 사례입니다. 유럽은 대체 카고를 확보해야 하므로 TTF가 가장 민감하게 반응하고, 유럽의 추가 입찰은 아시아와의 현물 경쟁을 통해 JKM도 끌어올릴 수 있습니다. 다만 미국 내 가스 가격인 HH에는 직접 연결고리가 약해 영향은 제한적입니다.",
-      "eventTypeLv1": "infrastructure_facility",
-      "eventTypeLv1Label": "인프라 / 설비",
-      "eventTypeLv2": "liquefaction_terminal_facility_capacity_utilization_change",
-      "eventTypeLv2Label": "액화 / 터미널 시설 Capa/가동률 변화",
+      "eventTypeLv1": "supply",
+      "eventTypeLv1Label": "공급",
+      "eventTypeLv2": "terminal_utilization_change",
+      "eventTypeLv2Label": "터미널 Utilization 변동",
       "sources": [
         "Reuters"
       ]
@@ -19929,10 +19929,10 @@
         }
       ],
       "analysisText": "이번 이벤트의 핵심은 중동 LNG 생산량보다 호르무즈 경유 수송 경로의 신뢰성이 훼손된 점입니다. 카타르 물량이 이 병목에 집중되어 있어 JKM과 TTF 모두 지정학·운임·도착 지연 프리미엄을 반영할 가능성이 큽니다. HH는 글로벌 대체 공급 논리로 간접 영향을 받을 수 있지만 미국 내 기준가에 대한 직접 충격은 작습니다.",
-      "eventTypeLv1": "geopolitical_risk",
-      "eventTypeLv1Label": "지정학적 리스크",
-      "eventTypeLv2": "war_military_conflict",
-      "eventTypeLv2Label": "전쟁 / 군사 분쟁",
+      "eventTypeLv1": "exogenous_shock",
+      "eventTypeLv1Label": "외생충격",
+      "eventTypeLv2": "geopolitical_tension_war",
+      "eventTypeLv2Label": "지정학적 긴장 및 전쟁·군사분쟁",
       "sources": [
         "Reuters"
       ]
@@ -20115,10 +20115,10 @@
         }
       ],
       "analysisText": "이번 이벤트는 실제 LNG 공급 증가보다 중동 리스크 프리미엄이 빠지는 가격 조정 성격이 강합니다. 호르무즈 통항 제한 완화와 해상 봉쇄 해제 기대는 JKM과 TTF의 운송·공급 차질 우려를 낮춥니다. 다만 최종 합의 전까지 군사 충돌 재개 가능성이 남아 있어 약세 영향은 변동성을 동반할 수 있습니다.",
-      "eventTypeLv1": "geopolitical_risk",
-      "eventTypeLv1Label": "지정학적 리스크",
-      "eventTypeLv2": "geopolitical_tension_instability",
-      "eventTypeLv2Label": "지정학적 긴장 / 불안정",
+      "eventTypeLv1": "exogenous_shock",
+      "eventTypeLv1Label": "외생충격",
+      "eventTypeLv2": "geopolitical_tension_war",
+      "eventTypeLv2Label": "지정학적 긴장 및 전쟁·군사분쟁",
       "sources": [
         "Reuters"
       ]
@@ -20301,10 +20301,10 @@
         }
       ],
       "analysisText": "유럽 저장 부족은 단순한 재고 이슈를 넘어 겨울 전 재충전 수요와 러시아 가스 대체 수요를 동시에 자극합니다. TTF는 가장 직접적인 강세 영향을 받으며, 유럽이 더 높은 가격으로 LNG를 흡수하면 JKM도 현물 카고 경쟁을 통해 상승 압력을 받습니다. HH는 미국 LNG 수출 수요 증가 기대를 통해 간접적으로 지지되지만 영향은 작습니다.",
-      "eventTypeLv1": "supply_demand_balance",
-      "eventTypeLv1Label": "수급 밸런스",
-      "eventTypeLv2": "inventory_storage_level",
-      "eventTypeLv2Label": "재고 / 저장 수준",
+      "eventTypeLv1": "inventory_logistics",
+      "eventTypeLv1Label": "재고/운송/시장",
+      "eventTypeLv2": "inventory_level",
+      "eventTypeLv2Label": "재고 수준",
       "sources": [
         "Reuters"
       ]
@@ -20488,10 +20488,10 @@
         }
       ],
       "analysisText": "이번 이벤트는 단순 카고 취소가 아니라 카타르의 액화·가스 처리 설비 손상과 중기 글로벌 공급 하향이라는 구조적 공급 리스크입니다. JKM과 TTF는 모두 카타르 공급 의존도와 현물 대체 경쟁 때문에 극단적인 강세 프리미엄을 반영할 수 있습니다. 미국 HH는 직접 공급 차질 대상은 아니지만 미국 LNG 대체 수요 확대 기대를 통해 상승 압력을 받을 수 있습니다.",
-      "eventTypeLv1": "infrastructure_facility",
-      "eventTypeLv1Label": "인프라 / 설비",
-      "eventTypeLv2": "liquefaction_terminal_facility_capacity_utilization_change",
-      "eventTypeLv2Label": "액화 / 터미널 시설 Capa/가동률 변화",
+      "eventTypeLv1": "supply",
+      "eventTypeLv1Label": "공급",
+      "eventTypeLv2": "terminal_utilization_change",
+      "eventTypeLv2Label": "터미널 Utilization 변동",
       "sources": [
         "Reuters"
       ]
@@ -20696,10 +20696,10 @@
         }
       ],
       "analysisText": "미국 LNG 공급 확대는 중동과 카타르 리스크가 커진 상황에서 중요한 완충 장치입니다. JKM과 TTF에는 추가 공급 및 대체 조달 가능성 확대가 약세로 작용합니다. 반면 미국 내에서는 액화설비 가동률 상승이 피드가스 수요를 늘려 HH를 지지합니다.",
-      "eventTypeLv1": "infrastructure_facility",
-      "eventTypeLv1Label": "인프라 / 설비",
-      "eventTypeLv2": "liquefaction_terminal_facility_capacity_utilization_change",
-      "eventTypeLv2Label": "액화 / 터미널 시설 Capa/가동률 변화",
+      "eventTypeLv1": "supply",
+      "eventTypeLv1Label": "공급",
+      "eventTypeLv2": "terminal_utilization_change",
+      "eventTypeLv2Label": "터미널 Utilization 변동",
       "sources": [
         "Reuters"
       ]
@@ -20883,10 +20883,10 @@
         }
       ],
       "analysisText": "이번 정책은 당장 물량을 줄이는 단기 충격보다는 2027년 이후 호주 동부 LNG의 수출 유연성을 낮추는 중기 구조 변화입니다. 아시아 구매자에게 호주는 근거리 핵심 공급원이므로 JKM에 가장 큰 강세 프리미엄이 붙을 수 있습니다. TTF와 HH는 글로벌 대체 조달 경로를 통한 간접 영향에 그칩니다.",
-      "eventTypeLv1": "geopolitical_risk",
-      "eventTypeLv1Label": "지정학적 리스크",
+      "eventTypeLv1": "exogenous_shock",
+      "eventTypeLv1Label": "외생충격",
       "eventTypeLv2": "economic_sanctions_trade_restrictions",
-      "eventTypeLv2Label": "경제 제재 / 무역 제한",
+      "eventTypeLv2Label": "경제 제재 및 무역 제한",
       "sources": [
         "Reuters"
       ]
@@ -21176,10 +21176,10 @@
         }
       ],
       "analysisText": "Troll 정비 연장은 카타르나 호르무즈 리스크보다 규모는 작지만 유럽 현물 가스 시장에는 즉각적인 공급 변수입니다. 노르웨이 공급 감소는 TTF에 직접 강세로 작용하며, 부족분을 LNG로 보충할 경우 JKM에도 약한 상방 압력이 전이될 수 있습니다. HH는 지역적 연결성이 낮아 영향이 미미합니다.",
-      "eventTypeLv1": "infrastructure_facility",
-      "eventTypeLv1Label": "인프라 / 설비",
-      "eventTypeLv2": "upstream_production_facility_capacity_utilization_change",
-      "eventTypeLv2Label": "상류 생산 시설 Capa/가동률 변화",
+      "eventTypeLv1": "supply",
+      "eventTypeLv1Label": "공급",
+      "eventTypeLv2": "upstream_utilization_change",
+      "eventTypeLv2Label": "Upstream Utilization 변동",
       "sources": [
         "Reuters"
       ]
@@ -21362,10 +21362,10 @@
         }
       ],
       "analysisText": "미국 LNG 봄철 정비는 글로벌 LNG와 미국 내 가스 가격에 반대 방향으로 작용한다. 액화설비 가동률 하락은 JKM·TTF에는 미국발 카고 감소 우려를 통해 강세 요인이지만, HH에는 수출용 피드가스 수요 감소로 약세 요인이다. Lower 48 생산 감소와 퍼미안 병목은 일부 상방 신호를 제공하나, 이벤트의 핵심은 계절 정비에 따른 단기 공급 혼재다.",
-      "eventTypeLv1": "infrastructure_facility",
-      "eventTypeLv1Label": "인프라 / 설비",
-      "eventTypeLv2": "liquefaction_terminal_facility_capacity_utilization_change",
-      "eventTypeLv2Label": "액화 / 터미널 시설 Capa/가동률 변화",
+      "eventTypeLv1": "supply",
+      "eventTypeLv1Label": "공급",
+      "eventTypeLv2": "terminal_utilization_change",
+      "eventTypeLv2Label": "터미널 Utilization 변동",
       "sources": [
         "Reuters"
       ]
@@ -21549,10 +21549,10 @@
         }
       ],
       "analysisText": "미국 재고 주입 예상 하회와 생산 축소는 HH에 가장 직접적인 강세 이벤트다. 저장량 증가폭이 과거 평균보다 낮고 생산업체 감산까지 동반되면서 미국 내 수급 균형이 타이트하게 해석된다. JKM과 TTF에는 미국 LNG 원가 및 수출 여력 경로를 통해 낮은 수준의 간접 강세 요인으로 작용한다.",
-      "eventTypeLv1": "supply_demand_balance",
-      "eventTypeLv1Label": "수급 밸런스",
-      "eventTypeLv2": "inventory_storage_level",
-      "eventTypeLv2Label": "재고 / 저장 수준",
+      "eventTypeLv1": "inventory_logistics",
+      "eventTypeLv1Label": "재고/운송/시장",
+      "eventTypeLv2": "inventory_level",
+      "eventTypeLv2Label": "재고 수준",
       "sources": [
         "Reuters"
       ]
@@ -21735,10 +21735,10 @@
         }
       ],
       "analysisText": "중동 리스크로 LNG 선박 확보 전략이 장기 용선 중심으로 이동하는 것은 물류 리스크가 비용 구조에 반영되고 있음을 의미한다. 이는 현물 선복 가용성을 낮추고 운임·보험·계약 프리미엄을 높여 JKM과 TTF에 강세 요인으로 작용한다. 신조선 인도와 선박 대형화는 중기 완화 요인이지만, 단기적으로는 호르무즈 리스크가 물류 프리미엄을 유지시킨다.",
-      "eventTypeLv1": "logistics_shipping",
-      "eventTypeLv1Label": "물류 / 해운",
-      "eventTypeLv2": "ocean_freight_charter_rate_change",
-      "eventTypeLv2Label": "해상 운임 / 용선료 변동",
+      "eventTypeLv1": "inventory_logistics",
+      "eventTypeLv1Label": "재고/운송/시장",
+      "eventTypeLv2": "ocean_freight",
+      "eventTypeLv2Label": "해상 운임",
       "sources": [
         "Reuters"
       ]
@@ -21921,10 +21921,10 @@
         }
       ],
       "analysisText": "Equinor의 1분기 최대 생산은 유럽 가스 공급 안정성 측면에서 TTF에 약세 요인이다. 노르웨이 생산 확대는 유럽의 LNG 현물 조달 부담을 낮춰 JKM에도 낮은 수준의 완화 효과를 줄 수 있다. 다만 실적 기반의 공급 신호이고 즉각적인 LNG 카고 증가가 아니므로 전체 영향은 유럽 리스크 프리미엄 일부 축소에 그친다.",
-      "eventTypeLv1": "infrastructure_facility",
-      "eventTypeLv1Label": "인프라 / 설비",
-      "eventTypeLv2": "upstream_production_facility_capacity_utilization_change",
-      "eventTypeLv2Label": "상류 생산 시설 Capa/가동률 변화",
+      "eventTypeLv1": "supply",
+      "eventTypeLv1Label": "공급",
+      "eventTypeLv2": "upstream_utilization_change",
+      "eventTypeLv2Label": "Upstream Utilization 변동",
       "sources": [
         "Reuters"
       ]
@@ -22086,10 +22086,10 @@
         }
       ],
       "analysisText": "EU 메탄 규정 유예 검토는 유럽 공급 안보와 환경 규제 간 균형을 조정하는 정책 이벤트다. 수입 가스와 LNG 공급자의 시장 접근 제한 가능성이 낮아지면 TTF의 장기 리스크 프리미엄은 완화된다. 다만 초안 단계라 단기 현물 가격 영향은 제한적이며, JKM에는 유럽 조달 경쟁 완화라는 낮은 수준의 약세 효과만 있다.",
-      "eventTypeLv1": "geopolitical_risk",
-      "eventTypeLv1Label": "지정학적 리스크",
+      "eventTypeLv1": "exogenous_shock",
+      "eventTypeLv1Label": "외생충격",
       "eventTypeLv2": "economic_sanctions_trade_restrictions",
-      "eventTypeLv2Label": "경제 제재 / 무역 제한",
+      "eventTypeLv2Label": "경제 제재 및 무역 제한",
       "sources": [
         "Reuters"
       ]
@@ -22251,10 +22251,10 @@
         }
       ],
       "analysisText": "유럽의 온화한 날씨와 태양광 발전 증가는 수요 측면에서 TTF를 완화하는 요인이다. 난방 수요와 가스발전 수요가 동시에 낮아지면 저장 주입 부담과 현물 LNG 구매 필요성이 일부 줄어든다. 다만 현재 시장의 주요 동인이 중동 물류 리스크와 카타르 공급 차질이므로 가격 방향을 단독으로 전환할 정도의 신호는 아니다.",
-      "eventTypeLv1": "geopolitical_risk",
-      "eventTypeLv1Label": "지정학적 리스크",
-      "eventTypeLv2": "geopolitical_tension_instability",
-      "eventTypeLv2Label": "지정학적 긴장 / 불안정",
+      "eventTypeLv1": "exogenous_shock",
+      "eventTypeLv1Label": "외생충격",
+      "eventTypeLv2": "geopolitical_tension_war",
+      "eventTypeLv2Label": "지정학적 긴장 및 전쟁·군사분쟁",
       "sources": [
         "Reuters"
       ]
@@ -22416,10 +22416,10 @@
         }
       ],
       "analysisText": "호르무즈 통항 차질은 LNG 시장에서 가장 직접적인 물류 리스크 이벤트 중 하나다. 카타르 LNG의 물리적 생산이 유지되더라도 선박 대기, 보험료, 호위 필요성은 유효 공급 가용성과 도착 비용을 악화시킨다. JKM은 아시아의 중동산 LNG 의존도 때문에 가장 민감하고, TTF도 대체 화물 경쟁과 리스크 프리미엄을 통해 강한 상방 압력을 받는다.",
-      "eventTypeLv1": "logistics_shipping",
-      "eventTypeLv1Label": "물류 / 해운",
-      "eventTypeLv2": "cargo_flow_change_port_canal_disruption",
-      "eventTypeLv2Label": "화물 흐름 변화 / 항만·운하 차질",
+      "eventTypeLv1": "inventory_logistics",
+      "eventTypeLv1Label": "재고/운송/시장",
+      "eventTypeLv2": "supply_chain_cargo_flow",
+      "eventTypeLv2Label": "공급망 및 화물 흐름",
       "sources": [
         "Reuters"
       ]
@@ -22644,10 +22644,10 @@
         }
       ],
       "analysisText": "카타르 Edison향 LNG 취소와 포스마쥬르 연장은 단순 지연이 아니라 유럽향 계약 인도량 감소라는 점에서 가격 영향이 크다. 유럽 구매자는 대체 현물·단기 물량을 확보해야 하며, 이 경쟁은 아시아 시장으로도 전이되어 JKM을 함께 끌어올릴 수 있다. 특히 호르무즈 항행 리스크가 동시에 존재해 카타르 공급 차질의 가격 민감도는 높게 평가된다.",
-      "eventTypeLv1": "infrastructure_facility",
-      "eventTypeLv1Label": "인프라 / 설비",
-      "eventTypeLv2": "liquefaction_terminal_facility_capacity_utilization_change",
-      "eventTypeLv2Label": "액화 / 터미널 시설 Capa/가동률 변화",
+      "eventTypeLv1": "supply",
+      "eventTypeLv1Label": "공급",
+      "eventTypeLv2": "terminal_utilization_change",
+      "eventTypeLv2Label": "터미널 Utilization 변동",
       "sources": [
         "Reuters"
       ]
@@ -22872,10 +22872,10 @@
         }
       ],
       "analysisText": "미군과 이란 간 해상 충돌 가능성은 LNG 생산설비 피해보다 호르무즈 통항 안전성에 대한 재평가를 유발하는 이벤트다. 아시아는 중동산 LNG 의존도가 높아 JKM에 가장 큰 상방 압력이 발생하며, 유럽도 대체 화물 확보 경쟁과 지정학 리스크 프리미엄을 통해 TTF가 지지된다. HH는 미국 국내 수급과의 연결이 약해 영향이 제한적이다.",
-      "eventTypeLv1": "geopolitical_risk",
-      "eventTypeLv1Label": "지정학적 리스크",
-      "eventTypeLv2": "war_military_conflict",
-      "eventTypeLv2Label": "전쟁 / 군사 분쟁",
+      "eventTypeLv1": "exogenous_shock",
+      "eventTypeLv1Label": "외생충격",
+      "eventTypeLv2": "geopolitical_tension_war",
+      "eventTypeLv2Label": "지정학적 긴장 및 전쟁·군사분쟁",
       "sources": [
         "Reuters"
       ]
@@ -23079,10 +23079,10 @@
         }
       ],
       "analysisText": "EU 저장률 하락은 여름철 비수기에도 유럽의 보충 구매 압력을 유지시키는 상방 요인이다. TTF에 가장 직접적인 영향을 주며, 유럽이 LNG 수입을 늘리면 아시아와의 화물 경쟁을 통해 JKM에도 중간 정도의 상방 압력이 전이될 수 있다. HH에 대한 직접 영향은 제한적이다.",
-      "eventTypeLv1": "supply_demand_balance",
-      "eventTypeLv1Label": "수급 밸런스",
-      "eventTypeLv2": "inventory_storage_level",
-      "eventTypeLv2Label": "재고 / 저장 수준",
+      "eventTypeLv1": "inventory_logistics",
+      "eventTypeLv1Label": "재고/운송/시장",
+      "eventTypeLv2": "inventory_level",
+      "eventTypeLv2Label": "재고 수준",
       "sources": [
         "Reuters"
       ]
@@ -23265,10 +23265,10 @@
         }
       ],
       "analysisText": "미국 LNG 정비로 피드가스가 4월 18.8 bcfd에서 5월 평균 17.3 bcfd로 감소한 것은 글로벌 LNG 공급에는 단기 타이트 요인이다. JKM과 TTF는 미국산 대체 화물 감소로 상방 압력을 받지만, HH는 수출용 가스 수요 감소로 반대로 하방 압력을 받는다. 정비 종료 시 회복될 수 있어 구조적 충격보다는 수주 단위의 영향으로 보는 것이 적절하다.",
-      "eventTypeLv1": "infrastructure_facility",
-      "eventTypeLv1Label": "인프라 / 설비",
-      "eventTypeLv2": "liquefaction_terminal_facility_capacity_utilization_change",
-      "eventTypeLv2Label": "액화 / 터미널 시설 Capa/가동률 변화",
+      "eventTypeLv1": "supply",
+      "eventTypeLv1Label": "공급",
+      "eventTypeLv2": "terminal_utilization_change",
+      "eventTypeLv2Label": "터미널 Utilization 변동",
       "sources": [
         "Reuters"
       ]
@@ -23451,10 +23451,10 @@
         }
       ],
       "analysisText": "중국의 LNG 수입 축소는 아시아 LNG 시장의 한계 수요를 약화시키는 재료로 JKM 상승폭을 제한한다. 특히 석탄, 국내 가스, 파이프라인 가스 대체가 가능하다는 점은 중동 공급 리스크의 가격 전가를 일부 흡수한다. TTF에는 아시아-유럽 카고 경쟁 완화라는 간접 약세 요인이지만, HH 영향은 미미하다.",
-      "eventTypeLv1": "energy_mix_transition",
-      "eventTypeLv1Label": "에너지 믹스 전환",
-      "eventTypeLv2": "alternative_fuel_availability",
-      "eventTypeLv2Label": "대체 연료 가용성",
+      "eventTypeLv1": "demand",
+      "eventTypeLv1Label": "수요",
+      "eventTypeLv2": "coal_power",
+      "eventTypeLv2Label": "석탄 발전",
       "sources": [
         "Reuters"
       ]
@@ -23637,10 +23637,10 @@
         }
       ],
       "analysisText": "러시아 LNG 수출 증가와 유럽향 물량 확대는 TTF에 공급 완화 재료로 작용한다. 다만 러시아산 LNG는 제재, 결제, 운항, 수입국 정책 리스크가 커서 시장은 이를 완전히 안정적인 공급으로 평가하지 않는다. JKM에는 유럽의 카고 경쟁 완화라는 간접 약세 요인만 제한적으로 작용한다.",
-      "eventTypeLv1": "infrastructure_facility",
-      "eventTypeLv1Label": "인프라 / 설비",
-      "eventTypeLv2": "liquefaction_terminal_facility_capacity_utilization_change",
-      "eventTypeLv2Label": "액화 / 터미널 시설 Capa/가동률 변화",
+      "eventTypeLv1": "supply",
+      "eventTypeLv1Label": "공급",
+      "eventTypeLv2": "terminal_utilization_change",
+      "eventTypeLv2Label": "터미널 Utilization 변동",
       "sources": [
         "Reuters"
       ]
@@ -23802,10 +23802,10 @@
         }
       ],
       "analysisText": "Naftogaz 생산시설 피격은 글로벌 LNG 설비 차질은 아니지만 유럽 역내 가스 공급 완충력을 약화시키는 이벤트다. TTF는 전쟁 관련 에너지 인프라 리스크 프리미엄을 반영해 상승 압력을 받는다. 유럽의 LNG 보완 수요가 커질 경우 JKM에도 약한 상방 전이가 가능하나, HH 영향은 제한적이다.",
-      "eventTypeLv1": "infrastructure_facility",
-      "eventTypeLv1Label": "인프라 / 설비",
-      "eventTypeLv2": "upstream_production_facility_capacity_utilization_change",
-      "eventTypeLv2Label": "상류 생산 시설 Capa/가동률 변화",
+      "eventTypeLv1": "supply",
+      "eventTypeLv1Label": "공급",
+      "eventTypeLv2": "upstream_utilization_change",
+      "eventTypeLv2Label": "Upstream Utilization 변동",
       "sources": [
         "Reuters"
       ]
@@ -23988,10 +23988,10 @@
         }
       ],
       "analysisText": "LNG Canada의 월간 100만 톤 돌파는 아시아 시장에 접근성이 높은 비중동 공급원이 확대되었다는 점에서 JKM에 완화적이다. 중동 물류 리스크가 커진 상황에서 대체 공급원 역할이 부각되지만, 단일 프로젝트의 월간 증가만으로 글로벌 가격 추세를 바꾸기는 어렵다. TTF와 HH에는 직접성이 낮아 영향이 미미하다.",
-      "eventTypeLv1": "infrastructure_facility",
-      "eventTypeLv1Label": "인프라 / 설비",
-      "eventTypeLv2": "liquefaction_terminal_facility_capacity_utilization_change",
-      "eventTypeLv2Label": "액화 / 터미널 시설 Capa/가동률 변화",
+      "eventTypeLv1": "supply",
+      "eventTypeLv1Label": "공급",
+      "eventTypeLv2": "terminal_utilization_change",
+      "eventTypeLv2Label": "터미널 Utilization 변동",
       "sources": [
         "Reuters"
       ]
@@ -24153,10 +24153,10 @@
         }
       ],
       "analysisText": "Eirin 가스전 생산 개시는 유럽의 파이프라인 공급 안정성을 높이는 재료로 TTF에 하방 압력을 준다. 프로젝트 규모는 유럽 전체 수급을 구조적으로 바꿀 정도는 아니지만, 낮은 저장률과 노르웨이 정비 이슈가 있는 상황에서는 의미 있는 완충 신호다. 유럽 LNG 수입 필요가 줄면 JKM에도 약한 약세 효과가 전이될 수 있다.",
-      "eventTypeLv1": "infrastructure_facility",
-      "eventTypeLv1Label": "인프라 / 설비",
-      "eventTypeLv2": "upstream_production_facility_capacity_utilization_change",
-      "eventTypeLv2Label": "상류 생산 시설 Capa/가동률 변화",
+      "eventTypeLv1": "supply",
+      "eventTypeLv1Label": "공급",
+      "eventTypeLv2": "upstream_utilization_change",
+      "eventTypeLv2Label": "Upstream Utilization 변동",
       "sources": [
         "Reuters"
       ]
@@ -24318,10 +24318,10 @@
         }
       ],
       "analysisText": "이번 이벤트는 미국 생산업체가 낮은 가격에 대응해 공급을 조절하고 있다는 신호로, HH에는 명확한 하방 완화 요인이다. 다만 LNG 수출 터미널의 실제 가동률이나 글로벌 카고 공급 변화가 확인되지 않아 JKM과 TTF로의 전이는 약하다. 감산이 반복·장기화될 경우 미국 LNG 피드가스 비용을 통해 글로벌 LNG 가격에 간접 상방 압력이 생길 수 있다.",
-      "eventTypeLv1": "infrastructure_facility",
-      "eventTypeLv1Label": "인프라 / 설비",
-      "eventTypeLv2": "upstream_production_facility_capacity_utilization_change",
-      "eventTypeLv2Label": "상류 생산 시설 Capa/가동률 변화",
+      "eventTypeLv1": "supply",
+      "eventTypeLv1Label": "공급",
+      "eventTypeLv2": "upstream_utilization_change",
+      "eventTypeLv2Label": "Upstream Utilization 변동",
       "sources": [
         "Reuters"
       ]
@@ -24457,10 +24457,10 @@
         }
       ],
       "analysisText": "Waha의 장기 마이너스 가격은 미국 전체 가스 수급보다 퍼미안 산지의 수송 제약과 지역 basis 왜곡을 보여준다. 단기적으로 HH 자체에 미치는 영향은 낮지만, 병목이 생산 감산으로 이어질 경우 미국 전체 공급에 일부 상방 압력을 줄 수 있다. 글로벌 LNG 가격에는 아직 실제 수출 차질이 확인되지 않아 영향이 거의 없다.",
-      "eventTypeLv1": "infrastructure_facility",
-      "eventTypeLv1Label": "인프라 / 설비",
-      "eventTypeLv2": "pipeline_transport_infrastructure_capacity_utilization_change",
-      "eventTypeLv2Label": "파이프라인/수송 인프라 Capa/가동률 변화",
+      "eventTypeLv1": "supply",
+      "eventTypeLv1Label": "공급",
+      "eventTypeLv2": "pipeline_utilization_change",
+      "eventTypeLv2Label": "파이프라인 Utilization 변동",
       "sources": [
         "Reuters"
       ]
@@ -24596,10 +24596,10 @@
         }
       ],
       "analysisText": "저풍속은 공급 차질은 아니지만 가스발전이 풍력 부족분을 대체하게 만들기 때문에 유럽 가스 수요를 즉각적으로 높일 수 있다. 영향은 지속 기간에 따라 달라지며, 며칠 단위라면 TTF 근월물 중심의 중간 이하 상방 압력에 그칠 가능성이 크다. JKM과 HH에는 직접 수급 연결성이 낮다.",
-      "eventTypeLv1": "energy_mix_transition",
-      "eventTypeLv1Label": "에너지 믹스 전환",
-      "eventTypeLv2": "renewable_power_expansion_reduction",
-      "eventTypeLv2Label": "재생에너지 발전 확대 / 축소",
+      "eventTypeLv1": "demand",
+      "eventTypeLv1Label": "수요",
+      "eventTypeLv2": "renewable_energy",
+      "eventTypeLv2Label": "재생에너지",
       "sources": [
         "Reuters"
       ]
@@ -24735,10 +24735,10 @@
         }
       ],
       "analysisText": "GTA FLNG의 설계용량 초과 생산은 대서양권 신규 LNG 공급원이 안정적으로 기여하고 있음을 보여준다. 규모는 카타르나 미국 대형 증설 대비 작지만, 유럽의 현물 조달 포트폴리오를 넓혀 TTF에는 완만한 하방 압력을 준다. JKM에는 글로벌 공급 증가 신호로 낮은 수준의 약세 요인에 그친다.",
-      "eventTypeLv1": "infrastructure_facility",
-      "eventTypeLv1Label": "인프라 / 설비",
-      "eventTypeLv2": "liquefaction_terminal_facility_capacity_utilization_change",
-      "eventTypeLv2Label": "액화 / 터미널 시설 Capa/가동률 변화",
+      "eventTypeLv1": "supply",
+      "eventTypeLv1Label": "공급",
+      "eventTypeLv2": "terminal_utilization_change",
+      "eventTypeLv2Label": "터미널 Utilization 변동",
       "sources": [
         "Reuters"
       ]
@@ -24900,10 +24900,10 @@
         }
       ],
       "analysisText": "미국 단기 가스 수요 전망 하향은 전력·냉난방 수요 둔화와 저장 주입 증가 기대를 통해 HH에 직접적인 약세 요인으로 작용한다. 이미 선물 가격 하락으로 반영된 만큼 단기 가격 민감도가 높다. 다만 이는 미국 내 수요 신호이므로 JKM과 TTF에는 직접 영향이 크지 않다.",
-      "eventTypeLv1": "geopolitical_risk",
-      "eventTypeLv1Label": "지정학적 리스크",
-      "eventTypeLv2": "war_military_conflict",
-      "eventTypeLv2Label": "전쟁 / 군사 분쟁",
+      "eventTypeLv1": "exogenous_shock",
+      "eventTypeLv1Label": "외생충격",
+      "eventTypeLv2": "geopolitical_tension_war",
+      "eventTypeLv2Label": "지정학적 긴장 및 전쟁·군사분쟁",
       "sources": [
         "Reuters"
       ]
@@ -25065,10 +25065,10 @@
         }
       ],
       "analysisText": "호르무즈 통항 제한 장기화는 중동 LNG의 물리적 도착 신뢰도를 낮추는 핵심 해상 병목 리스크다. 생산설비 피해가 확인되지 않았더라도 선박 지연, 보험료 상승, 항로 통제는 현물 카고 프리미엄을 빠르게 높일 수 있다. 중동산 의존도가 큰 JKM의 반응이 가장 크며, 유럽도 대체 조달 경쟁을 통해 TTF가 강하게 지지될 수 있다.",
-      "eventTypeLv1": "logistics_shipping",
-      "eventTypeLv1Label": "물류 / 해운",
-      "eventTypeLv2": "cargo_flow_change_port_canal_disruption",
-      "eventTypeLv2Label": "화물 흐름 변화 / 항만·운하 차질",
+      "eventTypeLv1": "inventory_logistics",
+      "eventTypeLv1Label": "재고/운송/시장",
+      "eventTypeLv2": "supply_chain_cargo_flow",
+      "eventTypeLv2Label": "공급망 및 화물 흐름",
       "sources": [
         "Reuters"
       ]
@@ -25273,10 +25273,10 @@
         }
       ],
       "analysisText": "이번 이벤트는 통항 제한 우려를 넘어 선박 정체라는 실제 물류 차질이 발생했다는 점에서 단기 가격 민감도가 높다. 미국의 정체 해소 작전은 완화 신호일 수 있지만, 작전이 필요할 정도의 병목은 오히려 단기 리스크 프리미엄을 키운다. 중동 LNG 도착 지연은 JKM에 더 강하게, TTF에는 중간 수준의 상방 압력으로 작용한다.",
-      "eventTypeLv1": "logistics_shipping",
-      "eventTypeLv1Label": "물류 / 해운",
-      "eventTypeLv2": "cargo_flow_change_port_canal_disruption",
-      "eventTypeLv2Label": "화물 흐름 변화 / 항만·운하 차질",
+      "eventTypeLv1": "inventory_logistics",
+      "eventTypeLv1Label": "재고/운송/시장",
+      "eventTypeLv2": "supply_chain_cargo_flow",
+      "eventTypeLv2Label": "공급망 및 화물 흐름",
       "sources": [
         "Reuters"
       ]
@@ -25481,10 +25481,10 @@
         }
       ],
       "analysisText": "푸자이라·ADNOC 관련 공격 보도는 LNG 생산설비 직접 피해보다는 걸프 해상 물류와 항만 접근 안정성 훼손이라는 경로로 가격에 영향을 준다. 선박 보험료, 대기, 우회 운항 리스크가 커지면 중동산 LNG의 도착 신뢰도가 낮아진다. 이에 따라 중동 의존도가 높은 JKM이 더 크게 지지되고, TTF도 대체 조달 경쟁을 통해 중간 수준의 상방 압력을 받는다.",
-      "eventTypeLv1": "geopolitical_risk",
-      "eventTypeLv1Label": "지정학적 리스크",
-      "eventTypeLv2": "war_military_conflict",
-      "eventTypeLv2Label": "전쟁 / 군사 분쟁",
+      "eventTypeLv1": "exogenous_shock",
+      "eventTypeLv1Label": "외생충격",
+      "eventTypeLv2": "geopolitical_tension_war",
+      "eventTypeLv2Label": "지정학적 긴장 및 전쟁·군사분쟁",
       "sources": [
         "Reuters"
       ]
@@ -25668,10 +25668,10 @@
         }
       ],
       "analysisText": "미·이스라엘-이란 충돌 장기화는 호르무즈 통항 안전과 걸프 LNG 수출 신뢰도를 낮추는 전형적인 지정학적 프리미엄 요인이다. 카타르 LNG 생산 차질은 확인되지 않았지만 선박 운항 회피, 보험료 상승, 항로 지연 가능성이 JKM과 TTF를 지지한다. 지역적으로 중동 물류 의존도가 큰 아시아 JKM 영향이 가장 크고, HH 영향은 제한적이다.",
-      "eventTypeLv1": "geopolitical_risk",
-      "eventTypeLv1Label": "지정학적 리스크",
-      "eventTypeLv2": "war_military_conflict",
-      "eventTypeLv2Label": "전쟁 / 군사 분쟁",
+      "eventTypeLv1": "exogenous_shock",
+      "eventTypeLv1Label": "외생충격",
+      "eventTypeLv2": "geopolitical_tension_war",
+      "eventTypeLv2Label": "지정학적 긴장 및 전쟁·군사분쟁",
       "sources": [
         "Reuters"
       ]
@@ -25855,10 +25855,10 @@
         }
       ],
       "analysisText": "TurkStream 공급 급감은 유럽 가스 밸런스에 직접적인 타이트닝 신호이며 TTF에 가장 큰 상방 요인이다. 유럽이 부족분을 LNG로 보완하면 현물 카고 유치 경쟁이 확대되어 JKM에도 중간 수준의 상승 압력이 전이될 수 있다. HH는 미국 내 수급 변화가 동반되지 않아 영향이 작다.",
-      "eventTypeLv1": "infrastructure_facility",
-      "eventTypeLv1Label": "인프라 / 설비",
-      "eventTypeLv2": "pipeline_transport_infrastructure_capacity_utilization_change",
-      "eventTypeLv2Label": "파이프라인/수송 인프라 Capa/가동률 변화",
+      "eventTypeLv1": "supply",
+      "eventTypeLv1Label": "공급",
+      "eventTypeLv2": "pipeline_utilization_change",
+      "eventTypeLv2Label": "파이프라인 Utilization 변동",
       "sources": [
         "Reuters"
       ]
@@ -26042,10 +26042,10 @@
         }
       ],
       "analysisText": "미국 LNG feedgas가 4월 18.8bcfd에서 5월 17.4bcfd로 감소한 것은 글로벌 LNG 시장에는 미국산 카고 공급 여력 약화 신호다. 이로 인해 JKM과 TTF는 대체 조달 경쟁을 통해 상승 압력을 받는다. 반면 Henry Hub에는 LNG 수출용 가스 수요 감소가 단기 약세 요인으로 작용한다.",
-      "eventTypeLv1": "infrastructure_facility",
-      "eventTypeLv1Label": "인프라 / 설비",
-      "eventTypeLv2": "liquefaction_terminal_facility_capacity_utilization_change",
-      "eventTypeLv2Label": "액화 / 터미널 시설 Capa/가동률 변화",
+      "eventTypeLv1": "supply",
+      "eventTypeLv1Label": "공급",
+      "eventTypeLv2": "terminal_utilization_change",
+      "eventTypeLv2Label": "터미널 Utilization 변동",
       "sources": [
         "Reuters"
       ]
@@ -26208,10 +26208,10 @@
         }
       ],
       "analysisText": "미국 Lower 48 생산 감소는 Henry Hub에 직접적인 상방 요인으로, 이미 선물 가격 상승으로 반영되고 있다. 글로벌 LNG 시장에는 미국 원료가스 비용 상승을 통해 간접적으로 JKM과 TTF 하방을 제한하는 정도의 영향이 있다. 다만 LNG feedgas 감소와 함께 나타난 신호이므로 LNG 수출 공급에 대한 순효과는 제한적으로 해석해야 한다.",
-      "eventTypeLv1": "infrastructure_facility",
-      "eventTypeLv1Label": "인프라 / 설비",
-      "eventTypeLv2": "upstream_production_facility_capacity_utilization_change",
-      "eventTypeLv2Label": "상류 생산 시설 Capa/가동률 변화",
+      "eventTypeLv1": "supply",
+      "eventTypeLv1Label": "공급",
+      "eventTypeLv2": "upstream_utilization_change",
+      "eventTypeLv2Label": "Upstream Utilization 변동",
       "sources": [
         "Reuters"
       ]
@@ -26348,10 +26348,10 @@
         }
       ],
       "analysisText": "대이란 봉쇄·제재 교착은 LNG 직접 제재가 아니더라도 걸프 지역 해상 운송의 법적 불확실성과 보험 비용을 높인다. 실제 카타르 LNG 차질은 확인되지 않았지만 선주와 보험사의 위험 회피가 JKM과 TTF 프리미엄을 유지시킬 수 있다. HH는 중동 운송 리스크와 직접 연결성이 낮다.",
-      "eventTypeLv1": "geopolitical_risk",
-      "eventTypeLv1Label": "지정학적 리스크",
+      "eventTypeLv1": "exogenous_shock",
+      "eventTypeLv1Label": "외생충격",
       "eventTypeLv2": "economic_sanctions_trade_restrictions",
-      "eventTypeLv2Label": "경제 제재 / 무역 제한",
+      "eventTypeLv2Label": "경제 제재 및 무역 제한",
       "sources": [
         "Reuters"
       ]
@@ -26535,10 +26535,10 @@
         }
       ],
       "analysisText": "대이란 공습 재개 경고는 실제 공급 차질보다 먼저 운송·보험·선복 배치에 영향을 주는 리스크 요인이다. 카타르 LNG 터미널 피해는 확인되지 않았지만 호르무즈와 걸프 해역의 선박 운항 위험이 커지면 JKM과 TTF 프리미엄이 확대될 수 있다. HH는 중동발 물류 리스크와의 직접 연결성이 낮아 영향이 거의 없다.",
-      "eventTypeLv1": "geopolitical_risk",
-      "eventTypeLv1Label": "지정학적 리스크",
-      "eventTypeLv2": "war_military_conflict",
-      "eventTypeLv2Label": "전쟁 / 군사 분쟁",
+      "eventTypeLv1": "exogenous_shock",
+      "eventTypeLv1Label": "외생충격",
+      "eventTypeLv2": "geopolitical_tension_war",
+      "eventTypeLv2Label": "지정학적 긴장 및 전쟁·군사분쟁",
       "sources": [
         "Reuters"
       ]
@@ -26722,10 +26722,10 @@
         }
       ],
       "analysisText": "Waha 허브의 장기 마이너스 가격은 퍼미안 가스가 수요지와 수출 터미널로 원활히 이동하지 못하는 병목 신호다. 현재는 LNG 수출 터미널 조달 차질보다 미국 내 허브 간 가격 괴리와 생산 신호 왜곡의 의미가 더 크다. 따라서 JKM과 TTF 영향은 거의 없고, HH에는 잠재적 감산 리스크를 통한 낮은 수준의 상방 요인으로 해석된다.",
-      "eventTypeLv1": "infrastructure_facility",
-      "eventTypeLv1Label": "인프라 / 설비",
-      "eventTypeLv2": "pipeline_transport_infrastructure_capacity_utilization_change",
-      "eventTypeLv2Label": "파이프라인/수송 인프라 Capa/가동률 변화",
+      "eventTypeLv1": "supply",
+      "eventTypeLv1Label": "공급",
+      "eventTypeLv2": "pipeline_utilization_change",
+      "eventTypeLv2Label": "파이프라인 Utilization 변동",
       "sources": [
         "Reuters"
       ]
@@ -26888,10 +26888,10 @@
         }
       ],
       "analysisText": "미·이란 핵·평화안 교착은 중동 리스크 완화 시점을 늦추는 요인으로, LNG 시장에는 리스크 프리미엄 유지로 작용한다. 합의 진전 시에는 프리미엄 축소가 가능하지만 현재는 통항 재개, 제재 해제, 군사적 보장 등 쟁점이 남아 있다. 따라서 JKM에는 중간 수준, TTF에는 낮은 수준의 상방 영향이 예상되며 HH 영향은 제한적이다.",
-      "eventTypeLv1": "geopolitical_risk",
-      "eventTypeLv1Label": "지정학적 리스크",
-      "eventTypeLv2": "geopolitical_tension_instability",
-      "eventTypeLv2Label": "지정학적 긴장 / 불안정",
+      "eventTypeLv1": "exogenous_shock",
+      "eventTypeLv1Label": "외생충격",
+      "eventTypeLv2": "geopolitical_tension_war",
+      "eventTypeLv2Label": "지정학적 긴장 및 전쟁·군사분쟁",
       "sources": [
         "Reuters"
       ]
@@ -27054,10 +27054,10 @@
         }
       ],
       "analysisText": "연준의 매파적 스탠스는 LNG 공급 자체를 줄이지는 않지만, 산업활동·전력수요·현물 구매 심리를 둔화시키는 수요 측 하방 요인이다. 특히 고금리 지속은 구매자들이 현물 조달을 늦추거나 보수적 재고 운용을 택하게 만들어 JKM과 TTF의 상승폭을 제한할 수 있다. HH 역시 미국 경기 민감 수요 기대에는 부정적이나, 단기 가격은 날씨와 생산·재고 변수의 영향이 더 커 영향은 낮다.",
-      "eventTypeLv1": "macroeconomy_policy",
-      "eventTypeLv1Label": "거시경제 / 정책",
-      "eventTypeLv2": "interest_rate_fx_policy_change",
-      "eventTypeLv2Label": "금리 / 통화정책 변화",
+      "eventTypeLv1": "exogenous_shock",
+      "eventTypeLv1Label": "외생충격",
+      "eventTypeLv2": "interest_rate_fx",
+      "eventTypeLv2Label": "금리 및 통화",
       "sources": [
         "Reuters"
       ]
@@ -27241,10 +27241,10 @@
         }
       ],
       "analysisText": "Neptun Deep 파이프라인 착수는 유럽의 중장기 역내 가스 공급 확대와 러시아 의존 축소에 대한 신뢰를 높이는 이벤트다. 2027년 첫 가스 목표가 유지된다는 점은 TTF의 장기 공급 리스크 프리미엄을 낮추는 하방 요인이지만, 현재 현물 LNG 수급에는 즉각적인 물량을 제공하지 않는다. JKM에는 유럽의 미래 LNG 흡수력이 낮아질 수 있다는 간접적 하방 효과가 작고, HH 영향은 거의 없다.",
-      "eventTypeLv1": "infrastructure_facility",
-      "eventTypeLv1Label": "인프라 / 설비",
-      "eventTypeLv2": "pipeline_transport_infrastructure_capacity_utilization_change",
-      "eventTypeLv2Label": "파이프라인/수송 인프라 Capa/가동률 변화",
+      "eventTypeLv1": "supply",
+      "eventTypeLv1Label": "공급",
+      "eventTypeLv2": "pipeline_utilization_change",
+      "eventTypeLv2Label": "파이프라인 Utilization 변동",
       "sources": [
         "Reuters"
       ]
@@ -27449,10 +27449,10 @@
         }
       ],
       "analysisText": "호르무즈 해협 통항 급감은 카타르 LNG의 물리적 병목 리스크를 키워 JKM에 강한 상방 압력을 준다. 운임·전쟁위험 보험료 상승과 도착 일정 불확실성은 아시아 현물 도착가격을 직접 끌어올린다. 유럽도 카타르 물량 의존과 낮은 저장률 때문에 TTF가 지지되지만, HH 영향은 매우 제한적이다.",
-      "eventTypeLv1": "logistics_shipping",
-      "eventTypeLv1Label": "물류 / 해운",
-      "eventTypeLv2": "cargo_flow_change_port_canal_disruption",
-      "eventTypeLv2Label": "화물 흐름 변화 / 항만·운하 차질",
+      "eventTypeLv1": "inventory_logistics",
+      "eventTypeLv1Label": "재고/운송/시장",
+      "eventTypeLv2": "supply_chain_cargo_flow",
+      "eventTypeLv2Label": "공급망 및 화물 흐름",
       "sources": [
         "Reuters"
       ]
@@ -27636,10 +27636,10 @@
         }
       ],
       "analysisText": "휴전 기대 약화는 LNG 설비 차질보다는 중동 공급망 신뢰도 하락을 통해 가격에 반영된다. 호르무즈 리스크와 결합되면 JKM은 선제 조달, 보험료, 운항 회피를 통해 강한 상방 압력을 받을 수 있다. TTF도 글로벌 LNG 경쟁 측면에서 지지되지만, HH 직접 영향은 미미하다.",
-      "eventTypeLv1": "geopolitical_risk",
-      "eventTypeLv1Label": "지정학적 리스크",
-      "eventTypeLv2": "war_military_conflict",
-      "eventTypeLv2Label": "전쟁 / 군사 분쟁",
+      "eventTypeLv1": "exogenous_shock",
+      "eventTypeLv1Label": "외생충격",
+      "eventTypeLv2": "geopolitical_tension_war",
+      "eventTypeLv2Label": "지정학적 긴장 및 전쟁·군사분쟁",
       "sources": [
         "Reuters"
       ]
@@ -27823,10 +27823,10 @@
         }
       ],
       "analysisText": "아시아 여름 전 조달 경쟁은 JKM의 가장 직접적인 강세 요인이다. 한국 재고 감소, 대만 수입 증가, 남아시아 구매는 현물 카고 흡수력을 키우지만 파키스탄 취소와 중국 둔화가 상승폭을 일부 제한한다. 유럽은 카고 경쟁을 통해 간접적으로 영향을 받으며, HH 영향은 거의 없다.",
-      "eventTypeLv1": "supply_demand_balance",
-      "eventTypeLv1Label": "수급 밸런스",
-      "eventTypeLv2": "regional_demand_competition",
-      "eventTypeLv2Label": "지역간 수요 경쟁 (유럽 vs. 아시아)",
+      "eventTypeLv1": "inventory_logistics",
+      "eventTypeLv1Label": "재고/운송/시장",
+      "eventTypeLv2": "supply_chain_cargo_flow",
+      "eventTypeLv2Label": "공급망 및 화물 흐름",
       "sources": [
         "Reuters"
       ]
@@ -28010,10 +28010,10 @@
         }
       ],
       "analysisText": "글로벌 액화설비 가동은 신규 공급과 단기 차질이 동시에 나타나는 혼조 국면이다. JKM 관점에서는 호르무즈 리스크와 아시아 조달 수요가 있는 상황이라 작은 액화 차질도 현물 프리미엄을 키울 수 있다. Golden Pass의 추가 카고는 중기적으로 완충 요인이지만 단기 가격 방향은 다소 강세다.",
-      "eventTypeLv1": "infrastructure_facility",
-      "eventTypeLv1Label": "인프라 / 설비",
-      "eventTypeLv2": "liquefaction_terminal_facility_capacity_utilization_change",
-      "eventTypeLv2Label": "액화 / 터미널 시설 Capa/가동률 변화",
+      "eventTypeLv1": "supply",
+      "eventTypeLv1Label": "공급",
+      "eventTypeLv2": "terminal_utilization_change",
+      "eventTypeLv2Label": "터미널 Utilization 변동",
       "sources": [
         "Reuters"
       ]
@@ -28176,10 +28176,10 @@
         }
       ],
       "analysisText": "미국 가스 생산 감소는 HH에 가장 직접적이고 강한 상방 요인이다. JKM에는 즉각적인 공급 부족보다 미국산 LNG의 feedgas 비용과 FOB Gulf Coast 가격 상승 가능성을 통해 약하게 전이된다. 글로벌 LNG 수급을 크게 바꾸는 이벤트는 아니지만 가격 하방을 제한하는 비용 요인이다.",
-      "eventTypeLv1": "infrastructure_facility",
-      "eventTypeLv1Label": "인프라 / 설비",
-      "eventTypeLv2": "upstream_production_facility_capacity_utilization_change",
-      "eventTypeLv2Label": "상류 생산 시설 Capa/가동률 변화",
+      "eventTypeLv1": "supply",
+      "eventTypeLv1Label": "공급",
+      "eventTypeLv2": "upstream_utilization_change",
+      "eventTypeLv2Label": "Upstream Utilization 변동",
       "sources": [
         "Reuters"
       ]
@@ -28316,10 +28316,10 @@
         }
       ],
       "analysisText": "유럽 저장률 35%대는 TTF에 가장 중요한 하방 제한 요인이다. JKM 관점에서는 유럽이 여름 주입을 위해 LNG 카고를 계속 흡수할 가능성이 커져 아시아와의 경쟁을 통해 약한 강세 요인으로 작용한다. HH에는 직접적인 영향이 거의 없다.",
-      "eventTypeLv1": "supply_demand_balance",
-      "eventTypeLv1Label": "수급 밸런스",
-      "eventTypeLv2": "inventory_storage_level",
-      "eventTypeLv2Label": "재고 / 저장 수준",
+      "eventTypeLv1": "inventory_logistics",
+      "eventTypeLv1Label": "재고/운송/시장",
+      "eventTypeLv2": "inventory_level",
+      "eventTypeLv2Label": "재고 수준",
       "sources": [
         "Reuters"
       ]
@@ -28456,10 +28456,10 @@
         }
       ],
       "analysisText": "Troll Phase 3 Stage 2 승인은 유럽 공급 안정성을 높이는 TTF 약세 요인이다. JKM에는 유럽의 LNG 현물 흡수력 감소를 통해 간접적으로 약한 하방 압력이 전달된다. 다만 실제 생산 램프업과 설비 운전 일정이 중요해 즉각적인 가격 충격은 제한적이다.",
-      "eventTypeLv1": "infrastructure_facility",
-      "eventTypeLv1Label": "인프라 / 설비",
-      "eventTypeLv2": "upstream_production_facility_capacity_utilization_change",
-      "eventTypeLv2Label": "상류 생산 시설 Capa/가동률 변화",
+      "eventTypeLv1": "supply",
+      "eventTypeLv1Label": "공급",
+      "eventTypeLv2": "upstream_utilization_change",
+      "eventTypeLv2Label": "Upstream Utilization 변동",
       "sources": [
         "Reuters"
       ]
@@ -28596,10 +28596,10 @@
         }
       ],
       "analysisText": "JKM 프리미엄 확대는 신규 물리 수요나 공급 차질이 아니라 카고 배분 신호로서 의미가 크다. 아시아가 유럽 및 미국 FOB 대비 높은 가격을 제공하면 유연 물량의 아시아향 유인이 유지되어 JKM 강세가 자기강화될 수 있다. TTF는 물량 이탈 우려로 약하게 지지되며, HH 영향은 작다.",
-      "eventTypeLv1": "market_trading_structure",
-      "eventTypeLv1Label": "시장 / 거래 구조",
-      "eventTypeLv2": "inter_index_spread_gap",
-      "eventTypeLv2Label": "인덱스별 스프레드 Gap",
+      "eventTypeLv1": "inventory_logistics",
+      "eventTypeLv1Label": "재고/운송/시장",
+      "eventTypeLv2": "index_spread",
+      "eventTypeLv2Label": "인덱스 Spread",
       "sources": [
         "Reuters"
       ]
@@ -28762,10 +28762,10 @@
         }
       ],
       "analysisText": "Waha의 장기 마이너스 가격은 퍼미안 분지의 지역 반출 병목과 미국 내 basis 왜곡을 보여주는 이벤트이다. 글로벌 LNG 물량 감소나 걸프 연안 액화시설 가동 차질이 확인된 것은 아니므로 JKM과 TTF에 대한 직접 가격 영향은 거의 없다. HH는 퍼미안 가스의 광역 시장 유입 제한과 basis 확대를 통해 낮은 수준의 상방 압력을 받을 수 있다.",
-      "eventTypeLv1": "infrastructure_facility",
-      "eventTypeLv1Label": "인프라 / 설비",
-      "eventTypeLv2": "pipeline_transport_infrastructure_capacity_utilization_change",
-      "eventTypeLv2Label": "파이프라인/수송 인프라 Capa/가동률 변화",
+      "eventTypeLv1": "supply",
+      "eventTypeLv1Label": "공급",
+      "eventTypeLv2": "pipeline_utilization_change",
+      "eventTypeLv2Label": "파이프라인 Utilization 변동",
       "sources": [
         "Reuters"
       ]
@@ -28876,10 +28876,10 @@
         }
       ],
       "analysisText": "대이란 제재 쟁점은 현재 LNG 현물 물량을 직접 줄이는 이벤트라기보다 중동 해상 교역비와 지정학 리스크 프리미엄을 높이는 배경 요인이다. JKM은 중동·아시아 항로와 유가연동 계약 노출 때문에 TTF나 HH보다 상대적으로 민감하지만, 실제 통항 차질이나 LNG 제재가 없으므로 영향 강도는 낮다. TTF는 글로벌 위험 프리미엄을 통해 제한적인 상방 영향을 받을 수 있고, HH는 직접 영향이 거의 없다.",
-      "eventTypeLv1": "geopolitical_risk",
-      "eventTypeLv1Label": "지정학적 리스크",
+      "eventTypeLv1": "exogenous_shock",
+      "eventTypeLv1Label": "외생충격",
       "eventTypeLv2": "economic_sanctions_trade_restrictions",
-      "eventTypeLv2Label": "경제 제재 / 무역 제한",
+      "eventTypeLv2Label": "경제 제재 및 무역 제한",
       "sources": [
         "Reuters"
       ]
