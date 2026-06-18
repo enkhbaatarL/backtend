@@ -32,6 +32,7 @@ import com.sk.domain.shared.enums.nextgen.ScenarioDisplayStatus;
 import com.sk.domain.shared.enums.nextgen.ScenarioGroupStage;
 import com.sk.domain.shared.enums.nextgen.ScenarioGroupStatus;
 import com.sk.domain.shared.enums.nextgen.SignpostStrength;
+import com.sk.domain.shared.service.permissions.AuthorizationService;
 import jakarta.annotation.PostConstruct;
 import java.io.IOException;
 import java.io.InputStream;
@@ -65,12 +66,12 @@ public class ScenarioDesignMockService {
     private static final long GROUP_ID_BASE = 900_000L;
     private static final long SCENARIO_ID_BASE = 950_000L;
     private static final long SIGNPOST_ID_BASE = 970_000L;
-    private static final Long MOCK_OCCUPANT_USER_ID = 10001L;
 
     private final ObjectMapper objectMapper;
     private final ScenarioDesignSseRegistry sseRegistry;
     private final NextGenMockProperties mockProps;
     private final ScenarioGroupMockService scenarioGroupMockService;
+    private final AuthorizationService authorizationService;
 
     private final Map<Long, Session> sessions = new ConcurrentHashMap<>();
     private final AtomicLong groupIdSeq = new AtomicLong(GROUP_ID_BASE);
@@ -91,11 +92,13 @@ public class ScenarioDesignMockService {
     private Map<Long, Long> eventTypeL2ByEvent = Map.of();
 
     public ScenarioDesignMockService(ObjectMapper objectMapper, ScenarioDesignSseRegistry sseRegistry,
-                                     NextGenMockProperties mockProps, ScenarioGroupMockService scenarioGroupMockService) {
+                                     NextGenMockProperties mockProps, ScenarioGroupMockService scenarioGroupMockService,
+                                     AuthorizationService authorizationService) {
         this.objectMapper = objectMapper;
         this.sseRegistry = sseRegistry;
         this.mockProps = mockProps;
         this.scenarioGroupMockService = scenarioGroupMockService;
+        this.authorizationService = authorizationService;
     }
 
     @PostConstruct
@@ -134,8 +137,11 @@ public class ScenarioDesignMockService {
         List<ScenarioDimensionColumnRes> columns = buildColumns(template);
         List<DesignScenarioRow> step1 = generateInitialScenarios(template);
 
+        // 점유자 = 설계를 시작한 실제 로그인 사용자(JWT user_no).
+        Long occupantUserId = authorizationService.getUserNo().longValue();
+
         // 접수 시점은 ready(생성 대기). Agent 생성 콜백이 도착하면 scenario_created로 전이 + SSE.
-        Session session = new Session(groupId, request.miEventId(), eventTypeL2Id, columns, step1);
+        Session session = new Session(groupId, request.miEventId(), eventTypeL2Id, occupantUserId, columns, step1);
         session.stage = ScenarioGroupStage.READY;
         sessions.put(groupId, session);
         log.info("[Mock] design started: groupId={}, miEventId={}, eventTypeL2Id={}",
@@ -499,7 +505,7 @@ public class ScenarioDesignMockService {
         final Long scenarioGroupId;
         final Long miEventId;
         final Long eventTypeL2Id;
-        final Long occupantUserId = MOCK_OCCUPANT_USER_ID;
+        final Long occupantUserId;
         final List<ScenarioDimensionColumnRes> initialColumns;
         final List<DesignScenarioRow> initialStep1;
 
@@ -514,11 +520,12 @@ public class ScenarioDesignMockService {
         String summary = "호르무즈 해협 통항 제한에 따른 LNG 공급 차질 시나리오 (mock)";
         String description = "Agent 생성 초기값 기반 설계 세션 (mock)";
 
-        Session(Long scenarioGroupId, Long miEventId, Long eventTypeL2Id,
+        Session(Long scenarioGroupId, Long miEventId, Long eventTypeL2Id, Long occupantUserId,
                 List<ScenarioDimensionColumnRes> columns, List<DesignScenarioRow> step1) {
             this.scenarioGroupId = scenarioGroupId;
             this.miEventId = miEventId;
             this.eventTypeL2Id = eventTypeL2Id;
+            this.occupantUserId = occupantUserId;
             this.initialColumns = columns;
             this.initialStep1 = step1;
             this.columns = columns;

@@ -51,17 +51,18 @@ file:
 
 external:
   file-crypto:
-    base-url: ${FILE_CRYPTO_BASE_URL}
-    upload-path: ${FILE_CRYPTO_UPLOAD_PATH}
-    encrypt-path: ${FILE_CRYPTO_ENCRYPT_PATH}
-    decrypt-path: ${FILE_CRYPTO_DECRYPT_PATH}
+    base-url: ${FILE_CRYPTO_BASE_URL:}
+    upload-path: ${FILE_CRYPTO_UPLOAD_PATH:}
+    status-path: ${FILE_CRYPTO_STATUS_PATH:}
+    encrypt-path: ${FILE_CRYPTO_ENCRYPT_PATH:}
+    decrypt-path: ${FILE_CRYPTO_DECRYPT_PATH:}
     connection-timeout: ${FILE_CRYPTO_CONNECTION_TIMEOUT:3s}
     read-timeout: ${FILE_CRYPTO_READ_TIMEOUT:30s}
     retry-count: ${FILE_CRYPTO_RETRY_COUNT:1}
     retry-backoff-ms: ${FILE_CRYPTO_RETRY_BACKOFF_MS:500}
-    pid: ${FILE_CRYPTO_PID}
-    label-id: ${FILE_CRYPTO_LABEL_ID}
-    user-id: ${FILE_CRYPTO_USER_ID}
+    pid: ${FILE_CRYPTO_PID:}
+    label-id: ${FILE_CRYPTO_LABEL_ID:}
+    user-id: ${FILE_CRYPTO_USER_ID:}
 ```
 
 `@ConfigurationProperties`로 바인딩하여 대상 고객사·확장자·외부 API endpoint와 암복호화 서비스 호출 식별값을 코드에서 분리한다. 추후 다른 고객사 추가 시 **코드 변경 없이 설정 변경**으로 대상 조건을 확장한다.
@@ -106,19 +107,21 @@ public class FileEncryptionPolicy {
 
 ### 3.3 외부 암복호화 API 연동 흐름
 
-암호화와 복호화 모두 외부 암복호화 서비스의 파일 처리 API를 같은 순서로 호출한다.
+암호화와 복호화 모두 외부 암복호화 서비스의 파일 처리 API를 같은 순서로 호출하되, 업로드 후 실제 암호화 여부를 먼저 확인해 이중 암복호화를 방지한다.
 
 1. 암복호화 서비스의 **파일 업로드 API** 호출
-2. 암복호화 서비스의 **암호화 또는 복호화 API** 호출
-3. 암복호화 서비스의 **파일 다운로드 API** 호출
+2. 암복호화 서비스의 **암호화 여부 확인 API** 호출
+3. 상태 확인 결과에 따라 암복호화 서비스의 **암호화 또는 복호화 API** 호출 여부 결정
+4. 암호화/복호화 API를 호출한 경우 암복호화 서비스의 **파일 다운로드 API** 호출
 
 여기서 업로드/다운로드 API는 MI Platform의 기존 `FileService.upload()` / `downloadFile()`이 아니라, 암복호화 서비스가 제공하는 별도 API이다.
 
 | 단계 | MI Platform 역할 | 암복호화 서비스 역할 |
 | --- | --- | --- |
 | 1. upload | 암호화/복호화 대상 파일 바이너리를 암복호화 서비스 업로드 API로 전송 | 작업 대상 파일을 임시 보관하고 file id/token 등 작업 식별자 반환 |
-| 2. encrypt/decrypt | 1단계 식별자로 암호화 또는 복호화 API 호출 | 암호화/복호화 작업 수행 후 결과 파일 식별자 또는 다운로드 식별자 반환 |
-| 3. download | 2단계 결과 식별자로 암복호화 서비스 다운로드 API 호출 | 결과 파일 바이너리 반환 |
+| 2. status | 1단계 식별자로 암호화 여부 확인 API 호출 | 업로드된 파일이 암호화돼 있으면 `true`, 아니면 `false` 반환 |
+| 3. encrypt/decrypt | 상태 확인 결과상 필요한 경우에만 암호화 또는 복호화 API 호출 | 암호화/복호화 작업 수행 후 결과 파일 식별자 또는 다운로드 식별자 반환 |
+| 4. download | 3단계 결과 식별자로 암복호화 서비스 다운로드 API 호출 | 결과 파일 바이너리 반환 |
 
 #### Upload API 계약
 
@@ -144,7 +147,7 @@ Response fields:
 | --- | --- | --- |
 | `result` | `int` | 처리 결과 |
 | `errorMsg` | `string` | 실패/오류 메시지 |
-| `fid` | `UUID` (`guid`) | 업로드된 파일 식별자. 이후 encrypt/decrypt API 호출에 사용 |
+| `fid` | `UUID` (`guid`) | 업로드된 파일 식별자. 이후 status/encrypt/decrypt API 호출에 사용 |
 
 Upload result rule:
 
@@ -160,11 +163,34 @@ curl -F "file=@/path/aaa/aaa.xlsx" ...
 ```
 
 ```java
-CryptoUploadResult uploaded = fileCryptoApiClient.upload(fileBytes, originalFileName);
-CryptoDecryptResult converted = fileCryptoApiClient.decrypt(
-        new CryptoDecryptRequest(properties.getUserId(), uploaded.getFid(), properties.getPid()));
-byte[] result = fileCryptoApiClient.download(converted.getOutputFilePath());
+byte[] result = fileCryptoApiClient.decrypt(fileBytes, originalFileName);
 ```
+
+#### Encryption Status API 계약
+
+| 항목 | 값 |
+| --- | --- |
+| method | `POST` |
+| configured path | `external.file-crypto.status-path` (`FILE_CRYPTO_STATUS_PATH`) |
+| Content-Type | `application/x-www-form-urlencoded` |
+| request fields | `fID`, `pID` |
+| response fields | `result`, `ErrorMsag` |
+
+Response fields:
+
+| field | type | 의미 |
+| --- | --- | --- |
+| `result` | `boolean` | 업로드된 파일이 암호화돼 있으면 `true`, 암호화돼 있지 않으면 `false` |
+| `ErrorMsag` | `string` | 실패/오류 메시지 |
+
+Status decision rule:
+
+| operation | `result=true` | `result=false` |
+| --- | --- | --- |
+| upload decrypt | 복호화 API 호출 후 결과 다운로드 | 복호화 API를 호출하지 않고 원본 업로드 바이트 그대로 저장 진행 |
+| download encrypt | 암호화 API를 호출하지 않고 원본 바이트 그대로 응답 | 암호화 API 호출 후 결과 다운로드 |
+
+> 구현은 응답 필드 `ErrorMsag` 오탈자를 외부 API 계약 그대로 수용한다. 기존 `ErrorMsg`/`errorMsg`가 내려와도 오류 메시지로 해석할 수 있게 방어적으로 처리한다.
 
 #### Encrypt API 계약
 
@@ -221,12 +247,7 @@ Decrypt status rule:
 
 ```java
 if (policy.isEnabled(companyCd, file.getOriginalFilename())) {
-    CryptoUploadResult uploaded = fileCryptoApiClient.upload(file.getBytes(), file.getOriginalFilename());
-    CryptoJobResult decryptedFile = fileCryptoApiClient.decrypt(fileCryptoRequest.of(
-            properties.getUserId(),
-            uploaded.getFid(),
-            properties.getPid()));
-    byte[] decrypted = fileCryptoApiClient.download(decryptedFile.getOutputFilePath());
+    byte[] decrypted = fileCryptoApiClient.decrypt(file.getBytes(), file.getOriginalFilename());
     objectStorageService.uploadFile(new ByteArrayInputStream(decrypted),
             bucketName, fileName, isPublic, file.getContentType(), decrypted.length);
     fileSize = (long) decrypted.length;   // ★ DB에는 복호화(평문) 크기 저장
@@ -248,13 +269,7 @@ if (policy.isEnabled(companyCd, file.getOriginalFilename())) {
 byte[] data = objectStorageService.downloadFile(bucketName, filePath);
 String companyCd = authorizationService.getCompanyCdOrNull();   // 인증 없으면 null → 평문
 if (policy.isEnabled(companyCd, uploadedFile.getOriginalFileNm())) {
-    CryptoUploadResult uploaded = fileCryptoApiClient.upload(data, uploadedFile.getOriginalFileNm());
-    CryptoJobResult encryptedFile = fileCryptoApiClient.encrypt(fileCryptoEncryptRequest.of(
-            properties.getUserId(),
-            properties.getLabelId(),
-            uploaded.getFid(),
-            properties.getPid()));
-    data = fileCryptoApiClient.download(encryptedFile.getOutputFilePath());
+    data = fileCryptoApiClient.encrypt(data, uploadedFile.getOriginalFileNm());
 }
 ```
 
@@ -262,7 +277,7 @@ if (policy.isEnabled(companyCd, uploadedFile.getOriginalFileNm())) {
 
 | 구분 | 책임 |
 | --- | --- |
-| MI Platform | 다운로드 권한 및 `fileNo`/`fileNm`/`fileSize` 검증, Object Storage 평문 파일 조회, 암복호화 서비스 upload/encrypt/download 호출, 클라이언트 다운로드 응답 반환 |
+| MI Platform | 다운로드 권한 및 `fileNo`/`fileNm`/`fileSize` 검증, Object Storage 평문 파일 조회, 암복호화 서비스 upload/status/encrypt/download 호출, 클라이언트 다운로드 응답 반환 |
 | 암복호화 서비스 | 암복호화 대상 파일 임시 보관, 암호화/복호화 처리, 결과 파일 다운로드 제공, 산출물 만료/정리 정책 |
 
 > 결정: 암호화/복호화 API가 파일 바이너리를 직접 동기 응답으로 반환하는 모델이 아니라, 암복호화 서비스의 별도 upload/download API를 조합하는 모델로 본다.
@@ -274,7 +289,7 @@ if (policy.isEnabled(companyCd, uploadedFile.getOriginalFileNm())) {
 | `FileEncryptionProperties` | 신규 | `@ConfigurationProperties(prefix="file.encryption")` |
 | `FileEncryptionPolicy` | 신규 | 대상 고객사/확장자 판단 단일 진실 공급원 |
 | `FileCryptoApiProperties` | 신규 | `@ConfigurationProperties(prefix="external.file-crypto")` |
-| `FileCryptoApiClient` | 신규 | 암복호화 서비스 upload/encrypt/decrypt/download API 연동 |
+| `FileCryptoApiClient` | 신규 | 암복호화 서비스 upload/status/encrypt/decrypt/download API 연동 |
 | `FileService.upload()` | 수정 | 업로드 복호화 훅, `fileSize` 평문 기준 저장 |
 | `FileService.downloadFile()` | 수정 | 1차 구현 대상: 단건 다운로드 암호화 훅 |
 | `FileService.downloadFiles()` / `directDownloadFiles()` | 보류 | ZIP/URL 직접 다운로드는 1차 구현 범위에서 제외 |
@@ -285,11 +300,11 @@ if (policy.isEnabled(companyCd, uploadedFile.getOriginalFileNm())) {
 ## 5. 미해결 합의 항목 (구현 전 결정 필요)
 
 1. **암복호화 서비스 API 세부 계약**
-   암호화와 복호화 모두 `암복호화 서비스 upload API → encrypt/decrypt API → 암복호화 서비스 download API` 순서로 호출한다.
-   → Upload API는 `POST` + `FILE_CRYPTO_UPLOAD_PATH/{FILE_CRYPTO_PID}` + `multipart/form-data` + multipart file field `file` + 응답 필드 `result:int`/`errorMsg:string`/`fid:UUID(guid)`로 확정이며 성공은 `result=1`, 실패는 `result=2`다. Encrypt API는 `POST` + `application/x-www-form-urlencoded` + request `operationUserId`, `LableID`, `FID`, `PID` + response `OutputFilePath`, `DataSize`, `Status`, `ErrorMsg:string`, `OperationUserId`, `FID`, `LabelID`로 확정이며 성공은 `Status=0`, 실패는 `Status=1`이다. Decrypt API는 `POST` + `application/x-www-form-urlencoded` + request `UserID`, `FID`, `PID` + response `OutputFilePath`, `DataSize`, `OperationUserId`, `Status`, `ErrorMsg:string`, `FID`로 확정이며 성공은 `Status=4`, 실패는 `Status=5`다. 결과 파일 다운로드는 `GET` + `base-url + OutputFilePath` + response `content:bytearray`로 확정이다. 현재 확보한 curl 예시 기준으로는 별도 인증 header 없이 호출한다. 업로드 파일과 결과 파일은 당일에만 사용 가능하므로, MI Platform은 같은 요청 흐름에서 후속 호출을 즉시 완료해야 한다.
+   암호화와 복호화 모두 `암복호화 서비스 upload API → status API → 필요한 경우 encrypt/decrypt API → 필요한 경우 암복호화 서비스 download API` 순서로 호출한다.
+   → Upload API는 `POST` + `FILE_CRYPTO_UPLOAD_PATH/{FILE_CRYPTO_PID}` + `multipart/form-data` + multipart file field `file` + 응답 필드 `result:int`/`errorMsg:string`/`fid:UUID(guid)`로 확정이며 성공은 `result=1`, 실패는 `result=2`다. Status API는 `POST` + `FILE_CRYPTO_STATUS_PATH` + `application/x-www-form-urlencoded` + request `fID`, `pID` + response `result:boolean`, `ErrorMsag:string`으로 확정이며 `result=true`는 암호화됨, `result=false`는 암호화되지 않음을 의미한다. Encrypt API는 `POST` + `application/x-www-form-urlencoded` + request `operationUserId`, `LableID`, `FID`, `PID` + response `OutputFilePath`, `DataSize`, `Status`, `ErrorMsg:string`, `OperationUserId`, `FID`, `LabelID`로 확정이며 성공은 `Status=0`, 실패는 `Status=1`이다. Decrypt API는 `POST` + `application/x-www-form-urlencoded` + request `UserID`, `FID`, `PID` + response `OutputFilePath`, `DataSize`, `OperationUserId`, `Status`, `ErrorMsg:string`, `FID`로 확정이며 성공은 `Status=4`, 실패는 `Status=5`다. 결과 파일 다운로드는 `GET` + `base-url + OutputFilePath` + response `content:bytearray`로 확정이다. 현재 확보한 curl 예시 기준으로는 별도 인증 header 없이 호출한다. 업로드 파일과 결과 파일은 당일에만 사용 가능하므로, MI Platform은 같은 요청 흐름에서 후속 호출을 즉시 완료해야 한다.
 
 2. **암복호화 서비스 파일 수명/정리 정책**
-   암복호화 서비스 upload/download API가 임시 파일을 관리하며, 업로드 파일과 결과 파일은 **당일에만 사용 가능**하다. 따라서 MI Platform은 upload -> encrypt/decrypt -> download를 하나의 요청 흐름 안에서 즉시 수행해야 하며, 다음 날 재사용이나 지연 처리 전제를 두면 안 된다.
+   암복호화 서비스 upload/download API가 임시 파일을 관리하며, 업로드 파일과 결과 파일은 **당일에만 사용 가능**하다. 따라서 MI Platform은 upload -> status -> 필요한 경우 encrypt/decrypt -> 필요한 경우 download를 하나의 요청 흐름 안에서 즉시 수행해야 하며, 다음 날 재사용이나 지연 처리 전제를 두면 안 된다.
 
 3. **용량/타임아웃 정책**
    암복호화 서비스에 파일을 업로드한 뒤 다시 결과를 다운로드하므로 MI Platform 요청 처리 시간이 증가한다. 최대 파일 크기, connect/read timeout, 재시도 정책, 동시 호출 제한을 구현 전에 확정해야 한다.

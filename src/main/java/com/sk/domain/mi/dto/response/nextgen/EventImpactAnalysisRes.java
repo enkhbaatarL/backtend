@@ -14,16 +14,16 @@ public record EventImpactAnalysisRes(
     @Schema(description = "전체 영향도 종합 텍스트", nullable = true)
     String analysisText,
 
-    @Schema(description = "이벤트 유형 Lv1", example = "geopolitical_risk")
+    @Schema(description = "이벤트 유형 Lv1", example = "exogenous_shock")
     String eventTypeLv1,
 
-    @Schema(description = "이벤트 유형 Lv1 라벨", example = "지정학적 리스크")
+    @Schema(description = "이벤트 유형 Lv1 라벨", example = "외생충격")
     String eventTypeLv1Label,
 
-    @Schema(description = "이벤트 유형 Lv2", example = "war_military_conflict")
+    @Schema(description = "이벤트 유형 Lv2", example = "geopolitical_tension_war")
     String eventTypeLv2,
 
-    @Schema(description = "이벤트 유형 Lv2 라벨", example = "전쟁 / 군사 분쟁")
+    @Schema(description = "이벤트 유형 Lv2 라벨", example = "지정학적 긴장 및 전쟁·군사분쟁")
     String eventTypeLv2Label,
 
     @ArraySchema(

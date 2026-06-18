@@ -18,6 +18,7 @@ public record EventListRow(
     LocalDateTime latestRecordFirstCreated,
     Long scenarioGroupId,
     ScenarioGroupStatus scenarioGroupStatus,
+    Long requestUserId,
     List<EventIndexImpactRow> indexImpacts
 ) {
 }
