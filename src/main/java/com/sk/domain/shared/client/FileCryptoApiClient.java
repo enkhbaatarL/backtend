@@ -111,7 +111,7 @@ public class FileCryptoApiClient {
 
     boolean isEncrypted(UUID fid, String pid) {
         return executeWithRetry("status", () -> {
-            FileCryptoStatusRes response = restClient.post()
+            FileCryptoStatusRes response = restClient.get()
                     .uri(cryptoUri(normalizePath(properties.getStatusPath()) + "/" + fid + "/" + pid))
                     .retrieve()
                     .body(FileCryptoStatusRes.class);
