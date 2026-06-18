@@ -4,7 +4,6 @@ import com.sk.common.enums.ResultCode;
 import com.sk.common.exception.AppErrorException;
 import com.sk.domain.shared.client.dto.request.FileCryptoDecryptReq;
 import com.sk.domain.shared.client.dto.request.FileCryptoEncryptReq;
-import com.sk.domain.shared.client.dto.request.FileCryptoStatusReq;
 import com.sk.domain.shared.client.dto.response.FileCryptoDecryptRes;
 import com.sk.domain.shared.client.dto.response.FileCryptoEncryptRes;
 import com.sk.domain.shared.client.dto.response.FileCryptoStatusRes;
@@ -113,9 +112,7 @@ public class FileCryptoApiClient {
     boolean isEncrypted(UUID fid, String pid) {
         return executeWithRetry("status", () -> {
             FileCryptoStatusRes response = restClient.post()
-                    .uri(cryptoUri(properties.getStatusPath()))
-                    .contentType(MediaType.APPLICATION_FORM_URLENCODED)
-                    .body(new FileCryptoStatusReq(fid, pid).toFormData())
+                    .uri(cryptoUri(normalizePath(properties.getStatusPath()) + "/" + fid + "/" + pid))
                     .retrieve()
                     .body(FileCryptoStatusRes.class);
 
