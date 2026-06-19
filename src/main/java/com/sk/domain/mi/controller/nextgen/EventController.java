@@ -107,6 +107,7 @@ public class EventController {
             - `scenarioGroupId`: 활성 시나리오 그룹 ID (없으면 null, `created`일 때 이동 대상)
             - `occupied`: 설계 점유 여부 (설계중이면 true)
             - `occupantUserId`: 점유 사용자 ID (점유 중이 아니면 null)
+            - `occupantUserName`: 점유 사용자명 (점유 중이 아니면 null)
             - `indexImpacts`: 인덱스별 영향도 — 단기/중장기 중 영향 강도가 더 큰 시점 1개만 표기 (강도가 같으면 단기).
               - `indexName` / `marketImpactLevel` / `marketImpactLevelLabel` / `direction` / `directionLabel` / `impactTerm` / `impactTermLabel`
               - `impactTerm`: `short` 단기 / `mid_long` 중장기
@@ -147,6 +148,8 @@ public class EventController {
             - `isScenarioSuggested`: 시나리오화 추천 여부
             - `scenarioSuggestReason`: 시나리오화 추천 근거 (추천 아님일 때 null)
             - `scenarioDesignStatus` / `scenarioDesignStatusLabel`: `designable`(설계가능) / `creating`(설계중) / `created`(설계완료)
+            - `occupied`: 설계 점유 여부 (설계중이면 true)
+            - `occupantUserId` / `occupantUserName`: 점유 사용자 ID/명 (점유 중이 아니면 null)
             - `eventTypeLv1` / `eventTypeLv1Label` / `eventTypeLv2` / `eventTypeLv2Label`
             - `createdAt`, `updatedAt`, `latestRecordFirstCreated`(최신 연관 레코드 최초 생성일시)
 
@@ -284,7 +287,7 @@ public class EventController {
             ### content 항목 필드 (예정)
             - `eventId`: 이벤트 ID
             - `scenarioDesignStatus` / `scenarioDesignStatusLabel`: `designable`(설계가능) / `creating`(설계중) / `created`(설계완료)
-            - `occupied`: 점유 여부 / `occupantUserId`: 점유 사용자 ID (없으면 null)
+            - `occupied`: 점유 여부 / `occupantUserId`: 점유 사용자 ID (없으면 null) / `occupantUserName`: 점유 사용자명 (없으면 null)
             - `scenarioGroupId`: 활성 시나리오 그룹 ID (없으면 null)
             """
     )

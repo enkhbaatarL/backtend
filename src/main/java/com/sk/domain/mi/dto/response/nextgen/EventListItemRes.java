@@ -65,12 +65,15 @@ public record EventListItemRes(
     @Schema(description = "점유 사용자 ID - 점유 중이 아니면 null)", example = "10001", nullable = true)
     Long occupantUserId,
 
+    @Schema(description = "점유 사용자명 - 점유 중이 아니면 null", example = "홍길동", nullable = true)
+    String occupantUserName,
+
     @Schema(description = "인덱스별 영향도 (JKM|TTF|HH)")
     List<EventImpactIndexRes> indexImpacts
 
 ) {
 
-    public static EventListItemRes from(EventListRow row) {
+    public static EventListItemRes from(EventListRow row, String occupantUserName) {
         ContentStatus status = Boolean.TRUE.equals(row.isNew()) ? ContentStatus.NEW : ContentStatus.UPDATED;
         EventSignalType signalType = Boolean.TRUE.equals(row.isSignal()) ? EventSignalType.SIGNAL : EventSignalType.NOISE;
         ScenarioDesignDisplayStatus designStatus = ScenarioDesignDisplayStatus.of(row.scenarioGroupStatus());
@@ -97,6 +100,7 @@ public record EventListItemRes(
             row.scenarioGroupId(),
             occupied,
             occupied ? row.requestUserId() : null,
+            occupied ? occupantUserName : null,
             row.indexImpacts().stream().map(EventImpactIndexRes::fromRow).toList()
         );
     }

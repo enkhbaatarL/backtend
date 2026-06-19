@@ -290,7 +290,8 @@ public class CustomMiEventRepositoryImpl implements CustomMiEventRepository {
                 miScenarioGroup.createDt,
                 miScenarioGroup.modifyDt,
                 miScenarioGroup.dimensionSelected,
-                miScenarioGroup.status
+                miScenarioGroup.status,
+                miScenarioGroup.requestUserId
             ))
             .from(miScenarioGroup)
             .where(

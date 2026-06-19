@@ -13,7 +13,8 @@ public record ScenarioGroupBaseRow(
     LocalDateTime createDt,
     LocalDateTime modifyDt,
     String dimensionSelected,
-    ScenarioGroupStatus status
+    ScenarioGroupStatus status,
+    Long requestUserId
 ) {
 
     @QueryProjection

@@ -69,7 +69,8 @@ public class CustomMiScenarioGroupRepositoryImpl implements CustomMiScenarioGrou
                 miScenarioGroup.createDt,
                 miScenarioGroup.modifyDt,
                 miScenarioGroup.dimensionSelected,
-                miScenarioGroup.status
+                miScenarioGroup.status,
+                miScenarioGroup.requestUserId
             ))
             .from(miScenarioGroup)
             .where(where)
