@@ -126,7 +126,7 @@ public class CustomMiEventRepositoryImpl implements CustomMiEventRepository {
         List<EventListRow> rows = baseRows.stream()
             .map(base -> new EventListRow(
                 base.miEventId(),
-                base.eventTitle(),
+                base.oneLineSummary(),
                 base.level1Code(),
                 base.level1Label(),
                 base.isSignal(),

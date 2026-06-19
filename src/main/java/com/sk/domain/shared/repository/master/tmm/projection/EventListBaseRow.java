@@ -6,7 +6,7 @@ import java.time.LocalDateTime;
 
 public record EventListBaseRow(
     Long miEventId,
-    String eventTitle,
+    String oneLineSummary,
     String level1Code,
     String level1Label,
     Boolean isSignal,

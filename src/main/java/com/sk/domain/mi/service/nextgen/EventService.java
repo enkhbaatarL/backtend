@@ -13,6 +13,9 @@ import java.util.List;
 
 public interface EventService {
 
+    // 이벤트 유형 lv1 조회
+    List<EventTypeL1Res> getEventTypesL1();
+
     EventListRes getEvents(EventListReq request);
 
     EventDetailRes getEventDetail(Long eventId);
@@ -20,8 +23,6 @@ public interface EventService {
     PaginationRes<EventRelatedRecordRes> getEventRecords(Long eventId, int page, int size);
 
     PaginationRes<EventInstitutionOutlookRes> getEventOutlooks(Long eventId, int page, int size);
-
-    List<EventTypeL1Res> getEventTypesL1();
 
     List<EventDesignAvailabilityRes> getEventDesignAvailability(List<Long> eventIds);
 
