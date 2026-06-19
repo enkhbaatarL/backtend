@@ -8,14 +8,14 @@ import java.util.List;
 
 public record ModelExecutionStatusRes(
 
-    @Schema(description = "실행 리소스 식별자", example = "exec_a1b2c3d4e5f6")
-    String executionId,
+    @Schema(description = "시나리오 케이스 ID", example = "101")
+    Long caseId,
 
     @Schema(description = "시나리오 ID", example = "1")
     Long scenarioId,
 
-    @Schema(description = "외부 모델 측 실행 추적 키", example = "run_20260508_0001")
-    String externalRunId,
+    @Schema(description = "backend가 발급한 yyyymmdd_hhmmss_XXXX 형식 실행 추적 ID", example = "20260619_143500_A1B2")
+    String runId,
 
     @Schema(description = "현재 실행 상태", implementation = ModelExecutionStatus.class, example = "RUNNING")
     ModelExecutionStatus status,
@@ -31,6 +31,9 @@ public record ModelExecutionStatusRes(
 
     @Schema(description = "실행 종료 시각")
     LocalDateTime finishedAt,
+
+    @Schema(description = "실패 사유 코드", example = "EXTERNAL_ERROR")
+    String failureReason,
 
     @Schema(description = "실패 시 오류 메시지", example = "Model execution failed due to invalid source data.")
     String errorMessage

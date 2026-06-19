@@ -6,6 +6,8 @@ import lombok.Getter;
 @Getter
 @Builder
 public class FundamentalModelJobArgs {
+    private Long caseId;
+    private Long scenarioId;
     private String runId;
     private Long runSeq;
     private String demandExcelPath;

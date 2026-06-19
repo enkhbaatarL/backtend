@@ -6,7 +6,6 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.sk.common.enums.ResultCode;
 import com.sk.common.exception.AppErrorException;
 import com.sk.domain.mi.config.NextGenMockProperties;
-import com.sk.domain.mi.dto.request.nextgen.ModelExecutionCallbackReq;
 import com.sk.domain.mi.dto.response.nextgen.ModelExecutionAcceptRes;
 import com.sk.domain.mi.dto.response.nextgen.ModelExecutionFileRes;
 import com.sk.domain.mi.dto.response.nextgen.ModelExecutionParameterRes;
@@ -50,6 +49,7 @@ public class ScenarioModelExecutionMockService {
     private final ScenarioGroupMockService scenarioGroupMockService;
     private final ConcurrentMap<String, StoredExecution> executionStore = new ConcurrentHashMap<>();
     private final ScheduledExecutorService scheduler = Executors.newSingleThreadScheduledExecutor();
+    private final AtomicLong caseIdSequence = new AtomicLong(100);
     private final AtomicLong fileNoSequence = new AtomicLong(1000);
     private Map<String, List<ModelExecutionParameterTableRes>> parameterTablesByScenario;
 
@@ -90,94 +90,43 @@ public class ScenarioModelExecutionMockService {
         rejectIfActiveExecutionExists(scenarioId);
 
         LocalDateTime requestedAt = LocalDateTime.now();
-        String executionId = generateExecutionId();
-        String externalRunId = generateExternalRunId();
+        Long caseId = caseIdSequence.incrementAndGet();
+        String runId = generateRunId(requestedAt);
         List<ModelExecutionFileRes> uploadedFiles = mockUploadFiles(files);
 
-        StoredExecution pendingExecution = new StoredExecution(
-            executionId,
+        StoredExecution runningExecution = new StoredExecution(
+            caseId,
+            runId,
             scenarioId,
-            externalRunId,
-            ModelExecutionStatus.QUEUED,
+            ModelExecutionStatus.RUNNING,
+            requestedAt,
             requestedAt,
             null,
             null,
             null,
             uploadedFiles
         );
-        executionStore.put(executionId, pendingExecution);
-        simulateExternalDispatch(pendingExecution);
+        executionStore.put(runId, runningExecution);
+        simulateExternalDispatch(runningExecution);
 
         return new ModelExecutionAcceptRes(
-            executionId,
+            caseId,
             scenarioId,
-            externalRunId,
-            ModelExecutionStatus.QUEUED,
+            runId,
+            ModelExecutionStatus.RUNNING,
             uploadedFiles,
             requestedAt,
-            buildStatusEndpoint(scenarioId, executionId)
+            runningExecution.startedAt(),
+            buildStatusEndpoint(scenarioId, runId)
         );
     }
 
-    public ModelExecutionStatusRes getModelExecutionStatus(Long scenarioId, String executionId) {
-        return getExecution(scenarioId, executionId).toResponse();
+    public ModelExecutionStatusRes getModelExecutionStatus(Long scenarioId, String runId) {
+        return getExecution(scenarioId, runId).toResponse();
     }
 
-    public ModelExecutionStatusRes updateModelExecutionFromCallback(
-        Long scenarioId,
-        String executionId,
-        ModelExecutionCallbackReq request
-    ) {
-        if (!request.status().isTerminal()) {
-            throw AppErrorException.of(
-                ResultCode.Error.REQ_INVALID_PARAMETER,
-                "콜백 status는 SUCCEEDED 또는 FAILED 여야 합니다."
-            );
-        }
-
-        StoredExecution current = getExecution(scenarioId, executionId);
-        StoredExecution currentWithTimeout = applyTimeoutIfNeeded(current);
-        if (currentWithTimeout.status() != ModelExecutionStatus.RUNNING) {
-            throw AppErrorException.of(
-                ResultCode.Error.BIZ_RULE_VIOLATION,
-                "콜백은 RUNNING 상태의 execution에만 허용됩니다."
-            );
-        }
-        if (!currentWithTimeout.externalRunId().equals(request.externalRunId())) {
-            throw AppErrorException.of(
-                ResultCode.Error.REQ_INVALID_PARAMETER,
-                "externalRunId가 execution과 일치하지 않습니다."
-            );
-        }
-        if (request.status() == ModelExecutionStatus.FAILED
-            && (request.errorMessage() == null || request.errorMessage().isBlank())) {
-            throw AppErrorException.of(
-                ResultCode.Error.REQ_INVALID_PARAMETER,
-                "FAILED callback에는 errorMessage가 필요합니다."
-            );
-        }
-
-        LocalDateTime finishedAt = request.finishedAt() != null ? request.finishedAt() : LocalDateTime.now();
-        LocalDateTime startedAt = currentWithTimeout.startedAt();
-        String errorMessage = request.status() == ModelExecutionStatus.FAILED ? request.errorMessage() : null;
-
-        StoredExecution updated = new StoredExecution(
-            currentWithTimeout.executionId(),
-            currentWithTimeout.scenarioId(),
-            currentWithTimeout.externalRunId(),
-            request.status(),
-            currentWithTimeout.requestedAt(),
-            startedAt,
-            finishedAt,
-            errorMessage,
-            currentWithTimeout.files()
-        );
-        executionStore.put(executionId, updated);
-        return updated.toResponse();
-    }
-
-    private StoredExecution getExecution(Long scenarioId, String executionId) {
-        StoredExecution execution = executionStore.get(executionId);
+    private StoredExecution getExecution(Long scenarioId, String runId) {
+        StoredExecution execution = executionStore.get(runId);
         if (execution == null || !execution.scenarioId().equals(scenarioId)) {
             throw AppErrorException.of(ResultCode.Error.RSC_NOT_FOUND, "Model execution을 찾을 수 없습니다.");
         }
@@ -216,8 +165,7 @@ public class ScenarioModelExecutionMockService {
         boolean hasActiveExecution = executionStore.values().stream()
             .filter(execution -> execution.scenarioId().equals(scenarioId))
             .map(this::applyTimeoutIfNeeded)
-            .anyMatch(execution -> execution.status() == ModelExecutionStatus.QUEUED
-                || execution.status() == ModelExecutionStatus.RUNNING);
+            .anyMatch(execution -> execution.status() == ModelExecutionStatus.RUNNING);
 
         if (hasActiveExecution) {
             throw AppErrorException.of(
@@ -231,56 +179,46 @@ public class ScenarioModelExecutionMockService {
         boolean dispatchSuccess = mockProperties.getModelExecutions().getWorkflow().isDispatchSuccess();
         if (!dispatchSuccess) {
             StoredExecution failedExecution = new StoredExecution(
-                pendingExecution.executionId(),
+                pendingExecution.caseId(),
+                pendingExecution.runId(),
                 pendingExecution.scenarioId(),
-                pendingExecution.externalRunId(),
                 ModelExecutionStatus.FAILED,
                 pendingExecution.requestedAt(),
-                null,
+                pendingExecution.startedAt(),
                 LocalDateTime.now(),
+                "JOB_SUBMIT_FAILED",
                 MOCK_DISPATCH_FAILURE_MESSAGE,
                 pendingExecution.files()
             );
-            executionStore.put(pendingExecution.executionId(), failedExecution);
+            executionStore.put(pendingExecution.runId(), failedExecution);
             return;
         }
 
-        StoredExecution runningExecution = new StoredExecution(
-            pendingExecution.executionId(),
-            pendingExecution.scenarioId(),
-            pendingExecution.externalRunId(),
-            ModelExecutionStatus.RUNNING,
-            pendingExecution.requestedAt(),
-            LocalDateTime.now(),
-            null,
-            null,
-            pendingExecution.files()
-        );
-        executionStore.put(pendingExecution.executionId(), runningExecution);
-        scenarioGroupMockService.markModelRunning(runningExecution.scenarioId()); // 그래프 mock 실행중 표기 연동
-        scheduleAutoComplete(runningExecution);
+        scenarioGroupMockService.markModelRunning(pendingExecution.scenarioId()); // 그래프 mock 실행중 표기 연동
+        scheduleAutoComplete(pendingExecution);
     }
 
     private void scheduleAutoComplete(StoredExecution runningExecution) {
         long delaySeconds = mockProperties.getModelExecutions().getWorkflow().getAutoCompleteSeconds();
         scheduler.schedule(() -> {
-            StoredExecution current = executionStore.get(runningExecution.executionId());
+            StoredExecution current = executionStore.get(runningExecution.runId());
             if (current != null && current.status() == ModelExecutionStatus.RUNNING) {
                 StoredExecution completed = new StoredExecution(
-                    current.executionId(),
+                    current.caseId(),
+                    current.runId(),
                     current.scenarioId(),
-                    current.externalRunId(),
-                    ModelExecutionStatus.SUCCEEDED,
+                    ModelExecutionStatus.COMPLETED,
                     current.requestedAt(),
                     current.startedAt(),
                     LocalDateTime.now(),
                     null,
+                    null,
                     current.files()
                 );
-                executionStore.put(current.executionId(), completed);
+                executionStore.put(current.runId(), completed);
                 scenarioGroupMockService.markModelIdle(current.scenarioId());
-                log.info("[Mock] Auto-completed model execution: executionId={}, scenarioId={}",
-                    current.executionId(), current.scenarioId());
+                log.info("[Mock] Auto-completed model execution: runId={}, scenarioId={}",
+                    current.runId(), current.scenarioId());
             }
         }, delaySeconds, TimeUnit.SECONDS);
     }
@@ -298,17 +236,18 @@ public class ScenarioModelExecutionMockService {
         }
 
         StoredExecution timedOutExecution = new StoredExecution(
-            execution.executionId(),
+            execution.caseId(),
+            execution.runId(),
             execution.scenarioId(),
-            execution.externalRunId(),
             ModelExecutionStatus.FAILED,
             execution.requestedAt(),
             execution.startedAt(),
             LocalDateTime.now(),
+            "TIMEOUT",
             TIMEOUT_ERROR_MESSAGE,
             execution.files()
         );
-        executionStore.put(execution.executionId(), timedOutExecution);
+        executionStore.put(execution.runId(), timedOutExecution);
         scenarioGroupMockService.markModelIdle(execution.scenarioId());
         return timedOutExecution;
     }
@@ -346,40 +285,39 @@ public class ScenarioModelExecutionMockService {
         );
     }
 
-    private String generateExecutionId() {
-        return "exec_" + UUID.randomUUID().toString().replace("-", "").substring(0, 12);
+    private String generateRunId(LocalDateTime requestedAt) {
+        String suffix = UUID.randomUUID().toString().replace("-", "").substring(0, 4).toUpperCase();
+        return requestedAt.format(java.time.format.DateTimeFormatter.ofPattern("yyyyMMdd_HHmmss")) + "_" + suffix;
     }
 
-    private String generateExternalRunId() {
-        return "run_" + UUID.randomUUID().toString().replace("-", "").substring(0, 12);
-    }
-
-    private String buildStatusEndpoint(Long scenarioId, String executionId) {
-        return "/api/v1/mi/next-gen/scenarios/" + scenarioId + "/model-executions/" + executionId;
+    private String buildStatusEndpoint(Long scenarioId, String runId) {
+        return "/api/v1/mi/next-gen/scenarios/" + scenarioId + "/model-executions/" + runId;
     }
 
     private record StoredExecution(
-        String executionId,
+        Long caseId,
+        String runId,
         Long scenarioId,
-        String externalRunId,
         ModelExecutionStatus status,
         LocalDateTime requestedAt,
         LocalDateTime startedAt,
         LocalDateTime finishedAt,
+        String failureReason,
         String errorMessage,
         List<ModelExecutionFileRes> files
     ) {
 
         private ModelExecutionStatusRes toResponse() {
             return new ModelExecutionStatusRes(
-                executionId,
+                caseId,
                 scenarioId,
-                externalRunId,
+                runId,
                 status,
                 files,
                 requestedAt,
                 startedAt,
                 finishedAt,
+                failureReason,
                 errorMessage
             );
         }

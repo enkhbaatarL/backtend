@@ -1,7 +1,6 @@
 package com.sk.domain.mi.service.nextgen.mock;
 
 import com.sk.domain.mi.config.NextGenMockProperties;
-import com.sk.domain.mi.dto.request.nextgen.ModelExecutionCallbackReq;
 import com.sk.domain.mi.dto.response.nextgen.ModelExecutionAcceptRes;
 import com.sk.domain.mi.dto.response.nextgen.ModelExecutionParameterRes;
 import com.sk.domain.mi.dto.response.nextgen.ModelExecutionStatusRes;
@@ -24,9 +23,7 @@ public class ScenarioModelExecutionServiceDelegator implements ScenarioModelExec
 
     @Override
     public ModelExecutionParameterRes getModelExecutionParameters(Long scenarioId) {
-        return mockProps.getModelExecutions().getApi().isGetParameters()
-            ? mockService.getModelExecutionParameters(scenarioId)
-            : realService.getModelExecutionParameters(scenarioId);
+        return realService.getModelExecutionParameters(scenarioId);
     }
 
     @Override
@@ -37,20 +34,9 @@ public class ScenarioModelExecutionServiceDelegator implements ScenarioModelExec
     }
 
     @Override
-    public ModelExecutionStatusRes getModelExecutionStatus(Long scenarioId, String executionId) {
+    public ModelExecutionStatusRes getModelExecutionStatus(Long scenarioId, String runId) {
         return mockProps.getModelExecutions().getApi().isGetStatus()
-            ? mockService.getModelExecutionStatus(scenarioId, executionId)
-            : realService.getModelExecutionStatus(scenarioId, executionId);
-    }
-
-    @Override
-    public ModelExecutionStatusRes updateModelExecutionFromCallback(
-        Long scenarioId,
-        String executionId,
-        ModelExecutionCallbackReq request
-    ) {
-        return mockProps.getModelExecutions().getApi().isCallback()
-            ? mockService.updateModelExecutionFromCallback(scenarioId, executionId, request)
-            : realService.updateModelExecutionFromCallback(scenarioId, executionId, request);
+            ? mockService.getModelExecutionStatus(scenarioId, runId)
+            : realService.getModelExecutionStatus(scenarioId, runId);
     }
 }

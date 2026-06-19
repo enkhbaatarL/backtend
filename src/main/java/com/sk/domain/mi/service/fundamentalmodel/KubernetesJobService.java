@@ -124,14 +124,20 @@ public class KubernetesJobService {
     }
 
     private Container buildContainer(FundamentalModelJobArgs args) {
-        List<String> namedArgs = List.of(
+        List<String> namedArgs = new ArrayList<>(List.of(
             "--run-id",            args.getRunId(),
             "--run-seq",           String.valueOf(args.getRunSeq()),
             "--demand-excel-path", args.getDemandExcelPath(),
             "--supply-excel-path", args.getSupplyExcelPath(),
             "--trade-excel-path",  args.getTradeExcelPath(),
             "--callback-url",      args.getCallbackUrl()
-        );
+        ));
+        if (args.getCaseId() != null) {
+            namedArgs.addAll(List.of("--case-id", String.valueOf(args.getCaseId())));
+        }
+        if (args.getScenarioId() != null) {
+            namedArgs.addAll(List.of("--scenario-id", String.valueOf(args.getScenarioId())));
+        }
 
         ContainerBuilder builder = new ContainerBuilder()
             .withName("fundamental-model")

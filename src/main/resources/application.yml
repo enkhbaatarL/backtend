@@ -60,6 +60,11 @@ springdoc:
 security:
   enabled: true
 
+file:
+  encryption:
+    enabled-company-cds: SKGAS
+    target-extensions: xlsx,xls,xlsm,docx,doc,docm,pptx,ppt,pptm
+
 mi:
   next-gen:
     mock:
@@ -81,10 +86,8 @@ mi:
           delete-group: false
       model-executions:
         api:
-          get-parameters: true
-          submit: true
-          get-status: true
-          callback: true
+          submit: false
+          get-status: false
         workflow:
           dispatch-success: true
           running-timeout-minutes: 10

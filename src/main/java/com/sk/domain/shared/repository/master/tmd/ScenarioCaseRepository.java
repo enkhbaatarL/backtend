@@ -2,6 +2,7 @@ package com.sk.domain.shared.repository.master.tmd;
 
 import com.sk.domain.shared.entity.master.tmd.ScenarioCase;
 import com.sk.domain.shared.enums.fundamentalmodel.FundamentalModelCaseStatus;
+import com.sk.domain.shared.enums.fundamentalmodel.FundamentalModelExecType;
 import com.sk.domain.shared.repository.master.tmd.custom.CustomScenarioCaseRepository;
 import java.time.LocalDateTime;
 import java.util.Collection;
@@ -14,6 +15,18 @@ import org.springframework.data.repository.query.Param;
 public interface ScenarioCaseRepository extends JpaRepository<ScenarioCase, Long>, CustomScenarioCaseRepository {
 
     Optional<ScenarioCase> findByCaseIdAndIsDeletedFalse(Long caseId);
+
+    Optional<ScenarioCase> findByCaseIdAndScenarioIdAndExecTypeAndIsDeletedFalse(
+        Long caseId,
+        Long scenarioId,
+        FundamentalModelExecType execType
+    );
+
+    boolean existsByScenarioIdAndExecTypeAndStatusAndIsDeletedFalse(
+        Long scenarioId,
+        FundamentalModelExecType execType,
+        FundamentalModelCaseStatus status
+    );
 
     @Modifying(clearAutomatically = true, flushAutomatically = true)
     @Query("""
