@@ -2,8 +2,6 @@ package com.sk.domain.shared.controller;
 
 import com.sk.common.annotation.ApiOrder;
 import com.sk.common.annotation.RequiredPermission;
-import com.sk.common.enums.ResultCode;
-import com.sk.common.exception.AppErrorException;
 import com.sk.common.model.BaseResponse;
 import com.sk.common.model.BaseResponseFactory;
 import com.sk.common.utils.DateUtil;
@@ -11,9 +9,7 @@ import com.sk.domain.admin.dto.request.file.FileUpdateReq;
 import com.sk.domain.admin.dto.response.file.FileDownloadRes;
 import com.sk.domain.admin.dto.response.file.FileUploadRes;
 import com.sk.domain.shared.dto.request.file.FileDownloadReq;
-import com.sk.domain.shared.entity.master.tmd.CustomerCompany;
 import com.sk.domain.shared.enums.Role;
-import com.sk.domain.shared.repository.master.tmd.CustomerCompanyRepository;
 import com.sk.domain.shared.service.FileDownloadEncryptor;
 import com.sk.domain.shared.service.FileService;
 import com.sk.domain.shared.service.permissions.AuthorizationService;
@@ -53,7 +49,6 @@ public class FileDedicatedController {
     private final AuthorizationService authorizationService;
     private final FileService fileService;
     private final FileDownloadEncryptor fileDownloadEncryptor;
-    private final CustomerCompanyRepository customerCompanyRepository;
 
     // @ApiOrder(1)
     // @Operation(summary = "파일 목록 조회", description = "파일 목록을 조회합니다.")
@@ -75,12 +70,8 @@ public class FileDedicatedController {
     public BaseResponse<FileUploadRes> uploadFile(
             @RequestPart(value = "file", required = false) MultipartFile file) {
 
-        int companyNo = authorizationService.getCompanyNo();
         Role role = authorizationService.getCurrentRole();
-        CustomerCompany customerCompany = customerCompanyRepository.findByCustomerCompanyNoAndIsDeletedFalse(companyNo)
-                .orElseThrow(
-                        () -> AppErrorException.of(ResultCode.Error.RSC_NOT_FOUND, "customer company no: %d".formatted(companyNo)));
-        String companyCd = customerCompany.getCustomerCompanyCd();
+        String companyCd = authorizationService.getCompanyCdWithPriority();
 
         return BaseResponseFactory.create(fileService.uploadFile(companyCd, role, file, true));
     }
@@ -118,7 +109,8 @@ public class FileDedicatedController {
             @RequestParam(value = "prefix", required = true) String prefix,
             @RequestBody @Valid List<FileDownloadReq> body) throws UnsupportedEncodingException {
 
-        byte[] fileData = fileService.downloadFiles(body);
+        String companyCd = authorizationService.getCompanyCdWithPriority();
+        byte[] fileData = fileService.downloadFiles(body, companyCd);
         String encodedFileName = URLEncoder.encode(prefix.concat("_").concat(DateUtil.currentYYYYMMDDHHMMSS()).concat(".zip"),
                 StandardCharsets.UTF_8.toString()).replace("+", "%20");
 

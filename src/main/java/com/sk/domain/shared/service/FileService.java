@@ -304,11 +304,15 @@ public class FileService {
     * @return byte[]
     */
     public byte[] downloadFiles(List<FileDownloadReq> list) {
+        return downloadFiles(list, null);
+    }
+
+    public byte[] downloadFiles(List<FileDownloadReq> list, String companyCd) {
         List<Long> fileNoList = list.stream()
                 .map(FileDownloadReq::fileNo)
                 .toList();
         List<UploadedFile> uploadedFiles = uploadedFileRepository.findByFileNoList(fileNoList);
-        if (uploadedFiles.isEmpty()) {
+        if (uploadedFiles.isEmpty() || uploadedFiles.size() != new HashSet<>(fileNoList).size()) {
             throw AppErrorException.of(ResultCode.Error.RSC_NOT_FOUND, String.format("file no: %s", fileNoList));
         }
         for (UploadedFile f1 : uploadedFiles) {
@@ -331,16 +335,21 @@ public class FileService {
                 String filePath = getFilePath(f.getStoragePathNm());
                 String fileName = f.getOriginalFileNm();
 
-                // S3에서 스트림으로 읽어와 바로 ZIP에 쓰기
                 try (S3ObjectInputStream s3is = objectStorageService.getObjectContent(bucketName, filePath)) {
                     if (s3is == null)
                         continue;
 
                     zos.putNextEntry(new ZipEntry(fileName));
-                    byte[] buffer = new byte[4096];
-                    int len;
-                    while ((len = s3is.read(buffer)) != -1) {
-                        zos.write(buffer, 0, len);
+                    if (fileEncryptionPolicy.isEnabled(companyCd, fileName)) {
+                        byte[] plainData = IOUtils.toByteArray(s3is);
+                        byte[] encryptedData = fileCryptoApiClient.encrypt(plainData, fileName);
+                        zos.write(encryptedData);
+                    } else {
+                        byte[] buffer = new byte[4096];
+                        int len;
+                        while ((len = s3is.read(buffer)) != -1) {
+                            zos.write(buffer, 0, len);
+                        }
                     }
                     zos.closeEntry();
                 }
