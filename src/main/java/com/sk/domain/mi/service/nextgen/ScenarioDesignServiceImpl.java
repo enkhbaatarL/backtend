@@ -10,6 +10,7 @@ import com.sk.domain.mi.dto.request.nextgen.design.ScenarioValidationReq;
 import com.sk.domain.mi.dto.response.nextgen.ScenarioDimensionColumnRes;
 import com.sk.domain.mi.dto.response.nextgen.ScenarioSignpostDefinitionViewRes;
 import com.sk.domain.mi.dto.response.nextgen.design.*;
+import com.sk.domain.mi.service.nextgen.design.ScenarioDesignFailureStore;
 import com.sk.domain.mi.service.nextgen.design.ScenarioDesignValidationStore;
 import com.sk.domain.mi.service.nextgen.support.ScenarioDesignTableMapper;
 import com.sk.domain.mi.service.nextgen.support.ScenarioDimensionMapper;
@@ -51,6 +52,7 @@ public class ScenarioDesignServiceImpl implements ScenarioDesignService {
 
     private final MiScenarioGroupRepository scenarioGroupRepository;
     private final ScenarioDesignValidationStore validationStore;
+    private final ScenarioDesignFailureStore failureStore;
     private final ScenarioDesignAgentApi scenarioDesignAgentApi;
     private final AuthorizationService authorizationService;
 
@@ -215,8 +217,9 @@ public class ScenarioDesignServiceImpl implements ScenarioDesignService {
 
         ScenarioDesignStageRes stageRes = toStageRes(res);
 
-        // 확정 완료 → 검토 캐시 정리 (콜백 없는 단계라 여기서 마무리)
+        // 확정 완료 → 검토/실패 캐시 정리 (콜백 없는 단계라 여기서 마무리)
         validationStore.delete(scenarioGroupId);
+        failureStore.delete(scenarioGroupId);
 
         return stageRes;
     }
@@ -263,6 +266,7 @@ public class ScenarioDesignServiceImpl implements ScenarioDesignService {
     @Override
     public ScenarioDesignStateRes reset(Long scenarioGroupId) {
         validationStore.delete(scenarioGroupId);
+        failureStore.delete(scenarioGroupId);
         return getDesign(scenarioGroupId);
     }
 

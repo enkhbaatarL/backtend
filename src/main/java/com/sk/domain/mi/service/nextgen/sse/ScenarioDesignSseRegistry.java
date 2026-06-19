@@ -1,11 +1,13 @@
 package com.sk.domain.mi.service.nextgen.sse;
 
 import com.sk.domain.mi.dto.response.nextgen.design.ScenarioDesignSseEvent;
+import com.sk.domain.mi.service.nextgen.design.ScenarioDesignFailureStore;
 import java.io.IOException;
 import java.time.Duration;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
@@ -20,10 +22,14 @@ import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
  */
 @Slf4j
 @Component
+@RequiredArgsConstructor
 public class ScenarioDesignSseRegistry {
 
     /** SSE 연결 타임아웃 */
     private static final long TIMEOUT_MS = Duration.ofMinutes(30).toMillis();
+
+    /** 연결 시점에 미해결 실패를 재전송하기 위한 실패 캐시 조회용 */
+    private final ScenarioDesignFailureStore failureStore;
 
     /** scenarioGroupId -> 이 노드의 SSE 연결들 */
     private final Map<Long, Set<SseEmitter>> emitters = new ConcurrentHashMap<>();
@@ -45,6 +51,15 @@ public class ScenarioDesignSseRegistry {
 
         send(emitter, "connected", Map.of("scenarioGroupId", scenarioGroupId));
         log.debug("[Design SSE] connected: groupId={}, localConnections={}", scenarioGroupId, count(scenarioGroupId));
+
+        // 연결 시점에 미해결 실패가 캐시에 있으면(레이스/끊김으로 실시간 푸시를 놓쳤을 수 있음) 곧바로 이 연결로 재전송한다.
+        try {
+            failureStore.find(scenarioGroupId).ifPresent(f ->
+                send(emitter, f.type().getCode(), ScenarioDesignSseEvent.failure(scenarioGroupId, f.type(), f.reason())));
+        } catch (Exception e) {
+            log.warn("[Design SSE] failure replay on connect skipped: groupId={}, {}", scenarioGroupId, e.getMessage());
+        }
+
         return emitter;
     }
 
