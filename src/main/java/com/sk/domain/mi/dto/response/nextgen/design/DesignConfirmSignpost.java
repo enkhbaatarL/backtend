@@ -6,9 +6,6 @@ import io.swagger.v3.oas.annotations.media.Schema;
 
 /**
  * 확정 요청의 편집 Signpost. 확정 단계에서 사용자가 편집 가능한 필드만 받는다.
- * <p>
- * 응답 뷰({@link com.sk.domain.mi.dto.response.nextgen.ScenarioSignpostDefinitionViewRes})와 달리
- * 표시용 라벨(directionLabel/strengthLabel)·확률영향점수(Agent 산출)는 제외하고, 사용여부({@code used})를 포함한다.
  */
 public record DesignConfirmSignpost(
 

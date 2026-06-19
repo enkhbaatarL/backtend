@@ -34,19 +34,19 @@ spring:
           connection-test-query: SELECT 1
           validation-timeout: 3000
           minimum-idle: 10
-#      - company-cd: midb-skens
-#        jdbc-url: jdbc:mysql://40.82.137.178:23009/midb-skens?useSSL=false&serverTimezone=Asia/Seoul&characterEncoding=UTF-8
-#        driver-class-name: com.mysql.cj.jdbc.Driver
-#        username: ${SKT_MI_DB_USERNAME_MASTER:min}
-#        password: ${SKT_MI_DB_PASSWORD_MASTER:min}
-#        hikari:
-#          connection-timeout: 7s
-#          maximum-pool-size: 20
-#          idle-timeout: 10m
-#          max-lifetime: 15m
-#          connection-test-query: SELECT 1
-#          validation-timeout: 3000
-#          minimum-idle: 10
+      #      - company-cd: midb-skens
+      #        jdbc-url: jdbc:mysql://40.82.137.178:23009/midb-skens?useSSL=false&serverTimezone=Asia/Seoul&characterEncoding=UTF-8
+      #        driver-class-name: com.mysql.cj.jdbc.Driver
+      #        username: ${SKT_MI_DB_USERNAME_MASTER:min}
+      #        password: ${SKT_MI_DB_PASSWORD_MASTER:min}
+      #        hikari:
+      #          connection-timeout: 7s
+      #          maximum-pool-size: 20
+      #          idle-timeout: 10m
+      #          max-lifetime: 15m
+      #          connection-test-query: SELECT 1
+      #          validation-timeout: 3000
+      #          minimum-idle: 10
       - company-cd: midb-ske
         jdbc-url: jdbc:mysql://40.82.137.178:23009/midb-ske?useSSL=false&serverTimezone=Asia/Seoul&characterEncoding=UTF-8
         driver-class-name: com.mysql.cj.jdbc.Driver
@@ -61,19 +61,19 @@ spring:
           connection-test-query: SELECT 1
           validation-timeout: 3000
           minimum-idle: 10
-#      - company-cd: midb-skhy
-#        jdbc-url: jdbc:mysql://40.82.137.178:23009/midb-skhy?useSSL=false&serverTimezone=Asia/Seoul&characterEncoding=UTF-8
-#        driver-class-name: com.mysql.cj.jdbc.Driver
-#        username: ${SKT_MI_DB_USERNAME_MASTER:min}
-#        password: ${SKT_MI_DB_PASSWORD_MASTER:min}
-#        hikari:
-#          connection-timeout: 7s
-#          maximum-pool-size: 20
-#          idle-timeout: 10m
-#          max-lifetime: 15m
-#          connection-test-query: SELECT 1
-#          validation-timeout: 3000
-#          minimum-idle: 10
+  #      - company-cd: midb-skhy
+  #        jdbc-url: jdbc:mysql://40.82.137.178:23009/midb-skhy?useSSL=false&serverTimezone=Asia/Seoul&characterEncoding=UTF-8
+  #        driver-class-name: com.mysql.cj.jdbc.Driver
+  #        username: ${SKT_MI_DB_USERNAME_MASTER:min}
+  #        password: ${SKT_MI_DB_PASSWORD_MASTER:min}
+  #        hikari:
+  #          connection-timeout: 7s
+  #          maximum-pool-size: 20
+  #          idle-timeout: 10m
+  #          max-lifetime: 15m
+  #          connection-test-query: SELECT 1
+  #          validation-timeout: 3000
+  #          minimum-idle: 10
 
   jpa:
     database-platform: org.hibernate.dialect.MySQLDialect
@@ -161,6 +161,10 @@ api:
     url: https://aip.sktai.io
     connection-timeout: 1s
     read-timeout: 20s
+  scenario-design-agent:
+    url: http://40.82.137.178:8001
+    connection-timeout: 1s
+    read-timeout: 60s
 
 mail:
   except-company-no: 2020
@@ -234,8 +238,8 @@ dummy:
 
 mip:
   company-urls:
-  # 회사코드별 MIP URL 설정 (로컬 테스트용)
-  # 예시:
+    # 회사코드별 MIP URL 설정 (로컬 테스트용)
+    # 예시:
     SKENS: http://localhost:8080
   # COMPANY_B: http://localhost:4000
 

@@ -1,6 +1,7 @@
 package com.sk.domain.shared.client;
 
 import com.sk.common.enums.ResultCode;
+import com.sk.common.exception.ApiErrorException;
 import com.sk.common.exception.AppErrorException;
 import com.sk.domain.shared.client.dto.request.FileCryptoDecryptReq;
 import com.sk.domain.shared.client.dto.request.FileCryptoEncryptReq;
@@ -27,6 +28,7 @@ import org.springframework.web.client.RestClient;
 @RequiredArgsConstructor
 public class FileCryptoApiClient {
 
+    private static final int LOG_DETAIL_MAX_LENGTH = 500;
     private static final int UPLOAD_SUCCESS = 1;
     private static final int ENCRYPT_SUCCESS = 0;
     private static final int DECRYPT_SUCCESS = 4;
@@ -127,15 +129,25 @@ public class FileCryptoApiClient {
 
     FileCryptoEncryptRes encrypt(FileCryptoEncryptReq request) {
         return executeWithRetry("encrypt", () -> {
+            MultiValueMap<String, String> formData = request.toFormData();
+            log.info("File crypto API encrypt request prepared. fid={}, fields={}",
+                    fidForLog(request.fid()), formData.keySet());
+
             FileCryptoEncryptRes response = restClient.post()
                     .uri(cryptoUri(properties.getEncryptPath()))
                     .contentType(MediaType.APPLICATION_FORM_URLENCODED)
-                    .body(request.toFormData())
+                    .body(formData)
                     .retrieve()
                     .body(FileCryptoEncryptRes.class);
 
             if (response == null || response.status() == null || response.status() != ENCRYPT_SUCCESS
                     || StringUtils.hasText(response.errorMsg()) || !StringUtils.hasText(response.outputFilePath())) {
+                log.warn("File crypto API encrypt response rejected. requestFid={}, responseFid={}, status={}, outputPathPresent={}, errorPresent={}, errorDetail={}",
+                        fidForLog(request.fid()), response == null ? "N/A" : fidForLog(response.fid()),
+                        response == null ? null : response.status(),
+                        response != null && StringUtils.hasText(response.outputFilePath()),
+                        response != null && StringUtils.hasText(response.errorMsg()),
+                        response == null ? "N/A" : sanitizeForLog(response.errorMsg()));
                 throw cryptoFailure("encrypt", response == null ? null : response.errorMsg());
             }
             log.info("File crypto API encrypt response accepted. fid={}, status={}, outputPathPresent={}, dataSize={}",
@@ -195,12 +207,12 @@ public class FileCryptoApiClient {
             } catch (RuntimeException e) {
                 lastException = e;
                 if (attempt >= maxAttempts || e instanceof AppErrorException) {
-                    log.warn("File crypto API {} request failed. attempt={}/{}, elapsedMs={}, retryable=false, error={}",
-                            operation, attempt, maxAttempts, elapsedMs(startedAt), e.toString());
+                    log.warn("File crypto API {} request failed. attempt={}/{}, elapsedMs={}, retryable=false, exception={}, detail={}",
+                            operation, attempt, maxAttempts, elapsedMs(startedAt), exceptionTypeForLog(e), errorDetailForLog(e));
                     throw e;
                 }
-                log.warn("File crypto API {} request failed. attempt={}/{}, elapsedMs={}, retryable=true, error={}",
-                        operation, attempt, maxAttempts, elapsedMs(startedAt), e.toString());
+                log.warn("File crypto API {} request failed. attempt={}/{}, elapsedMs={}, retryable=true, exception={}, detail={}",
+                        operation, attempt, maxAttempts, elapsedMs(startedAt), exceptionTypeForLog(e), errorDetailForLog(e));
                 sleepBeforeRetry();
             }
         }
@@ -222,6 +234,41 @@ public class FileCryptoApiClient {
                 ? "파일 암복호화 API " + operation + " 실패: " + errorMessage
                 : "파일 암복호화 API " + operation + " 실패";
         return AppErrorException.of(ResultCode.Error.SYS_INTERNAL_ERROR, message);
+    }
+
+    private String exceptionTypeForLog(RuntimeException e) {
+        return e.getClass().getSimpleName();
+    }
+
+    private String errorDetailForLog(RuntimeException e) {
+        String detail = null;
+        if (e instanceof AppErrorException appErrorException) {
+            detail = StringUtils.hasText(appErrorException.getAdditionalMessage())
+                    ? appErrorException.getAdditionalMessage()
+                    : appErrorException.getMessage();
+        } else if (e instanceof ApiErrorException apiErrorException) {
+            detail = "httpStatus=%d, message=%s".formatted(
+                    apiErrorException.getStatusCode(),
+                    apiErrorException.getMessage());
+        } else {
+            detail = e.getMessage();
+        }
+
+        if (!StringUtils.hasText(detail) && e.getCause() != null) {
+            detail = e.getCause().toString();
+        }
+        return sanitizeForLog(detail);
+    }
+
+    private String sanitizeForLog(String value) {
+        if (!StringUtils.hasText(value)) {
+            return "N/A";
+        }
+        String sanitized = value.replaceAll("[\\r\\n\\t]+", " ").trim();
+        if (sanitized.length() <= LOG_DETAIL_MAX_LENGTH) {
+            return sanitized;
+        }
+        return sanitized.substring(0, LOG_DETAIL_MAX_LENGTH) + "...";
     }
 
     private String normalizePath(String path) {

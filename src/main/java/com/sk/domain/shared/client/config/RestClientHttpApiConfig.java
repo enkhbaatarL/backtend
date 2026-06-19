@@ -5,6 +5,7 @@ import com.sk.common.http.RestClientDefaultConfig;
 import com.sk.domain.shared.client.AuthTokenApi;
 import com.sk.domain.shared.client.AxPlatformApi;
 import com.sk.domain.shared.client.ModelAgentApi;
+import com.sk.domain.shared.client.ScenarioDesignAgentApi;
 import com.sk.domain.shared.client.service.InMemoryTokenProvider;
 import com.sk.domain.shared.config.FileCryptoApiProperties;
 import java.io.IOException;
@@ -61,6 +62,18 @@ public class RestClientHttpApiConfig {
             .connectionTimeout(connectTimeout)
             .readTimeout(readTimeout)
             .build(ModelAgentApi.class);
+    }
+
+    @Bean
+    public ScenarioDesignAgentApi scenarioDesignAgentApi(@Value("${api.scenario-design-agent.url:http://40.82.137.178:8001}") String url,
+                                                         @Value("${api.scenario-design-agent.connection-timeout:1s}") Duration connectTimeout,
+                                                         @Value("${api.scenario-design-agent.read-timeout:60s}") Duration readTimeout) {
+
+        return new RestClientBuilder()
+            .url(url)
+            .connectionTimeout(connectTimeout)
+            .readTimeout(readTimeout)
+            .build(ScenarioDesignAgentApi.class);
     }
 
     @Bean

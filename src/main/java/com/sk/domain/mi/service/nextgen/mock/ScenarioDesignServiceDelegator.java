@@ -50,10 +50,10 @@ public class ScenarioDesignServiceDelegator implements ScenarioDesignService {
     }
 
     @Override
-    public ScenarioDesignStageRes validate(Long scenarioGroupId, ScenarioValidationReq request) {
+    public ScenarioDesignStageRes validateDesign(Long scenarioGroupId, ScenarioValidationReq request) {
         return api().isValidate()
             ? mockService.validate(scenarioGroupId, request)
-            : realService.validate(scenarioGroupId, request);
+            : realService.validateDesign(scenarioGroupId, request);
     }
 
     @Override
@@ -64,10 +64,10 @@ public class ScenarioDesignServiceDelegator implements ScenarioDesignService {
     }
 
     @Override
-    public ScenarioDesignStageRes confirm(Long scenarioGroupId, ScenarioConfirmationReq request) {
+    public ScenarioDesignStageRes confirmDesign(Long scenarioGroupId, ScenarioConfirmationReq request) {
         return api().isConfirm()
             ? mockService.confirm(scenarioGroupId, request)
-            : realService.confirm(scenarioGroupId, request);
+            : realService.confirmDesign(scenarioGroupId, request);
     }
 
     @Override

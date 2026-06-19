@@ -1,20 +1,24 @@
 package com.sk.domain.mi.dto.response.nextgen.design;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonValue;
+import com.sk.domain.shared.enums.nextgen.AgentCallbackResult;
 import java.util.Arrays;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 
 /**
  * 설계 세션 SSE 푸시 이벤트 (신호).
- * payload는 가볍게 두고, FE는 수신 후 세션 상태를 GET으로 재조회해 화면을 갱신한다.
  */
+@JsonInclude(JsonInclude.Include.NON_NULL)
 public record ScenarioDesignSseEvent(
 
     Long scenarioGroupId,
     Type type,
-    Stage stage
+    Stage stage,
+    AgentCallbackResult result,
+    String reason
 
 ) {
 
@@ -66,8 +70,14 @@ public record ScenarioDesignSseEvent(
         }
     }
 
+    /** 성공 이벤트. result=success, reason 없음. */
     public static ScenarioDesignSseEvent of(Long scenarioGroupId, Type type, Stage stage) {
-        return new ScenarioDesignSseEvent(scenarioGroupId, type, stage);
+        return new ScenarioDesignSseEvent(scenarioGroupId, type, stage, AgentCallbackResult.SUCCESS, null);
+    }
+
+    /** 실패 이벤트 (Agent 작업 실패). 단계 전이 없이 사유만 전달 */
+    public static ScenarioDesignSseEvent failure(Long scenarioGroupId, Type type, String reason) {
+        return new ScenarioDesignSseEvent(scenarioGroupId, type, null, AgentCallbackResult.FAILURE, reason);
     }
 
 }

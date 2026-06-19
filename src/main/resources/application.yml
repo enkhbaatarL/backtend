@@ -65,21 +65,21 @@ mi:
     mock:
       events:
         api:
-          get-list: true
-          get-detail: true
-          get-records: true
-          get-outlooks: true
-          design-availability: true
+          get-list: false
+          get-detail: false
+          get-records: false
+          get-outlooks: false
+          design-availability: false
       scenario-groups:
         api:
-          get-list: true
-          get-scenarios: true
-          get-graph: true
-          get-graph-export: true
-          get-detail: true
-          get-scenario-detail: true
-          update-scenario-status: true
-          delete-group: true
+          get-list: false
+          get-scenarios: false
+          get-graph: false
+          get-graph-export: false
+          get-detail: false
+          get-scenario-detail: false
+          update-scenario-status: false
+          delete-group: false
       model-executions:
         api:
           get-parameters: true
@@ -93,10 +93,10 @@ mi:
       design:
         callback-delay-seconds: 15
         api:
-          start: true
-          get-state: true
-          get-dimension-templates: true
-          validate: true
-          create-signposts: true
-          confirm: true
-          reset: true
+          start: false
+          get-state: false
+          get-dimension-templates: false
+          validate: false
+          create-signposts: false
+          confirm: false
+          reset: false
