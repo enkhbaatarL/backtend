@@ -35,6 +35,7 @@ import com.sk.domain.shared.repository.master.tmm.projection.EventListRow;
 import com.sk.domain.shared.repository.master.tmm.projection.ScenarioGroupBaseRow;
 
 import java.util.Collection;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -116,14 +117,17 @@ public class EventServiceImpl implements EventService {
      * requestUserId(Long)를 사용자 PK(usr_no, Integer)로 조회하며, 삭제/미존재 사용자는 결과에서 빠진다(이름 null).
      */
     private Map<Long, String> resolveOccupantNames(Collection<Long> userIds) {
+
         List<Integer> ids = userIds.stream()
             .filter(Objects::nonNull)
             .distinct()
             .map(Long::intValue)
             .toList();
+
         if (ids.isEmpty()) {
-            return Map.of();
+            return Collections.emptyMap();
         }
+
         return userRepository.findByUserNoInAndIsDeletedFalse(ids).stream()
             .collect(Collectors.toMap(user -> user.getUserNo().longValue(), User::getUserNm));
     }
