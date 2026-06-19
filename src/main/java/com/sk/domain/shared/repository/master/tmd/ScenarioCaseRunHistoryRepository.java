@@ -11,6 +11,8 @@ import org.springframework.data.repository.query.Param;
 
 public interface ScenarioCaseRunHistoryRepository extends JpaRepository<ScenarioCaseRunHistory, String> {
 
+    Optional<ScenarioCaseRunHistory> findByRunIdAndIsDeletedFalse(String runId);
+
     @Query("""
         SELECT h.runSeq
           FROM ScenarioCaseRunHistory h

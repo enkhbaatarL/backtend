@@ -79,10 +79,8 @@ public class NextGenMockProperties {
         @Getter
         @Setter
         public static class Api {
-            private boolean getParameters = false;
             private boolean submit = false;
             private boolean getStatus = false;
-            private boolean callback = false;
         }
 
         @Getter

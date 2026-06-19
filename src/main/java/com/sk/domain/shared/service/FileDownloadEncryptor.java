@@ -32,7 +32,7 @@ public class FileDownloadEncryptor {
             return plainData;
         }
 
-        String companyCd = authorizationService.getCompanyCd();
+        String companyCd = authorizationService.getCompanyCdWithPriority();
         if (!fileEncryptionPolicy.isEnabledCompany(companyCd)) {
             return plainData;
         }

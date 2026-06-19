@@ -10,10 +10,9 @@ import lombok.RequiredArgsConstructor;
 @RequiredArgsConstructor
 public enum ModelExecutionStatus {
 
-    QUEUED("queued", "대기"),
-    RUNNING("running", "실행 중"),
-    SUCCEEDED("succeeded", "성공"),
-    FAILED("failed", "실패");
+    RUNNING("RUNNING", "실행 중"),
+    COMPLETED("COMPLETED", "완료"),
+    FAILED("FAILED", "실패");
 
     @JsonValue
     private final String code;
@@ -28,6 +27,6 @@ public enum ModelExecutionStatus {
     }
 
     public boolean isTerminal() {
-        return this == SUCCEEDED || this == FAILED;
+        return this == COMPLETED || this == FAILED;
     }
 }

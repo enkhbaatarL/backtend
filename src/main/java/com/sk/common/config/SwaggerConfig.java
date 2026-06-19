@@ -2,11 +2,20 @@ package com.sk.common.config;
 
 import com.sk.common.annotation.ApiOrder;
 import com.sk.domain.mi.config.NextGenMockProperties;
-import io.swagger.v3.oas.models.*;
+import io.swagger.v3.oas.models.Components;
+import io.swagger.v3.oas.models.OpenAPI;
+import io.swagger.v3.oas.models.Operation;
+import io.swagger.v3.oas.models.PathItem;
+import io.swagger.v3.oas.models.Paths;
 import io.swagger.v3.oas.models.info.Info;
 import io.swagger.v3.oas.models.security.SecurityRequirement;
 import io.swagger.v3.oas.models.security.SecurityScheme;
 import io.swagger.v3.oas.models.security.SecurityScheme.Type;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
+import java.util.Comparator;
+import java.util.LinkedHashMap;
+import java.util.Map;
 import lombok.RequiredArgsConstructor;
 import org.springdoc.core.customizers.OpenApiCustomizer;
 import org.springdoc.core.customizers.OperationCustomizer;
@@ -16,13 +25,6 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Profile;
 import org.springframework.core.annotation.AnnotationUtils;
-import org.springframework.util.StringUtils;
-
-import java.time.LocalDateTime;
-import java.time.format.DateTimeFormatter;
-import java.util.Comparator;
-import java.util.LinkedHashMap;
-import java.util.Map;
 
 @Profile({"local", "tech", "dev", "prod", "testdb"})
 @Configuration
@@ -30,7 +32,7 @@ import java.util.Map;
 public class SwaggerConfig {
 
     // note: 안정화 후 투머치 문서 모두 삭제예정
-    private static final String SW_VERSION_BASE = "v1.2.61";
+    private static final String SW_VERSION_BASE = "v1.2.62";
     private static final DateTimeFormatter SW_DEPLOY_DATE_FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
 
     @Bean
@@ -132,11 +134,8 @@ public class SwaggerConfig {
   | 시나리오 그룹 삭제 | %s |
   | 시나리오 그룹 CME 벤치마크 그래프 (dedicated 전용) | %s |
   | **Model Execution** | |
-  | 수급모델 실행 파라미터 조회 | %s |
   | 수급모델 실행 요청 | %s |
   | 수급모델 실행 상태 조회 | %s |
-  | 수급모델 실행 콜백 | %s |
-  | 수급모델 실행 데이터 초기화 | %s |
   | **Fundamental Model Case** | |
   | Fundamental Model Case 목록 | %s |
   | Fundamental Model Case 업로드 | %s |
@@ -156,7 +155,7 @@ public class SwaggerConfig {
 
   ## 수정사항
   <details open>
-    <summary><strong>v1.2.61 (2026-06-18)</strong></summary>
+    <summary><strong>v1.2.62 (2026-06-18)</strong></summary>
 
   - [Event]
     - 이벤트 목록에 `occupied`(설계 점유 여부) · `occupantUserId`(점유자) 추가
@@ -166,6 +165,8 @@ public class SwaggerConfig {
     - CME 벤치마크 그래프 조회 API 추가 (dedicated 전용, `GET .../scenario-groups/graph/cme-benchmark`)
   - [File Crypto]
     - `status` API 경로 수정
+  - [Model Execution]
+    - 모델 실행 접수, 모델 실행 상태 조회 살DB 연동
 
   </details>
 
@@ -375,10 +376,8 @@ public class SwaggerConfig {
             label(mockProps.getScenarioGroups().getApi().isUpdateScenarioStatus()),
             label(mockProps.getScenarioGroups().getApi().isDeleteGroup()),
             label(false), // CME 벤치마크 — 항상 실 DB(midb-skgas), mock 없음
-            label(mockProps.getModelExecutions().getApi().isGetParameters()),
             label(mockProps.getModelExecutions().getApi().isSubmit()),
             label(mockProps.getModelExecutions().getApi().isGetStatus()),
-            label(mockProps.getModelExecutions().getApi().isCallback()),
             label(false),
             label(false),
             label(false),
