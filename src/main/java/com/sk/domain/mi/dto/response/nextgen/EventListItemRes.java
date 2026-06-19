@@ -17,7 +17,7 @@ public record EventListItemRes(
     @Schema(description = "이벤트명", example = "호르무즈 해협 긴장 재확대")
     String eventName,
 
-    @Schema(description = "상태 (new / updated)", example = "new")
+    @Schema(description = "상태 (new|updated)", example = "new")
     ContentStatus status,
 
     @Schema(description = "상태 라벨", example = "신규")
@@ -45,36 +45,40 @@ public record EventListItemRes(
     String signalTypeLabel,
 
     @Schema(description = "시나리오화 추천 여부", example = "true")
-    Boolean isScenarioSuggested,
+    boolean isScenarioSuggested,
 
     @Schema(description = "시나리오화 추천 근거", example = "글로벌 공급 차질 가능성으로 시나리오화 검토 필요")
     String scenarioSuggestReason,
 
-    @Schema(description = "시나리오 디자인 상태 — designable(설계가능) / creating(설계중) / created(설계완료)", example = "designable")
+    @Schema(description = "시나리오 디자인 상태 (designable|unavailable|creating|created)", example = "designable")
     ScenarioDesignDisplayStatus scenarioDesignStatus,
 
-    @Schema(description = "시나리오 디자인 상태 라벨", example = "설계가능")
+    @Schema(description = "시나리오 디자인 상태 라벨 (설계가능|설계불가|설계중|설계완료)", example = "설계가능")
     String scenarioDesignStatusLabel,
 
-    @Schema(description = "활성 시나리오 그룹 ID (없으면 null, created일 때 이동 대상)", example = "1", nullable = true)
+    @Schema(description = "활성 시나리오 그룹 ID", example = "2", nullable = true)
     Long scenarioGroupId,
 
-    @Schema(description = "설계 점유 여부 (설계중이면 true)", example = "false")
+    @Schema(description = "설계 점유 여부", example = "false")
     boolean occupied,
 
-    @Schema(description = "점유 사용자 ID (점유 중이 아니면 null)", example = "10001", nullable = true)
+    @Schema(description = "점유 사용자 ID - 점유 중이 아니면 null)", example = "10001", nullable = true)
     Long occupantUserId,
 
-    @Schema(description = "인덱스별 영향도 (JKM, TTF, HH)")
+    @Schema(description = "점유 사용자명 - 점유 중이 아니면 null", example = "홍길동", nullable = true)
+    String occupantUserName,
+
+    @Schema(description = "인덱스별 영향도 (JKM|TTF|HH)")
     List<EventImpactIndexRes> indexImpacts
 
 ) {
 
-    public static EventListItemRes from(EventListRow row) {
+    public static EventListItemRes from(EventListRow row, String occupantUserName) {
         ContentStatus status = Boolean.TRUE.equals(row.isNew()) ? ContentStatus.NEW : ContentStatus.UPDATED;
         EventSignalType signalType = Boolean.TRUE.equals(row.isSignal()) ? EventSignalType.SIGNAL : EventSignalType.NOISE;
-        ScenarioDesignDisplayStatus designStatus = ScenarioDesignDisplayStatus.of(row.scenarioGroupStatus());
-        // 점유 = 활성 그룹이 creating(설계중)인 상태. 점유자는 그룹 요청자(request_usr_id).
+        ScenarioDesignDisplayStatus designStatus = ScenarioDesignDisplayStatus.of(row.scenarioGroupStatus(), row.templateAvailable());
+
+        // 점유 = 활성 시나리오 그룹이 creating(설계중)인 상태. 점유자는 시나리오 그룹 요청자(request_usr_id)
         boolean occupied = row.scenarioGroupStatus() == ScenarioGroupStatus.CREATING;
 
         return new EventListItemRes(
@@ -96,6 +100,7 @@ public record EventListItemRes(
             row.scenarioGroupId(),
             occupied,
             occupied ? row.requestUserId() : null,
+            occupied ? occupantUserName : null,
             row.indexImpacts().stream().map(EventImpactIndexRes::fromRow).toList()
         );
     }

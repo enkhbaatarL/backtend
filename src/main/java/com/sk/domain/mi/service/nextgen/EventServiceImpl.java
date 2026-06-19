@@ -22,19 +22,25 @@ import com.sk.domain.mi.dto.response.nextgen.design.EventDesignAvailabilityRes;
 import com.sk.domain.mi.service.nextgen.support.ScenarioDimensionMapper;
 import com.sk.domain.mi.service.nextgen.support.ScenarioDimensionMapper.GroupDimensionTemplate;
 import com.sk.domain.mi.service.nextgen.support.ScenarioProbabilityAllocator;
+import com.sk.domain.shared.entity.master.tmd.User;
 import com.sk.domain.shared.enums.nextgen.ScenarioDesignDisplayStatus;
 import com.sk.domain.shared.enums.nextgen.ScenarioGroupStatus;
+import com.sk.domain.shared.repository.master.tmd.UserRepository;
 import com.sk.domain.shared.repository.master.tmm.MiEventRepository;
 import com.sk.domain.shared.repository.master.tmm.MiEventTypeL1Repository;
 import com.sk.domain.shared.repository.master.tmm.MiScenarioGroupRepository;
 import com.sk.domain.shared.repository.master.tmm.projection.EventDesignAvailabilityRow;
 import com.sk.domain.shared.repository.master.tmm.projection.EventDetailRow;
+import com.sk.domain.shared.repository.master.tmm.projection.EventListRow;
 import com.sk.domain.shared.repository.master.tmm.projection.ScenarioGroupBaseRow;
 
+import java.util.Collection;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.function.Function;
 import java.util.stream.Collectors;
+import org.springframework.data.domain.Page;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
@@ -47,6 +53,7 @@ public class EventServiceImpl implements EventService {
     private final MiEventRepository miEventRepository;
     private final MiEventTypeL1Repository miEventTypeL1Repository;
     private final MiScenarioGroupRepository miScenarioGroupRepository;
+    private final UserRepository userRepository;
 
     /**
      * [이벤트 유형 L1 목록]
@@ -68,9 +75,18 @@ public class EventServiceImpl implements EventService {
      */
     @Override
     public EventListRes getEvents(EventListReq request) {
+        Page<EventListRow> page = miEventRepository.getEventsByConditions(request);
+
+        // 점유(설계중) 이벤트의 요청자 userId만 모아 사용자명 일괄 조회
+        Map<Long, String> occupantNames = resolveOccupantNames(
+            page.getContent().stream()
+                .filter(row -> row.scenarioGroupStatus() == ScenarioGroupStatus.CREATING)
+                .map(EventListRow::requestUserId)
+                .toList());
+
         return new EventListRes(
             EventAppliedFilterRes.from(request),
-            PaginationRes.toRes(miEventRepository.getEventsByConditions(request).map(EventListItemRes::from))
+            PaginationRes.toRes(page.map(row -> EventListItemRes.from(row, occupantNames.get(row.requestUserId()))))
         );
     }
 
@@ -84,7 +100,32 @@ public class EventServiceImpl implements EventService {
         EventDetailRow row = miEventRepository.findEventDetail(eventId)
             .orElseThrow(() -> AppErrorException.of(ResultCode.Error.RSC_NOT_FOUND, "Event not found: %d".formatted(eventId)));
 
-        return EventDetailRes.from(row, buildRelatedScenarios(row));
+        return EventDetailRes.from(row, buildRelatedScenarios(row), resolveOccupantName(row.relatedScenarioGroup()));
+    }
+
+    /** 활성 그룹이 설계중(점유)일 때만 그룹 요청자의 사용자명을 조회한다. (그 외 null) */
+    private String resolveOccupantName(ScenarioGroupBaseRow group) {
+        if (group == null || group.status() != ScenarioGroupStatus.CREATING || group.requestUserId() == null) {
+            return null;
+        }
+        return resolveOccupantNames(List.of(group.requestUserId())).get(group.requestUserId());
+    }
+
+    /**
+     * 점유자(설계중 그룹 요청자) userId → 사용자명 매핑.
+     * requestUserId(Long)를 사용자 PK(usr_no, Integer)로 조회하며, 삭제/미존재 사용자는 결과에서 빠진다(이름 null).
+     */
+    private Map<Long, String> resolveOccupantNames(Collection<Long> userIds) {
+        List<Integer> ids = userIds.stream()
+            .filter(Objects::nonNull)
+            .distinct()
+            .map(Long::intValue)
+            .toList();
+        if (ids.isEmpty()) {
+            return Map.of();
+        }
+        return userRepository.findByUserNoInAndIsDeletedFalse(ids).stream()
+            .collect(Collectors.toMap(user -> user.getUserNo().longValue(), User::getUserNm));
     }
 
     /**
@@ -152,17 +193,28 @@ public class EventServiceImpl implements EventService {
         Map<Long, EventDesignAvailabilityRow> rowByEventId = miEventRepository.findDesignAvailability(eventIds).stream()
             .collect(Collectors.toMap(EventDesignAvailabilityRow::miEventId, Function.identity()));
 
+        // 점유(설계중) 이벤트의 요청자 userId만 모아 사용자명 일괄 조회
+        Map<Long, String> occupantNames = resolveOccupantNames(
+            rowByEventId.values().stream()
+                .filter(row -> row.scenarioGroupStatus() == ScenarioGroupStatus.CREATING)
+                .map(EventDesignAvailabilityRow::requestUserId)
+                .toList());
+
         return eventIds.stream()
             .distinct()
-            .map(eventId -> toAvailability(eventId, rowByEventId.get(eventId)))
+            .map(eventId -> toAvailability(eventId, rowByEventId.get(eventId), occupantNames))
             .toList();
     }
 
-    private EventDesignAvailabilityRes toAvailability(Long eventId, EventDesignAvailabilityRow row) {
+    private EventDesignAvailabilityRes toAvailability(Long eventId, EventDesignAvailabilityRow row, Map<Long, String> occupantNames) {
         if (row == null) return EventDesignAvailabilityRes.designable(eventId);
-        ScenarioDesignDisplayStatus status = ScenarioDesignDisplayStatus.of(row.scenarioGroupStatus());
+        ScenarioDesignDisplayStatus status = ScenarioDesignDisplayStatus.of(row.scenarioGroupStatus(), row.templateAvailable());
         boolean occupied = row.scenarioGroupStatus() == ScenarioGroupStatus.CREATING;
-        return EventDesignAvailabilityRes.of(eventId, status, occupied, occupied ? row.requestUserId() : null, row.scenarioGroupId());
+        return EventDesignAvailabilityRes.of(
+            eventId, status, occupied,
+            occupied ? row.requestUserId() : null,
+            occupied ? occupantNames.get(row.requestUserId()) : null,
+            row.scenarioGroupId());
     }
 
 }

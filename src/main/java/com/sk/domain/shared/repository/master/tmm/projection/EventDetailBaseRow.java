@@ -5,7 +5,7 @@ import java.time.LocalDateTime;
 
 public record EventDetailBaseRow(
     Long miEventId,
-    String eventTitle,
+    String oneLineSummary,
     LocalDateTime createDt,
     LocalDateTime modifyDt,
     LocalDateTime latestRecordFirstCreated,
@@ -18,7 +18,8 @@ public record EventDetailBaseRow(
     Boolean isScenarioSuggested,
     String scenarioSuggestReason,
     String detailAnalysis,
-    String keyBulletsJson
+    String keyBulletsJson,
+    boolean templateAvailable
 ) {
 
     @QueryProjection

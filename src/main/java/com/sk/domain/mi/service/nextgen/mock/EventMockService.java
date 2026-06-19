@@ -152,11 +152,14 @@ public class EventMockService {
         // 상세에는 scenarioGroupId 필드가 없어 그룹삭제 판정은 생략(목록에서 처리), 라이브 세션 상태만 반영
         DesignDisplay design = resolveDesignDisplay(eventId, detail.scenarioDesignStatus(), null);
         ScenarioDesignDisplayStatus status = design.status();
+        boolean occupied = status == ScenarioDesignDisplayStatus.CREATING;
+        // mock은 점유자명 소스가 없어 occupantUserName은 null (실DB 경로에서만 채움)
         return new EventDetailRes(
             detail.eventId(), detail.eventName(), detail.status(), detail.statusLabel(),
             detail.createdAt(), detail.updatedAt(), detail.latestRecordFirstCreated(),
             detail.signalType(), detail.signalTypeLabel(), detail.isScenarioSuggested(), detail.scenarioSuggestReason(),
             status, status == null ? null : status.getLabel(),
+            occupied, occupied ? design.occupantUserId() : null, null,
             detail.aiInsights(), detail.impactAnalysis(), detail.driverTreeScoreboard(), detail.relatedEventScenario());
     }
 
@@ -188,10 +191,10 @@ public class EventMockService {
         var session = designMockService.findSessionByEventId(eventId);
         if (session.isPresent()) {
             ScenarioDesignMockService.DesignSessionInfo info = session.get();
-            ScenarioDesignDisplayStatus status = ScenarioDesignDisplayStatus.of(info.status());
+            ScenarioDesignDisplayStatus status = ScenarioDesignDisplayStatus.of(info.status(), true);
             boolean occupied = info.status() == ScenarioGroupStatus.CREATING;
             return EventDesignAvailabilityRes.of(
-                eventId, status, occupied, occupied ? info.occupantUserId() : null, info.scenarioGroupId());
+                eventId, status, occupied, occupied ? info.occupantUserId() : null, null, info.scenarioGroupId());
         }
         // ② 세션 없으면 이벤트의 정적 설계 상태(사전 그룹) — event-list와 일관
         EventListItemRes event = eventById(eventId);
@@ -203,7 +206,7 @@ public class EventMockService {
             return EventDesignAvailabilityRes.designable(eventId);
         }
         return EventDesignAvailabilityRes.of(
-            eventId, event.scenarioDesignStatus(), false, null, event.scenarioGroupId());
+            eventId, event.scenarioDesignStatus(), false, null, null, event.scenarioGroupId());
     }
 
     /**
@@ -215,7 +218,7 @@ public class EventMockService {
         var session = designMockService.findSessionByEventId(eventId);
         if (session.isPresent()) {
             ScenarioDesignMockService.DesignSessionInfo info = session.get();
-            ScenarioDesignDisplayStatus status = ScenarioDesignDisplayStatus.of(info.status());
+            ScenarioDesignDisplayStatus status = ScenarioDesignDisplayStatus.of(info.status(), true);
             // 점유 = 설계중(creating). 점유자는 세션의 실제 시작 사용자.
             Long occupant = status == ScenarioDesignDisplayStatus.CREATING ? info.occupantUserId() : null;
             return new DesignDisplay(status, info.scenarioGroupId(), occupant);
@@ -240,7 +243,7 @@ public class EventMockService {
             item.latestRecordFirstCreated(), item.signalType(), item.signalTypeLabel(),
             item.isScenarioSuggested(), item.scenarioSuggestReason(),
             status, status == null ? null : status.getLabel(),
-            design.scenarioGroupId(), occupied, design.occupantUserId(), item.indexImpacts());
+            design.scenarioGroupId(), occupied, design.occupantUserId(), null, item.indexImpacts());
     }
 
     private EventListItemRes eventById(Long eventId) {

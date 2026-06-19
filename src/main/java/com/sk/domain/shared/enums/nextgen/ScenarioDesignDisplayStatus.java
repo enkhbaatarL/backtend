@@ -14,6 +14,7 @@ import lombok.RequiredArgsConstructor;
 public enum ScenarioDesignDisplayStatus {
 
     DESIGNABLE("designable", "설계가능"),
+    DESIGN_UNAVAILABLE("unavailable", "설계불가"),
     CREATING("creating", "설계중"),
     CREATED("created", "설계완료");
 
@@ -22,11 +23,15 @@ public enum ScenarioDesignDisplayStatus {
     private final String label;
 
     /**
-     * 활성 그룹이 없으면 "설계가능", 있으면 그룹 status 기준 분류.
-     * */
-    public static ScenarioDesignDisplayStatus of(ScenarioGroupStatus groupStatus) {
+     * 활성 그룹이 없으면 dimension template 유무로 설계가능/설계불가를 가르고, 있으면 그룹 status 기준 분류.
+     * - 그룹 없음 + 템플릿 있음 --> 설계가능 / 그룹 없음 + 템플릿 없음 --> 설계불가 (해당 event_type_l2에 dimension template 미존재)
+     * - creating/created/realized는 이미 설계가 진행 or 완료된 상태라 템플릿 유무와 무관하게 유지
+     *
+     * @param templateAvailable 이벤트의 event_type_l2에 매칭되는 비삭제 dimension template 존재 여부
+     */
+    public static ScenarioDesignDisplayStatus of(ScenarioGroupStatus groupStatus, boolean templateAvailable) {
         if (groupStatus == null) {
-            return DESIGNABLE;
+            return templateAvailable ? DESIGNABLE : DESIGN_UNAVAILABLE;
         }
         return switch (groupStatus) {
             case CREATING -> CREATING;
