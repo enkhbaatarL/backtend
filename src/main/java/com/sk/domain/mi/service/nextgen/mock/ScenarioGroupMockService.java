@@ -18,20 +18,17 @@ import com.sk.domain.mi.dto.response.nextgen.ScenarioIndividualItemRes;
 import com.sk.domain.mi.dto.response.nextgen.ScenarioIndividualListRes;
 import com.sk.domain.mi.dto.response.nextgen.ScenarioRowRes;
 import com.sk.domain.mi.dto.response.nextgen.ScenarioStatusRes;
-import com.sk.domain.mi.service.nextgen.support.ScenarioGroupGraphExcelMapper;
 import com.sk.domain.mi.service.nextgen.support.ScenarioProbabilityAllocator;
 import com.sk.domain.shared.enums.nextgen.GraphPeriodUnit;
 import com.sk.domain.shared.enums.nextgen.IndexName;
 import com.sk.domain.shared.enums.nextgen.ScenarioDisplayStatus;
 import com.sk.domain.shared.enums.nextgen.SortOrder;
 import jakarta.annotation.PostConstruct;
-import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
@@ -248,30 +245,6 @@ public class ScenarioGroupMockService {
         return new ScenarioGroupGraphRes(
             scenarioGroupId, indexName.getCode(), periodUnit, periodUnit.getLabel(),
             "USD", "MMBtu", List.of(), List.of(), series);
-    }
-
-    public ByteArrayInputStream exportScenarioGroupGraph(Long scenarioGroupId, GraphPeriodUnit periodUnit) {
-        if (deletedGroupIds.contains(scenarioGroupId)) {
-            throw AppErrorException.of(ResultCode.Error.RSC_NOT_FOUND,
-                "Scenario group graph not found: " + scenarioGroupId);
-        }
-        List<ScenarioGroupGraphRes> graphs = graphMap.get(scenarioGroupId);
-        if (graphs == null) {
-            // 설계 확정 등으로 생성됐으나 그래프 fixture 미보유(수급모델 미실행) → 빈 그래프로 내보냄(404 방지, 화면 그래프와 동일)
-            if (!groupDetailMap.containsKey(scenarioGroupId)) {
-                throw AppErrorException.of(ResultCode.Error.RSC_NOT_FOUND,
-                    "Scenario group graph not found: " + scenarioGroupId);
-            }
-            List<ScenarioGroupGraphRes> empties = Arrays.stream(IndexName.values())
-                .map(idx -> emptyGraph(scenarioGroupId, idx, periodUnit))
-                .toList();
-            return ScenarioGroupGraphExcelMapper.toExcel(empties);
-        }
-        // 화면 그래프와 동일하게 시나리오 판정 상태(상태변경/폐기)·실행중 표기를 오버레이해 내보낸다
-        return ScenarioGroupGraphExcelMapper.toExcel(graphs.stream()
-            .filter(g -> periodUnit == g.periodUnit())
-            .map(g -> applyScenarioStatusToGraph(scenarioGroupId, g))
-            .toList());
     }
 
     public ScenarioGroupDetailRes getScenarioGroupDetail(Long scenarioGroupId) {

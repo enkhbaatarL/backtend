@@ -63,7 +63,6 @@ public class NextGenMockProperties {
             private boolean getList = false;
             private boolean getScenarios = false;
             private boolean getGraph = false;
-            private boolean getGraphExport = false;
             private boolean getDetail = false;
             private boolean getScenarioDetail = false;
             private boolean updateScenarioStatus = false;

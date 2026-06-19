@@ -43,7 +43,7 @@ public final class ScenarioGroupGraphExcelMapper {
         }
         for (ScenarioGroupGraphRes.ScenarioSeries scenario : graph.scenarioSeries()) {
             rows.add(seriesRow("%s (Base Case)".formatted(scenario.scenarioName()), scenario.baseCaseValues(), dates.size()));
-            rows.add(seriesRow("%s (사용자 조정)".formatted(scenario.scenarioName()), scenario.userAdjustedValues(), dates.size()));
+            rows.add(seriesRow("%s (User Adjusted)".formatted(scenario.scenarioName()), scenario.userAdjustedValues(), dates.size()));
         }
         return new TableRes(graph.indexName(), columns, rows);
     }

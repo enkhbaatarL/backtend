@@ -21,7 +21,6 @@ import com.sk.domain.mi.dto.response.nextgen.ScenarioSignpostMonitoringRes;
 import com.sk.domain.mi.dto.response.nextgen.ScenarioStatusRes;
 import com.sk.domain.mi.service.nextgen.support.ScenarioDimensionMapper;
 import com.sk.domain.mi.service.nextgen.support.ScenarioDimensionMapper.GroupDimensionTemplate;
-import com.sk.domain.mi.service.nextgen.support.ScenarioGroupGraphExcelMapper;
 import com.sk.domain.mi.service.nextgen.support.ScenarioProbabilityAllocator;
 import com.sk.domain.shared.entity.master.tmm.MiScenario;
 import com.sk.domain.shared.entity.master.tmm.MiScenarioGroup;
@@ -39,8 +38,6 @@ import com.sk.domain.shared.repository.master.tmm.projection.ScenarioDetailBaseR
 import com.sk.domain.shared.repository.master.tmm.projection.ScenarioGroupBaseRow;
 import com.sk.domain.shared.repository.master.tmm.projection.ScenarioGroupDetailBaseRow;
 import com.sk.domain.shared.repository.master.tmm.projection.ScenarioIndividualBaseRow;
-import java.io.ByteArrayInputStream;
-import java.util.Arrays;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -167,19 +164,19 @@ public class ScenarioGroupServiceImpl implements ScenarioGroupService {
     }
 
     /**
-     * [그래프 엑셀 다운로드]
-     * - 전 인덱스(JKM/TTF/HH)를 인덱스별 시트로 묶고, 기간단위는 요청한 하나만 적용
-     * - 시나리오당 베이스케이스/사용자조정 2행, 값 없는 구간은 빈 칸
+     * [그래프 빌드 - 모든 인덱스]
+     * - 엑셀 다운로드 등 전 인덱스(JKM/TTF/HH)를 한 번에 빌드해야 하는 곳에서 사용 (인덱스별 그래프, 단일 기간단위)
+     * - 엑셀 변환/외부 기준선(CME) 병합은 호출 측 책임 (CME는 전용 DB라 dedicated 서비스에서만 접근)
      */
-    @Override
-    public ByteArrayInputStream exportScenarioGroupGraph(Long scenarioGroupId, GraphPeriodUnit periodUnit) {
+    public Map<IndexName, ScenarioGroupGraphRes> buildGraphs(Long scenarioGroupId, GraphPeriodUnit periodUnit) {
         requireActiveGroup(scenarioGroupId);
         List<ScenarioBaseRow> scenarios = scenarioGroupRepository.findScenariosByGroupId(scenarioGroupId);
 
-        List<ScenarioGroupGraphRes> graphs = Arrays.stream(IndexName.values())
-            .map(indexName -> buildGraph(scenarioGroupId, indexName, periodUnit, scenarios))
-            .toList();
-        return ScenarioGroupGraphExcelMapper.toExcel(graphs);
+        Map<IndexName, ScenarioGroupGraphRes> graphs = new LinkedHashMap<>();
+        for (IndexName indexName : IndexName.values()) {
+            graphs.put(indexName, buildGraph(scenarioGroupId, indexName, periodUnit, scenarios));
+        }
+        return graphs;
     }
 
     private ScenarioGroupGraphRes buildGraph(Long scenarioGroupId, IndexName indexName, GraphPeriodUnit periodUnit, List<ScenarioBaseRow> scenarios) {
