@@ -199,7 +199,7 @@ flowchart LR
 | 코드 후보 | 의미 |
 |---|---|
 | `REQ_INVALID_PARAMETER` | enum/query/body 값 오류 |
-| `REQ_RESOURCE_NOT_FOUND` | `eventId`, `scenarioId`, `generationId`, `executionId` 미존재 |
+| `REQ_RESOURCE_NOT_FOUND` | `eventId`, `scenarioId`, `generationId`, `runId` 미존재 |
 | `REQ_INVALID_STATE` | 허용되지 않는 상태에서 MI 수급모델 실행 접수 시도 |
 | `REQ_CONFLICT` | 중복 생성 또는 동시성 충돌 |
 | `REQ_FORBIDDEN` | 권한 없음 |
@@ -931,247 +931,189 @@ Dispatch accept response:
 
 ## 7.1 Feature Goal
 
-- 사용자는 scenario 상세 화면에서 `MI 수급모델 실행` 버튼을 클릭한다.
-- backend는 `MI 수급모델 실행 팝업`에 read-only 참조로 보여줄 baseline parameter를 반환한다.
-- parameter 조회는 execution 이력과 무관하게 항상 scenario baseline parameter를 기준으로 응답한다.
-- 사용자는 parameter를 수정하는 대신 입력 파일 3개를 업로드해 `MI 수급모델 실행 접수`를 수행한다.
-- backend는 업로드 파일을 storage(S3)에 올리고 execution을 `PENDING`(실행 대기) 상태로 생성한다.
-- 실행이 장시간일 수 있으므로 비동기 실행 리소스를 생성하는 contract를 기본안으로 둔다.
+- 사용자는 시나리오 그룹 상세 화면에서 시나리오 1개를 선택하고 입력 파일 3개를 업로드해 `MI 수급모델 실행`을 접수한다.
+- 이 API는 `POST /api/v1/mi/fundamental-model/cases` 와 `POST /api/v1/mi/fundamental-model/cases/{caseId}/runs` 의 통합 흐름으로 본다.
+- 차이는 `scenarioId` 가 path로 들어오고, 생성되는 `tmd_mdl_scnrcasem` row가 `exec_type_cd = 'SCENARIO'`, `scnr_id = :scenarioId` 를 가진다는 점이다.
+- 실행 접수는 새 case row와 run history row를 생성하고 즉시 `RUNNING` 상태로 시작한다. 별도 `PENDING` 단계는 두지 않는다.
+- 상태 조회와 callback은 backend 발급 `runId` 를 기준으로 한다.
+- callback은 실행 상태 전이만 담당하며 scenario 상세조회용 결과 데이터 생성 또는 materialization은 담당하지 않는다.
 
 ## 7.2 API Sequence
 
-### Flow A. MI 수급모델 실행 팝업 초기화
+### Flow A. MI 수급모델 실행 접수
 
-1. `GET /api/v1/mi/scenario-workbench/scenarios/{scenarioId}`
-2. 응답의 `modelExecutionAction.enabled = true` 확인
-3. `GET /api/v1/mi/scenario-workbench/scenarios/{scenarioId}/model-execution-parameters`
-4. backend는 execution 이력과 무관하게 scenario baseline parameter를 반환한다.
-5. 팝업은 `tables[]`, `timePeriods[]`, `rows[]`, `values` 를 사용해 baseline 값을 read-only 참조로 렌더링한다.
+1. 사용자가 시나리오 1개와 입력 파일 3개를 선택한다.
+2. `POST /api/v1/mi/next-gen/scenarios/{scenarioId}/model-executions` 를 `multipart/form-data` 로 호출한다.
+3. backend는 `scenarioId` 존재 여부와 실행 가능 여부를 확인한다.
+4. backend는 동일 `scnr_id` 기준 `RUNNING` case가 있으면 중복 실행으로 거절한다.
+5. backend는 입력 파일 3개를 검증하고 storage(S3)에 업로드한다. 업로드 실패 시 이미 올라간 파일을 보상 삭제한다.
+6. backend는 `tmd_mdl_scnrcasem` 에 `exec_type_cd = 'SCENARIO'`, `scnr_id = :scenarioId`, `case_stat_cd = 'RUNNING'` row를 생성한다.
+7. backend는 입력 파일을 `tcm_filel(file_rel_obj_spt_cd = 'SCNRCASE', file_rel_obj_dstg_no = case_id)` 로 연결한다.
+8. backend는 `runId` 를 발급하고 `tmd_mdl_scnrcaseh` 에 `exec_stat_cd = 'RUNNING'` row를 생성한다.
+9. backend는 `run_seq` 를 조회한 뒤 Kubernetes Job 또는 외부 모델 실행에 `caseId`, `runId`, `runSeq`, callback URL, 입력 파일 참조를 전달한다.
+10. 응답은 `caseId`, `scenarioId`, `runId`, `status = RUNNING`, 업로드 파일 참조, 상태 조회 endpoint를 반환한다.
 
-### Flow B. MI 수급모델 실행 접수
+### Flow B. MI 수급모델 실행 상태 조회
 
-1. 사용자가 팝업에서 입력 파일 3개를 선택한다.
-2. `POST /api/v1/mi/scenario-workbench/scenarios/{scenarioId}/model-executions` (multipart 파일 3개)
-3. backend는 latest execution이 `SUCCEEDED` 또는 `FAILED` 인 경우에만 새 execution을 생성한다.
-4. backend는 입력 파일 3개를 검증하고 storage(S3)에 업로드한다. 업로드 실패 시 이미 올라간 파일을 보상(삭제)하고 접수를 실패 처리한다.
-5. backend는 Platform canonical id인 `executionId` 를 발급하고 새 execution을 `PENDING` 으로 생성하며 업로드 파일 참조를 저장한다.
-6. backend는 외부 모델 API에 `executionId`, callback URL, 입력 파일 참조를 dispatch한다.
-7. 외부 모델 API가 dispatch를 수락하면 optional `externalRunId` 를 반환할 수 있다.
-8. backend는 제공된 `externalRunId` 만 저장하고 execution을 `RUNNING` 으로 전이한 뒤 `executionId`, optional `externalRunId`, lifecycle 상태를 반환한다.
-9. 클라이언트는 필요 시 실행 상태 조회 endpoint를 poll 한다.
+1. `GET /api/v1/mi/next-gen/scenarios/{scenarioId}/model-executions/{runId}` 를 호출한다.
+2. backend는 path의 `runId` 로 `tmd_mdl_scnrcaseh` 를 조회하고, 해당 run의 case가 path `scenarioId` 와 연결되는지 검증한다.
+3. 응답은 `RUNNING`, `COMPLETED`, `FAILED` 중 하나를 반환한다.
+4. 프론트는 `COMPLETED` 또는 `FAILED` 가 될 때까지 polling 할 수 있다.
+5. 완료 상태가 되면 프론트는 시나리오 상세 조회를 다시 호출한다.
 
 ### Flow C. MI 수급모델 실행 완료 콜백
 
-1. 외부 모델 API가 실행 완료 또는 실패 시 callback을 호출한다.
-2. `POST /api/v1/mi/scenario-workbench/scenarios/{scenarioId}/model-executions/{executionId}/callback`
-3. 외부 모델 API는 callback 호출 전에 scenario 상세조회에서 읽힐 결과 데이터를 먼저 생성한다.
-4. backend는 path의 `executionId` 로 execution을 조회한다.
-5. `externalRunId` 제공 모드이면 body의 `externalRunId` 를 저장된 correlation key와 교차 검증한다.
-6. `externalRunId` 미제공 모드이면 callback 인증/서명과 terminal payload idempotency로 정합성을 보장한다.
-7. backend는 callback에서 해당 execution의 상태만 terminal 상태로 갱신한다.
-
-### Flow D. MI 수급모델 실행 상태 조회 (optional but recommended)
-
-1. `GET /api/v1/mi/scenario-workbench/scenarios/{scenarioId}/model-executions/{executionId}`
-2. 프론트는 polling 응답의 상태가 `SUCCEEDED` 또는 `FAILED` 가 될 때까지 반복 조회한다.
-3. 완료 상태가 되면 프론트는 시나리오 상세 조회를 다시 호출한다.
-4. 시나리오 상세 조회는 생성된 데이터가 있으면 이를 응답에 포함하고, 없으면 미생성 상태 또는 빈값을 응답한다.
+1. 외부 모델 실행 주체가 완료 또는 실패 시 기존 Fundamental Model Run callback을 호출한다.
+2. `POST /api/v1/mi/fundamental-model/runs/{runId}/callback`
+3. 외부 모델은 callback 호출 전에 scenario 상세조회에서 읽힐 결과 데이터를 먼저 생성해야 한다.
+4. backend는 path의 `runId` 로 `tmd_mdl_scnrcaseh` 를 조회한다.
+5. backend는 기존 Fundamental Model Run callback 구현의 terminal payload idempotency 정책을 따른다.
+6. 대상 run이 `RUNNING` 이면 `COMPLETED` 또는 `FAILED` 로 전이한다.
+7. 대상 run이 case의 latest run이면 같은 transaction 안에서 `tmd_mdl_scnrcasem.case_stat_cd` 도 같은 terminal 상태로 전이한다.
+8. 이미 terminal 상태인 동일 terminal payload 재전송은 `200 OK` no-op으로 처리한다.
+9. 이미 terminal 상태인데 상이한 terminal payload가 들어오면 상태를 바꾸지 않고 conflict/error로 처리한다.
 
 ## 7.2.1 Parameter Source Resolution Rule
 
-- `model-execution-parameters` 응답은 계산형 임시값이 아니라, 팝업에서 참조로 보여줄 baseline parameter를 반환한다.
-- 입력 모델이 파일 업로드로 바뀌면서 execution은 더 이상 parameter snapshot을 보관하지 않는다.
-- 따라서 parameter 조회는 execution 이력과 무관하게 항상 scenario 저장 baseline parameter를 반환한다.
-- "마지막으로 제출했던 parameter 복원" 규칙은 더 이상 적용되지 않는다. 사용자가 다시 제출하는 입력은 parameter 값이 아니라 새로 업로드하는 파일 3개다.
+- 2026-06-10 이후 `MI 수급모델 실행` 팝업의 parameter 조회는 현재 구현 scope에서 제외한다.
+- 팝업은 시나리오 선택 드롭다운과 입력 파일 업로드 UI만 제공한다.
+- 기존 `GET .../model-execution-parameters` 는 미래 확장 후보 또는 mock/과거 설계 호환용으로 남아 있을 수 있으나, 현재 F4 실DB 연결의 호출 대상이 아니다.
+- 현재 `next-gen` Swagger/API slice에서는 `POST .../model-executions`, `GET .../model-executions/{runId}` 2개만 노출 대상으로 본다.
+- 수급모델 실행 완료/실패 callback은 기존 `POST /api/v1/mi/fundamental-model/runs/{runId}/callback` 을 공유한다.
 
 ## 7.2.2 Execution Re-Submission Rule
 
 - scenario 기준 active execution은 최대 1건만 허용한다.
-- latest execution 상태가 `PENDING` 또는 `RUNNING` 이면 새 접수를 거절한다.
-- latest execution 상태가 `SUCCEEDED` 또는 `FAILED` 이면 새 접수를 허용한다.
-- 재접수 시 이전 execution을 수정하지 않고 새 입력 파일 3개 업로드 + 새로운 execution row를 생성한다.
+- `scnr_id` 기준 `RUNNING` row가 있으면 새 접수를 거절한다.
+- latest case가 `COMPLETED` 또는 `FAILED` 이면 새 접수를 허용한다.
+- 재접수는 기존 row update가 아니라 새 입력 파일 3개 업로드 + 새 `tmd_mdl_scnrcasem` row + 새 `tmd_mdl_scnrcaseh` row insert다.
+- 동시성 최후 방어선은 `actv_scnr_id` generated column + `UNIQUE (actv_scnr_id)` 이다.
 
-## 7.2.4 Execution Status, Duplicate, And Timeout Rule
+## 7.2.3 Execution Status, Duplicate, And Timeout Rule
 
-- execution lifecycle의 기본 상태 집합은 `PENDING | RUNNING | SUCCEEDED | FAILED` 다.
-- `PENDING`, `RUNNING` 은 non-terminal 상태다.
-- `SUCCEEDED`, `FAILED` 는 terminal 상태다.
-- 동일 scenario에 대해 latest execution이 non-terminal 상태면 새 접수를 거절한다.
-- 동일 scenario에 대해 latest execution이 terminal 상태면 새 접수를 허용한다.
-- timeout은 polling API의 lazy 판정이 아니라 scheduler 또는 별도 background 정리 작업으로 처리하는 방향을 기본안으로 둔다.
+- execution lifecycle 상태 집합은 `RUNNING | COMPLETED | FAILED` 다.
+- `RUNNING` 은 non-terminal 상태다.
+- `COMPLETED`, `FAILED` 는 terminal 상태다.
+- timeout은 polling API의 lazy 판정이 아니라 scheduler 또는 별도 background 정리 작업으로 처리한다.
 - `RUNNING` timeout 대상 execution은 `FAILED` 로 전이하고, 실패 사유는 `TIMEOUT` 으로 저장한다.
-- `PENDING` stale execution은 외부 실행 중 timeout과 구분해 `FAILED` 로 전이하고, 실패 사유는 `DISPATCH_TIMEOUT` 으로 저장한다.
-- callback 성공/실패와 별개로 timeout 정리도 terminal 상태 전이의 한 경로로 취급한다.
-- 재실행은 `SUCCEEDED -> 새 execution 생성`, `FAILED -> 새 execution 생성` 으로 해석하며, 기존 execution row를 재사용하지 않는다.
-- active execution 중복 방지는 application validation과 DB unique helper를 함께 사용한다.
-- DB 제약은 `actv_exec_token` nullable helper column과 unique `(scenario_id, actv_exec_token)` 을 사용한다. active row는 `actv_exec_token = 'Y'`, terminal row는 `NULL` 로 둔다.
+- 별도 `PENDING` / `DISPATCH_TIMEOUT` 단계는 두지 않는다. Job dispatch 실패는 접수/dispatch 흐름에서 즉시 `FAILED` 로 전이한다.
 
-## 7.2.5 Execution State Interpretation Rule
-
-- `F4` 는 내부 저장 상태와 화면 해석 상태를 분리해 다룬다.
-- 내부 저장 상태는 execution lifecycle 제어와 중복 실행 차단 기준으로 사용한다.
-- 화면 해석 상태는 배지 표시, 문구, 버튼 활성화 판단 기준으로 사용한다.
+## 7.2.4 Execution State Interpretation Rule
 
 | 내부 상태 | 의미 | 화면 해석 상태 | 재접수 가능 여부 | 비고 |
 |---|---|---|---|---|
-| `PENDING` | 입력 파일 업로드 완료, 실행 대기(외부 실행 시작 전) | `EXECUTING` | 불가 | active execution |
-| `RUNNING` | 외부 모델 API가 처리 중 | `EXECUTING` | 불가 | active execution |
-| `SUCCEEDED` | 실행 성공 terminal 상태 | `SUCCEEDED` | 가능 | 새 execution 생성 방식으로 재실행 |
-| `FAILED` + `EXTERNAL_ERROR` | 외부 API 실패 응답 또는 callback 실패 | `FAILED` | 가능 | 새 execution 생성 방식으로 재실행 |
-| `FAILED` + `TIMEOUT` | F4 model execution callback 미도착으로 scheduler timeout 처리 | `FAILED` | 가능 | late callback은 execution 상태를 되돌리지 않고 no-op + ack 처리 |
-| `FAILED` + `DISPATCH_TIMEOUT` | `PENDING` 상태에서 외부 dispatch 시작/전환 지연으로 scheduler 정리 처리 | `FAILED` | 가능 | 외부 실행 중 timeout과 분리 |
+| `RUNNING` | 외부 모델 실행 중 | `EXECUTING` | 불가 | active execution |
+| `COMPLETED` | 실행 성공 terminal 상태 | `SUCCEEDED` | 가능 | 새 case/run 생성 방식으로 재실행 |
+| `FAILED` + `EXTERNAL_ERROR` | 외부 실행 또는 callback 실패 | `FAILED` | 가능 | 새 case/run 생성 방식으로 재실행 |
+| `FAILED` + `TIMEOUT` | callback 미도착으로 scheduler timeout 처리 | `FAILED` | 가능 | late callback은 상태를 되돌리지 않음 |
+| `FAILED` + `JOB_SUBMIT_FAILED` | Job 생성 또는 dispatch 실패 | `FAILED` | 가능 | 접수/dispatch 흐름에서 즉시 terminal 처리 |
 | `FAILED` + `UNKNOWN` | 분류되지 않은 실패 | `FAILED` | 가능 | 원인 추적 필요 |
 
 ### 해석 규칙
 
 - 버튼 활성화는 latest execution의 내부 상태 기준으로 판단한다.
-- latest execution이 `PENDING` 또는 `RUNNING` 이면 `MI 수급모델 실행` 버튼은 비활성이다.
-- latest execution이 `SUCCEEDED` 또는 `FAILED` 이면 `MI 수급모델 실행` 버튼은 활성이다.
-- 화면 상태 badge 또는 polling 상태 표시는 `PENDING/RUNNING -> EXECUTING`, `SUCCEEDED -> SUCCEEDED`, `FAILED -> FAILED` 로 해석한다.
-- F4 timeout은 내부적으로는 `FAILED + TIMEOUT` 이지만 화면에는 일반 실패와 같은 `FAILED` 계열로 우선 노출하고, 필요 시 상세 사유 문구로 분기한다.
-- `DISPATCH_TIMEOUT` 도 화면에는 `FAILED` 계열로 노출하되, 운영/재처리 판단에서는 `TIMEOUT` 과 구분한다.
+- latest execution이 `RUNNING` 이면 `MI 수급모델 실행` 버튼은 비활성이다.
+- latest execution이 `COMPLETED` 또는 `FAILED` 이면 버튼은 활성이다.
+- 화면 상태 badge 또는 polling 상태 표시는 `RUNNING -> EXECUTING`, `COMPLETED -> SUCCEEDED`, `FAILED -> FAILED` 로 해석한다.
 
-## 7.2.3 Callback And Detail Read Boundary
+## 7.2.5 Callback And Detail Read Boundary
 
 - callback API의 책임은 execution lifecycle 상태를 terminal 상태로 전이하는 것에 한정한다.
 - callback API는 scenario 상세조회에 노출되는 결과 데이터의 생성 또는 materialization 책임을 가지지 않는다.
-- 외부 모델 API는 callback 호출 전에 scenario 상세조회에서 읽힐 결과 데이터를 먼저 생성해야 한다.
-- scenario 상세조회 API는 저장된 결과 데이터가 있으면 이를 응답에 포함하고, 없으면 아직 생성되지 않았음을 나타내는 값으로 응답한다.
+- 외부 모델은 callback 호출 전에 scenario 상세조회용 결과 데이터를 먼저 생성해야 한다.
+- scenario 상세조회는 저장된 결과 데이터가 있으면 이를 응답에 포함하고, 없으면 아직 생성되지 않았음을 나타내는 값으로 응답한다.
 
 ## 7.3 Endpoint
 
-### A. MI 수급모델 실행 파라미터 조회
-
-- Method: `GET`
-- Path: `/api/v1/mi/scenario-workbench/scenarios/{scenarioId}/model-execution-parameters`
-- Purpose: `MI 수급모델 실행 팝업` 초기화 데이터 조회
-
-#### Response DTO draft
-
-- `scenarioId`
-- `title`
-- `parameterSource` (`SCENARIO_BASELINE`) — 항상 baseline 참조
-- `tables[]`
-  - `tableId`
-  - `tableLabel`
-  - `timeAxisType` (`MONTHLY | YEARLY`)
-  - `timePeriods[]`
-  - `rows[]`
-    - `rowId`
-    - `target`
-    - `values`
-
-### B. MI 수급모델 실행 접수
+### A. MI 수급모델 실행 접수
 
 - Method: `POST`
-- Path: `/api/v1/mi/scenario-workbench/scenarios/{scenarioId}/model-executions`
+- Path: `/api/v1/mi/next-gen/scenarios/{scenarioId}/model-executions`
 - Content-Type: `multipart/form-data`
-- Purpose: 사용자가 업로드한 입력 파일 3개로 `MI 수급모델 실행` 비동기 실행 리소스 생성을 요청
+- Purpose: 선택한 scenario에 대해 입력 파일 3개를 업로드하고 통합 case/run 실행을 `RUNNING` 으로 접수한다.
 
 #### Request DTO draft
 
 - `scenarioId` path variable
-- `files` (`@RequestPart`) — 입력 파일 3개 (정확히 3개)
+- `files` (`@RequestPart`) — 입력 파일 3개
 - `requestedBy` 는 인증 컨텍스트에서 추출
 
 #### Validation
 
 - `scenarioId` 는 존재해야 한다.
 - `files` 는 정확히 3개이고 각 파일은 비어 있지 않아야 한다.
-- latest execution 상태가 `PENDING` 또는 `RUNNING` 이면 중복 접수로 거절한다.
-- latest execution 상태가 `SUCCEEDED` 또는 `FAILED` 이면 새 접수를 허용한다.
-- 업로드 파일은 storage(S3)에 보존하고, execution은 파일 참조만 보관한다. 업로드 실패 시 이미 올라간 파일을 보상(삭제)한다.
-- 동일 scenario의 active execution 중복 차단은 application validation과 transaction 경계에서 함께 보장해야 한다.
+- 파일명은 `DEMAND`, `SUPPLY`, `TRADE` 역할을 각각 1개씩 식별할 수 있어야 한다.
+- 동일 `scnr_id` 기준 `RUNNING` row가 있으면 중복 접수로 거절한다.
+- 업로드 실패 시 이미 올라간 파일을 보상 삭제한다.
+- 동일 scenario의 active execution 중복 차단은 application validation과 DB unique helper로 함께 보장한다.
 
-#### External model dispatch handoff draft
-
-Dispatch request:
+#### External model / Job handoff draft
 
 ```json
 {
-  "executionId": 90001,
+  "caseId": 101,
   "scenarioId": 10001,
-  "callbackUrl": "{PLATFORM_BASE_URL}/api/v1/mi/scenario-workbench/scenarios/10001/model-executions/90001/callback",
+  "runId": "20260619_143500_A1B2",
+  "runSeq": 90001,
+  "callbackUrl": "{PLATFORM_BASE_URL}/api/v1/mi/fundamental-model/runs/20260619_143500_A1B2/callback",
   "inputFiles": [
-    { "fileNo": 1, "fileName": "input-1.csv", "fileUrl": "s3://.../input-1.csv" },
-    { "fileNo": 2, "fileName": "input-2.csv", "fileUrl": "s3://.../input-2.csv" },
-    { "fileNo": 3, "fileName": "input-3.csv", "fileUrl": "s3://.../input-3.csv" }
+    { "fileNo": 1, "fileName": "DEMAND.xlsx", "storagePath": "s3://.../DEMAND.xlsx" },
+    { "fileNo": 2, "fileName": "SUPPLY.xlsx", "storagePath": "s3://.../SUPPLY.xlsx" },
+    { "fileNo": 3, "fileName": "TRADE.xlsx", "storagePath": "s3://.../TRADE.xlsx" }
   ]
 }
 ```
 
-Dispatch accept response:
-
-```json
-{
-  "externalRunId": "model-run-20260515-000001",
-  "acceptedAt": "2026-05-15T16:00:03+09:00",
-  "status": "ACCEPTED"
-}
-```
-
-- `executionId` 는 Platform canonical execution id이며 callback path의 `{executionId}` 와 동일해야 한다.
-- `callbackUrl` 은 외부 모델 API가 완료/실패 시 호출할 Platform callback URL이다.
-- `externalRunId` 는 외부 모델 API가 별도 run key를 제공하는 경우에만 Platform의 `ext_run_id` 에 저장한다.
-- 외부 모델 API가 `externalRunId` 를 제공하지 않는 경우 `ext_run_id` 는 null로 두고 `executionId` 기반 callback lookup을 유지한다.
-- `externalRunId` 제공 모드에서는 callback 재전송 시 외부 모델 API가 같은 `externalRunId` 를 보내야 한다.
-- `acceptedAt` 이 제공되면 `exec_bgn_dtm` 후보로 사용한다.
+- `runId` 는 Platform/backend가 발급한 canonical execution identifier이며 callback path의 `{runId}` 와 동일해야 한다.
+- `callbackUrl` 은 외부 모델 실행 주체가 완료/실패 시 호출할 Platform callback URL이며, scenario 실행도 기존 Fundamental Model Run callback API를 공유한다.
+- 별도 `externalRunId` / `ext_run_id` 는 저장하지 않는다.
 
 #### Response DTO draft
 
-- `executionId`
+- `caseId`
 - `scenarioId`
-- `externalRunId` (외부 모델 API가 별도 run key를 제공하는 경우 필수)
-- `status` (`PENDING | RUNNING | SUCCEEDED | FAILED`) — 접수 직후 `PENDING`
+- `runId`
+- `status` (`RUNNING`) — 접수 직후 상태
 - `files[]` (업로드된 입력 파일 참조: `fileNo`, `seq`, `fileName`, `contentType`, `size`)
 - `requestedAt`
+- `startedAt`
 - `statusEndpoint`
 
-### C. MI 수급모델 실행 상태 조회
+### B. MI 수급모델 실행 상태 조회
 
 - Method: `GET`
-- Path: `/api/v1/mi/scenario-workbench/scenarios/{scenarioId}/model-executions/{executionId}`
+- Path: `/api/v1/mi/next-gen/scenarios/{scenarioId}/model-executions/{runId}`
 - Purpose: `MI 수급모델 실행` 비동기 실행 리소스의 lifecycle 상태 조회
 
 #### Response DTO draft
 
-- `executionId`
+- `caseId`
 - `scenarioId`
-- `externalRunId`
-- `status` (`PENDING | RUNNING | SUCCEEDED | FAILED`)
+- `runId`
+- `status` (`RUNNING | COMPLETED | FAILED`)
 - `files[]` (업로드된 입력 파일 참조)
-- `failureReason` (`TIMEOUT | DISPATCH_TIMEOUT | EXTERNAL_ERROR | UNKNOWN`) (failed 시)
 - `requestedAt`
 - `startedAt`
 - `finishedAt`
+- `failureReason` (`TIMEOUT | EXTERNAL_ERROR | JOB_SUBMIT_FAILED | UNKNOWN`) (failed 시)
 - `errorMessage` (failed 시)
 
-### D. MI 수급모델 실행 완료 콜백
+### C. MI 수급모델 실행 완료 콜백
 
-- Method: `POST`
-- Path: `/api/v1/mi/scenario-workbench/scenarios/{scenarioId}/model-executions/{executionId}/callback`
-- Purpose: 외부 모델 API의 완료/실패 통보를 수신해 execution 상태를 terminal 상태로 전이
-
-#### Request DTO draft
-
-- `externalRunId`
-- `status` (`SUCCEEDED | FAILED`)
-- `finishedAt`
-- `errorMessage` (failed 시)
+- Shared API: `POST /api/v1/mi/fundamental-model/runs/{runId}/callback`
+- Purpose: 외부 모델 실행의 완료/실패 통보를 수신해 run/case 상태를 terminal 상태로 전이
+- Scenario 실행 여부는 callback path가 아니라 `runId` 로 조회한 `tmd_mdl_scnrcaseh` -> `tmd_mdl_scnrcasem.exec_type_cd = 'SCENARIO'` 관계로 판정한다.
 
 #### Callback Handling Rule
 
 - callback은 execution 상태 전이만 수행한다.
-- callback lookup은 path의 `executionId` 를 primary key로 사용한다.
-- `externalRunId` 제공 모드이면 body의 `externalRunId` 를 저장된 correlation key와 교차 검증한다.
-- `externalRunId` 미제공 모드이면 callback 인증/서명과 terminal payload idempotency를 정합성 방어선으로 사용한다.
+- callback lookup은 path의 `runId` 를 primary key로 사용한다.
+- 기존 Fundamental Model Run callback 구현의 terminal payload idempotency 정책을 정합성 방어선으로 사용한다.
 - callback 처리 안에서 scenario summary 또는 기타 상세조회용 결과 데이터를 추가 생성하지 않는다.
-- scenario 상세조회용 데이터는 callback 이전에 외부 모델 API 또는 별도 저장 경로에서 준비되어 있어야 한다.
-- callback이 도착하기 전에 scheduler timeout으로 이미 terminal 처리된 execution에 대해서는 상태를 되돌리지 않는 idempotent no-op 정책을 기본안으로 둔다.
-- 식별자가 일치하는 late callback은 `200 OK` no-op으로 처리할 수 있지만 execution 상태는 `FAILED` 에서 `SUCCEEDED` 로 바꾸지 않는다.
+- callback이 도착하기 전에 scheduler timeout으로 이미 terminal 처리된 execution은 상태를 되돌리지 않는 idempotent no-op 정책을 기본안으로 둔다.
+- 식별자가 일치하는 late callback은 `200 OK` no-op으로 처리할 수 있지만 execution 상태는 `FAILED` 에서 `COMPLETED` 로 바꾸지 않는다.
 - 이미 terminal 상태인 execution에 동일 terminal payload가 재전송되면 `200 OK` no-op으로 처리한다.
-- `externalRunId` 제공 모드에서 mismatch가 발생하거나 기존 terminal 상태와 상이한 terminal payload가 들어오면 상태를 바꾸지 않고 conflict/error로 처리한다.
-- callback 처리 안에서는 결과 데이터 materialization 또는 readiness 검증을 수행하지 않는다.
+- 기존 terminal 상태와 상이한 terminal payload가 들어오면 상태를 바꾸지 않고 conflict/error로 처리한다.
 
 ## 7.4 Representative Error Scenarios
 
@@ -1179,66 +1121,57 @@ Dispatch accept response:
 - `MI 수급모델 실행` 비활성 scenario
 - 입력 파일 누락 또는 개수 불일치(3개 아님)
 - 빈 파일 업로드
-- latest execution이 `PENDING` 또는 `RUNNING` 인 상태에서의 실행 중복 요청
-- 존재하지 않는 `executionId`
+- 파일 역할(`DEMAND`/`SUPPLY`/`TRADE`) 식별 실패
+- latest execution이 `RUNNING` 인 상태에서의 실행 중복 요청
+- 존재하지 않는 `runId`
+- path `scenarioId` 와 `runId` 의 case/scenario 연결 불일치
 - 장시간 callback 미도착으로 timeout 처리된 execution
 
 ## 7.5 Swagger Annotation Recommendation
 
-- `summary`: `MI 수급모델 실행 파라미터 조회`
-- `description`: `Scenario 상세 화면의 MI 수급모델 실행 팝업을 초기화하기 위한 parameter metadata와 기본값을 조회합니다.`
 - `summary`: `MI 수급모델 실행 접수`
-- `description`: `사용자가 업로드한 입력 파일 3개로 MI 수급모델 실행 비동기 리소스 생성을 요청합니다.`
+- `description`: `선택한 scenario에 입력 파일 3개를 업로드하고 통합 case/run 실행을 RUNNING 상태로 접수합니다.`
 - `summary`: `MI 수급모델 실행 상태 조회`
-- `description`: `MI 수급모델 실행 비동기 리소스의 lifecycle 상태를 polling 용도로 조회합니다.`
-- `summary`: `MI 수급모델 실행 완료 콜백`
-- `description`: `외부 모델 API가 완료 또는 실패를 통보하면 execution 상태를 terminal 상태로 갱신합니다.`
+- `description`: `runId 기준으로 MI 수급모델 실행 상태를 polling 용도로 조회합니다.`
+- `next-gen` slice에는 별도 callback endpoint를 노출하지 않는다.
+- callback은 `6-1. MI Fundamental Model Run API` 의 `POST /api/v1/mi/fundamental-model/runs/{runId}/callback` 을 공유한다.
 
 ## 7.6 Data / Model Impact
 
-- 신규 저장 후보
-- `ScenarioModelExecution`
-- `Scenario` baseline model execution parameter 저장 경계
-- execution 입력 파일 참조 (storage(S3) 업로드 + execution 종속 파일 참조)
-- parameter 조회 source-of-truth는 항상 `scenario baseline` 이다 (execution 이력과 분리).
-- execution 입력은 업로드 파일 3개 참조로 재현 가능해야 한다.
-- scenario 상세조회용 결과 데이터는 execution status row와 분리된 read source를 가질 수 있다.
-- callback은 결과 데이터 materialization이 아니라 execution 상태 동기화만 담당한다.
-- execution 상태와 별도로 `failureReason` 을 DB 컬럼과 API contract 양쪽에 포함한다.
-- `failureReason` 은 시스템 분기용 코드이고, `errorMessage` 는 사람이 읽는 상세 메시지다.
-- timeout 판정 시각, scheduler 정리 근거를 남길지 ERD 단계에서 확정해야 한다.
-- latest status 조회와 실행 이력 보존을 분리할지 여부를 ERD 단계에서 확정해야 한다.
-- 실행 이력 보존 정책과 재실행 정책 정의가 필요하다.
+- `MI 수급모델 실행`은 별도 execution table을 만들지 않고 `tmd_mdl_scnrcasem` + `tmd_mdl_scnrcaseh` 를 재사용한다.
+- submit 시 `tmd_mdl_scnrcasem.exec_type_cd = 'SCENARIO'`, `tmd_mdl_scnrcasem.scnr_id = :scenarioId`, `case_stat_cd = 'RUNNING'` 을 저장한다.
+- `tmd_mdl_scnrcaseh.run_id` 는 backend가 발급한 `yyyymmdd_hhmmss_XXXX` 형식의 canonical run identifier다.
+- 입력 파일 3개는 `tcm_filel` 의 `SCNRCASE + case_id` 관계로 보관한다.
+- 공유 callback은 `tmd_mdl_scnrcaseh.exec_stat_cd` 와 latest run일 때 `tmd_mdl_scnrcasem.case_stat_cd` 를 terminal 상태로 갱신한다.
+- scenario 상세조회용 결과 데이터는 execution status row와 분리된 read source를 가진다.
 
 ## 7.7 Recommended Data Access Approach
 
 - Primary: `JPA`
-- 이유: execution 생성/상태 변경은 command와 lifecycle 관리가 핵심이다. 상세조회용 결과 데이터 저장은 execution lifecycle row와 분리해 설계한다.
+- 이유: case/run 생성, 상태 변경, callback compare-and-set은 command와 lifecycle 관리가 핵심이다. 결과 데이터 조회는 별도 read source로 분리한다.
 
 ## 7.8 Implementation Touch Points
 
 - `ScenarioModelExecutionController` (실행 접수는 `multipart/form-data`)
 - `ScenarioModelExecutionService`
-- model execution parameter/execution/status/callback DTO + 입력 파일 참조 DTO
+- `ModelExecutionAcceptRes`, `ModelExecutionStatusRes`
+- `FundamentalModelRunDedicatedController` / `FundamentalModelRunCallbackReq` (공유 callback)
+- `ScenarioCase`, `ScenarioCaseRunHistory`
+- `ScenarioCaseRepository`, `ScenarioCaseRunHistoryRepository`
 - 파일 업로드/보상 처리 (`FileService` 등 기존 업로드 경계 재사용)
-- execution repository
-- 외부 모델 실행 adapter 또는 내부 orchestration service
+- Kubernetes Job 또는 외부 모델 실행 adapter
 
 ## 7.9 Risks / Open Questions
 
-- callback 인증 방식과 서명 검증 규칙
-- 외부 모델 API가 `externalRunId` 를 제공할지, 제공한다면 재전송 시 동일값을 보장할지 확인이 필요하다.
-- `externalRunId` 제공 모드에서만 Platform의 `ext_run_id` 에 저장한다. callback lookup은 항상 `executionId` 기준이며 `externalRunId` 는 제공될 때만 correlation / audit / mismatch 검증용으로 사용한다.
-- latest execution 식별 기준은 `requestedAt desc, executionId desc` tie-breaker로 둔다.
-- scenario baseline parameter physical owner는 백엔드 임의 결정 대상이 아니며, 타 팀 공유 자료를 받은 뒤 확인한다.
-- 입력 파일 참조를 execution row 직컬럼으로 둘지 file relationship/child table로 둘지, 그리고 파일 형식/크기/개수 검증 규칙(현재 3개 고정 전제) 확정 필요
-- scenario 상세조회 결과 데이터 생성/저장은 외부 API 책임이다. `ScenarioModelExecution` 은 결과 materialization/readiness를 검증하거나 저장하지 않는다.
-- timeout 임계 시간과 scheduler 주기 확정 필요
+- timeout 임계 시간과 scheduler 주기
+- Job dispatch 실패 시 transaction 경계와 파일 보상 범위
+- callback 완료 전 결과 row 존재를 backend가 검증할지 여부
 
 ## 7.10 Exit Criteria / Handoff
 
-- popup 초기화용 input parameter 조회와 비동기 실행 접수/상태 조회/완료 콜백 contract는 구현 가능하다.
-- execution lifecycle, retry 정책, callback 보안 경계는 ERD review 및 보안 합의가 필요하다.
+- `model-executions` request/status contract와 공유 fundamental callback contract는 `runId`, `RUNNING/COMPLETED/FAILED`, 통합 case/run 저장소 기준으로 구현 가능하다.
+- 스키마/DBA rollout 상세는 [scenario-case-execution-erd-ddl-draft.md](../design-docs/gas/scenario-case-execution-erd-ddl-draft.md)를 따른다.
+- timeout scheduler는 실DB 구현 전 별도 확정이 필요하다.
 
 ## 8. Recommended Build Order
 
@@ -1467,8 +1400,8 @@ Dispatch accept response:
 - `F3`, `F4` 는 command service + transaction 중심 구현
 - `F5` 는 read/query와 execution/file download 책임을 분리 구현
 - 모든 API는 `BaseResponse<T>` 래퍼 사용
-- MI 수급모델 실행 workflow는 `파라미터(baseline) 조회 -> 입력 파일 3개 업로드 실행 접수 -> 실행 상태 조회` 3단계 계약을 따른다.
-- MI 수급모델 실행은 latest execution이 `PENDING/RUNNING` 이면 중복 접수를 차단하고, terminal 상태면 새 execution을 생성하는 규칙을 따른다.
+- MI 수급모델 실행 workflow는 `입력 파일 3개 업로드 실행 접수 -> 실행 상태 조회 -> 실행 완료 콜백` 계약을 따른다.
+- MI 수급모델 실행은 latest execution이 `RUNNING` 이면 중복 접수를 차단하고, terminal 상태면 새 case/run을 생성하는 규칙을 따른다.
 - fundamental model workflow는 `목록 조회 -> 실행 -> output 조회 -> 파일 다운로드` 4단계 계약을 따른다.
 
 ## 11. Open Questions Summary

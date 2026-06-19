@@ -137,6 +137,35 @@ public class ScenarioCase extends BaseEntity {
             .build();
     }
 
+    public static ScenarioCase createScenarioRunning(
+        Integer userNo,
+        Long scenarioId,
+        String title,
+        String description,
+        String actorLoginId
+    ) {
+        LocalDateTime now = LocalDateTime.now();
+        return ScenarioCase.builder()
+            .createDt(now)
+            .modifyDt(now)
+            .createUserId(actorLoginId)
+            .modifyUserId(actorLoginId)
+            .isDeleted(Boolean.FALSE)
+            .userNo(userNo)
+            .scenarioId(scenarioId)
+            .execType(FundamentalModelExecType.SCENARIO)
+            .title(title)
+            .description(description)
+            .status(FundamentalModelCaseStatus.RUNNING)
+            .build();
+    }
+
+    public void attachLatestRun(String runId, String actorLoginId) {
+        this.lastRunId = runId;
+        this.modifyUserId = actorLoginId;
+        this.modifyDt = LocalDateTime.now();
+    }
+
     public void updateMetadata(String title, String description, String actorLoginId) {
         this.title = title;
         this.description = description;

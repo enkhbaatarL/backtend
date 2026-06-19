@@ -8,11 +8,16 @@ import com.sk.common.exception.AppErrorException;
 import com.sk.common.model.BaseResponse;
 import com.sk.common.model.BaseResponseFactory;
 import com.sk.common.model.PaginationRes;
-import com.sk.domain.admin.dto.request.provider.*;
+import com.sk.domain.admin.dto.request.provider.GoodsDataCreateReq;
+import com.sk.domain.admin.dto.request.provider.GoodsDataUpdateReq;
+import com.sk.domain.admin.dto.request.provider.StructuredDataFileReq;
+import com.sk.domain.admin.dto.request.provider.StructuredDataJsonReq;
 import com.sk.domain.admin.dto.response.file.FileExistRes;
 import com.sk.domain.admin.dto.response.file.FileUploadRes;
 import com.sk.domain.admin.dto.response.file.GoodsDataFileUploadRes;
-import com.sk.domain.admin.dto.response.provider.*;
+import com.sk.domain.admin.dto.response.provider.GoodsDataDetailRes;
+import com.sk.domain.admin.dto.response.provider.GoodsDataJsonUploadRes;
+import com.sk.domain.admin.dto.response.provider.GoodsDataRes;
 import com.sk.domain.admin.service.AdminGoodsDataService;
 import com.sk.domain.shared.entity.master.tcm.UploadedFile;
 import com.sk.domain.shared.entity.master.tmd.CustomerCompany;
@@ -30,16 +35,23 @@ import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.Min;
-import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
-import org.springframework.http.MediaType;
-import org.springframework.web.bind.annotation.*;
-import org.springframework.web.multipart.MultipartFile;
-
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.http.MediaType;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PatchMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RequestPart;
+import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.multipart.MultipartFile;
 
 
 @Tag(name = "03. 데이타 프로바이더 관리 API", description = "데이타 프로바이더 관리 API 입니다.")
@@ -48,18 +60,15 @@ import java.util.List;
 @RequestMapping("/api/v1/admin/provider-management")
 @RequiredArgsConstructor
 public class AdminProviderDedicatedController {
+    private static final List<String> ALLOWED_EXTENSIONS_STRUCTURED = Arrays.asList("xlsx", "xls", "csv");
+    private static final List<String> ALLOWED_EXTENSIONS_UNSTRUCTURED = Arrays.asList(
+            "txt", "csv", "pdf", "doc", "docx", "xls", "xlsb", "xlsm", "xlsx", "ppt", "pbix", "pbit",
+            "xltx", "pptx", "eml", "md", "jpeg", "jpg", "png", "html", "htm");
     private final AuthorizationService authorizationService;
     private final AdminGoodsDataService goodsDataService;
     private final FileService fileService;
     private final CustomerCompanyRepository customerCompanyRepository;
     private final CustomerCompanyGoodsMappingRepository customerCompanyGoodsMappingRepository;
-
-    private static final List<String> ALLOWED_EXTENSIONS_STRUCTURED = Arrays.asList("xlsx", "xls", "csv");
-
-    private static final List<String> ALLOWED_EXTENSIONS_UNSTRUCTURED = Arrays.asList(
-            "txt", "csv", "pdf", "doc", "docx", "xls", "xlsb", "xlsm", "xlsx", "ppt", "pbix", "pbit",
-            "xltx", "pptx", "eml", "md", "jpeg", "jpg", "png", "html", "htm");
-
 
     @ApiOrder(14)
     @Parameters({
@@ -185,12 +194,8 @@ public class AdminProviderDedicatedController {
             @Schema(implementation = StructuredDataFileReq.class) @RequestPart(value = "data", required = true) @Valid StructuredDataFileReq structuredDataFileReq)
             throws IOException {
 
-        int companyNo = authorizationService.getCompanyNo();
         Role role = authorizationService.getCurrentRole();
-        CustomerCompany customerCompany = customerCompanyRepository.findByCustomerCompanyNoAndIsDeletedFalse(companyNo)
-                .orElseThrow(
-                        () -> AppErrorException.of(ResultCode.Error.RSC_NOT_FOUND, "customer company no: %d".formatted(companyNo)));
-        String companyCd = customerCompany.getCustomerCompanyCd();
+        String companyCd = authorizationService.getCompanyCdWithPriority();
 
         if (file == null) {
             throw AppErrorException.of(ResultCode.Error.REQ_INVALID_PARAMETER);
@@ -224,12 +229,8 @@ public class AdminProviderDedicatedController {
             @RequestParam(value = "fileHash", required = false, defaultValue = "") String fileHash,
             @RequestPart(value = "file", required = true) MultipartFile file) {
 
-        int companyNo = authorizationService.getCompanyNo();
         Role role = authorizationService.getCurrentRole();
-        CustomerCompany customerCompany = customerCompanyRepository.findByCustomerCompanyNoAndIsDeletedFalse(companyNo)
-                .orElseThrow(
-                        () -> AppErrorException.of(ResultCode.Error.RSC_NOT_FOUND, "customer company no: %d".formatted(companyNo)));
-        String companyCd = customerCompany.getCustomerCompanyCd();
+        String companyCd = authorizationService.getCompanyCdWithPriority();
 
         if (file == null) {
             throw AppErrorException.of(ResultCode.Error.REQ_INVALID_PARAMETER);

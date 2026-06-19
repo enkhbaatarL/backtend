@@ -93,6 +93,9 @@ public class FundamentalModelCaseServiceImpl implements FundamentalModelCaseServ
 
     private static final int REQUIRED_FILE_COUNT = 3;
     private static final int TITLE_MAX_LENGTH = 200;
+    private static final List<String> REQUIRED_INPUT_FILE_ROLE_KEYWORDS = List.of("DEMAND", "SUPPLY", "TRADE");
+    private static final String REQUIRED_INPUT_FILE_ROLE_MESSAGE =
+        "files는 파일명에 DEMAND, SUPPLY, TRADE 키워드를 각각 정확히 1개씩 포함해야 합니다.";
     private static final String FILE_RELATION_SCENARIO_CASE = "SCNRCASE";
     private static final String FILE_RELATION_SCENARIO_CASE_HISTORY = "SCNRCASEH";
     private static final String CALLBACK_ACTOR = "SYSTEM";
@@ -178,7 +181,7 @@ public class FundamentalModelCaseServiceImpl implements FundamentalModelCaseServ
 
         Integer actorUserNo = authorizationService.getUserNo();
         String actorLoginId = authorizationService.getSubject();
-        String companyCd = authorizationService.getCompanyCd();
+        String companyCd = authorizationService.getCompanyCdWithPriority();
         Role role = authorizationService.getCurrentRole();
 
         ScenarioCase savedCase = scenarioCaseRepository.saveAndFlush(
@@ -1570,6 +1573,35 @@ public class FundamentalModelCaseServiceImpl implements FundamentalModelCaseServ
         if (hasEmptyFile) {
             throw AppErrorException.of(ResultCode.Error.FILE_INVALID, "빈 파일은 업로드할 수 없습니다.");
         }
+        validateRequiredInputFileRoles(files);
+    }
+
+    private void validateRequiredInputFileRoles(List<MultipartFile> files) {
+        Map<String, Integer> roleCounts = new LinkedHashMap<>();
+        REQUIRED_INPUT_FILE_ROLE_KEYWORDS.forEach(keyword -> roleCounts.put(keyword, 0));
+
+        for (MultipartFile file : files) {
+            String originalFileName = Optional.ofNullable(file.getOriginalFilename()).orElse("");
+            String normalizedFileName = originalFileName.toUpperCase(Locale.ROOT);
+            List<String> matchedRoles = REQUIRED_INPUT_FILE_ROLE_KEYWORDS.stream()
+                .filter(normalizedFileName::contains)
+                .toList();
+
+            if (matchedRoles.size() != 1) {
+                throw invalidInputFileRolesException();
+            }
+            String matchedRole = matchedRoles.get(0);
+            roleCounts.put(matchedRole, roleCounts.get(matchedRole) + 1);
+        }
+
+        boolean hasInvalidRoleCount = roleCounts.values().stream().anyMatch(count -> count != 1);
+        if (hasInvalidRoleCount) {
+            throw invalidInputFileRolesException();
+        }
+    }
+
+    private AppErrorException invalidInputFileRolesException() {
+        return AppErrorException.of(ResultCode.Error.REQ_INVALID_PARAMETER, REQUIRED_INPUT_FILE_ROLE_MESSAGE);
     }
 
     private List<FundamentalModelCaseFileRes> uploadCaseFiles(
@@ -1655,14 +1687,32 @@ public class FundamentalModelCaseServiceImpl implements FundamentalModelCaseServ
             Math.toIntExact(caseId),
             FILE_RELATION_SCENARIO_CASE
         );
+        String demandExcelPath = findInputFileStoragePath(inputFiles, "DEMAND");
+        String supplyExcelPath = findInputFileStoragePath(inputFiles, "SUPPLY");
+        String tradeExcelPath = findInputFileStoragePath(inputFiles, "TRADE");
+        validateRequiredInputFilePaths(demandExcelPath, supplyExcelPath, tradeExcelPath);
+
         return FundamentalModelJobArgs.builder()
             .runId(runId)
             .runSeq(runSeq)
-            .demandExcelPath(findInputFileStoragePath(inputFiles, "DEMAND"))
-            .supplyExcelPath(findInputFileStoragePath(inputFiles, "SUPPLY"))
-            .tradeExcelPath(findInputFileStoragePath(inputFiles, "TRADE"))
+            .demandExcelPath(demandExcelPath)
+            .supplyExcelPath(supplyExcelPath)
+            .tradeExcelPath(tradeExcelPath)
             .callbackUrl(serverDomain + CALLBACK_PATH_TEMPLATE.formatted(runId))
             .build();
+    }
+
+    private void validateRequiredInputFilePaths(String demandExcelPath, String supplyExcelPath, String tradeExcelPath) {
+        if (isBlank(demandExcelPath) || isBlank(supplyExcelPath) || isBlank(tradeExcelPath)) {
+            throw AppErrorException.of(
+                ResultCode.Error.BIZ_RULE_VIOLATION,
+                "case input files must include DEMAND, SUPPLY, and TRADE storage paths."
+            );
+        }
+    }
+
+    private boolean isBlank(String value) {
+        return value == null || value.isBlank();
     }
 
     private String findInputFileStoragePath(List<UploadedFile> files, String keyword) {

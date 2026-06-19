@@ -6,11 +6,12 @@ import com.sk.common.exception.CustomAuthorizationException;
 import com.sk.common.utils.MDCUtil;
 import com.sk.domain.mi.dto.response.PermissionRes;
 import com.sk.domain.mi.service.MiGoodsPermissionService;
-import com.sk.domain.shared.entity.master.tam.AuthManageGoodsMapping;
+import com.sk.domain.shared.entity.master.tmd.CustomerCompany;
 import com.sk.domain.shared.enums.Claim;
-import com.sk.domain.shared.enums.GoodsAuthCd;
 import com.sk.domain.shared.enums.Role;
 import com.sk.domain.shared.repository.master.tam.AuthManageGoodsMappingRepository;
+import com.sk.domain.shared.repository.master.tmd.CustomerCompanyRepository;
+import java.util.Map;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.core.Authentication;
@@ -18,10 +19,6 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationToken;
 import org.springframework.stereotype.Service;
-
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
 
 /**
  * JWT 인증/권한 서비스
@@ -33,6 +30,7 @@ public class AuthorizationService {
 
     private final MiGoodsPermissionService goodsPermissionService;
     private final AuthManageGoodsMappingRepository authManageGoodsMappingRepository;
+    private final CustomerCompanyRepository customerCompanyRepository;
 
     /**
      * JWT 토큰 조회
@@ -74,14 +72,55 @@ public class AuthorizationService {
     }
 
     /**
-     * 우선순위에 따른 회사번호 조회
-     * 1. 헤더의 X-Company-No
-     * 2. token claim
+     * 우선순위에 따른 회사번호 조회.
+     * ADMIN 이 타사 접근 권한을 가진 경우에만 헤더의 X-Company-No 를 우선 사용하고,
+     * 그 외 역할은 헤더를 신뢰하지 않고 token claim 을 사용한다.
      */
     public Integer getCompanyNoWithPriority() {
-        return Optional.ofNullable(MDCUtil.getValue(MDCUtil.REQUEST_X_COMPANY_NO))
-            .map(Integer::parseInt)
-            .orElseGet(this::getCompanyNo);
+        String headerCompanyNo = MDCUtil.getValue(MDCUtil.REQUEST_X_COMPANY_NO);
+        if (headerCompanyNo == null) {
+            return getCompanyNo();
+        }
+
+        if (getCurrentRole() != Role.ADMIN) {
+            return getCompanyNo();
+        }
+
+        Integer parsedHeaderCompanyNo = parseHeaderCompanyNo(headerCompanyNo);
+        if (!isThirdPartyAccessAllowed()) {
+            throw CustomAuthorizationException.of(
+                ResultCode.Error.AUTH_INSUFFICIENT_PERMISSIONS,
+                "X-Company-No is allowed only for third-party access admin");
+        }
+
+        return parsedHeaderCompanyNo;
+    }
+
+    private Integer parseHeaderCompanyNo(String headerCompanyNo) {
+        try {
+            return Integer.parseInt(headerCompanyNo);
+        } catch (NumberFormatException e) {
+            throw AppErrorException.of(
+                ResultCode.Error.REQ_INVALID_PARAMETER,
+                "Invalid X-Company-No: %s".formatted(headerCompanyNo));
+        }
+    }
+
+    /**
+     * 회사코드 조회.
+     * 1. 헤더의 X-Company-No 기준 고객사
+     * 2. token claim 의 companyNo 기준 고객사
+     *
+     * Admin 이 특정 고객사 컨텍스트로 서비스를 사용할 때 JWT companyCd 대신
+     * 선택된 고객사 코드를 사용해야 하는 파일 암복호화 등에서 사용한다.
+     */
+    public String getCompanyCdWithPriority() {
+        Integer companyNo = getCompanyNoWithPriority();
+        CustomerCompany customerCompany = customerCompanyRepository.findByCustomerCompanyNoAndIsDeletedFalse(companyNo)
+            .orElseThrow(() -> AppErrorException.of(
+                ResultCode.Error.RSC_NOT_FOUND,
+                "customer company no: %d".formatted(companyNo)));
+        return customerCompany.getCustomerCompanyCd();
     }
 
     /**

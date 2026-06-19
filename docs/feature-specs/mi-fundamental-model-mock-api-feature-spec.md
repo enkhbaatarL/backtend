@@ -266,7 +266,7 @@ Acceptance criteria:
 |---|---|---|---|---|
 | `title` | `String` | Y | trim 후 1-200자 | Scenario Case 제목 |
 | `description` | `String` | N | 최대 2000자 권장 | Scenario Case 설명 |
-| `files` | `MultipartFile[]` | Y | 정확히 3개, 각 파일 non-empty | 모델 실행에 필요한 입력 파일 3개 |
+| `files` | `MultipartFile[]` | Y | 정확히 3개, 각 파일 non-empty, 파일명 역할 키워드 검증 | 모델 실행에 필요한 입력 파일 3개 |
 
 권장 DTO/handler 형태:
 
@@ -283,6 +283,7 @@ createCase(
 
 - `files.size() == 3` 이 아니면 거절한다.
 - 파일 중 하나라도 비어 있으면 거절한다.
+- 파일명에는 `DEMAND`, `SUPPLY`, `TRADE` 키워드가 각각 정확히 1개씩 포함되어야 한다. 비교는 대소문자 무관이며, 하나의 파일명이 여러 역할 키워드를 동시에 포함하거나 특정 역할 키워드가 누락/중복되면 `400 REQ_INVALID_PARAMETER`로 거절한다.
 - 1차 mock에서는 확장자/MIME allowlist를 확정하지 않는다. 단, 구현 시 기존 `FileService` 정책을 재사용할 수 있으면 `FILE_FORMAT_ERROR`, `FILE_SIZE_ERROR`로 매핑한다.
 - 같은 파일명 중복은 1차 mock에서는 허용한다. 운영 정책상 막아야 하면 후속 open question으로 남긴다.
 

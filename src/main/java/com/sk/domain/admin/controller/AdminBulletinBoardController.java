@@ -1,22 +1,5 @@
 package com.sk.domain.admin.controller;
 
-import java.util.Arrays;
-import java.util.List;
-
-import org.springframework.context.annotation.Profile;
-import org.springframework.http.MediaType;
-import org.springframework.web.bind.annotation.DeleteMapping;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PatchMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.RequestPart;
-import org.springframework.web.bind.annotation.RestController;
-import org.springframework.web.multipart.MultipartFile;
-
 import com.sk.common.annotation.AccessIpCheck;
 import com.sk.common.annotation.ApiOrder;
 import com.sk.common.annotation.RequiredPermission;
@@ -35,16 +18,12 @@ import com.sk.domain.admin.dto.response.bbs.FaqRes;
 import com.sk.domain.admin.dto.response.bbs.NoticeDetailRes;
 import com.sk.domain.admin.dto.response.bbs.NoticeFilterRes;
 import com.sk.domain.admin.dto.response.bbs.NoticeRes;
-import com.sk.domain.admin.dto.response.bbs.PopupRes;
 import com.sk.domain.admin.dto.response.file.FileUploadRes;
 import com.sk.domain.admin.service.AdminBulletinBoardService;
 import com.sk.domain.shared.entity.master.tcm.BulletinBoard;
-import com.sk.domain.shared.entity.master.tmd.CustomerCompany;
 import com.sk.domain.shared.enums.Role;
-import com.sk.domain.shared.repository.master.tmd.CustomerCompanyRepository;
 import com.sk.domain.shared.service.FileService;
 import com.sk.domain.shared.service.permissions.AuthorizationService;
-
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.Parameters;
@@ -52,8 +31,23 @@ import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.Min;
+import java.util.Arrays;
+import java.util.List;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.context.annotation.Profile;
+import org.springframework.http.MediaType;
+import org.springframework.web.bind.annotation.DeleteMapping;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PatchMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RequestPart;
+import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.multipart.MultipartFile;
 
 @Profile("!dedicated")
 @AccessIpCheck
@@ -63,17 +57,15 @@ import lombok.extern.slf4j.Slf4j;
 @RequestMapping("/api/v1/admin/bulletinboard-management")
 @RequiredArgsConstructor
 public class AdminBulletinBoardController {
-    private final AuthorizationService authorizationService;
-    private final AdminBulletinBoardService adminBulletinBoardService;
-    private final FileService fileService;
-    private final CustomerCompanyRepository customerCompanyRepository;
-
     /*******************************************************************
      *
      * 공지사항
      *
      *******************************************************************/
     private static final List<String> ALLOWED_EXTENSIONS = Arrays.asList("jpg", "png");
+    private final AuthorizationService authorizationService;
+    private final AdminBulletinBoardService adminBulletinBoardService;
+    private final FileService fileService;
 
     @ApiOrder(1)
     @Operation(summary = "공지사항 필터 조회", description = "공지사항 필터를 조회합니다.")
@@ -176,12 +168,8 @@ public class AdminBulletinBoardController {
     public BaseResponse<FileUploadRes> uploadFile(
             @RequestPart(value = "file", required = false) MultipartFile file) {
 
-        int companyNo = authorizationService.getCompanyNo();
         Role role = authorizationService.getCurrentRole();
-        CustomerCompany customerCompany = customerCompanyRepository.findByCustomerCompanyNoAndIsDeletedFalse(companyNo)
-                .orElseThrow(
-                        () -> AppErrorException.of(ResultCode.Error.RSC_NOT_FOUND, "customer company no: %d".formatted(companyNo)));
-        String companyCd = customerCompany.getCustomerCompanyCd();
+        String companyCd = authorizationService.getCompanyCdWithPriority();
 
         if (file == null) {
             throw AppErrorException.of(ResultCode.Error.REQ_INVALID_PARAMETER);
