@@ -10,7 +10,6 @@ import com.sk.domain.mi.dto.response.nextgen.ScenarioStatusRes;
 import com.sk.domain.shared.enums.nextgen.GraphPeriodUnit;
 import com.sk.domain.shared.enums.nextgen.IndexName;
 import com.sk.domain.shared.enums.nextgen.ScenarioDisplayStatus;
-import java.io.ByteArrayInputStream;
 
 public interface ScenarioGroupService {
 
@@ -22,9 +21,6 @@ public interface ScenarioGroupService {
 
     /** 그룹 펼침 그래프 데이터 (단일 인덱스 × 단일 기간단위 — Base + 시나리오 시리즈) */
     ScenarioGroupGraphRes getScenarioGroupGraph(Long scenarioGroupId, IndexName indexName, GraphPeriodUnit periodUnit);
-
-    /** 그룹 그래프 엑셀 다운로드 (전 인덱스를 인덱스별 시트로, 단일 기간단위) */
-    ByteArrayInputStream exportScenarioGroupGraph(Long scenarioGroupId, GraphPeriodUnit periodUnit);
 
     /** 시나리오 그룹 상세 (요약 + 가정·실행가능성 표) */
     ScenarioGroupDetailRes getScenarioGroupDetail(Long scenarioGroupId);

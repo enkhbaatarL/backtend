@@ -18,7 +18,6 @@ import com.sk.domain.mi.service.nextgen.ScenarioGroupServiceImpl;
 import com.sk.domain.shared.enums.nextgen.GraphPeriodUnit;
 import com.sk.domain.shared.enums.nextgen.IndexName;
 import com.sk.domain.shared.enums.nextgen.ScenarioDisplayStatus;
-import java.io.ByteArrayInputStream;
 
 import lombok.RequiredArgsConstructor;
 
@@ -51,13 +50,6 @@ public class ScenarioGroupServiceDelegator implements ScenarioGroupService {
         return mockProps.getScenarioGroups().getApi().isGetGraph()
             ? mockService.getScenarioGroupGraph(scenarioGroupId, indexName, periodUnit)
             : realService.getScenarioGroupGraph(scenarioGroupId, indexName, periodUnit);
-    }
-
-    @Override
-    public ByteArrayInputStream exportScenarioGroupGraph(Long scenarioGroupId, GraphPeriodUnit periodUnit) {
-        return mockProps.getScenarioGroups().getApi().isGetGraphExport()
-            ? mockService.exportScenarioGroupGraph(scenarioGroupId, periodUnit)
-            : realService.exportScenarioGroupGraph(scenarioGroupId, periodUnit);
     }
 
     @Override

@@ -10,6 +10,7 @@ import io.swagger.v3.oas.annotations.media.ArraySchema;
 import io.swagger.v3.oas.annotations.media.Schema;
 import java.math.BigDecimal;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -103,6 +104,51 @@ public record ScenarioGroupGraphRes(
         return baseSeries;
     }
 
+    /**
+     * [Dedicated 병합] 다른 기준선(CME 등)을 같은 인덱스 그래프에 합쳐 새 그래프를 만든다.
+     *
+     * MI(시나리오 + MI Base)와 외부 기준선(CME)은 산출 기준이 달라 기간 범위가 어긋날 수 있다.
+     * 정합/클램프하지 않고 x축은 양측 표기(yyyy-MM / yyyy) union, 각 시리즈는 자기 값이 없는 구간을 null(엑셀 빈칸)로 재패딩한다.
+     * 내부 periodKey 포맷이 서로 달라(MI=YYYYMM, CME=YYYY-MM) 표기 레벨에서 병합한다.
+     *
+     * @param extraDates      합칠 기준선의 표기 기간 목록 (extraBaseSeries 값과 동일 순서)
+     * @param extraBaseSeries 합칠 기준선 시리즈 (extraDates 순서에 정렬돼 있어야 함)
+     */
+    public static ScenarioGroupGraphRes withBenchmark(ScenarioGroupGraphRes graph, List<String> extraDates, List<BaseSeries> extraBaseSeries) {
+        List<String> mergedDates = Stream.concat(graph.dates().stream(), extraDates.stream())
+            .distinct()
+            .sorted()
+            .toList();
+
+        List<BaseSeries> baseSeries = new ArrayList<>();
+        for (BaseSeries base : graph.baseSeries()) {
+            baseSeries.add(new BaseSeries(base.seriesId(), base.seriesName(), realign(mergedDates, graph.dates(), base.values())));
+        }
+        for (BaseSeries base : extraBaseSeries) {
+            baseSeries.add(new BaseSeries(base.seriesId(), base.seriesName(), realign(mergedDates, extraDates, base.values())));
+        }
+
+        List<ScenarioSeries> scenarioSeries = graph.scenarioSeries().stream()
+            .map(series -> series.realignTo(mergedDates, graph.dates()))
+            .toList();
+
+        return new ScenarioGroupGraphRes(
+            graph.scenarioGroupId(), graph.indexName(), graph.periodUnit(), graph.periodUnitLabel(),
+            graph.currency(), graph.unit(), mergedDates, baseSeries, scenarioSeries);
+    }
+
+    /** 기존 dates 순서의 값들을 targetDates 순서로 재배열 (없는 구간 null). values가 null이면 null 유지(미실행 시나리오). */
+    private static List<BigDecimal> realign(List<String> targetDates, List<String> sourceDates, List<BigDecimal> sourceValues) {
+        if (sourceValues == null) {
+            return null;
+        }
+        Map<String, BigDecimal> valueByDate = new HashMap<>();
+        for (int i = 0; i < sourceDates.size() && i < sourceValues.size(); i++) {
+            valueByDate.put(sourceDates.get(i), sourceValues.get(i));
+        }
+        return targetDates.stream().map(valueByDate::get).toList();
+    }
+
     public record BaseSeries(
 
         @Schema(description = "시리즈 식별자", example = "MI_BASE")
@@ -171,6 +217,14 @@ public record ScenarioGroupGraphRes(
                     return row == null ? null : extractor.apply(row);
                 })
                 .toList();
+        }
+
+        /** 값 시리즈를 sourceDates -> targetDates 순서로 재배열한 새 시리즈 (병합 시 x축 union 정렬용). */
+        ScenarioSeries realignTo(List<String> targetDates, List<String> sourceDates) {
+            return new ScenarioSeries(
+                scenarioId, scenarioName, baseCase, executed, modelRunning, status, statusLabel,
+                realign(targetDates, sourceDates, baseCaseValues),
+                realign(targetDates, sourceDates, userAdjustedValues));
         }
 
     }

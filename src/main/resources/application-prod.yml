@@ -116,7 +116,7 @@ api:
     connection-timeout: 1s
     read-timeout: 20s
   scenario-design-agent:
-    url: http://skmip-mi-agent-scenario.mi-skgas-dev.svc.cluster.local:8000 # 운영 service DNS 설정 필요
+    url: http://skmip-mi-agent-scenario.mi-skgas.svc.cluster.local:8000 # 운영 service DNS 설정 필요
     connection-timeout: 1s
     read-timeout: 60s
 

@@ -26,17 +26,10 @@ import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
-import java.io.ByteArrayInputStream;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springdoc.core.annotations.ParameterObject;
 import org.springframework.context.annotation.Profile;
-import org.springframework.core.io.InputStreamResource;
-import org.springframework.http.ContentDisposition;
-import org.springframework.http.HttpHeaders;
-import org.springframework.http.HttpStatus;
-import org.springframework.http.MediaType;
-import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
@@ -179,36 +172,6 @@ public class ScenarioGroupController {
         @RequestParam(defaultValue = "monthly") GraphPeriodUnit periodUnit
     ) {
         return BaseResponseFactory.create(scenarioGroupService.getScenarioGroupGraph(scenarioGroupId, indexName, periodUnit));
-    }
-
-    @ApiOrder(4)
-    @Operation(
-        summary = "Scenario Group 그래프 엑셀 다운로드 API",
-        description = """
-            그래프 데이터를 엑셀(.xlsx)로 다운로드 합니다. <br>
-            **전 인덱스(JKM/TTF/HH)를 인덱스별 시트**로 묶어 한 파일로 내려줍니다. <br>
-            기간 단위는 `periodUnit`(기본 monthly) 하나만 적용되며, 시나리오별로 베이스케이스/사용자조정 2행씩 내려갑니다.
-            """
-    )
-    @Parameter(name = "periodUnit", description = "기간 단위 (`monthly` / `yearly`, 대소문자 무관). 기본값 `monthly`")
-    @ApiResponse(responseCode = "200", description = "다운로드 성공")
-    @GetMapping("/{scenarioGroupId}/graph/export")
-    @RequiredPermissionRules(rules = {
-        @PermissionRule(role = Role.USER, conditions = {PermissionCondition.SKGAS_COMPANY_USER_ONLY}),
-        @PermissionRule(role = Role.ADMIN, conditions = {PermissionCondition.THIRD_PARTY_ADMIN_ONLY})
-    })
-    public ResponseEntity<InputStreamResource> exportScenarioGroupGraph(
-        @Parameter(description = "시나리오 그룹 ID", example = "1") @PathVariable Long scenarioGroupId,
-        @RequestParam(defaultValue = "monthly") GraphPeriodUnit periodUnit
-    ) {
-        ByteArrayInputStream excel = scenarioGroupService.exportScenarioGroupGraph(scenarioGroupId, periodUnit);
-
-        String filename = "scenario-group-%s-graph-%s.xlsx".formatted(scenarioGroupId, periodUnit.getCode());
-        HttpHeaders headers = new HttpHeaders();
-        headers.setContentType(MediaType.parseMediaType("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"));
-        headers.setContentDisposition(ContentDisposition.attachment().filename(filename).build());
-
-        return new ResponseEntity<>(new InputStreamResource(excel), headers, HttpStatus.OK);
     }
 
     @ApiOrder(5)

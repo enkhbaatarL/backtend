@@ -369,7 +369,7 @@ public class SwaggerConfig {
             label(mockProps.getScenarioGroups().getApi().isGetList()),
             label(mockProps.getScenarioGroups().getApi().isGetScenarios()),
             label(mockProps.getScenarioGroups().getApi().isGetGraph()),
-            label(mockProps.getScenarioGroups().getApi().isGetGraphExport()),
+            label(false), // 그래프 엑셀 다운로드 — dedicated 전용, 실 DB(midb + CME midb-skgas) 합본, mock 없음
             label(mockProps.getScenarioGroups().getApi().isGetDetail()),
             label(mockProps.getScenarioGroups().getApi().isGetScenarioDetail()),
             label(mockProps.getScenarioGroups().getApi().isUpdateScenarioStatus()),
