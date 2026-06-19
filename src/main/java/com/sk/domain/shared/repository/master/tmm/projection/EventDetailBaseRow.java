@@ -5,7 +5,7 @@ import java.time.LocalDateTime;
 
 public record EventDetailBaseRow(
     Long miEventId,
-    String eventTitle,
+    String oneLineSummary,
     LocalDateTime createDt,
     LocalDateTime modifyDt,
     LocalDateTime latestRecordFirstCreated,

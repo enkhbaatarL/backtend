@@ -21,7 +21,7 @@ public record EventDetailRes(
     @Schema(description = "이벤트명")
     String eventName,
 
-    @Schema(description = "상태 (new / updated)", example = "new")
+    @Schema(description = "상태 (new|updated)", example = "new")
     ContentStatus status,
 
     @Schema(description = "상태 라벨", example = "신규")
@@ -45,13 +45,13 @@ public record EventDetailRes(
     @Schema(description = "시나리오화 추천 여부", example = "true")
     Boolean isScenarioSuggested,
 
-    @Schema(description = "시나리오화 추천 근거 (추천 아님일 때 null)", example = "글로벌 LNG 공급 차질 가능성이 시나리오화 가치 있음")
+    @Schema(description = "시나리오화 추천 근거", example = "글로벌 LNG 공급 차질 가능성이 시나리오화 가치 있음")
     String scenarioSuggestReason,
 
-    @Schema(description = "시나리오 디자인 상태 — designable(설계가능) / creating(설계중) / created(설계완료)", example = "designable")
+    @Schema(description = "시나리오 디자인 상태 (designable|creating|created)", example = "designable")
     ScenarioDesignDisplayStatus scenarioDesignStatus,
 
-    @Schema(description = "시나리오 디자인 상태 라벨", example = "설계가능")
+    @Schema(description = "시나리오 디자인 상태 라벨 (설계가능|설계중|설계완료)", example = "설계가능")
     String scenarioDesignStatusLabel,
 
     @Schema(description = "AI Insights")

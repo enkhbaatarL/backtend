@@ -298,25 +298,13 @@ public class CustomMiEventRepositoryImpl implements CustomMiEventRepository {
                 miScenarioGroup.isDeleted.isFalse()
             )
             .fetchFirst();
+
         List<ScenarioBaseRow> relatedScenarios = relatedScenarioGroup == null
             ? List.of()
             : fetchRelatedScenarios(relatedScenarioGroup.scenarioGroupId());
 
-        return Optional.of(new EventDetailRow(
-            base.miEventId(),
-            base.eventTitle(),
-            base.createDt(),
-            base.modifyDt(),
-            base.latestRecordFirstCreated(),
-            base.level1Code(),
-            base.level1Label(),
-            base.level2Code(),
-            base.level2Label(),
-            base.isSignal(),
-            base.isNew(),
-            base.isScenarioSuggested(),
-            base.scenarioSuggestReason(),
-            base.detailAnalysis(),
+        return Optional.of(EventDetailRow.of(
+            base,
             impactSummary,
             indexImpacts,
             keyBullets,
