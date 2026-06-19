@@ -4,6 +4,7 @@ import com.sk.domain.mi.dto.request.nextgen.design.ScenarioGenerationCallbackReq
 import com.sk.domain.mi.dto.request.nextgen.design.ScenarioSignpostsCallbackReq;
 import com.sk.domain.mi.dto.request.nextgen.design.ScenarioValidationCallbackReq;
 import com.sk.domain.mi.dto.response.nextgen.design.ScenarioDesignSseEvent;
+import com.sk.domain.mi.dto.response.nextgen.design.ScenarioDesignFailureCache;
 import com.sk.domain.mi.dto.response.nextgen.design.ScenarioDesignSseEvent.Stage;
 import com.sk.domain.mi.dto.response.nextgen.design.ScenarioDesignSseEvent.Type;
 import com.sk.domain.mi.dto.response.nextgen.design.ScenarioValidationCache;
@@ -25,6 +26,7 @@ import org.springframework.stereotype.Service;
 public class ScenarioDesignCallbackService {
 
     private final ScenarioDesignValidationStore validationStore;
+    private final ScenarioDesignFailureStore failureStore;
     private final ScenarioDesignEventPublisher eventPublisher;
 
     /** 생성 완료: stage scenario_created 푸시. */
@@ -32,6 +34,7 @@ public class ScenarioDesignCallbackService {
         if (jobFailed(scenarioGroupId, Type.GENERATION, request.result(), request.reason())) {
             return;
         }
+        failureStore.delete(scenarioGroupId); // 재시도 성공 시 직전 실패 흔적 정리
         eventPublisher.publish(ScenarioDesignSseEvent.of(scenarioGroupId, Type.GENERATION, Stage.SCENARIO_CREATED));
     }
 
@@ -45,6 +48,7 @@ public class ScenarioDesignCallbackService {
         if (jobFailed(scenarioGroupId, Type.VALIDATION, request.result(), request.reason())) {
             return;
         }
+        failureStore.delete(scenarioGroupId); // 재시도 성공 시 직전 실패 흔적 정리
         validationStore.save(scenarioGroupId, ScenarioValidationCache.of(request.isValid(), request.reason(), request.table()));
 
         Stage stage = Boolean.TRUE.equals(request.isValid()) ? Stage.SCENARIO_VALIDATED : Stage.SCENARIO_CREATED;
@@ -56,6 +60,7 @@ public class ScenarioDesignCallbackService {
         if (jobFailed(scenarioGroupId, Type.SIGNPOSTS, request.result(), request.reason())) {
             return;
         }
+        failureStore.delete(scenarioGroupId); // 재시도 성공 시 직전 실패 흔적 정리
         eventPublisher.publish(ScenarioDesignSseEvent.of(scenarioGroupId, Type.SIGNPOSTS, Stage.SIGNPOST_CREATED));
     }
 
@@ -68,6 +73,7 @@ public class ScenarioDesignCallbackService {
     private boolean jobFailed(Long scenarioGroupId, Type type, AgentCallbackResult result, String reason) {
         if (result != null && result.isSuccess()) return false;
         log.warn("[Design Callback] agent job failed: type={}, groupId={}, reason={}", type.getCode(), scenarioGroupId, reason);
+        failureStore.save(scenarioGroupId, ScenarioDesignFailureCache.of(type, reason));
         eventPublisher.publish(ScenarioDesignSseEvent.failure(scenarioGroupId, type, reason));
         return true;
     }
