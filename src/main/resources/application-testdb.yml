@@ -6,74 +6,90 @@ spring:
     type: com.zaxxer.hikari.HikariDataSource
     master:
       company-cd: master
-      jdbc-url: ${SKT_MI_DB_URL_MASTER:jdbc:mysql://localhost:3306/midb?useSSL=false&serverTimezone=Asia/Seoul&characterEncoding=UTF-8&allowPublicKeyRetrieval=true&autoReconnect=true}
+      jdbc-url: jdbc:mysql://40.82.137.178:23009/midb?useSSL=false&serverTimezone=Asia/Seoul&characterEncoding=UTF-8
       driver-class-name: com.mysql.cj.jdbc.Driver
-      username: ${SKT_MI_DB_USERNAME_MASTER:min}
-      password: ${SKT_MI_DB_PASSWORD_MASTER:min}
+      username: ${SKT_MI_DB_USERNAME_MASTER:appuser}
+      password: ${SKT_MI_DB_PASSWORD_MASTER:aoqdbwjaqSW}
       hikari:
-        connection-timeout: 7s
+        connection-timeout: 7000 # 7s 대신 밀리초 단위 권장
         maximum-pool-size: 20
-        idle-timeout: 5m
-        max-lifetime: 9m
-        keepalive-time: 4m
+        idle-timeout: 300000     # 10m -> 5m (수명보다 짧게)
+        max-lifetime: 600000     # 15m -> 10m (안전하게 더 단축)
+        keepalive-time: 30000    # [추가] 30초마다 연결 살아있는지 확인
         connection-test-query: SELECT 1
         validation-timeout: 3000
         minimum-idle: 10
     tenants:
       - company-cd: midb
-        jdbc-url: ${SKT_MI_DB_URL_MASTER:jdbc:mysql://localhost:3306/midb?useSSL=false&serverTimezone=Asia/Seoul&characterEncoding=UTF-8&allowPublicKeyRetrieval=true&autoReconnect=true}
+        jdbc-url: jdbc:mysql://40.82.137.178:23009/midb?useSSL=false&serverTimezone=Asia/Seoul&characterEncoding=UTF-8
         driver-class-name: com.mysql.cj.jdbc.Driver
-        username: ${SKT_MI_DB_USERNAME_MASTER:min}
-        password: ${SKT_MI_DB_PASSWORD_MASTER:min}
+        username: ${SKT_MI_DB_USERNAME_MASTER:appuser}
+        password: ${SKT_MI_DB_PASSWORD_MASTER:aoqdbwjaqSW}
         hikari:
-          connection-timeout: 7s
+          connection-timeout: 7000 # 7s 대신 밀리초 단위 권장
           maximum-pool-size: 20
-          idle-timeout: 5m
-          max-lifetime: 9m
-          keepalive-time: 4m
+          idle-timeout: 300000     # 10m -> 5m (수명보다 짧게)
+          max-lifetime: 600000     # 15m -> 10m (안전하게 더 단축)
+          keepalive-time: 30000    # [추가] 30초마다 연결 살아있는지 확인
           connection-test-query: SELECT 1
           validation-timeout: 3000
           minimum-idle: 10
-#      - company-cd: midb-skens
-#        jdbc-url: jdbc:mysql://40.82.137.178:23009/midb-skens?useSSL=false&serverTimezone=Asia/Seoul&characterEncoding=UTF-8
-#        driver-class-name: com.mysql.cj.jdbc.Driver
-#        username: ${SKT_MI_DB_USERNAME_MASTER:min}
-#        password: ${SKT_MI_DB_PASSWORD_MASTER:min}
-#        hikari:
-#          connection-timeout: 7s
-#          maximum-pool-size: 20
-#          idle-timeout: 10m
-#          max-lifetime: 15m
-#          connection-test-query: SELECT 1
-#          validation-timeout: 3000
-#          minimum-idle: 10
+      - company-cd: midb-skens
+        jdbc-url: jdbc:mysql://40.82.137.178:23009/midb-skens?useSSL=false&serverTimezone=Asia/Seoul&characterEncoding=UTF-8
+        driver-class-name: com.mysql.cj.jdbc.Driver
+        username: ${SKT_MI_DB_USERNAME_MASTER:appuser}
+        password: ${SKT_MI_DB_PASSWORD_MASTER:aoqdbwjaqSW}
+        hikari:
+          connection-timeout: 7000 # 7s 대신 밀리초 단위 권장
+          maximum-pool-size: 20
+          idle-timeout: 300000     # 10m -> 5m (수명보다 짧게)
+          max-lifetime: 600000     # 15m -> 10m (안전하게 더 단축)
+          keepalive-time: 30000    # [추가] 30초마다 연결 살아있는지 확인
+          connection-test-query: SELECT 1
+          validation-timeout: 3000
+          minimum-idle: 10
       - company-cd: midb-ske
         jdbc-url: jdbc:mysql://40.82.137.178:23009/midb-ske?useSSL=false&serverTimezone=Asia/Seoul&characterEncoding=UTF-8
         driver-class-name: com.mysql.cj.jdbc.Driver
-        username: ${SKT_MI_DB_USERNAME_MASTER:min}
-        password: ${SKT_MI_DB_PASSWORD_MASTER:min}
+        username: ${SKT_MI_DB_USERNAME_MASTER:appuser}
+        password: ${SKT_MI_DB_PASSWORD_MASTER:aoqdbwjaqSW}
         hikari:
-          connection-timeout: 7s
+          connection-timeout: 7000 # 7s 대신 밀리초 단위 권장
           maximum-pool-size: 20
-          idle-timeout: 5m
-          max-lifetime: 9m
-          keepalive-time: 4m
+          idle-timeout: 300000     # 10m -> 5m (수명보다 짧게)
+          max-lifetime: 600000     # 15m -> 10m (안전하게 더 단축)
+          keepalive-time: 30000    # [추가] 30초마다 연결 살아있는지 확인
           connection-test-query: SELECT 1
           validation-timeout: 3000
           minimum-idle: 10
-#      - company-cd: midb-skhy
-#        jdbc-url: jdbc:mysql://40.82.137.178:23009/midb-skhy?useSSL=false&serverTimezone=Asia/Seoul&characterEncoding=UTF-8
-#        driver-class-name: com.mysql.cj.jdbc.Driver
-#        username: ${SKT_MI_DB_USERNAME_MASTER:min}
-#        password: ${SKT_MI_DB_PASSWORD_MASTER:min}
-#        hikari:
-#          connection-timeout: 7s
-#          maximum-pool-size: 20
-#          idle-timeout: 10m
-#          max-lifetime: 15m
-#          connection-test-query: SELECT 1
-#          validation-timeout: 3000
-#          minimum-idle: 10
+      - company-cd: midb-skhy
+        jdbc-url: jdbc:mysql://40.82.137.178:23009/midb-skhy?useSSL=false&serverTimezone=Asia/Seoul&characterEncoding=UTF-8
+        driver-class-name: com.mysql.cj.jdbc.Driver
+        username: ${SKT_MI_DB_USERNAME_MASTER:appuser}
+        password: ${SKT_MI_DB_PASSWORD_MASTER:aoqdbwjaqSW}
+        hikari:
+          connection-timeout: 7000 # 7s 대신 밀리초 단위 권장
+          maximum-pool-size: 20
+          idle-timeout: 300000     # 10m -> 5m (수명보다 짧게)
+          max-lifetime: 600000     # 15m -> 10m (안전하게 더 단축)
+          keepalive-time: 30000    # [추가] 30초마다 연결 살아있는지 확인
+          connection-test-query: SELECT 1
+          validation-timeout: 3000
+          minimum-idle: 10
+      - company-cd: midb-skgas
+        jdbc-url: jdbc:mysql://40.82.137.178:23009/midb-skgas?useSSL=false&serverTimezone=Asia/Seoul&characterEncoding=UTF-8
+        driver-class-name: com.mysql.cj.jdbc.Driver
+        username: ${SKT_MI_DB_USERNAME_MASTER:appuser}
+        password: ${SKT_MI_DB_PASSWORD_MASTER:aoqdbwjaqSW}
+        hikari:
+          connection-timeout: 7000 # 7s 대신 밀리초 단위 권장
+          maximum-pool-size: 20
+          idle-timeout: 300000     # 10m -> 5m (수명보다 짧게)
+          max-lifetime: 600000     # 15m -> 10m (안전하게 더 단축)
+          keepalive-time: 30000    # [추가] 30초마다 연결 살아있는지 확인
+          connection-test-query: SELECT 1
+          validation-timeout: 3000
+          minimum-idle: 10
 
   jpa:
     database-platform: org.hibernate.dialect.MySQLDialect
@@ -82,9 +98,9 @@ spring:
 
   data:
     redis:
-      host: localhost
-      port: 6379
-      password: no used
+      host: 10.0.20.131
+      port: 16379
+      password:
       command-timeout: 10s
 
   security:
@@ -141,7 +157,7 @@ logging:
 decorator:
   datasource:
     p6spy:
-      enable-logging: false
+      enable-logging: true
 
 api:
   model-agent:
@@ -169,15 +185,15 @@ api:
 mail:
   except-company-no: 2020
   smtp:
-    host: email-smtp.ap-northeast-2.amazonaws.com
-    port: 465
-    username: ${SKT_MI_NO_REPLY_MAIL_USERNAME:AKIASF4YAEJSVKP3P3O3}
-    password: ${SKT_MI_NO_REPLY_MAIL_PW:BMsw5q2ZzLMToeeyFFFg6RW/R6Unf0hrGRzOwWVnNc1G}
-    from: ${SKT_MI_NO_REPLY_MAIL_ADDR:no-reply@marketforesight.ai}
+    host: 144.24.94.179
+    port: 31025
+    username: ${SKT_MI_NO_REPLY_MAIL_ADDR:no-reply@ai-market-insights.co.kr}
+    password: ${SKT_MI_NO_REPLY_MAIL_PW:Godqhr0630}
+    from: ${SKT_MI_NO_REPLY_MAIL_ADDR:no-reply@ai-market-insights.co.kr}
     properties:
       transport-protocol: smtp
-      auth: true
-      ssl-enable: true
+      auth: false
+      ssl-enable: false
       starttls-enable: false
       ssl-protocols: TLSv1.2
       connectiontimeout: 10000
@@ -238,14 +254,14 @@ dummy:
 
 mip:
   company-urls:
-  # 회사코드별 MIP URL 설정 (로컬 테스트용)
-  # 예시:
+    # 회사코드별 MIP URL 설정 (로컬 테스트용)
+    # 예시:
     SKENS: http://localhost:8080
   # COMPANY_B: http://localhost:4000
 
 kubernetes:
-  namespace: ${MI_K8S_NAMESPACE:}
-  image: ${MI_K8S_IMAGE:}
+  namespace: ${MI_K8S_NAMESPACE:default}
+  image: ${MI_K8S_IMAGE:fundamental-model:test}
   command: ${MI_K8S_COMMAND:}  # smoke용: "python3,-c" / 실제 모델 이미지 사용 시 비워둠
   env-config-map-name: ${MI_K8S_ENV_CONFIG_MAP_NAME:}
   env-secret-name: ${MI_K8S_ENV_SECRET_NAME:}
