@@ -93,10 +93,10 @@ mi:
       design:
         callback-delay-seconds: 15
         api:
-          start: true
-          get-state: true
-          get-dimension-templates: true
-          validate: true
-          create-signposts: true
-          confirm: true
-          reset: true
+          start: false
+          get-state: false
+          get-dimension-templates: false
+          validate: false
+          create-signposts: false
+          confirm: false
+          reset: false
