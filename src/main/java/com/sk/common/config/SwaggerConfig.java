@@ -32,7 +32,7 @@ import org.springframework.core.annotation.AnnotationUtils;
 public class SwaggerConfig {
 
     // note: 안정화 후 투머치 문서 모두 삭제예정
-    private static final String SW_VERSION_BASE = "v1.2.61";
+    private static final String SW_VERSION_BASE = "v1.2.62";
     private static final DateTimeFormatter SW_DEPLOY_DATE_FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
 
     @Bean
@@ -155,7 +155,7 @@ public class SwaggerConfig {
 
   ## 수정사항
   <details open>
-    <summary><strong>v1.2.61 (2026-06-18)</strong></summary>
+    <summary><strong>v1.2.62 (2026-06-18)</strong></summary>
 
   - [Event]
     - 이벤트 목록에 `occupied`(설계 점유 여부) · `occupantUserId`(점유자) 추가
@@ -165,6 +165,8 @@ public class SwaggerConfig {
     - CME 벤치마크 그래프 조회 API 추가 (dedicated 전용, `GET .../scenario-groups/graph/cme-benchmark`)
   - [File Crypto]
     - `status` API 경로 수정
+  - [Model Execution]
+    - 모델 실행 접수, 모델 실행 상태 조회 살DB 연동
 
   </details>
 
