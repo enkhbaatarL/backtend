@@ -120,21 +120,6 @@ api:
     connection-timeout: 1s
     read-timeout: 60s
 
-external:
-  file-crypto:
-    base-url: ${FILE_CRYPTO_BASE_URL:}
-    upload-path: ${FILE_CRYPTO_UPLOAD_PATH:}
-    status-path: ${FILE_CRYPTO_STATUS_PATH:}
-    encrypt-path: ${FILE_CRYPTO_ENCRYPT_PATH:}
-    decrypt-path: ${FILE_CRYPTO_DECRYPT_PATH:}
-    connection-timeout: ${FILE_CRYPTO_CONNECTION_TIMEOUT:3s}
-    read-timeout: ${FILE_CRYPTO_READ_TIMEOUT:30s}
-    retry-count: ${FILE_CRYPTO_RETRY_COUNT:1}
-    retry-backoff-ms: ${FILE_CRYPTO_RETRY_BACKOFF_MS:500}
-    pid: ${FILE_CRYPTO_PID:}
-    label-id: ${FILE_CRYPTO_LABEL_ID:}
-    user-id: ${FILE_CRYPTO_USER_ID:}
-
 mail:
   except-company-no: 2013
   smtp:
