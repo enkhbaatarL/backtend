@@ -25,7 +25,8 @@ public record EventDetailRow(
     List<String> sources,
     List<DriverTagScoreboardRow> driverTags,
     ScenarioGroupBaseRow relatedScenarioGroup,
-    List<ScenarioBaseRow> relatedScenarios
+    List<ScenarioBaseRow> relatedScenarios,
+    boolean templateAvailable
 ) {
 
     /**
@@ -57,7 +58,8 @@ public record EventDetailRow(
             sources,
             driverTags,
             relatedScenarioGroup,
-            relatedScenarios
+            relatedScenarios,
+            base.templateAvailable()
         );
     }
 

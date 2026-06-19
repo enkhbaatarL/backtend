@@ -11,7 +11,7 @@ public record EventDesignAvailabilityRes(
     @Schema(description = "이벤트 ID", example = "1")
     Long eventId,
 
-    @Schema(description = "설계 상태 (designable/creating/created)", example = "designable")
+    @Schema(description = "설계 상태 (designable/unavailable/creating/created)", example = "designable")
     ScenarioDesignDisplayStatus scenarioDesignStatus,
 
     @Schema(description = "설계 상태 라벨", example = "설계가능")

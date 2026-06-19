@@ -15,13 +15,16 @@ import static com.sk.domain.shared.entity.master.tmm.QMiImpactDriver.miImpactDri
 import static com.sk.domain.shared.entity.master.tmm.QMiImpactResult.miImpactResult;
 import static com.sk.domain.shared.entity.master.tmm.QMiInstitutionView.miInstitutionView;
 import static com.sk.domain.shared.entity.master.tmm.QMiScenario.miScenario;
+import static com.sk.domain.shared.entity.master.tmm.QMiScenarioDimensionTemplate.miScenarioDimensionTemplate;
 import static com.sk.domain.shared.entity.master.tmm.QMiScenarioGroup.miScenarioGroup;
 
 import com.querydsl.core.BooleanBuilder;
+import com.querydsl.core.types.Expression;
 import com.querydsl.core.types.OrderSpecifier;
 import com.querydsl.core.types.dsl.BooleanExpression;
 import com.querydsl.core.types.dsl.CaseBuilder;
 import com.querydsl.core.types.dsl.NumberExpression;
+import com.querydsl.jpa.JPAExpressions;
 import com.querydsl.jpa.JPQLQuery;
 import com.querydsl.jpa.impl.JPAQueryFactory;
 import com.sk.common.utils.JsonUtil;
@@ -97,7 +100,8 @@ public class CustomMiEventRepositoryImpl implements CustomMiEventRepository {
                 miEvent.latestRecordFirstCreated,
                 miScenarioGroup.scenarioGroupId,
                 miScenarioGroup.status,
-                miScenarioGroup.requestUserId
+                miScenarioGroup.requestUserId,
+                templateAvailable(miEventTypeL2.eventTypeL2Id)
             ))
             .from(miEvent)
             .innerJoin(miEvent.eventTypeL2, miEventTypeL2).on(miEventTypeL2.isDeleted.isFalse())
@@ -139,6 +143,7 @@ public class CustomMiEventRepositoryImpl implements CustomMiEventRepository {
                 base.scenarioGroupId(),
                 base.scenarioGroupStatus(),
                 base.requestUserId(),
+                base.templateAvailable(),
                 impactsByEventId.getOrDefault(base.miEventId(), List.of())
             ))
             .toList();
@@ -156,12 +161,28 @@ public class CustomMiEventRepositoryImpl implements CustomMiEventRepository {
                 miEvent.miEventId,
                 miScenarioGroup.scenarioGroupId,
                 miScenarioGroup.status,
-                miScenarioGroup.requestUserId
+                miScenarioGroup.requestUserId,
+                templateAvailable(miEvent.eventTypeL2.eventTypeL2Id)
             ))
             .from(miEvent)
             .leftJoin(miScenarioGroup).on(miScenarioGroup.miEvent.eq(miEvent), miScenarioGroup.isDeleted.isFalse())
             .where(miEvent.isDeleted.isFalse(), miEvent.miEventId.in(eventIds))
             .fetch();
+    }
+
+    /**
+     * 이벤트의 event_type_l2에 매칭되는 비삭제 dimension template 존재 여부 (EXISTS로 판정)
+     */
+    private Expression<Boolean> templateAvailable(NumberExpression<Long> eventTypeL2Id) {
+        return new CaseBuilder()
+            .when(JPAExpressions.selectOne()
+                .from(miScenarioDimensionTemplate)
+                .where(
+                    miScenarioDimensionTemplate.eventTypeL2.eventTypeL2Id.eq(eventTypeL2Id),
+                    miScenarioDimensionTemplate.isDeleted.isFalse())
+                .exists())
+            .then(true)
+            .otherwise(false);
     }
 
     private BooleanBuilder buildEventWhere(EventListReq request) {
@@ -251,7 +272,8 @@ public class CustomMiEventRepositoryImpl implements CustomMiEventRepository {
                 miEvent.isScenarioSuggested,
                 miEvent.scenarioSuggestReason,
                 miEvent.detailAnalysis,
-                miEvent.keyBulletsJson
+                miEvent.keyBulletsJson,
+                templateAvailable(miEventTypeL2.eventTypeL2Id)
             ))
             .from(miEvent)
             .innerJoin(miEvent.eventTypeL2, miEventTypeL2).on(miEventTypeL2.isDeleted.isFalse())

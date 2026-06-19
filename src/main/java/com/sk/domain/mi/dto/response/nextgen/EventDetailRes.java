@@ -50,10 +50,10 @@ public record EventDetailRes(
     @Schema(description = "시나리오화 추천 근거", example = "글로벌 LNG 공급 차질 가능성이 시나리오화 가치 있음")
     String scenarioSuggestReason,
 
-    @Schema(description = "시나리오 디자인 상태 (designable|creating|created)", example = "designable")
+    @Schema(description = "시나리오 디자인 상태 (designable|unavailable|creating|created)", example = "designable")
     ScenarioDesignDisplayStatus scenarioDesignStatus,
 
-    @Schema(description = "시나리오 디자인 상태 라벨 (설계가능|설계중|설계완료)", example = "설계가능")
+    @Schema(description = "시나리오 디자인 상태 라벨 (설계가능|설계불가|설계중|설계완료)", example = "설계가능")
     String scenarioDesignStatusLabel,
 
     @Schema(description = "설계 점유 여부 (설계중이면 true)", example = "false")
@@ -85,7 +85,7 @@ public record EventDetailRes(
         EventImpactAnalysisRes impactAnalysis = EventImpactAnalysisRes.from(row);
 
         ScenarioGroupBaseRow group = row.relatedScenarioGroup();
-        ScenarioDesignDisplayStatus designStatus = ScenarioDesignDisplayStatus.of(group == null ? null : group.status());
+        ScenarioDesignDisplayStatus designStatus = ScenarioDesignDisplayStatus.of(group == null ? null : group.status(), row.templateAvailable());
         // 점유 = 활성 시나리오 그룹이 creating(설계중)인 상태. 점유자는 그룹 요청자(request_usr_id)
         boolean occupied = group != null && group.status() == ScenarioGroupStatus.CREATING;
 

@@ -18,7 +18,8 @@ public record EventDetailBaseRow(
     Boolean isScenarioSuggested,
     String scenarioSuggestReason,
     String detailAnalysis,
-    String keyBulletsJson
+    String keyBulletsJson,
+    boolean templateAvailable
 ) {
 
     @QueryProjection

@@ -13,7 +13,8 @@ public record EventDesignAvailabilityRow(
     Long miEventId,
     Long scenarioGroupId,
     ScenarioGroupStatus scenarioGroupStatus,
-    Long requestUserId
+    Long requestUserId,
+    boolean templateAvailable
 ) {
 
     @QueryProjection

@@ -18,7 +18,8 @@ public record EventListBaseRow(
     LocalDateTime latestRecordFirstCreated,
     Long scenarioGroupId,
     ScenarioGroupStatus scenarioGroupStatus,
-    Long requestUserId
+    Long requestUserId,
+    boolean templateAvailable
 ) {
 
     @QueryProjection

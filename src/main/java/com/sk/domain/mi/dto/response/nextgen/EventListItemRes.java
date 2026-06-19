@@ -50,10 +50,10 @@ public record EventListItemRes(
     @Schema(description = "시나리오화 추천 근거", example = "글로벌 공급 차질 가능성으로 시나리오화 검토 필요")
     String scenarioSuggestReason,
 
-    @Schema(description = "시나리오 디자인 상태 (designable|creating|created)", example = "designable")
+    @Schema(description = "시나리오 디자인 상태 (designable|unavailable|creating|created)", example = "designable")
     ScenarioDesignDisplayStatus scenarioDesignStatus,
 
-    @Schema(description = "시나리오 디자인 상태 라벨 (설계가능|설계중|설계완료)", example = "설계가능")
+    @Schema(description = "시나리오 디자인 상태 라벨 (설계가능|설계불가|설계중|설계완료)", example = "설계가능")
     String scenarioDesignStatusLabel,
 
     @Schema(description = "활성 시나리오 그룹 ID", example = "2", nullable = true)
@@ -76,7 +76,7 @@ public record EventListItemRes(
     public static EventListItemRes from(EventListRow row, String occupantUserName) {
         ContentStatus status = Boolean.TRUE.equals(row.isNew()) ? ContentStatus.NEW : ContentStatus.UPDATED;
         EventSignalType signalType = Boolean.TRUE.equals(row.isSignal()) ? EventSignalType.SIGNAL : EventSignalType.NOISE;
-        ScenarioDesignDisplayStatus designStatus = ScenarioDesignDisplayStatus.of(row.scenarioGroupStatus());
+        ScenarioDesignDisplayStatus designStatus = ScenarioDesignDisplayStatus.of(row.scenarioGroupStatus(), row.templateAvailable());
 
         // 점유 = 활성 시나리오 그룹이 creating(설계중)인 상태. 점유자는 시나리오 그룹 요청자(request_usr_id)
         boolean occupied = row.scenarioGroupStatus() == ScenarioGroupStatus.CREATING;

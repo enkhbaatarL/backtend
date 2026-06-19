@@ -208,7 +208,7 @@ public class EventServiceImpl implements EventService {
 
     private EventDesignAvailabilityRes toAvailability(Long eventId, EventDesignAvailabilityRow row, Map<Long, String> occupantNames) {
         if (row == null) return EventDesignAvailabilityRes.designable(eventId);
-        ScenarioDesignDisplayStatus status = ScenarioDesignDisplayStatus.of(row.scenarioGroupStatus());
+        ScenarioDesignDisplayStatus status = ScenarioDesignDisplayStatus.of(row.scenarioGroupStatus(), row.templateAvailable());
         boolean occupied = row.scenarioGroupStatus() == ScenarioGroupStatus.CREATING;
         return EventDesignAvailabilityRes.of(
             eventId, status, occupied,

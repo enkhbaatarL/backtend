@@ -191,7 +191,7 @@ public class EventMockService {
         var session = designMockService.findSessionByEventId(eventId);
         if (session.isPresent()) {
             ScenarioDesignMockService.DesignSessionInfo info = session.get();
-            ScenarioDesignDisplayStatus status = ScenarioDesignDisplayStatus.of(info.status());
+            ScenarioDesignDisplayStatus status = ScenarioDesignDisplayStatus.of(info.status(), true);
             boolean occupied = info.status() == ScenarioGroupStatus.CREATING;
             return EventDesignAvailabilityRes.of(
                 eventId, status, occupied, occupied ? info.occupantUserId() : null, null, info.scenarioGroupId());
@@ -218,7 +218,7 @@ public class EventMockService {
         var session = designMockService.findSessionByEventId(eventId);
         if (session.isPresent()) {
             ScenarioDesignMockService.DesignSessionInfo info = session.get();
-            ScenarioDesignDisplayStatus status = ScenarioDesignDisplayStatus.of(info.status());
+            ScenarioDesignDisplayStatus status = ScenarioDesignDisplayStatus.of(info.status(), true);
             // 점유 = 설계중(creating). 점유자는 세션의 실제 시작 사용자.
             Long occupant = status == ScenarioDesignDisplayStatus.CREATING ? info.occupantUserId() : null;
             return new DesignDisplay(status, info.scenarioGroupId(), occupant);

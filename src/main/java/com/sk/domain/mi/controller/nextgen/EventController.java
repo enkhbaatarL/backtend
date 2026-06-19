@@ -103,7 +103,7 @@ public class EventController {
             - `signalType` / `signalTypeLabel`: 신호(`signal`) / 소음(`noise`)
             - `isScenarioSuggested`: 시나리오화 추천 여부
             - `scenarioSuggestReason`: 시나리오화 추천 근거
-            - `scenarioDesignStatus` / `scenarioDesignStatusLabel`: `designable`(설계가능) / `creating`(설계중) / `created`(설계완료)
+            - `scenarioDesignStatus` / `scenarioDesignStatusLabel`: `designable`(설계가능) / `unavailable`(설계불가, 매칭 dimension template 없음) / `creating`(설계중) / `created`(설계완료)
             - `scenarioGroupId`: 활성 시나리오 그룹 ID (없으면 null, `created`일 때 이동 대상)
             - `occupied`: 설계 점유 여부 (설계중이면 true)
             - `occupantUserId`: 점유 사용자 ID (점유 중이 아니면 null)
@@ -147,7 +147,7 @@ public class EventController {
             - `signalType` / `signalTypeLabel`: 신호(`signal`) / 소음(`noise`)
             - `isScenarioSuggested`: 시나리오화 추천 여부
             - `scenarioSuggestReason`: 시나리오화 추천 근거 (추천 아님일 때 null)
-            - `scenarioDesignStatus` / `scenarioDesignStatusLabel`: `designable`(설계가능) / `creating`(설계중) / `created`(설계완료)
+            - `scenarioDesignStatus` / `scenarioDesignStatusLabel`: `designable`(설계가능) / `unavailable`(설계불가, 매칭 dimension template 없음) / `creating`(설계중) / `created`(설계완료)
             - `occupied`: 설계 점유 여부 (설계중이면 true)
             - `occupantUserId` / `occupantUserName`: 점유 사용자 ID/명 (점유 중이 아니면 null)
             - `eventTypeLv1` / `eventTypeLv1Label` / `eventTypeLv2` / `eventTypeLv2Label`
@@ -286,7 +286,7 @@ public class EventController {
             <br><br>
             ### content 항목 필드 (예정)
             - `eventId`: 이벤트 ID
-            - `scenarioDesignStatus` / `scenarioDesignStatusLabel`: `designable`(설계가능) / `creating`(설계중) / `created`(설계완료)
+            - `scenarioDesignStatus` / `scenarioDesignStatusLabel`: `designable`(설계가능) / `unavailable`(설계불가, 매칭 dimension template 없음) / `creating`(설계중) / `created`(설계완료)
             - `occupied`: 점유 여부 / `occupantUserId`: 점유 사용자 ID (없으면 null) / `occupantUserName`: 점유 사용자명 (없으면 null)
             - `scenarioGroupId`: 활성 시나리오 그룹 ID (없으면 null)
             """
