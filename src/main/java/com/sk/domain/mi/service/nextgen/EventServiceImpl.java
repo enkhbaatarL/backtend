@@ -195,7 +195,13 @@ public class EventServiceImpl implements EventService {
         if (eventIds == null || eventIds.isEmpty()) return List.of();
 
         Map<Long, EventDesignAvailabilityRow> rowByEventId = miEventRepository.findDesignAvailability(eventIds).stream()
-            .collect(Collectors.toMap(EventDesignAvailabilityRow::miEventId, Function.identity()));
+            .collect(Collectors.toMap(
+                EventDesignAvailabilityRow::miEventId,
+                Function.identity(),
+                (a, b) -> {
+                    // [260620] 이벤트당 활성 시나리오 그룹은 1개여야 하나, 중복 존재 시 먼저 생성된(가장 오래된) 그룹을 선택
+                    return a.scenarioGroupId() <= b.scenarioGroupId() ? a : b;
+                }));
 
         // 점유(설계중) 이벤트의 요청자 userId만 모아 사용자명 일괄 조회
         Map<Long, String> occupantNames = resolveOccupantNames(
