@@ -28,6 +28,7 @@ import com.querydsl.jpa.JPAExpressions;
 import com.querydsl.jpa.JPQLQuery;
 import com.querydsl.jpa.impl.JPAQueryFactory;
 import com.sk.common.utils.JsonUtil;
+import com.sk.domain.shared.entity.master.tmm.QMiScenarioGroup;
 import com.sk.domain.mi.dto.request.nextgen.EventListReq;
 import com.sk.domain.shared.enums.nextgen.ContentStatus;
 import com.sk.domain.shared.enums.nextgen.IndexName;
@@ -84,6 +85,9 @@ public class CustomMiEventRepositoryImpl implements CustomMiEventRepository {
         BooleanBuilder where = buildEventWhere(request);
         OrderSpecifier<?> order = buildEventOrder(request);
 
+        // [260620] 이벤트당 활성 시나리오 그룹은 1개여야 하나, 중복 존재 시 목록 행 중복/페이지네이션 깨짐 방지를 위해 먼저 생성된 활성 그룹 1건만 조인되도록 제한
+        QMiScenarioGroup groupSub = new QMiScenarioGroup("groupSub");
+
         List<EventListBaseRow> baseRows = queryFactory
             .select(new QEventListBaseRow(
                 miEvent.miEventId,
@@ -106,7 +110,13 @@ public class CustomMiEventRepositoryImpl implements CustomMiEventRepository {
             .from(miEvent)
             .innerJoin(miEvent.eventTypeL2, miEventTypeL2).on(miEventTypeL2.isDeleted.isFalse())
             .innerJoin(miEventTypeL2.eventTypeL1, miEventTypeL1).on(miEventTypeL1.isDeleted.isFalse())
-            .leftJoin(miScenarioGroup).on(miScenarioGroup.miEvent.eq(miEvent), miScenarioGroup.isDeleted.isFalse())
+            .leftJoin(miScenarioGroup).on(
+                miScenarioGroup.miEvent.eq(miEvent),
+                miScenarioGroup.isDeleted.isFalse(),
+                miScenarioGroup.scenarioGroupId.eq(
+                    JPAExpressions.select(groupSub.scenarioGroupId.min())
+                        .from(groupSub)
+                        .where(groupSub.miEvent.eq(miEvent), groupSub.isDeleted.isFalse())))
             .where(where)
             .orderBy(order)
             .offset(pageable.getOffset())
@@ -320,6 +330,8 @@ public class CustomMiEventRepositoryImpl implements CustomMiEventRepository {
                 miScenarioGroup.miEvent.miEventId.eq(eventId),
                 miScenarioGroup.isDeleted.isFalse()
             )
+            // [260620] 이벤트당 활성 시나리오 그룹은 1개여야 하나, 중복 존재 시 먼저 생성된(가장 오래된) 그룹을 선택
+            .orderBy(miScenarioGroup.scenarioGroupId.asc())
             .fetchFirst();
 
         List<ScenarioBaseRow> relatedScenarios = relatedScenarioGroup == null

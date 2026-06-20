@@ -112,7 +112,7 @@ public class CustomScenarioCaseRepositoryImpl implements CustomScenarioCaseRepos
             .where(
                 scenarioCase.scenarioId.in(scenarioIds),
                 scenarioCaseRunHistory.runSeq.eq(latestCompletedRunSeq()),
-                scenarioCaseRunPrice.priceRegionName.equalsIgnoreCase(indexName.getCode()),
+                scenarioCaseRunPrice.priceRegionName.equalsIgnoreCase(indexName.getPriceRegionName()),
                 scenarioCaseRunPrice.periodUnit.eq(periodUnit),
                 scenarioCaseRunPrice.isDeleted.isFalse()
             )
@@ -155,7 +155,7 @@ public class CustomScenarioCaseRepositoryImpl implements CustomScenarioCaseRepos
             .innerJoin(scenarioCaseRunPrice).on(scenarioCaseRunPrice.runSeq.eq(scenarioCaseRunHistory.runSeq))
             .where(
                 scenarioCase.caseId.eq(latestMiBaseCaseId()),
-                scenarioCaseRunPrice.priceRegionName.equalsIgnoreCase(indexName.getCode()),
+                scenarioCaseRunPrice.priceRegionName.equalsIgnoreCase(indexName.getPriceRegionName()),
                 scenarioCaseRunPrice.periodUnit.eq(periodUnit),
                 scenarioCaseRunPrice.isDeleted.isFalse()
             )
