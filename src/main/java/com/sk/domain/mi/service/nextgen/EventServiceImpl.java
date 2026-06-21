@@ -143,7 +143,8 @@ public class EventServiceImpl implements EventService {
     private EventRelatedScenariosRes buildRelatedScenarios(EventDetailRow row) {
         ScenarioGroupBaseRow group = row.relatedScenarioGroup();
 
-        if (group == null) {
+        // [260621] 설계(생성) 진행 중인 그룹의 시나리오는 아직 미완성이므로 연관 시나리오로 노출 X
+        if (group == null || group.status() == ScenarioGroupStatus.CREATING) {
             return null;
         }
 
