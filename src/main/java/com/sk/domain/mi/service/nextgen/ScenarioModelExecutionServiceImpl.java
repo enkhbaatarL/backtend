@@ -73,8 +73,8 @@ public class ScenarioModelExecutionServiceImpl implements ScenarioModelExecution
     private final KubernetesJobService kubernetesJobService;
     private final TransactionOperations transactionOperations;
 
-    @Value("${server.domain:http://localhost:8080}")
-    private String serverDomain = "http://localhost:8080";
+    @Value("${kubernetes.callback-base-url:}")
+    private String callbackBaseUrl;
 
     @Override
     public ModelExecutionParameterRes getModelExecutionParameters(Long scenarioId) {
@@ -326,8 +326,23 @@ public class ScenarioModelExecutionServiceImpl implements ScenarioModelExecution
             .demandExcelPath(demandExcelPath)
             .supplyExcelPath(supplyExcelPath)
             .tradeExcelPath(tradeExcelPath)
-            .callbackUrl(serverDomain + CALLBACK_PATH_TEMPLATE.formatted(runId))
+            .callbackUrl(buildCallbackUrl(runId))
             .build();
+    }
+
+    private String buildCallbackUrl(String runId) {
+        return normalizeCallbackBaseUrl() + CALLBACK_PATH_TEMPLATE.formatted(runId);
+    }
+
+    private String normalizeCallbackBaseUrl() {
+        if (callbackBaseUrl == null || callbackBaseUrl.isBlank()) {
+            throw AppErrorException.of(ResultCode.Error.BIZ_RULE_VIOLATION, "kubernetes.callback-base-url is required.");
+        }
+        String normalized = callbackBaseUrl.trim();
+        if (normalized.endsWith("/")) {
+            return normalized.substring(0, normalized.length() - 1);
+        }
+        return normalized;
     }
 
     private String findInputFileStoragePath(List<UploadedFile> inputFiles, String roleKeyword) {

@@ -24,6 +24,8 @@ import org.springframework.util.StringUtils;
 @RequiredArgsConstructor
 public class KubernetesJobService {
 
+    private static final int JOB_BACKOFF_LIMIT = 0;
+
     // python3 -c 방식으로 실행할 smoke 스크립트
     // --run-id, --callback-url arg를 파싱해 callback POST 후 종료
     private static final String SMOKE_SCRIPT = """
@@ -62,6 +64,8 @@ public class KubernetesJobService {
     private String envSecretName;
     @Value("${kubernetes.image-pull-secret-name:}")
     private String imagePullSecretName;
+    @Value("${kubernetes.ttl-seconds-after-finished:3600}")
+    private Integer ttlSecondsAfterFinished;
 
     // k8s Job 생성 권한(RBAC) 검증 전용. 최소 Job을 동기 생성해 생성된 Job 이름을 반환한다.
     // 동기 응답은 create API 권한만 검증하며, 이미지 pull 결과는 생성된 pod 이벤트에서 확인한다.
@@ -73,7 +77,8 @@ public class KubernetesJobService {
                 .withNamespace(namespace)
             .endMetadata()
             .withNewSpec()
-                .withTtlSecondsAfterFinished(0)
+                .withBackoffLimit(JOB_BACKOFF_LIMIT)
+                .withTtlSecondsAfterFinished(ttlSecondsAfterFinished)
                 .withNewTemplate()
                     .withNewSpec()
                         .withImagePullSecrets(buildImagePullSecrets())
@@ -104,7 +109,8 @@ public class KubernetesJobService {
                 .withNamespace(namespace)
             .endMetadata()
             .withNewSpec()
-                .withTtlSecondsAfterFinished(0)
+                .withBackoffLimit(JOB_BACKOFF_LIMIT)
+                .withTtlSecondsAfterFinished(ttlSecondsAfterFinished)
                 .withNewTemplate()
                     .withNewSpec()
                         .withImagePullSecrets(buildImagePullSecrets())

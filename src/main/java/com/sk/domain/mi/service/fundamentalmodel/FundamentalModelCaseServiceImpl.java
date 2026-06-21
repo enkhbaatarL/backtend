@@ -144,8 +144,8 @@ public class FundamentalModelCaseServiceImpl implements FundamentalModelCaseServ
     private final TransactionOperations transactionOperations;
     private final ObjectMapper objectMapper;
 
-    @Value("${server.domain:http://localhost:8080}")
-    private String serverDomain = "http://localhost:8080";
+    @Value("${kubernetes.callback-base-url:}")
+    private String callbackBaseUrl;
 
     @Override
     @Transactional(readOnly = true)
@@ -1698,8 +1698,23 @@ public class FundamentalModelCaseServiceImpl implements FundamentalModelCaseServ
             .demandExcelPath(demandExcelPath)
             .supplyExcelPath(supplyExcelPath)
             .tradeExcelPath(tradeExcelPath)
-            .callbackUrl(serverDomain + CALLBACK_PATH_TEMPLATE.formatted(runId))
+            .callbackUrl(buildCallbackUrl(runId))
             .build();
+    }
+
+    private String buildCallbackUrl(String runId) {
+        return normalizeCallbackBaseUrl() + CALLBACK_PATH_TEMPLATE.formatted(runId);
+    }
+
+    private String normalizeCallbackBaseUrl() {
+        if (callbackBaseUrl == null || callbackBaseUrl.isBlank()) {
+            throw AppErrorException.of(ResultCode.Error.BIZ_RULE_VIOLATION, "kubernetes.callback-base-url is required.");
+        }
+        String normalized = callbackBaseUrl.trim();
+        if (normalized.endsWith("/")) {
+            return normalized.substring(0, normalized.length() - 1);
+        }
+        return normalized;
     }
 
     private void validateRequiredInputFilePaths(String demandExcelPath, String supplyExcelPath, String tradeExcelPath) {
