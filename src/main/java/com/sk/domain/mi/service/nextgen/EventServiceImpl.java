@@ -22,7 +22,9 @@ import com.sk.domain.mi.dto.response.nextgen.design.EventDesignAvailabilityRes;
 import com.sk.domain.mi.service.nextgen.support.ScenarioDimensionMapper;
 import com.sk.domain.mi.service.nextgen.support.ScenarioDimensionMapper.GroupDimensionTemplate;
 import com.sk.domain.mi.service.nextgen.support.ScenarioProbabilityAllocator;
+import com.sk.domain.mi.dto.response.PermissionRes;
 import com.sk.domain.shared.entity.master.tmd.User;
+import com.sk.domain.shared.service.permissions.AuthorizationService;
 import com.sk.domain.shared.enums.nextgen.ScenarioDesignDisplayStatus;
 import com.sk.domain.shared.enums.nextgen.ScenarioGroupStatus;
 import com.sk.domain.shared.repository.master.tmd.UserRepository;
@@ -55,6 +57,7 @@ public class EventServiceImpl implements EventService {
     private final MiEventTypeL1Repository miEventTypeL1Repository;
     private final MiScenarioGroupRepository miScenarioGroupRepository;
     private final UserRepository userRepository;
+    private final AuthorizationService authorizationService;
 
     /**
      * [이벤트 유형 L1 목록]
@@ -176,11 +179,19 @@ public class EventServiceImpl implements EventService {
     /**
      * [연관 레코드 목록]
      * - 뉴스(NEWS)와 데이터 파일 요약(비NEWS) 두 소스를 UNION으로 합쳐 first_created 내림차순
+     * - isPermitted: 현재 사용자(고객사)의 상품 조회 권한 여부 — goodsViewableMap을 1회 조회해 row별 goodsNo로 판정
      */
     @Override
     public PaginationRes<EventRelatedRecordRes> getEventRecords(Long eventId, int page, int size) {
+        PermissionRes permissions = authorizationService.getPermissions();
+
+        Map<Integer, Boolean> goodsViewableMap = permissions.getGoodsViewableMap(authorizationService.getCompanyNoWithPriority());
+
         return PaginationRes.toRes(
-            miEventRepository.findEventRecords(eventId, PageRequest.of(page - 1, size)).map(EventRelatedRecordRes::from)
+            miEventRepository.findEventRecords(eventId, PageRequest.of(page - 1, size))
+                .map(row -> EventRelatedRecordRes.from(
+                    row,
+                    row.getGoodsNo() != null && goodsViewableMap.getOrDefault(row.getGoodsNo(), Boolean.FALSE)))
         );
     }
 

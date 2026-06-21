@@ -256,6 +256,7 @@ public class EventController {
             - `goodsNo`: 상품 번호 (gds_no)
             - `goodsDataNo`: 상품 데이터 번호 (gds_data_no). NEWS인 경우 null
             - `sourceObjId`: 원본 소스 ID (source_obj_id)
+            - `isPermitted`: 현재 사용자(고객사)의 상품 조회 권한 여부 (goodsNo 기준)
             """
     )
     @ApiResponse(responseCode = "200", description = "조회 성공")

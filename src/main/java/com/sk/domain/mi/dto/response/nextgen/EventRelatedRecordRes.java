@@ -25,11 +25,14 @@ public record EventRelatedRecordRes(
     Integer goodsDataNo,
 
     @Schema(description = "원본 소스 ID", example = "12345")
-    Long sourceObjId
+    Long sourceObjId,
+
+    @Schema(description = "권한 여부", example = "true")
+    Boolean isPermitted
 
 ) {
 
-    public static EventRelatedRecordRes from(EventRecordRow row) {
+    public static EventRelatedRecordRes from(EventRecordRow row, boolean isPermitted) {
         return new EventRelatedRecordRes(
             row.getFirstCreated(),
             row.getRecordType(),
@@ -37,7 +40,8 @@ public record EventRelatedRecordRes(
             row.getSummary(),
             row.getGoodsNo(),
             row.getGoodsDataNo(),
-            row.getSourceObjId()
+            row.getSourceObjId(),
+            isPermitted
         );
     }
 }
