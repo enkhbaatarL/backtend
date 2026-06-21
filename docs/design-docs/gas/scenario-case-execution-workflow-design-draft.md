@@ -3,7 +3,7 @@
 - domain: gas
 - status: draft
 - owner: platform BE
-- updated at: 2026-06-05 (createCase 파일 귀속/보상 처리 결정 반영)
+- updated at: 2026-06-21 (Kubernetes Job 실패 유형별 재시도 정책 반영)
 - role: Scenario Case 업로드, 비동기 실행, 상태 추적, timeout 처리의 backend workflow와 persistence 초안을 정리하는 설계 문서
 
 > 빠른 진입점:
@@ -161,6 +161,21 @@ tcm_filel (공통 파일 내역)
 - 2026-05-22 기준 실행 주체는 Kubernetes Job/model pod로 분리한다. k8s Job 방식에서 backend는 Job 생성 요청 후 비동기 접수 응답을 반환하므로 장시간 모델 실행 동안 backend request thread를 점유하지 않는 방향으로 설계한다.
 - 다만 k8s Job 방식에서도 무제한 병렬 실행을 의미하지 않는다. cluster quota, namespace resource, 모델 pod CPU/memory, Python 내부 병렬도, storage/API 부하를 기준으로 동시 Job 수 제한이 필요한지는 별도 운영 설계에서 검토한다.
 - 기존 설계의 확정 동시성 제약은 동일 case에 대해서만 active `RUNNING` 실행을 하나만 허용하는 것이다.
+
+#### Kubernetes Job Pod 실행 재시도 정책 (2026-06-21 확정)
+
+Job 생성 API 실패와 Job이 생성된 뒤 Pod 실행 실패를 분리해서 다룬다. 현재는 실패 유형과 무관하게 Pod 실행 재시도를 하지 않는다.
+
+| 실패 유형 | 정책 | 구현 전제 |
+|---|---|---|
+| 입력값 오류, 권한 오류, 필수 파일 누락 | 재시도 `0회`. Job을 생성하지 않고 backend 검증 단계에서 거절한다. | backend validation이 해당 오류를 Job 생성 전에 확정해야 한다. |
+| 일시적 인프라 오류 | Job controller 재시도 `0회`. 실패한 run은 즉시 `FAILED`로 확정하고 사용자 또는 운영자가 새 run으로 재실행한다. | 자동 회복보다 중복 실행·비용·실패 확정 지연 방지를 우선한다. |
+| 모델 코드/비즈니스 로직 오류 | Job controller 재시도 `0회`. | 동일 입력의 반복 실행을 방지한다. |
+| 이미지 pull 실패 | Job controller 재시도 `0회`. registry, image tag, `imagePullSecret`, service account 권한을 복구한다. | 무한 `ImagePullBackOff` 관측을 막기 위해 Job/backend timeout을 함께 적용한다. |
+
+- 모든 생성 Job에 `spec.backoffLimit: 0`을 명시한다. `restartPolicy: Never`와 함께 컨테이너 실패 뒤 새 Pod를 생성하지 않는다.
+- 향후 retry를 다시 도입하려면, 모델 이미지의 exit code 계약과 Kubernetes `podFailurePolicy`를 포함한 failure classification을 먼저 확정한다.
+- Job 생성 API의 network/timeout/5xx 재시도는 별도 application 정책이다. 현재 구현에는 없으며, 도입 시 동일 Job 이름의 `409 Conflict`를 이미 생성된 Job으로 확인하는 멱등 처리와 함께 설계한다.
 
 ### 5. 중복 실행 방지
 
@@ -543,6 +558,7 @@ VALUES (
 | 상태 정합성 | execution 완료/실패 시 case 최신 상태도 동기화 | callback 대상이 latest/active execution (`last_run_id = :run_id`) 일 때만 case 최신 상태 갱신 |
 | `last_run_id` invariant | `case_stat_cd` 와 `last_run_id` 가 가리키는 `tmd_mdl_scnrcaseh.exec_stat_cd` 는 항상 같은 terminal/RUNNING 상태여야 한다 | 갱신은 한 transaction 안에서 수행. terminal/timeout 동기화 시 `last_run_id` 자체는 변경하지 않는다 |
 | 실패 추적 | `fail_rsn_cd`, `err_msg_cntt` 기록 | 운영 추적 목적 |
+| Kubernetes Job 재시도 | 모든 Pod 실행 실패에 `backoffLimit: 0` | 자동 재시도 없이 terminal failure로 확정한다. 재실행은 사용자 또는 운영자가 새 run으로 요청한다 |
 | soft delete | case delete는 `tmd_mdl_scnrcasem.del_yn = 'Y'`만 갱신 | phase-1 및 future DB-backed 기본 semantics. `tmd_mdl_scnrcaseh` / `tcm_filel`은 물리 삭제하지 않는다 |
 
 ## Kubernetes Job 실행 설정
@@ -557,11 +573,12 @@ mi:
       image: {registry}/mi-fundamental-model:{tag}
       command: ["python", "engine/run_all_parallel.py"]
       timeout-minutes: 5
+      backoff-limit: 0
       ttl-seconds-after-finished: 3600
 ```
 
 - 세부 값은 운영 환경과 모델 이미지 배포 방식에 맞춰 조정한다.
-- image pull secret, service account/RBAC, object storage credential, callback auth secret, resource requests/limits, retry/backoff, Job TTL은 운영 배포 전 별도 보안/운영 설계에서 확정한다.
+- image pull secret, service account/RBAC, object storage credential, callback auth secret, resource requests/limits, Job TTL은 운영 배포 전 별도 보안/운영 설계에서 확정한다. retry/backoff는 §4의 "Kubernetes Job Pod 실행 재시도 정책"에 따라 `0`으로 고정한다.
 
 ## Open Questions
 
@@ -570,6 +587,7 @@ mi:
 - timeout 5분을 고정값으로 둘지 운영 설정값으로 노출할지 미정이다.
 - soft-deleted case의 보존 기간, audit 조회, 복구 정책은 정해지지 않았다.
 - 재실행 시 별도 retry count 컬럼이 필요한지는 추후 운영 운영 모니터링/SLA 요구가 들어오면 재검토한다.
+- 향후 Pod 실행 재시도를 도입할 경우에만 모델 이미지의 permanent/transient exit code, `podFailurePolicy` 지원 Kubernetes 버전, environment별 `backoffLimit` 값을 사전에 확정한다.
 
 ### Closed Decisions
 
@@ -580,6 +598,7 @@ mi:
 - `run_id` callback 전달 방식 (2026-05-21): callback URL path에 `runId` 를 포함하는 방식으로 확정 (`POST /api/v1/mi/fundamental-model/runs/{runId}/callback`). payload에 별도로 포함하지 않는다.
 - 실행 방식 (2026-05-21): 외부 model API 호출에서 Python `ProcessBuilder` 직접 실행으로 변경. 이 결정은 2026-05-22 k8s Job 방식으로 superseded 되었다.
 - 실행 방식 (2026-05-22): backend는 Kubernetes Job 생성 요청으로 모델 이미지 pod를 실행한다. pod 내부에서 `python engine/run_all_parallel.py` 를 실행하고, 결과를 S3/object storage에 저장한 뒤 backend callback API를 호출한다.
+- Kubernetes Job Pod 실행 재시도 정책 (2026-06-21): 입력/권한/필수 파일 누락은 Job 생성 전 backend가 거절한다. Job 생성 후 모든 Pod 실행 실패(일시적 인프라, 모델 코드, image pull 포함)는 `backoffLimit: 0`으로 자동 재시도하지 않는다. 실패 run은 terminal failure로 확정하며, 재실행은 사용자 또는 운영자가 새 run으로 요청한다. Job 생성 API 재시도는 별도 멱등성 정책으로 남긴다.
 - callback URL 전달 방식 (2026-05-22, updated 2026-05-22): callback URL은 `--callback-url` Job arg로 pod에 전달하는 방식으로 확정한다. backend가 `run_id`를 포함한 전체 callback URL(`{backend_host}/api/v1/mi/fundamental-model/runs/{run_id}/callback`)을 Job 생성 시점에 생성해 주입한다. auth header/signature 규격은 운영 연동 설계에서 확정한다.
 - 파일 타입 구분 방식 (2026-05-21): `tcm_filel`에 별도 파일 타입 컬럼 없음. 파일명의 `DEMAND`/`SUPPLY`/`TRADE` 키워드로 구분. 업로드 시점 검증 추가.
 - 외부 모델 완료 동기화 방식 (2026-05-19): polling 이 아니라 backend callback 호출 방식으로 확정. 자세한 흐름은 본문 §4 와 Callback Idempotency 섹션 참고.
