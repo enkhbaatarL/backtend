@@ -3,7 +3,7 @@
 - domain: gas
 - status: draft for 1st mock implementation
 - owner: platform BE
-- updated at: 2026-06-08 (run/callback DB-backed readiness sync)
+- updated at: 2026-06-21 (Trade Flow value truncation rule sync)
 - canonical design input: [scenario-case-execution-workflow-design-draft.md](../design-docs/gas/scenario-case-execution-workflow-design-draft.md)
 - reference only:
   - Notion `MI Fundamental Model 실행` (`350263ff004c8035b20ef02683447f4b`)
@@ -1172,7 +1172,7 @@ FE는 `latestRun.startedAt`과 `latestRun.finishedAt`으로 소요시간을 계�
 | `fromCountry` | `String` | 수출 국가. `null`이면 지역 집계 |
 | `toRegion` | `FundamentalModelRegion` | 수입 지역. `null`이면 Total 행 |
 | `toCountry` | `String` | 수입 국가. `null`이면 지역 집계. `"Total"`이면 Total 합계 행 |
-| `value` | `Double` | 물량 |
+| `value` | `Double` | 물량. 소수점 다섯째 자리까지 절삭하며, 여섯째 자리에서 반올림하지 않는다 |
 
 **신규 enum:**
 

@@ -91,7 +91,7 @@ public record FundamentalModelTradeFlowsRes(
         @Schema(description = "수입 국가. null이면 지역 집계. Total이면 합계 행", example = "Bangladesh")
         String toCountry,
 
-        @Schema(description = "물량 (MTPA 기준)", example = "0.00177793534133898")
+        @Schema(description = "물량 (MTPA 기준). 소수점 다섯째 자리까지 절삭하며, 여섯째 자리에서 반올림하지 않는다.", example = "0.00177")
         Double value
 
     ) {

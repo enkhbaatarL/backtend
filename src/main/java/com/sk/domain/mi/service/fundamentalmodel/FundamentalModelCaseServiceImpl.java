@@ -62,6 +62,8 @@ import com.sk.domain.shared.repository.master.tmd.projection.ScenarioCaseTradeFl
 import com.sk.domain.shared.repository.master.tmd.projection.ScenarioCaseVolumeRegionBucketRow;
 import com.sk.domain.shared.service.FileService;
 import com.sk.domain.shared.service.permissions.AuthorizationService;
+import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
@@ -111,6 +113,7 @@ public class FundamentalModelCaseServiceImpl implements FundamentalModelCaseServ
     private static final String TRADE_FLOW_AXIS_TO = "TO";
     private static final String TRADE_FLOW_TOTAL_KEY = "TOTAL";
     private static final String TRADE_FLOW_TOTAL_LABEL = "Total";
+    private static final int TRADE_FLOW_VALUE_SCALE = 5;
     private static final List<FundamentalModelPriceRes.PriceColumn> ANNUAL_PRICE_COLUMNS = List.of(
         new FundamentalModelPriceRes.PriceColumn("year", "Year"),
         new FundamentalModelPriceRes.PriceColumn("priceRegion", "Price Region"),
@@ -1159,10 +1162,16 @@ public class FundamentalModelCaseServiceImpl implements FundamentalModelCaseServ
                     row.fromNationName(),
                     parseFundamentalModelRegion(row.toRegionCode()),
                     row.toNationName(),
-                    row.flowValue()
+                    truncateTradeFlowValue(row.flowValue())
                 );
             })
             .toList();
+    }
+
+    private double truncateTradeFlowValue(double value) {
+        return BigDecimal.valueOf(value)
+            .setScale(TRADE_FLOW_VALUE_SCALE, RoundingMode.DOWN)
+            .doubleValue();
     }
 
     private FundamentalModelRegion parseFundamentalModelRegion(String regionCode) {
@@ -1258,11 +1267,11 @@ public class FundamentalModelCaseServiceImpl implements FundamentalModelCaseServ
     ) {
         List<FundamentalModelTradeFlowsRes.TradeFlowItem> totalFlows = new ArrayList<>(flows);
         for (FundamentalModelTradeFlowsRes.TradeCountryHeader toHeader : toCountries) {
-            double rowTotal = flows.stream()
+            BigDecimal rowTotal = flows.stream()
                 .filter(flow -> toHeader.key().equals(flow.toKey()))
-                .mapToDouble(flow -> flow.value() != null ? flow.value() : 0.0)
-                .sum();
-            if (rowTotal != 0) {
+                .map(flow -> BigDecimal.valueOf(flow.value() != null ? flow.value() : 0.0))
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
+            if (rowTotal.signum() != 0) {
                 totalFlows.add(new FundamentalModelTradeFlowsRes.TradeFlowItem(
                     TRADE_FLOW_TOTAL_KEY,
                     toHeader.key(),
@@ -1270,7 +1279,7 @@ public class FundamentalModelCaseServiceImpl implements FundamentalModelCaseServ
                     TRADE_FLOW_TOTAL_LABEL,
                     toHeader.region(),
                     toHeader.country(),
-                    rowTotal
+                    truncateTradeFlowValue(rowTotal.doubleValue())
                 ));
             }
         }
