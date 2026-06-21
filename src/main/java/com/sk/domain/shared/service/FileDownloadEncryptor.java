@@ -1,6 +1,7 @@
 package com.sk.domain.shared.service;
 
 import com.sk.domain.shared.client.FileCryptoApiClient;
+import com.sk.domain.shared.enums.Role;
 import com.sk.domain.shared.service.permissions.AuthorizationService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
@@ -29,6 +30,11 @@ public class FileDownloadEncryptor {
 
     public byte[] encryptForDownloadIfRequired(String fileName, byte[] plainData) {
         if (!fileEncryptionPolicy.isTargetExtension(fileName)) {
+            return plainData;
+        }
+
+        Role role = authorizationService.getCurrentRole();
+        if (Role.USER != role) {
             return plainData;
         }
 
