@@ -434,8 +434,8 @@ public class CustomMiEventRepositoryImpl implements CustomMiEventRepository {
         return queryFactory
             .select(provider.providerNm).distinct()
             .from(miEventRecordMap)
-            .innerJoin(miEventRecordMap.miRecord, miRecord).on(
-                miRecord.recordType.eq("NEWS")
+            .innerJoin(miEventRecordMap.miRecord, miRecord)
+                .on(miRecord.recordType.eq("NEWS")
                     .and(miRecord.isDeleted.isFalse()))
             .innerJoin(newsSummary)
                 .on(newsSummary.newsSummaryId.eq(miRecord.sourceObjId)
@@ -457,11 +457,11 @@ public class CustomMiEventRepositoryImpl implements CustomMiEventRepository {
         return queryFactory
             .select(provider.providerNm).distinct()
             .from(miEventRecordMap)
-            .innerJoin(miEventRecordMap.miRecord, miRecord).on(
-                miRecord.recordType.ne("NEWS")
+            .innerJoin(miEventRecordMap.miRecord, miRecord)
+                .on(miRecord.recordType.ne("NEWS")
                     .and(miRecord.isDeleted.isFalse()))
             .innerJoin(goodsDataFileSummary)
-                .on(goodsDataFileSummary.goodsDataSummaryNo.castToNum(Long.class).eq(miRecord.sourceObjId)
+                .on(goodsDataFileSummary.goodsDataSummaryNo.eq(miRecord.sourceObjId.castToNum(Integer.class))
                     .and(goodsDataFileSummary.isDeleted.isFalse()))
             .innerJoin(goodsDataFileSummary.goodsData, goodsData).on(goodsData.isDeleted.isFalse())
             .innerJoin(goods).on(goods.eq(goodsData.goods)
