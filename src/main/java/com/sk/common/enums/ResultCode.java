@@ -54,6 +54,7 @@ public class ResultCode {
         // BIZ_DATA_INTEGRITY("BIZ-002", "The operation would violate data integrity."),
         // BIZ_STATE_CONFLICT("BIZ-003", "The operation cannot be performed in the current state."),
         // BIZ_VALIDATION_FAILED("BIZ-004", "Business validation failed."),
+        BIZ_DESIGN_OCCUPIED("BIZ-005", "The event is currently occupied for scenario design."), // 이벤트 설계 점유 충돌
 
         // API: 외부 시스템 및 서비스 관련 오류
         API_CALL_FAILED("API-001", "An external API call has failed."),

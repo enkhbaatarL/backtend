@@ -10,6 +10,7 @@ import com.sk.domain.mi.dto.request.nextgen.design.ScenarioValidationReq;
 import com.sk.domain.mi.dto.response.nextgen.ScenarioDimensionColumnRes;
 import com.sk.domain.mi.dto.response.nextgen.ScenarioSignpostDefinitionViewRes;
 import com.sk.domain.mi.dto.response.nextgen.design.*;
+import com.sk.domain.mi.service.nextgen.design.EventDesignLockStore;
 import com.sk.domain.mi.service.nextgen.design.ScenarioDesignFailureStore;
 import com.sk.domain.mi.service.nextgen.design.ScenarioDesignValidationStore;
 import com.sk.domain.mi.service.nextgen.support.ScenarioDesignTableMapper;
@@ -53,18 +54,40 @@ public class ScenarioDesignServiceImpl implements ScenarioDesignService {
     private final MiScenarioGroupRepository scenarioGroupRepository;
     private final ScenarioDesignValidationStore validationStore;
     private final ScenarioDesignFailureStore failureStore;
+    private final EventDesignLockStore eventDesignLockStore;
     private final ScenarioDesignAgentApi scenarioDesignAgentApi;
     private final AuthorizationService authorizationService;
 
     /**
      * [설계 시작] Agent 바이패스
      *  - 그룹/시나리오 생성 및 DB 적재는 Agent가 수행
+     *  - 점유 가드 2단:
+     *    1. Redis NX 락 — 같은 이벤트 동시 설계 시작의 경쟁 창(DB row 생기기 전)을 직렬화
+     *    2. DB 활성그룹 선검사 — 이미 점유된 이벤트의 재시작을 BE에서 차단(순차 호출 대비)
+     *  - 락은 이 호출 동안만 보유하고 finally에서 즉시 해제 -> 그룹 생성 이후의 점유 지속/해제는 DB(scenarioDesignStatus)가 인계
      */
     @Override
     public ScenarioDesignStageRes startDesign(ScenarioDesignStartReq request) {
         Long userId = authorizationService.getUserNo().longValue();
-        ScenarioDesignAgentRes res = callAgent(() -> scenarioDesignAgentApi.createScenarioGroup(ScenarioGroupCreateAgentReq.of(request.miEventId(), userId)), "startDesign");
-        return toStageRes(res);
+        Long miEventId = request.miEventId();
+
+        String lockToken = eventDesignLockStore.tryAcquire(miEventId)
+            .orElseThrow(() -> AppErrorException.of(ResultCode.Error.BIZ_DESIGN_OCCUPIED, "다른 사용자가 설계를 시작하고 있습니다. (eventId=%d)".formatted(miEventId)));
+
+        try {
+
+            if (scenarioGroupRepository.existsByMiEvent_MiEventIdAndIsDeletedFalse(miEventId)) {
+                throw AppErrorException.of(ResultCode.Error.BIZ_DESIGN_OCCUPIED, "이미 설계 중이거나 완료된 이벤트입니다. (eventId=%d)".formatted(miEventId));
+            }
+
+            ScenarioDesignAgentRes res = callAgent(() -> scenarioDesignAgentApi.createScenarioGroup(ScenarioGroupCreateAgentReq.of(miEventId, userId)), "startDesign");
+            return toStageRes(res);
+
+        } finally {
+            // lock 해제
+            eventDesignLockStore.release(miEventId, lockToken);
+        }
+
     }
 
     /**
