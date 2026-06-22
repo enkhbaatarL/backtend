@@ -60,7 +60,7 @@ public class ScenarioGroupServiceImpl implements ScenarioGroupService {
 
     /**
      * [그룹 모드 목록]
-     * - 최신순 정렬/기간 필터 모두 그룹 수정일시(modify_dt) 기준
+     * - 최신순 정렬/기간 필터 모두 그룹 생성일시(create_dt) 기준
      * - adjustedProbability는 조회 시점 계산값(비영속) - 폐기 제외 비례 재분배로 활성 시나리오 합 100, 폐기는 0
      */
     @Override
@@ -107,7 +107,7 @@ public class ScenarioGroupServiceImpl implements ScenarioGroupService {
 
     /**
      * [개별 모드 목록]
-     * - 최신순 정렬/기간 필터 모두 시나리오 수정일시(modify_dt) 기준
+     * - 최신순 정렬/기간 필터 모두 시나리오 생성일시(create_dt) 기준
      * - adjustedProbability는 그룹 단위 계산이라, 페이지에 걸린 그룹들의 시나리오 전체를 일괄 조회해 재분배
      */
     @Override

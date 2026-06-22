@@ -20,10 +20,10 @@ public record ScenarioIndividualItemRes(
     @Schema(description = "BC(Base Case) 여부", example = "false")
     boolean baseCase,
 
-    @Schema(description = "시나리오 생성일시")
+    @Schema(description = "시나리오 생성일시 (최신순 정렬·기간 필터 기준)")
     LocalDateTime createdAt,
 
-    @Schema(description = "시나리오 수정일시 (최신순 정렬·기간 필터 기준)")
+    @Schema(description = "시나리오 수정일시")
     LocalDateTime updatedAt,
 
     @Schema(description = "부모 시나리오 그룹")
