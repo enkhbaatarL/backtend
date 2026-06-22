@@ -27,7 +27,7 @@ public class CmeBenchmarkServiceImpl implements CmeBenchmarkService {
     /** 표출 종료 연도 (기획서: 현재 연도 ~ 2030년). */
     private static final int END_YEAR = 2030;
     /** 연차트 평균 소수 자릿수. */
-    private static final int YEARLY_AVG_SCALE = 2;
+    private static final int YEARLY_AVG_SCALE = 5;
 
     private final CmeBenchmarkMapper cmeBenchmarkMapper;
 
