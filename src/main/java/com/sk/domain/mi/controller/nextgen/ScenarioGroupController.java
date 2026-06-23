@@ -156,6 +156,7 @@ public class ScenarioGroupController {
               - `executed`: 수급모델 실행 완료 여부 (최신 완료 실행의 가격 결과 존재)
               - `modelRunning`: 수급모델 실행중 여부 (RUNNING 케이스 존재). executed와 독립 — 재실행 중엔 둘 다 true
               - `baseCaseValues` / `userAdjustedValues`: 베이스케이스/사용자조정 가격 (최신 완료 결과, 재실행 중에도 직전 결과 유지)
+            - 모든 가격 값(baseSeries/scenarioSeries)은 **소수 2자리 반올림(HALF_UP)** 으로 표기됩니다.
             """
     )
     @Parameter(name = "indexName", description = "조회 인덱스 (JKM / TTF / HH). 기본값 JKM")

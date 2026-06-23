@@ -9,6 +9,7 @@ import com.sk.domain.shared.repository.master.tmm.projection.ScenarioBaseRow;
 import io.swagger.v3.oas.annotations.media.ArraySchema;
 import io.swagger.v3.oas.annotations.media.Schema;
 import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -59,6 +60,8 @@ public record ScenarioGroupGraphRes(
     private static final String UNIT = "MMBtu";
     private static final String MI_BASE_SERIES_ID = "MI_BASE";
     private static final String MI_BASE_SERIES_NAME = "MI Base";
+    /** 화면 및 엑셀 표기 가격 자릿수 (소수 2자리, 반올림). */
+    private static final int PRICE_SCALE = 2;
 
     public static ScenarioGroupGraphRes of(Long scenarioGroupId, IndexName indexName, GraphPeriodUnit periodUnit, List<ScenarioBaseRow> scenarios, List<ScenarioPriceRow> prices, Set<Long> runningScenarioIds, List<MiBasePriceRow> miBasePrices) {
 
@@ -98,10 +101,15 @@ public record ScenarioGroupGraphRes(
         if (miBasePrices != null && !miBasePrices.isEmpty()) {
             Map<String, BigDecimal> valueByPeriodKey = miBasePrices.stream()
                 .collect(Collectors.toMap(MiBasePriceRow::periodKey, MiBasePriceRow::baseCasePrice, (a, b) -> a));
-            List<BigDecimal> values = periodKeys.stream().map(valueByPeriodKey::get).toList();
+            List<BigDecimal> values = periodKeys.stream().map(valueByPeriodKey::get).map(ScenarioGroupGraphRes::scalePrice).toList();
             baseSeries.add(new BaseSeries(MI_BASE_SERIES_ID, MI_BASE_SERIES_NAME, values));
         }
         return baseSeries;
+    }
+
+    /** 화면·엑셀 표기용 가격 정규화 — 소수 2자리 반올림(HALF_UP). null은 그대로. */
+    private static BigDecimal scalePrice(BigDecimal value) {
+        return value == null ? null : value.setScale(PRICE_SCALE, RoundingMode.HALF_UP);
     }
 
     /**
@@ -214,7 +222,7 @@ public record ScenarioGroupGraphRes(
             return periodKeys.stream()
                 .map(periodKey -> {
                     ScenarioPriceRow row = priceByPeriodKey.get(periodKey);
-                    return row == null ? null : extractor.apply(row);
+                    return row == null ? null : scalePrice(extractor.apply(row));
                 })
                 .toList();
         }

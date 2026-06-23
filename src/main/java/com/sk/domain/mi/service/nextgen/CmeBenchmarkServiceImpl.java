@@ -26,8 +26,8 @@ public class CmeBenchmarkServiceImpl implements CmeBenchmarkService {
 
     /** 표출 종료 연도 (기획서: 현재 연도 ~ 2030년). */
     private static final int END_YEAR = 2030;
-    /** 연차트 평균 소수 자릿수. */
-    private static final int YEARLY_AVG_SCALE = 5;
+    /** 화면·엑셀 표기 가격 자릿수 (소수 2자리, 반올림). */
+    private static final int PRICE_SCALE = 2;
 
     private final CmeBenchmarkMapper cmeBenchmarkMapper;
 
@@ -71,13 +71,18 @@ public class CmeBenchmarkServiceImpl implements CmeBenchmarkService {
         }
     }
 
-    /** 월별 — value_month(YYYY-MM) 그대로 기간키. SQL이 이미 오름차순. */
+    /** 월별 — value_month(YYYY-MM) 그대로 기간키, 값은 소수 2자리 반올림. SQL이 이미 오름차순. */
     private Map<String, BigDecimal> toMonthlyMap(List<CmeBenchmarkPriceRow> rows) {
         Map<String, BigDecimal> map = new LinkedHashMap<>();
         for (CmeBenchmarkPriceRow row : rows) {
-            map.put(row.getValueMonth(), row.getIndexValue());
+            map.put(row.getValueMonth(), scalePrice(row.getIndexValue()));
         }
         return map;
+    }
+
+    /** 화면 및 엑셀 표기용 가격 정규화 — 소수 2자리 반올림(HALF_UP). null은 그대로. */
+    private static BigDecimal scalePrice(BigDecimal value) {
+        return value == null ? null : value.setScale(PRICE_SCALE, RoundingMode.HALF_UP);
     }
 
     /** 연도별 — 연(YYYY) 단위 월값 평균 (현업 확정: 월평균 = 연도값). */
@@ -91,7 +96,7 @@ public class CmeBenchmarkServiceImpl implements CmeBenchmarkService {
         Map<String, BigDecimal> avgByYear = new LinkedHashMap<>();
         valuesByYear.forEach((year, values) -> {
             BigDecimal sum = values.stream().reduce(BigDecimal.ZERO, BigDecimal::add);
-            avgByYear.put(year, sum.divide(BigDecimal.valueOf(values.size()), YEARLY_AVG_SCALE, RoundingMode.HALF_UP));
+            avgByYear.put(year, sum.divide(BigDecimal.valueOf(values.size()), PRICE_SCALE, RoundingMode.HALF_UP));
         });
         return avgByYear;
     }
