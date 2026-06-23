@@ -1163,7 +1163,7 @@ Dispatch accept response:
 
 ## 7.9 Risks / Open Questions
 
-- timeout 임계 시간과 scheduler 주기
+- timeout 정책은 workflow canonical source를 따른다: DB `NOW()` 기준 10분, 30초 `fixedDelay`, `SCENARIO`/`INDEPENDENT` 대상. scheduler는 지정 dedicated namespace의 단일 Backend Deployment에만 enable property로 등록한다. 상세 운영 규칙은 [scenario-case-execution-workflow-design-draft.md](../design-docs/gas/scenario-case-execution-workflow-design-draft.md) §6을 따른다.
 - Job dispatch 실패 시 transaction 경계와 파일 보상 범위
 - callback 완료 전 결과 row 존재를 backend가 검증할지 여부
 

@@ -20,6 +20,7 @@ import com.sk.domain.mi.dto.response.fundamentalmodel.FundamentalModelCaseListIt
 import com.sk.domain.mi.dto.response.fundamentalmodel.FundamentalModelCaseListRes;
 import com.sk.domain.mi.dto.response.fundamentalmodel.FundamentalModelCaseStatusRes;
 import com.sk.domain.mi.dto.response.fundamentalmodel.FundamentalModelDownloadFileRes;
+import com.sk.domain.mi.dto.response.fundamentalmodel.FundamentalModelFiveScaleTruncatingNumberSerializer;
 import com.sk.domain.mi.dto.response.fundamentalmodel.FundamentalModelPriceRes;
 import com.sk.domain.mi.dto.response.fundamentalmodel.FundamentalModelRunAcceptRes;
 import com.sk.domain.mi.dto.response.fundamentalmodel.FundamentalModelRunCallbackRes;
@@ -63,7 +64,6 @@ import com.sk.domain.shared.repository.master.tmd.projection.ScenarioCaseVolumeR
 import com.sk.domain.shared.service.FileService;
 import com.sk.domain.shared.service.permissions.AuthorizationService;
 import java.math.BigDecimal;
-import java.math.RoundingMode;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
@@ -103,6 +103,7 @@ public class FundamentalModelCaseServiceImpl implements FundamentalModelCaseServ
     private static final String CALLBACK_ACTOR = "SYSTEM";
     private static final String JOB_SUBMIT_FAILURE_REASON = "JOB_SUBMIT_FAILED";
     private static final String CALLBACK_PATH_TEMPLATE = "/api/v1/mi/fundamental-model/runs/%s/callback";
+    private static final String FUNDAMENTAL_MODEL_CASE_NOT_FOUND_MESSAGE = "fundamental model case not found. caseId: %d";
     private static final String PERIOD_UNIT_YEAR = "Y";
     private static final String PERIOD_UNIT_MONTH = "M";
     private static final int VOLUMES_JSON_SCHEMA_VERSION = 1;
@@ -112,8 +113,7 @@ public class FundamentalModelCaseServiceImpl implements FundamentalModelCaseServ
     private static final String TRADE_FLOW_AXIS_FROM = "FROM";
     private static final String TRADE_FLOW_AXIS_TO = "TO";
     private static final String TRADE_FLOW_TOTAL_KEY = "TOTAL";
-    private static final String TRADE_FLOW_TOTAL_LABEL = "Total";
-    private static final int TRADE_FLOW_VALUE_SCALE = 5;
+    private static final String TOTAL_LABEL = "Total";
     private static final List<FundamentalModelPriceRes.PriceColumn> ANNUAL_PRICE_COLUMNS = List.of(
         new FundamentalModelPriceRes.PriceColumn("year", "Year"),
         new FundamentalModelPriceRes.PriceColumn("priceRegion", "Price Region"),
@@ -219,11 +219,12 @@ public class FundamentalModelCaseServiceImpl implements FundamentalModelCaseServ
     @Override
     @Transactional(readOnly = true)
     public FundamentalModelCaseDetailRes getCaseDetail(Long caseId) {
+        return getCaseDetailInternal(caseId);
+    }
+
+    private FundamentalModelCaseDetailRes getCaseDetailInternal(Long caseId) {
         ScenarioCaseDetailRow caseRow = scenarioCaseRepository.findDetailRow(caseId)
-            .orElseThrow(() -> AppErrorException.of(
-                ResultCode.Error.RSC_NOT_FOUND,
-                "fundamental model case not found. caseId: %d".formatted(caseId)
-            ));
+            .orElseThrow(() -> caseNotFound(caseId));
 
         List<FundamentalModelDownloadFileRes> inputFiles = findDownloadFiles(
             caseId,
@@ -251,7 +252,7 @@ public class FundamentalModelCaseServiceImpl implements FundamentalModelCaseServ
     @Transactional
     public FundamentalModelCaseDetailRes updateCase(Long caseId, FundamentalModelCaseUpdateReq request) {
         String normalizedTitle = validateAndNormalizeTitle(request == null ? null : request.title());
-        String description = request == null ? null : request.description();
+        String description = request.description();
         ScenarioCase scenarioCase = findActiveOwnedCase(caseId);
 
         scenarioCase.updateMetadata(
@@ -261,7 +262,7 @@ public class FundamentalModelCaseServiceImpl implements FundamentalModelCaseServ
         );
         scenarioCaseRepository.flush();
 
-        return getCaseDetail(caseId);
+        return getCaseDetailInternal(caseId);
     }
 
     @Override
@@ -299,6 +300,11 @@ public class FundamentalModelCaseServiceImpl implements FundamentalModelCaseServ
                 ResultCode.Error.RSC_NOT_FOUND,
                 "fundamental model run_seq not found after insert. runId: %s".formatted(runId)
             ));
+        LocalDateTime executionBeginDt = scenarioCaseRunHistoryRepository.findExecutionBeginDtByRunId(runId)
+            .orElseThrow(() -> AppErrorException.of(
+                ResultCode.Error.RSC_NOT_FOUND,
+                "fundamental model execution begin time not found after insert. runId: %s".formatted(runId)
+            ));
         FundamentalModelJobArgs jobArgs = buildJobArgs(caseId, runId, runSeq);
         submitJobAfterCommit(caseId, runId, jobArgs);
 
@@ -307,7 +313,7 @@ public class FundamentalModelCaseServiceImpl implements FundamentalModelCaseServ
             runId,
             FundamentalModelRunStatus.RUNNING,
             runHistory.getCreateDt(),
-            runHistory.getExecutionBeginDt(),
+            executionBeginDt,
             buildStatusEndpoint(caseId)
         );
     }
@@ -560,15 +566,9 @@ public class FundamentalModelCaseServiceImpl implements FundamentalModelCaseServ
 
     private void handleRunClaimFailure(Long caseId) {
         ScenarioCase scenarioCase = scenarioCaseRepository.findById(caseId)
-            .orElseThrow(() -> AppErrorException.of(
-                ResultCode.Error.RSC_NOT_FOUND,
-                "fundamental model case not found. caseId: %d".formatted(caseId)
-            ));
+            .orElseThrow(() -> caseNotFound(caseId));
         if (Boolean.TRUE.equals(scenarioCase.getIsDeleted())) {
-            throw AppErrorException.of(
-                ResultCode.Error.RSC_NOT_FOUND,
-                "fundamental model case not found. caseId: %d".formatted(caseId)
-            );
+            throw caseNotFound(caseId);
         }
         if (scenarioCase.getStatus() == FundamentalModelCaseStatus.RUNNING) {
             throw AppErrorException.of(
@@ -876,7 +876,7 @@ public class FundamentalModelCaseServiceImpl implements FundamentalModelCaseServ
 
         String country = rowNode.path("country").isNull() ? null : rowNode.path("country").asText(null);
         VolumesRowKind rowKind = country == null ? VolumesRowKind.REGION_SUBTOTAL : VolumesRowKind.COUNTRY;
-        if (rowKind == VolumesRowKind.COUNTRY && country.isBlank()) {
+        if (country != null && country.isBlank()) {
             throw invalidVolumeData(
                 "fundamental model volume country row has blank country. type=%s, region=%s"
                     .formatted(dataType.getCode(), region.getCode())
@@ -901,7 +901,7 @@ public class FundamentalModelCaseServiceImpl implements FundamentalModelCaseServ
                         .formatted(dataType.getCode(), region.getCode(), periodKey)
                 );
             }
-            values.put(periodKey, valueNode.asDouble());
+            values.put(periodKey, FundamentalModelFiveScaleTruncatingNumberSerializer.truncate(valueNode.decimalValue()));
         }
 
         return new ParsedVolumeRow(
@@ -923,62 +923,13 @@ public class FundamentalModelCaseServiceImpl implements FundamentalModelCaseServ
         List<FundamentalModelVolumesRes.VolumesRow> responseRows = new ArrayList<>();
 
         for (FundamentalModelDataType type : appliedTypes) {
-            Map<String, Double> typeTotals = null;
-            boolean hasTypeRows = false;
-
-            for (FundamentalModelRegion region : appliedRegions) {
-                ParsedVolumeBucket bucket = buckets.get(new VolumeBucketKey(type, region));
-                if (bucket == null) {
-                    continue;
-                }
-                if (responsePeriodKeys == null) {
-                    responsePeriodKeys = bucket.periodKeys();
-                } else if (!responsePeriodKeys.equals(bucket.periodKeys())) {
-                    throw invalidVolumeData(
-                        "fundamental model volume bucket periodKeys mismatch. type=%s, region=%s"
-                            .formatted(type.getCode(), region.getCode())
-                    );
-                }
-                if (typeTotals == null) {
-                    typeTotals = zeroValues(responsePeriodKeys);
-                }
-
-                ParsedVolumeRow subtotalRow = null;
-                List<ParsedVolumeRow> countryRows = new ArrayList<>();
-                for (ParsedVolumeRow row : bucket.rows()) {
-                    if (row.rowKind() == VolumesRowKind.REGION_SUBTOTAL) {
-                        subtotalRow = row;
-                    } else if (row.rowKind() == VolumesRowKind.COUNTRY) {
-                        countryRows.add(row);
-                    }
-                }
-                if (subtotalRow == null) {
-                    throw invalidVolumeData(
-                        "fundamental model volume bucket has no REGION_SUBTOTAL row. type=%s, region=%s"
-                            .formatted(type.getCode(), region.getCode())
-                    );
-                }
-
-                responseRows.add(toVolumeResponseRow(type, region, subtotalRow, responsePeriodKeys));
-                addValues(typeTotals, subtotalRow.values());
-                hasTypeRows = true;
-                for (ParsedVolumeRow countryRow : countryRows) {
-                    responseRows.add(toVolumeResponseRow(type, region, countryRow, responsePeriodKeys));
-                }
-            }
-
-            if (!hasTypeRows) {
-                continue;
-            }
-            responseRows.add(new FundamentalModelVolumesRes.VolumesRow(
+            responsePeriodKeys = appendTypeVolumeRows(
                 type,
-                type.getLabel(),
-                null,
-                null,
-                VolumesRowKind.TYPE_TOTAL,
-                "Total",
-                toResponseValues(typeTotals, responsePeriodKeys)
-            ));
+                appliedRegions,
+                buckets,
+                responsePeriodKeys,
+                responseRows
+            );
         }
 
         if (responsePeriodKeys == null) {
@@ -994,6 +945,82 @@ public class FundamentalModelCaseServiceImpl implements FundamentalModelCaseServ
             toVolumeColumns(granularity, responsePeriodKeys),
             List.copyOf(responseRows)
         );
+    }
+
+    private List<String> appendTypeVolumeRows(
+        FundamentalModelDataType type,
+        List<FundamentalModelRegion> appliedRegions,
+        Map<VolumeBucketKey, ParsedVolumeBucket> buckets,
+        List<String> responsePeriodKeys,
+        List<FundamentalModelVolumesRes.VolumesRow> responseRows
+    ) {
+        Map<String, Double> typeTotals = null;
+        for (FundamentalModelRegion region : appliedRegions) {
+            ParsedVolumeBucket bucket = buckets.get(new VolumeBucketKey(type, region));
+            if (bucket == null) {
+                continue;
+            }
+            responsePeriodKeys = resolveResponsePeriodKeys(responsePeriodKeys, bucket, type, region);
+            if (typeTotals == null) {
+                typeTotals = zeroValues(responsePeriodKeys);
+            }
+            appendVolumeBucketRows(type, region, bucket, responsePeriodKeys, typeTotals, responseRows);
+        }
+        if (typeTotals == null) {
+            return responsePeriodKeys;
+        }
+        responseRows.add(new FundamentalModelVolumesRes.VolumesRow(
+            type,
+            type.getLabel(),
+            null,
+            null,
+            VolumesRowKind.TYPE_TOTAL,
+            TOTAL_LABEL,
+            toResponseValues(typeTotals, responsePeriodKeys)
+        ));
+        return responsePeriodKeys;
+    }
+
+    private List<String> resolveResponsePeriodKeys(
+        List<String> responsePeriodKeys,
+        ParsedVolumeBucket bucket,
+        FundamentalModelDataType type,
+        FundamentalModelRegion region
+    ) {
+        if (responsePeriodKeys == null) {
+            return bucket.periodKeys();
+        }
+        if (!responsePeriodKeys.equals(bucket.periodKeys())) {
+            throw invalidVolumeData(
+                "fundamental model volume bucket periodKeys mismatch. type=%s, region=%s"
+                    .formatted(type.getCode(), region.getCode())
+            );
+        }
+        return responsePeriodKeys;
+    }
+
+    private void appendVolumeBucketRows(
+        FundamentalModelDataType type,
+        FundamentalModelRegion region,
+        ParsedVolumeBucket bucket,
+        List<String> responsePeriodKeys,
+        Map<String, Double> typeTotals,
+        List<FundamentalModelVolumesRes.VolumesRow> responseRows
+    ) {
+        ParsedVolumeRow subtotalRow = bucket.rows().stream()
+            .filter(row -> row.rowKind() == VolumesRowKind.REGION_SUBTOTAL)
+            .findFirst()
+            .orElseThrow(() -> invalidVolumeData(
+                "fundamental model volume bucket has no REGION_SUBTOTAL row. type=%s, region=%s"
+                    .formatted(type.getCode(), region.getCode())
+            ));
+
+        responseRows.add(toVolumeResponseRow(type, region, subtotalRow, responsePeriodKeys));
+        addValues(typeTotals, subtotalRow.values());
+        bucket.rows().stream()
+            .filter(row -> row.rowKind() == VolumesRowKind.COUNTRY)
+            .map(row -> toVolumeResponseRow(type, region, row, responsePeriodKeys))
+            .forEach(responseRows::add);
     }
 
     private FundamentalModelVolumesRes emptyVolumesResponse(
@@ -1024,7 +1051,12 @@ public class FundamentalModelCaseServiceImpl implements FundamentalModelCaseServ
 
     private void addValues(Map<String, Double> totals, Map<String, Double> values) {
         for (Map.Entry<String, Double> entry : values.entrySet()) {
-            totals.compute(entry.getKey(), (ignored, value) -> (value == null ? 0.0 : value) + entry.getValue());
+            totals.compute(
+                entry.getKey(),
+                (ignored, value) -> FundamentalModelFiveScaleTruncatingNumberSerializer.truncate(
+                    BigDecimal.valueOf(value == null ? 0.0 : value).add(BigDecimal.valueOf(entry.getValue()))
+                )
+            );
         }
     }
 
@@ -1162,16 +1194,10 @@ public class FundamentalModelCaseServiceImpl implements FundamentalModelCaseServ
                     row.fromNationName(),
                     parseFundamentalModelRegion(row.toRegionCode()),
                     row.toNationName(),
-                    truncateTradeFlowValue(row.flowValue())
+                    FundamentalModelFiveScaleTruncatingNumberSerializer.truncate(row.flowValue())
                 );
             })
             .toList();
-    }
-
-    private double truncateTradeFlowValue(double value) {
-        return BigDecimal.valueOf(value)
-            .setScale(TRADE_FLOW_VALUE_SCALE, RoundingMode.DOWN)
-            .doubleValue();
     }
 
     private FundamentalModelRegion parseFundamentalModelRegion(String regionCode) {
@@ -1253,10 +1279,10 @@ public class FundamentalModelCaseServiceImpl implements FundamentalModelCaseServ
         List<FundamentalModelTradeFlowsRes.TradeCountryHeader> result = new ArrayList<>(fromCountries);
         result.add(new FundamentalModelTradeFlowsRes.TradeCountryHeader(
             TRADE_FLOW_TOTAL_KEY,
-            TRADE_FLOW_TOTAL_LABEL,
+            TOTAL_LABEL,
             TradeCountryHeaderKind.GRAND_TOTAL,
             null,
-            TRADE_FLOW_TOTAL_LABEL
+            TOTAL_LABEL
         ));
         return List.copyOf(result);
     }
@@ -1276,10 +1302,10 @@ public class FundamentalModelCaseServiceImpl implements FundamentalModelCaseServ
                     TRADE_FLOW_TOTAL_KEY,
                     toHeader.key(),
                     null,
-                    TRADE_FLOW_TOTAL_LABEL,
+                    TOTAL_LABEL,
                     toHeader.region(),
                     toHeader.country(),
-                    truncateTradeFlowValue(rowTotal.doubleValue())
+                    FundamentalModelFiveScaleTruncatingNumberSerializer.truncate(rowTotal)
                 ));
             }
         }
@@ -1553,22 +1579,23 @@ public class FundamentalModelCaseServiceImpl implements FundamentalModelCaseServ
         // SCENARIO / MI_BASE 케이스는 active resource hiding 규칙에 따라 404 처리한다.
         return scenarioCaseRepository.findByCaseIdAndIsDeletedFalse(caseId)
             .filter(scenarioCase -> scenarioCase.getExecType() == FundamentalModelExecType.INDEPENDENT)
-            .orElseThrow(() -> AppErrorException.of(
-                ResultCode.Error.RSC_NOT_FOUND,
-                "fundamental model case not found. caseId: %d".formatted(caseId)
-            ));
+            .orElseThrow(() -> caseNotFound(caseId));
     }
 
     private ScenarioCase findActiveOwnedCase(Long caseId) {
         ScenarioCase scenarioCase = findActiveCase(caseId);
         Integer actorUserNo = authorizationService.getUserNo();
         if (!scenarioCase.getUserNo().equals(actorUserNo)) {
-            throw AppErrorException.of(
-                ResultCode.Error.RSC_NOT_FOUND,
-                "fundamental model case not found. caseId: %d".formatted(caseId)
-            );
+            throw caseNotFound(caseId);
         }
         return scenarioCase;
+    }
+
+    private AppErrorException caseNotFound(Long caseId) {
+        return AppErrorException.of(
+            ResultCode.Error.RSC_NOT_FOUND,
+            FUNDAMENTAL_MODEL_CASE_NOT_FOUND_MESSAGE.formatted(caseId)
+        );
     }
 
     private void validateFiles(List<MultipartFile> files) {

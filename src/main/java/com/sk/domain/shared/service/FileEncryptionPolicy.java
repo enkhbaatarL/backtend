@@ -11,8 +11,13 @@ public class FileEncryptionPolicy {
 
     private final FileEncryptionProperties properties;
 
+    /** 전역 사용 여부 */
+    public boolean isEnabled() {
+        return properties.isEnabled();
+    }
+
     public boolean isEnabled(String companyCd, String fileName) {
-        return isEnabledCompany(companyCd) && isTargetExtension(fileName);
+        return isEnabled() && isEnabledCompany(companyCd) && isTargetExtension(fileName);
     }
 
     public boolean isEnabledCompany(String companyCd) {

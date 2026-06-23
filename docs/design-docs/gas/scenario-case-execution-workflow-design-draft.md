@@ -3,7 +3,7 @@
 - domain: gas
 - status: draft
 - owner: platform BE
-- updated at: 2026-06-21 (Kubernetes Job 실패 유형별 재시도 정책 반영)
+- updated at: 2026-06-22 (timeout scheduler execution-type scope 결정 반영)
 - role: Scenario Case 업로드, 비동기 실행, 상태 추적, timeout 처리의 backend workflow와 persistence 초안을 정리하는 설계 문서
 
 > 빠른 진입점:
@@ -205,9 +205,15 @@ WHERE case_id = :case_id
 
 ### 6. timeout 처리
 
-- scheduler가 주기적으로 `RUNNING` 이면서 시작 시각이 임계치를 넘긴 실행을 찾아 `FAILED/TIMEOUT` 으로 전환한다.
-- 아직 구현된 scheduler query는 없으며, 아래 인덱스/EXPLAIN 검토는 expected query shape 기준의 DB-backed rollout 검증 항목이다.
-- timeout 기준은 현재 문서에서는 5분 가정으로 두되, 운영 설정값화 여부는 open question으로 유지한다.
+- timeout scheduler 대상은 `tmd_mdl_scnrcasem.exec_type_cd IN ('SCENARIO', 'INDEPENDENT')` 의 `RUNNING` execution이다 (2026-06-22). `MI_BASE` 는 이번 timeout scheduler 범위에서 제외한다.
+- timeout 판정은 DB 시각 기준 `exec_bgn_dtm < NOW() - INTERVAL 10 MINUTE` 이다 (2026-06-22). `exec_bgn_dtm`은 DB `CURRENT_TIMESTAMP` default로 생성하며 application server 시각은 시작·판정 기준으로 사용하지 않는다.
+- scheduler는 `fixedDelay = 30초`로 실행한다 (2026-06-22).
+- timeout scheduler는 SKGAS dedicated Backend 인스턴스에만 `MODEL_EXECUTION_TIMEOUT_SCHEDULER_ENABLED=true`를 설정해 등록한다 (2026-06-22). 이 환경변수는 `features.scheduling.model-execution-timeout.enabled`에 매핑되며, 모든 다른 Backend 인스턴스와 dedicated Backend Deployment의 기본값은 `false`다.
+- 지정 namespace에는 Backend replica가 정확히 1개여야 한다. 이 정책은 Pod 이름이 아니라 Deployment/namespace configuration을 기준으로 하므로 Pod 재생성으로 이름이 바뀌어도 유지된다. 해당 Deployment의 replica 수를 늘리거나 HPA를 적용하면 scheduler가 중복 등록되므로 금지한다.
+- namespace 식별자가 필요하면 Kubernetes Downward API의 `metadata.namespace`를 `POD_NAMESPACE` 환경변수로 주입해 startup log/health 정보에 기록할 수 있지만, scheduler selection 자체에 Pod 이름은 사용하지 않는다.
+- scheduler가 대상 중 임계치를 넘긴 실행을 찾아 `FAILED/TIMEOUT` 으로 전환한다.
+- scheduler는 `exec_bgn_dtm` 오래된 순으로 최대 100건을 한 cycle에 처리한다. 남은 대상은 다음 30초 cycle에서 처리한다. 각 run은 독립 transaction에서 DB `CURRENT_TIMESTAMP`를 읽고, `RUNNING` compare-and-set과 `last_run_id = :run_id` case 동기화를 함께 수행한다. 한 run의 실패는 다른 후보의 전이를 rollback하지 않는다.
+- timeout query와 index의 실제 사용은 DBA rollout 전 `EXPLAIN`으로 검증한다.
 
 ### 7. 파일 저장은 `tcm_filel` 재사용
 
@@ -342,10 +348,10 @@ affected row count가 `0`이면 case 없음, ownership 불일치, 또는 이미 
 
 ### Stage 5. timeout 정리
 
-1. scheduler가 주기적으로 장시간 `RUNNING` execution을 조회한다.
+1. scheduler-enabled dedicated namespace의 단일 Backend replica가 30초 `fixedDelay`로 `exec_type_cd IN ('SCENARIO', 'INDEPENDENT')`, `exec_stat_cd = 'RUNNING'`, `exec_bgn_dtm < DB NOW() - 10분` 인 execution을 조회한다. `MI_BASE` 는 조회 대상이 아니다.
 2. 임계치 초과 건은 execution을 `FAILED` 로 전환한다.
 3. `fail_rsn_cd = TIMEOUT` 과 `exec_end_dtm` 을 함께 기록한다.
-4. `tmd_mdl_scnrcasem.case_stat_cd` 를 `FAILED` 로 동기화한다. `actv_scnr_id` generated column 이 자동으로 NULL 로 풀려 active 점유가 해제되므로 helper 를 따로 해제할 필요가 없다. `last_run_id` 는 그대로 두어 어떤 run이 timeout 되었는지 추적할 수 있게 한다. case update 는 callback 흐름과 동일하게 `last_run_id = :run_id` 조건을 사용해, 사용자가 이미 재실행한 경우에는 case 최신 상태를 덮어쓰지 않는다.
+4. `tmd_mdl_scnrcasem.case_stat_cd` 를 `FAILED` 로 동기화한다. `SCENARIO` case는 `actv_scnr_id` generated column 이 자동으로 NULL 로 풀려 active 점유가 해제되므로 helper 를 따로 해제할 필요가 없다. `INDEPENDENT` case는 `scnr_id = NULL` 이므로 scenario active-run helper에 영향을 주지 않는다. `last_run_id` 는 그대로 두어 어떤 run이 timeout 되었는지 추적할 수 있게 한다. case update 는 callback 흐름과 동일하게 `last_run_id = :run_id` 조건을 사용해, 사용자가 이미 재실행한 경우에는 case 최신 상태를 덮어쓰지 않는다.
 
 ## 상태 전이
 
@@ -455,7 +461,7 @@ sequenceDiagram
 
 ```mermaid
 flowchart TD
-    A["@Scheduled\n1분 주기 실행"] --> B["RUNNING 상태이며\nexec_bgn_dtm < NOW - 5분\n레코드 조회"]
+    A["@Scheduled\n30초 fixedDelay 실행"] --> B["RUNNING 상태이며\nexec_bgn_dtm < DB NOW - 10분\n레코드 조회"]
     B --> C{대상 존재?}
     C -- 없음 --> Z[종료]
     C -- 있음 --> D["execution UPDATE\nFAILED + TIMEOUT"]
@@ -572,19 +578,22 @@ mi:
       namespace: mi-model
       image: {registry}/mi-fundamental-model:{tag}
       command: ["python", "engine/run_all_parallel.py"]
-      timeout-minutes: 5
       backoff-limit: 0
       ttl-seconds-after-finished: 3600
 ```
 
 - 세부 값은 운영 환경과 모델 이미지 배포 방식에 맞춰 조정한다.
 - image pull secret, service account/RBAC, object storage credential, callback auth secret, resource requests/limits, Job TTL은 운영 배포 전 별도 보안/운영 설계에서 확정한다. retry/backoff는 §4의 "Kubernetes Job Pod 실행 재시도 정책"에 따라 `0`으로 고정한다.
+- `Job.spec.activeDeadlineSeconds` 는 현재 적용하지 않는다 (2026-06-22). Backend timeout 처리 뒤에도 model Pod를 강제 종료하지 않아 운영자가 Pod 로그를 확인할 수 있게 한다.
+- `ttlSecondsAfterFinished = 3600` 은 terminal Job(`Complete` 또는 `Failed`)이 된 뒤 1시간 보존 후 정리하는 설정이다. 실행 중인 Pod를 종료하는 timeout 설정이 아니다.
+- 따라서 Backend scheduler가 `FAILED/TIMEOUT` 으로 전이한 뒤에도 Pod는 계속 실행할 수 있다. late callback은 기존 terminal no-op 정책을 따르고, 계속 실행된 Pod의 리소스/결과 write 관찰과 수동 정리는 운영 책임으로 남는다.
+- image pull secret, service account/RBAC, object storage credential, callback auth secret, resource requests/limits, retry/backoff, Job TTL은 운영 배포 전 별도 보안/운영 설계에서 확정한다.
 
 ## Open Questions
 
 - 현재 문서 기준 테이블명은 `tmd_mdl_scnrcasem`, `tmd_mdl_scnrcaseh` 로 확정했다. 실제 배포 전 DBA 검토는 별도로 필요하다.
 - `SCNRCASE` 공통코드는 target 중복 없음이 확인되었다. 단, `cd_nm`, `cd_rnk`, `cd_expn` 최종 값은 운영 공통코드 관리 기준에 맞춰 DBA/공통코드 owner가 확정한다.
-- timeout 5분을 고정값으로 둘지 운영 설정값으로 노출할지 미정이다.
+- `activeDeadlineSeconds` 는 Backend timeout과 독립적으로 현재 미적용이다.
 - soft-deleted case의 보존 기간, audit 조회, 복구 정책은 정해지지 않았다.
 - 재실행 시 별도 retry count 컬럼이 필요한지는 추후 운영 운영 모니터링/SLA 요구가 들어오면 재검토한다.
 - 향후 Pod 실행 재시도를 도입할 경우에만 모델 이미지의 permanent/transient exit code, `podFailurePolicy` 지원 Kubernetes 버전, environment별 `backoffLimit` 값을 사전에 확정한다.

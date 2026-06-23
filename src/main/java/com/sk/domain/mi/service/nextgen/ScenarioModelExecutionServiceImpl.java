@@ -114,6 +114,11 @@ public class ScenarioModelExecutionServiceImpl implements ScenarioModelExecution
                     ResultCode.Error.RSC_NOT_FOUND,
                     "scenario model execution run_seq not found after insert. runId: %s".formatted(runId)
                 ));
+            LocalDateTime executionBeginDt = scenarioCaseRunHistoryRepository.findExecutionBeginDtByRunId(runId)
+                .orElseThrow(() -> AppErrorException.of(
+                    ResultCode.Error.RSC_NOT_FOUND,
+                    "scenario model execution begin time not found after insert. runId: %s".formatted(runId)
+                ));
 
             savedCase.attachLatestRun(runId, actorLoginId);
             scenarioCaseRepository.flush();
@@ -128,7 +133,7 @@ public class ScenarioModelExecutionServiceImpl implements ScenarioModelExecution
                 ModelExecutionStatus.RUNNING,
                 uploadedFiles,
                 savedCase.getCreateDt(),
-                runHistory.getExecutionBeginDt(),
+                executionBeginDt,
                 buildStatusEndpoint(scenarioId, runId)
             );
         } catch (RuntimeException e) {

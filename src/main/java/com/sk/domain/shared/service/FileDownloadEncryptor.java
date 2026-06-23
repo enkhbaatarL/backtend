@@ -29,6 +29,11 @@ public class FileDownloadEncryptor {
     private final AuthorizationService authorizationService;
 
     public byte[] encryptForDownloadIfRequired(String fileName, byte[] plainData) {
+
+        if (!fileEncryptionPolicy.isEnabled()) {
+            return plainData;
+        }
+
         if (!fileEncryptionPolicy.isTargetExtension(fileName)) {
             return plainData;
         }
@@ -45,4 +50,5 @@ public class FileDownloadEncryptor {
 
         return fileCryptoApiClient.encrypt(plainData, fileName);
     }
+
 }

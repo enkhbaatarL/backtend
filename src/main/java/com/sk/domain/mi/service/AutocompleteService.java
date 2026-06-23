@@ -12,6 +12,7 @@ import java.util.Set;
 import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.core.io.Resource;
 import org.springframework.dao.DataAccessException;
@@ -34,8 +35,15 @@ public class AutocompleteService {
     private final StringRedisTemplate redisTemplate;
     private final ObjectMapper objectMapper;
 
+    @Value("${mi.autocomplete.initial-load.enabled:false}")
+    private boolean initialLoadEnabled;
+
     @PostConstruct
     public void loadFromJsonFile() {
+        if (!initialLoadEnabled) {
+            return;
+        }
+
         try {
             Resource resource = new ClassPathResource("static/json/autocomplete/financial-terms.json");
 

@@ -5,6 +5,7 @@ import com.sk.domain.mi.dto.response.nextgen.ScenarioDetailViewRes;
 import com.sk.domain.mi.dto.response.nextgen.ScenarioGroupDetailRes;
 import com.sk.domain.mi.dto.response.nextgen.ScenarioGroupGraphRes;
 import com.sk.domain.mi.dto.response.nextgen.ScenarioGroupListRes;
+import com.sk.domain.mi.dto.response.nextgen.ScenarioGroupRunStatusRes;
 import com.sk.domain.mi.dto.response.nextgen.ScenarioIndividualListRes;
 import com.sk.domain.mi.dto.response.nextgen.ScenarioStatusRes;
 import com.sk.domain.shared.enums.nextgen.GraphPeriodUnit;
@@ -21,6 +22,9 @@ public interface ScenarioGroupService {
 
     /** 그룹 펼침 그래프 데이터 (단일 인덱스 × 단일 기간단위 — Base + 시나리오 시리즈) */
     ScenarioGroupGraphRes getScenarioGroupGraph(Long scenarioGroupId, IndexName indexName, GraphPeriodUnit periodUnit);
+
+    /** 그래프 폴링 — 그룹 내 시나리오별 실행중/완료 상태 (가격 제외 경량, 인덱스 무관) */
+    ScenarioGroupRunStatusRes getScenarioGroupGraphRunStatus(Long scenarioGroupId);
 
     /** 시나리오 그룹 상세 (요약 + 가정·실행가능성 표) */
     ScenarioGroupDetailRes getScenarioGroupDetail(Long scenarioGroupId);

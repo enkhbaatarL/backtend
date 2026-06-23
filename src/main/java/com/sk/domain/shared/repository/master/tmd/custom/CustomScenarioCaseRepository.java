@@ -7,6 +7,7 @@ import com.sk.domain.shared.repository.master.tmd.projection.MiBasePriceRow;
 import com.sk.domain.shared.repository.master.tmd.projection.ScenarioCaseDetailRow;
 import com.sk.domain.shared.repository.master.tmd.projection.ScenarioCaseListRow;
 import com.sk.domain.shared.repository.master.tmd.projection.ScenarioPriceRow;
+import com.sk.domain.shared.repository.master.tmd.projection.ScenarioRunStateRow;
 import java.util.List;
 import java.util.Optional;
 
@@ -18,7 +19,7 @@ public interface CustomScenarioCaseRepository {
 
     List<ScenarioPriceRow> findLatestCompletedPricesByScenarioIds(List<Long> scenarioIds, IndexName indexName, PeriodUnitSeparateCd periodUnit);
 
-    List<Long> findRunningScenarioIds(List<Long> scenarioIds);
+    List<ScenarioRunStateRow> findScenarioRunStates(List<Long> scenarioIds);
 
     /** MI Base 기준선 가격 — exec_type_cd=MI_BASE 케이스 중 최신 1건(case_id 최대)의 가격 결과. */
     List<MiBasePriceRow> findLatestMiBasePrices(IndexName indexName, PeriodUnitSeparateCd periodUnit);
