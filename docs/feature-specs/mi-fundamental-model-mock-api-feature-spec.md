@@ -515,6 +515,7 @@ Reset API 포함 판단:
 - 응답은 차트 데이터, Annual 테이블, Monthly 테이블을 단일 응답으로 동시에 반환한다.
 - 차트는 `BASE_CASE`와 `USER_ADJUSTED` 두 series를 포함한다.
 - Annual 테이블과 Monthly 테이블의 행 `label`은 데이터 기반 동적 값이다. 서버가 고정 enum으로 강제하지 않는다.
+- Price 응답의 수치 필드(`chart.*.points[].value`, `annualTable.rows[].baseCasePrice`, `annualTable.rows[].userAdjustedPrice`, `monthlyTable.rows[].baseCasePrice`, `monthlyTable.rows[].userAdjustedPrice`)는 원본 값을 변경하지 않고 응답 직렬화 시 소수점 셋째 자리에서 `HALF_UP`으로 반올림한 JSON number로 반환한다.
 - 실제 price result row가 없으면 에러가 아니라 `200 OK`로 응답하고 chart series와 table rows는 빈 배열로 반환한다. table columns는 유지한다.
 - 1차 mock에서는 json seed 파일 기반 고정 데이터를 반환한다.
 
