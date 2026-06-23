@@ -32,8 +32,9 @@ public class TemplateFieldValueResolver {
     private static final String FALLBACK_IMAGE_PATH = "static/images/oil_trend_cover_img.png";
     private static final DateTimeFormatter PUBLISH_DATE_FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM-dd");
     private static final String BRENT_PRICE_TEXT_TYPE = "SUB_INFO_TXT";
+    private static final String META_KEY_DEFAULT_VALUE = "defaultValue";
     private static final Pattern BRENT_PRICE_RANGE_PATTERN = Pattern.compile(
-        ".*?\\$\\s*([0-9]+(?:\\.[0-9]+)?)\\s*/B\\s*(?:→|->)\\s*\\$\\s*([0-9]+(?:\\.[0-9]+)?)\\s*/B.*"
+        ".*?\\$\\s*(\\d+(?:\\.\\d+)?)\\s*/B\\s*(?:→|->)\\s*\\$\\s*(\\d+(?:\\.\\d+)?)\\s*/B.*"
     );
 
     private final ObjectMapper objectMapper;
@@ -244,7 +245,12 @@ public class TemplateFieldValueResolver {
     ) {
         NewsletterMaster master = pubHist != null ? pubHist.getNewsletterMaster() : null;
         return switch (block.blockCode()) {
-            case "COVER_IMAGE_CARD" -> "imageBase64".equals(fieldKey) ? encodeImageToBase64(master != null ? master.getImageUrl() : null) : null;
+            case "COVER_IMAGE_CARD" -> {
+                if (!"imageBase64".equals(fieldKey)) {
+                    yield null;
+                }
+                yield encodeImageToBase64(master != null ? master.getImageUrl() : null);
+            }
             case "COVER_INFO" -> resolveCoverInfoField(fieldKey, master);
             case "DATE_ISSUE_INFO" -> resolveDateIssueField(fieldKey, pubHist);
             case "TITLE_MAIN_SPECIALIZED" -> "title".equals(fieldKey) && pubHist != null ? pubHist.getNewsletterTitle() : null;
@@ -313,8 +319,8 @@ public class TemplateFieldValueResolver {
                 return FieldMetaSpec.empty();
             }
 
-            Object defaultValue = metaNode.has("defaultValue") && !metaNode.get("defaultValue").isNull()
-                ? objectMapper.convertValue(metaNode.get("defaultValue"), Object.class)
+            Object defaultValue = metaNode.has(META_KEY_DEFAULT_VALUE) && !metaNode.get(META_KEY_DEFAULT_VALUE).isNull()
+                ? objectMapper.convertValue(metaNode.get(META_KEY_DEFAULT_VALUE), Object.class)
                 : null;
             ValueSourceSpec valueSource = parseValueSource(metaNode.get("valueSource"));
             String transform = readText(metaNode.get("transform"));
