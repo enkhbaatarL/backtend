@@ -178,7 +178,7 @@ public class ScenarioGroupController {
 
     @ApiOrder(4)
     @Operation(
-        summary = "Scenario Group 수금모델 실행상태 폴링 API",
+        summary = "Scenario Group 수급모델 진행상태 폴링 API",
         description = """
             그래프 화면에서 시나리오별 수급모델 **실행중/완료 상태만** 경량 조회합니다. <br>
             수급모델 실행 후 해당 API를 폴링하다가 그래프 조회 API(`/{scenarioGroupId}/graph`)를 재조회해 완료된 그래프를 표출하세요. <br>
