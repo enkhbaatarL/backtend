@@ -7,39 +7,34 @@ import com.sk.common.model.BaseResponseFactory;
 import com.sk.common.model.PaginationTableRes;
 import com.sk.common.model.TableRes;
 import com.sk.common.utils.DateUtil;
-import com.sk.domain.mi.dto.request.ChartsPersonalizeReq;
 import com.sk.domain.mi.dto.response.charts.ChartBundleRes;
-import com.sk.domain.mi.dto.response.charts.ChartMetadataSimple;
-import com.sk.domain.mi.dto.response.charts.ChartsPersonalizeRes;
 import com.sk.domain.mi.dto.response.detail.GoodsDataRes;
-import com.sk.domain.mi.dto.response.detail.GoodsDataSourceRes;
-import com.sk.domain.mi.dto.response.detail.UnstructuredDataRes;
 import com.sk.domain.mi.service.MiDataDetailService;
 import com.sk.domain.shared.enums.PermissionCondition;
 import com.sk.domain.shared.enums.Role;
 import com.sk.domain.shared.enums.chart.Interval;
 import com.sk.domain.shared.enums.chart.Range;
+import com.sk.domain.shared.service.FileDownloadEncryptor;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.Parameters;
 import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.tags.Tag;
-import jakarta.validation.Valid;
 import jakarta.validation.constraints.Min;
+import java.time.LocalDate;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.core.io.InputStreamResource;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.ContentDisposition;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.*;
-
-import java.io.ByteArrayInputStream;
-import java.time.LocalDate;
-import java.util.List;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RestController;
 
 @Tag(name = "05. 상품 데이터 상세 API", description = "상품 데이터 상세 API 입니다.")
 @Slf4j
@@ -49,6 +44,7 @@ import java.util.List;
 public class MiDataDetailDedicatedController {
 
     private final MiDataDetailService miDataDetailService;
+    private final FileDownloadEncryptor fileDownloadEncryptor;
 
     @ApiOrder(1)
     @Parameters({
@@ -187,7 +183,7 @@ public class MiDataDetailDedicatedController {
         condition = PermissionCondition.THIRD_PARTY_ADMIN_ONLY,
         goodsNestedParam = "goodsDataSourceNo", requireDownloadPermission = true
     )
-    public ResponseEntity<InputStreamResource> downloadGoodsDataSourcesRawData(
+    public ResponseEntity<byte[]> downloadGoodsDataSourcesRawData(
         @PathVariable(value = "goodsNo") Integer goodsNo,
         @PathVariable(value = "goodsDataNo") Integer goodsDataNo,
         @PathVariable(value = "goodsDataSourceNo") Integer goodsDataSourceNo,
@@ -199,12 +195,14 @@ public class MiDataDetailDedicatedController {
         String title = "raw_data_%s.xlsx".formatted(DateUtil.currentYmdHms());
         headers.setContentDisposition(ContentDisposition.attachment().filename(title).build());
 
-        ByteArrayInputStream in = miDataDetailService.downloadGoodsDataSourcesRawData(goodsNo, goodsDataNo, goodsDataSourceNo, startDate, endDate);
+        byte[] plainData = miDataDetailService.downloadGoodsDataSourcesRawData(goodsNo, goodsDataNo, goodsDataSourceNo, startDate, endDate);
+        byte[] responseData = fileDownloadEncryptor.encryptForDownloadIfRequired(title, plainData);
 
         return ResponseEntity.ok()
             .headers(headers)
             .contentType(MediaType.APPLICATION_OCTET_STREAM)
-            .body(new InputStreamResource(in));
+            .contentLength(responseData.length)
+            .body(responseData);
     }
 
 }
