@@ -180,13 +180,16 @@ public class ScenarioGroupController {
     @Operation(
         summary = "Scenario Group 수급모델 진행상태 폴링 API",
         description = """
-            그래프 화면에서 시나리오별 수급모델 **실행중/완료 상태만** 경량 조회합니다. <br>
-            수급모델 실행 후 해당 API를 폴링하다가 그래프 조회 API(`/{scenarioGroupId}/graph`)를 재조회해 완료된 그래프를 표출하세요. <br>
+            그래프 화면에서 시나리오별 수급모델 진행상태를 경량 조회합니다. <br>
+            수급모델 실행 후 해당 API를 폴링하다가 `modelRunning` 필드가 `true` -> `false` 전환 시, 그래프 조회 API(`/{scenarioGroupId}/graph`)를 재조회해 완료된 그래프를 재조회합니다. <br>
 
             <br><br>
             ### 응답 필드
             - `anyRunning`: 그룹 내 실행중 시나리오 존재 여부
-            - `scenarios[]`: `scenarioId` / `executed` / `modelRunning`
+            - `scenarios[]`
+              - `scenarioId` : 시나리오 ID
+              - `modelRunning` : 모델 실행중 여부
+              - `executed` : 시나리오 수행완료 여부
             """
     )
     @ApiResponse(responseCode = "200", description = "조회 성공")
