@@ -1,5 +1,6 @@
 package com.sk.domain.mi.dto.response.fundamentalmodel;
 
+import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import com.sk.domain.shared.enums.fundamentalmodel.FundamentalModelDataType;
 import com.sk.domain.shared.enums.fundamentalmodel.FundamentalModelGranularity;
 import com.sk.domain.shared.enums.fundamentalmodel.FundamentalModelRegion;
@@ -84,7 +85,8 @@ public record FundamentalModelVolumesRes(
         @Schema(description = "행 화면 표시명. REGION_SUBTOTAL은 지역명, COUNTRY는 국가명, TYPE_TOTAL은 Total입니다.", example = "China")
         String rowLabel,
 
-        @Schema(description = "column key별 수치 map. key는 columns[].key와 동일합니다.", example = "{\"2026-01\":15.1,\"2026-02\":0.3}")
+        @Schema(description = "column key별 수치 map. key는 columns[].key와 동일합니다. JSON number이며 소수 다섯째 자리까지 0 방향 절삭합니다.", example = "{\"2026-01\":15.12345,\"2026-02\":0.28947}")
+        @JsonSerialize(contentUsing = FundamentalModelFiveScaleTruncatingNumberSerializer.class)
         Map<String, Double> values
 
     ) {
