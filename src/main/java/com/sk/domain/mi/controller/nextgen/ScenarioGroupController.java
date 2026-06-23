@@ -185,11 +185,10 @@ public class ScenarioGroupController {
 
             <br><br>
             ### 응답 필드
-            - `anyRunning`: 그룹 내 실행중 시나리오 존재 여부
+            - `anyRunning`: 그룹 내 실행중 시나리오 존재 여부 (그룹 단위 폴링 종료 판단)
             - `scenarios[]`
               - `scenarioId` : 시나리오 ID
-              - `modelRunning` : 모델 실행중 여부
-              - `executed` : 시나리오 수행완료 여부
+              - `modelRunning` : 모델 실행중 여부 (재조회 트리거: `true` → `false` 전환)
             """
     )
     @ApiResponse(responseCode = "200", description = "조회 성공")

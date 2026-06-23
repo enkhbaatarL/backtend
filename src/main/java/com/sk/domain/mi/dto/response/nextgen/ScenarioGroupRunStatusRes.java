@@ -26,10 +26,7 @@ public record ScenarioGroupRunStatusRes(
         @Schema(description = "시나리오 ID", example = "11")
         Long scenarioId,
 
-        @Schema(description = "수급모델 실행 완료 여부 (완료 케이스 존재)", example = "true")
-        boolean executed,
-
-        @Schema(description = "수급모델 실행중 여부 (RUNNING 케이스 존재)", example = "false")
+        @Schema(description = "수급모델 실행중 여부 (RUNNING 케이스 존재). 재조회 트리거: true -> false 전환", example = "false")
         boolean modelRunning
 
     ) {}

@@ -38,8 +38,4 @@ public record ScenarioRunStates(
         return running.contains(scenarioId);
     }
 
-    public boolean isCompleted(Long scenarioId) {
-        return completed.contains(scenarioId);
-    }
-
 }

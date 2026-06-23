@@ -176,7 +176,7 @@ public class ScenarioGroupServiceImpl implements ScenarioGroupService {
 
     /**
      * [그래프 실행상태 폴링]
-     * - 그래프(running/executed)와 동일 소스를 가격 없이 가볍게 반환 — FE는 anyRunning=false가 되면 그래프를 재조회
+     * - 가격 없이 시나리오별 실행중(modelRunning)만 가볍게 반환 — FE는 anyRunning(=modelRunning) true→false 전환 시 그래프를 재조회
      */
     @Override
     public ScenarioGroupRunStatusRes getScenarioGroupGraphRunStatus(Long scenarioGroupId) {
@@ -187,10 +187,7 @@ public class ScenarioGroupServiceImpl implements ScenarioGroupService {
         ScenarioRunStates runStates = resolveRunStates(scenarioIds);
 
         List<ScenarioRunStatus> scenarios = scenarioIds.stream()
-            .map(scenarioId -> new ScenarioRunStatus(
-                scenarioId,
-                runStates.isCompleted(scenarioId),
-                runStates.isRunning(scenarioId)))
+            .map(scenarioId -> new ScenarioRunStatus(scenarioId, runStates.isRunning(scenarioId)))
             .toList();
 
         return ScenarioGroupRunStatusRes.of(scenarioGroupId, scenarios);
