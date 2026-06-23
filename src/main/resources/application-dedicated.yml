@@ -34,6 +34,7 @@ dedicated:
 
 file:
   encryption:
+    enabled: true
     enabled-company-cds: SKGAS
     target-extensions: xlsx,xls,xlsm,docx,doc,docm,pptx,ppt,pptm
 

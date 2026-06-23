@@ -9,6 +9,7 @@ import com.sk.common.utils.DateUtil;
 import com.sk.domain.mi.dto.response.nextgen.CmeBenchmarkGraphRes;
 import com.sk.domain.mi.service.nextgen.CmeBenchmarkService;
 import com.sk.domain.mi.service.nextgen.ScenarioGroupGraphExportDedicatedService;
+import com.sk.domain.shared.service.FileDownloadEncryptor;
 import com.sk.domain.shared.enums.PermissionCondition;
 import com.sk.domain.shared.enums.Role;
 import com.sk.domain.shared.enums.nextgen.GraphPeriodUnit;
@@ -18,8 +19,6 @@ import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import java.io.ByteArrayInputStream;
-import java.time.LocalDate;
-import java.time.format.DateTimeFormatter;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.annotation.Profile;
@@ -52,6 +51,7 @@ public class ScenarioGroupDedicatedController {
 
     private final CmeBenchmarkService cmeBenchmarkService;
     private final ScenarioGroupGraphExportDedicatedService scenarioGroupGraphExportService;
+    private final FileDownloadEncryptor fileDownloadEncryptor;
 
     @ApiOrder(1)
     @Operation(
@@ -109,14 +109,17 @@ public class ScenarioGroupDedicatedController {
         @PathVariable Long scenarioGroupId,
         @RequestParam(defaultValue = "monthly") GraphPeriodUnit periodUnit
     ) {
-        ByteArrayInputStream excel = scenarioGroupGraphExportService.exportScenarioGroupGraph(scenarioGroupId, periodUnit);
-
         String filename = "scenario-group-%s-graph-%s-%s.xlsx".formatted(scenarioGroupId, periodUnit.getCode(), DateUtil.currentYmd());
+
+        byte[] plain = scenarioGroupGraphExportService.exportScenarioGroupGraph(scenarioGroupId, periodUnit).readAllBytes();
+        byte[] data = fileDownloadEncryptor.encryptForDownloadIfRequired(filename, plain);
+
         HttpHeaders headers = new HttpHeaders();
         headers.setContentType(MediaType.parseMediaType("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"));
         headers.setContentDisposition(ContentDisposition.attachment().filename(filename).build());
+        headers.setContentLength(data.length);
 
-        return new ResponseEntity<>(new InputStreamResource(excel), headers, HttpStatus.OK);
+        return new ResponseEntity<>(new InputStreamResource(new ByteArrayInputStream(data)), headers, HttpStatus.OK);
     }
 
 }

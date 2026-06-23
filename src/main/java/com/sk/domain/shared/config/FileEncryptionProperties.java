@@ -10,6 +10,9 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
 @ConfigurationProperties(prefix = "file.encryption")
 public class FileEncryptionProperties {
 
+    /** 파일 암복호화 전역 사용 여부. 기본 false. */
+    private boolean enabled = false;
+
     private List<String> enabledCompanyCds = List.of();
 
     private List<String> targetExtensions = List.of(

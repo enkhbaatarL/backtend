@@ -80,7 +80,7 @@ public class MiEvent extends BaseEntity {
 
     @Column(name = "signal_confidence", precision = 5, scale = 4)
     @Comment("신호 신뢰도 0~1")
-    private java.math.BigDecimal signalConfidence;
+    private BigDecimal signalConfidence;
 
     @Column(name = "signal_reason", length = 100)
     @Comment("신호 판정 근거")
