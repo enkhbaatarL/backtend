@@ -894,7 +894,7 @@ FE는 `latestRun.startedAt`과 `latestRun.finishedAt`으로 소요시간을 계�
 | `country` | `String` | 국가명. `rowKind=REGION_SUBTOTAL` 또는 `TYPE_TOTAL`이면 `null` |
 | `rowKind` | `VolumesRowKind` | `COUNTRY` \| `REGION_SUBTOTAL` \| `TYPE_TOTAL` |
 | `rowLabel` | `String` | 행 화면 표시명. `REGION_SUBTOTAL`이면 지역 label, `COUNTRY`이면 국가명, `TYPE_TOTAL`이면 `Total` |
-| `values` | `Map<String, Double>` | column key별 수치 map. key는 `columns[].key`와 동일하며 FE는 `row.values[column.key]`로 조회한다 |
+| `values` | `Map<String, Double>` | column key별 수치 map. key는 `columns[].key`와 동일하며 FE는 `row.values[column.key]`로 조회한다. JSON number로 반환하며 원천값과 `TYPE_TOTAL`은 소수 다섯째 자리까지 0 방향 절삭한다. |
 
 표시용 text는 `typeLabel`, `rowLabel`을 사용한다. `type`, `region`, `country`, `rowKind`는 필터/집계/스타일 분기용 canonical code 필드로 유지한다. Rowspan은 응답 순서에서 연속된 동일 `type` 구간을 기준으로 FE가 계산한다.
 
@@ -1172,7 +1172,7 @@ FE는 `latestRun.startedAt`과 `latestRun.finishedAt`으로 소요시간을 계�
 | `fromCountry` | `String` | 수출 국가. `null`이면 지역 집계 |
 | `toRegion` | `FundamentalModelRegion` | 수입 지역. `null`이면 Total 행 |
 | `toCountry` | `String` | 수입 국가. `null`이면 지역 집계. `"Total"`이면 Total 합계 행 |
-| `value` | `Double` | 물량. 소수점 다섯째 자리까지 절삭하며, 여섯째 자리에서 반올림하지 않는다 |
+| `value` | `Double` | 물량. JSON number로 반환하며 소수점 다섯째 자리까지 0 방향 절삭하고, 여섯째 자리에서 반올림하지 않는다 |
 
 **신규 enum:**
 
