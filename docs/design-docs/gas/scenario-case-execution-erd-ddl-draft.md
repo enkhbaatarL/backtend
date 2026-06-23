@@ -44,7 +44,7 @@ Volumes / Trade Flows / Price parsed output result table, key, index, partition-
 - Those Notion DDL details are reference-only and are superseded by this DDL draft:
   - use `scnr_id`, not `scn_id`;
   - use `run_seq INT UNSIGNED AUTO_INCREMENT UNIQUE`, not `BIGINT UNSIGNED`;
-  - do not create `tmd_mdl_scnrcaseh_ix01` until the timeout scheduler query is implemented and verified;
+  - use `tmd_mdl_scnrcaseh_ix01 (exec_stat_cd, exec_bgn_dtm, case_id)` for the approved timeout scheduler, but apply it only with the scheduler implementation and verify the actual query with `EXPLAIN`;
   - keep `tmd_mdl_scnrcasem_ix03 (last_run_id, del_yn)` for callback latest-case status sync.
 - No additional owned table DDL is missing for the current case/run scope. `tcm_filel` is an existing common table and is referenced through compatibility/pre-check SQL instead of being redefined here.
 
@@ -271,7 +271,7 @@ CREATE TABLE tmd_mdl_scnrcaseh
     exec_stat_cd    VARCHAR(20) DEFAULT 'RUNNING'         NOT NULL COMMENT '실행상태코드',
     fail_rsn_cd     VARCHAR(20)                           NULL COMMENT '실패사유코드',
     err_msg_cntt    VARCHAR(2000)                         NULL COMMENT '오류메시지내용',
-    exec_bgn_dtm    DATETIME                              NULL COMMENT '실행시작일시',
+    exec_bgn_dtm    DATETIME DEFAULT CURRENT_TIMESTAMP    NOT NULL COMMENT '실행시작일시 (DB 시각으로 생성)',
     exec_end_dtm    DATETIME                              NULL COMMENT '실행종료일시',
     CONSTRAINT tmd_mdl_scnrcaseh_uq01
         UNIQUE (run_seq),
@@ -279,6 +279,9 @@ CREATE TABLE tmd_mdl_scnrcaseh
         FOREIGN KEY (case_id) REFERENCES tmd_mdl_scnrcasem (case_id)
 )
     COMMENT 'TMD_시나리오케이스이력';
+
+CREATE INDEX tmd_mdl_scnrcaseh_ix01
+    ON tmd_mdl_scnrcaseh (exec_stat_cd, exec_bgn_dtm, case_id);
 
 INSERT INTO tcm_commcdd (
     cd_grp_id, cd_id, cd_nm, cd_rnk, cd_expn,
@@ -326,10 +329,11 @@ Apply ordering:
 3. Create `tmd_mdl_scnrcasem_ix02`.
 4. Create `tmd_mdl_scnrcasem_ix03`.
 5. Create `tmd_mdl_scnrcaseh`.
-6. Register `SCNRCASE` (existing `file_rel_obj_spt_cd` group — `tcm_commcdd` only).
-7. Register `SCNRCASEH` (existing `file_rel_obj_spt_cd` group — `tcm_commcdd` only).
-8. Register `mdl_exec_type_cd` group in `tcm_commcdm` (new group — must precede its detail codes).
-9. Register `mdl_exec_type_cd` codes in `tcm_commcdd` (`INDEPENDENT` / `SCENARIO` / `MI_BASE`).
+6. Create `tmd_mdl_scnrcaseh_ix01`.
+7. Register `SCNRCASE` (existing `file_rel_obj_spt_cd` group — `tcm_commcdd` only).
+8. Register `SCNRCASEH` (existing `file_rel_obj_spt_cd` group — `tcm_commcdd` only).
+9. Register `mdl_exec_type_cd` group in `tcm_commcdm` (new group — must precede its detail codes).
+10. Register `mdl_exec_type_cd` codes in `tcm_commcdd` (`INDEPENDENT` / `SCENARIO` / `MI_BASE`).
 
 ### 기존 배포 환경 마이그레이션 (옛 이름 테이블이 이미 있는 경우)
 
@@ -435,6 +439,47 @@ Pre-rollout evidence already confirmed:
 
 - `SCNRCASE + case_id` file lookup on production DB used `key = tcm_filel_ix01`, `type = ref`, `rows` small, and no full scan under `del_yn = 'N'`.
 
+### Timeout scheduler rollout pre-check and EXPLAIN
+
+Do not apply these statements from application deployment. The DBA executes the pre-check, applies `tmd_mdl_scnrcaseh_ix01` only when absent, and retains the evidence with the scheduler rollout. Apply the `exec_bgn_dtm` default before deploying application code that omits this column on insert; otherwise newly created runs can retain a null start time on an older nullable schema.
+
+```sql
+-- FK가 생성한 case_id 인덱스와 scheduler index를 함께 확인한다.
+-- case_id 인덱스가 존재하면 별도 단일-column index를 추가하지 않는다.
+SHOW INDEX FROM tmd_mdl_scnrcaseh;
+
+-- exec_bgn_dtm은 timeout 판정과 같은 DB 시각 기준으로 생성되어야 한다.
+SHOW COLUMNS FROM tmd_mdl_scnrcaseh LIKE 'exec_bgn_dtm';
+SELECT COUNT(*) AS null_exec_bgn_dtm_count
+FROM tmd_mdl_scnrcaseh
+WHERE exec_bgn_dtm IS NULL;
+
+-- null row가 없음을 확인한 뒤에만 기존 table에 적용한다.
+ALTER TABLE tmd_mdl_scnrcaseh
+    MODIFY exec_bgn_dtm DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '실행시작일시 (DB 시각으로 생성)';
+
+-- tmd_mdl_scnrcaseh_ix01 이 없을 때만 실행한다.
+CREATE INDEX tmd_mdl_scnrcaseh_ix01
+    ON tmd_mdl_scnrcaseh (exec_stat_cd, exec_bgn_dtm, case_id);
+
+-- Application의 실제 timeout 후보 조회와 동일한 EXPLAIN이다.
+EXPLAIN
+SELECT h.run_id
+FROM tmd_mdl_scnrcaseh h
+JOIN tmd_mdl_scnrcasem c
+  ON c.case_id = h.case_id
+WHERE h.exec_stat_cd = 'RUNNING'
+  AND h.exec_bgn_dtm < NOW() - INTERVAL 10 MINUTE
+  AND c.exec_type_cd IN ('SCENARIO', 'INDEPENDENT')
+ORDER BY h.exec_bgn_dtm ASC, h.case_id ASC
+LIMIT 100;
+
+-- Rollback: scheduler release가 더 이상 이 index에 의존하지 않는 경우에만 DBA 승인 후 실행한다.
+DROP INDEX tmd_mdl_scnrcaseh_ix01 ON tmd_mdl_scnrcaseh;
+```
+
+Expected result: timeout 후보 조회의 `h` access에 `key = tmd_mdl_scnrcaseh_ix01` 이 선택되어야 한다. `SHOW INDEX` 결과에서 `case_id`를 포함하는 FK implicit index가 있으면 그것을 유지하고, 중복 단일-column index는 만들지 않는다.
+
 Add remaining verification SQL here after DB-backed queries are implemented.
 
 Expected future checks:
@@ -449,7 +494,7 @@ Expected future checks:
 - Verify `SCNRCASEH + run_seq` file lookup (model execution output files).
 - Verify `last_run_id` invariant: for every `tmd_mdl_scnrcasem` row with `last_run_id IS NOT NULL`, the referenced `tmd_mdl_scnrcaseh` row exists and its `exec_stat_cd` matches `case_stat_cd` in the terminal/RUNNING semantics defined by the workflow draft.
 - Run `EXPLAIN` for callback latest-case sync SQL (`WHERE last_run_id = :run_id AND del_yn = 'N'`) and confirm `key = tmd_mdl_scnrcasem_ix03`.
-- `tmd_mdl_scnrcaseh_ix01 (exec_stat_cd, exec_bgn_dtm)` was removed (2026-06-10): no current query uses it and the table is small. When the timeout scheduler (scan `exec_stat_cd = 'RUNNING'` rows older than a threshold by `exec_bgn_dtm`) is implemented, re-add this index and run `EXPLAIN` against the actual query to confirm usage.
+- `tmd_mdl_scnrcaseh_ix01 (exec_stat_cd, exec_bgn_dtm, case_id)` supports the timeout scheduler. The scheduler queries `exec_stat_cd = 'RUNNING' AND exec_bgn_dtm < NOW() - INTERVAL 10 MINUTE`, joins the case row to limit `exec_type_cd IN ('SCENARIO', 'INDEPENDENT')`, and uses `case_id` as the join/covering tail; `MI_BASE` is excluded. Before production rollout, run `EXPLAIN` against the actual limited query and confirm `key = tmd_mdl_scnrcaseh_ix01`.
 - Run `EXPLAIN` for canonical list SQL (`WHERE del_yn = 'N' ORDER BY crt_dtm DESC`) and confirm `key = tmd_mdl_scnrcasem_ix01` usage.
 - Verify DB-backed update/delete affect only active owned case rows via `case_id + usr_no + del_yn = 'N'` predicate.
 - After `ASSIGNEE_NAME` search SQL is implemented, run `EXPLAIN` against the JOIN query resolving `usr_no` to uploader name and confirm index usage on both sides of the JOIN.

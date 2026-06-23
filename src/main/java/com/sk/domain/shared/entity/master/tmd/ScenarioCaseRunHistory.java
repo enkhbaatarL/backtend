@@ -7,6 +7,7 @@ import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
 import jakarta.persistence.Enumerated;
 import jakarta.persistence.Id;
+import jakarta.persistence.Index;
 import jakarta.persistence.Table;
 import java.time.LocalDateTime;
 import lombok.AccessLevel;
@@ -21,7 +22,12 @@ import org.hibernate.type.SqlTypes;
 @Getter
 @Entity
 @Comment("TMD_시나리오케이스이력")
-@Table(name = "tmd_mdl_scnrcaseh")
+@Table(
+    name = "tmd_mdl_scnrcaseh",
+    indexes = {
+        @Index(name = "tmd_mdl_scnrcaseh_ix01", columnList = "exec_stat_cd, exec_bgn_dtm, case_id")
+    }
+)
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 public class ScenarioCaseRunHistory extends BaseEntity {
 
@@ -53,7 +59,8 @@ public class ScenarioCaseRunHistory extends BaseEntity {
     @Comment("오류메시지내용")
     private String errorMessage;
 
-    @Column(name = "exec_bgn_dtm")
+    @Column(name = "exec_bgn_dtm", nullable = false, insertable = false, updatable = false)
+    @ColumnDefault("CURRENT_TIMESTAMP")
     @Comment("실행시작일시")
     private LocalDateTime executionBeginDt;
 
@@ -94,7 +101,6 @@ public class ScenarioCaseRunHistory extends BaseEntity {
             .runId(runId)
             .caseId(caseId)
             .status(FundamentalModelRunStatus.RUNNING)
-            .executionBeginDt(now)
             .createDt(now)
             .modifyDt(now)
             .createUserId(actorLoginId)

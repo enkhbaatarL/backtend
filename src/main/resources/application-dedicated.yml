@@ -32,6 +32,11 @@ spring:
 dedicated:
   company-no: 2013
 
+features:
+  scheduling:
+    model-execution-timeout:
+      enabled: ${MODEL_EXECUTION_TIMEOUT_SCHEDULER_ENABLED:false}
+
 file:
   encryption:
     enabled: true

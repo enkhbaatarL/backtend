@@ -299,6 +299,11 @@ public class FundamentalModelCaseServiceImpl implements FundamentalModelCaseServ
                 ResultCode.Error.RSC_NOT_FOUND,
                 "fundamental model run_seq not found after insert. runId: %s".formatted(runId)
             ));
+        LocalDateTime executionBeginDt = scenarioCaseRunHistoryRepository.findExecutionBeginDtByRunId(runId)
+            .orElseThrow(() -> AppErrorException.of(
+                ResultCode.Error.RSC_NOT_FOUND,
+                "fundamental model execution begin time not found after insert. runId: %s".formatted(runId)
+            ));
         FundamentalModelJobArgs jobArgs = buildJobArgs(caseId, runId, runSeq);
         submitJobAfterCommit(caseId, runId, jobArgs);
 
@@ -307,7 +312,7 @@ public class FundamentalModelCaseServiceImpl implements FundamentalModelCaseServ
             runId,
             FundamentalModelRunStatus.RUNNING,
             runHistory.getCreateDt(),
-            runHistory.getExecutionBeginDt(),
+            executionBeginDt,
             buildStatusEndpoint(caseId)
         );
     }
