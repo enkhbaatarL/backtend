@@ -1,5 +1,6 @@
 package com.sk.domain.mi.dto.response.fundamentalmodel;
 
+import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import com.sk.domain.shared.enums.fundamentalmodel.PriceSeriesType;
 import io.swagger.v3.oas.annotations.media.ArraySchema;
 import io.swagger.v3.oas.annotations.media.Schema;
@@ -76,7 +77,8 @@ public record FundamentalModelPriceRes(
         @Schema(description = "월. yearlySeriesSets의 point에서는 null입니다.", example = "1")
         Integer month,
 
-        @Schema(description = "가격 값", example = "8.51")
+        @Schema(description = "가격 값. 소수점 셋째 자리에서 반올림한 JSON number입니다.", example = "8.51")
+        @JsonSerialize(using = FundamentalModelPriceTwoScaleRoundingNumberSerializer.class)
         Double value
 
     ) {
@@ -115,10 +117,12 @@ public record FundamentalModelPriceRes(
         @Schema(description = "가격 지역", example = "JKM")
         String priceRegion,
 
-        @Schema(description = "기준 가격 (US$/mmbtu)", example = "15.71")
+        @Schema(description = "기준 가격 (US$/mmbtu). 소수점 셋째 자리에서 반올림한 JSON number입니다.", example = "15.71")
+        @JsonSerialize(using = FundamentalModelPriceTwoScaleRoundingNumberSerializer.class)
         Double baseCasePrice,
 
-        @Schema(description = "사용자 조정 가격 (US$/mmbtu)", example = "15.71")
+        @Schema(description = "사용자 조정 가격 (US$/mmbtu). 소수점 셋째 자리에서 반올림한 JSON number입니다.", example = "15.71")
+        @JsonSerialize(using = FundamentalModelPriceTwoScaleRoundingNumberSerializer.class)
         Double userAdjustedPrice
 
     ) {
