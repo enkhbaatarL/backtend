@@ -12,6 +12,7 @@ import com.sk.domain.mi.dto.response.nextgen.ScenarioDetailViewRes;
 import com.sk.domain.mi.dto.response.nextgen.ScenarioGroupDetailRes;
 import com.sk.domain.mi.dto.response.nextgen.ScenarioGroupGraphRes;
 import com.sk.domain.mi.dto.response.nextgen.ScenarioGroupListRes;
+import com.sk.domain.mi.dto.response.nextgen.ScenarioGroupRunStatusRes;
 import com.sk.domain.mi.dto.response.nextgen.ScenarioIndividualListRes;
 import com.sk.domain.mi.dto.response.nextgen.ScenarioStatusRes;
 import com.sk.domain.mi.service.nextgen.ScenarioGroupService;
@@ -153,9 +154,9 @@ public class ScenarioGroupController {
             - `scenarioSeries`: 시나리오별 시리즈
               - `scenarioId` / `scenarioName` / `baseCase`
               - `status` / `statusLabel`: 판정 상태 (pending/realized/discarded — 폐기여부)
-              - `executed`: 수급모델 실행 완료 여부 (최신 완료 실행의 가격 결과 존재)
-              - `modelRunning`: 수급모델 실행중 여부 (RUNNING 케이스 존재). executed와 독립 — 재실행 중엔 둘 다 true
-              - `baseCaseValues` / `userAdjustedValues`: 베이스케이스/사용자조정 가격 (최신 완료 결과, 재실행 중에도 직전 결과 유지)
+              - `executed`: 수급모델 실행 완료 여부 (N회차 실행 중 한번이라도 성공되면 true로 응답됩니다.)
+              - `modelRunning`: 수급모델 실행중 여부
+              - `baseCaseValues` / `userAdjustedValues`: 베이스케이스/사용자조정 가격 (최신 완료 결과, 재실행 중에도 직전 결과 유지).
             - 모든 가격 값(baseSeries/scenarioSeries)은 **소수 2자리 반올림(HALF_UP)** 으로 표기됩니다.
             """
     )
@@ -173,6 +174,31 @@ public class ScenarioGroupController {
         @RequestParam(defaultValue = "monthly") GraphPeriodUnit periodUnit
     ) {
         return BaseResponseFactory.create(scenarioGroupService.getScenarioGroupGraph(scenarioGroupId, indexName, periodUnit));
+    }
+
+    @ApiOrder(4)
+    @Operation(
+        summary = "Scenario Group 수금모델 실행상태 폴링 API",
+        description = """
+            그래프 화면에서 시나리오별 수급모델 **실행중/완료 상태만** 경량 조회합니다. <br>
+            수급모델 실행 후 해당 API를 폴링하다가 그래프 조회 API(`/{scenarioGroupId}/graph`)를 재조회해 완료된 그래프를 표출하세요. <br>
+
+            <br><br>
+            ### 응답 필드
+            - `anyRunning`: 그룹 내 실행중 시나리오 존재 여부
+            - `scenarios[]`: `scenarioId` / `executed` / `modelRunning`
+            """
+    )
+    @ApiResponse(responseCode = "200", description = "조회 성공")
+    @GetMapping("/{scenarioGroupId}/graph/run-status")
+    @RequiredPermissionRules(rules = {
+        @PermissionRule(role = Role.USER, conditions = {PermissionCondition.SKGAS_COMPANY_USER_ONLY}),
+        @PermissionRule(role = Role.ADMIN, conditions = {PermissionCondition.THIRD_PARTY_ADMIN_ONLY})
+    })
+    public BaseResponse<ScenarioGroupRunStatusRes> getScenarioGroupGraphRunStatus(
+        @Parameter(description = "시나리오 그룹 ID", example = "1") @PathVariable Long scenarioGroupId
+    ) {
+        return BaseResponseFactory.create(scenarioGroupService.getScenarioGroupGraphRunStatus(scenarioGroupId));
     }
 
     @ApiOrder(5)

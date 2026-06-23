@@ -60,10 +60,14 @@ public record ScenarioGroupGraphRes(
     private static final String UNIT = "MMBtu";
     private static final String MI_BASE_SERIES_ID = "MI_BASE";
     private static final String MI_BASE_SERIES_NAME = "MI Base";
-    /** 화면 및 엑셀 표기 가격 자릿수 (소수 2자리, 반올림). */
+
+    /**
+     * 화면 및 엑셀 표기 가격 자릿수 (소수 2자리, 반올림).
+     * */
     private static final int PRICE_SCALE = 2;
 
-    public static ScenarioGroupGraphRes of(Long scenarioGroupId, IndexName indexName, GraphPeriodUnit periodUnit, List<ScenarioBaseRow> scenarios, List<ScenarioPriceRow> prices, Set<Long> runningScenarioIds, List<MiBasePriceRow> miBasePrices) {
+    public static ScenarioGroupGraphRes of(Long scenarioGroupId, IndexName indexName, GraphPeriodUnit periodUnit, List<ScenarioBaseRow> scenarios, List<ScenarioPriceRow> prices,
+                                           Set<Long> runningScenarioIds, Set<Long> completedScenarioIds, List<MiBasePriceRow> miBasePrices) {
 
         // x축 = 시나리오 + MI Base 기간키 union (실행 시점이 달라 범위가 다를 수 있음 → 빠진 구간은 null 패딩)
         List<String> periodKeys = Stream.concat(
@@ -79,8 +83,11 @@ public record ScenarioGroupGraphRes(
 
         List<ScenarioSeries> scenarioSeries = scenarios.stream()
             .map(scenario -> ScenarioSeries.of(scenario, periodKeys, pricesByScenario.get(scenario.scenarioId()),
-                runningScenarioIds != null && runningScenarioIds.contains(scenario.scenarioId())))
+                runningScenarioIds != null && runningScenarioIds.contains(scenario.scenarioId()),
+                completedScenarioIds != null && completedScenarioIds.contains(scenario.scenarioId())))
             .toList();
+
+        List<BaseSeries> miBaseCaseSeries = buildBaseSeries(periodKeys, miBasePrices);
 
         return new ScenarioGroupGraphRes(
             scenarioGroupId,
@@ -90,12 +97,12 @@ public record ScenarioGroupGraphRes(
             CURRENCY,
             UNIT,
             periodKeys.stream().map(periodUnit::formatPeriodKey).toList(),
-            buildBaseSeries(periodKeys, miBasePrices),
+            miBaseCaseSeries,
             scenarioSeries
         );
     }
 
-    /** 기준선 시리즈 구성 — MI Base. */
+    // MI Base 기준선
     private static List<BaseSeries> buildBaseSeries(List<String> periodKeys, List<MiBasePriceRow> miBasePrices) {
         List<BaseSeries> baseSeries = new ArrayList<>();
         if (miBasePrices != null && !miBasePrices.isEmpty()) {
@@ -129,6 +136,7 @@ public record ScenarioGroupGraphRes(
             .toList();
 
         List<BaseSeries> baseSeries = new ArrayList<>();
+
         for (BaseSeries base : graph.baseSeries()) {
             baseSeries.add(new BaseSeries(base.seriesId(), base.seriesName(), realign(mergedDates, graph.dates(), base.values())));
         }
@@ -142,10 +150,13 @@ public record ScenarioGroupGraphRes(
 
         return new ScenarioGroupGraphRes(
             graph.scenarioGroupId(), graph.indexName(), graph.periodUnit(), graph.periodUnitLabel(),
-            graph.currency(), graph.unit(), mergedDates, baseSeries, scenarioSeries);
+            graph.currency(), graph.unit(), mergedDates, baseSeries, scenarioSeries
+        );
     }
 
-    /** 기존 dates 순서의 값들을 targetDates 순서로 재배열 (없는 구간 null). values가 null이면 null 유지(미실행 시나리오). */
+    /**
+     * 기존 dates 순서의 값들을 targetDates 순서로 재배열 (없는 구간 null). values가 null이면 null 유지(미실행 시나리오).
+     */
     private static List<BigDecimal> realign(List<String> targetDates, List<String> sourceDates, List<BigDecimal> sourceValues) {
         if (sourceValues == null) {
             return null;
@@ -181,10 +192,10 @@ public record ScenarioGroupGraphRes(
         @Schema(description = "BC(Base Case) 여부", example = "false")
         boolean baseCase,
 
-        @Schema(description = "수급모델 실행 완료 여부", example = "true")
+        @Schema(description = "수급모델 실행 완료 여부 (완료 케이스 존재, 인덱스 무관 — run-status 폴링 API와 동일 기준)", example = "true")
         boolean executed,
 
-        @Schema(description = "수급모델 실행중 여부", example = "false")
+        @Schema(description = "수급모델 실행중 여부 (RUNNING 케이스 존재)", example = "false")
         boolean modelRunning,
 
         @Schema(description = "판정 상태 (pending/realized/discarded)", example = "pending")
@@ -193,17 +204,16 @@ public record ScenarioGroupGraphRes(
         @Schema(description = "판정 상태 라벨 (대기/실현/폐기)", example = "대기")
         String statusLabel,
 
-        @Schema(description = "베이스케이스 가격 목록 (dates와 동일 순서, 빠진 구간 null). 미실행이면 null", nullable = true)
+        @Schema(description = "베이스케이스 가격 목록 (dates와 동일 순서, 빠진 구간 null). 해당 인덱스 완료 가격이 없으면 null(완료여도 그 인덱스 가격 없으면 null)", nullable = true)
         List<BigDecimal> baseCaseValues,
 
-        @Schema(description = "사용자조정 가격 목록 (dates와 동일 순서, 빠진 구간 null). 미실행이면 null", nullable = true)
+        @Schema(description = "사용자조정 가격 목록 (dates와 동일 순서, 빠진 구간 null). 해당 인덱스 완료 가격이 없으면 null", nullable = true)
         List<BigDecimal> userAdjustedValues
 
     ) {
 
-        static ScenarioSeries of(ScenarioBaseRow scenario, List<String> periodKeys, Map<String, ScenarioPriceRow> priceByPeriodKey, boolean modelRunning) {
-            // executed = 최신 완료 실행의 가격 결과 존재 / modelRunning = RUNNING 케이스 존재 (독립적, 재실행 중엔 둘 다 true 가능)
-            boolean executed = priceByPeriodKey != null && !priceByPeriodKey.isEmpty();
+        static ScenarioSeries of(ScenarioBaseRow scenario, List<String> periodKeys, Map<String, ScenarioPriceRow> priceByPeriodKey, boolean modelRunning, boolean executed) {
+            boolean hasPrices = priceByPeriodKey != null && !priceByPeriodKey.isEmpty();
             ScenarioDisplayStatus status = ScenarioDisplayStatus.from(scenario.status());
             return new ScenarioSeries(
                 scenario.scenarioId(),
@@ -213,8 +223,8 @@ public record ScenarioGroupGraphRes(
                 modelRunning,
                 status,
                 status == null ? null : status.getLabel(),
-                executed ? values(periodKeys, priceByPeriodKey, ScenarioPriceRow::baseCasePrice) : null,
-                executed ? values(periodKeys, priceByPeriodKey, ScenarioPriceRow::userAdjustedPrice) : null
+                hasPrices ? values(periodKeys, priceByPeriodKey, ScenarioPriceRow::baseCasePrice) : null,
+                hasPrices ? values(periodKeys, priceByPeriodKey, ScenarioPriceRow::userAdjustedPrice) : null
             );
         }
 
@@ -227,12 +237,15 @@ public record ScenarioGroupGraphRes(
                 .toList();
         }
 
-        /** 값 시리즈를 sourceDates -> targetDates 순서로 재배열한 새 시리즈 (병합 시 x축 union 정렬용). */
+        /**
+         * 값 시리즈를 sourceDates -> targetDates 순서로 재배열한 새 시리즈 (병합 시 x축 union 정렬용).
+         */
         ScenarioSeries realignTo(List<String> targetDates, List<String> sourceDates) {
             return new ScenarioSeries(
                 scenarioId, scenarioName, baseCase, executed, modelRunning, status, statusLabel,
                 realign(targetDates, sourceDates, baseCaseValues),
-                realign(targetDates, sourceDates, userAdjustedValues));
+                realign(targetDates, sourceDates, userAdjustedValues)
+            );
         }
 
     }

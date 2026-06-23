@@ -13,6 +13,8 @@ import com.sk.domain.mi.dto.response.nextgen.ScenarioGroupDetailRowRes;
 import com.sk.domain.mi.dto.response.nextgen.ScenarioGroupGraphRes;
 import com.sk.domain.mi.dto.response.nextgen.ScenarioGroupListItemRes;
 import com.sk.domain.mi.dto.response.nextgen.ScenarioGroupListRes;
+import com.sk.domain.mi.dto.response.nextgen.ScenarioGroupRunStatusRes;
+import com.sk.domain.mi.dto.response.nextgen.ScenarioGroupRunStatusRes.ScenarioRunStatus;
 import com.sk.domain.mi.dto.response.nextgen.ScenarioIndividualItemRes;
 import com.sk.domain.mi.dto.response.nextgen.ScenarioIndividualListRes;
 import com.sk.domain.mi.dto.response.nextgen.ScenarioRowRes;
@@ -22,6 +24,7 @@ import com.sk.domain.mi.dto.response.nextgen.ScenarioStatusRes;
 import com.sk.domain.mi.service.nextgen.support.ScenarioDimensionMapper;
 import com.sk.domain.mi.service.nextgen.support.ScenarioDimensionMapper.GroupDimensionTemplate;
 import com.sk.domain.mi.service.nextgen.support.ScenarioProbabilityAllocator;
+import com.sk.domain.mi.service.nextgen.support.ScenarioRunStates;
 import com.sk.domain.shared.entity.master.tmm.MiScenario;
 import com.sk.domain.shared.entity.master.tmm.MiScenarioGroup;
 import com.sk.domain.shared.entity.master.tmm.MiSignpost;
@@ -41,7 +44,6 @@ import com.sk.domain.shared.repository.master.tmm.projection.ScenarioIndividualB
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -151,7 +153,7 @@ public class ScenarioGroupServiceImpl implements ScenarioGroupService {
     }
 
     /**
-     * [가격전망 그래프] (단일 인덱스 x 단일 기간단위)
+     * [가격전망 그래프]
      * - 시나리오 라인 = '케이스 마지막 실행이 모두 완료'된 최신 케이스의 실행 가격 (재실행 실패/진행 중이면 직전 완료 케이스 유지)
      * - 완료 케이스가 없는 시나리오는 executed=false, 값 null
      * - 판정 상태(실현/폐기)와 무관하게 그룹 내 모든 시나리오를 시리즈로 내린다
@@ -159,8 +161,39 @@ public class ScenarioGroupServiceImpl implements ScenarioGroupService {
      */
     @Override
     public ScenarioGroupGraphRes getScenarioGroupGraph(Long scenarioGroupId, IndexName indexName, GraphPeriodUnit periodUnit) {
+
+        // 시나리오 그룹 유효성 검증
         requireActiveGroup(scenarioGroupId);
-        return buildGraph(scenarioGroupId, indexName, periodUnit, scenarioGroupRepository.findScenariosByGroupId(scenarioGroupId));
+
+        List<ScenarioBaseRow> scenarios = scenarioGroupRepository.findScenariosByGroupId(scenarioGroupId);
+        List<Long> scenarioIds = scenarioIdsOf(scenarios);
+
+        // 시나리오 실행상태 조회
+        ScenarioRunStates runStates = resolveRunStates(scenarioIds);
+
+        return buildGraph(scenarioGroupId, indexName, periodUnit, scenarios, runStates);
+    }
+
+    /**
+     * [그래프 실행상태 폴링]
+     * - 그래프(running/executed)와 동일 소스를 가격 없이 가볍게 반환 — FE는 anyRunning=false가 되면 그래프를 재조회
+     */
+    @Override
+    public ScenarioGroupRunStatusRes getScenarioGroupGraphRunStatus(Long scenarioGroupId) {
+
+        // 시나리오 그룹 유효성 검증
+        requireActiveGroup(scenarioGroupId);
+        List<Long> scenarioIds = scenarioIdsOf(scenarioGroupRepository.findScenariosByGroupId(scenarioGroupId));
+        ScenarioRunStates runStates = resolveRunStates(scenarioIds);
+
+        List<ScenarioRunStatus> scenarios = scenarioIds.stream()
+            .map(scenarioId -> new ScenarioRunStatus(
+                scenarioId,
+                runStates.isCompleted(scenarioId),
+                runStates.isRunning(scenarioId)))
+            .toList();
+
+        return ScenarioGroupRunStatusRes.of(scenarioGroupId, scenarios);
     }
 
     /**
@@ -169,24 +202,50 @@ public class ScenarioGroupServiceImpl implements ScenarioGroupService {
      * - 엑셀 변환/외부 기준선(CME) 병합은 호출 측 책임 (CME는 전용 DB라 dedicated 서비스에서만 접근)
      */
     public Map<IndexName, ScenarioGroupGraphRes> buildGraphs(Long scenarioGroupId, GraphPeriodUnit periodUnit) {
+
+        // 시나리오 그룹 유효성 검증
         requireActiveGroup(scenarioGroupId);
+
         List<ScenarioBaseRow> scenarios = scenarioGroupRepository.findScenariosByGroupId(scenarioGroupId);
 
+        List<Long> scenarioIds = scenarioIdsOf(scenarios);
+
+        // 시나리오 실행상태 조회
+        ScenarioRunStates runStates = resolveRunStates(scenarioIds);
+
         Map<IndexName, ScenarioGroupGraphRes> graphs = new LinkedHashMap<>();
+
+        // JKM, TTF, HH 인덱스 전체
         for (IndexName indexName : IndexName.values()) {
-            graphs.put(indexName, buildGraph(scenarioGroupId, indexName, periodUnit, scenarios));
+            graphs.put(indexName, buildGraph(scenarioGroupId, indexName, periodUnit, scenarios, runStates));
         }
+
         return graphs;
     }
 
-    private ScenarioGroupGraphRes buildGraph(Long scenarioGroupId, IndexName indexName, GraphPeriodUnit periodUnit, List<ScenarioBaseRow> scenarios) {
-        List<Long> scenarioIds = scenarios.stream().map(ScenarioBaseRow::scenarioId).toList();
+    private ScenarioGroupGraphRes buildGraph(Long scenarioGroupId, IndexName indexName, GraphPeriodUnit periodUnit, List<ScenarioBaseRow> scenarios, ScenarioRunStates runStates) {
+
+        List<Long> scenarioIds = scenarioIdsOf(scenarios);
+
+        // 가장 최신 COMPLETED 상태 케이스의 가격
         List<ScenarioPriceRow> prices = scenarioCaseRepository.findLatestCompletedPricesByScenarioIds(scenarioIds, indexName, periodUnit.getDbUnit());
-        // modelRunning = RUNNING 케이스 존재 (case_stat_cd=RUNNING). executed/값은 최신 완료 가격(prices)으로 판정.
-        Set<Long> runningScenarioIds = Set.copyOf(scenarioCaseRepository.findRunningScenarioIds(scenarioIds));
-        // MI Base 기준선 = exec_type_cd=MI_BASE 최신 케이스의 가격 결과 (그룹 공통, scnr_id 없음)
+
+        // MI Base 기준선 = 실행유형코드(MI_BASE) 최신 케이스의 가격 결과
         List<MiBasePriceRow> miBasePrices = scenarioCaseRepository.findLatestMiBasePrices(indexName, periodUnit.getDbUnit());
-        return ScenarioGroupGraphRes.of(scenarioGroupId, indexName, periodUnit, scenarios, prices, runningScenarioIds, miBasePrices);
+
+        return ScenarioGroupGraphRes.of(scenarioGroupId, indexName, periodUnit, scenarios, prices, runStates.running(), runStates.completed(), miBasePrices);
+
+    }
+
+    private static List<Long> scenarioIdsOf(List<ScenarioBaseRow> scenarios) {
+        return scenarios.stream().map(ScenarioBaseRow::scenarioId).toList();
+    }
+
+    /**
+     * 그룹에 포함된 시나리오들의 실행 상태를 running/completed 집합으로 도출
+     * */
+    private ScenarioRunStates resolveRunStates(List<Long> scenarioIds) {
+        return ScenarioRunStates.from(scenarioCaseRepository.findScenarioRunStates(scenarioIds));
     }
 
     /**
