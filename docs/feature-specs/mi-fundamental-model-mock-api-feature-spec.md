@@ -1725,12 +1725,13 @@ phase 1 mock 시연 동선:
 1. `caseId`로 active case를 찾는다. 없거나 `delYn = Y`이면 `RSC_NOT_FOUND`.
 2. case status 조건은 §Volumes Data Query와 동일하게 처리한다.
 3. 쿼리 파라미터 없음. 요청 즉시 차트 + Annual 테이블 + Monthly 테이블을 구성해 단일 응답으로 반환한다.
-4. `chart.series`는 항상 `BASE_CASE`, `USER_ADJUSTED` 두 시리즈를 포함한다. 데이터가 없으면 `points: []`로 반환한다.
+4. chart는 monthly/yearly granularity별로 `BASE_CASE`, `USER_ADJUSTED` 시리즈를 구성한다. 데이터가 없으면 빈 series set 또는 `points: []`로 반환한다.
 5. `annualTable`과 `monthlyTable`의 행 `label`은 데이터 기반 동적 값으로, 서버가 고정 enum으로 강제하지 않는다.
 6. `annualTable.columns`의 `month`는 `null`이다.
 7. `monthlyTable.columns`의 `month`는 1~12 정수다.
 8. 1차 mock에서는 json seed 파일 기반 고정 데이터를 반환한다.
 9. DB-backed 전환 시 Price 조회는 `caseId -> active case -> last_run_id -> run_seq`로 latest result를 해석한다. Price result read는 다른 사용자가 실행한 결과도 로그인 사용자가 조회할 수 있는 shared read model이므로 `usr_no` owner predicate를 적용하지 않는다. endpoint 권한은 controller permission rule로 처리하고, `usr_no` ownership predicate는 update/delete처럼 소유자 변경 작업에 적용한다.
+10. DB-backed Price 조회는 result row를 DB에서 조회한 뒤 응답을 조립한다. chart point는 조회 결과 중 monthly는 서버 현재월 - 6개월, yearly는 서버 현재연도 - 1년부터 포함한다. 이 기간 필터는 chart에만 적용하고 `annualTable`/`monthlyTable` row는 조회된 기간 전체를 유지한다.
 
 ## 11. Risks / Open Questions
 
