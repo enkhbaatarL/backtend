@@ -120,6 +120,69 @@ public record ScenarioGroupGraphRes(
     }
 
     /**
+     * 차트 표시 구간으로 x축(dates)과 모든 시리즈(MI Base + 시나리오) 값을 잘라낸 새 그래프를 만든다.
+     * 구간 밖 기간은 dates에서 제거하고, 각 시리즈도 동일 위치의 값을 함께 제거한다.
+     */
+    public ScenarioGroupGraphRes clip(ChartWindow window) {
+        List<Integer> keepIdx = keepIndices(dates, window);
+
+        if (keepIdx.size() == dates.size()) return this;
+
+        List<String> clippedDates = keepIdx.stream().map(dates::get).toList();
+
+        List<BaseSeries> clippedBase = baseSeries.stream()
+            .map(base -> new BaseSeries(
+                base.seriesId(),
+                base.seriesName(),
+                sliceValues(base.values(), keepIdx)
+            ))
+            .toList();
+
+        List<ScenarioSeries> clippedScenario = scenarioSeries.stream()
+            .map(series -> new ScenarioSeries(
+                series.scenarioId(),
+                series.scenarioName(),
+                series.baseCase(),
+                series.executed(),
+                series.modelRunning(),
+                series.status(),
+                series.statusLabel(),
+                sliceValues(series.baseCaseValues(), keepIdx),
+                sliceValues(series.userAdjustedValues(), keepIdx)
+            ))
+            .toList();
+
+        return new ScenarioGroupGraphRes(
+            scenarioGroupId, indexName, periodUnit, periodUnitLabel, currency, unit,
+            clippedDates, clippedBase, clippedScenario
+        );
+    }
+
+    /**
+     * dates 중 구간에 포함되는 인덱스 목록
+     */
+    private static List<Integer> keepIndices(List<String> dates, ChartWindow window) {
+        List<Integer> keep = new ArrayList<>();
+        for (int i = 0; i < dates.size(); i++) {
+            if (window.contains(dates.get(i))) {
+                keep.add(i);
+            }
+        }
+        return keep;
+    }
+
+    /**
+     * 값 목록에서 keepIdx 위치의 값만 같은 순서로 추린다.
+     * null 시리즈는 null 유지 -> 미실행 시나리오
+     */
+    private static List<BigDecimal> sliceValues(List<BigDecimal> values, List<Integer> keepIdx) {
+        if (values == null) return null;
+        return keepIdx.stream()
+            .map(i -> i < values.size() ? values.get(i) : null)
+            .toList();
+    }
+
+    /**
      * [Dedicated 병합] 다른 기준선(CME 등)을 같은 인덱스 그래프에 합쳐 새 그래프를 만든다.
      *
      * MI(시나리오 + MI Base)와 외부 기준선(CME)은 산출 기준이 달라 기간 범위가 어긋날 수 있다.
@@ -130,6 +193,7 @@ public record ScenarioGroupGraphRes(
      * @param extraBaseSeries 합칠 기준선 시리즈 (extraDates 순서에 정렬돼 있어야 함)
      */
     public static ScenarioGroupGraphRes withBenchmark(ScenarioGroupGraphRes graph, List<String> extraDates, List<BaseSeries> extraBaseSeries) {
+
         List<String> mergedDates = Stream.concat(graph.dates().stream(), extraDates.stream())
             .distinct()
             .sorted()

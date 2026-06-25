@@ -6,6 +6,7 @@ import com.sk.domain.shared.enums.nextgen.IndexName;
 import io.swagger.v3.oas.annotations.media.ArraySchema;
 import io.swagger.v3.oas.annotations.media.Schema;
 import java.math.BigDecimal;
+import java.util.ArrayList;
 import java.util.List;
 
 /**
@@ -64,4 +65,27 @@ public record CmeBenchmarkGraphRes(
             baseSeries
         );
     }
+
+    /**
+     * 차트 표시 구간으로 x축(dates)과 CME 시리즈 값을 잘라낸 새 응답 생성
+     */
+    public CmeBenchmarkGraphRes clip(ChartWindow window) {
+        List<Integer> keepIdx = new ArrayList<>();
+        for (int i = 0; i < dates.size(); i++) {
+            if (window.contains(dates.get(i))) {
+                keepIdx.add(i);
+            }
+        }
+        if (keepIdx.size() == dates.size()) {
+            return this;
+        }
+        List<String> clippedDates = keepIdx.stream().map(dates::get).toList();
+        List<BaseSeries> clippedBase = baseSeries.stream()
+            .map(base -> new BaseSeries(base.seriesId(), base.seriesName(),
+                keepIdx.stream().map(i -> i < base.values().size() ? base.values().get(i) : null).toList()
+            ))
+            .toList();
+        return new CmeBenchmarkGraphRes(indexName, periodUnit, periodUnitLabel, currency, unit, clippedDates, clippedBase);
+    }
+
 }
