@@ -3,18 +3,17 @@ package com.sk.common.utils;
 import com.sk.common.enums.ResultCode;
 import com.sk.common.exception.SystemErrorException;
 import com.sk.common.model.TableRes;
-import lombok.extern.slf4j.Slf4j;
-import org.apache.poi.ss.usermodel.Cell;
-import org.apache.poi.ss.usermodel.Row;
-import org.apache.poi.ss.usermodel.Sheet;
-import org.apache.poi.xssf.streaming.SXSSFWorkbook;
-
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.regex.Pattern;
 import java.util.stream.IntStream;
+import lombok.extern.slf4j.Slf4j;
+import org.apache.poi.ss.usermodel.Cell;
+import org.apache.poi.ss.usermodel.Row;
+import org.apache.poi.ss.usermodel.Sheet;
+import org.apache.poi.xssf.streaming.SXSSFWorkbook;
 
 
 @Slf4j
@@ -22,7 +21,15 @@ public class ExcelUtils {
 
     private static final Pattern INVALID_SHEET_NAME_PATTERN = Pattern.compile("[:\\\\/?*\\[\\]]");
 
+    private ExcelUtils() {
+    }
+
     public static ByteArrayInputStream toExcel(String title, List<TableRes.Column> columns, List<TableRes.Row> rows) {
+
+        return new ByteArrayInputStream(toExcelBytes(title, columns, rows));
+    }
+
+    public static byte[] toExcelBytes(String title, List<TableRes.Column> columns, List<TableRes.Row> rows) {
 
         String[] headers = columns.stream().map(TableRes.Column::name).toArray(String[]::new);
 
@@ -50,7 +57,7 @@ public class ExcelUtils {
             });
 
             workbook.write(out);
-            return new ByteArrayInputStream(out.toByteArray());
+            return out.toByteArray();
         } catch (Exception e) {
             log.error("Excel download failed: {}", e.getMessage(), e);
             throw SystemErrorException.of(ResultCode.Error.SYS_INTERNAL_ERROR, "excel download fail.");

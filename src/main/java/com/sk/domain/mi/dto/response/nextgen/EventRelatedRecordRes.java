@@ -1,13 +1,15 @@
 package com.sk.domain.mi.dto.response.nextgen;
 
+import com.sk.common.utils.DateUtil;
 import com.sk.domain.shared.repository.master.tmm.projection.EventRecordRow;
 import io.swagger.v3.oas.annotations.media.Schema;
 import java.time.LocalDateTime;
+import java.time.LocalTime;
 
 public record EventRelatedRecordRes(
 
-    @Schema(description = "Record 발행/생성 일시")
-    LocalDateTime publishedAt,
+    @Schema(description = "Record 발행/생성 일시 (KST). 시각이 00:00:00이면 날짜만 표기", example = "2025-07-29 23:59:09")
+    String publishedAt,
 
     @Schema(description = "Record 종류 (NEWS, REPORT 등)", example = "NEWS")
     String recordType,
@@ -34,7 +36,7 @@ public record EventRelatedRecordRes(
 
     public static EventRelatedRecordRes from(EventRecordRow row, boolean isPermitted) {
         return new EventRelatedRecordRes(
-            row.getFirstCreated(),
+            toKstPublishedAt(row.getFirstCreated()),
             row.getRecordType(),
             row.getTitle(),
             row.getSummary(),
@@ -44,4 +46,18 @@ public record EventRelatedRecordRes(
             isPermitted
         );
     }
+
+    /**
+     * MI Record 생성시간을 UTC로 해석해 KST로 변환.
+     *   - 변환 후 시각이 자정(00:00:00)이면 날짜만, 아니면 시각까지 표기
+
+     */
+    private static String toKstPublishedAt(LocalDateTime utc) {
+        LocalDateTime kst = DateUtil.utcToKst(utc);
+        if (kst == null) {
+            return null;
+        }
+        return kst.toLocalTime().equals(LocalTime.MIDNIGHT) ? kst.format(DateUtil.YYYY_MM_DD) : kst.format(DateUtil.YYYY_MM_DD_HH_MM_SS);
+    }
+
 }

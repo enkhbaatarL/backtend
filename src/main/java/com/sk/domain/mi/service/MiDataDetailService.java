@@ -5,24 +5,42 @@ import com.sk.common.enums.ResultCode;
 import com.sk.common.exception.AppErrorException;
 import com.sk.common.model.PaginationTableRes;
 import com.sk.common.model.TableRes;
-import com.sk.common.utils.*;
+import com.sk.common.utils.ChartSliceUtil;
+import com.sk.common.utils.CombineUtil;
+import com.sk.common.utils.DateBindingUtil;
+import com.sk.common.utils.DateUtil;
+import com.sk.common.utils.ExcelUtils;
 import com.sk.domain.admin.dto.request.dynamicData.DynamicDataReq;
 import com.sk.domain.admin.service.MybatisDynamicQueryService;
 import com.sk.domain.mi.dto.request.ChartsPersonalizeReq;
 import com.sk.domain.mi.dto.response.PermissionRes;
-import com.sk.domain.mi.dto.response.charts.*;
+import com.sk.domain.mi.dto.response.charts.Chart;
+import com.sk.domain.mi.dto.response.charts.ChartBundleRes;
+import com.sk.domain.mi.dto.response.charts.ChartMetadata;
+import com.sk.domain.mi.dto.response.charts.ChartMetadataSimple;
+import com.sk.domain.mi.dto.response.charts.ChartsPersonalizeRes;
+import com.sk.domain.mi.dto.response.charts.Indicator;
 import com.sk.domain.mi.dto.response.detail.GoodsDataCategoryProjection;
 import com.sk.domain.mi.dto.response.detail.GoodsDataRes;
 import com.sk.domain.mi.dto.response.detail.GoodsDataSourceRes;
 import com.sk.domain.mi.dto.response.detail.UnstructuredDataRes;
-import com.sk.domain.mi.service.chart.*;
+import com.sk.domain.mi.service.chart.ChartBundleFactory;
+import com.sk.domain.mi.service.chart.ChartGenerationService;
+import com.sk.domain.mi.service.chart.ChartUnitConversionService;
+import com.sk.domain.mi.service.chart.PersonalizationService;
+import com.sk.domain.mi.service.chart.TechnicalIndicatorService;
 import com.sk.domain.mi.service.chart.dto.ChartSettingsContext;
 import com.sk.domain.mi.service.chart.dto.PersonalizeKey;
 import com.sk.domain.mi.service.chart.dto.RawDataQueryContext;
 import com.sk.domain.mi.service.chart.dto.UnitCd;
 import com.sk.domain.shared.entity.master.tcm.PersonalizedChartSetting;
 import com.sk.domain.shared.entity.master.tcm.UploadedFile;
-import com.sk.domain.shared.entity.master.tmd.*;
+import com.sk.domain.shared.entity.master.tmd.GoodsData;
+import com.sk.domain.shared.entity.master.tmd.GoodsDataCategory;
+import com.sk.domain.shared.entity.master.tmd.GoodsDataFileSummary;
+import com.sk.domain.shared.entity.master.tmd.GoodsDataSourceDetail;
+import com.sk.domain.shared.entity.master.tmd.ProviderDataColumn;
+import com.sk.domain.shared.entity.master.tmd.UnitConvert;
 import com.sk.domain.shared.enums.FileRelationshipObjectSeparateCode;
 import com.sk.domain.shared.enums.GoodsDataManagementSeparateCode;
 import com.sk.domain.shared.enums.PeriodUnitSeparateCd;
@@ -37,21 +55,23 @@ import com.sk.domain.shared.repository.master.tmd.GoodsDataFileSummaryRepository
 import com.sk.domain.shared.repository.master.tmd.GoodsDataRepository;
 import com.sk.domain.shared.repository.master.tmd.GoodsDataSourceDetailRepository;
 import com.sk.domain.shared.service.permissions.AuthorizationService;
-
-import java.io.ByteArrayInputStream;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+import java.util.Set;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
-
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.ObjectUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.tuple.Pair;
-import org.springframework.cglib.core.Local;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -632,17 +652,6 @@ public class MiDataDetailService {
         // 테이블 응답 생성
         TableRes table = buildTableResponse(dataQuery, queryContext);
 
-        String hdr = table.headers().stream().map(hd -> hd.field())
-            .collect(Collectors.joining(","));
-        System.out.println("[hd]" + hdr);
-        String rst = table.rows().stream()
-            .map(row -> row.cells().stream()
-                .map(cell -> cell == null ? "null" : "'" + cell.toString() + "'")
-                .collect(Collectors.joining(",", "[", "]"))
-            )
-            .collect(Collectors.joining(","));
-        System.out.println("[rst]" + rst);
-
         // 최종 페이징 응답 반환
         return PaginationTableRes.toRes(page, size, totalElements, table.rows(), table.headers());
     }
@@ -655,9 +664,9 @@ public class MiDataDetailService {
      * @param gdsNo     상품 데이터소스 번호
      * @param startDate 조회 시작일
      * @param endDate   조회 종료일
-     * @return 엑셀 파일 스트림
+     * @return 엑셀 파일 바이트
      */
-    public ByteArrayInputStream downloadGoodsDataSourcesRawData(Integer goodsNo, Integer gdNo, Integer gdsNo, LocalDate startDate, LocalDate endDate) {
+    public byte[] downloadGoodsDataSourcesRawData(Integer goodsNo, Integer gdNo, Integer gdsNo, LocalDate startDate, LocalDate endDate) {
 
         GoodsDataSourceDetail gds = getValidatedGoodsDataSource(gdsNo, gdNo, goodsNo);
         RawDataQueryContext queryContext = prepareRawDataQueryContext(gds, DateUtil.toYmd(startDate), DateUtil.toYmd(endDate));
@@ -668,7 +677,7 @@ public class MiDataDetailService {
         TableRes table = buildTableResponse(dataQuery, queryContext);
 
         // 엑셀 파일 생성 및 반환
-        return ExcelUtils.toExcel(gds.getGoodsDataSourceNm(), table.headers(), table.rows());
+        return ExcelUtils.toExcelBytes(gds.getGoodsDataSourceNm(), table.headers(), table.rows());
     }
 
     /**
