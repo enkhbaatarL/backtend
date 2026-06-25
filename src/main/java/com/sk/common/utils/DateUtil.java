@@ -5,6 +5,8 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.time.YearMonth;
+import java.time.ZoneId;
+import java.time.ZoneOffset;
 import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeParseException;
 import java.time.temporal.TemporalAdjusters;
@@ -32,8 +34,17 @@ public final class DateUtil {
     public static final DateTimeFormatter DD_MMM_YYYY_KOREA = DateTimeFormatter.ofPattern("dd-MMM-yyyy", Locale.KOREA);
     public static final DateTimeFormatter DD_MMM_YYYY_ENG = DateTimeFormatter.ofPattern("dd-MMM-yyyy", Locale.ENGLISH);
 
+    public static final ZoneId KST_ZONE = ZoneId.of("Asia/Seoul");
+
 
     private DateUtil() {
+    }
+
+    /**
+     * UTC로 저장된 LocalDateTime을 KST(Asia/Seoul) 기준 LocalDateTime으로 변환한다.
+     */
+    public static LocalDateTime utcToKst(LocalDateTime utc) {
+        return utc == null ? null : utc.atZone(ZoneOffset.UTC).withZoneSameInstant(KST_ZONE).toLocalDateTime();
     }
 
     /**
