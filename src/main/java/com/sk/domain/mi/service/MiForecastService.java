@@ -4339,7 +4339,8 @@ public class MiForecastService {
             redisTemplate.opsForValue()
                 .set(key, json, Duration.ofSeconds(FORECAST_CHART_CACHE_TTL));
         } catch (Exception e) {
-            // ignore serialization failure for cache
+            // 캐시 저장 실패는 기능 동작에 영향 없으므로 경고 로그만 남기고 진행
+            log.warn("예측 차트 캐시 저장 실패: key={}", key, e);
         }
     }
 
@@ -4353,6 +4354,7 @@ public class MiForecastService {
             case M -> AxisUnit.ONE_MONTH;
             case Q -> AxisUnit.ONE_QUARTER;
             case Y -> AxisUnit.ONE_YEAR;
+            default -> throw new IllegalStateException("지원하지 않는 PeriodUnitSeparateCd 값입니다: " + unit);
         };
     }
 
@@ -4507,8 +4509,10 @@ public class MiForecastService {
                                 value.setScale(forecastNumberFormatter.resolveScale(companyNo), RoundingMode.HALF_UP)
                                     .doubleValue();
                         }
-                    } catch (NumberFormatException ignored) {
-                        // ignore invalid numeric data
+                    } catch (NumberFormatException e) {
+                        // 숫자로 변환할 수 없는 예측값은 min/max 계산에서 제외
+                        log.debug("예측값 숫자 변환 실패, min/max 계산에서 제외: value={}",
+                            point.predictionResultVal());
                     }
                 }
             }
@@ -4722,8 +4726,10 @@ public class MiForecastService {
                             value.setScale(forecastNumberFormatter.resolveScale(companyNo), RoundingMode.HALF_UP)
                                 .doubleValue();
                     }
-                } catch (NumberFormatException ignored) {
-                    // ignore invalid numeric data
+                } catch (NumberFormatException e) {
+                    // 숫자로 변환할 수 없는 예측값은 min/max 계산에서 제외
+                    log.debug("예측값 숫자 변환 실패, min/max 계산에서 제외: value={}",
+                        point.predictionResultVal());
                 }
             }
         }
@@ -6066,8 +6072,9 @@ public class MiForecastService {
                         || criteria.compareTo(predictionCriteriaVal) > 0) {
                         predictionCriteriaVal = criteria;
                     }
-                } catch (NumberFormatException ignored) {
-                    // ignore invalid numeric data
+                } catch (NumberFormatException e) {
+                    // 숫자로 변환할 수 없는 기준값은 최대 기준값 계산에서 제외
+                    log.debug("기준값 숫자 변환 실패, 최대 기준값 계산에서 제외: value={}", criteriaVal);
                 }
             }
 
@@ -6075,8 +6082,9 @@ public class MiForecastService {
                 try {
                     predictionResultSum = predictionResultSum.add(new BigDecimal(resultVal));
                     predictionResultCount++;
-                } catch (NumberFormatException ignored) {
-                    // ignore invalid numeric data
+                } catch (NumberFormatException e) {
+                    // 숫자로 변환할 수 없는 결과값은 합계/평균 계산에서 제외
+                    log.debug("결과값 숫자 변환 실패, 합계/평균 계산에서 제외: value={}", resultVal);
                 }
             }
 
@@ -6127,6 +6135,7 @@ public class MiForecastService {
             case ONE_YEAR -> today.minusYears(1).plusDays(1);
             case TWO_YEARS -> today.minusYears(2).plusDays(1);
             case ALL -> today.minusYears(10).plusDays(1);
+            default -> throw new IllegalStateException("지원하지 않는 TotalPeriod 값입니다: " + totalPeriod);
         };
     }
 
@@ -6152,6 +6161,7 @@ public class MiForecastService {
                 yield java.time.temporal.ChronoUnit.DAYS.between(quarterStart, quarterEnd) + 1;
             }
             case ONE_YEAR -> endDate.lengthOfYear();
+            default -> throw new IllegalStateException("지원하지 않는 AxisUnit 값입니다: " + axisUnit);
         };
     }
 
@@ -6211,6 +6221,7 @@ public class MiForecastService {
             }
             case ONE_YEAR -> LocalDate.of(date.getYear(), 1, 1);
             case ONE_DAY -> date;
+            default -> throw new IllegalStateException("지원하지 않는 AxisUnit 값입니다: " + axisUnit);
         };
     }
 
@@ -6234,6 +6245,7 @@ public class MiForecastService {
                 yield String.format("%02d-%dQ", year, quarter);
             }
             case ONE_YEAR -> String.valueOf(date.getYear());
+            default -> throw new IllegalStateException("지원하지 않는 AxisUnit 값입니다: " + axisUnit);
         };
     }
 

@@ -310,6 +310,7 @@ public class MiInsightsService {
             case TWELVE_MONTH -> where.append(" AND tgc.gds_data_keywd_nm >= DATE_SUB(NOW(), INTERVAL 12 MONTH)");
             case ALL_DATES -> {
             } // no filter
+            default -> throw new IllegalStateException("지원하지 않는 기간 값입니다: " + period);
         }
 
         // 오늘 날짜 포함 이전 날짜만 조회
@@ -319,6 +320,7 @@ public class MiInsightsService {
             case NEWEST -> " ORDER BY modifyDt DESC ";
             case OLDEST -> " ORDER BY modifyDt ASC ";
             case MOST_RELEVANT -> " ";
+            default -> throw new IllegalStateException("지원하지 않는 정렬 값입니다: " + sort);
         };
 
         String grouptBy = " GROUP BY tgd.gds_data_no";

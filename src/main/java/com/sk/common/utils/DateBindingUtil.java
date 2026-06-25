@@ -4,12 +4,11 @@ import com.sk.common.enums.ResultCode;
 import com.sk.common.exception.SystemErrorException;
 import com.sk.domain.shared.enums.DateGranularity;
 import com.sk.domain.shared.mapper.dto.SchemaMetadata;
-import org.apache.commons.lang3.tuple.Pair;
-
 import java.time.LocalDate;
 import java.time.LocalTime;
 import java.time.YearMonth;
 import java.time.format.DateTimeFormatter;
+import org.apache.commons.lang3.tuple.Pair;
 
 public class DateBindingUtil {
 
@@ -49,6 +48,7 @@ public class DateBindingUtil {
             case MONTH_VARCHAR -> Pair.of(F_YM.format(YearMonth.from(start)), F_YM.format(YearMonth.from(end)));
             case DAY_VARCHAR -> Pair.of(F_YMD.format(start), F_YMD.format(end));
             case DATETIME -> Pair.of(F_TS.format(start.atStartOfDay()), F_TS.format(end.atTime(LocalTime.MAX)));
+            default -> throw new IllegalStateException("지원하지 않는 날짜 형식 타입입니다: " + resolve(meta));
         };
     }
 
@@ -61,6 +61,7 @@ public class DateBindingUtil {
             case MONTH_VARCHAR -> F_YM.format(YearMonth.from(date));
             case DAY_VARCHAR -> F_YMD.format(date);
             case DATETIME -> F_TS.format(date.atStartOfDay());
+            default -> throw new IllegalStateException("지원하지 않는 날짜 형식 타입입니다: " + resolve(meta));
         };
     }
 

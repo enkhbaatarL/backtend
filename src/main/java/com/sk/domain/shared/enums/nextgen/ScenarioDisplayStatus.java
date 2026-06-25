@@ -42,6 +42,7 @@ public enum ScenarioDisplayStatus {
             case CREATING, CREATED -> PENDING;
             case REALIZED -> REALIZED;
             case DISCARDED -> DISCARDED;
+            default -> throw new IllegalStateException("지원하지 않는 ScenarioStatus 값입니다: " + dbStatus);
         };
     }
 
