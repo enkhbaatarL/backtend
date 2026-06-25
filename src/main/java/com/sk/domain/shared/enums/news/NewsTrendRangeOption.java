@@ -36,6 +36,7 @@ public enum NewsTrendRangeOption {
         return switch (this) {
             case LAST_7_DAYS -> DateRangeOption.LAST_7_DAYS;
             case LAST_14_DAYS -> DateRangeOption.LAST_14_DAYS;
+            default -> throw new IllegalStateException("지원하지 않는 NewsTrendRangeOption 값입니다: " + this);
         };
     }
 }

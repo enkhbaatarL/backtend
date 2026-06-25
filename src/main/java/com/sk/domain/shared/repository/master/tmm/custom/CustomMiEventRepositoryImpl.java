@@ -28,8 +28,8 @@ import com.querydsl.jpa.JPAExpressions;
 import com.querydsl.jpa.JPQLQuery;
 import com.querydsl.jpa.impl.JPAQueryFactory;
 import com.sk.common.utils.JsonUtil;
-import com.sk.domain.shared.entity.master.tmm.QMiScenarioGroup;
 import com.sk.domain.mi.dto.request.nextgen.EventListReq;
+import com.sk.domain.shared.entity.master.tmm.QMiScenarioGroup;
 import com.sk.domain.shared.enums.nextgen.ContentStatus;
 import com.sk.domain.shared.enums.nextgen.IndexName;
 import com.sk.domain.shared.enums.nextgen.TargetType;
@@ -218,6 +218,7 @@ public class CustomMiEventRepositoryImpl implements CustomMiEventRepository {
                 .and(miEvent.isNew.isFalse())
                 .and(isSignalEvent());
             case ALL -> where.and(isSignalEvent());
+            default -> throw new IllegalStateException("지원하지 않는 ContentStatus 값입니다: " + status);
         }
     }
 

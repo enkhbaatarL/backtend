@@ -75,6 +75,7 @@ public enum EconomicCalendarDateRange {
                 LocalDate nextSunday = nextMonday.with(DayOfWeek.SUNDAY);
                 yield Pair.of(DateUtil.toYmdHyphen(nextMonday), DateUtil.toYmdHyphen(nextSunday));
             }
+            default -> throw new IllegalStateException("지원하지 않는 EconomicCalendarDateRange 값입니다: " + this);
         };
     }
 }

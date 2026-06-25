@@ -29,6 +29,7 @@ public enum PeriodUnitSeparateCd {
             case M -> Interval.ONE_MONTH;
             case Q -> Interval.THREE_MONTH;
             case Y -> Interval.ONE_YEAR;
+            default -> throw new IllegalStateException("지원하지 않는 PeriodUnitSeparateCd 값입니다: " + this);
         };
     }
 
@@ -39,6 +40,7 @@ public enum PeriodUnitSeparateCd {
             case M -> Range.ONE_YEAR;
             case Q -> Range.TWO_YEARS;
             case Y -> Range.TWO_YEARS;
+            default -> throw new IllegalStateException("지원하지 않는 PeriodUnitSeparateCd 값입니다: " + this);
         };
     }
 

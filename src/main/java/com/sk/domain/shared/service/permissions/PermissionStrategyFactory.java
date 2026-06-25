@@ -3,11 +3,18 @@ package com.sk.domain.shared.service.permissions;
 import com.sk.common.annotation.PermissionRule;
 import com.sk.domain.shared.enums.PermissionCondition;
 import com.sk.domain.shared.enums.Role;
-import com.sk.domain.shared.service.permissions.strategy.*;
+import com.sk.domain.shared.service.permissions.strategy.AdminPermissionStrategy;
+import com.sk.domain.shared.service.permissions.strategy.AdminWithThirdPartyAccessStrategy;
+import com.sk.domain.shared.service.permissions.strategy.ApiPlusOperatorPermissionStrategy;
+import com.sk.domain.shared.service.permissions.strategy.ApiSubAdminPermissionStrategy;
+import com.sk.domain.shared.service.permissions.strategy.OperatorPermissionStrategy;
+import com.sk.domain.shared.service.permissions.strategy.PermissionStrategy;
+import com.sk.domain.shared.service.permissions.strategy.SKGasUserPermissionStrategy;
+import com.sk.domain.shared.service.permissions.strategy.SystemPermissionStrategy;
+import com.sk.domain.shared.service.permissions.strategy.UserPermissionStrategy;
+import java.util.Arrays;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
-
-import java.util.Arrays;
 
 @Component
 @RequiredArgsConstructor
@@ -117,6 +124,7 @@ public class PermissionStrategyFactory {
             case NONE -> true;
             case THIRD_PARTY_ADMIN_ONLY -> role == Role.ADMIN && authService.isThirdPartyAccessAllowed();
             case SKGAS_COMPANY_USER_ONLY -> role == Role.USER && PermissionCondition.AllowedCompany.SKGAS.getCode().equals(authService.getCompanyCd());
+            default -> throw new IllegalStateException("지원하지 않는 PermissionCondition 값입니다: " + condition);
         };
     }
 
