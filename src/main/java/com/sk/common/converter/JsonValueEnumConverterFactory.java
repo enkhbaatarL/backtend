@@ -4,6 +4,7 @@ import com.fasterxml.jackson.annotation.JsonValue;
 import java.lang.reflect.Field;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.core.convert.converter.Converter;
 import org.springframework.core.convert.converter.ConverterFactory;
 import org.springframework.stereotype.Component;
@@ -13,6 +14,7 @@ import org.springframework.stereotype.Component;
  *
  * Spring MVC의 {@code @RequestParam}, {@code @PathVariable}, {@code @ModelAttribute}, {@code @ParameterObject} 등 쿼리 파라미터 / 경로 변수 바인딩에만 적용됩니다.
  */
+@Slf4j
 @Component
 public class JsonValueEnumConverterFactory implements ConverterFactory<String, Enum<?>> {
 
@@ -45,7 +47,9 @@ public class JsonValueEnumConverterFactory implements ConverterFactory<String, E
                             return (T) constant;
                         }
                     } catch (IllegalAccessException e) {
-                        // fallback to name matching
+                        // @JsonValue 필드 접근 실패 시 enum name 매칭으로 fallback
+                        log.debug("@JsonValue 필드 접근 실패, name 매칭으로 fallback: type={}, field={}",
+                            targetType.getSimpleName(), jsonValueField.getName(), e);
                     }
                 }
 

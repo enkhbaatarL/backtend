@@ -50,8 +50,9 @@ public class RdbDataStreamEventHandler implements StreamEventHandler {
         // 1) value가 바로 배열 형태인 경우: [{...}, {...}]
         try {
             return objectMapper.readValue(rawValue, new TypeReference<List<Map<String, Object>>>() {});
-        } catch (Exception ignored) {
-            // ignore
+        } catch (Exception e) {
+            // 배열 형태 파싱 실패, wrapper 객체 형태로 재시도
+            log.debug("rdb_data 배열 파싱 실패, wrapper 객체 형태로 재시도: {}", e.getMessage());
         }
 
         // 2) value가 wrapper 객체인 경우: {"data": [{...}]}
