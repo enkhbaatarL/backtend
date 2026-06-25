@@ -36,6 +36,7 @@ public enum ScenarioDesignDisplayStatus {
         return switch (groupStatus) {
             case CREATING -> CREATING;
             case CREATED, REALIZED -> CREATED;
+            default -> throw new IllegalStateException("지원하지 않는 ScenarioGroupStatus 값입니다: " + groupStatus);
         };
     }
 

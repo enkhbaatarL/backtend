@@ -4,9 +4,8 @@ import com.querydsl.core.annotations.QueryProjection;
 import com.sk.domain.shared.dto.AuditInfo;
 import com.sk.domain.shared.enums.GoodsAuthManagementSeparateCd;
 import io.swagger.v3.oas.annotations.media.Schema;
-import lombok.Builder;
-
 import java.time.LocalDateTime;
+import lombok.Builder;
 
 public record GoodsCompanyPermissionRes(
 
@@ -45,11 +44,13 @@ public record GoodsCompanyPermissionRes(
             switch (goodsAuthManagementSeparateCd) {
                 case COMPANY -> viewExistsForCompany != null && viewExistsForCompany ? PermissionInfo.all() : PermissionInfo.none();
                 case INDIVIDUAL -> viewCountForIndividual != null && viewCountForIndividual > 0 ? PermissionInfo.some(viewCountForIndividual) : PermissionInfo.some(0);
+                default -> throw new IllegalStateException("지원하지 않는 GoodsAuthManagementSeparateCd 값입니다: " + goodsAuthManagementSeparateCd);
             },
             // downloadPermission 로직
             switch (goodsAuthManagementSeparateCd) {
                 case COMPANY -> downloadExistsForCompany != null && downloadExistsForCompany ? PermissionInfo.all() : PermissionInfo.none();
                 case INDIVIDUAL -> downloadCountForIndividual != null && downloadCountForIndividual > 0 ? PermissionInfo.some(downloadCountForIndividual) : PermissionInfo.some(0);
+                default -> throw new IllegalStateException("지원하지 않는 GoodsAuthManagementSeparateCd 값입니다: " + goodsAuthManagementSeparateCd);
             },
             AuditInfo.ofDetail(createUserId, createDt, modifyUserId, modifyDt, createUserNm, createUserDeptNm, createUserCpnyNm, modifyUserNm, modifyUserDeptNm, modifyUserCpnyNm));
     }

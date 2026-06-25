@@ -1,10 +1,9 @@
 package com.sk.domain.shared.enums.chart;
 
 import com.sk.common.utils.DateUtil;
+import java.time.LocalDate;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
-
-import java.time.LocalDate;
 
 /**
  * 지표 계산(Window) 룩백 정의.<br/>
@@ -24,6 +23,30 @@ public enum LookBack {
     W_SIZE_120(120);
 
     private final int windowSize;
+
+    /**
+     * 최대 windowSize enum 반환
+     */
+    public static LookBack max(LookBack a, LookBack b) {
+        return a.windowSize >= b.windowSize ? a : b;
+    }
+
+    /**
+     * date 에서 interval 을 n 번 뒤로 이동(retreat)한 날짜 반환.
+     * ONE_DAY 는 minusDays(n), ONE_WEEK 는 minusWeeks(n) 처럼 매핑.
+     */
+    private static LocalDate retreat(LocalDate date, Interval interval, int n) {
+        return switch (interval) {
+            case ONE_DAY -> date.minusDays(n);
+            case ONE_WEEK -> date.minusWeeks(n);
+            case TWO_WEEK -> date.minusWeeks(n * 2L);
+            case ONE_MONTH -> date.minusMonths(n);
+            case THREE_MONTH -> date.minusMonths(n * 3L);
+            case SIX_MONTH -> date.minusMonths(n * 6L);
+            case ONE_YEAR -> date.minusYears(n);
+            default -> throw new IllegalStateException("지원하지 않는 Interval 값입니다: " + interval);
+        };
+    }
 
     /**
      * 현재 버킷을 제외하고 추가로 필요한 과거 데이터 포인트 수
@@ -47,29 +70,6 @@ public enum LookBack {
     public LocalDate getLookBackStartDate(LocalDate startDate, Interval interval, int spareBuckets) {
         int totalBuckets = getNeededPastDataPoints() + Math.max(spareBuckets, 0);
         return retreat(startDate, interval, totalBuckets);
-    }
-
-    /**
-     * 최대 windowSize enum 반환
-     */
-    public static LookBack max(LookBack a, LookBack b) {
-        return a.windowSize >= b.windowSize ? a : b;
-    }
-
-    /**
-     * date 에서 interval 을 n 번 뒤로 이동(retreat)한 날짜 반환.
-     * ONE_DAY 는 minusDays(n), ONE_WEEK 는 minusWeeks(n) 처럼 매핑.
-     */
-    private static LocalDate retreat(LocalDate date, Interval interval, int n) {
-        return switch (interval) {
-            case ONE_DAY -> date.minusDays(n);
-            case ONE_WEEK -> date.minusWeeks(n);
-            case TWO_WEEK -> date.minusWeeks(n * 2L);
-            case ONE_MONTH -> date.minusMonths(n);
-            case THREE_MONTH -> date.minusMonths(n * 3L);
-            case SIX_MONTH -> date.minusMonths(n * 6L);
-            case ONE_YEAR -> date.minusYears(n);
-        };
     }
 
 }

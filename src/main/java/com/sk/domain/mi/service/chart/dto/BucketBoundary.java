@@ -2,13 +2,12 @@ package com.sk.domain.mi.service.chart.dto;
 
 import com.sk.common.utils.DateUtil;
 import com.sk.domain.shared.enums.chart.Interval;
-import lombok.Builder;
-
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
+import lombok.Builder;
 
 /**
  * 버킷 경계를 나타내는 내부 레코드 (시작일 포함, 종료일 미포함)
@@ -125,6 +124,7 @@ public record BucketBoundary(
             case THREE_MONTH -> DateUtil.firstDayOfQuarter(cursor.minusDays(1));
             case SIX_MONTH -> DateUtil.firstDayOfHalf(cursor.minusDays(1));
             case ONE_YEAR -> DateUtil.firstDayOfYear(cursor.minusDays(1));
+            default -> throw new IllegalStateException("지원하지 않는 Interval 값입니다: " + interval);
         };
     }
 

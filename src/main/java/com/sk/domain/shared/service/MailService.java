@@ -1,20 +1,5 @@
 package com.sk.domain.shared.service;
 
-import java.math.RoundingMode;
-import java.time.LocalDate;
-import java.util.HashMap;
-import java.util.Map;
-
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.core.io.ClassPathResource;
-import org.springframework.mail.javamail.JavaMailSender;
-import org.springframework.mail.javamail.MimeMessageHelper;
-import org.springframework.scheduling.annotation.Async;
-import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
-import org.thymeleaf.context.Context;
-import org.thymeleaf.spring6.SpringTemplateEngine;
-
 import com.sk.common.enums.ResultCode;
 import com.sk.common.exception.AppErrorException;
 import com.sk.common.properties.MailProperties;
@@ -26,10 +11,21 @@ import com.sk.domain.shared.entity.master.tmd.GoodsDataSourceDetail;
 import com.sk.domain.shared.enums.EmailSendStatusName;
 import com.sk.domain.shared.enums.NotiCrtvlSptCd;
 import com.sk.domain.shared.repository.master.tlm.EmailAccessLogRepository;
-
 import jakarta.mail.internet.MimeMessage;
+import java.math.RoundingMode;
+import java.time.LocalDate;
+import java.util.Map;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.core.io.ClassPathResource;
+import org.springframework.mail.javamail.JavaMailSender;
+import org.springframework.mail.javamail.MimeMessageHelper;
+import org.springframework.scheduling.annotation.Async;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+import org.thymeleaf.context.Context;
+import org.thymeleaf.spring6.SpringTemplateEngine;
 
 @Service
 @RequiredArgsConstructor
@@ -81,6 +77,8 @@ public class MailService {
         String notificationCriticalValueSeparate = switch (goodsCriticalValueSetting.getNotificationCriticalValueSeparateCd()) {
             case DECRATE, INCRATE -> goodsCriticalValueSetting.getNotificationCriticalValueSeparateCd().getDescription();
             case UPPER, LOWER -> "";
+            default -> throw new IllegalStateException("지원하지 않는 NotificationCriticalValueSeparateCd 값입니다: "
+                + goodsCriticalValueSetting.getNotificationCriticalValueSeparateCd());
         };
 
         // 메일 내용 설정(html)

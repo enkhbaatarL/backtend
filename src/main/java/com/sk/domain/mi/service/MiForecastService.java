@@ -4354,6 +4354,7 @@ public class MiForecastService {
             case M -> AxisUnit.ONE_MONTH;
             case Q -> AxisUnit.ONE_QUARTER;
             case Y -> AxisUnit.ONE_YEAR;
+            default -> throw new IllegalStateException("지원하지 않는 PeriodUnitSeparateCd 값입니다: " + unit);
         };
     }
 
@@ -6134,6 +6135,7 @@ public class MiForecastService {
             case ONE_YEAR -> today.minusYears(1).plusDays(1);
             case TWO_YEARS -> today.minusYears(2).plusDays(1);
             case ALL -> today.minusYears(10).plusDays(1);
+            default -> throw new IllegalStateException("지원하지 않는 TotalPeriod 값입니다: " + totalPeriod);
         };
     }
 
@@ -6159,6 +6161,7 @@ public class MiForecastService {
                 yield java.time.temporal.ChronoUnit.DAYS.between(quarterStart, quarterEnd) + 1;
             }
             case ONE_YEAR -> endDate.lengthOfYear();
+            default -> throw new IllegalStateException("지원하지 않는 AxisUnit 값입니다: " + axisUnit);
         };
     }
 
@@ -6218,6 +6221,7 @@ public class MiForecastService {
             }
             case ONE_YEAR -> LocalDate.of(date.getYear(), 1, 1);
             case ONE_DAY -> date;
+            default -> throw new IllegalStateException("지원하지 않는 AxisUnit 값입니다: " + axisUnit);
         };
     }
 
@@ -6241,6 +6245,7 @@ public class MiForecastService {
                 yield String.format("%02d-%dQ", year, quarter);
             }
             case ONE_YEAR -> String.valueOf(date.getYear());
+            default -> throw new IllegalStateException("지원하지 않는 AxisUnit 값입니다: " + axisUnit);
         };
     }
 
