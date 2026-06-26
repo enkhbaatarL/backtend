@@ -35,11 +35,11 @@ public class UserFeedback extends BaseEntity {
     @Comment("사용자피드백번호")
     private Long userFeedbackNo;
 
-    @Column(name = "fedb_page_nm", length = 50)
+    @Column(name = "fedb_page_nm", length = 300)
     @Comment("피드백페이지명")
     private String feedbackPageNm;
 
-    @Column(name = "fedb_sectn_nm", length = 50)
+    @Column(name = "fedb_sectn_nm", length = 300)
     @Comment("피드백섹션명")
     private String feedbackSectionNm;
 
