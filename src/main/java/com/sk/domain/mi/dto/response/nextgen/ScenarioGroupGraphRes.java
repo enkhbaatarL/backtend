@@ -143,6 +143,7 @@ public record ScenarioGroupGraphRes(
                 series.scenarioId(),
                 series.scenarioName(),
                 series.baseCase(),
+                series.displayOrder(),
                 series.executed(),
                 series.modelRunning(),
                 series.status(),
@@ -256,6 +257,9 @@ public record ScenarioGroupGraphRes(
         @Schema(description = "BC(Base Case) 여부", example = "false")
         boolean baseCase,
 
+        @Schema(description = "표시 순서", example = "1")
+        Integer displayOrder,
+
         @Schema(description = "수급모델 실행 완료 여부 (완료 케이스 존재, 인덱스 무관 — run-status 폴링 API와 동일 기준)", example = "true")
         boolean executed,
 
@@ -283,6 +287,7 @@ public record ScenarioGroupGraphRes(
                 scenario.scenarioId(),
                 scenario.title(),
                 Boolean.TRUE.equals(scenario.isBaseline()),
+                scenario.displayOrder(),
                 executed,
                 modelRunning,
                 status,
@@ -306,7 +311,7 @@ public record ScenarioGroupGraphRes(
          */
         ScenarioSeries realignTo(List<String> targetDates, List<String> sourceDates) {
             return new ScenarioSeries(
-                scenarioId, scenarioName, baseCase, executed, modelRunning, status, statusLabel,
+                scenarioId, scenarioName, baseCase, displayOrder, executed, modelRunning, status, statusLabel,
                 realign(targetDates, sourceDates, baseCaseValues),
                 realign(targetDates, sourceDates, userAdjustedValues)
             );

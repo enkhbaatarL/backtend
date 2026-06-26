@@ -20,6 +20,9 @@ public record ScenarioIndividualItemRes(
     @Schema(description = "BC(Base Case) 여부", example = "false")
     boolean baseCase,
 
+    @Schema(description = "표시 순서 (그룹 내)", example = "1")
+    Integer displayOrder,
+
     @Schema(description = "시나리오 생성일시 (최신순 정렬·기간 필터 기준)")
     LocalDateTime createdAt,
 
@@ -51,6 +54,7 @@ public record ScenarioIndividualItemRes(
             row.scenarioId(),
             row.scenarioName(),
             row.baseCase(),
+            row.displayOrder(),
             // mock 전용 경로: mock 데이터에 시나리오 자체 일시가 없어 그룹 일시로 대체
             group.createdAt(),
             group.updatedAt(),
@@ -71,6 +75,7 @@ public record ScenarioIndividualItemRes(
             row.scenarioId(),
             row.scenarioTitle(),
             Boolean.TRUE.equals(row.isBaseline()),
+            row.displayOrder(),
             row.createdAt(),
             row.updatedAt(),
             new ScenarioGroupRefRes(row.scenarioGroupId(), row.groupTitle(), row.groupCreatedAt()),

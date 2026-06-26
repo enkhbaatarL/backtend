@@ -218,7 +218,7 @@ public class ScenarioGroupMockService {
             .map(s -> {
                 ScenarioDisplayStatus status = statusByScenario.getOrDefault(s.scenarioId(), ScenarioDisplayStatus.PENDING);
                 return new ScenarioGroupGraphRes.ScenarioSeries(
-                    s.scenarioId(), s.scenarioName(), s.baseCase(), s.executed(),
+                    s.scenarioId(), s.scenarioName(), s.baseCase(), s.displayOrder(), s.executed(),
                     runningScenarioIds.contains(s.scenarioId()), status, status.getLabel(),
                     s.baseCaseValues(), s.userAdjustedValues());
             })
@@ -238,7 +238,7 @@ public class ScenarioGroupMockService {
                     ScenarioDisplayStatus status = effectiveStatus(row);
                     return new ScenarioGroupGraphRes.ScenarioSeries(
                         row.scenarioId(), row.scenarioName(), Boolean.TRUE.equals(row.baseCase()),
-                        false, runningScenarioIds.contains(row.scenarioId()),
+                        row.displayOrder(), false, runningScenarioIds.contains(row.scenarioId()),
                         status, status.getLabel(), null, null);
                 })
                 .toList();
@@ -263,7 +263,7 @@ public class ScenarioGroupMockService {
             .map(row -> {
                 ScenarioDisplayStatus status = effectiveStatus(row);
                 return new ScenarioGroupDetailRowRes(
-                    row.scenarioId(), row.scenarioName(), row.baseCase(),
+                    row.scenarioId(), row.scenarioName(), row.baseCase(), row.displayOrder(),
                     row.dimensions(), row.probability(), adjusted.get(row.scenarioId()),
                     status, status.getLabel());
             })
@@ -302,7 +302,7 @@ public class ScenarioGroupMockService {
             .map(row -> {
                 ScenarioDisplayStatus status = effectiveStatus(row);
                 return new ScenarioRowRes(
-                    row.scenarioId(), row.scenarioName(), row.baseCase(),
+                    row.scenarioId(), row.scenarioName(), row.baseCase(), row.displayOrder(),
                     row.dimensions(), row.probability(), adjusted.get(row.scenarioId()),
                     status, status.getLabel());
             })

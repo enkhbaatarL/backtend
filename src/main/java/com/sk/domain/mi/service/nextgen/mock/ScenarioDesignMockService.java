@@ -271,7 +271,7 @@ public class ScenarioDesignMockService {
         LocalDateTime now = LocalDateTime.now();
 
         List<ScenarioRowRes> listRows = rows.stream()
-            .map(r -> new ScenarioRowRes(r.scenarioId(), r.scenarioName(), r.baseCase(),
+            .map(r -> new ScenarioRowRes(r.scenarioId(), r.scenarioName(), r.baseCase(), r.displayOrder(),
                 r.dimensions(), r.probability(), r.probability(),
                 ScenarioDisplayStatus.PENDING, ScenarioDisplayStatus.PENDING.getLabel()))
             .toList();
@@ -280,7 +280,7 @@ public class ScenarioDesignMockService {
 
         ScenarioBaseEventRes baseEvent = new ScenarioBaseEventRes(session.miEventId, null, null, null, now);
         List<ScenarioGroupDetailRowRes> detailRows = rows.stream()
-            .map(r -> new ScenarioGroupDetailRowRes(r.scenarioId(), r.scenarioName(), r.baseCase(),
+            .map(r -> new ScenarioGroupDetailRowRes(r.scenarioId(), r.scenarioName(), r.baseCase(), r.displayOrder(),
                 r.dimensions(), r.probability(), r.probability(),
                 ScenarioDisplayStatus.PENDING, ScenarioDisplayStatus.PENDING.getLabel()))
             .toList();
