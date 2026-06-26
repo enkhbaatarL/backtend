@@ -9,6 +9,7 @@ public record EventDetailBaseRow(
     LocalDateTime createDt,
     LocalDateTime modifyDt,
     LocalDateTime latestRecordFirstCreated,
+    LocalDateTime oldestRecordFirstCreated,
     String level1Code,
     String level1Label,
     String level2Code,

@@ -73,6 +73,10 @@ public class MiEvent extends BaseEntity {
     @Comment("Event 관련 Record 중 최신 first_created 시각")
     private LocalDateTime latestRecordFirstCreated;
 
+    @Column(name = "oldest_record_first_created")
+    @Comment("Event 관련 Record 중 오래된 first_created 시각")
+    private LocalDateTime oldestRecordFirstCreated;
+
     @Column(name = "signal_yn", nullable = false, length = 1, columnDefinition = "char(1)")
     @Comment("신호 여부")
     @Convert(converter = BooleanToYNAttributeConverter.class)
@@ -104,7 +108,7 @@ public class MiEvent extends BaseEntity {
     public MiEvent(Long miEventId, String eventTitle, String oneLineSummary, String keyBulletsJson,
                    String detailAnalysis, String tagsJson,
                    MiEventTypeL2 eventTypeL2, String estimatedImpactId,
-                   LocalDateTime occurredAt, LocalDateTime latestRecordFirstCreated,
+                   LocalDateTime occurredAt, LocalDateTime latestRecordFirstCreated, LocalDateTime oldestRecordFirstCreated,
                    Boolean isSignal, BigDecimal signalConfidence, String signalReason,
                    Boolean isScenarioSuggested, String scenarioSuggestReason, Boolean isNew) {
         this.miEventId = miEventId;
@@ -117,6 +121,7 @@ public class MiEvent extends BaseEntity {
         this.estimatedImpactId = estimatedImpactId;
         this.occurredAt = occurredAt;
         this.latestRecordFirstCreated = latestRecordFirstCreated;
+        this.oldestRecordFirstCreated = oldestRecordFirstCreated;
         this.isSignal = isSignal;
         this.signalConfidence = signalConfidence;
         this.signalReason = signalReason;
