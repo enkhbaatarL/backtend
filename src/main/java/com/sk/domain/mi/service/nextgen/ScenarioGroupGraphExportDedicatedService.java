@@ -2,6 +2,7 @@ package com.sk.domain.mi.service.nextgen;
 
 import com.sk.domain.mi.dto.response.nextgen.CmeBenchmarkGraphRes;
 import com.sk.domain.mi.dto.response.nextgen.ScenarioGroupGraphRes;
+import com.sk.domain.mi.service.nextgen.support.IndexGraph;
 import com.sk.domain.mi.service.nextgen.support.ScenarioGroupGraphExcelMapper;
 import com.sk.domain.shared.enums.nextgen.GraphPeriodUnit;
 import com.sk.domain.shared.enums.nextgen.IndexName;
@@ -31,7 +32,7 @@ public class ScenarioGroupGraphExportDedicatedService {
      * - MI와 CME는 기준이 달라 기간 범위가 어긋날 수 있으며, x축은 양측 union 없는 구간은 빈칸으로 둔다.
      */
     public ByteArrayInputStream exportScenarioGroupGraph(Long scenarioGroupId, GraphPeriodUnit periodUnit) {
-        Map<IndexName, ScenarioGroupGraphRes> graphs = scenarioGroupService.buildGraphs(scenarioGroupId, periodUnit);
+        Map<IndexName, IndexGraph> graphs = scenarioGroupService.buildGraphs(scenarioGroupId, periodUnit);
 
         List<ScenarioGroupGraphRes> merged = graphs.entrySet().stream()
             .map(entry -> mergeCmeBenchmark(entry.getKey(), entry.getValue(), periodUnit))
@@ -40,9 +41,11 @@ public class ScenarioGroupGraphExportDedicatedService {
         return ScenarioGroupGraphExcelMapper.toExcel(merged);
     }
 
-    /** 인덱스별 CME 기준선을 같은 그래프에 기준선 시리즈로 합친다. */
-    private ScenarioGroupGraphRes mergeCmeBenchmark(IndexName indexName, ScenarioGroupGraphRes graph, GraphPeriodUnit periodUnit) {
-        CmeBenchmarkGraphRes cme = cmeBenchmarkService.getCmeBenchmarkGraph(indexName, periodUnit);
-        return ScenarioGroupGraphRes.withBenchmark(graph, cme.dates(), cme.baseSeries());
+    /**
+     * 인덱스별 CME 기준선을 같은 그래프에 기준선 시리즈로 합친다.
+     */
+    private ScenarioGroupGraphRes mergeCmeBenchmark(IndexName indexName, IndexGraph indexGraph, GraphPeriodUnit periodUnit) {
+        CmeBenchmarkGraphRes cme = cmeBenchmarkService.getCmeBenchmarkGraph(indexName, periodUnit, indexGraph.window());
+        return ScenarioGroupGraphRes.withBenchmark(indexGraph.graph(), cme.dates(), cme.baseSeries());
     }
 }

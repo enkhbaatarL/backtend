@@ -19,6 +19,9 @@ public record EventRelatedScenarioRes(
     @Schema(description = "BC(Base Case) 여부", example = "false")
     boolean baseCase,
 
+    @Schema(description = "표시 순서", example = "1")
+    Integer displayOrder,
+
     @Schema(description = "차원값 목록 (dimensionColumns 순서와 매칭)")
     List<ScenarioDimensionRes> dimensions,
 
@@ -42,6 +45,7 @@ public record EventRelatedScenarioRes(
             row.scenarioId(),
             row.title(),
             Boolean.TRUE.equals(row.isBaseline()),
+            row.displayOrder(),
             dimensions,
             row.probabilityScore() == null ? null : row.probabilityScore().intValue(),
             adjustedProbability,

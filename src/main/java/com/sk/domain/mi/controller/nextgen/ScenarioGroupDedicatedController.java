@@ -55,7 +55,7 @@ public class ScenarioGroupDedicatedController {
 
     @ApiOrder(1)
     @Operation(
-        summary = "Scenario Group 그래프 CME 벤치마크 기준선 조회 API",
+        summary = "Scenario Group 그래프 CME 벤치마크 기준선 조회 API (Dedicated)",
         description = """
             그래프 뷰의 CME 벤치마크 기준선 데이터입니다. (전용 DB `midb-skgas` 조회) <br>
             `indexName`(기본 JKM) × `periodUnit`(기본 monthly)으로 **단일 인덱스 × 단일 기간단위**만 반환합니다. <br>
@@ -68,7 +68,7 @@ public class ScenarioGroupDedicatedController {
             - `baseSeries`: 기준선 — `CME` 제공 (seriesId / seriesName / values, dates와 동일 순서)
               - 모든 가격 값은 **소수 2자리 반올림(HALF_UP)**
               - 연도별은 해당 연 월값의 평균
-            - 표출 기간: 현재 연도 ~ 2030년 (Future, index_div=F 기준)
+            - 표출 기간: 월별 = -6M ~ MI BASE 마지막 / 연도별 = -1Y ~ 2030년
             """
     )
     @Parameter(name = "indexName", description = "조회 인덱스 (JKM / TTF / HH). 기본값 JKM")
@@ -94,9 +94,6 @@ public class ScenarioGroupDedicatedController {
             MI Base/시나리오 시리즈(공통 DB) + **CME 기준선(전용 DB)을 한 파일에 합본**합니다. <br>
             기간 단위는 `periodUnit`(기본 monthly) 하나만 적용되며, 시나리오별로 베이스케이스/사용자조정 2행씩 내려갑니다. <br>
             모든 가격 값은 **소수 2자리 반올림(HALF_UP)** 으로 표기됩니다. <br>
-
-            <br>
-            MI와 CME는 산출 기준이 달라 기간 범위가 어긋날 수 있으며, 정합하지 않고 각자 자기 기간을 표출합니다(겹치지 않는 칸은 빈 칸).
             """
     )
     @Parameter(name = "scenarioGroupId", description = "시나리오 그룹 ID", example = "1")

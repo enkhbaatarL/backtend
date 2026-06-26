@@ -4,6 +4,7 @@ import com.sk.common.enums.ResultCode;
 import com.sk.common.exception.AppErrorException;
 import com.sk.common.model.PaginationRes;
 import com.sk.domain.mi.dto.request.nextgen.ScenarioGroupListReq;
+import com.sk.domain.mi.dto.response.nextgen.ChartWindow;
 import com.sk.domain.mi.dto.response.nextgen.ScenarioDetailViewRes;
 import com.sk.domain.mi.dto.response.nextgen.ScenarioDimensionColumnRes;
 import com.sk.domain.mi.dto.response.nextgen.ScenarioDimensionRes;
@@ -21,6 +22,7 @@ import com.sk.domain.mi.dto.response.nextgen.ScenarioRowRes;
 import com.sk.domain.mi.dto.response.nextgen.ScenarioSignpostDefinitionViewRes;
 import com.sk.domain.mi.dto.response.nextgen.ScenarioSignpostMonitoringRes;
 import com.sk.domain.mi.dto.response.nextgen.ScenarioStatusRes;
+import com.sk.domain.mi.service.nextgen.support.IndexGraph;
 import com.sk.domain.mi.service.nextgen.support.ScenarioDimensionMapper;
 import com.sk.domain.mi.service.nextgen.support.ScenarioDimensionMapper.GroupDimensionTemplate;
 import com.sk.domain.mi.service.nextgen.support.ScenarioProbabilityAllocator;
@@ -41,6 +43,7 @@ import com.sk.domain.shared.repository.master.tmm.projection.ScenarioDetailBaseR
 import com.sk.domain.shared.repository.master.tmm.projection.ScenarioGroupBaseRow;
 import com.sk.domain.shared.repository.master.tmm.projection.ScenarioGroupDetailBaseRow;
 import com.sk.domain.shared.repository.master.tmm.projection.ScenarioIndividualBaseRow;
+import java.util.Comparator;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -171,7 +174,7 @@ public class ScenarioGroupServiceImpl implements ScenarioGroupService {
         // 시나리오 실행상태 조회
         ScenarioRunStates runStates = resolveRunStates(scenarioIds);
 
-        return buildGraph(scenarioGroupId, indexName, periodUnit, scenarios, runStates);
+        return buildGraph(scenarioGroupId, indexName, periodUnit, scenarios, runStates).graph();
     }
 
     /**
@@ -198,7 +201,7 @@ public class ScenarioGroupServiceImpl implements ScenarioGroupService {
      * - 엑셀 다운로드 등 전 인덱스(JKM/TTF/HH)를 한 번에 빌드해야 하는 곳에서 사용 (인덱스별 그래프, 단일 기간단위)
      * - 엑셀 변환/외부 기준선(CME) 병합은 호출 측 책임 (CME는 전용 DB라 dedicated 서비스에서만 접근)
      */
-    public Map<IndexName, ScenarioGroupGraphRes> buildGraphs(Long scenarioGroupId, GraphPeriodUnit periodUnit) {
+    public Map<IndexName, IndexGraph> buildGraphs(Long scenarioGroupId, GraphPeriodUnit periodUnit) {
 
         // 시나리오 그룹 유효성 검증
         requireActiveGroup(scenarioGroupId);
@@ -210,7 +213,7 @@ public class ScenarioGroupServiceImpl implements ScenarioGroupService {
         // 시나리오 실행상태 조회
         ScenarioRunStates runStates = resolveRunStates(scenarioIds);
 
-        Map<IndexName, ScenarioGroupGraphRes> graphs = new LinkedHashMap<>();
+        Map<IndexName, IndexGraph> graphs = new LinkedHashMap<>();
 
         // JKM, TTF, HH 인덱스 전체
         for (IndexName indexName : IndexName.values()) {
@@ -220,7 +223,7 @@ public class ScenarioGroupServiceImpl implements ScenarioGroupService {
         return graphs;
     }
 
-    private ScenarioGroupGraphRes buildGraph(Long scenarioGroupId, IndexName indexName, GraphPeriodUnit periodUnit, List<ScenarioBaseRow> scenarios, ScenarioRunStates runStates) {
+    private IndexGraph buildGraph(Long scenarioGroupId, IndexName indexName, GraphPeriodUnit periodUnit, List<ScenarioBaseRow> scenarios, ScenarioRunStates runStates) {
 
         List<Long> scenarioIds = scenarioIdsOf(scenarios);
 
@@ -230,8 +233,22 @@ public class ScenarioGroupServiceImpl implements ScenarioGroupService {
         // MI Base 기준선 = 실행유형코드(MI_BASE) 최신 케이스의 가격 결과
         List<MiBasePriceRow> miBasePrices = scenarioCaseRepository.findLatestMiBasePrices(indexName, periodUnit.getDbUnit());
 
-        return ScenarioGroupGraphRes.of(scenarioGroupId, indexName, periodUnit, scenarios, prices, runStates.running(), runStates.completed(), miBasePrices);
+        ScenarioGroupGraphRes graph = ScenarioGroupGraphRes.of(scenarioGroupId, indexName, periodUnit, scenarios, prices, runStates.running(), runStates.completed(), miBasePrices);
 
+        // 차트 표시 구간으로 클리핑 (CME/MI/시나리오 동일 창 — 화면 및 엑셀 공통 정책)
+        ChartWindow window = ChartWindow.of(periodUnit, getMiBaseEndResult(miBasePrices, periodUnit));
+        return new IndexGraph(graph.clip(window), window);
+    }
+
+    /**
+     * MI Base 가장 큰 기간 조회
+     */
+    private static String getMiBaseEndResult(List<MiBasePriceRow> miBasePrices, GraphPeriodUnit periodUnit) {
+        return miBasePrices.stream()
+            .map(MiBasePriceRow::periodKey)
+            .max(Comparator.naturalOrder())
+            .map(periodUnit::formatPeriodKey)
+            .orElse(null);
     }
 
     private static List<Long> scenarioIdsOf(List<ScenarioBaseRow> scenarios) {

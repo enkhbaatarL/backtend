@@ -64,7 +64,9 @@ import com.sk.domain.shared.repository.master.tmd.projection.ScenarioCaseVolumeR
 import com.sk.domain.shared.service.FileService;
 import com.sk.domain.shared.service.permissions.AuthorizationService;
 import java.math.BigDecimal;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.YearMonth;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -1347,13 +1349,14 @@ public class FundamentalModelCaseServiceImpl implements FundamentalModelCaseServ
                 monthlyRows.add(parsedRow);
             }
         }
+        LocalDate chartBaseDate = LocalDate.now();
 
         return new FundamentalModelPriceRes(
             caseId,
             FundamentalModelPriceRes.FIXED_UNIT,
             new FundamentalModelPriceRes.PriceChart(
-                toPriceSeriesSets(monthlyRows),
-                toPriceSeriesSets(annualRows)
+                toPriceSeriesSets(filterMonthlyPriceChartRows(monthlyRows, YearMonth.from(chartBaseDate))),
+                toPriceSeriesSets(filterYearlyPriceChartRows(annualRows, chartBaseDate.getYear()))
             ),
             new FundamentalModelPriceRes.PriceTable(
                 ANNUAL_PRICE_COLUMNS,
@@ -1364,6 +1367,20 @@ public class FundamentalModelCaseServiceImpl implements FundamentalModelCaseServ
                 toPriceTableRows(monthlyRows)
             )
         );
+    }
+
+    private List<ParsedPriceRow> filterMonthlyPriceChartRows(List<ParsedPriceRow> priceRows, YearMonth baseMonth) {
+        YearMonth chartStartMonth = baseMonth.minusMonths(6);
+        return priceRows.stream()
+            .filter(row -> !YearMonth.of(row.year(), row.month()).isBefore(chartStartMonth))
+            .toList();
+    }
+
+    private List<ParsedPriceRow> filterYearlyPriceChartRows(List<ParsedPriceRow> priceRows, int baseYear) {
+        int chartStartYear = baseYear - 1;
+        return priceRows.stream()
+            .filter(row -> row.year() >= chartStartYear)
+            .toList();
     }
 
     private ParsedPriceRow parsePriceRow(ScenarioCasePriceRow priceRow) {
