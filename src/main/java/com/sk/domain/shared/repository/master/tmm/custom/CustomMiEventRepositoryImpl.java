@@ -274,6 +274,7 @@ public class CustomMiEventRepositoryImpl implements CustomMiEventRepository {
                 miEvent.createDt,
                 miEvent.modifyDt,
                 miEvent.latestRecordFirstCreated,
+                miEvent.oldestRecordFirstCreated,
                 miEventTypeL1.level1Code,
                 miEventTypeL1.level1Label,
                 miEventTypeL2.level2Code,

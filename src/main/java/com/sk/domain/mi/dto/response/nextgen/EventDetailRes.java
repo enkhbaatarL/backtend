@@ -1,5 +1,6 @@
 package com.sk.domain.mi.dto.response.nextgen;
 
+import com.sk.common.utils.DateUtil;
 import com.sk.domain.shared.enums.nextgen.ContentStatus;
 import com.sk.domain.shared.enums.nextgen.EventSignalType;
 import com.sk.domain.shared.enums.nextgen.ScenarioDesignDisplayStatus;
@@ -29,10 +30,10 @@ public record EventDetailRes(
     @Schema(description = "상태 라벨", example = "신규")
     String statusLabel,
 
-    @Schema(description = "생성일시")
+    @Schema(description = "생성일시 (KST). tmm_mi_mievent_m.oldest_record_first_created, 응답 시 KST 변환", example = "2026-05-12 15:08:34")
     LocalDateTime createdAt,
 
-    @Schema(description = "수정일시")
+    @Schema(description = "갱신일시 (KST). tmm_mi_mievent_m.latest_record_first_created, 응답 시 KST 변환", example = "2026-05-12 15:08:34")
     LocalDateTime updatedAt,
 
     @Schema(description = "Event 관련 Record 중 최신 first_created 시각")
@@ -94,9 +95,9 @@ public record EventDetailRes(
             row.eventTitle(),
             status,
             status.getLabel(),
-            row.createDt(),
-            row.modifyDt(),
-            row.latestRecordFirstCreated(),
+            DateUtil.utcToKst(row.oldestRecordFirstCreated()),
+            DateUtil.utcToKst(row.latestRecordFirstCreated()),
+            DateUtil.utcToKst(row.latestRecordFirstCreated()),
             signalType,
             signalType.getLabel(),
             Boolean.TRUE.equals(row.isScenarioSuggested()),
