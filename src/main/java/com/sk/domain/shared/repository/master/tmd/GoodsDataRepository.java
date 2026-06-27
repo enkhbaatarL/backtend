@@ -30,7 +30,8 @@ public interface GoodsDataRepository extends JpaRepository<GoodsData, Integer> {
                 gd.goodsDataNo,
                 gd.goodsDataNm,
                 gd.goodsDataExpn,
-                gd.publishedDate
+                gd.publishedDate,
+                gd.publishedDateTmp
             )
             FROM GoodsData gd
                 LEFT JOIN gd.customerCompany cc

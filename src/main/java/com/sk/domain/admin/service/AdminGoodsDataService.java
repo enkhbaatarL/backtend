@@ -9,6 +9,7 @@ import com.sk.domain.shared.repository.master.tmd.GoodsDataExtensionRepository;
 import com.sk.domain.shared.repository.master.tcm.UploadedFileRepository;
 import java.io.IOException;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.*;
 
 import com.sk.common.properties.ProviderDefaultProperties;
@@ -243,7 +244,7 @@ public class AdminGoodsDataService {
 
         return GoodsDataDetailRes.of(
                 goodsData, docCategoryList, langCategoryList, structuredDataList,
-            unstructuredDataList, goodsData.getPublishedDate(), goodsDataExtension);
+            unstructuredDataList, goodsData.getPublishedDate(), goodsData.getPublishedDateTmp(), goodsDataExtension);
     }
 
     private void validateOperatorAccess(int companyNo, int providerNo, int goodsNo) {
@@ -349,6 +350,10 @@ public class AdminGoodsDataService {
             return DateUtil.fromYmdHyphen(publishedDate);
         }
         return resolveLatestCriteriaDt(unstructuredDataList);
+    }
+
+    private LocalDateTime resolvePublishedDateTmp(String publishedDate) {
+        return DateUtil.fromYmdHms(publishedDate);
     }
 
     private LocalDate resolveLatestCriteriaDt(List<UnstructuredDataReq> unstructuredDataList) {
@@ -495,7 +500,7 @@ public class AdminGoodsDataService {
             // gds_data_dstg_id는 LSEG의 식별 ID로 사용하려고 만는 컬럼이라서 무시하셔도 됩니다.
             GoodsData savedGoodsData = goodsDataRepository
                     .save(GoodsData.of(goods, customerCompany, dto.goodsDataNm(), dto.goodsDataExpn(), dto.goodsDataSummaryCntt(),
-                            dto.dataContributorNm(), false, true, resolvePublishedDate(dto), dto.authors()));
+                            dto.dataContributorNm(), false, true, resolvePublishedDate(dto), resolvePublishedDateTmp(dto.publishedDate()), dto.authors()));
 
             updateGoodsDataExtension(savedGoodsData, dto);
 
@@ -665,7 +670,7 @@ public class AdminGoodsDataService {
     }
 
     private void internalUpdateGoodsData(int providerNo, GoodsData goodsData, GoodsDataUpdateReq dto) {
-        goodsData.update(dto.goodsDataExpn(), dto.goodsDataSummaryCntt(), dto.dataContributorNm(), DateUtil.fromYmdHyphen(dto.publishedDate()), dto.authors());
+        goodsData.update(dto.goodsDataExpn(), dto.goodsDataSummaryCntt(), dto.dataContributorNm(), DateUtil.fromYmdHyphen(dto.publishedDate()), DateUtil.fromYmdHms(dto.publishedDate()), dto.authors());
 
         updateGoodsDataExtension(goodsData, dto);
 
@@ -867,7 +872,7 @@ public class AdminGoodsDataService {
             if (!StringUtils.hasText(dto.publishedDate())) {
                 LocalDate resolvedPublishedDate = resolveLatestCriteriaDt(dto.unstructuredDataList());
                 if (resolvedPublishedDate != null) {
-                    goodsData.update(null, null, null, resolvedPublishedDate, null);
+                    goodsData.update(null, null, null, resolvedPublishedDate, null, null);
                 }
             }
 

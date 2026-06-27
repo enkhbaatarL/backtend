@@ -92,6 +92,10 @@ public class GoodsData extends BaseEntity {
     @Comment("발행일")
     private LocalDate publishedDate;
 
+    @Column(name = "pub_dt_tmp")
+    @Comment("발행일 임시")
+    private LocalDateTime publishedDateTmp;
+
     @Column(name = "gds_data_outlook", columnDefinition = "text")
     @Comment("상품데이터전망")
     private String gdsDataOutlook;
@@ -99,7 +103,7 @@ public class GoodsData extends BaseEntity {
     @Builder
     public GoodsData(LocalDateTime createDt, LocalDateTime modifyDt, String createUserId, String modifyUserId, Boolean isDeleted,
             Integer goodsDataNo, String goodsDataDistinguishId, String goodsDataNm, String goodsDataExpn, String goodsDataSummaryCntt, Goods goods,
-            CustomerCompany customerCompany, String dataContributorNm, Boolean isMetaDataUploaded, Boolean isGoodsDataMarked, LocalDate publishedDate) {
+            CustomerCompany customerCompany, String dataContributorNm, Boolean isMetaDataUploaded, Boolean isGoodsDataMarked, LocalDate publishedDate, LocalDateTime publishedDateTmp) {
         super(createDt, modifyDt, createUserId, modifyUserId, isDeleted);
         this.goodsDataNo = goodsDataNo;
         this.goodsDataDistinguishId = goodsDataDistinguishId;
@@ -112,10 +116,11 @@ public class GoodsData extends BaseEntity {
         this.isMetaDataUploaded = isMetaDataUploaded;
         this.isGoodsDataMarked = isGoodsDataMarked;
         this.publishedDate = publishedDate;
+        this.publishedDateTmp = publishedDateTmp;
     }
 
     public static GoodsData of(Goods goods, CustomerCompany customerCompany, String goodsDataNm, String goodsDataExpn, String goodsDataSummaryCntt,
-            String dataContributorNm, Boolean isMetaDataUploaded, Boolean isGoodsDataMarked, LocalDate publishedDate, String authors) {
+            String dataContributorNm, Boolean isMetaDataUploaded, Boolean isGoodsDataMarked, LocalDate publishedDate, LocalDateTime publishedDateTmp, String authors) {
         return GoodsData.builder()
                 .goodsDataNm(goodsDataNm)
                 .goodsDataExpn(goodsDataExpn)
@@ -126,10 +131,11 @@ public class GoodsData extends BaseEntity {
                 .isMetaDataUploaded(isMetaDataUploaded)
                 .isGoodsDataMarked(isGoodsDataMarked)
                 .publishedDate(publishedDate)
+                .publishedDateTmp(publishedDateTmp)
                 .build();
     }
 
-    public void update(String goodsDataExpn, String goodsDataSummaryCntt, String dataContributorNm, LocalDate publishedDate, String authors) {
+    public void update(String goodsDataExpn, String goodsDataSummaryCntt, String dataContributorNm, LocalDate publishedDate, LocalDateTime publishedDateTmp, String authors) {
         if (StringUtils.isNotEmpty(goodsDataExpn)) {
             this.goodsDataExpn = goodsDataExpn;
         }
@@ -143,6 +149,9 @@ public class GoodsData extends BaseEntity {
         }
         if (publishedDate != null) {
             this.publishedDate = publishedDate;
+        }
+        if (publishedDateTmp != null) {
+            this.publishedDateTmp = publishedDateTmp;
         }
 
         this.modifyDt = LocalDateTime.now();

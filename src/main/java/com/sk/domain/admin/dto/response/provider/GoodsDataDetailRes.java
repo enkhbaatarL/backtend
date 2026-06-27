@@ -5,6 +5,7 @@ import com.sk.domain.admin.dto.request.provider.Recommendation;
 import com.sk.domain.admin.dto.request.provider.UnstructuredDataLinkReq;
 import com.sk.domain.shared.entity.master.tmd.GoodsDataExtension;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.List;
 
 import com.sk.domain.shared.entity.master.tmd.GoodsData;
@@ -27,6 +28,7 @@ public record GoodsDataDetailRes(
 
     // OMDIA 추가
     @Schema(description = "발행일", example = "2025-12-31") String publishedDate, // DB 컬럼추가
+    @Schema(description = "발행일시", example = "2025-12-31 15:30:45") String publishedDateTime,
     @Schema(description = "저자 리스트", example = "Jane, John Doe") String authors, // DB 컬럼 추가
 
     // OMDIA 부가 정보로 저장
@@ -49,6 +51,7 @@ public record GoodsDataDetailRes(
       List<StructuredDataRes> structuredDataList,
       List<UnstructuredDataRes> unstructuredDataList,
       String publishedDate,
+      String publishedDateTime,
       String authors,
       List<Recommendation> recommendations,
       String url,
@@ -64,6 +67,7 @@ public record GoodsDataDetailRes(
     this.structuredDataList = structuredDataList;
     this.unstructuredDataList = unstructuredDataList;
     this.publishedDate = publishedDate;
+    this.publishedDateTime = publishedDateTime;
     this.authors = authors;
     this.recommendations = recommendations;
     this.url = url;
@@ -78,6 +82,7 @@ public record GoodsDataDetailRes(
       List<StructuredDataRes> structuredDataList,
       List<UnstructuredDataRes> unstructuredDataList,
       LocalDate publishedDate,
+      LocalDateTime publishedDateTmp,
       GoodsDataExtension goodsDataExtension) {
 
       List<Recommendation> recommendations = null;
@@ -105,6 +110,7 @@ public record GoodsDataDetailRes(
         .structuredDataList(structuredDataList)
         .unstructuredDataList(unstructuredDataList)
         .publishedDate(publishedDate == null ? null : DateUtil.toYmdHyphen(publishedDate))
+        .publishedDateTime(publishedDateTmp != null ? DateUtil.toYyyyMmDdHms(publishedDateTmp) : null)
         .authors(authors)
         .recommendations(recommendations)
         .url(url)

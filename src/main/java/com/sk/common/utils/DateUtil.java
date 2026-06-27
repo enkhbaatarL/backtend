@@ -76,10 +76,25 @@ public final class DateUtil {
     }
 
     /**
-     * "yyyy-MM-dd" 문자열을 LocalDate로 변환
+     * "yyyy-MM-dd HH:mm:ss" 문자열을 LocalDate로 변환
      */
     public static LocalDate fromYmdHyphen(String dateStr) {
-        return dateStr == null ? null : LocalDate.parse(dateStr, YYYY_MM_DD);
+        return parseDate(dateStr);
+    }
+
+    /**
+     * "yyyy-MM-dd HH:mm:ss" 문자열을 LocalDateTime으로 변환
+     */
+    public static LocalDateTime fromYmdHms(String dateStr) {
+        if (dateStr == null || dateStr.isBlank()) return null;
+        try {
+            if (dateStr.length() > 10) {
+                return LocalDateTime.parse(dateStr, YYYY_MM_DD_HH_MM_SS);
+            }
+            return null;
+        } catch (Exception e) {
+            return null;
+        }
     }
 
     /**
