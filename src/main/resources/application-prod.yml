@@ -116,7 +116,7 @@ api:
     connection-timeout: 1s
     read-timeout: 20s
   scenario-design-agent:
-    url: http://agent-sceanario-skgas-app-prod.mi-skgas.svc.cluster.local:8000
+    url: http://agent-scenario-skgas-app-prod.mi-skgas.svc.cluster.local:8000
     connection-timeout: 1s
     read-timeout: 60s
 
