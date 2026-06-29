@@ -1,5 +1,20 @@
 package com.sk.domain.shared.service;
 
+import com.amazonaws.HttpMethod;
+import com.amazonaws.services.s3.AmazonS3;
+import com.amazonaws.services.s3.Headers;
+import com.amazonaws.services.s3.model.AccessControlList;
+import com.amazonaws.services.s3.model.CannedAccessControlList;
+import com.amazonaws.services.s3.model.DeleteObjectRequest;
+import com.amazonaws.services.s3.model.GeneratePresignedUrlRequest;
+import com.amazonaws.services.s3.model.GroupGrantee;
+import com.amazonaws.services.s3.model.ObjectMetadata;
+import com.amazonaws.services.s3.model.Permission;
+import com.amazonaws.services.s3.model.PutObjectRequest;
+import com.amazonaws.services.s3.model.S3Object;
+import com.amazonaws.services.s3.model.S3ObjectInputStream;
+import com.amazonaws.util.IOUtils;
+import com.sk.common.utils.PathUtil;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
@@ -7,39 +22,11 @@ import java.net.URL;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Date;
-import java.util.List;
-
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
-
-import com.amazonaws.HttpMethod;
-import com.amazonaws.SdkClientException;
-import com.amazonaws.services.s3.AmazonS3;
-import com.amazonaws.services.s3.Headers;
-import com.amazonaws.services.s3.model.AccessControlList;
-import com.amazonaws.services.s3.model.AmazonS3Exception;
-import com.amazonaws.services.s3.model.Bucket;
-import com.amazonaws.services.s3.model.CannedAccessControlList;
-import com.amazonaws.services.s3.model.DeleteObjectRequest;
-import com.amazonaws.services.s3.model.GeneratePresignedUrlRequest;
-import com.amazonaws.services.s3.model.GroupGrantee;
-import com.amazonaws.services.s3.model.ListObjectsRequest;
-import com.amazonaws.services.s3.model.ObjectListing;
-import com.amazonaws.services.s3.model.ObjectMetadata;
-import com.amazonaws.services.s3.model.Permission;
-import com.amazonaws.services.s3.model.PutObjectRequest;
-import com.amazonaws.services.s3.model.S3Object;
-import com.amazonaws.services.s3.model.S3ObjectInputStream;
-import com.amazonaws.services.s3.model.S3ObjectSummary;
-import com.amazonaws.util.IOUtils;
-
-import com.sk.common.utils.PathUtil;
-
-import jakarta.annotation.PostConstruct;
-
-import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
 
 // todo: 멀티파트 업로드 필요시
 // https://velog.io/@sangwoo-sean/spring-AWS-S3-Multipart-Upload
@@ -183,12 +170,37 @@ public class ObjectStorageService {
     * @return byte[] 파일 데이타
     */
     public byte[] downloadFile(String bucketName, String fileName) throws IOException {
-        log.info("Download File : BucketName={}, filename={}", bucketName, fileName);
-        S3Object s3Object = objectStorageClient.getObject(bucketName, fileName);
+        long totalStartedAt = System.nanoTime();
 
-        S3ObjectInputStream s3ObjectInputStream = s3Object.getObjectContent();
+        try {
+            long getObjectStartedAt = System.nanoTime();
+            S3Object s3Object = objectStorageClient.getObject(bucketName, fileName);
+            long storageGetMs = elapsedMs(getObjectStartedAt);
 
-        return IOUtils.toByteArray(s3ObjectInputStream);
+            try (s3Object; S3ObjectInputStream inputStream = s3Object.getObjectContent()) {
+                long readStartedAt = System.nanoTime();
+                byte[] data = IOUtils.toByteArray(inputStream);
+                long storageReadMs = elapsedMs(readStartedAt);
+
+                log.info(
+                        "Object storage download completed. bytes={}, storageGetMs={}, storageReadMs={}, totalMs={}",
+                        data.length,
+                        storageGetMs,
+                        storageReadMs,
+                        elapsedMs(totalStartedAt));
+                return data;
+            }
+        } catch (IOException | RuntimeException e) {
+            log.warn(
+                    "Object storage download failed. totalMs={}, exception={}",
+                    elapsedMs(totalStartedAt),
+                    e.getClass().getSimpleName());
+            throw e;
+        }
+    }
+
+    private long elapsedMs(long startedAt) {
+        return (System.nanoTime() - startedAt) / 1_000_000;
     }
 
     /**
