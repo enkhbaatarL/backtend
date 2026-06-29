@@ -84,11 +84,16 @@ public class FileDedicatedController {
     public ResponseEntity<byte[]> downloadFile(
             @RequestBody @Valid FileDownloadReq body) throws UnsupportedEncodingException {
 
+        long prepareStartedAt = System.nanoTime();
+        long serviceStartedAt = System.nanoTime();
         FileDownloadRes fileDownloadRes = fileService.downloadFile(body);
+        long serviceMs = elapsedMs(serviceStartedAt);
 
         // 외부 클라이언트 전달 경계: 특정 고객사 대상 파일은 평문 저장본을 나가기 직전에 재암호화한다.
+        long encryptionStartedAt = System.nanoTime();
         byte[] responseData = fileDownloadEncryptor.encryptForDownloadIfRequired(
                 fileDownloadRes.fileNm(), fileDownloadRes.fileData());
+        long encryptionStageMs = elapsedMs(encryptionStartedAt);
 
         String encodedFileName = URLEncoder.encode(fileDownloadRes.fileNm(), StandardCharsets.UTF_8.toString()).replace("+", "%20");
 
@@ -97,7 +102,20 @@ public class FileDedicatedController {
         httpHeaders.setContentLength(responseData.length);
         httpHeaders.add("Content-Disposition", "attachment; filename*=UTF-8''" + encodedFileName);
 
+        log.info(
+                "File download response prepared. fileNo={}, plainBytes={}, responseBytes={}, serviceMs={}, encryptionStageMs={}, prepareMs={}",
+                fileDownloadRes.fileNo(),
+                fileDownloadRes.fileData().length,
+                responseData.length,
+                serviceMs,
+                encryptionStageMs,
+                elapsedMs(prepareStartedAt));
+
         return new ResponseEntity<>(responseData, httpHeaders, HttpStatus.OK);
+    }
+
+    private long elapsedMs(long startedAt) {
+        return (System.nanoTime() - startedAt) / 1_000_000;
     }
 
     @ApiOrder(4)

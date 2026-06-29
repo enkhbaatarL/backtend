@@ -3,7 +3,9 @@ package com.sk.domain.shared.service;
 import com.sk.domain.shared.client.FileCryptoApiClient;
 import com.sk.domain.shared.enums.Role;
 import com.sk.domain.shared.service.permissions.AuthorizationService;
+import java.util.Locale;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 
 /**
@@ -20,6 +22,7 @@ import org.springframework.stereotype.Component;
  *   <li>회사코드가 암호화 대상 고객사(SKGAS)일 때만 암호화하고, 그 외 고객사는 평문으로 반환한다.</li>
  * </ul>
  */
+@Slf4j
 @Component
 @RequiredArgsConstructor
 public class FileDownloadEncryptor {
@@ -29,26 +32,59 @@ public class FileDownloadEncryptor {
     private final AuthorizationService authorizationService;
 
     public byte[] encryptForDownloadIfRequired(String fileName, byte[] plainData) {
+        long startedAt = System.nanoTime();
 
         if (!fileEncryptionPolicy.isEnabled()) {
-            return plainData;
+            return skipEncryption(fileName, plainData, "feature_disabled", startedAt);
         }
 
         if (!fileEncryptionPolicy.isTargetExtension(fileName)) {
-            return plainData;
+            return skipEncryption(fileName, plainData, "extension_not_target", startedAt);
         }
 
         Role role = authorizationService.getCurrentRole();
         if (Role.USER != role) {
-            return plainData;
+            return skipEncryption(fileName, plainData, "role_not_target", startedAt);
         }
 
         String companyCd = authorizationService.getCompanyCdWithPriority();
         if (!fileEncryptionPolicy.isEnabledCompany(companyCd)) {
-            return plainData;
+            return skipEncryption(fileName, plainData, "company_not_target", startedAt);
         }
 
-        return fileCryptoApiClient.encrypt(plainData, fileName);
+        long cryptoStartedAt = System.nanoTime();
+        byte[] encryptedData = fileCryptoApiClient.encrypt(plainData, fileName);
+        log.info(
+                "File download encryption completed. extension={}, inputBytes={}, outputBytes={}, cryptoMs={}, totalMs={}",
+                extensionForLog(fileName),
+                plainData.length,
+                encryptedData.length,
+                elapsedMs(cryptoStartedAt),
+                elapsedMs(startedAt));
+        return encryptedData;
     }
 
+    private byte[] skipEncryption(String fileName, byte[] plainData, String reason, long startedAt) {
+        log.info(
+                "File download encryption skipped. extension={}, reason={}, elapsedMs={}",
+                extensionForLog(fileName),
+                reason,
+                elapsedMs(startedAt));
+        return plainData;
+    }
+
+    private String extensionForLog(String fileName) {
+        if (fileName == null || fileName.isBlank()) {
+            return "unknown";
+        }
+        int dotIndex = fileName.lastIndexOf('.');
+        if (dotIndex < 0 || dotIndex == fileName.length() - 1) {
+            return "none";
+        }
+        return fileName.substring(dotIndex + 1).toLowerCase(Locale.ROOT);
+    }
+
+    private long elapsedMs(long startedAt) {
+        return (System.nanoTime() - startedAt) / 1_000_000;
+    }
 }

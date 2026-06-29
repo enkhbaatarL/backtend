@@ -10,6 +10,11 @@ import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import java.io.IOException;
+import java.nio.charset.StandardCharsets;
+import java.util.Enumeration;
+import java.util.List;
+import java.util.concurrent.atomic.AtomicLong;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.RandomStringUtils;
@@ -19,12 +24,6 @@ import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
 import org.springframework.web.util.ContentCachingRequestWrapper;
 import org.springframework.web.util.ContentCachingResponseWrapper;
-
-import java.io.IOException;
-import java.nio.charset.StandardCharsets;
-import java.util.Enumeration;
-import java.util.List;
-import java.util.concurrent.atomic.AtomicLong;
 
 @Slf4j
 @Component
@@ -38,6 +37,13 @@ public class HttpLoggingFilter extends OncePerRequestFilter implements Ordered {
     private final AtomicLong id = new AtomicLong(0);
 
     private final AuthorizationService authorizationService;
+
+    public static void main(String[] arges){
+
+        String test = "http://localhost:8080/api/v1/mi/mari-agent/chat-rooms/8926f090-952f-4003-8165-caf1127db1f3/stream";
+        System.out.println(test.matches(".*/stream/?(\\\\?.*)?$"));
+
+    }
 
     @Override
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain) throws ServletException, IOException {
@@ -66,7 +72,7 @@ public class HttpLoggingFilter extends OncePerRequestFilter implements Ordered {
             try {
                 filterChain.doFilter(request, response);
             } finally {
-                logResponse();
+                logResponse(response);
                 MDCUtil.clear();
                 DataSourceContextHolder.clearDataSourceKey();
             }
@@ -79,7 +85,7 @@ public class HttpLoggingFilter extends OncePerRequestFilter implements Ordered {
             try {
                 filterChain.doFilter(cachingRequestWrapper, response);
             } finally {
-                logResponse();
+                logResponse(response);
                 MDCUtil.clear();
                 DataSourceContextHolder.clearDataSourceKey();
             }
@@ -199,12 +205,16 @@ public class HttpLoggingFilter extends OncePerRequestFilter implements Ordered {
     /**
      * logging response
      */
-    private void logResponse() {
+    private void logResponse(HttpServletResponse response) {
 
         String uri = MDCUtil.getValue(MDCUtil.REQUEST_URI);
         long startTime = Long.parseLong(MDCUtil.getValue(MDCUtil.REQUEST_START_TIME));
 
-        log.info("res uri={}, totalTime={}", uri, System.currentTimeMillis() - startTime);
+        log.info("res uri={}, status={}, contentLength={}, totalTime={}",
+            uri,
+            response.getStatus(),
+            response.getHeader("Content-Length"),
+            System.currentTimeMillis() - startTime);
 
     }
 
@@ -221,17 +231,8 @@ public class HttpLoggingFilter extends OncePerRequestFilter implements Ordered {
         return requestUri.matches(".*/stream/?(\\\\?.*)?$");
     }
 
-
     @Override
     public int getOrder() {
         return Ordered.HIGHEST_PRECEDENCE + 1;
-    }
-
-
-    public static void main(String[] arges){
-
-        String test = "http://localhost:8080/api/v1/mi/mari-agent/chat-rooms/8926f090-952f-4003-8165-caf1127db1f3/stream";
-        System.out.println(test.matches(".*/stream/?(\\\\?.*)?$"));
-
     }
 }
