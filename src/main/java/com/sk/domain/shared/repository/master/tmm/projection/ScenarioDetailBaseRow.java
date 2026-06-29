@@ -15,7 +15,8 @@ public record ScenarioDetailBaseRow(
     BigDecimal probabilityScore,
     String dimensionValues,
     String dimensionSelected,
-    Long eventTypeL2Id
+    Long eventTypeL2Id,
+    Integer displayOrder
 ) {
 
     @QueryProjection

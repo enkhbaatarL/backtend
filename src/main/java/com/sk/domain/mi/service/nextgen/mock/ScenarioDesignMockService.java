@@ -289,7 +289,7 @@ public class ScenarioDesignMockService {
 
         List<ScenarioDetailViewRes> scenarioDetails = rows.stream()
             .map(r -> new ScenarioDetailViewRes(
-                r.scenarioId(), groupId, r.scenarioName(), r.baseCase(), now, now,
+                r.scenarioId(), groupId, r.scenarioName(), r.baseCase(), r.displayOrder(), now, now,
                 r.narrative(), r.probability(), r.probability(), r.dimensions(),
                 r.signposts() == null ? List.of() : r.signposts(), List.of()))
             .toList();

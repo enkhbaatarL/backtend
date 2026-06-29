@@ -242,6 +242,7 @@ public class ScenarioGroupController {
             <br><br>
             ### 상위(top-level) 필드
             - `scenarioId`, `scenarioGroupId`, `scenarioName`, `baseCase`
+            - `displayOrder`: 표시 순서 (목록과 동일한 시나리오 정렬 순서)
             - `createdAt` / `updatedAt`: 시나리오 생성/수정일시
             - `narrative`: 시나리오 내러티브
             - `probability`: 시나리오 발생 확률 (0~100, 원본)

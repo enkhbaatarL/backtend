@@ -259,7 +259,8 @@ public class CustomMiScenarioGroupRepositoryImpl implements CustomMiScenarioGrou
                 miScenario.probabilityScore,
                 miScenario.dimensionValues,
                 miScenarioGroup.dimensionSelected,
-                miScenarioGroup.eventTypeL2.eventTypeL2Id
+                miScenarioGroup.eventTypeL2.eventTypeL2Id,
+                miScenario.displayOrder
             ))
             .from(miScenario)
             .innerJoin(miScenario.scenarioGroup, miScenarioGroup).on(miScenarioGroup.isDeleted.isFalse())
