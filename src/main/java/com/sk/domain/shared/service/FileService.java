@@ -277,9 +277,11 @@ public class FileService {
     * @return FileDownloadRes
     */
     public FileDownloadRes downloadFile(FileDownloadReq dto) {
+        long metadataStartedAt = System.nanoTime();
         UploadedFile uploadedFile = uploadedFileRepository.findByFileNo(dto.fileNo())
                 .orElseThrow(
                         () -> AppErrorException.of(ResultCode.Error.RSC_NOT_FOUND, String.format("file no: %d", dto.fileNo())));
+        long metadataMs = elapsedMs(metadataStartedAt);
 
         if (!(uploadedFile.getOriginalFileNm().equals(dto.fileNm()) && uploadedFile.getFileSize().equals(dto.fileSize()))) {
             throw AppErrorException.of(ResultCode.Error.FILE_ACCESS_DENIED);
@@ -289,12 +291,26 @@ public class FileService {
             String bucketName = getBucketName(uploadedFile.getStoragePathNm());
             String filePath = getFilePath(uploadedFile.getStoragePathNm());
 
+            long storageStartedAt = System.nanoTime();
             byte[] fileData = objectStorageService.downloadFile(bucketName, filePath);
+            long storageMs = elapsedMs(storageStartedAt);
+
+            log.info(
+                    "File download data prepared. fileNo={}, fileSizeBytes={}, extension={}, metadataMs={}, storageMs={}",
+                    uploadedFile.getFileNo(),
+                    uploadedFile.getFileSize(),
+                    uploadedFile.getFileExtNm(),
+                    metadataMs,
+                    storageMs);
 
             return FileDownloadRes.of(uploadedFile.getFileNo(), uploadedFile.getOriginalFileNm(), uploadedFile.getFileSize(), fileData);
         } catch (Exception e) {
             throw AppErrorException.of(ResultCode.Error.SYS_INTERNAL_ERROR, "파일 다운로드 중 오류가 발생했습니다." + e.getMessage());
         }
+    }
+
+    private long elapsedMs(long startedAt) {
+        return (System.nanoTime() - startedAt) / 1_000_000;
     }
 
     /**
