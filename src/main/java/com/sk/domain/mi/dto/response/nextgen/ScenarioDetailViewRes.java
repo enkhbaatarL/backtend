@@ -22,6 +22,9 @@ public record ScenarioDetailViewRes(
     @Schema(description = "BC(Base Case) 여부", example = "false")
     boolean baseCase,
 
+    @Schema(description = "표시 순서", example = "1")
+    Integer displayOrder,
+
     @Schema(description = "시나리오 생성일시")
     LocalDateTime createdAt,
 
@@ -58,6 +61,7 @@ public record ScenarioDetailViewRes(
             base.scenarioGroupId(),
             base.title(),
             Boolean.TRUE.equals(base.isBaseline()),
+            base.displayOrder(),
             base.createdAt(),
             base.updatedAt(),
             base.narrative(),
@@ -72,7 +76,7 @@ public record ScenarioDetailViewRes(
     /** 재분배 확률만 바꾼 사본 (mock 등 후처리용). */
     public ScenarioDetailViewRes withAdjustedProbability(Integer value) {
         return new ScenarioDetailViewRes(
-            scenarioId, scenarioGroupId, scenarioName, baseCase, createdAt, updatedAt, narrative,
+            scenarioId, scenarioGroupId, scenarioName, baseCase, displayOrder, createdAt, updatedAt, narrative,
             probability, value, dimensions, signpostDefinitions, signpostMonitorings
         );
     }
