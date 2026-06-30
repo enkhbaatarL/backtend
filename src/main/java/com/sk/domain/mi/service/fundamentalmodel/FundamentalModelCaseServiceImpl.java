@@ -4,6 +4,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.sk.common.enums.ResultCode;
 import com.sk.common.exception.AppErrorException;
+import com.sk.common.utils.DateUtil;
 import com.sk.domain.admin.dto.response.file.FileUploadRes;
 import com.sk.domain.mi.dto.request.fundamentalmodel.FundamentalModelCaseListReq;
 import com.sk.domain.mi.dto.request.fundamentalmodel.FundamentalModelCaseUpdateReq;
@@ -513,11 +514,12 @@ public class FundamentalModelCaseServiceImpl implements FundamentalModelCaseServ
 
         String failureReason = request.status() == FundamentalModelRunStatus.FAILED ? request.failureReason() : null;
         String errorMessage = request.status() == FundamentalModelRunStatus.FAILED ? request.errorMessage() : null;
+        LocalDateTime finishedAtKst = DateUtil.utcToKst(request.finishedAt());
         int updateCount = scenarioCaseRunHistoryRepository.updateRunningToTerminal(
             runId,
             request.status(),
             FundamentalModelRunStatus.RUNNING,
-            request.finishedAt(),
+            finishedAtKst,
             failureReason,
             errorMessage,
             processedAt,

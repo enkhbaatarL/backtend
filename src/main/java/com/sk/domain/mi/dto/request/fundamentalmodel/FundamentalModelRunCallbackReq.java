@@ -12,7 +12,7 @@ public record FundamentalModelRunCallbackReq(
     FundamentalModelRunStatus status,
 
     @NotNull(message = "finishedAt은 필수입니다")
-    @Schema(description = "Python 프로세스 기준 실행 완료/실패 시각")
+    @Schema(description = "Python 프로세스 기준 UTC 실행 완료/실패 시각. offset 없는 ISO-8601 형식이며 Backend가 KST로 변환해 저장합니다.", example = "2026-06-08T01:12:00")
     LocalDateTime finishedAt,
 
     @Schema(description = "실패 사유", example = "EXTERNAL_ERROR")
