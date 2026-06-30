@@ -440,7 +440,7 @@ Reset API 포함 판단:
 | 필드 | 타입 | 필수 | 설명 |
 |---|---|---|---|
 | `status` | `String` | Y | `COMPLETED | FAILED` 만 허용 |
-| `finishedAt` | `LocalDateTime` | Y | 외부 모델 기준 실행 완료/실패 시각 |
+| `finishedAt` | `LocalDateTime` | Y | 외부 모델의 UTC 실행 완료/실패 시각. offset 없는 ISO-8601 값(`yyyy-MM-ddTHH:mm:ss`)으로 전달하며 Backend가 KST로 변환해 저장 |
 | `failureReason` | `String` | N | `FAILED`일 때 권장. `EXTERNAL_ERROR | UNKNOWN` 후보. `TIMEOUT`은 scheduler가 설정하는 전용 값으로 callback payload에서는 허용하지 않는다 |
 | `errorMessage` | `String` | N | 실패 상세 메시지. `FAILED`이면 권장 |
 
@@ -1670,15 +1670,16 @@ phase 1 mock 시연 동선:
 1. path `runId`로 run record를 찾는다.
 2. run이 없으면 `RSC_NOT_FOUND`.
 3. run이 `RUNNING`이면 terminal 상태로 전이한다.
-4. `status = COMPLETED`이면 run 상태와 case 최신 상태를 `COMPLETED`로 변경하고 `finishedAt`을 반영한다.
-5. `status = FAILED`이면 run 상태와 case 최신 상태를 `FAILED`로 변경하고 `failureReason`, `errorMessage`, `finishedAt`을 반영한다.
-6. 이미 terminal 상태인 run에 동일 terminal payload가 재전송되면 상태를 바꾸지 않고 `200 OK` no-op으로 응답한다. 이때 `FundamentalModelRunCallbackRes.idempotentReplay = true` 로 설정한다.
-7. 이미 terminal 상태인 run에 상이 payload가 들어오면 상태를 바꾸지 않는다. 동일 retry로 볼 수 없으면 `409 + BIZ_RULE_VIOLATION` 후보로 처리한다.
+4. callback의 `finishedAt`은 offset 없는 UTC `LocalDateTime`으로 해석하고 KST(`Asia/Seoul`) `LocalDateTime`으로 변환한다.
+5. `status = COMPLETED`이면 run 상태와 case 최신 상태를 `COMPLETED`로 변경하고 KST로 변환한 `finishedAt`을 `exec_end_dtm`에 반영한다.
+6. `status = FAILED`이면 run 상태와 case 최신 상태를 `FAILED`로 변경하고 `failureReason`, `errorMessage`, KST로 변환한 `finishedAt`을 반영한다.
+7. 이미 terminal 상태인 run에 동일 terminal payload가 재전송되면 상태를 바꾸지 않고 `200 OK` no-op으로 응답한다. 이때 `FundamentalModelRunCallbackRes.idempotentReplay = true` 로 설정한다.
+8. 이미 terminal 상태인 run에 상이 payload가 들어오면 상태를 바꾸지 않는다. 동일 retry로 볼 수 없으면 `409 + BIZ_RULE_VIOLATION` 후보로 처리한다.
    - 비교 키는 `status`, `failureReason`, `errorMessage` 세 필드만 사용한다. 세 필드가 모두 같으면 "동일 payload"로 간주한다.
    - `finishedAt` 은 외부 모델 retry마다 다르게 들어올 수 있으므로 비교 대상에서 제외한다.
    - `runId` 는 path 식별자이므로 payload 비교 키에 포함하지 않는다.
-8. timeout 등으로 이미 `FAILED` 처리된 run에 늦은 `COMPLETED` callback이 오면 상태를 되돌리지 않는다. 외부 모델 재시도 폭주를 막기 위해 `200 OK` no-op과 late callback 로그를 권장한다.
-9. callback 처리 안에서는 결과 payload materialization이나 파일 다운로드 처리를 수행하지 않는다.
+9. timeout 등으로 이미 `FAILED` 처리된 run에 늦은 `COMPLETED` callback이 오면 상태를 되돌리지 않는다. 외부 모델 재시도 폭주를 막기 위해 `200 OK` no-op과 late callback 로그를 권장한다.
+10. callback 처리 안에서는 결과 payload materialization이나 파일 다운로드 처리를 수행하지 않는다.
 
 ### Volumes Data Query
 
