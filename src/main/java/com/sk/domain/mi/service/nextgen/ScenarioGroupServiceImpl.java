@@ -30,11 +30,14 @@ import com.sk.domain.mi.service.nextgen.support.ScenarioRunStates;
 import com.sk.domain.shared.entity.master.tmm.MiScenario;
 import com.sk.domain.shared.entity.master.tmm.MiScenarioGroup;
 import com.sk.domain.shared.entity.master.tmm.MiSignpost;
+import com.sk.domain.shared.enums.fundamentalmodel.FundamentalModelCaseStatus;
+import com.sk.domain.shared.enums.fundamentalmodel.FundamentalModelRunStatus;
 import com.sk.domain.shared.enums.nextgen.GraphPeriodUnit;
 import com.sk.domain.shared.enums.nextgen.IndexName;
 import com.sk.domain.shared.enums.nextgen.ScenarioDisplayStatus;
 import com.sk.domain.shared.enums.nextgen.ScenarioStatus;
 import com.sk.domain.shared.repository.master.tmd.ScenarioCaseRepository;
+import com.sk.domain.shared.repository.master.tmd.ScenarioCaseRunHistoryRepository;
 import com.sk.domain.shared.repository.master.tmd.projection.MiBasePriceRow;
 import com.sk.domain.shared.repository.master.tmd.projection.ScenarioPriceRow;
 import com.sk.domain.shared.repository.master.tmm.MiScenarioGroupRepository;
@@ -43,6 +46,8 @@ import com.sk.domain.shared.repository.master.tmm.projection.ScenarioDetailBaseR
 import com.sk.domain.shared.repository.master.tmm.projection.ScenarioGroupBaseRow;
 import com.sk.domain.shared.repository.master.tmm.projection.ScenarioGroupDetailBaseRow;
 import com.sk.domain.shared.repository.master.tmm.projection.ScenarioIndividualBaseRow;
+import com.sk.domain.shared.service.permissions.AuthorizationService;
+import java.time.LocalDateTime;
 import java.util.Comparator;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -60,8 +65,12 @@ import org.springframework.transaction.annotation.Transactional;
 @Transactional(readOnly = true)
 public class ScenarioGroupServiceImpl implements ScenarioGroupService {
 
+    private static final String SCENARIO_CANCELLED = "SCENARIO_CANCELLED";
+
     private final MiScenarioGroupRepository scenarioGroupRepository;
     private final ScenarioCaseRepository scenarioCaseRepository;
+    private final ScenarioCaseRunHistoryRepository scenarioCaseRunHistoryRepository;
+    private final AuthorizationService authorizationService;
 
     /**
      * [그룹 모드 목록]
@@ -364,6 +373,12 @@ public class ScenarioGroupServiceImpl implements ScenarioGroupService {
         boolean anyRealized = scenarios.stream().anyMatch(s -> s.getStatus() == ScenarioStatus.REALIZED);
         target.getScenarioGroup().deriveStatus(anyRealized);
 
+        List<Long> executionDeleteScenarioIds = status == ScenarioDisplayStatus.DISCARDED
+            ? List.of(scenarioId)
+            : discardedScenarioIds;
+        scenarioGroupRepository.flush();
+        softDeleteScenarioExecutions(executionDeleteScenarioIds);
+
         return ScenarioStatusRes.of(scenarioId, status, discardedScenarioIds);
     }
 
@@ -380,10 +395,48 @@ public class ScenarioGroupServiceImpl implements ScenarioGroupService {
         MiScenarioGroup group = scenarioGroupRepository.findByScenarioGroupIdAndIsDeletedFalse(scenarioGroupId)
             .orElseThrow(() -> AppErrorException.of(ResultCode.Error.RSC_NOT_FOUND, "Scenario group not found: %d".formatted(scenarioGroupId)));
 
-        scenarioGroupRepository.findSignpostEntitiesByGroupId(scenarioGroupId).forEach(MiSignpost::softDelete);
-        scenarioGroupRepository.findScenarioEntitiesByGroupId(scenarioGroupId).forEach(MiScenario::softDelete);
+        List<MiScenario> scenarios = scenarioGroupRepository.findScenarioEntitiesByGroupId(scenarioGroupId);
+        List<MiSignpost> signposts = scenarioGroupRepository.findSignpostEntitiesByGroupId(scenarioGroupId);
+        signposts.forEach(MiSignpost::softDelete);
+        scenarios.forEach(MiScenario::softDelete);
         group.softDelete();
+        scenarioGroupRepository.flush();
 
+        softDeleteScenarioExecutions(scenarios.stream().map(MiScenario::getScenarioId).toList());
+
+    }
+
+    private void softDeleteScenarioExecutions(List<Long> scenarioIds) {
+        if (scenarioIds.isEmpty()) {
+            return;
+        }
+
+        LocalDateTime modifiedAt = LocalDateTime.now();
+        String actorLoginId = authorizationService.getSubject();
+        List<Long> caseIds = scenarioCaseRepository.findCaseIdsByScenarioIds(scenarioIds);
+
+        if (!caseIds.isEmpty()) {
+            scenarioCaseRunHistoryRepository.cancelRunningByCaseIds(
+                caseIds,
+                FundamentalModelRunStatus.FAILED,
+                FundamentalModelRunStatus.RUNNING,
+                modifiedAt,
+                SCENARIO_CANCELLED,
+                modifiedAt,
+                actorLoginId
+            );
+        }
+        scenarioCaseRepository.cancelRunningByScenarioIds(
+            scenarioIds,
+            FundamentalModelCaseStatus.FAILED,
+            FundamentalModelCaseStatus.RUNNING,
+            modifiedAt,
+            actorLoginId
+        );
+        scenarioCaseRepository.softDeleteByScenarioIds(scenarioIds, modifiedAt, actorLoginId);
+        if (!caseIds.isEmpty()) {
+            scenarioCaseRunHistoryRepository.softDeleteByCaseIds(caseIds, modifiedAt, actorLoginId);
+        }
     }
 
 }

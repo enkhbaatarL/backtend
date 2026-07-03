@@ -1,5 +1,16 @@
 # MI Scenario Workbench - Backend Feature Spec
 
+## Document Control
+
+- status: active; F4 scenario lifecycle cancellation/reconciliation implementation pending
+- canonical for: Scenario Workbench endpoint behavior, field contract, and acceptance rules
+- owner: MI Platform Backend
+- upstream sources:
+  - `docs/design-docs/gas/mi-scenario-model-execution-workflow-design.md`
+  - `docs/design-docs/gas/scenario-case-execution-workflow-design-draft.md`
+- dependencies: Kubernetes Job get/list/delete RBAC and scheduler-enabled dedicated deployment
+- last sync date: 2026-07-06
+
 > 목적
 > - MI Scenario Workbench를 endpoint 목록이 아니라 backend 기능 단위로 정리한다.
 > - 하나의 기능이 여러 단계의 API 호출로 구성될 수 있음을 전제로, 화면 기준 user flow와 backend 호출 순서를 함께 정의한다.
@@ -15,6 +26,7 @@
 - 본 스냅샷은 `7d1ba27a` 이후 커밋(`7b03c74e`, `c70d0278`, `d51b4bae`, `39284376`, `c066a4f9`)을 기준으로 2026-05-06에 재검토했다.
 - 추가로 Notion 페이지 `2️⃣ Events` (`https://www.notion.so/34b263ff004c8016a6c2ebec824d14d5`) 에 기록된 팀 업데이트를 2026-05-06 기준으로 대조했다.
 - 2026-05-11 기준 추가로 `ad6aeeee` (`feat: design 도메인 mocking`) 커밋을 검토했다.
+- 2026-07-03 기준으로 F3(Design scenario generation)와 F4(MI 수급모델 실행)/Fundamental model 행을 real DB 구현 완료 반영으로 갱신했다. 근거: `docs/work-notes/2026/2026-06-30-scenario-generation-callback-failure-handling-investigation.md`(운영 Swagger `v1.2.62` 확인), `docs/work-notes/2026/2026-06-19-scenario-model-execution-real-db-implementation.md`, `docs/work-notes/2026/2026-06-05-fundamental-model-create-case-real-db-implementation.md` 이후 일련의 real DB 구현 기록.
 - 아래 상태는 설계 의도보다 현재 코드 기준의 개발 현황을 우선한다.
 
 | 기능 | 현재 상태 | 비고 |
@@ -25,15 +37,17 @@
 | Event 기관 전망 조회 | 일부 DB 연동 완료 | 별도 pagination endpoint |
 | Event 상세 > Fundamental Deep-dive | 보류 | 관련 테이블/컬럼 미확정 |
 | Event 상세 > 관련 이벤트 및 시나리오 | 보류 | `relatedEventScenario`, Event-Scenario 매핑 스키마 미확정 |
-| Scenario 목록 조회 | Mock만 제공 | `mock` 프로필에서는 정상, `!mock` 에서는 미구현 예외 |
-| Scenario 상세 조회 | Mock만 제공 | `mock` 프로필에서는 정상, `!mock` 에서는 미구현 예외 |
+| Scenario 목록 조회 | Mock만 제공 | `mock` 프로필에서는 정상, `!mock` 에서는 미구현 예외. §5.9/5.10 참고 |
+| Scenario 상세 조회 | Mock만 제공 | `mock` 프로필에서는 정상, `!mock` 에서는 미구현 예외. §5.9/5.10 참고 |
 | Scenario 관련 Event 재조회 | 미구현 | 별도 endpoint 없음 |
 | Design 이벤트 목록 조회 | Mock만 제공 | `DesignController#getDesignEvents`, 별도 `/design/events` path |
-| Design scenario generation 접수 | Mock만 제공 | `POST /design/generate`, 현재 `BaseResponse 200` |
-| Design scenario generation 상태 조회 | Mock만 제공 | `GET /design/generate/status?requestIds=...`, 현재 batch polling |
-| Design scenario generation 결과 조회 | Mock만 제공 | `GET /design/generate/{requestId}/scenarios` |
-| Design scenario generation callback | Mock만 제공 | `POST /design/callback`, body는 `requestId/success/scenarioIds/...` |
-| Scenario 생성 / MI 수급모델 실행 / Fundamental model | 미구현 | 본 문서의 설계 범위만 유지 |
+| Design scenario generation 접수 | 구현 완료 (real DB/Agent 연동) | `POST /design/generate`. 2026-06-30 운영 Swagger `v1.2.62`에서 동일 endpoint/contract 확인 |
+| Design scenario generation 상태 조회 | 구현 완료 (real DB/Agent 연동) | `GET /design/generate/status?requestIds=...` |
+| Design scenario generation 결과 조회 | 구현 완료 (real DB/Agent 연동) | `GET /design/generate/{requestId}/scenarios` |
+| Design scenario generation callback | 구현 완료, 운영 배포 확인 | `POST /design/callback`. Redis 기반 failure cache, SSE 발행까지 확인됨(2026-06-30) |
+| MI 수급모델 실행 | 구현 완료 (real DB, 2026-06-19) | `tmd_mdl_scnrcasem`/`tmd_mdl_scnrcaseh` 통합 저장, timeout scheduler 코드 구현 완료(2026-06-22, feature flag 기본 비활성) |
+| Fundamental model | 구현 완료 (real DB, 2026-06-05~2026-06-19) | case CRUD/run/callback/Volumes/Trade Flows/Price 모두 real DB. 상세는 `mi-fundamental-model-mock-api-feature-spec.md` §12 참고 |
+| Scenario 생성 (직접 생성, Design generation과 별개) | 미구현 | 본 문서의 설계 범위만 유지 |
 
 ### 0.1 Design Mock API Drift Note
 
@@ -971,7 +985,7 @@ Dispatch accept response:
 6. 대상 run이 `RUNNING` 이면 `COMPLETED` 또는 `FAILED` 로 전이한다.
 7. 대상 run이 case의 latest run이면 같은 transaction 안에서 `tmd_mdl_scnrcasem.case_stat_cd` 도 같은 terminal 상태로 전이한다.
 8. 이미 terminal 상태인 동일 terminal payload 재전송은 `200 OK` no-op으로 처리한다.
-9. 이미 terminal 상태인데 상이한 terminal payload가 들어오면 상태를 바꾸지 않고 conflict/error로 처리한다.
+9. 이미 terminal 상태인데 상이한 terminal payload가 들어오면 상태를 바꾸지 않고 conflict/error로 처리한다. 단, `TIMEOUT`/`SCENARIO_CANCELLED` backend-forced terminal은 상이 payload도 `200 OK` no-op 예외로 처리한다.
 
 ## 7.2.1 Parameter Source Resolution Rule
 
@@ -1022,6 +1036,22 @@ Dispatch accept response:
 - callback API는 scenario 상세조회에 노출되는 결과 데이터의 생성 또는 materialization 책임을 가지지 않는다.
 - 외부 모델은 callback 호출 전에 scenario 상세조회용 결과 데이터를 먼저 생성해야 한다.
 - scenario 상세조회는 저장된 결과 데이터가 있으면 이를 응답에 포함하고, 없으면 아직 생성되지 않았음을 나타내는 값으로 응답한다.
+
+## 7.2.6 Scenario Lifecycle Cancellation And Job Reconciliation Rule
+
+- scenario lifecycle 변경으로 더 이상 유효하지 않은 실행은 DB에서 먼저 terminal 처리한 뒤 soft delete한다.
+- cancellation 대상은 다음과 같다.
+  - scenario를 직접 `DISCARDED`로 변경한 경우 해당 scenario
+  - scenario를 `REALIZED`로 변경해 sibling scenario가 자동 `DISCARDED`된 경우 해당 sibling만 대상이며, realized 대상 본인의 실행은 유지
+  - scenario group 삭제 시 그룹에 속한 모든 scenario
+- 대상 case/history 중 `RUNNING` row만 `FAILED`로 전이하고 history의 `failureReasonCode`는 `SCENARIO_CANCELLED`로 저장한다. 이 코드는 18자로 `fail_rsn_cd VARCHAR(20)` 범위 안에 있으며 schema 변경은 없다.
+- `SCENARIO_CANCELLED`는 soft-deleted history의 내부 audit/reconciliation code이며 active-resource 상태 조회 응답 enum에는 추가하지 않는다.
+- 이미 `COMPLETED` 또는 `FAILED`인 history는 기존 terminal 상태와 실패 사유를 보존하고 soft delete만 수행한다.
+- RUNNING history와 latest case의 `FAILED` 전이, `actv_scnr_id` 점유 해제, case/history soft delete는 scenario 상태 변경 또는 group 삭제와 같은 DB transaction 안에서 완료한다.
+- callback은 soft-deleted history도 내부적으로 식별할 수 있어야 한다. 저장된 상태가 `FAILED + SCENARIO_CANCELLED`이면 이후 도착한 `COMPLETED`/`FAILED` callback payload와 일치 여부를 비교하지 않고 상태를 덮어쓰지 않는 `200 OK` no-op으로 처리한다. 일반 terminal callback 재전송에는 기존 exact-payload idempotency 규칙을 유지한다.
+- 요청 transaction은 Kubernetes API를 호출하지 않는다. Kubernetes Job 정리는 scheduler 기반 reconciler가 eventual consistency로 수행한다.
+- reconciler는 일반 terminal Job 전체가 아니라 backend가 강제 terminal 처리한 `FAILED + TIMEOUT` 또는 `FAILED + SCENARIO_CANCELLED` run 중 Kubernetes에서 아직 active인 Job만 삭제한다. 정상 `COMPLETED`/외부 `FAILED` Job의 `ttlSecondsAfterFinished` 로그 보존 정책은 유지한다.
+- cleanup SLA `30초 이내`는 `features.scheduling.model-execution-timeout.enabled=true`인 dedicated deployment에서만 성립한다. 해당 flag와 RBAC 확인은 production rollout gate다.
 
 ## 7.3 Endpoint
 
@@ -1112,8 +1142,9 @@ Dispatch accept response:
 - callback 처리 안에서 scenario summary 또는 기타 상세조회용 결과 데이터를 추가 생성하지 않는다.
 - callback이 도착하기 전에 scheduler timeout으로 이미 terminal 처리된 execution은 상태를 되돌리지 않는 idempotent no-op 정책을 기본안으로 둔다.
 - 식별자가 일치하는 late callback은 `200 OK` no-op으로 처리할 수 있지만 execution 상태는 `FAILED` 에서 `COMPLETED` 로 바꾸지 않는다.
+- `FAILED + SCENARIO_CANCELLED` 또는 `FAILED + TIMEOUT`처럼 backend가 강제 terminal 처리한 execution의 late callback은 incoming payload가 기존 terminal payload와 달라도 상태를 덮어쓰지 않고 `200 OK` no-op으로 처리한다.
 - 이미 terminal 상태인 execution에 동일 terminal payload가 재전송되면 `200 OK` no-op으로 처리한다.
-- 기존 terminal 상태와 상이한 terminal payload가 들어오면 상태를 바꾸지 않고 conflict/error로 처리한다.
+- backend 강제 terminal 사유가 아닌 기존 terminal 상태에 상이한 terminal payload가 들어오면 상태를 바꾸지 않고 conflict/error로 처리한다.
 
 ## 7.4 Representative Error Scenarios
 
@@ -1166,12 +1197,15 @@ Dispatch accept response:
 - timeout 정책은 workflow canonical source를 따른다: DB `NOW()` 기준 10분, 30초 `fixedDelay`, `SCENARIO`/`INDEPENDENT` 대상. scheduler는 지정 dedicated namespace의 단일 Backend Deployment에만 enable property로 등록한다. 상세 운영 규칙은 [scenario-case-execution-workflow-design-draft.md](../design-docs/gas/scenario-case-execution-workflow-design-draft.md) §6을 따른다.
 - Job dispatch 실패 시 transaction 경계와 파일 보상 범위
 - callback 완료 전 결과 row 존재를 backend가 검증할지 여부
+- scenario lifecycle cancellation과 model execution submit이 동시에 발생할 때 신규 RUNNING case가 cancellation 대상 밖에 생성되지 않도록 scenario row lock 또는 동등한 serialization 규칙이 필요하다.
+- scheduler flag가 비활성인 환경에서는 Job cleanup SLA가 보장되지 않는다. production 활성화 전 DBA index 검증, dedicated single-replica 조건, Kubernetes RBAC를 함께 충족해야 한다.
 
 ## 7.10 Exit Criteria / Handoff
 
-- `model-executions` request/status contract와 공유 fundamental callback contract는 `runId`, `RUNNING/COMPLETED/FAILED`, 통합 case/run 저장소 기준으로 구현 가능하다.
+- `model-executions` request/status contract와 공유 fundamental callback contract는 `runId`, `RUNNING/COMPLETED/FAILED`, 통합 case/run 저장소 기준으로 real DB에 구현 완료됐다 (2026-06-19).
 - 스키마/DBA rollout 상세는 [scenario-case-execution-erd-ddl-draft.md](../design-docs/gas/scenario-case-execution-erd-ddl-draft.md)를 따른다.
-- timeout scheduler는 실DB 구현 전 별도 확정이 필요하다.
+- timeout scheduler는 코드 구현 완료(2026-06-22)됐으며, DBA index 검증 전까지 feature flag 기본 비활성 상태로 운영 활성화만 남아 있다.
+- scenario lifecycle cancellation과 Kubernetes active Job reconciliation은 설계 확정, 구현 대기 상태다. API path/response shape와 schema는 변경하지 않는다.
 
 ## 8. Recommended Build Order
 

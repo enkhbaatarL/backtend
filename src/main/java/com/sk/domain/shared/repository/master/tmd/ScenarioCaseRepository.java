@@ -6,6 +6,7 @@ import com.sk.domain.shared.enums.fundamentalmodel.FundamentalModelExecType;
 import com.sk.domain.shared.repository.master.tmd.custom.CustomScenarioCaseRepository;
 import java.time.LocalDateTime;
 import java.util.Collection;
+import java.util.List;
 import java.util.Optional;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Modifying;
@@ -26,6 +27,45 @@ public interface ScenarioCaseRepository extends JpaRepository<ScenarioCase, Long
         Long scenarioId,
         FundamentalModelExecType execType,
         FundamentalModelCaseStatus status
+    );
+
+    @Query("""
+        SELECT c.caseId
+          FROM ScenarioCase c
+         WHERE c.scenarioId IN :scenarioIds
+        """)
+    List<Long> findCaseIdsByScenarioIds(@Param("scenarioIds") Collection<Long> scenarioIds);
+
+    @Modifying(flushAutomatically = true)
+    @Query("""
+        UPDATE ScenarioCase c
+           SET c.status = :failedStatus,
+               c.modifyDt = :modifiedAt,
+               c.modifyUserId = :actorLoginId
+         WHERE c.scenarioId IN :scenarioIds
+           AND c.status = :runningStatus
+        """)
+    int cancelRunningByScenarioIds(
+        @Param("scenarioIds") Collection<Long> scenarioIds,
+        @Param("failedStatus") FundamentalModelCaseStatus failedStatus,
+        @Param("runningStatus") FundamentalModelCaseStatus runningStatus,
+        @Param("modifiedAt") LocalDateTime modifiedAt,
+        @Param("actorLoginId") String actorLoginId
+    );
+
+    @Modifying(flushAutomatically = true)
+    @Query("""
+        UPDATE ScenarioCase c
+           SET c.isDeleted = true,
+               c.modifyDt = :modifiedAt,
+               c.modifyUserId = :actorLoginId
+         WHERE c.scenarioId IN :scenarioIds
+           AND c.isDeleted = false
+        """)
+    int softDeleteByScenarioIds(
+        @Param("scenarioIds") Collection<Long> scenarioIds,
+        @Param("modifiedAt") LocalDateTime modifiedAt,
+        @Param("actorLoginId") String actorLoginId
     );
 
     @Modifying(clearAutomatically = true, flushAutomatically = true)
