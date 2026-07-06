@@ -16,7 +16,7 @@ public record UserFeedbackReq(
     @Size(max = 300, message = "피드백 섹션명은 300자 이하여야 합니다.")
     String feedbackSectionNm,
 
-    @Schema(description = "피드백 유형 코드", example = "data_error")
+    @Schema(description = "피드백 유형 코드", example = "agent_output")
     @NotNull(message = "피드백 유형 코드는 필수입니다.")
     FeedbackTypeCd feedbackTypeCd,
 
