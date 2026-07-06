@@ -75,6 +75,9 @@ public record EventDetailRes(
     @Schema(description = "Driver Tree Scoreboard — 인덱스(JKM/TTF/HH)별 그룹")
     List<EventDriverTreeIndexRes> driverTreeScoreboard,
 
+    @Schema(description = "기관 전망 View 종합", nullable = true)
+    String institutionViewSynthesis,
+
     @Schema(description = "연관 시나리오", nullable = true)
     EventRelatedScenariosRes relatedEventScenario
 
@@ -110,6 +113,7 @@ public record EventDetailRes(
             EventAiInsightsRes.from(row),
             impactAnalysis,
             buildDriverTreeScoreboard(row.driverTags()),
+            row.institutionViewSynthesis(),
             relatedEventScenario
         );
     }

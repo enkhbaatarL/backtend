@@ -152,6 +152,7 @@ public class EventController {
             - `occupantUserId` / `occupantUserName`: 점유 사용자 ID/명 (점유 중이 아니면 null)
             - `eventTypeLv1` / `eventTypeLv1Label` / `eventTypeLv2` / `eventTypeLv2Label`
             - `createdAt`, `updatedAt`, `latestRecordFirstCreated`(최신 연관 레코드 최초 생성일시)
+            - `institutionViewSynthesis`: 기관 전망 View 종합 — 기관전망 섹션 상단의 전체 요약
 
             <br><br>
             ### impactAnalysis 필드

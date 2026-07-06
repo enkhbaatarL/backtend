@@ -160,7 +160,7 @@ public class EventMockService {
             detail.signalType(), detail.signalTypeLabel(), detail.isScenarioSuggested(), detail.scenarioSuggestReason(),
             status, status == null ? null : status.getLabel(),
             occupied, occupied ? design.occupantUserId() : null, null,
-            detail.aiInsights(), detail.impactAnalysis(), detail.driverTreeScoreboard(), detail.relatedEventScenario());
+            detail.aiInsights(), detail.impactAnalysis(), detail.driverTreeScoreboard(), detail.institutionViewSynthesis(), detail.relatedEventScenario());
     }
 
     public PaginationRes<EventRelatedRecordRes> getEventRecords(Long eventId, int page, int size) {

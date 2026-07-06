@@ -20,6 +20,7 @@ public record EventDetailBaseRow(
     String scenarioSuggestReason,
     String detailAnalysis,
     String keyBulletsJson,
+    String institutionViewSynthesis,
     boolean templateAvailable
 ) {
 

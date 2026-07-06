@@ -285,6 +285,7 @@ public class CustomMiEventRepositoryImpl implements CustomMiEventRepository {
                 miEvent.scenarioSuggestReason,
                 miEvent.detailAnalysis,
                 miEvent.keyBulletsJson,
+                miEvent.institutionViewSynthesis,
                 templateAvailable(miEventTypeL2.eventTypeL2Id)
             ))
             .from(miEvent)
