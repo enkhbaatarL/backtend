@@ -3,6 +3,7 @@ package com.sk.domain.mi.service.fundamentalmodel;
 import com.sk.domain.mi.dto.request.fundamentalmodel.FundamentalModelJobArgs;
 import io.fabric8.kubernetes.api.model.Container;
 import io.fabric8.kubernetes.api.model.ContainerBuilder;
+import io.fabric8.kubernetes.api.model.DeletionPropagation;
 import io.fabric8.kubernetes.api.model.EnvFromSource;
 import io.fabric8.kubernetes.api.model.EnvFromSourceBuilder;
 import io.fabric8.kubernetes.api.model.LocalObjectReference;
@@ -10,9 +11,12 @@ import io.fabric8.kubernetes.api.model.LocalObjectReferenceBuilder;
 import io.fabric8.kubernetes.api.model.batch.v1.Job;
 import io.fabric8.kubernetes.api.model.batch.v1.JobBuilder;
 import io.fabric8.kubernetes.client.KubernetesClient;
+import io.fabric8.kubernetes.client.KubernetesClientException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Map;
+import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
@@ -25,6 +29,11 @@ import org.springframework.util.StringUtils;
 public class KubernetesJobService {
 
     private static final int JOB_BACKOFF_LIMIT = 0;
+    private static final String JOB_NAME_PREFIX = "fundamental-model-";
+    private static final String COMPONENT_LABEL = "app.kubernetes.io/component";
+    private static final String COMPONENT_LABEL_VALUE = "fundamental-model-execution";
+    private static final String RUN_ID_LABEL = "mi.sk.com/run-id";
+    private static final String RUN_ID_ANNOTATION = "mi.sk.com/original-run-id";
 
     // python3 -c 방식으로 실행할 smoke 스크립트
     // --run-id, --callback-url arg를 파싱해 callback POST 후 종료
@@ -105,8 +114,13 @@ public class KubernetesJobService {
     public CompletableFuture<Void> createFundamentalModelJob(FundamentalModelJobArgs args) {
         Job job = new JobBuilder()
             .withNewMetadata()
-                .withName("fundamental-model-" + args.getRunId().replace('_', '-').toLowerCase())
+                .withName(toJobName(args.getRunId()))
                 .withNamespace(namespace)
+                .withLabels(Map.of(
+                    COMPONENT_LABEL, COMPONENT_LABEL_VALUE,
+                    RUN_ID_LABEL, args.getRunId()
+                ))
+                .withAnnotations(Map.of(RUN_ID_ANNOTATION, args.getRunId()))
             .endMetadata()
             .withNewSpec()
                 .withBackoffLimit(JOB_BACKOFF_LIMIT)
@@ -127,6 +141,77 @@ public class KubernetesJobService {
             .create();
 
         return CompletableFuture.completedFuture(null);
+    }
+
+    public String toJobName(String runId) {
+        return JOB_NAME_PREFIX + runId.replace('_', '-').toLowerCase();
+    }
+
+    public List<ManagedActiveJob> findManagedActiveJobs() {
+        return kubernetesClient.batch().v1().jobs()
+            .inNamespace(namespace)
+            .list()
+            .getItems()
+            .stream()
+            .filter(this::isManagedJob)
+            .filter(this::isActiveJob)
+            .map(job -> resolveRunId(job)
+                .map(runId -> new ManagedActiveJob(job.getMetadata().getName(), runId))
+                .orElse(null))
+            .filter(java.util.Objects::nonNull)
+            .toList();
+    }
+
+    public void deleteJob(String runId) {
+        String jobName = toJobName(runId);
+        try {
+            kubernetesClient.batch().v1().jobs()
+                .inNamespace(namespace)
+                .withName(jobName)
+                .withPropagationPolicy(DeletionPropagation.FOREGROUND)
+                .delete();
+        } catch (KubernetesClientException e) {
+            if (e.getCode() != 404) {
+                throw e;
+            }
+        }
+    }
+
+    private boolean isManagedJob(Job job) {
+        Map<String, String> labels = job.getMetadata().getLabels();
+        return COMPONENT_LABEL_VALUE.equals(labels == null ? null : labels.get(COMPONENT_LABEL))
+            || job.getMetadata().getName().startsWith(JOB_NAME_PREFIX);
+    }
+
+    private boolean isActiveJob(Job job) {
+        if (job.getStatus() == null) {
+            return true;
+        }
+        boolean terminalCondition = Optional.ofNullable(job.getStatus().getConditions()).orElse(List.of()).stream()
+            .anyMatch(condition -> "True".equalsIgnoreCase(condition.getStatus())
+                && ("Complete".equals(condition.getType()) || "Failed".equals(condition.getType())));
+        return !terminalCondition && job.getStatus().getCompletionTime() == null;
+    }
+
+    private Optional<String> resolveRunId(Job job) {
+        Map<String, String> annotations = job.getMetadata().getAnnotations();
+        if (annotations != null && StringUtils.hasText(annotations.get(RUN_ID_ANNOTATION))) {
+            return Optional.of(annotations.get(RUN_ID_ANNOTATION));
+        }
+        Map<String, String> labels = job.getMetadata().getLabels();
+        if (labels != null && StringUtils.hasText(labels.get(RUN_ID_LABEL))) {
+            return Optional.of(labels.get(RUN_ID_LABEL));
+        }
+        String name = job.getMetadata().getName();
+        if (!name.startsWith(JOB_NAME_PREFIX)) {
+            return Optional.empty();
+        }
+        String legacyValue = name.substring(JOB_NAME_PREFIX.length());
+        String[] parts = legacyValue.split("-", 3);
+        if (parts.length != 3) {
+            return Optional.empty();
+        }
+        return Optional.of(String.join("_", parts));
     }
 
     private Container buildContainer(FundamentalModelJobArgs args) {
@@ -196,5 +281,8 @@ public class KubernetesJobService {
         if (!envFromSources.isEmpty()) {
             builder.withEnvFrom(envFromSources);
         }
+    }
+
+    public record ManagedActiveJob(String jobName, String runId) {
     }
 }

@@ -334,6 +334,7 @@ public class CustomMiScenarioGroupRepositoryImpl implements CustomMiScenarioGrou
                 miScenario.displayOrder.asc(),
                 miScenario.scenarioId.asc()
             )
+            .setLockMode(jakarta.persistence.LockModeType.PESSIMISTIC_WRITE)
             .fetch();
     }
 

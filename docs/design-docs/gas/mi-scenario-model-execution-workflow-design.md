@@ -1,10 +1,14 @@
 # MI Scenario Model Execution Workflow Design
 
 - domain: gas
-- status: draft
+- status: implemented (real DB rollout complete; scenario lifecycle cancellation/reconciliation pending)
 - owner: platform BE
-- updated at: 2026-06-10
+- updated at: 2026-07-06
 - role: 시나리오 그룹 상세 화면의 `MI 수급모델 실행` workflow에 대해 backend aggregate, persistence 책임, latest status/source-of-truth 규칙을 정리하는 설계 문서
+- canonical for: MI 수급모델 실행의 scenario-linked lifecycle, Kubernetes Job orchestration, latest execution 규칙
+- upstream sources: `mi-scenario-workbench-backend-feature-spec.md`, `scenario-case-execution-workflow-design-draft.md`
+- dependencies: scheduler-enabled dedicated deployment, Kubernetes jobs get/list/delete RBAC
+- last sync date: 2026-07-06
 
 > ## 변경 메모 (2026-06-09) — SUPERSEDED BY 2026-06-10 통합 메모
 >
@@ -265,7 +269,7 @@ execution row는 최소 아래 상태를 권장한다.
 - callback 인증/서명과 `runId` + terminal payload idempotency로 정합성을 보장한다.
 - 이미 terminal 상태인 동일 terminal payload 재전송은 `200 OK` no-op으로 처리한다.
 - scheduler timeout 이후 도착한 late callback도 식별자가 일치하면 `200 OK` no-op으로 처리하되, execution 상태는 되돌리지 않는다.
-- 기존 terminal 상태와 상이한 terminal payload가 들어오면 상태를 바꾸지 않고 conflict/error로 처리한다.
+- 기존 terminal 상태와 상이한 terminal payload가 들어오면 상태를 바꾸지 않고 conflict/error로 처리한다. 단, `TIMEOUT`/`SCENARIO_CANCELLED` backend-forced terminal은 상이 payload도 `200 OK` no-op 예외로 처리한다.
 
 ## Timeout Scheduler Rule
 
@@ -278,6 +282,35 @@ execution row는 최소 아래 상태를 권장한다.
   - 전이: `FAILED`
   - 실패 사유: `TIMEOUT`
 - 별도 `PENDING` stale 정리는 없다. Job dispatch 실패는 접수/dispatch 흐름 안에서 즉시 `FAILED` 로 전이한다.
+
+## Scenario Lifecycle Cancellation And Kubernetes Job Reconciliation
+
+### DB transaction rule
+
+- 직접 `DISCARDED`된 scenario, `REALIZED` 전환으로 자동 `DISCARDED`된 sibling scenario, 삭제되는 group의 모든 scenario가 cancellation 대상이다. realized 대상 본인의 실행은 유지한다.
+- 대상 case/history 중 `RUNNING` row만 같은 시각으로 `FAILED` terminal 전이한다. history에는 `fail_rsn_cd = SCENARIO_CANCELLED`, `exec_end_dtm`, audit 값을 기록한다.
+- `SCENARIO_CANCELLED`는 18자로 현재 `VARCHAR(20)`에 저장 가능하다. `CANCELLED_BY_SCENARIO_DELETE`는 28자이므로 사용하지 않는다.
+- 이미 terminal인 case/history의 status와 failure reason은 덮어쓰지 않고 soft delete만 수행한다.
+- history와 latest case를 함께 terminal로 바꿔 `last_run_id` 상태 불변식을 유지하고, case status가 `FAILED`가 되면서 generated `actv_scnr_id`가 자동으로 `NULL`이 되게 한 뒤 case/history를 soft delete한다.
+- scenario/group/signpost entity 변경은 bulk DML보다 먼저 수행한다. bulk DML의 `flushAutomatically`로 entity 변경을 반영한 뒤, 모든 managed entity 변경이 끝난 시점에만 persistence context를 clear한다. `deleteScenarioGroup()`에서 bulk DML 이후 detached entity를 변경하는 순서는 금지한다.
+- submit과 cancellation이 경합해 cancellation 대상 조회 뒤 새 RUNNING case가 생성되지 않도록, 두 command 경로가 동일한 scenario row lock 또는 동등한 DB serialization 규칙에 참여해야 한다.
+
+### Late callback rule
+
+- 일반 terminal callback 재전송은 shared workflow의 canonical 비교 키(`status`, `failureReason`, `errorMessage`; `finishedAt` 제외)가 같을 때 기존 idempotent no-op 규칙을 적용한다. 현재 구현이 `finishedAt`까지 비교하는 drift는 본 구현에서 함께 정리한다.
+- `FAILED + SCENARIO_CANCELLED` 또는 `FAILED + TIMEOUT`은 backend-forced terminal 상태다. 이후 callback은 incoming terminal payload가 달라도 저장 상태를 덮어쓰지 않고 `200 OK`로 ack하며 audit log만 남긴다.
+- soft-deleted cancellation history도 callback correlation을 위해 `runId`로 내부 조회할 수 있어야 한다. active-resource 조회 API에는 계속 노출하지 않는다.
+
+### Kubernetes reconciliation rule
+
+- scenario 상태 변경/group 삭제 요청 transaction에서는 Kubernetes API를 호출하지 않는다.
+- 기존 `ModelExecutionTimeoutScheduler` tick에서 timeout DB 처리와 Job reconciliation을 분리된 단계로 실행한다. 한 단계 실패가 다른 단계를 건너뛰지 않도록 단계별 예외 경계를 둔다.
+- Job 생성 시 original `runId`를 label 또는 annotation으로 저장하고, `KubernetesJobService`의 단일 `toJobName(runId)` helper가 생성/조회/삭제 이름 변환을 담당한다.
+- reconciler는 namespace의 managed active Job을 조회한 뒤 runId를 수집하고, DB에서 해당 run의 상태/사유를 batch 조회한다. 삭제 대상은 `FAILED + TIMEOUT` 또는 `FAILED + SCENARIO_CANCELLED`인 active Job으로 제한한다.
+- 정상 `COMPLETED`, 외부 callback `FAILED`, 이미 Kubernetes terminal인 Job은 즉시 삭제하지 않는다. 기존 `ttlSecondsAfterFinished = 3600` 로그 보존 정책을 따른다.
+- Job 삭제는 idempotent하게 처리하고 not-found는 성공으로 간주한다. owned Pod가 함께 정리되도록 cascade propagation을 명시한다.
+- cleanup 주기 30초는 scheduler flag가 활성인 환경의 목표 SLA다. flag 비활성 환경에는 SLA가 없으므로 production rollout 전에 `features.scheduling.model-execution-timeout.enabled=true`, dedicated single replica, jobs get/list/delete RBAC를 gate로 검증한다.
+- 기존 label 없는 Job은 deterministic name prefix/legacy runId parsing을 한시적 fallback으로 지원하고, rollout 이후 label 기반 조회로 수렴한다.
 
 ## Persistence Draft
 
@@ -366,7 +399,7 @@ DB unique는 동시성의 최후 방어선이라는 아이디어만 유지한다
 3. non-terminal이면 `COMPLETED` 또는 `FAILED` 로 전이한다.
 4. 대상 run이 latest run이면 같은 transaction에서 `tmd_mdl_scnrcasem.case_stat_cd` 도 같은 terminal 상태로 전이한다.
 5. 이미 terminal이고 동일 terminal payload이면 `200 OK` no-op 처리한다.
-6. 이미 terminal이고 상이 terminal payload이면 상태를 바꾸지 않고 conflict/error 처리한다.
+6. 이미 terminal이고 상이 terminal payload이면 상태를 바꾸지 않고 conflict/error 처리한다. 단, `TIMEOUT`/`SCENARIO_CANCELLED` backend-forced terminal은 상이 payload도 `200 OK` no-op 예외로 처리한다.
 7. callback 처리 안에서는 결과 데이터 materialization을 수행하지 않는다.
 
 ### E. timeout 정리
@@ -393,7 +426,7 @@ DB unique는 동시성의 최후 방어선이라는 아이디어만 유지한다
 
 ## Open Questions
 
-- timeout 임계 시간과 scheduler 주기
+- ~~timeout 임계 시간과 scheduler 주기~~ → 2026-06-22 구현 완료: 10분 RUNNING 임계값, `@Scheduled(fixedDelay = 30000)` 30초 polling, `features.scheduling.model-execution-timeout.enabled` feature flag(기본 `false`)로 SKGAS dedicated 단일 인스턴스에서만 활성화. DBA가 `tmd_mdl_scnrcaseh_ix01` `SHOW INDEX`/`EXPLAIN` pre-check를 확인하기 전까지는 운영 활성화를 보류한다(`docs/work-notes/2026/2026-06-22-model-execution-timeout-scheduler-implementation.md` 참고).
 - ~~scenario 상세조회 결과 데이터의 physical owner와 저장 시점~~ → 2026-06-10 확정, Volumes table은 2026-06-17 `tmd_mdl_scnrcasevolrgnl`로 변경 확정. 결과 테이블 4개(`tmd_mdl_scnrcasevolrgnl`/`tmd_mdl_scnrcasetrdehdrl`/`tmd_mdl_scnrcasetrdeflwl`/`tmd_mdl_scnrcaseprcl`)에 모델 측이 `run_seq` 기준으로 적재한다("Source-Of-Truth Rule §3" 참고). execution 쪽 DDL에는 결과 readiness/materialization 컬럼을 추가하지 않는다.
 
 ## Recommended Next Step

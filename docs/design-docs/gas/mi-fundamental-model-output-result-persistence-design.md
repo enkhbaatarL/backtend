@@ -22,14 +22,11 @@
   - `docs/design-docs/gas/mi-fundamental-model-volumes-region-bucket-json-plan-b.md` as a separate Plan B candidate; the approved `tmd_mdl_scnrcasevolrgnl` decision is folded into this canonical document
   - `docs/design-docs/gas/mi-fundamental-model-trade-flow-erd-ddl-draft.md` as canonical Trade Flow persistence design
   - "DB-backed 전환 시 별도 ERD review 필요" notes for Volumes/Trade Flows/Price result data in older drafts
-- last synced: 2026-06-17
+- last synced: 2026-07-03
+- implementation status: physical rollout complete (real DB implementation shipped 2026-06-15 for Volumes/Trade Flows/Price; see `docs/work-notes/2026/2026-06-15-*-real-db-implementation.md`). Remaining open questions below are follow-up DBA policy items, not rollout blockers.
 - open questions:
-  - DBA physical rollout window and target schema name
-  - DBA confirmation of JSON column production policy and maximum expected `vol_data_json` payload size per Volumes bucket
-  - DBA physical drop/decommission timing if `tmd_mdl_scnrcasevoll` was already created in any environment
   - result retention policy: keep latest N runs per case, keep runs for M months, or archive by explicit DBA operation
-  - DBA confirmation of the initial no-partition recommendation
-  - DBA confirmation of future partition objective: query pruning only vs retention/archive management
+  - DBA confirmation of future partition objective: query pruning only vs retention/archive management (initial no-partition rollout is live)
   - Price 물리명 사전 정합성 (2026-06-11 ERD review, 해소됨): `granularity_cd` → `perd_unit_spt_cd`(기간단위구분코드, enum `PeriodUnitSeparateCd`) 재사용, `period_key` → `perd_key`(표준 약어 `PERD` + 기존 `_key` 패밀리), `user_adj_prc`의 `조정/ADJ`는 용어사전(`db-term-dictionary-sheet2.csv` id 380)에 등록 완료. Price 결과테이블 물리명은 모두 사전 정합.
   - Price series 라벨 단일화 (2026-06-11 ERD review, 해소됨): API series 코드는 `BASE_CASE` / `USER_ADJUSTED`로 통일했다. 코드 enum `PriceSeriesType`·mock seed에 맞춰 feature spec의 `LAST_ADJUSTED` 표기(토큰 8곳 + 라벨 문자열 3곳)를 `USER_ADJUSTED` / `User adjusted price`로 정렬 완료.
   - Price `unit` 상수 필드 (2026-06-15 해소): Price 응답은 `unit: "USD/mmbtu"` 고정 상수 필드를 반환한다. ERD는 단위 컬럼을 두지 않고 API 조립 시 상수로 채운다.
@@ -648,9 +645,9 @@ WHERE run_seq = :run_seq
 
 Expected invalid count values are `0`. If DBA policy does not apply CHECK constraints in production, this same validation condition is mandatory in Python/model loader and Java/backend validation before a run can be marked `COMPLETED`. Deep JSON validation such as sorted `periodKeys`, per-row `values` length, first-row subtotal, and `TOTAL` attr handling remains application/loader responsibility because MySQL JSON SQL is awkward for nested array validation.
 
-## Mock to Real Transition Boundary
+## Mock to Real Transition Boundary (completed 2026-06-15)
 
-Phase 1 mock:
+Phase 1 mock (historical, superseded):
 
 - `src/main/resources/mock/fundamental-model/fundamental-model-volumes-data.json`
 - `src/main/resources/mock/fundamental-model/fundamental-model-trade-flows-data.json`
@@ -658,36 +655,37 @@ Phase 1 mock:
 - no DB writes
 - no DBA rollout
 
-DB-backed real:
+DB-backed real (current state):
 
-- result API flags in `FundamentalModelMockProperties` switch from mock service to real service per API.
-- real service must not read mock JSON.
+- result API flags in `FundamentalModelMockProperties` switched from mock service to real service per API.
+- real service does not read mock JSON in the DB-backed profile.
 - real service reads only latest completed run result tables through `caseId -> last_run_id -> run_seq`.
-- Python/model side must insert Volumes into `tmd_mdl_scnrcasevolrgnl` and commit result table inserts before invoking success callback.
-- Java/backend must not set `exec_stat_cd = 'COMPLETED'` unless callback validation and result row existence checks pass.
+- Python/model side inserts Volumes into `tmd_mdl_scnrcasevolrgnl` and commits result table inserts before invoking success callback.
+- Java/backend does not set `exec_stat_cd = 'COMPLETED'` unless callback validation and result row existence checks pass.
 - `tcm_filel(SCNRCASEH + run_seq)` remains the source for raw output file metadata, not for chart/table API rows.
+- mock seed files are kept only for local/demo mode.
 
-Transition checklist:
+Transition checklist (all complete):
 
-1. Apply case/run DDL from `scenario-case-execution-erd-ddl-draft.md`.
-2. Apply result tables from this document.
-3. Implement result ingestion from model output files.
-4. Verify row counts and EXPLAIN for one completed run.
-5. Switch result API flags from mock to real in a controlled profile.
-6. Keep mock seed files only for local/demo mode.
+1. Apply case/run DDL from `scenario-case-execution-erd-ddl-draft.md`. — done
+2. Apply result tables from this document. — done
+3. Implement result ingestion from model output files. — done
+4. Verify row counts and EXPLAIN for one completed run. — done
+5. Switch result API flags from mock to real in a controlled profile. — done
+6. Keep mock seed files only for local/demo mode. — done
 
 ## DBA Action Items
 
-- Confirm initial no-partition rollout.
+- ~~Confirm initial no-partition rollout.~~ confirmed and live.
 - Confirm whether CHECK constraints are applied in production. If not, require the same period-key validation in Python/model loader and Java/backend validation.
-- Define result retention policy: latest N runs per case, M-month retention, or manual archive only.
-- If partitioning is required later, confirm `run_seq` RANGE partition design and FK policy.
-- Confirm JSON column production policy and maximum expected `vol_data_json` payload size for `tmd_mdl_scnrcasevolrgnl`. Trade Flow `flow_val` and Price values are `DOUBLE` as of 2026-06-15.
+- Define result retention policy: latest N runs per case, M-month retention, or manual archive only. (still open — no retention job implemented yet)
+- If partitioning is required later, confirm `run_seq` RANGE partition design and FK policy. (still open, future work)
+- ~~Confirm JSON column production policy and maximum expected `vol_data_json` payload size for `tmd_mdl_scnrcasevolrgnl`.~~ Trade Flow `flow_val` and Price values are `DOUBLE` as of 2026-06-15; `vol_data_json` policy confirmed as part of the 2026-06-15 rollout.
 - Confirm secondary index count against insert volume and model output size.
 
 ## Implementation Readiness
 
-ready after minor cleanup
+implemented and rolled out (2026-06-15)
 
-- The data model, run linkage, key strategy, mock-to-real boundary, and DBA verification shape are fixed enough for implementation planning.
-- Physical rollout remains blocked until DBA confirms retention policy, partition/FK policy, and remaining Volumes numeric precision, but those decisions do not change the API contract or case/run ownership model.
+- The data model, run linkage, key strategy, mock-to-real boundary, and DBA verification shape were fixed and carried through to production rollout.
+- Physical rollout is complete. Remaining DBA items (retention policy, future partition/FK policy) are follow-up operational decisions and do not block the current implementation or API contract.

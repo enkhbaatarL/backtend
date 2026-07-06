@@ -1,10 +1,14 @@
 # Scenario Case Execution Workflow Design Draft
 
 - domain: gas
-- status: draft
+- status: implemented (real DB rollout complete; workflow/domain semantics remain canonical)
 - owner: platform BE
-- updated at: 2026-06-22 (timeout scheduler execution-type scope 결정 반영)
-- role: Scenario Case 업로드, 비동기 실행, 상태 추적, timeout 처리의 backend workflow와 persistence 초안을 정리하는 설계 문서
+- updated at: 2026-07-06 (scenario lifecycle cancellation 및 Job reconciliation 결정 반영)
+- role: Scenario Case 업로드, 비동기 실행, 상태 추적, timeout 처리의 backend workflow와 persistence를 정리하는 설계 문서
+- canonical for: shared Scenario Case/run lifecycle, callback idempotency, timeout and backend-forced terminal semantics
+- upstream sources: `mi-scenario-workbench-backend-feature-spec.md`, `mi-scenario-model-execution-workflow-design.md`
+- dependencies: canonical DDL draft, scheduler-enabled dedicated deployment, Kubernetes RBAC
+- last sync date: 2026-07-06
 
 > 빠른 진입점:
 > - 이 문서는 `Scenario Case -> Execution History -> run_id/status` 흐름의 workflow/domain semantics source로 사용한다.
@@ -18,13 +22,13 @@
 
 ## 현재 canonical artifact
 
-- MI Fundamental Model 1차 mock API endpoint/path/request/response canonical source는 [mi-fundamental-model-mock-api-feature-spec.md](../../feature-specs/mi-fundamental-model-mock-api-feature-spec.md) 다.
-- 1차 mock API의 초기 응답 데이터 source는 `src/main/resources/mock/fundamental-model/fundamental-model-cases.json` 이다. API 호출 중 생성/실행/callback으로 바뀌는 상태는 메모리 store에만 반영하고, reset은 이 seed json을 다시 읽어 초기 상태로 복원한다.
+- MI Fundamental Model 1차 API endpoint/path/request/response canonical source는 [mi-fundamental-model-mock-api-feature-spec.md](../../feature-specs/mi-fundamental-model-mock-api-feature-spec.md) 다.
+- 1차 mock 단계에서는 `src/main/resources/mock/fundamental-model/fundamental-model-cases.json` seed 기반 in-memory store를 사용했다. 2026-06-05 ~ 2026-06-19 real DB 구현 완료로 현재는 `tmd_mdl_scnrcasem`/`tmd_mdl_scnrcaseh` 및 관련 결과 테이블에 상태를 영속한다. seed json/in-memory store는 로컬 demo 전용으로만 남아 있다.
 - 이 workflow draft는 Scenario Case aggregate, 상태 전이, callback/timeout semantics, future persistence rationale의 source다.
 - MI Fundamental Model은 MI Scenario Workbench와 동급 메뉴다. `Scenario Case` 명칭은 현업 용어로 유지하지만, API parent가 `Scenario` 또는 Scenario Workbench라는 뜻은 아니다.
 - canonical API path family는 `/api/v1/mi/fundamental-model/**` 이다. 기존 `/api/v1/mi/scenario-workbench/**/fundamental-*` 및 `/api/v1/mi/scenario-workbench/scenarios/{scenarioId}/fundamental-model-cases/**` 형태는 superseded contract이며 이 문서의 workflow는 해당 hierarchy를 전제로 하지 않는다.
 - 상위 도메인 흐름은 [gas-event-scenario-supply-model-linkage.md](gas-event-scenario-supply-model-linkage.md) 를 따른다.
-- DB rollout SQL 초안은 [scenario-case-execution-erd-ddl-draft.md](scenario-case-execution-erd-ddl-draft.md) 에서 관리한다. 현재는 template / not rollout-ready 상태이며, 과거 `scenario_id` 컬럼명/물리 FK 전제는 제거되었다. 현재 proposed model은 nullable `scnr_id`로 MI 수급모델의 scenario 식별자를 논리 참조한다.
+- DB rollout SQL은 [scenario-case-execution-erd-ddl-draft.md](scenario-case-execution-erd-ddl-draft.md) 에서 관리한다. 해당 DDL은 production에 적용 완료됐으며, 과거 `scenario_id` 컬럼명/물리 FK 전제는 제거되었다. 현재 model은 nullable `scnr_id`로 MI 수급모델의 scenario 식별자를 논리 참조한다.
 - 실행 이력과 검증 기록은 [2026-04-28-scenario-case-execution-db-design.md](../../work-notes/2026/2026-04-28-scenario-case-execution-db-design.md) 에 남긴다.
 
 ## 범위
@@ -283,7 +287,7 @@ WHERE case_id = :case_id
 1. 프론트는 canonical 1차 mock API 기준으로 `caseId` 상태 조회 endpoint를 폴링한다.
 2. backend는 case 최신 상태와 latest run projection을 조회해 상태/시작/종료 시각을 반환한다.
 3. 결과 파일 자체는 model pod가 S3/object storage에 저장/관리한다.
-4. backend는 결과 파일 download URL 또는 결과 파일 pointer/reference를 저장하지 않는다. 결과 데이터 조회(Volumes/Price 수치 데이터)는 `GET /cases/{caseId}/volumes`, `GET /cases/{caseId}/price` API로 분리되어 제공한다. 1차 mock은 json seed 기반 고정 데이터를 반환하며, DB-backed 전환 시 별도 테이블 설계가 필요하다.
+4. backend는 결과 파일 download URL 또는 결과 파일 pointer/reference를 저장하지 않는다. 결과 데이터 조회(Volumes/Price 수치 데이터)는 `GET /cases/{caseId}/volumes`, `GET /cases/{caseId}/price` API로 분리되어 제공한다. 1차 mock 단계에서는 json seed 기반 고정 데이터를 반환했으나, 2026-06-15 real DB 구현 완료로 현재는 `mi-fundamental-model-output-result-persistence-design.md`의 테이블에서 조회한다.
 5. `runId` 단독 조회는 후속 이력 조회 계약에서 별도로 검토한다.
 
 ### Stage 4a. 상세 조회
@@ -293,7 +297,7 @@ WHERE case_id = :case_id
 3. 상세 조회는 화면 rendering용 aggregate snapshot이다. FE polling loop는 `GET /cases/{caseId}/status`를 사용하고, 상세 조회를 polling용 API로 반복 호출하지 않는다.
 4. 상세 조회는 full run history를 반환하지 않는다. case의 전체 실행 이력은 별도 runs API가 정의될 때까지 이 workflow의 phase-1 범위에 포함하지 않는다.
 5. 상세 조회는 result payload, result file reference, download URL/path를 반환하지 않는다. 결과 수치 데이터(Volumes/Price)는 `GET /cases/{caseId}/volumes`, `GET /cases/{caseId}/price` API로 분리 제공하며, 결과 파일 다운로드는 별도 API 계약과 persistence 검토가 필요하다.
-6. phase-1 mock 구현은 기존 in-memory case aggregate와 run store의 `latestRunId` pointer를 사용해 이 projection을 만든다. DB-backed 전환 시에는 master case, `tcm_filel`, latest execution row를 같은 ownership/permission scope에서 조회해야 한다.
+6. phase-1 mock 구현은 기존 in-memory case aggregate와 run store의 `latestRunId` pointer를 사용해 이 projection을 만들었다. real DB 구현 완료 후에는 master case, `tcm_filel`, latest execution row를 같은 ownership/permission scope에서 조회한다.
 7. soft-deleted case는 active resource가 아니므로 상세 조회에서 `404 RSC_NOT_FOUND`로 처리한다.
 
 ### Stage 4b. Case metadata 수정
@@ -332,6 +336,8 @@ affected row count가 `0`이면 case 없음, ownership 불일치, 또는 이미 
 6. 삭제된 case는 detail/status/run/update/delete에서 active resource가 아니므로 `404 RSC_NOT_FOUND`로 처리한다.
 7. 반복 delete도 active resource가 아니므로 `404 RSC_NOT_FOUND`로 처리한다.
 
+> 이 Stage는 Fundamental Model의 사용자 직접 case delete semantics다. Scenario Workbench에서 scenario 폐기/실현/group 삭제가 `SCENARIO` case/history를 cascade soft delete하는 규칙은 별도 aggregate lifecycle이며, [mi-scenario-model-execution-workflow-design.md](mi-scenario-model-execution-workflow-design.md)의 `Scenario Lifecycle Cancellation And Kubernetes Job Reconciliation`을 따른다. 두 흐름을 같은 delete contract로 해석하지 않는다.
+
 DB-backed 전환 시 권장 delete shape:
 
 ```sql
@@ -352,6 +358,16 @@ affected row count가 `0`이면 case 없음, ownership 불일치, 또는 이미 
 2. 임계치 초과 건은 execution을 `FAILED` 로 전환한다.
 3. `fail_rsn_cd = TIMEOUT` 과 `exec_end_dtm` 을 함께 기록한다.
 4. `tmd_mdl_scnrcasem.case_stat_cd` 를 `FAILED` 로 동기화한다. `SCENARIO` case는 `actv_scnr_id` generated column 이 자동으로 NULL 로 풀려 active 점유가 해제되므로 helper 를 따로 해제할 필요가 없다. `INDEPENDENT` case는 `scnr_id = NULL` 이므로 scenario active-run helper에 영향을 주지 않는다. `last_run_id` 는 그대로 두어 어떤 run이 timeout 되었는지 추적할 수 있게 한다. case update 는 callback 흐름과 동일하게 `last_run_id = :run_id` 조건을 사용해, 사용자가 이미 재실행한 경우에는 case 최신 상태를 덮어쓰지 않는다.
+5. DB timeout 처리 후 같은 scheduler tick의 reconciliation 단계가 `FAILED + TIMEOUT`인데 Kubernetes에서 아직 active인 Job을 삭제한다. DB transaction과 Kubernetes API 호출은 분리하며 Job 삭제 실패는 다음 tick에서 재시도한다.
+
+### Stage 6. Scenario lifecycle cancellation reconciliation
+
+1. Scenario Workbench command가 직접 discarded scenario, realized에 의해 discarded된 sibling, 삭제 group 하위 scenario를 식별한다.
+2. 대상 history 중 `RUNNING`만 `FAILED + SCENARIO_CANCELLED`로 전이하고 `exec_end_dtm`을 기록한다. 이미 terminal인 history는 상태/사유를 보존한다.
+3. 대응하는 latest case의 `RUNNING` 상태를 `FAILED`로 바꿔 `actv_scnr_id` 점유를 해제한다.
+4. case/history를 soft delete한다. scenario/group/signpost managed entity 변경은 bulk DML 전에 끝내 detached entity 변경 누락을 방지한다.
+5. callback은 soft-deleted `FAILED + SCENARIO_CANCELLED` run을 internal lookup으로 식별하고 payload 차이와 무관하게 상태 overwrite 없이 `200 OK`로 ack한다.
+6. scheduler reconciliation은 managed active Kubernetes Job을 조회하고 DB 상태가 `FAILED + SCENARIO_CANCELLED`인 Job을 삭제한다. not-found는 성공으로 처리하고 실패는 다음 tick에서 재시도한다.
 
 ## 상태 전이
 
@@ -403,6 +419,8 @@ stateDiagram-v2
 - 해당 late callback이 이전 `run_id` 에 대한 것이고 사용자가 이미 재실행해 새 execution이 latest가 된 경우에도 `tmd_mdl_scnrcasem.case_stat_cd` 를 바꾸지 않는다.
 - 운영 추적을 위해 애플리케이션 로그에 `LATE_CALLBACK_IGNORED` 성격의 이벤트를 남긴다.
 - 이 처리는 상태 전이가 아니며, `exec_stat_cd`, `case_stat_cd`, `exec_end_dtm` 을 변경하지 않는다.
+- `TIMEOUT`과 `SCENARIO_CANCELLED`는 backend-forced terminal reason이다. 이 reason의 late callback은 exact-payload 일치 여부와 무관하게 `200 OK` no-op으로 ack한다.
+- 그 외 terminal 상태의 상이 payload callback은 기존 conflict/error 정책을 유지한다.
 
 ## 처리 흐름
 
@@ -564,6 +582,7 @@ VALUES (
 | 상태 정합성 | execution 완료/실패 시 case 최신 상태도 동기화 | callback 대상이 latest/active execution (`last_run_id = :run_id`) 일 때만 case 최신 상태 갱신 |
 | `last_run_id` invariant | `case_stat_cd` 와 `last_run_id` 가 가리키는 `tmd_mdl_scnrcaseh.exec_stat_cd` 는 항상 같은 terminal/RUNNING 상태여야 한다 | 갱신은 한 transaction 안에서 수행. terminal/timeout 동기화 시 `last_run_id` 자체는 변경하지 않는다 |
 | 실패 추적 | `fail_rsn_cd`, `err_msg_cntt` 기록 | 운영 추적 목적 |
+| backend-forced terminal | `TIMEOUT`, `SCENARIO_CANCELLED` | late callback은 저장 상태를 덮어쓰지 않고 payload 차이와 무관하게 성공 ack. `SCENARIO_CANCELLED`는 18자로 `VARCHAR(20)` 범위 내 |
 | Kubernetes Job 재시도 | 모든 Pod 실행 실패에 `backoffLimit: 0` | 자동 재시도 없이 terminal failure로 확정한다. 재실행은 사용자 또는 운영자가 새 run으로 요청한다 |
 | soft delete | case delete는 `tmd_mdl_scnrcasem.del_yn = 'Y'`만 갱신 | phase-1 및 future DB-backed 기본 semantics. `tmd_mdl_scnrcaseh` / `tcm_filel`은 물리 삭제하지 않는다 |
 
@@ -586,7 +605,7 @@ mi:
 - image pull secret, service account/RBAC, object storage credential, callback auth secret, resource requests/limits, Job TTL은 운영 배포 전 별도 보안/운영 설계에서 확정한다. retry/backoff는 §4의 "Kubernetes Job Pod 실행 재시도 정책"에 따라 `0`으로 고정한다.
 - `Job.spec.activeDeadlineSeconds` 는 현재 적용하지 않는다 (2026-06-22). Backend timeout 처리 뒤에도 model Pod를 강제 종료하지 않아 운영자가 Pod 로그를 확인할 수 있게 한다.
 - `ttlSecondsAfterFinished = 3600` 은 terminal Job(`Complete` 또는 `Failed`)이 된 뒤 1시간 보존 후 정리하는 설정이다. 실행 중인 Pod를 종료하는 timeout 설정이 아니다.
-- 따라서 Backend scheduler가 `FAILED/TIMEOUT` 으로 전이한 뒤에도 Pod는 계속 실행할 수 있다. late callback은 기존 terminal no-op 정책을 따르고, 계속 실행된 Pod의 리소스/결과 write 관찰과 수동 정리는 운영 책임으로 남는다.
+- scenario lifecycle cancellation/timeout Job reconciliation 구현 전에는 Backend terminal 전이 뒤에도 Pod가 계속 실행할 수 있다. 구현 후 scheduler는 `FAILED + TIMEOUT` 또는 `FAILED + SCENARIO_CANCELLED` 상태이며 Kubernetes에서 아직 active인 managed Job만 삭제한다. 정상 terminal Job은 TTL 1시간 보존을 유지한다.
 - image pull secret, service account/RBAC, object storage credential, callback auth secret, resource requests/limits, retry/backoff, Job TTL은 운영 배포 전 별도 보안/운영 설계에서 확정한다.
 
 ## Open Questions
@@ -595,6 +614,7 @@ mi:
 - `SCNRCASE` 공통코드는 target 중복 없음이 확인되었다. 단, `cd_nm`, `cd_rnk`, `cd_expn` 최종 값은 운영 공통코드 관리 기준에 맞춰 DBA/공통코드 owner가 확정한다.
 - `activeDeadlineSeconds` 는 Backend timeout과 독립적으로 현재 미적용이다.
 - soft-deleted case의 보존 기간, audit 조회, 복구 정책은 정해지지 않았다.
+- Kubernetes Job reconciliation 운영 활성화에는 jobs get/list/delete RBAC, scheduler feature flag, dedicated single-replica 조건 확인이 필요하다.
 - 재실행 시 별도 retry count 컬럼이 필요한지는 추후 운영 운영 모니터링/SLA 요구가 들어오면 재검토한다.
 - 향후 Pod 실행 재시도를 도입할 경우에만 모델 이미지의 permanent/transient exit code, `podFailurePolicy` 지원 Kubernetes 버전, environment별 `backoffLimit` 값을 사전에 확정한다.
 
@@ -614,7 +634,8 @@ mi:
 - ownership scope (2026-05-20): `usr_no` only로 확정. 조직/부서/tenant 정책 키는 본 모델에 추가하지 않는다.
 - `ASSIGNEE_NAME` JOIN boundary (2026-05-20): `tmd_mdl_scnrcasem.usr_no = tmd_usrm.usr_no`, 표시 컬럼은 `tmd_usrm.usr_nm`으로 확정.
 - 실행유형 명시 컬럼 (2026-06-16): 기존 `scnr_id` NULL 여부 기반 암묵 구분을 `exec_type_cd`(`INDEPENDENT`/`SCENARIO`/`MI_BASE`) 명시 컬럼으로 분리한다. 트리거는 `MI Base` 적재 데이터를 실행 테이블에 두기로 한 결정이며, `INDEPENDENT`/`MI_BASE` 가 동일 `scnr_id = NULL` 이라 `scnr_id` 만으로 구분 불가해졌다. `MI_BASE` 는 사용자 실행 흐름(`PENDING`→`RUNNING`→terminal)을 타지 않고, 적재 주체(배치/admin)가 case + `tmd_mdl_scnrcaseh` row 를 `COMPLETED` 로 직접 INSERT 해 Volumes/Price 결과를 `run_seq` 로 연결한다. 물리 스키마/공통코드/CHECK 는 [scenario-case-execution-erd-ddl-draft.md](scenario-case-execution-erd-ddl-draft.md) 가 canonical source다.
-- Volumes/Trade Flows/Price 결과 데이터 조회 API (2026-06-07): 결과 파일 다운로드와 분리하여 `GET /cases/{caseId}/volumes`, `GET /cases/{caseId}/volumes/trade`, `GET /cases/{caseId}/price`를 1차 mock scope에 포함. 상세 조회(`GET /cases/{caseId}`)는 metadata + files + latestRun만 반환하는 경계를 유지한다. 1차 mock은 json seed 기반 고정 데이터 반환. DB-backed 전환 시 parsed result table, key, partition/index, mock-to-real 경계는 [mi-fundamental-model-output-result-persistence-design.md](mi-fundamental-model-output-result-persistence-design.md)를 따른다.
+- Volumes/Trade Flows/Price 결과 데이터 조회 API (2026-06-07): 결과 파일 다운로드와 분리하여 `GET /cases/{caseId}/volumes`, `GET /cases/{caseId}/volumes/trade`, `GET /cases/{caseId}/price`를 1차 mock scope에 포함. 상세 조회(`GET /cases/{caseId}`)는 metadata + files + latestRun만 반환하는 경계를 유지한다. 1차 mock은 json seed 기반 고정 데이터 반환. parsed result table, key, partition/index, mock-to-real 경계는 [mi-fundamental-model-output-result-persistence-design.md](mi-fundamental-model-output-result-persistence-design.md)를 따른다. (2026-06-15 real DB 구현 완료로 세 API 모두 위 테이블에서 조회하도록 전환됨.)
+- scenario lifecycle cancellation (2026-07-06): RUNNING execution은 `FAILED + SCENARIO_CANCELLED` terminal 전이 후 case/history를 soft delete한다. Kubernetes Job은 request transaction에서 삭제하지 않고 timeout scheduler 확장 reconciler가 eventual cleanup한다. normal terminal Job TTL 보존과 backend-forced terminal cleanup을 구분한다.
 
 ## Completion Boundary
 

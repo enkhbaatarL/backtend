@@ -1,10 +1,11 @@
 # MI Fundamental Model - Trade Flows API 설계
 
 - domain: gas
-- status: draft
+- status: implemented (real DB rollout complete 2026-06-15; separation rationale/data shape below remain canonical)
 - owner: platform BE
-- updated at: 2026-06-01
+- updated at: 2026-07-03
 - canonical spec: [mi-fundamental-model-mock-api-feature-spec.md](../../feature-specs/mi-fundamental-model-mock-api-feature-spec.md)
+- canonical persistence: [mi-fundamental-model-output-result-persistence-design.md](mi-fundamental-model-output-result-persistence-design.md)
 - role: Trade Flows API를 Volumes API에서 분리한 근거와 데이터 구조 설계 결정을 기록한다
 
 ---
@@ -109,7 +110,7 @@ Total 행(`toRegion=null`)은 필터와 무관하게 항상 포함된다.
 
 ---
 
-## 4. Mock 데이터 출처
+## 4. Mock 데이터 출처 (1차 mock 단계 참고용, 2026-06-15 real DB로 전환 완료)
 
 엑셀 파일: `Output_Model_Dashboard_Templates_20260406_001_suje.xlsx`의 "Trade Flow Dashboard" 시트
 
@@ -131,8 +132,8 @@ toCountries LNG 2026 예시 구성:
 
 ---
 
-## 5. DB 전환 시 고려사항
+## 5. DB 전환 결정 (2026-06 ERD review에서 확정, real DB 적용 완료)
 
-- country 목록이 base 버전마다 달라지는 구조 → 컬럼 메타데이터를 별도 테이블로 관리하거나 JSON 컬럼으로 저장하는 전략 필요. ERD review 항목으로 등록
-- Sparse flows 저장 방식: `(case_id, selector, year, from_region, from_country, to_region, to_country, value)` 복합 키 구조 검토 필요
+- country 목록 가변 구조는 header row table(`tmd_mdl_scnrcasetrdehdrl`) + sparse flow table(`tmd_mdl_scnrcasetrdeflwl`)로 확정했다. JSON 컬럼 후보(`from_countries_json`/`to_countries_json`)는 superseded됐다.
+- Sparse flows 저장 방식은 `tmd_mdl_scnrcasetrdeflwl`의 복합 키 구조로 확정했다. 물리 스키마 정본은 [mi-fundamental-model-output-result-persistence-design.md](mi-fundamental-model-output-result-persistence-design.md)를 따른다.
 - 집계 행(region aggregate, Total)의 저장 방식: 파생값으로 DB에 미저장하고 조회 시 계산할지, 원본 엑셀 데이터 그대로 저장할지 결정 필요
