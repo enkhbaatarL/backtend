@@ -11,6 +11,7 @@ import com.sk.domain.mi.dto.request.nextgen.design.ScenarioSignpostsReq;
 import com.sk.domain.mi.dto.request.nextgen.design.ScenarioValidationReq;
 import com.sk.domain.mi.dto.response.nextgen.ScenarioBaseEventRes;
 import com.sk.domain.mi.dto.response.nextgen.ScenarioDetailViewRes;
+import com.sk.domain.mi.dto.response.nextgen.priceinterp.PriceInterpretationSectionRes;
 import com.sk.domain.mi.dto.response.nextgen.ScenarioDimensionColumnRes;
 import com.sk.domain.mi.dto.response.nextgen.ScenarioDimensionRes;
 import com.sk.domain.mi.dto.response.nextgen.ScenarioGroupDetailRes;
@@ -26,7 +27,7 @@ import com.sk.domain.mi.dto.response.nextgen.design.ScenarioDesignSseEvent;
 import com.sk.domain.mi.dto.response.nextgen.design.ScenarioDesignStageRes;
 import com.sk.domain.mi.dto.response.nextgen.design.ScenarioDesignStateRes;
 import com.sk.domain.mi.dto.response.nextgen.design.ScenarioDimensionTemplateRes;
-import com.sk.domain.mi.service.nextgen.sse.ScenarioDesignSseRegistry;
+import com.sk.domain.mi.service.nextgen.sse.registry.ScenarioDesignSseRegistry;
 import com.sk.domain.shared.enums.nextgen.ProbabilityDirection;
 import com.sk.domain.shared.enums.nextgen.ScenarioDisplayStatus;
 import com.sk.domain.shared.enums.nextgen.ScenarioGroupStage;
@@ -285,7 +286,8 @@ public class ScenarioDesignMockService {
                 ScenarioDisplayStatus.PENDING, ScenarioDisplayStatus.PENDING.getLabel()))
             .toList();
         ScenarioGroupDetailRes detail = new ScenarioGroupDetailRes(
-            groupId, session.groupName, now, now, baseEvent, session.summary, rows.size(), session.columns, detailRows);
+            groupId, session.groupName, now, now, baseEvent, session.summary, rows.size(), session.columns, detailRows,
+            PriceInterpretationSectionRes.of(false, List.of())); // 확정 직후 — 수급모델 실행 전이라 해석 없음
 
         List<ScenarioDetailViewRes> scenarioDetails = rows.stream()
             .map(r -> new ScenarioDetailViewRes(

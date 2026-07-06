@@ -271,7 +271,7 @@ public class ScenarioGroupMockService {
         return new ScenarioGroupDetailRes(
             detail.scenarioGroupId(), detail.groupName(), detail.createdAt(), detail.updatedAt(),
             detail.baseEvent(), detail.summary(), detail.scenarioCount(),
-            detail.dimensionColumns(), rows);
+            detail.dimensionColumns(), rows, detail.priceInterpretation());
     }
 
     private Map<Long, Integer> redistributeRows(List<ScenarioGroupDetailRowRes> rows) {

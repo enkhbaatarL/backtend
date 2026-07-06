@@ -8,7 +8,7 @@ import com.sk.domain.mi.dto.response.nextgen.design.ScenarioDesignFailureCache;
 import com.sk.domain.mi.dto.response.nextgen.design.ScenarioDesignSseEvent.Stage;
 import com.sk.domain.mi.dto.response.nextgen.design.ScenarioDesignSseEvent.Type;
 import com.sk.domain.mi.dto.response.nextgen.design.ScenarioValidationCache;
-import com.sk.domain.mi.service.nextgen.sse.ScenarioDesignEventPublisher;
+import com.sk.domain.mi.service.nextgen.sse.SseEventPublisher;
 import com.sk.domain.shared.enums.nextgen.AgentCallbackResult;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -27,7 +27,7 @@ public class ScenarioDesignCallbackService {
 
     private final ScenarioDesignValidationStore validationStore;
     private final ScenarioDesignFailureStore failureStore;
-    private final ScenarioDesignEventPublisher eventPublisher;
+    private final SseEventPublisher eventPublisher;
 
     /** 생성 완료: stage scenario_created 푸시. */
     public void handleGeneration(Long scenarioGroupId, ScenarioGenerationCallbackReq request) {

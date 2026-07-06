@@ -100,3 +100,7 @@ mi:
           create-signposts: false
           confirm: false
           reset: false
+      price-interpretations:
+        callback-delay-seconds: 20
+        api:
+          generate: true

@@ -22,6 +22,8 @@ import com.sk.domain.mi.dto.response.nextgen.ScenarioRowRes;
 import com.sk.domain.mi.dto.response.nextgen.ScenarioSignpostDefinitionViewRes;
 import com.sk.domain.mi.dto.response.nextgen.ScenarioSignpostMonitoringRes;
 import com.sk.domain.mi.dto.response.nextgen.ScenarioStatusRes;
+import com.sk.domain.mi.dto.response.nextgen.priceinterp.PriceInterpretationSectionRes;
+import com.sk.domain.mi.service.nextgen.priceinterp.PriceInterpretationStore;
 import com.sk.domain.mi.service.nextgen.support.IndexGraph;
 import com.sk.domain.mi.service.nextgen.support.ScenarioDimensionMapper;
 import com.sk.domain.mi.service.nextgen.support.ScenarioDimensionMapper.GroupDimensionTemplate;
@@ -62,6 +64,7 @@ public class ScenarioGroupServiceImpl implements ScenarioGroupService {
 
     private final MiScenarioGroupRepository scenarioGroupRepository;
     private final ScenarioCaseRepository scenarioCaseRepository;
+    private final PriceInterpretationStore priceInterpretationStore;
 
     /**
      * [그룹 모드 목록]
@@ -299,7 +302,10 @@ public class ScenarioGroupServiceImpl implements ScenarioGroupService {
             ))
             .toList();
 
-        return ScenarioGroupDetailRes.of(base, dimensionColumns, scenarios);
+        // 시나리오별 가격전망 해석 section (이미 로드한 시나리오 재사용 — 재조회 없이 조립)
+        PriceInterpretationSectionRes priceInterpretation = priceInterpretationStore.buildSection(scenarioGroupId, groupScenarios);
+
+        return ScenarioGroupDetailRes.of(base, dimensionColumns, scenarios, priceInterpretation);
     }
 
     /**
@@ -369,8 +375,8 @@ public class ScenarioGroupServiceImpl implements ScenarioGroupService {
 
     /**
      * [그룹 삭제]
-     * - 그룹 + 하위 시나리오 + 하위 signpost를 함께 del_yn 처리, 이후 모든 조회에서 제외
-     * - signpost는 시나리오/그룹을 지우기 전에 먼저 조회해 soft-delete (삭제 후엔 join에서 빠지므로)
+     * - 그룹 + 하위 시나리오 + 하위 signpost + 시나리오별 가격전망 해석을 함께 del_yn 처리, 이후 모든 조회에서 제외
+     * - signpost/가격전망해석은 시나리오/그룹을 지우기 전에 먼저 조회해 soft-delete (삭제 후엔 join에서 빠지므로)
      * - 이벤트:활성 그룹 = 1:1이므로 삭제 시 해당 이벤트의 scenarioDesignStatus는 designable(재설계 가능)로 복귀
      */
     @Override
@@ -380,6 +386,7 @@ public class ScenarioGroupServiceImpl implements ScenarioGroupService {
         MiScenarioGroup group = scenarioGroupRepository.findByScenarioGroupIdAndIsDeletedFalse(scenarioGroupId)
             .orElseThrow(() -> AppErrorException.of(ResultCode.Error.RSC_NOT_FOUND, "Scenario group not found: %d".formatted(scenarioGroupId)));
 
+        priceInterpretationStore.softDeleteByGroup(scenarioGroupId);
         scenarioGroupRepository.findSignpostEntitiesByGroupId(scenarioGroupId).forEach(MiSignpost::softDelete);
         scenarioGroupRepository.findScenarioEntitiesByGroupId(scenarioGroupId).forEach(MiScenario::softDelete);
         group.softDelete();

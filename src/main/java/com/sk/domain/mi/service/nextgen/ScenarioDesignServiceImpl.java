@@ -271,13 +271,13 @@ public class ScenarioDesignServiceImpl implements ScenarioDesignService {
         } catch (ResourceAccessException e) {
             ResultCode.Error code = e.getCause() instanceof SocketTimeoutException ? ResultCode.Error.API_TIMEOUT : ResultCode.Error.API_SERVICE_UNAVAILABLE;
             log.error("[Design Agent] {} 통신 오류: {}", action, e.getMessage(), e);
-            throw AppErrorException.of(code, "Agent 통신 오류 (%s)".formatted(action));
+            throw AppErrorException.of(code, "Agent communication error (%s)".formatted(action));
         } catch (RestClientResponseException e) {
             log.error("[Design Agent] {} 응답 오류: status={}, body={}", action, e.getStatusCode(), e.getResponseBodyAsString(), e);
-            throw AppErrorException.of(ResultCode.Error.API_RESPONSE_ERROR, "Agent 응답 오류 (%s)".formatted(action));
+            throw AppErrorException.of(ResultCode.Error.API_RESPONSE_ERROR, "Agent response error (%s)".formatted(action));
         } catch (RestClientException e) {
             log.error("[Design Agent] {} 호출 실패: {}", action, e.getMessage(), e);
-            throw AppErrorException.of(ResultCode.Error.API_CALL_FAILED, "Agent 호출 실패 (%s)".formatted(action));
+            throw AppErrorException.of(ResultCode.Error.API_CALL_FAILED, "Agent call failed (%s)".formatted(action));
         }
     }
 

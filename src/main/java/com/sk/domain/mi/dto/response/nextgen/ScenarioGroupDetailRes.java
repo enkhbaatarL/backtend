@@ -1,5 +1,6 @@
 package com.sk.domain.mi.dto.response.nextgen;
 
+import com.sk.domain.mi.dto.response.nextgen.priceinterp.PriceInterpretationSectionRes;
 import com.sk.domain.shared.repository.master.tmm.projection.ScenarioGroupDetailBaseRow;
 import io.swagger.v3.oas.annotations.media.Schema;
 import java.time.LocalDateTime;
@@ -36,13 +37,17 @@ public record ScenarioGroupDetailRes(
     List<ScenarioDimensionColumnRes> dimensionColumns,
 
     @Schema(description = "그룹 내 시나리오 (가정 및 실행 가능성 표 + 시나리오 상세 사이드바)")
-    List<ScenarioGroupDetailRowRes> scenarios
+    List<ScenarioGroupDetailRowRes> scenarios,
+
+    @Schema(description = "시나리오별 가격전망 해석 section (버튼 활성 여부 + 해석 보유 시나리오)")
+    PriceInterpretationSectionRes priceInterpretation
 
 ) {
 
     public static ScenarioGroupDetailRes of(ScenarioGroupDetailBaseRow base,
                                             List<ScenarioDimensionColumnRes> dimensionColumns,
-                                            List<ScenarioGroupDetailRowRes> scenarios) {
+                                            List<ScenarioGroupDetailRowRes> scenarios,
+                                            PriceInterpretationSectionRes priceInterpretation) {
         return new ScenarioGroupDetailRes(
             base.scenarioGroupId(),
             base.groupName(),
@@ -52,7 +57,8 @@ public record ScenarioGroupDetailRes(
             base.summary(),
             base.scenarioCount() == null ? scenarios.size() : base.scenarioCount(),
             dimensionColumns,
-            scenarios
+            scenarios,
+            priceInterpretation
         );
     }
 
