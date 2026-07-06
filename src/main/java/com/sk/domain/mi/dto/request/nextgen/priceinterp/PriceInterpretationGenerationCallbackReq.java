@@ -1,5 +1,6 @@
 package com.sk.domain.mi.dto.request.nextgen.priceinterp;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.sk.domain.shared.enums.nextgen.AgentCallbackResult;
 import java.util.List;
 
@@ -14,6 +15,7 @@ public record PriceInterpretationGenerationCallbackReq(
 
 ) {
 
+    @JsonIgnore
     public boolean isSuccess() {
         return result != null && result.isSuccess();
     }
