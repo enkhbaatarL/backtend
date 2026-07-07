@@ -57,6 +57,12 @@ public record EventListItemRes(
     @Schema(description = "시나리오 디자인 상태 라벨 (설계가능|설계불가|설계중|설계완료)", example = "설계가능")
     String scenarioDesignStatusLabel,
 
+    @Schema(description = "설계중(creating) 세부 진행 단계 (step1/step2). 설계중이 아니면 null", example = "step1", nullable = true)
+    ScenarioDesignDisplayStatus.CreatingStep designStep,
+
+    @Schema(description = "설계중 세부 진행 단계 라벨 (분기항목 설계/Signpost 설계). 설계중이 아니면 null", example = "분기항목 설계", nullable = true)
+    String designStepLabel,
+
     @Schema(description = "활성 시나리오 그룹 ID", example = "2", nullable = true)
     Long scenarioGroupId,
 
@@ -81,6 +87,8 @@ public record EventListItemRes(
 
         // 점유 = 활성 시나리오 그룹이 creating(설계중)인 상태. 점유자는 시나리오 그룹 요청자(request_usr_id)
         boolean occupied = row.scenarioGroupStatus() == ScenarioGroupStatus.CREATING;
+        ScenarioDesignDisplayStatus.CreatingStep designStep =
+            occupied ? ScenarioDesignDisplayStatus.CreatingStep.of(row.scenarioGroupStage()) : null;
 
         return new EventListItemRes(
             row.miEventId(),
@@ -98,6 +106,8 @@ public record EventListItemRes(
             row.scenarioSuggestReason(),
             designStatus,
             designStatus.getLabel(),
+            designStep,
+            designStep == null ? null : designStep.getLabel(),
             row.scenarioGroupId(),
             occupied,
             occupied ? row.requestUserId() : null,

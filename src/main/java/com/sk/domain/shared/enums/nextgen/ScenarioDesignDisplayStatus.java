@@ -48,4 +48,39 @@ public enum ScenarioDesignDisplayStatus {
             .orElseThrow(() -> new IllegalArgumentException("Unknown ScenarioDesignDisplayStatus: " + value));
     }
 
+    /**
+     * CREATING(설계중)의 세부 진행 단계. 그룹 stage에서 파생하며, 설계중이 아니면 null.
+     * step1 = 분기항목 설계 (ready / scenario_created / scenario_validated)
+     * step2 = Signpost 설계 (signpost_created)
+     */
+    @Getter
+    @RequiredArgsConstructor
+    public enum CreatingStep {
+
+        STEP1("step1", "분기항목 설계"),
+        STEP2("step2", "Signpost 설계");
+
+        @JsonValue
+        private final String code;
+        private final String label;
+
+        public static CreatingStep of(ScenarioGroupStage stage) {
+            if (stage == null) return null;
+            return switch (stage) {
+                case READY, SCENARIO_CREATED, SCENARIO_VALIDATED -> STEP1;
+                case SIGNPOST_CREATED -> STEP2;
+                case COMPLETED -> null; // 확정완료 = 설계중 아님
+            };
+        }
+
+        @JsonCreator
+        public static CreatingStep from(String value) {
+            return Arrays.stream(values())
+                .filter(step -> step.name().equalsIgnoreCase(value) || step.code.equalsIgnoreCase(value))
+                .findFirst()
+                .orElseThrow(() -> new IllegalArgumentException("Unknown CreatingStep: " + value));
+        }
+
+    }
+
 }

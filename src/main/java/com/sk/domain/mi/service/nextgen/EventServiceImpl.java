@@ -233,7 +233,9 @@ public class EventServiceImpl implements EventService {
         ScenarioDesignDisplayStatus status = ScenarioDesignDisplayStatus.of(row.scenarioGroupStatus(), row.templateAvailable());
         boolean occupied = row.scenarioGroupStatus() == ScenarioGroupStatus.CREATING;
         return EventDesignAvailabilityRes.of(
-            eventId, status, occupied,
+            eventId, status,
+            occupied ? ScenarioDesignDisplayStatus.CreatingStep.of(row.scenarioGroupStage()) : null,
+            occupied,
             occupied ? row.requestUserId() : null,
             occupied ? occupantNames.get(row.requestUserId()) : null,
             row.scenarioGroupId());

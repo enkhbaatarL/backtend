@@ -1,6 +1,7 @@
 package com.sk.domain.shared.repository.master.tmm.projection;
 
 import com.querydsl.core.annotations.QueryProjection;
+import com.sk.domain.shared.enums.nextgen.ScenarioGroupStage;
 import com.sk.domain.shared.enums.nextgen.ScenarioGroupStatus;
 
 /**
@@ -13,6 +14,7 @@ public record EventDesignAvailabilityRow(
     Long miEventId,
     Long scenarioGroupId,
     ScenarioGroupStatus scenarioGroupStatus,
+    ScenarioGroupStage scenarioGroupStage,
     Long requestUserId,
     boolean templateAvailable
 ) {

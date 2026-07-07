@@ -239,13 +239,13 @@ public class ScenarioGroupServiceImpl implements ScenarioGroupService {
 
         List<Long> scenarioIds = scenarioIdsOf(scenarios);
 
-        // 가장 최신 COMPLETED 상태 케이스의 가격
-        List<ScenarioPriceRow> prices = scenarioCaseRepository.findLatestCompletedPricesByScenarioIds(scenarioIds, indexName, periodUnit.getDbUnit());
+        // 시나리오 목록의 기준선 : 가장 최신 COMPLETED 상태 케이스의 가격
+        List<ScenarioPriceRow> scenariosPrices = scenarioCaseRepository.findLatestCompletedPricesByScenarioIds(scenarioIds, indexName, periodUnit.getDbUnit());
 
-        // MI Base 기준선 = 실행유형코드(MI_BASE) 최신 케이스의 가격 결과
+        // MI Base 기준선 : 실행유형코드(MI_BASE) 최신 케이스의 가격 결과
         List<MiBasePriceRow> miBasePrices = scenarioCaseRepository.findLatestMiBasePrices(indexName, periodUnit.getDbUnit());
 
-        ScenarioGroupGraphRes graph = ScenarioGroupGraphRes.of(scenarioGroupId, indexName, periodUnit, scenarios, prices, runStates.running(), runStates.completed(), miBasePrices);
+        ScenarioGroupGraphRes graph = ScenarioGroupGraphRes.of(scenarioGroupId, indexName, periodUnit, scenarios, miBasePrices, scenariosPrices, runStates.running(), runStates.completed());
 
         // 차트 표시 구간으로 클리핑 (CME/MI/시나리오 동일 창 — 화면 및 엑셀 공통 정책)
         ChartWindow window = ChartWindow.of(periodUnit, getMiBaseEndResult(miBasePrices, periodUnit));

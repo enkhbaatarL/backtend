@@ -191,11 +191,11 @@ public class ScenarioDesignMockService {
         return sessions.values().stream()
             .filter(s -> miEventId.equals(s.miEventId))
             .max(Comparator.comparingLong(s -> s.scenarioGroupId))
-            .map(s -> new DesignSessionInfo(s.scenarioGroupId, s.status, s.occupantUserId));
+            .map(s -> new DesignSessionInfo(s.scenarioGroupId, s.status, s.stage, s.occupantUserId));
     }
 
     /** 이벤트 설계가능 폴링이 참조하는 세션 요약. */
-    public record DesignSessionInfo(Long scenarioGroupId, ScenarioGroupStatus status, Long occupantUserId) {}
+    public record DesignSessionInfo(Long scenarioGroupId, ScenarioGroupStatus status, ScenarioGroupStage stage, Long occupantUserId) {}
 
     public ScenarioDesignStageRes validate(Long scenarioGroupId, ScenarioValidationReq request) {
         Session session = getSession(scenarioGroupId);

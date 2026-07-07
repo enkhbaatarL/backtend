@@ -66,18 +66,19 @@ public record ScenarioGroupGraphRes(
      * */
     private static final int PRICE_SCALE = 2;
 
-    public static ScenarioGroupGraphRes of(Long scenarioGroupId, IndexName indexName, GraphPeriodUnit periodUnit, List<ScenarioBaseRow> scenarios, List<ScenarioPriceRow> prices,
-                                           Set<Long> runningScenarioIds, Set<Long> completedScenarioIds, List<MiBasePriceRow> miBasePrices) {
+    public static ScenarioGroupGraphRes of(Long scenarioGroupId, IndexName indexName, GraphPeriodUnit periodUnit,
+                                           List<ScenarioBaseRow> scenarios, List<MiBasePriceRow> miBasePrices, List<ScenarioPriceRow> scenariosPrices,
+                                           Set<Long> runningScenarioIds, Set<Long> completedScenarioIds) {
 
         // x축 = 시나리오 + MI Base 기간키 union (실행 시점이 달라 범위가 다를 수 있음 → 빠진 구간은 null 패딩)
         List<String> periodKeys = Stream.concat(
-                prices.stream().map(ScenarioPriceRow::periodKey),
+                scenariosPrices.stream().map(ScenarioPriceRow::periodKey),
                 miBasePrices == null ? Stream.empty() : miBasePrices.stream().map(MiBasePriceRow::periodKey))
             .distinct()
             .sorted()
             .toList();
 
-        Map<Long, Map<String, ScenarioPriceRow>> pricesByScenario = prices.stream()
+        Map<Long, Map<String, ScenarioPriceRow>> pricesByScenario = scenariosPrices.stream()
             .collect(Collectors.groupingBy(ScenarioPriceRow::scenarioId,
                 Collectors.toMap(ScenarioPriceRow::periodKey, Function.identity())));
 
@@ -107,7 +108,7 @@ public record ScenarioGroupGraphRes(
         List<BaseSeries> baseSeries = new ArrayList<>();
         if (miBasePrices != null && !miBasePrices.isEmpty()) {
             Map<String, BigDecimal> valueByPeriodKey = miBasePrices.stream()
-                .collect(Collectors.toMap(MiBasePriceRow::periodKey, MiBasePriceRow::baseCasePrice, (a, b) -> a));
+                .collect(Collectors.toMap(MiBasePriceRow::periodKey, MiBasePriceRow::baseCasePrice, (v1, v2) -> v1));
             List<BigDecimal> values = periodKeys.stream().map(valueByPeriodKey::get).map(ScenarioGroupGraphRes::scalePrice).toList();
             baseSeries.add(new BaseSeries(MI_BASE_SERIES_ID, MI_BASE_SERIES_NAME, values));
         }

@@ -70,6 +70,7 @@ public class CustomMiScenarioGroupRepositoryImpl implements CustomMiScenarioGrou
                 miScenarioGroup.modifyDt,
                 miScenarioGroup.dimensionSelected,
                 miScenarioGroup.status,
+                miScenarioGroup.stage,
                 miScenarioGroup.requestUserId
             ))
             .from(miScenarioGroup)

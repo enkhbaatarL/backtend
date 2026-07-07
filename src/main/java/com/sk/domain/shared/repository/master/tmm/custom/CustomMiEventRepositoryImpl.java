@@ -104,6 +104,7 @@ public class CustomMiEventRepositoryImpl implements CustomMiEventRepository {
                 miEvent.latestRecordFirstCreated,
                 miScenarioGroup.scenarioGroupId,
                 miScenarioGroup.status,
+                miScenarioGroup.stage,
                 miScenarioGroup.requestUserId,
                 templateAvailable(miEventTypeL2.eventTypeL2Id)
             ))
@@ -152,6 +153,7 @@ public class CustomMiEventRepositoryImpl implements CustomMiEventRepository {
                 base.latestRecordFirstCreated(),
                 base.scenarioGroupId(),
                 base.scenarioGroupStatus(),
+                base.scenarioGroupStage(),
                 base.requestUserId(),
                 base.templateAvailable(),
                 impactsByEventId.getOrDefault(base.miEventId(), List.of())
@@ -171,6 +173,7 @@ public class CustomMiEventRepositoryImpl implements CustomMiEventRepository {
                 miEvent.miEventId,
                 miScenarioGroup.scenarioGroupId,
                 miScenarioGroup.status,
+                miScenarioGroup.stage,
                 miScenarioGroup.requestUserId,
                 templateAvailable(miEvent.eventTypeL2.eventTypeL2Id)
             ))
@@ -326,6 +329,7 @@ public class CustomMiEventRepositoryImpl implements CustomMiEventRepository {
                 miScenarioGroup.modifyDt,
                 miScenarioGroup.dimensionSelected,
                 miScenarioGroup.status,
+                miScenarioGroup.stage,
                 miScenarioGroup.requestUserId
             ))
             .from(miScenarioGroup)
