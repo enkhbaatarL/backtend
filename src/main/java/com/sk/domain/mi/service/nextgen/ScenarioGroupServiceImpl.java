@@ -169,7 +169,8 @@ public class ScenarioGroupServiceImpl implements ScenarioGroupService {
 
     /**
      * [가격전망 그래프]
-     * - 시나리오 라인 = '케이스 마지막 실행이 모두 완료'된 최신 케이스의 실행 가격 (재실행 실패/진행 중이면 직전 완료 케이스 유지)
+     * - MI Base 기준선 : MI_BASE 최신 케이스의 실행 가격
+     * - 시나리오 기준선 : '케이스 마지막 실행이 모두 완료'된 최신 케이스의 실행 가격 (재실행 실패/진행 중이면 직전 완료 케이스 유지)
      * - 완료 케이스가 없는 시나리오는 executed=false, 값 null
      * - 판정 상태(실현/폐기)와 무관하게 그룹 내 모든 시나리오를 시리즈로 내린다
      * - x축은 전 시나리오 기간키 union, 시리즈별 빠진 구간은 null 패딩
@@ -198,7 +199,10 @@ public class ScenarioGroupServiceImpl implements ScenarioGroupService {
 
         // 시나리오 그룹 유효성 검증
         requireActiveGroup(scenarioGroupId);
-        List<Long> scenarioIds = scenarioIdsOf(scenarioGroupRepository.findScenariosByGroupId(scenarioGroupId));
+
+        List<ScenarioBaseRow> scenarioRows = scenarioGroupRepository.findScenariosByGroupId(scenarioGroupId);
+
+        List<Long> scenarioIds = scenarioIdsOf(scenarioRows);
         ScenarioRunStates runStates = resolveRunStates(scenarioIds);
 
         List<ScenarioRunStatus> scenarios = scenarioIds.stream()
@@ -295,8 +299,9 @@ public class ScenarioGroupServiceImpl implements ScenarioGroupService {
             .orElseThrow(() -> AppErrorException.of(ResultCode.Error.RSC_NOT_FOUND, "Scenario group not found: %d".formatted(scenarioGroupId)));
 
         GroupDimensionTemplate template = ScenarioDimensionMapper.parseTemplates(
-                scenarioGroupRepository.findTemplatesByEventTypeL2Ids(List.of(base.eventTypeL2Id())))
-            .getOrDefault(base.eventTypeL2Id(), GroupDimensionTemplate.EMPTY);
+                scenarioGroupRepository.findTemplatesByEventTypeL2Ids(List.of(base.eventTypeL2Id()))
+            ).getOrDefault(base.eventTypeL2Id(), GroupDimensionTemplate.EMPTY);
+
         List<String> selectedKeys = ScenarioDimensionMapper.parseSelectedKeys(base.dimensionSelected());
 
         List<ScenarioDimensionColumnRes> dimensionColumns = template.columns(selectedKeys);
