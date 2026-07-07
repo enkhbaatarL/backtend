@@ -119,6 +119,10 @@ api:
     url: http://agent-scenario-skgas-app-prod.mi-skgas.svc.cluster.local:8000
     connection-timeout: 1s
     read-timeout: 60s
+  price-interpretation-agent:
+    url: http://40.82.137.178:8003
+    connection-timeout: 1s
+    read-timeout: 60s
 
 mail:
   except-company-no: 2013

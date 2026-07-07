@@ -103,4 +103,4 @@ mi:
       price-interpretations:
         callback-delay-seconds: 20
         api:
-          generate: true
+          generate: false

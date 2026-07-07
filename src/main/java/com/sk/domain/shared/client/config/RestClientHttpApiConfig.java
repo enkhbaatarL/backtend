@@ -78,7 +78,7 @@ public class RestClientHttpApiConfig {
     }
 
     @Bean
-    public PriceInterpretationAgentApi priceInterpretationAgentApi(@Value("${api.price-interpretation-agent.url:${api.scenario-design-agent.url:http://40.82.137.178:8001}}") String url,
+    public PriceInterpretationAgentApi priceInterpretationAgentApi(@Value("${api.price-interpretation-agent.url:http://40.82.137.178:8003}") String url,
                                                                    @Value("${api.price-interpretation-agent.connection-timeout:1s}") Duration connectTimeout,
                                                                    @Value("${api.price-interpretation-agent.read-timeout:60s}") Duration readTimeout) {
 
