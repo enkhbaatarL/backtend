@@ -113,6 +113,7 @@ Agent `status`는 proposal 계산 상태이고 `callback_status`는 Agent→Back
 
 | Method | Path | 목적 |
 |---|---|---|
+| `GET` | `/api/v1/mi/next-gen/scenario-groups/{scenarioGroupId}/graph` | 그래프 데이터와 파라미터 제안 대상 여부 조회 |
 | `GET` | `/api/v1/mi/next-gen/scenarios/{scenarioId}/model-execution-options` | 기반 Event에 따른 실행 입력 mode 조회 |
 | `POST` | `/api/v1/mi/next-gen/scenarios/{scenarioId}/model-param-proposals` | Agent proposal 생성 접수 |
 | `GET` | `/api/v1/mi/next-gen/scenarios/{scenarioId}/model-param-proposals/{modelParamProposalId}` | 상태 및 proposal 결과 조회 |
@@ -156,11 +157,32 @@ callback path는 대상 리소스 식별자 `{scenarioId}`를 경로에 둔다. 
 
 - mode는 Backend가 `Scenario -> ScenarioGroup -> eventTypeL2Id` 관계로 도출한다.
 - FE request로 mode를 변경할 수 없다.
-- `eventTypeL2Id`가 `12`, `13`, `14`, `15`, `16`, `20` 중 하나면 `FILE_UPLOAD`를 반환한다.
+- `eventTypeL2Id`가 `3`, `12`, `13`, `14`, `15`, `16`, `20` 중 하나면 `FILE_UPLOAD`를 반환한다.
 - 그 외 `eventTypeL2Id`는 `PARAMETER_PROPOSAL`을 반환한다.
 - `PARAMETER_PROPOSAL`이면 `parameterProposalAvailable=true`, `fileUploadAvailable=false`다.
 - `FILE_UPLOAD`이면 `parameterProposalAvailable=false`, `fileUploadAvailable=true`다.
 - dimension mapping 존재 여부는 `inputMode` 응답을 변경하지 않는다. 상세 business rule은 canonical design의 3.4절과 6절을 따른다.
+
+### 5.0.1 Scenario Group 그래프 대상 여부 조회
+
+`GET /api/v1/mi/next-gen/scenario-groups/{scenarioGroupId}/graph`
+
+기존 그래프 응답의 최상위 필드에 필수 boolean `parameterProposalTarget`을 포함한다.
+
+```json
+{
+  "scenarioGroupId": 1,
+  "parameterProposalTarget": false,
+  "indexName": "JKM",
+  "periodUnit": "monthly"
+}
+```
+
+- `parameterProposalTarget=true`: `inputMode=PARAMETER_PROPOSAL`인 파라미터 제안 대상
+- `parameterProposalTarget=false`: `inputMode=FILE_UPLOAD`인 파라미터 제안 미대상
+- 판정은 Model execution options와 동일하게 Scenario Group의 `eventTypeL2Id`를 사용한다.
+- `eventTypeL2Id IN (3, 12, 13, 14, 15, 16, 20)`이면 `false`, 그 외에는 `true`다.
+- FE request나 dimension mapping 존재 여부로 값을 변경할 수 없다.
 
 ### 5.1 Proposal 생성 접수
 
@@ -675,6 +697,7 @@ FE가 반드시 처리해야 하는 최소 상태는 `PROCESSING`, `PROPOSED`, `
 - 2026-07-06: Agent DB 설계의 parameter master, dimension mapping, proposal table 책임을 반영하고 API/DB field mapping을 명시.
 - 2026-07-06: Agent proposal lifecycle과 Backend execution-preparation lifecycle을 분리하고 real integration DDL blocker를 갱신.
 - 2026-07-06: `eventTypeL2Id IN (12,13,14,15,16,20)`은 `FILE_UPLOAD`, 나머지는 `PARAMETER_PROPOSAL`로 eligibility 계약 확정.
+- 2026-07-07: eligibility 제외 목록에 `eventTypeL2Id=3`을 추가해 `FILE_UPLOAD` 대상을 `IN (3,12,13,14,15,16,20)`으로 갱신. 동일 집합을 그룹 그래프 API(`GET /api/v1/mi/next-gen/scenario-groups/{scenarioGroupId}/graph`)의 `parameterProposalTarget`(대상=true) 필드도 공유한다.
 - 2026-07-06: Agent-generated proposal ID의 생성 순서를 고려해 callback을 고정 collection path로 변경하고 body correlation으로 확정.
 - 2026-07-06: Backend-generated `callbackCorrelationId`를 dispatch 전에 저장하고 Agent가 echo하도록 해 응답/callback race 제거.
 - 2026-07-06: callback JWT `Role.SYSTEM`, DTO validation, CAS/idempotency, late callback, ack disposition, Agent retry 계약 확정.
@@ -747,7 +770,7 @@ Verification:
 
 필수 eligibility test case:
 
-- `eventTypeL2Id=12`, `20` → `FILE_UPLOAD`
+- `eventTypeL2Id=3`, `12`, `20` → `FILE_UPLOAD`
 - `eventTypeL2Id=11`, `17`, `21` → `PARAMETER_PROPOSAL`
 - 제외 목록에 없는 신규 ID → `PARAMETER_PROPOSAL`
 

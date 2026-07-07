@@ -209,6 +209,19 @@ public class CustomMiScenarioGroupRepositoryImpl implements CustomMiScenarioGrou
     }
 
     @Override
+    public Optional<Long> findEventTypeL2IdByScenarioGroupId(Long scenarioGroupId) {
+        Long eventTypeL2Id = queryFactory
+            .select(miScenarioGroup.eventTypeL2.eventTypeL2Id)
+            .from(miScenarioGroup)
+            .where(
+                miScenarioGroup.scenarioGroupId.eq(scenarioGroupId),
+                miScenarioGroup.isDeleted.isFalse()
+            )
+            .fetchOne();
+        return Optional.ofNullable(eventTypeL2Id);
+    }
+
+    @Override
     public List<ScenarioBaseRow> findScenariosByGroupIds(List<Long> scenarioGroupIds) {
         if (scenarioGroupIds == null || scenarioGroupIds.isEmpty()) {
             return List.of();

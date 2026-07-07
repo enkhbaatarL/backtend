@@ -8,8 +8,6 @@ import com.sk.domain.shared.repository.master.tmd.projection.ScenarioPriceRow;
 import com.sk.domain.shared.repository.master.tmm.projection.ScenarioBaseRow;
 import io.swagger.v3.oas.annotations.media.ArraySchema;
 import io.swagger.v3.oas.annotations.media.Schema;
-import lombok.Builder;
-
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.util.ArrayList;
@@ -20,6 +18,7 @@ import java.util.Set;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
+import lombok.Builder;
 
 /**
  * 시나리오 그룹 펼침 그래프 데이터 (단일 인덱스 × 단일 기간단위).
@@ -29,6 +28,9 @@ public record ScenarioGroupGraphRes(
 
     @Schema(description = "시나리오 그룹 ID", example = "1")
     Long scenarioGroupId,
+
+    @Schema(description = "파라미터 제안 대상여부 (true=대상/PARAMETER_PROPOSAL, false=미대상/FILE_UPLOAD)", example = "true")
+    Boolean parameterProposalTarget,
 
     @Schema(description = "인덱스명", example = "JKM")
     String indexName,
@@ -67,7 +69,7 @@ public record ScenarioGroupGraphRes(
      * */
     private static final int PRICE_SCALE = 2;
 
-    public static ScenarioGroupGraphRes of(Long scenarioGroupId, IndexName indexName, GraphPeriodUnit periodUnit,
+    public static ScenarioGroupGraphRes of(Long scenarioGroupId, boolean parameterProposalTarget, IndexName indexName, GraphPeriodUnit periodUnit,
                                            List<ScenarioBaseRow> scenarios, List<MiBasePriceRow> miBasePrices, List<ScenarioPriceRow> scenariosPrices,
                                            Set<Long> runningScenarioIds, Set<Long> completedScenarioIds) {
 
@@ -88,6 +90,7 @@ public record ScenarioGroupGraphRes(
 
         return ScenarioGroupGraphRes.builder()
             .scenarioGroupId(scenarioGroupId)
+            .parameterProposalTarget(parameterProposalTarget)
             .indexName(indexName.getCode())
             .periodUnit(periodUnit)
             .periodUnitLabel(periodUnit.getLabel())
@@ -102,39 +105,6 @@ public record ScenarioGroupGraphRes(
     /** 화면·엑셀 표기용 가격 정규화 — 소수 2자리 반올림(HALF_UP). null은 그대로. */
     private static BigDecimal scalePrice(BigDecimal value) {
         return value == null ? null : value.setScale(PRICE_SCALE, RoundingMode.HALF_UP);
-    }
-
-    /**
-     * 차트 표시 구간으로 x축(dates)과 모든 시리즈(MI Base + 시나리오) 값을 잘라낸 새 그래프를 만든다.
-     * 구간 밖 기간은 dates에서 제거하고, 각 시리즈도 동일 위치의 값을 함께 제거한다.
-     */
-    public ScenarioGroupGraphRes clip(ChartWindow window) {
-        List<Integer> keepIdx = keepIndices(dates, window);
-
-        if (keepIdx.size() == dates.size()) return this;
-
-        List<String> clippedDates = keepIdx.stream().map(dates::get).toList();
-
-        List<BaseSeries> clippedBase = baseSeries.stream()
-            .map(base -> new BaseSeries(
-                base.seriesId(),
-                base.seriesName(),
-                sliceValues(base.values(), keepIdx)
-            ))
-            .toList();
-
-        List<ScenarioSeries> clippedScenario = scenarioSeries.stream()
-            .map(series -> series.toBuilder()
-                .baseCaseValues(sliceValues(series.baseCaseValues(), keepIdx))
-                .userAdjustedValues(sliceValues(series.userAdjustedValues(), keepIdx))
-                .build())
-            .toList();
-
-        return toBuilder()
-            .dates(clippedDates)
-            .baseSeries(clippedBase)
-            .scenarioSeries(clippedScenario)
-            .build();
     }
 
     /**
@@ -210,6 +180,39 @@ public record ScenarioGroupGraphRes(
             valueByDate.put(sourceDates.get(i), sourceValues.get(i));
         }
         return targetDates.stream().map(valueByDate::get).toList();
+    }
+
+    /**
+     * 차트 표시 구간으로 x축(dates)과 모든 시리즈(MI Base + 시나리오) 값을 잘라낸 새 그래프를 만든다.
+     * 구간 밖 기간은 dates에서 제거하고, 각 시리즈도 동일 위치의 값을 함께 제거한다.
+     */
+    public ScenarioGroupGraphRes clip(ChartWindow window) {
+        List<Integer> keepIdx = keepIndices(dates, window);
+
+        if (keepIdx.size() == dates.size()) return this;
+
+        List<String> clippedDates = keepIdx.stream().map(dates::get).toList();
+
+        List<BaseSeries> clippedBase = baseSeries.stream()
+            .map(base -> new BaseSeries(
+                base.seriesId(),
+                base.seriesName(),
+                sliceValues(base.values(), keepIdx)
+            ))
+            .toList();
+
+        List<ScenarioSeries> clippedScenario = scenarioSeries.stream()
+            .map(series -> series.toBuilder()
+                .baseCaseValues(sliceValues(series.baseCaseValues(), keepIdx))
+                .userAdjustedValues(sliceValues(series.userAdjustedValues(), keepIdx))
+                .build())
+            .toList();
+
+        return toBuilder()
+            .dates(clippedDates)
+            .baseSeries(clippedBase)
+            .scenarioSeries(clippedScenario)
+            .build();
     }
 
     @Builder

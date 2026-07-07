@@ -6,11 +6,11 @@ import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.inOrder;
 
+import com.sk.domain.mi.service.nextgen.priceinterp.PriceInterpretationStore;
 import com.sk.domain.shared.entity.master.tmm.MiScenario;
 import com.sk.domain.shared.entity.master.tmm.MiScenarioGroup;
 import com.sk.domain.shared.enums.fundamentalmodel.FundamentalModelCaseStatus;
 import com.sk.domain.shared.enums.fundamentalmodel.FundamentalModelRunStatus;
-import com.sk.domain.shared.enums.nextgen.ScenarioDisplayStatus;
 import com.sk.domain.shared.enums.nextgen.ScenarioGroupStatus;
 import com.sk.domain.shared.enums.nextgen.ScenarioStatus;
 import com.sk.domain.shared.repository.master.tmd.ScenarioCaseRepository;
@@ -19,6 +19,7 @@ import com.sk.domain.shared.repository.master.tmm.MiScenarioGroupRepository;
 import com.sk.domain.shared.service.permissions.AuthorizationService;
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Optional;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InOrder;
@@ -32,6 +33,7 @@ class ScenarioExecutionCancellationTest {
     @Mock private ScenarioCaseRepository caseRepository;
     @Mock private ScenarioCaseRunHistoryRepository historyRepository;
     @Mock private AuthorizationService authorizationService;
+    @Mock private PriceInterpretationStore priceInterpretationStore;
 
     @Test
     void flushesManagedLifecycleChangesBeforeCancellingRunningRowsAndSoftDeletingAllRows() {
@@ -39,14 +41,16 @@ class ScenarioExecutionCancellationTest {
             .scenarioGroupId(1L).status(ScenarioGroupStatus.CREATED).build();
         MiScenario target = MiScenario.builder()
             .scenarioId(11L).scenarioGroup(group).status(ScenarioStatus.CREATED).build();
+        given(groupRepository.findByScenarioGroupIdAndIsDeletedFalse(1L)).willReturn(Optional.of(group));
         given(groupRepository.findScenarioEntitiesByGroupId(1L)).willReturn(List.of(target));
         given(authorizationService.getSubject()).willReturn("tester");
         given(caseRepository.findCaseIdsByScenarioIds(List.of(11L))).willReturn(List.of(101L));
 
-        new ScenarioGroupServiceImpl(groupRepository, caseRepository, historyRepository, authorizationService)
-            .updateScenarioStatus(1L, 11L, ScenarioDisplayStatus.DISCARDED);
+        new ScenarioGroupServiceImpl(groupRepository, caseRepository, historyRepository, authorizationService, priceInterpretationStore)
+            .deleteScenarioGroup(1L);
 
-        assertThat(target.getStatus()).isEqualTo(ScenarioStatus.DISCARDED);
+        assertThat(group.getIsDeleted()).isTrue();
+        assertThat(target.getIsDeleted()).isTrue();
         InOrder order = inOrder(groupRepository, historyRepository, caseRepository);
         order.verify(groupRepository).flush();
         order.verify(caseRepository).findCaseIdsByScenarioIds(List.of(11L));

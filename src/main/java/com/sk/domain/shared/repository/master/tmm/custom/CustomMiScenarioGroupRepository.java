@@ -23,6 +23,8 @@ public interface CustomMiScenarioGroupRepository {
 
     Optional<ScenarioGroupDetailBaseRow> findScenarioGroupDetail(Long scenarioGroupId);
 
+    Optional<Long> findEventTypeL2IdByScenarioGroupId(Long scenarioGroupId);
+
     List<ScenarioBaseRow> findScenariosByGroupIds(List<Long> scenarioGroupIds);
 
     List<ScenarioBaseRow> findScenariosByGroupId(Long scenarioGroupId);

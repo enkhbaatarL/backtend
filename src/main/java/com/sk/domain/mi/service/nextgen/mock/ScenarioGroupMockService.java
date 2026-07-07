@@ -21,6 +21,7 @@ import com.sk.domain.mi.dto.response.nextgen.ScenarioStatusRes;
 import com.sk.domain.mi.service.nextgen.support.ScenarioProbabilityAllocator;
 import com.sk.domain.shared.enums.nextgen.GraphPeriodUnit;
 import com.sk.domain.shared.enums.nextgen.IndexName;
+import com.sk.domain.shared.enums.nextgen.ModelInputMode;
 import com.sk.domain.shared.enums.nextgen.ScenarioDisplayStatus;
 import com.sk.domain.shared.enums.nextgen.SortOrder;
 import jakarta.annotation.PostConstruct;
@@ -54,6 +55,7 @@ public class ScenarioGroupMockService {
     private Map<Long, List<ScenarioGroupGraphRes>> graphMap;
     private Map<Long, ScenarioGroupDetailRes> groupDetailMap;
     private Map<Long, ScenarioDetailViewRes> scenarioDetailMap;
+    private Map<Long, Long> eventTypeL2ByEvent = Map.of();
 
     /** [mock 전용] 상태 변경 API가 바꾼 시나리오 상태 (scenarioId → status). reset API로 초기화. */
     private final Map<Long, ScenarioDisplayStatus> statusOverrides = new ConcurrentHashMap<>();
@@ -99,6 +101,13 @@ public class ScenarioGroupMockService {
         loadGraphs();
         loadGroupDetails();
         loadScenarioDetails();
+        loadEventTypeL2ByEvent();
+    }
+
+    private void loadEventTypeL2ByEvent() throws IOException {
+        try (InputStream is = new ClassPathResource("mock/design/event-l2-mapping.json").getInputStream()) {
+            eventTypeL2ByEvent = objectMapper.readValue(is, new TypeReference<>() {});
+        }
     }
 
     private void loadGroupDetails() throws IOException {
@@ -224,9 +233,10 @@ public class ScenarioGroupMockService {
             })
             .toList();
 
-        return new ScenarioGroupGraphRes(
-            graph.scenarioGroupId(), graph.indexName(), graph.periodUnit(), graph.periodUnitLabel(),
-            graph.currency(), graph.unit(), graph.dates(), graph.baseSeries(), series);
+        return graph.toBuilder()
+            .parameterProposalTarget(resolveParameterProposalTarget(scenarioGroupId, graph.parameterProposalTarget()))
+            .scenarioSeries(series)
+            .build();
     }
 
     /** 그래프 fixture가 없는 그룹(설계 확정 직후 등)용 빈 그래프 — 시나리오는 미실행 시리즈로만 노출. */
@@ -242,9 +252,29 @@ public class ScenarioGroupMockService {
                         status, status.getLabel(), null, null);
                 })
                 .toList();
-        return new ScenarioGroupGraphRes(
-            scenarioGroupId, indexName.getCode(), periodUnit, periodUnit.getLabel(),
-            "USD", "MMBtu", List.of(), List.of(), series);
+        return ScenarioGroupGraphRes.builder()
+            .scenarioGroupId(scenarioGroupId)
+            .parameterProposalTarget(resolveParameterProposalTarget(scenarioGroupId, null))
+            .indexName(indexName.getCode())
+            .periodUnit(periodUnit)
+            .periodUnitLabel(periodUnit.getLabel())
+            .currency("USD")
+            .unit("MMBtu")
+            .dates(List.of())
+            .baseSeries(List.of())
+            .scenarioSeries(series)
+            .build();
+    }
+
+    /** fixture 값이 없으면 기반 Event의 eventTypeL2Id로 실서비스와 동일하게 판정한다. */
+    private boolean resolveParameterProposalTarget(Long scenarioGroupId, Boolean fixtureValue) {
+        if (fixtureValue != null) {
+            return fixtureValue;
+        }
+        ScenarioGroupDetailRes detail = groupDetailMap.get(scenarioGroupId);
+        Long eventId = detail == null || detail.baseEvent() == null ? null : detail.baseEvent().eventId();
+        Long eventTypeL2Id = eventId == null ? null : eventTypeL2ByEvent.get(eventId);
+        return ModelInputMode.from(eventTypeL2Id).isParameterProposal();
     }
 
     public ScenarioGroupDetailRes getScenarioGroupDetail(Long scenarioGroupId) {

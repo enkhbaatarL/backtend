@@ -132,7 +132,7 @@ Scenario의 기반 Event가 어떤 수급모델 실행 입력 workflow를 사용
 - mode는 사용자가 선택하는 값이 아니다.
 - Backend가 `Scenario -> ScenarioGroup -> event_type_l2_id` 관계로 판정한다.
 - FE는 Backend가 제공한 mode로 팝업 UI를 분기한다.
-- `event_type_l2_id IN (12, 13, 14, 15, 16, 20)`이면 `FILE_UPLOAD`다.
+- `event_type_l2_id IN (3, 12, 13, 14, 15, 16, 20)`이면 `FILE_UPLOAD`다.
 - 그 외 모든 `event_type_l2_id`는 `PARAMETER_PROPOSAL`이다.
 - 신규 Event Type L2도 별도 제외 목록에 추가되지 않는 한 `PARAMETER_PROPOSAL`로 판정한다.
 - 이 규칙은 기존 `MiScenarioGroup.eventTypeL2`로 계산하므로 eligibility 전용 컬럼이나 기존 데이터 backfill이 필요하지 않다.
@@ -243,7 +243,7 @@ tcm_filel: DEMAND / SUPPLY / TRADE generated files
 18. 최종 실행 버튼 중복 클릭은 동일 proposal 기준 하나의 Case/Run만 생성해야 한다.
 19. Agent request 생성 시 `scenarioId`로부터 도출한 `scenarioGroupId`, `miEventId`, `eventTypeL2Id`를 함께 검증하고 request snapshot으로 고정한다.
 20. callback의 식별자들은 생성 시점 snapshot과 모두 일치해야 하며, 현재 Scenario 관계가 이후 변경된 경우 자동 덮어쓰지 않는다.
-21. `event_type_l2_id IN (12, 13, 14, 15, 16, 20)`이면 `FILE_UPLOAD`, 그 외에는 `PARAMETER_PROPOSAL`로 판정한다.
+21. `event_type_l2_id IN (3, 12, 13, 14, 15, 16, 20)`이면 `FILE_UPLOAD`, 그 외에는 `PARAMETER_PROPOSAL`로 판정한다.
 22. dimension mapping의 존재 여부나 활성 model parameter 수는 `inputMode`를 변경하지 않는다. proposal 생성 이후 parameter routing에만 사용한다.
 23. 지연 callback(신호)은 Agent 재조회로 수렴하며 Backend orchestration 상태를 되돌리지 않는다(monotonic no-op).
 24. Backend orchestration 행 write commit 이후에 SSE를 발행한다.
