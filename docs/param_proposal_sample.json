@@ -1,0 +1,61 @@
+[
+  {
+    "values": [
+      {
+        "Year": 2026,
+        "Month": 7,
+        "Country": "China",
+        "rationale": "선택된 좌표는 1개월 이하의 단기 영향 기간에 해당하는 2026년 7월 중국 PMI record이다. 기준값 49.5에 대해 경미한 경기 둔화와 LNG 수요 영향 제한을 단기 제조업 심리 약화로 반영하되, 명시적 물량 충격이 없으므로 0.5p만 낮춘 최종 PMI 49.0을 적용한다.",
+        "basecaseValue": 49.5,
+        "proposedValue": 49
+      }
+    ],
+    "rationale": "강도 차원의 '경미'는 산업 수요 단기 변동을 PMI로 반영한다는 parameter 의미와 직접 연결된다. 기간 차원의 '1개월 이하'는 월별 PMI 입력에 맞는 단기 적용 범위를 정하고, 수요 영향 규모는 직접 수요 조정보다는 PMI 강도에 반영하는 보조 조건으로 사용한다. 제안값은 중국의 해당 월에 한해 PMI를 소폭 하향하는 구조로 두며, 장기 성장률 조정과 중복되지 않도록 단기 심리 충격만 반영한다.",
+    "modelTarget": {
+      "modelFile": "Demand",
+      "tableName": "table1",
+      "modelSheet": "PMIAdjustment",
+      "valueFieldNames": [
+        "PMI"
+      ],
+      "slotAxesFieldNames": [
+        "Country",
+        "Year",
+        "Month"
+      ]
+    },
+    "parameterName": "PMI"
+  },
+  {
+    "values": [
+      {
+        "Year": 2026,
+        "Country": "China",
+        "rationale": "선택된 좌표는 이벤트에서 2026년 성장 전망이 명시된 중국의 연간 GDP 입력 record이다. 기준값 0.042에 대해 OECD가 제시한 중국 2026년 성장률 4.5%를 같은 소수 형식으로 변환해 최종 입력값 0.045로 적용한다.",
+        "basecaseValue": 0.042,
+        "proposedValue": 0.045
+      },
+      {
+        "Year": 2026,
+        "Country": "United States",
+        "rationale": "선택된 좌표는 이벤트에서 2026년 성장 전망이 명시된 미국의 연간 GDP 입력 record이다. 기준값 0.019에 대해 OECD가 제시한 미국 2026년 성장률 2.0%를 같은 소수 형식으로 변환해 최종 입력값 0.020으로 적용한다.",
+        "basecaseValue": 0.019,
+        "proposedValue": 0.02
+      }
+    ],
+    "rationale": "강도 차원의 '경미'는 구조적 경기 변동을 국가별 GDP 경로로 반영한다는 parameter 의미와 연결된다. 기간 차원의 '1개월 이하'는 다년 확장이 아니라 명시된 2026년 연간 성장률 입력에만 반영하는 제약으로 사용하고, 수요 영향 규모는 직접 수요 조정이 아닌 GDP 경로 조정의 보조 맥락으로만 반영한다. 제안값은 이벤트에 명시된 국가별 2026년 성장 전망을 모델의 GDP 변화율 형식으로 변환해 적용한다.",
+    "modelTarget": {
+      "modelFile": "Demand",
+      "tableName": "table1",
+      "modelSheet": "GDPPopulationAdjustment",
+      "valueFieldNames": [
+        "GDP"
+      ],
+      "slotAxesFieldNames": [
+        "Country",
+        "Year"
+      ]
+    },
+    "parameterName": "GDP"
+  }
+]
