@@ -42,7 +42,7 @@ class ScenarioExecutionCancellationTest {
         MiScenario target = MiScenario.builder()
             .scenarioId(11L).scenarioGroup(group).status(ScenarioStatus.CREATED).build();
         given(groupRepository.findByScenarioGroupIdAndIsDeletedFalse(1L)).willReturn(Optional.of(group));
-        given(groupRepository.findScenarioEntitiesByGroupId(1L)).willReturn(List.of(target));
+        given(groupRepository.findScenarioEntitiesByGroupIdForUpdate(1L)).willReturn(List.of(target));
         given(authorizationService.getSubject()).willReturn("tester");
         given(caseRepository.findCaseIdsByScenarioIds(List.of(11L))).willReturn(List.of(101L));
 

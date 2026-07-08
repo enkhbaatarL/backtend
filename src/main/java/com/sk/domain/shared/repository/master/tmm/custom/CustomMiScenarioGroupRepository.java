@@ -39,6 +39,8 @@ public interface CustomMiScenarioGroupRepository {
 
     List<MiScenario> findScenarioEntitiesByGroupId(Long scenarioGroupId);
 
+    List<MiScenario> findScenarioEntitiesByGroupIdForUpdate(Long scenarioGroupId);
+
     List<MiSignpost> findSignpostEntitiesByGroupId(Long scenarioGroupId);
 
 }

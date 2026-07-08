@@ -13,6 +13,7 @@ import com.querydsl.core.BooleanBuilder;
 import com.querydsl.core.types.OrderSpecifier;
 import com.querydsl.core.types.dsl.BooleanExpression;
 import com.querydsl.jpa.JPQLQuery;
+import com.querydsl.jpa.impl.JPAQuery;
 import com.querydsl.jpa.impl.JPAQueryFactory;
 import com.sk.domain.mi.dto.request.nextgen.ScenarioGroupListReq;
 import com.sk.domain.shared.entity.master.tmm.MiScenario;
@@ -337,6 +338,22 @@ public class CustomMiScenarioGroupRepositoryImpl implements CustomMiScenarioGrou
 
     @Override
     public List<MiScenario> findScenarioEntitiesByGroupId(Long scenarioGroupId) {
+        return scenarioEntitiesByGroupIdQuery(scenarioGroupId).fetch();
+    }
+
+    /**
+     * 그룹 내 시나리오 엔티티를 배타 잠금(SELECT FOR UPDATE)으로 조회
+     * 읽은 시나리오 전체를 함께 수정하는 쓰기 트랜잭션(폐기/실현 캐스케이드, 그룹 삭제) 전용.
+     * readOnly 트랜잭션에서 호출하면 MySQL이 잠금을 거부(1792)하므로 조회 경로에서는 findScenarioEntitiesByGroupId를 사용한다.
+     */
+    @Override
+    public List<MiScenario> findScenarioEntitiesByGroupIdForUpdate(Long scenarioGroupId) {
+        return scenarioEntitiesByGroupIdQuery(scenarioGroupId)
+            .setLockMode(jakarta.persistence.LockModeType.PESSIMISTIC_WRITE)
+            .fetch();
+    }
+
+    private JPAQuery<MiScenario> scenarioEntitiesByGroupIdQuery(Long scenarioGroupId) {
         return queryFactory
             .selectFrom(miScenario)
             .innerJoin(miScenario.scenarioGroup, miScenarioGroup).on(miScenarioGroup.isDeleted.isFalse())
@@ -347,9 +364,7 @@ public class CustomMiScenarioGroupRepositoryImpl implements CustomMiScenarioGrou
             .orderBy(
                 miScenario.displayOrder.asc(),
                 miScenario.scenarioId.asc()
-            )
-            .setLockMode(jakarta.persistence.LockModeType.PESSIMISTIC_WRITE)
-            .fetch();
+            );
     }
 
     @Override

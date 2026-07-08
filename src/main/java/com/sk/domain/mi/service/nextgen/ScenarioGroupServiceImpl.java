@@ -373,7 +373,8 @@ public class ScenarioGroupServiceImpl implements ScenarioGroupService {
     @Transactional
     public ScenarioStatusRes updateScenarioStatus(Long scenarioGroupId, Long scenarioId, ScenarioDisplayStatus status) {
 
-        List<MiScenario> scenarios = scenarioGroupRepository.findScenarioEntitiesByGroupId(scenarioGroupId);
+        // 실현 캐스케이드(나머지 전체 폐기)가 동시 요청과 어긋나지 않도록 그룹 시나리오 전체를 잠그고 시작
+        List<MiScenario> scenarios = scenarioGroupRepository.findScenarioEntitiesByGroupIdForUpdate(scenarioGroupId);
 
         MiScenario target = scenarios.stream()
             .filter(s -> s.getScenarioId().equals(scenarioId))
@@ -413,7 +414,7 @@ public class ScenarioGroupServiceImpl implements ScenarioGroupService {
             .orElseThrow(() -> AppErrorException.of(ResultCode.Error.RSC_NOT_FOUND, "Scenario group not found: %d".formatted(scenarioGroupId)));
 
         priceInterpretationStore.softDeleteByGroup(scenarioGroupId);
-        List<MiScenario> scenarios = scenarioGroupRepository.findScenarioEntitiesByGroupId(scenarioGroupId);
+        List<MiScenario> scenarios = scenarioGroupRepository.findScenarioEntitiesByGroupIdForUpdate(scenarioGroupId);
         List<MiSignpost> signposts = scenarioGroupRepository.findSignpostEntitiesByGroupId(scenarioGroupId);
         signposts.forEach(MiSignpost::softDelete);
         scenarios.forEach(MiScenario::softDelete);
