@@ -71,12 +71,14 @@ public class ModelParamExcelMergeService {
     private void apply(Map<ModelInputFile, XSSFWorkbook> workbooks, MiModelParam param, ModelParamAdjustment adjustment) {
         String context = ValueRows.context(param);
 
-        if (adjustment.values() == null || adjustment.values().isEmpty()) {
-            throw ValueRows.error(context, "기입할 values가 없습니다");
+        // 제안 대상(use_yn=Y)만 병합
+        if (!Boolean.TRUE.equals(param.getIsUsed())) {
+            log.warn("[ModelInput Merge] 제안 미대상(use_yn=N) 파라미터 skip — 확정 payload에 포함되었으나 기입하지 않음: [{}]", context);
+            return;
         }
 
-        if (!Boolean.TRUE.equals(param.getIsUsed())) {
-            log.warn("[ModelInput Merge] 제안 미대상 파라미터가 확정 payload에 포함됨: [{}]", context);
+        if (adjustment.values() == null || adjustment.values().isEmpty()) {
+            throw ValueRows.error(context, "기입할 values가 없습니다");
         }
 
         ModelInputFile file = ModelInputFile.from(param.getModelFile());
