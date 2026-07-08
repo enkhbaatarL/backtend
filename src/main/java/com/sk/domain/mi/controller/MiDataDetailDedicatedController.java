@@ -192,7 +192,7 @@ public class MiDataDetailDedicatedController {
     ) {
         HttpHeaders headers = new HttpHeaders();
 
-        String title = "raw_data_%s.xlsx".formatted(DateUtil.currentYmdHms());
+        String title = "raw_data_%s.xlsx".formatted(DateUtil.currentYYYYMMDDHHMMSS());
         headers.setContentDisposition(ContentDisposition.attachment().filename(title).build());
 
         byte[] plainData = miDataDetailService.downloadGoodsDataSourcesRawData(goodsNo, goodsDataNo, goodsDataSourceNo, startDate, endDate);

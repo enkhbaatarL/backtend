@@ -104,13 +104,17 @@ public class MiEvent extends BaseEntity {
     @Convert(converter = BooleanToYNAttributeConverter.class)
     private Boolean isNew;
 
+    @Column(name = "institution_view_synthesis", length = 1000)
+    @Comment("기관 전망 View 종합")
+    private String institutionViewSynthesis;
+
     @Builder
     public MiEvent(Long miEventId, String eventTitle, String oneLineSummary, String keyBulletsJson,
                    String detailAnalysis, String tagsJson,
                    MiEventTypeL2 eventTypeL2, String estimatedImpactId,
                    LocalDateTime occurredAt, LocalDateTime latestRecordFirstCreated, LocalDateTime oldestRecordFirstCreated,
                    Boolean isSignal, BigDecimal signalConfidence, String signalReason,
-                   Boolean isScenarioSuggested, String scenarioSuggestReason, Boolean isNew) {
+                   Boolean isScenarioSuggested, String scenarioSuggestReason, Boolean isNew, String institutionViewSynthesis) {
         this.miEventId = miEventId;
         this.eventTitle = eventTitle;
         this.oneLineSummary = oneLineSummary;
@@ -128,6 +132,7 @@ public class MiEvent extends BaseEntity {
         this.isScenarioSuggested = isScenarioSuggested;
         this.scenarioSuggestReason = scenarioSuggestReason;
         this.isNew = isNew;
+        this.institutionViewSynthesis = institutionViewSynthesis;
     }
 
 }

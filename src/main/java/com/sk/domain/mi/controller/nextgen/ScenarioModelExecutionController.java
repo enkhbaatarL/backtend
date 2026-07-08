@@ -25,7 +25,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 @Profile("!dedicated")
-@Tag(name = "04. Next Gen MI Model Execution API", description = "Next Gen MI MI 수급모델 실행 API입니다.")
+@Tag(name = "05. Next Gen MI Model Execution API", description = "Next Gen MI MI 수급모델 실행 API입니다.")
 @Slf4j
 @RestController
 @RequestMapping("/api/v1/mi/next-gen/scenarios/{scenarioId}")

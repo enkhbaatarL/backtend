@@ -15,6 +15,21 @@ public class NextGenMockProperties {
     private ScenarioGroups scenarioGroups = new ScenarioGroups();
     private ModelExecutions modelExecutions = new ModelExecutions();
     private Design design = new Design();
+    private PriceInterpretations priceInterpretations = new PriceInterpretations();
+
+    @Getter
+    @Setter
+    public static class PriceInterpretations {
+        private Api api = new Api();
+        /** Agent 콜백(생성) 도착까지의 시뮬레이션 지연(초). 0이면 즉시(동기). */
+        private long callbackDelaySeconds = 20;
+
+        @Getter
+        @Setter
+        public static class Api {
+            private boolean generate = false;
+        }
+    }
 
     @Getter
     @Setter

@@ -22,6 +22,8 @@ import com.sk.domain.mi.dto.response.nextgen.ScenarioRowRes;
 import com.sk.domain.mi.dto.response.nextgen.ScenarioSignpostDefinitionViewRes;
 import com.sk.domain.mi.dto.response.nextgen.ScenarioSignpostMonitoringRes;
 import com.sk.domain.mi.dto.response.nextgen.ScenarioStatusRes;
+import com.sk.domain.mi.dto.response.nextgen.priceinterp.PriceInterpretationSectionRes;
+import com.sk.domain.mi.service.nextgen.priceinterp.PriceInterpretationStore;
 import com.sk.domain.mi.service.nextgen.support.IndexGraph;
 import com.sk.domain.mi.service.nextgen.support.ScenarioDimensionMapper;
 import com.sk.domain.mi.service.nextgen.support.ScenarioDimensionMapper.GroupDimensionTemplate;
@@ -30,11 +32,15 @@ import com.sk.domain.mi.service.nextgen.support.ScenarioRunStates;
 import com.sk.domain.shared.entity.master.tmm.MiScenario;
 import com.sk.domain.shared.entity.master.tmm.MiScenarioGroup;
 import com.sk.domain.shared.entity.master.tmm.MiSignpost;
+import com.sk.domain.shared.enums.fundamentalmodel.FundamentalModelCaseStatus;
+import com.sk.domain.shared.enums.fundamentalmodel.FundamentalModelRunStatus;
 import com.sk.domain.shared.enums.nextgen.GraphPeriodUnit;
 import com.sk.domain.shared.enums.nextgen.IndexName;
+import com.sk.domain.shared.enums.nextgen.ModelInputMode;
 import com.sk.domain.shared.enums.nextgen.ScenarioDisplayStatus;
 import com.sk.domain.shared.enums.nextgen.ScenarioStatus;
 import com.sk.domain.shared.repository.master.tmd.ScenarioCaseRepository;
+import com.sk.domain.shared.repository.master.tmd.ScenarioCaseRunHistoryRepository;
 import com.sk.domain.shared.repository.master.tmd.projection.MiBasePriceRow;
 import com.sk.domain.shared.repository.master.tmd.projection.ScenarioPriceRow;
 import com.sk.domain.shared.repository.master.tmm.MiScenarioGroupRepository;
@@ -43,6 +49,8 @@ import com.sk.domain.shared.repository.master.tmm.projection.ScenarioDetailBaseR
 import com.sk.domain.shared.repository.master.tmm.projection.ScenarioGroupBaseRow;
 import com.sk.domain.shared.repository.master.tmm.projection.ScenarioGroupDetailBaseRow;
 import com.sk.domain.shared.repository.master.tmm.projection.ScenarioIndividualBaseRow;
+import com.sk.domain.shared.service.permissions.AuthorizationService;
+import java.time.LocalDateTime;
 import java.util.Comparator;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -60,8 +68,13 @@ import org.springframework.transaction.annotation.Transactional;
 @Transactional(readOnly = true)
 public class ScenarioGroupServiceImpl implements ScenarioGroupService {
 
+    private static final String SCENARIO_CANCELLED = "SCENARIO_CANCELLED";
+
     private final MiScenarioGroupRepository scenarioGroupRepository;
     private final ScenarioCaseRepository scenarioCaseRepository;
+    private final ScenarioCaseRunHistoryRepository scenarioCaseRunHistoryRepository;
+    private final AuthorizationService authorizationService;
+    private final PriceInterpretationStore priceInterpretationStore;
 
     /**
      * [그룹 모드 목록]
@@ -157,7 +170,8 @@ public class ScenarioGroupServiceImpl implements ScenarioGroupService {
 
     /**
      * [가격전망 그래프]
-     * - 시나리오 라인 = '케이스 마지막 실행이 모두 완료'된 최신 케이스의 실행 가격 (재실행 실패/진행 중이면 직전 완료 케이스 유지)
+     * - MI Base 기준선 : MI_BASE 최신 케이스의 실행 가격
+     * - 시나리오 기준선 : '케이스 마지막 실행이 모두 완료'된 최신 케이스의 실행 가격 (재실행 실패/진행 중이면 직전 완료 케이스 유지)
      * - 완료 케이스가 없는 시나리오는 executed=false, 값 null
      * - 판정 상태(실현/폐기)와 무관하게 그룹 내 모든 시나리오를 시리즈로 내린다
      * - x축은 전 시나리오 기간키 union, 시리즈별 빠진 구간은 null 패딩
@@ -165,8 +179,8 @@ public class ScenarioGroupServiceImpl implements ScenarioGroupService {
     @Override
     public ScenarioGroupGraphRes getScenarioGroupGraph(Long scenarioGroupId, IndexName indexName, GraphPeriodUnit periodUnit) {
 
-        // 시나리오 그룹 유효성 검증
-        requireActiveGroup(scenarioGroupId);
+        // 시나리오 그룹 유효성 검증 겸 파라미터 제안 대상여부 도출
+        boolean parameterProposalTarget = resolveParameterProposalTarget(scenarioGroupId);
 
         List<ScenarioBaseRow> scenarios = scenarioGroupRepository.findScenariosByGroupId(scenarioGroupId);
         List<Long> scenarioIds = scenarioIdsOf(scenarios);
@@ -174,7 +188,7 @@ public class ScenarioGroupServiceImpl implements ScenarioGroupService {
         // 시나리오 실행상태 조회
         ScenarioRunStates runStates = resolveRunStates(scenarioIds);
 
-        return buildGraph(scenarioGroupId, indexName, periodUnit, scenarios, runStates).graph();
+        return buildGraph(scenarioGroupId, parameterProposalTarget, indexName, periodUnit, scenarios, runStates).graph();
     }
 
     /**
@@ -186,7 +200,10 @@ public class ScenarioGroupServiceImpl implements ScenarioGroupService {
 
         // 시나리오 그룹 유효성 검증
         requireActiveGroup(scenarioGroupId);
-        List<Long> scenarioIds = scenarioIdsOf(scenarioGroupRepository.findScenariosByGroupId(scenarioGroupId));
+
+        List<ScenarioBaseRow> scenarioRows = scenarioGroupRepository.findScenariosByGroupId(scenarioGroupId);
+
+        List<Long> scenarioIds = scenarioIdsOf(scenarioRows);
         ScenarioRunStates runStates = resolveRunStates(scenarioIds);
 
         List<ScenarioRunStatus> scenarios = scenarioIds.stream()
@@ -203,8 +220,8 @@ public class ScenarioGroupServiceImpl implements ScenarioGroupService {
      */
     public Map<IndexName, IndexGraph> buildGraphs(Long scenarioGroupId, GraphPeriodUnit periodUnit) {
 
-        // 시나리오 그룹 유효성 검증
-        requireActiveGroup(scenarioGroupId);
+        // 시나리오 그룹 유효성 검증 겸 파라미터 제안 대상여부 도출
+        boolean parameterProposalTarget = resolveParameterProposalTarget(scenarioGroupId);
 
         List<ScenarioBaseRow> scenarios = scenarioGroupRepository.findScenariosByGroupId(scenarioGroupId);
 
@@ -217,23 +234,23 @@ public class ScenarioGroupServiceImpl implements ScenarioGroupService {
 
         // JKM, TTF, HH 인덱스 전체
         for (IndexName indexName : IndexName.values()) {
-            graphs.put(indexName, buildGraph(scenarioGroupId, indexName, periodUnit, scenarios, runStates));
+            graphs.put(indexName, buildGraph(scenarioGroupId, parameterProposalTarget, indexName, periodUnit, scenarios, runStates));
         }
 
         return graphs;
     }
 
-    private IndexGraph buildGraph(Long scenarioGroupId, IndexName indexName, GraphPeriodUnit periodUnit, List<ScenarioBaseRow> scenarios, ScenarioRunStates runStates) {
+    private IndexGraph buildGraph(Long scenarioGroupId, boolean parameterProposalTarget, IndexName indexName, GraphPeriodUnit periodUnit, List<ScenarioBaseRow> scenarios, ScenarioRunStates runStates) {
 
         List<Long> scenarioIds = scenarioIdsOf(scenarios);
 
-        // 가장 최신 COMPLETED 상태 케이스의 가격
-        List<ScenarioPriceRow> prices = scenarioCaseRepository.findLatestCompletedPricesByScenarioIds(scenarioIds, indexName, periodUnit.getDbUnit());
+        // 시나리오 목록의 기준선 : 가장 최신 COMPLETED 상태 케이스의 가격
+        List<ScenarioPriceRow> scenariosPrices = scenarioCaseRepository.findLatestCompletedPricesByScenarioIds(scenarioIds, indexName, periodUnit.getDbUnit());
 
-        // MI Base 기준선 = 실행유형코드(MI_BASE) 최신 케이스의 가격 결과
+        // MI Base 기준선 : 실행유형코드(MI_BASE) 최신 케이스의 가격 결과
         List<MiBasePriceRow> miBasePrices = scenarioCaseRepository.findLatestMiBasePrices(indexName, periodUnit.getDbUnit());
 
-        ScenarioGroupGraphRes graph = ScenarioGroupGraphRes.of(scenarioGroupId, indexName, periodUnit, scenarios, prices, runStates.running(), runStates.completed(), miBasePrices);
+        ScenarioGroupGraphRes graph = ScenarioGroupGraphRes.of(scenarioGroupId, parameterProposalTarget, indexName, periodUnit, scenarios, miBasePrices, scenariosPrices, runStates.running(), runStates.completed());
 
         // 차트 표시 구간으로 클리핑 (CME/MI/시나리오 동일 창 — 화면 및 엑셀 공통 정책)
         ChartWindow window = ChartWindow.of(periodUnit, getMiBaseEndResult(miBasePrices, periodUnit));
@@ -273,6 +290,17 @@ public class ScenarioGroupServiceImpl implements ScenarioGroupService {
     }
 
     /**
+     * 그룹 존재 검증 겸 파라미터 제안 대상여부 도출
+     *  - 그룹의 eventTypeL2Id로 판정 (미대상 집합은 {@link ModelInputMode} 단일 소스)
+     *  - 없는 그룹이면 404 (requireActiveGroup과 동일 기준)
+     */
+    private boolean resolveParameterProposalTarget(Long scenarioGroupId) {
+        Long eventTypeL2Id = scenarioGroupRepository.findEventTypeL2IdByScenarioGroupId(scenarioGroupId)
+            .orElseThrow(() -> AppErrorException.of(ResultCode.Error.RSC_NOT_FOUND, "Scenario group not found: %d".formatted(scenarioGroupId)));
+        return ModelInputMode.from(eventTypeL2Id).isParameterProposal();
+    }
+
+    /**
      * [그룹 상세]
      * - status는 DB 상태를 화면 판정 상태로 매핑 (creating/created -> pending)
      * - adjustedProbability는 목록과 동일한 조회 시점 계산값(비영속)
@@ -283,8 +311,9 @@ public class ScenarioGroupServiceImpl implements ScenarioGroupService {
             .orElseThrow(() -> AppErrorException.of(ResultCode.Error.RSC_NOT_FOUND, "Scenario group not found: %d".formatted(scenarioGroupId)));
 
         GroupDimensionTemplate template = ScenarioDimensionMapper.parseTemplates(
-                scenarioGroupRepository.findTemplatesByEventTypeL2Ids(List.of(base.eventTypeL2Id())))
-            .getOrDefault(base.eventTypeL2Id(), GroupDimensionTemplate.EMPTY);
+                scenarioGroupRepository.findTemplatesByEventTypeL2Ids(List.of(base.eventTypeL2Id()))
+            ).getOrDefault(base.eventTypeL2Id(), GroupDimensionTemplate.EMPTY);
+
         List<String> selectedKeys = ScenarioDimensionMapper.parseSelectedKeys(base.dimensionSelected());
 
         List<ScenarioDimensionColumnRes> dimensionColumns = template.columns(selectedKeys);
@@ -299,7 +328,10 @@ public class ScenarioGroupServiceImpl implements ScenarioGroupService {
             ))
             .toList();
 
-        return ScenarioGroupDetailRes.of(base, dimensionColumns, scenarios);
+        // 시나리오별 가격전망 해석 section (이미 로드한 시나리오 재사용 — 재조회 없이 조립)
+        PriceInterpretationSectionRes priceInterpretation = priceInterpretationStore.buildSection(scenarioGroupId, groupScenarios);
+
+        return ScenarioGroupDetailRes.of(base, dimensionColumns, scenarios, priceInterpretation);
     }
 
     /**
@@ -341,7 +373,8 @@ public class ScenarioGroupServiceImpl implements ScenarioGroupService {
     @Transactional
     public ScenarioStatusRes updateScenarioStatus(Long scenarioGroupId, Long scenarioId, ScenarioDisplayStatus status) {
 
-        List<MiScenario> scenarios = scenarioGroupRepository.findScenarioEntitiesByGroupId(scenarioGroupId);
+        // 실현 캐스케이드(나머지 전체 폐기)가 동시 요청과 어긋나지 않도록 그룹 시나리오 전체를 잠그고 시작
+        List<MiScenario> scenarios = scenarioGroupRepository.findScenarioEntitiesByGroupIdForUpdate(scenarioGroupId);
 
         MiScenario target = scenarios.stream()
             .filter(s -> s.getScenarioId().equals(scenarioId))
@@ -380,10 +413,49 @@ public class ScenarioGroupServiceImpl implements ScenarioGroupService {
         MiScenarioGroup group = scenarioGroupRepository.findByScenarioGroupIdAndIsDeletedFalse(scenarioGroupId)
             .orElseThrow(() -> AppErrorException.of(ResultCode.Error.RSC_NOT_FOUND, "Scenario group not found: %d".formatted(scenarioGroupId)));
 
-        scenarioGroupRepository.findSignpostEntitiesByGroupId(scenarioGroupId).forEach(MiSignpost::softDelete);
-        scenarioGroupRepository.findScenarioEntitiesByGroupId(scenarioGroupId).forEach(MiScenario::softDelete);
+        priceInterpretationStore.softDeleteByGroup(scenarioGroupId);
+        List<MiScenario> scenarios = scenarioGroupRepository.findScenarioEntitiesByGroupIdForUpdate(scenarioGroupId);
+        List<MiSignpost> signposts = scenarioGroupRepository.findSignpostEntitiesByGroupId(scenarioGroupId);
+        signposts.forEach(MiSignpost::softDelete);
+        scenarios.forEach(MiScenario::softDelete);
         group.softDelete();
+        scenarioGroupRepository.flush();
 
+        softDeleteScenarioExecutions(scenarios.stream().map(MiScenario::getScenarioId).toList());
+
+    }
+
+    private void softDeleteScenarioExecutions(List<Long> scenarioIds) {
+        if (scenarioIds.isEmpty()) {
+            return;
+        }
+
+        LocalDateTime modifiedAt = LocalDateTime.now();
+        String actorLoginId = authorizationService.getSubject();
+        List<Long> caseIds = scenarioCaseRepository.findCaseIdsByScenarioIds(scenarioIds);
+
+        if (!caseIds.isEmpty()) {
+            scenarioCaseRunHistoryRepository.cancelRunningByCaseIds(
+                caseIds,
+                FundamentalModelRunStatus.FAILED,
+                FundamentalModelRunStatus.RUNNING,
+                modifiedAt,
+                SCENARIO_CANCELLED,
+                modifiedAt,
+                actorLoginId
+            );
+        }
+        scenarioCaseRepository.cancelRunningByScenarioIds(
+            scenarioIds,
+            FundamentalModelCaseStatus.FAILED,
+            FundamentalModelCaseStatus.RUNNING,
+            modifiedAt,
+            actorLoginId
+        );
+        scenarioCaseRepository.softDeleteByScenarioIds(scenarioIds, modifiedAt, actorLoginId);
+        if (!caseIds.isEmpty()) {
+            scenarioCaseRunHistoryRepository.softDeleteByCaseIds(caseIds, modifiedAt, actorLoginId);
+        }
     }
 
 }

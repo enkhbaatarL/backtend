@@ -17,6 +17,7 @@ import org.springframework.stereotype.Component;
 public class ModelExecutionTimeoutScheduler {
 
     private final ModelExecutionTimeoutService modelExecutionTimeoutService;
+    private final ModelExecutionJobReconciler modelExecutionJobReconciler;
 
     @Scheduled(fixedDelay = 30_000)
     public void processTimedOutRuns() {
@@ -24,6 +25,11 @@ public class ModelExecutionTimeoutScheduler {
             modelExecutionTimeoutService.processTimedOutRuns();
         } catch (RuntimeException e) {
             log.error("Model execution timeout scheduler failed.", e);
+        }
+        try {
+            modelExecutionJobReconciler.reconcile();
+        } catch (RuntimeException e) {
+            log.error("Model execution Job reconciliation failed.", e);
         }
     }
 }

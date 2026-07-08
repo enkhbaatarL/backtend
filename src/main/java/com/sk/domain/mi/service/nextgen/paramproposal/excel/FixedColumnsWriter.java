@@ -1,0 +1,88 @@
+package com.sk.domain.mi.service.nextgen.paramproposal.excel;
+
+import com.sk.domain.mi.service.nextgen.paramproposal.excel.ColumnRoleMap.Role;
+import com.sk.domain.mi.service.nextgen.paramproposal.excel.ExcelCells.RowScan;
+import com.sk.domain.shared.entity.master.tmm.MiModelParam;
+import java.util.List;
+import java.util.Map;
+import lombok.extern.slf4j.Slf4j;
+import org.apache.poi.ss.usermodel.Sheet;
+
+/**
+ * fixed_columns 모드 기입기 - slot/value가 고정 컬럼에 있는 행 단위 표
+ *
+ * 기입 규칙:
+ * - slot 축 키를 column roles 라벨로 매칭해 slot 컬럼을, 잔여 role 하나로 value 컬럼을 정한다
+ * - data start row부터 slot 컬럼 전체가 일치하는 행을 찾아 value 셀에 proposedValue를 덮어쓴다
+ * - 일치 행이 없으면(원본에 없던 신규 항목) 데이터 영역 끝에 행을 추가한다
+ * - 일치 행이 복수면 시트 데이터 정합 문제이므로 실패시킨다 (부분 성공 없음)
+ */
+@Slf4j
+final class FixedColumnsWriter {
+
+    private record SlotCell(int columnIndex, Object expected) {
+    }
+
+    private final Sheet sheet;
+    private final MiModelParam param;
+    private final ColumnRoleMap roles;
+    private final String context;
+
+    FixedColumnsWriter(Sheet sheet, MiModelParam param, ColumnRoleMap roles) {
+        this.sheet = sheet;
+        this.param = param;
+        this.roles = roles;
+        this.context = ValueRows.context(param);
+    }
+
+    void apply(List<Map<String, Object>> valueRows) {
+        valueRows.forEach(this::applyRow);
+    }
+
+    private void applyRow(Map<String, Object> valueRow) {
+        Map<String, Object> slotAxes = ValueRows.slotAxes(context, valueRow);
+
+        List<SlotCell> slots = slotAxes.entrySet().stream()
+            .map(axis -> new SlotCell(resolveColumn(axis.getKey()), axis.getValue()))
+            .toList();
+        Role valueRole = roles.valueRole(slotAxes.keySet());
+        double proposedValue = ValueRows.proposedValue(context, valueRow);
+
+        List<Integer> keyColumns = slots.stream().map(SlotCell::columnIndex).toList();
+        RowScan scan = ExcelCells.scanRows(sheet, param.getBasecaseDataStartRow() - 1, keyColumns, rowIndex -> matchesAll(rowIndex, slots));
+
+        if (scan.matchedRowIndexes().size() > 1) {
+            throw ValueRows.error(context, "slot 축에 일치하는 행이 복수입니다 (엑셀 행=%s, axes=%s)".formatted(toExcelRows(scan.matchedRowIndexes()), slotAxes));
+        }
+
+        if (scan.matchedRowIndexes().size() == 1) {
+            ExcelCells.writeValue(sheet, scan.matchedRowIndexes().get(0), valueRole.columnIndex(), proposedValue);
+            return;
+        }
+
+        appendRow(scan.appendRowIndex(), slots, valueRole, proposedValue);
+        log.info("[ModelInput Merge] 신규 행 추가: [{}] 엑셀 행={}, axes={}", context, scan.appendRowIndex() + 1, slotAxes);
+    }
+
+    private int resolveColumn(String axisLabel) {
+        return roles.byLabel(axisLabel)
+            .orElseThrow(() -> ValueRows.error(context, "column roles에 없는 slot 축입니다: %s".formatted(axisLabel)))
+            .columnIndex();
+    }
+
+    private boolean matchesAll(int rowIndex, List<SlotCell> slots) {
+        return slots.stream()
+            .allMatch(slot -> ExcelCells.matches(slot.expected(), ExcelCells.readValue(sheet, rowIndex, slot.columnIndex())));
+    }
+
+    private void appendRow(int rowIndex, List<SlotCell> slots, Role valueRole, double proposedValue) {
+        slots.forEach(slot -> ExcelCells.writeValue(sheet, rowIndex, slot.columnIndex(), slot.expected()));
+        ExcelCells.writeValue(sheet, rowIndex, valueRole.columnIndex(), proposedValue);
+    }
+
+    /** POI 0-based 행 인덱스를 엑셀 표기(1-based)로 변환 — 에러/로그는 항상 엑셀 행 번호로 말한다. */
+    private static List<Integer> toExcelRows(List<Integer> rowIndexes) {
+        return rowIndexes.stream().map(rowIndex -> rowIndex + 1).toList();
+    }
+
+}

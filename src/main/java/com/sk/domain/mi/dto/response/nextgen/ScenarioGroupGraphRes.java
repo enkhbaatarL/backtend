@@ -18,14 +18,19 @@ import java.util.Set;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
+import lombok.Builder;
 
 /**
  * 시나리오 그룹 펼침 그래프 데이터 (단일 인덱스 × 단일 기간단위).
  */
+@Builder(toBuilder = true)
 public record ScenarioGroupGraphRes(
 
     @Schema(description = "시나리오 그룹 ID", example = "1")
     Long scenarioGroupId,
+
+    @Schema(description = "파라미터 제안 대상여부 (true=대상/PARAMETER_PROPOSAL, false=미대상/FILE_UPLOAD)", example = "true")
+    Boolean parameterProposalTarget,
 
     @Schema(description = "인덱스명", example = "JKM")
     String indexName,
@@ -58,105 +63,48 @@ public record ScenarioGroupGraphRes(
 
     private static final String CURRENCY = "USD";
     private static final String UNIT = "MMBtu";
-    private static final String MI_BASE_SERIES_ID = "MI_BASE";
-    private static final String MI_BASE_SERIES_NAME = "MI Base";
 
     /**
      * 화면 및 엑셀 표기 가격 자릿수 (소수 2자리, 반올림).
      * */
     private static final int PRICE_SCALE = 2;
 
-    public static ScenarioGroupGraphRes of(Long scenarioGroupId, IndexName indexName, GraphPeriodUnit periodUnit, List<ScenarioBaseRow> scenarios, List<ScenarioPriceRow> prices,
-                                           Set<Long> runningScenarioIds, Set<Long> completedScenarioIds, List<MiBasePriceRow> miBasePrices) {
+    public static ScenarioGroupGraphRes of(Long scenarioGroupId, boolean parameterProposalTarget, IndexName indexName, GraphPeriodUnit periodUnit,
+                                           List<ScenarioBaseRow> scenarios, List<MiBasePriceRow> miBasePrices, List<ScenarioPriceRow> scenariosPrices,
+                                           Set<Long> runningScenarioIds, Set<Long> completedScenarioIds) {
 
         // x축 = 시나리오 + MI Base 기간키 union (실행 시점이 달라 범위가 다를 수 있음 → 빠진 구간은 null 패딩)
         List<String> periodKeys = Stream.concat(
-                prices.stream().map(ScenarioPriceRow::periodKey),
-                miBasePrices == null ? Stream.empty() : miBasePrices.stream().map(MiBasePriceRow::periodKey))
+                scenariosPrices.stream().map(ScenarioPriceRow::periodKey),
+                miBasePrices.stream().map(MiBasePriceRow::periodKey)
+            )
             .distinct()
             .sorted()
             .toList();
 
-        Map<Long, Map<String, ScenarioPriceRow>> pricesByScenario = prices.stream()
-            .collect(Collectors.groupingBy(ScenarioPriceRow::scenarioId,
-                Collectors.toMap(ScenarioPriceRow::periodKey, Function.identity())));
+        // 시나리오 시리즈
+        List<ScenarioSeries> scenarioSeries = ScenarioSeries.of(scenarios, periodKeys, scenariosPrices, runningScenarioIds, completedScenarioIds);
 
-        List<ScenarioSeries> scenarioSeries = scenarios.stream()
-            .map(scenario -> ScenarioSeries.of(scenario, periodKeys, pricesByScenario.get(scenario.scenarioId()),
-                runningScenarioIds != null && runningScenarioIds.contains(scenario.scenarioId()),
-                completedScenarioIds != null && completedScenarioIds.contains(scenario.scenarioId())))
-            .toList();
+        // MI Base 기준선 시리즈
+        List<BaseSeries> baseSeries = BaseSeries.of(periodKeys, miBasePrices);
 
-        List<BaseSeries> miBaseCaseSeries = buildBaseSeries(periodKeys, miBasePrices);
-
-        return new ScenarioGroupGraphRes(
-            scenarioGroupId,
-            indexName.getCode(),
-            periodUnit,
-            periodUnit.getLabel(),
-            CURRENCY,
-            UNIT,
-            periodKeys.stream().map(periodUnit::formatPeriodKey).toList(),
-            miBaseCaseSeries,
-            scenarioSeries
-        );
-    }
-
-    // MI Base 기준선
-    private static List<BaseSeries> buildBaseSeries(List<String> periodKeys, List<MiBasePriceRow> miBasePrices) {
-        List<BaseSeries> baseSeries = new ArrayList<>();
-        if (miBasePrices != null && !miBasePrices.isEmpty()) {
-            Map<String, BigDecimal> valueByPeriodKey = miBasePrices.stream()
-                .collect(Collectors.toMap(MiBasePriceRow::periodKey, MiBasePriceRow::baseCasePrice, (a, b) -> a));
-            List<BigDecimal> values = periodKeys.stream().map(valueByPeriodKey::get).map(ScenarioGroupGraphRes::scalePrice).toList();
-            baseSeries.add(new BaseSeries(MI_BASE_SERIES_ID, MI_BASE_SERIES_NAME, values));
-        }
-        return baseSeries;
+        return ScenarioGroupGraphRes.builder()
+            .scenarioGroupId(scenarioGroupId)
+            .parameterProposalTarget(parameterProposalTarget)
+            .indexName(indexName.getCode())
+            .periodUnit(periodUnit)
+            .periodUnitLabel(periodUnit.getLabel())
+            .currency(CURRENCY)
+            .unit(UNIT)
+            .dates(periodKeys.stream().map(periodUnit::formatPeriodKey).toList())
+            .baseSeries(baseSeries)
+            .scenarioSeries(scenarioSeries)
+            .build();
     }
 
     /** 화면·엑셀 표기용 가격 정규화 — 소수 2자리 반올림(HALF_UP). null은 그대로. */
     private static BigDecimal scalePrice(BigDecimal value) {
         return value == null ? null : value.setScale(PRICE_SCALE, RoundingMode.HALF_UP);
-    }
-
-    /**
-     * 차트 표시 구간으로 x축(dates)과 모든 시리즈(MI Base + 시나리오) 값을 잘라낸 새 그래프를 만든다.
-     * 구간 밖 기간은 dates에서 제거하고, 각 시리즈도 동일 위치의 값을 함께 제거한다.
-     */
-    public ScenarioGroupGraphRes clip(ChartWindow window) {
-        List<Integer> keepIdx = keepIndices(dates, window);
-
-        if (keepIdx.size() == dates.size()) return this;
-
-        List<String> clippedDates = keepIdx.stream().map(dates::get).toList();
-
-        List<BaseSeries> clippedBase = baseSeries.stream()
-            .map(base -> new BaseSeries(
-                base.seriesId(),
-                base.seriesName(),
-                sliceValues(base.values(), keepIdx)
-            ))
-            .toList();
-
-        List<ScenarioSeries> clippedScenario = scenarioSeries.stream()
-            .map(series -> new ScenarioSeries(
-                series.scenarioId(),
-                series.scenarioName(),
-                series.baseCase(),
-                series.displayOrder(),
-                series.executed(),
-                series.modelRunning(),
-                series.status(),
-                series.statusLabel(),
-                sliceValues(series.baseCaseValues(), keepIdx),
-                sliceValues(series.userAdjustedValues(), keepIdx)
-            ))
-            .toList();
-
-        return new ScenarioGroupGraphRes(
-            scenarioGroupId, indexName, periodUnit, periodUnitLabel, currency, unit,
-            clippedDates, clippedBase, clippedScenario
-        );
     }
 
     /**
@@ -213,10 +161,11 @@ public record ScenarioGroupGraphRes(
             .map(series -> series.realignTo(mergedDates, graph.dates()))
             .toList();
 
-        return new ScenarioGroupGraphRes(
-            graph.scenarioGroupId(), graph.indexName(), graph.periodUnit(), graph.periodUnitLabel(),
-            graph.currency(), graph.unit(), mergedDates, baseSeries, scenarioSeries
-        );
+        return graph.toBuilder()
+            .dates(mergedDates)
+            .baseSeries(baseSeries)
+            .scenarioSeries(scenarioSeries)
+            .build();
     }
 
     /**
@@ -233,6 +182,40 @@ public record ScenarioGroupGraphRes(
         return targetDates.stream().map(valueByDate::get).toList();
     }
 
+    /**
+     * 차트 표시 구간으로 x축(dates)과 모든 시리즈(MI Base + 시나리오) 값을 잘라낸 새 그래프를 만든다.
+     * 구간 밖 기간은 dates에서 제거하고, 각 시리즈도 동일 위치의 값을 함께 제거한다.
+     */
+    public ScenarioGroupGraphRes clip(ChartWindow window) {
+        List<Integer> keepIdx = keepIndices(dates, window);
+
+        if (keepIdx.size() == dates.size()) return this;
+
+        List<String> clippedDates = keepIdx.stream().map(dates::get).toList();
+
+        List<BaseSeries> clippedBase = baseSeries.stream()
+            .map(base -> new BaseSeries(
+                base.seriesId(),
+                base.seriesName(),
+                sliceValues(base.values(), keepIdx)
+            ))
+            .toList();
+
+        List<ScenarioSeries> clippedScenario = scenarioSeries.stream()
+            .map(series -> series.toBuilder()
+                .baseCaseValues(sliceValues(series.baseCaseValues(), keepIdx))
+                .userAdjustedValues(sliceValues(series.userAdjustedValues(), keepIdx))
+                .build())
+            .toList();
+
+        return toBuilder()
+            .dates(clippedDates)
+            .baseSeries(clippedBase)
+            .scenarioSeries(clippedScenario)
+            .build();
+    }
+
+    @Builder
     public record BaseSeries(
 
         @Schema(description = "시리즈 식별자", example = "MI_BASE")
@@ -244,8 +227,35 @@ public record ScenarioGroupGraphRes(
         @Schema(description = "값 목록 (dates와 동일 순서)")
         List<BigDecimal> values
 
-    ) {}
+    ) {
 
+        private static final String MI_BASE_SERIES_ID = "MI_BASE";
+        private static final String MI_BASE_SERIES_NAME = "MI Base";
+
+        static List<BaseSeries> of(List<String> periodKeys, List<MiBasePriceRow> miBasePrices) {
+
+            if (miBasePrices.isEmpty()) {
+                // 미적재 -> 기준선 시리즈 생략
+                return List.of();
+            }
+
+            Map<String, BigDecimal> priceByPeriodKey = miBasePrices.stream()
+                .collect(Collectors.toMap(MiBasePriceRow::periodKey, MiBasePriceRow::baseCasePrice, (v1, v2) -> v1));
+
+            List<BigDecimal> series = periodKeys.stream().map(priceByPeriodKey::get).map(ScenarioGroupGraphRes::scalePrice).toList();
+
+            return List.of(
+                BaseSeries.builder()
+                    .seriesId(MI_BASE_SERIES_ID)
+                    .seriesName(MI_BASE_SERIES_NAME)
+                    .values(series)
+                    .build()
+            );
+        }
+
+    }
+
+    @Builder(toBuilder = true)
     public record ScenarioSeries(
 
         @Schema(description = "시나리오 ID", example = "11")
@@ -266,10 +276,10 @@ public record ScenarioGroupGraphRes(
         @Schema(description = "수급모델 실행중 여부 (RUNNING 케이스 존재)", example = "false")
         boolean modelRunning,
 
-        @Schema(description = "판정 상태 (pending/realized/discarded)", example = "pending")
+        @Schema(description = "상태 (pending/realized/discarded)", example = "pending")
         ScenarioDisplayStatus status,
 
-        @Schema(description = "판정 상태 라벨 (대기/실현/폐기)", example = "대기")
+        @Schema(description = "상태 라벨 (대기/실현/폐기)", example = "대기")
         String statusLabel,
 
         @Schema(description = "베이스케이스 가격 목록 (dates와 동일 순서, 빠진 구간 null). 해당 인덱스 완료 가격이 없으면 null(완료여도 그 인덱스 가격 없으면 null)", nullable = true)
@@ -280,21 +290,35 @@ public record ScenarioGroupGraphRes(
 
     ) {
 
-        static ScenarioSeries of(ScenarioBaseRow scenario, List<String> periodKeys, Map<String, ScenarioPriceRow> priceByPeriodKey, boolean modelRunning, boolean executed) {
+        static List<ScenarioSeries> of(List<ScenarioBaseRow> scenarios, List<String> periodKeys, List<ScenarioPriceRow> scenariosPrices,
+                                       Set<Long> runningScenarioIds, Set<Long> completedScenarioIds) {
+
+            Map<Long, Map<String, ScenarioPriceRow>> pricesByScenario = scenariosPrices.stream()
+                .collect(Collectors.groupingBy(ScenarioPriceRow::scenarioId,
+                    Collectors.toMap(ScenarioPriceRow::periodKey, Function.identity())));
+
+            return scenarios.stream()
+                .map(scenario -> toSeries(scenario, periodKeys, pricesByScenario.get(scenario.scenarioId()),
+                    runningScenarioIds != null && runningScenarioIds.contains(scenario.scenarioId()),
+                    completedScenarioIds != null && completedScenarioIds.contains(scenario.scenarioId())))
+                .toList();
+        }
+
+        private static ScenarioSeries toSeries(ScenarioBaseRow scenario, List<String> periodKeys, Map<String, ScenarioPriceRow> priceByPeriodKey, boolean modelRunning, boolean executed) {
             boolean hasPrices = priceByPeriodKey != null && !priceByPeriodKey.isEmpty();
             ScenarioDisplayStatus status = ScenarioDisplayStatus.from(scenario.status());
-            return new ScenarioSeries(
-                scenario.scenarioId(),
-                scenario.title(),
-                Boolean.TRUE.equals(scenario.isBaseline()),
-                scenario.displayOrder(),
-                executed,
-                modelRunning,
-                status,
-                status == null ? null : status.getLabel(),
-                hasPrices ? values(periodKeys, priceByPeriodKey, ScenarioPriceRow::baseCasePrice) : null,
-                hasPrices ? values(periodKeys, priceByPeriodKey, ScenarioPriceRow::userAdjustedPrice) : null
-            );
+            return ScenarioSeries.builder()
+                .scenarioId(scenario.scenarioId())
+                .scenarioName(scenario.title())
+                .baseCase(Boolean.TRUE.equals(scenario.isBaseline()))
+                .displayOrder(scenario.displayOrder())
+                .executed(executed)
+                .modelRunning(modelRunning)
+                .status(status)
+                .statusLabel(status == null ? null : status.getLabel())
+                .baseCaseValues(hasPrices ? values(periodKeys, priceByPeriodKey, ScenarioPriceRow::baseCasePrice) : null)
+                .userAdjustedValues(hasPrices ? values(periodKeys, priceByPeriodKey, ScenarioPriceRow::userAdjustedPrice) : null)
+                .build();
         }
 
         private static List<BigDecimal> values(List<String> periodKeys, Map<String, ScenarioPriceRow> priceByPeriodKey, Function<ScenarioPriceRow, BigDecimal> extractor) {
@@ -310,11 +334,10 @@ public record ScenarioGroupGraphRes(
          * 값 시리즈를 sourceDates -> targetDates 순서로 재배열한 새 시리즈 (병합 시 x축 union 정렬용).
          */
         ScenarioSeries realignTo(List<String> targetDates, List<String> sourceDates) {
-            return new ScenarioSeries(
-                scenarioId, scenarioName, baseCase, displayOrder, executed, modelRunning, status, statusLabel,
-                realign(targetDates, sourceDates, baseCaseValues),
-                realign(targetDates, sourceDates, userAdjustedValues)
-            );
+            return toBuilder()
+                .baseCaseValues(realign(targetDates, sourceDates, baseCaseValues))
+                .userAdjustedValues(realign(targetDates, sourceDates, userAdjustedValues))
+                .build();
         }
 
     }

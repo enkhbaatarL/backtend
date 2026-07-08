@@ -123,6 +123,10 @@ api:
     url: http://40.82.137.178:8001
     connection-timeout: 1s
     read-timeout: 60s
+  price-interpretation-agent:
+    url: http://40.82.137.178:8003
+    connection-timeout: 1s
+    read-timeout: 60s
 
 mail:
   except-company-no: 2020

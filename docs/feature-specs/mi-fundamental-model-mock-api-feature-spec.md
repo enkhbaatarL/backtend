@@ -1,9 +1,9 @@
 # MI Fundamental Model - 1st Mock API Feature Spec
 
 - domain: gas
-- status: draft for 1st mock implementation
+- status: implemented — 1st implementation shipped against real DB (2026-06-05 ~ 2026-06-19); endpoint/request/response contract below remains canonical
 - owner: platform BE
-- updated at: 2026-06-21 (Trade Flow value truncation rule sync)
+- updated at: 2026-07-03 (real DB rollout status reflected; see §12 Exit Criteria)
 - canonical design input: [scenario-case-execution-workflow-design-draft.md](../design-docs/gas/scenario-case-execution-workflow-design-draft.md)
 - reference only:
   - Notion `MI Fundamental Model 실행` (`350263ff004c8035b20ef02683447f4b`)
@@ -154,12 +154,12 @@ MI Fundamental Model의 1차 mock API는 MI Fundamental Model 화면에서 사�
 | 항목 | 현재 상태 | 필요한 후속 source of truth |
 |---|---|---|
 | 결과 파일 다운로드 | phase 1 제외 | result/download API feature spec + result/file ERD review |
-| 운영 Kubernetes Job dispatch | phase 1 제외 | external model interface spec + workflow design |
-| callback 인증/서명/재시도 | mock 구현 밖의 운영 정책 | security/integration design + feature spec update |
-| DB persistence / DDL (volumes/trade flows/price 포함) | phase 1 제외. mock은 json seed | case/run DDL은 `scenario-case-execution-erd-ddl-draft.md`, output result data persistence는 `mi-fundamental-model-output-result-persistence-design.md` |
+| 운영 Kubernetes Job dispatch | 구현 완료 (2026-06-12, 재시도 정책 no-retry 확정 2026-06-21) | external model interface spec + workflow design |
+| callback 인증/서명 | 재시도 정책은 확정, 인증/서명 세부는 여전히 mock 구현 밖의 운영 정책 | security/integration design + feature spec update |
+| DB persistence / DDL (volumes/trade flows/price 포함) | 구현 완료 (2026-06-15 real DB rollout) | case/run DDL은 `scenario-case-execution-erd-ddl-draft.md`, output result data persistence는 `mi-fundamental-model-output-result-persistence-design.md` |
 | Ownership scope | DB-backed 확정 사항 | owner-scoped mutation(run/update/delete 등)은 `usr_no` only로 확정. 조직/부서/tenant 정책 키는 본 모델에 추가하지 않는다. Volumes/Trade Flows/Price result read는 다른 사용자가 실행한 결과도 조회 가능한 shared read model이므로 `usr_no` owner predicate를 적용하지 않는다 |
 | `ASSIGNEE_NAME` DB 검색 경계 | DB-backed 확정 사항 + 검증 필요 | `tmd_mdl_scnrcasem.usr_no = tmd_usrm.usr_no` JOIN, 표시값 `tmd_usrm.usr_nm` 사용. rollout 전 JOIN 양측 인덱스 EXPLAIN 검증 필요 |
-| timeout scheduler | phase 1 제외 | DB-backed scheduler design + query/EXPLAIN verification |
+| timeout scheduler | 코드 구현 완료 (2026-06-22), DBA index 검증 전까지 feature flag 기본 비활성 | 상세는 `mi-scenario-model-execution-workflow-design.md` Open Questions 참고 |
 | Volumes/Price 필터 저장 (Save 토글) | phase 1 제외. FE 로컬 상태로 관리 | user preference API feature spec + DB 테이블 설계 |
 
 ### Future Contract Only
@@ -1298,9 +1298,9 @@ Swagger 문서에는 다음을 명시한다.
 
 ## 7. Data / Model Impact
 
-### 7.1 1st Mock Implementation
+### 7.1 1st Mock Implementation (superseded by real DB implementation, 2026-06-05 ~ 2026-06-19)
 
-1차 구현은 DB schema 변경 없이 `src/main/resources/mock/fundamental-model/fundamental-model-cases.json` seed 파일을 읽어 in-memory store로 동작한다. `Next Gen` mock API와 동일하게 기능/메뉴별 mock resource 폴더를 두되, `Fundamental Model`은 `fundamental-model` 폴더를 canonical 위치로 사용한다.
+1차 mock 구현은 DB schema 변경 없이 `src/main/resources/mock/fundamental-model/fundamental-model-cases.json` seed 파일을 읽어 in-memory store로 동작했다. `Next Gen` mock API와 동일하게 기능/메뉴별 mock resource 폴더를 두되, `Fundamental Model`은 `fundamental-model` 폴더를 canonical 위치로 사용했다. 현재는 real DB(`tmd_mdl_scnrcasem`/`tmd_mdl_scnrcaseh` 및 결과 테이블)로 전환 완료됐으며, 아래 seed 구조는 local/demo mock profile에만 남아 있다.
 
 seed 파일은 다음 최상위 구조를 가진다.
 
@@ -1739,13 +1739,13 @@ phase 1 mock 시연 동선:
 - 외부 모델 완료 동기화는 callback 방식으로 확정한다. phase 1 mock은 callback endpoint를 구현한다. 남은 항목은 실제 Kubernetes Job 연동용 인증 방식, header/signature 규격, retry 정책이다.
 - `run_id` 생성 주체는 backend로 확정한다. 생성 포맷은 `yyyymmdd_hhmmss_XXXX` 이다. Kubernetes Job 연동 계약에서는 backend가 Job/pod에 전달한 `run_id` 를 완료/실패 callback path에 그대로 사용하는지만 확인한다.
 - 결과 payload와 결과 파일은 model pod가 S3/object storage에 저장/관리하며 backend 소관이 아니다. 1차 범위에서는 backend가 result pointer/reference도 저장하지 않는다.
-- Volumes/Trade Flows/Price 결과 데이터는 1차 mock에서 json seed 기반 고정 응답으로 처리한다. DB-backed 전환 시 parsed result table, key, partition/index, mock-to-real 경계는 [mi-fundamental-model-output-result-persistence-design.md](../design-docs/gas/mi-fundamental-model-output-result-persistence-design.md)를 따른다.
+- Volumes/Trade Flows/Price 결과 데이터는 1차 mock에서 json seed 기반 고정 응답으로 처리했다. 2026-06-15 DB-backed 전환 완료 후에는 [mi-fundamental-model-output-result-persistence-design.md](../design-docs/gas/mi-fundamental-model-output-result-persistence-design.md)의 parsed result table/key/partition/index를 따른다.
 - 결과 파일 다운로드는 이번 1차 scope에서 제외한다. 단, status response의 `latestRun.runId`는 후속 결과 조회의 연결 키가 될 수 있다.
 - Volumes 필터의 Save 토글(사용자별 필터 저장)은 1차 scope에서 제외한다. 후속 구현 시 user preference 테이블 설계가 필요하다.
 - 삭제는 phase-1에서 case active-resource 제외를 위한 soft delete만 구현한다. 보존 기간, audit 조회, 복구 정책은 후속 정책 범위다.
-- timeout은 설계 문서에서 5분 가정이 있으나 1차 mock에서는 scheduler를 구현하지 않는다.
-- 운영 입력 파일명에는 `DEMAND`/`SUPPLY`/`TRADE` 키워드가 포함되는 것으로 확정한다. DB-backed run dispatch 전환 시 backend는 `SCNRCASE + caseId` 파일 목록에서 파일명 키워드로 입력 파일 역할을 매핑한다.
-- mock store의 런타임 변경분은 서버 재시작 또는 reset 시 유실되고 seed json 기준으로 복원된다. 개발/시연 전용으로만 사용한다.
+- timeout은 설계 문서에서 5분 가정이 있으나 아직 scheduler 임계 시간/주기가 확정되지 않아 미구현이다(`mi-scenario-model-execution-workflow-design.md` Open Questions와 동일 항목).
+- 운영 입력 파일명에는 `DEMAND`/`SUPPLY`/`TRADE` 키워드가 포함되는 것으로 확정한다. DB-backed run dispatch 전환 후 backend는 `SCNRCASE + caseId` 파일 목록에서 파일명 키워드로 입력 파일 역할을 매핑한다.
+- mock store는 1차 mock 단계의 동작이었다. real DB 전환(2026-06-19) 이후 case/run 상태는 DB에 영속되며, mock store 기반 reset 동작은 local/demo profile 전용으로만 유지된다.
 - `caseId`를 path에 노출하므로 후속 DB 전환 시 case 접근 정책과 권한 검증이 필수다. Price read의 active case/latest-run 검증과 `usr_no` 소유자 검증은 분리한다.
 - DB-backed update/delete 전환 시 predicate는 `case_id + usr_no ownership + del_yn = 'N'`을 포함해야 한다.
 - workflow/ERD draft/ERD draft의 `scenario_id` 상태 해석은 §7.2 Future DB Mapping Notes의 superseded note를 따른다.
@@ -1776,13 +1776,17 @@ phase 1 mock 시연 동선:
 - Trade Flows 데이터 조회 (`COMPLETED` case 한정, selector/year 필수, unit/types/regions 선택 필터, fromCountries/toCountries 헤더 + sparse flows 응답, Total 행 항상 포함)
 - Price 데이터 조회 (`COMPLETED` case 한정, 차트 + Annual 테이블 + Monthly 테이블 단일 응답)
 
+**구현 완료 (2026-06 real DB 전환):**
+
+- case CRUD/run/callback의 real DB 구현 (`tmd_mdl_scnrcasem`/`tmd_mdl_scnrcaseh`, 2026-06-05~06-08)
+- Kubernetes Job 실제 dispatch 연동 및 재시도 정책 확정(no-retry, 2026-06-12/06-21)
+- Volumes/Trade Flows/Price DB persistence implementation (canonical table/key/partition/index design은 `mi-fundamental-model-output-result-persistence-design.md`에 확정, 2026-06-15 rollout 완료)
+
 아직 안정적이지 않은 항목:
 
-- 실제 Kubernetes Job 연동 (run/callback DB 상태 전이 slice에서는 제외)
-- callback 운영 인증/서명/재시도 세부 정책
+- callback 운영 인증/서명 세부 정책 (재시도 정책은 no-retry로 확정됨, 2026-06-21)
 - 결과 파일 다운로드
-- Volumes/Trade Flows/Price DB persistence implementation (canonical table/key/partition/index design은 `mi-fundamental-model-output-result-persistence-design.md`에 확정됨)
-- timeout scheduler
+- timeout scheduler 운영 활성화 (구현은 2026-06-22 완료 — 10분 임계값/30초 polling, `SCENARIO`/`INDEPENDENT` 공통 적용. DBA index 검증 전까지 feature flag 기본 비활성. 상세는 `mi-scenario-model-execution-workflow-design.md` Open Questions 참고)
 - Volumes 필터 Save 기능 (user preference 저장)
 
 ### Input for `erd-change-review`

@@ -19,6 +19,7 @@ import com.sk.domain.shared.enums.fundamentalmodel.FundamentalModelCaseStatus;
 import com.sk.domain.shared.enums.fundamentalmodel.FundamentalModelExecType;
 import com.sk.domain.shared.enums.fundamentalmodel.FundamentalModelRunStatus;
 import com.sk.domain.shared.enums.nextgen.ModelExecutionStatus;
+import com.sk.domain.shared.enums.nextgen.ScenarioStatus;
 import com.sk.domain.shared.repository.master.tcm.UploadedFileRepository;
 import com.sk.domain.shared.repository.master.tmd.ScenarioCaseRepository;
 import com.sk.domain.shared.repository.master.tmd.ScenarioCaseRunHistoryRepository;
@@ -84,7 +85,8 @@ public class ScenarioModelExecutionServiceImpl implements ScenarioModelExecution
     @Override
     @Transactional
     public ModelExecutionAcceptRes submitModelExecution(Long scenarioId, List<MultipartFile> files) {
-        MiScenario scenario = findScenario(scenarioId);
+        MiScenario scenario = findScenarioForUpdate(scenarioId);
+        rejectDiscardedScenario(scenario);
         validateFiles(files);
         rejectIfActiveExecutionExists(scenarioId);
 
@@ -181,6 +183,14 @@ public class ScenarioModelExecutionServiceImpl implements ScenarioModelExecution
             ));
     }
 
+    private MiScenario findScenarioForUpdate(Long scenarioId) {
+        return miScenarioRepository.findByScenarioIdForUpdate(scenarioId)
+            .orElseThrow(() -> AppErrorException.of(
+                ResultCode.Error.RSC_NOT_FOUND,
+                "Scenario not found. scenarioId: %d".formatted(scenarioId)
+            ));
+    }
+
     private void rejectIfActiveExecutionExists(Long scenarioId) {
         boolean exists = scenarioCaseRepository.existsByScenarioIdAndExecTypeAndStatusAndIsDeletedFalse(
             scenarioId,
@@ -189,6 +199,15 @@ public class ScenarioModelExecutionServiceImpl implements ScenarioModelExecution
         );
         if (exists) {
             throw activeExecutionConflict(scenarioId);
+        }
+    }
+
+    private void rejectDiscardedScenario(MiScenario scenario) {
+        if (scenario.getStatus() == ScenarioStatus.DISCARDED) {
+            throw AppErrorException.of(
+                ResultCode.Error.BIZ_RULE_VIOLATION,
+                "Discarded scenario cannot start a model execution. scenarioId: %d".formatted(scenario.getScenarioId())
+            );
         }
     }
 

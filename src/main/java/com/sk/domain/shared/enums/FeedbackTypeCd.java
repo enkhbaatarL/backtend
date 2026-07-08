@@ -9,8 +9,8 @@ import lombok.RequiredArgsConstructor;
 @RequiredArgsConstructor
 public enum FeedbackTypeCd {
 
-    DATA_ERROR("data_error", "데이터 오류"),
-    UI_IMPROVEMENT("ui_improvement", "UI 개선"),
+    AGENT_OUTPUT("agent_output", "Agent Output"),
+    UX_UI("ux_ui", "UX/UI"),
     FEATURE_SUGGESTION("feature_suggestion", "기능 제안"),
     ETC("etc", "기타");
 

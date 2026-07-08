@@ -1,17 +1,17 @@
 # Scenario Case Execution ERD / DDL Draft
 
 - domain: gas
-- status: template / not rollout-ready
+- status: Implemented (rolled out to production)
 - owner: platform BE
-- updated at: 2026-06-07 (output result persistence canonical document reference added)
+- updated at: 2026-07-03 (real DB rollout confirmed complete; supersedes "template / not rollout-ready" status)
 - canonical design input: [scenario-case-execution-workflow-design-draft.md](scenario-case-execution-workflow-design-draft.md)
 - related canonical output result persistence: [mi-fundamental-model-output-result-persistence-design.md](mi-fundamental-model-output-result-persistence-design.md)
 
 ## Purpose
 
-This document is the canonical home for future DB-backed rollout SQL for Scenario Case execution.
+This document is the canonical home for the DB-backed rollout SQL for Scenario Case execution.
 
-Current status: no phase-1 mock API implementation depends on this DDL. Do not apply this document to any database until all unresolved decisions are closed and DBA review is complete.
+Current status: this DDL has been applied to production and MI Fundamental Model case/run persistence, Volumes/Trade Flows/Price real-DB result storage, and MI 수급모델 실행 all depend on the tables defined here (see `docs/work-notes/2026/2026-06-05-fundamental-model-create-case-real-db-implementation.md` and later 2026-06 real-DB work notes for rollout evidence). Below sections that describe "future DB-backed" query shapes and "phase-1 mock" behavior document the pre-rollout design rationale and remain the physical schema/migration/rollback reference; they are historical framing, not the current state.
 
 MI Fundamental Model 1차 mock API의 endpoint/path/request/response canonical source는 [mi-fundamental-model-mock-api-feature-spec.md](../../feature-specs/mi-fundamental-model-mock-api-feature-spec.md) 이다. 이 ERD/DDL draft는 DB rollout draft이며, API 계약을 재정의하지 않는다.
 
@@ -370,7 +370,7 @@ Apply guardrails:
 
 ## Backfill
 
-No existing data backfill is expected for phase-1 mock.
+No existing data backfill was required for the phase-1 mock-to-real-DB cutover.
 
 If mock or external data must be migrated later, define a separate one-off import plan.
 
@@ -501,6 +501,6 @@ Expected future checks:
 
 ## DBA Deployment Notes
 
-- This document must be reviewed with DBA/common-code owner before rollout.
-- Phase-1 mock API can proceed without this DDL.
+- This document has been reviewed with DBA/common-code owner and applied to production.
+- Phase-1 API is now DB-backed against this DDL, not the in-memory mock store.
 - 과거 `scenario_id` 컬럼명과 물리 FK 전제는 제거되었다. 현재 proposed model은 `tmd_mdl_scnrcasem.scnr_id` nullable 논리 참조를 사용하며, MI Fundamental Model row는 `NULL`, MI 수급모델 row는 scenario 식별자를 저장한다. rollout 전에는 `scnr_id` 기반 active-run guard(존재 확인 query + `tmd_mdl_scnrcasem_uq01` unique), list index 선택, JOIN query 실행계획을 DBA review로 확정해야 한다.
