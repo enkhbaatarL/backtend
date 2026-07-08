@@ -252,7 +252,7 @@ public class MiInsightsService {
                 .append(" tgd.gds_data_expn AS goodsDataExpn,")
                 .append(" tgd.gds_data_smry_cntt AS goodsDataSummaryCntt,")
                 // .append(" tgd.mod_dtm AS modifyDt")
-                .append(" max(tgc.gds_data_keywd_nm) AS modifyDt")
+                .append(" DATE_FORMAT(tgd.pub_dt, '%Y%m%d') AS modifyDt")
             ;
 
         StringBuilder where = new StringBuilder()
@@ -302,44 +302,60 @@ public class MiInsightsService {
             case SIX_MONTH -> where.append(" AND tgd.mod_dtm >= DATE_SUB(NOW(), INTERVAL 6 MONTH)");
             case TWELVE_MONTH -> where.append(" AND tgd.mod_dtm >= DATE_SUB(NOW(), INTERVAL 12 MONTH)");
             */
-            case ONE_DAY -> where.append(" AND tgc.gds_data_keywd_nm >= DATE_SUB(NOW(), INTERVAL 1 DAY)");
-            case ONE_WEEK -> where.append(" AND tgc.gds_data_keywd_nm >= DATE_SUB(NOW(), INTERVAL 1 WEEK)");
-            case ONE_MONTH -> where.append(" AND tgc.gds_data_keywd_nm >= DATE_SUB(NOW(), INTERVAL 1 MONTH)");
-            case THREE_MONTH -> where.append(" AND tgc.gds_data_keywd_nm >= DATE_SUB(NOW(), INTERVAL 3 MONTH)");
-            case SIX_MONTH -> where.append(" AND tgc.gds_data_keywd_nm >= DATE_SUB(NOW(), INTERVAL 6 MONTH)");
-            case TWELVE_MONTH -> where.append(" AND tgc.gds_data_keywd_nm >= DATE_SUB(NOW(), INTERVAL 12 MONTH)");
+            case ONE_DAY -> where.append(" AND tgd.pub_dt >= DATE_SUB(CURDATE(), INTERVAL 1 DAY)");
+            case ONE_WEEK -> where.append(" AND tgd.pub_dt >= DATE_SUB(CURDATE(), INTERVAL 1 WEEK)");
+            case ONE_MONTH -> where.append(" AND tgd.pub_dt >= DATE_SUB(CURDATE(), INTERVAL 1 MONTH)");
+            case THREE_MONTH -> where.append(" AND tgd.pub_dt >= DATE_SUB(CURDATE(), INTERVAL 3 MONTH)");
+            case SIX_MONTH -> where.append(" AND tgd.pub_dt >= DATE_SUB(CURDATE(), INTERVAL 6 MONTH)");
+            case TWELVE_MONTH -> where.append(" AND tgd.pub_dt >= DATE_SUB(CURDATE(), INTERVAL 12 MONTH)");
             case ALL_DATES -> {
             } // no filter
             default -> throw new IllegalStateException("지원하지 않는 기간 값입니다: " + period);
         }
 
-        // 오늘 날짜 포함 이전 날짜만 조회
-        where.append(" AND tgc.gds_data_keywd_nm <= DATE_FORMAT(CURDATE(), '%Y%m%d')");
+        // 오늘 날짜 포함 이전 날짜만 조회 (pub_dt 미입력 데이터도 제외됨)
+        where.append(" AND tgd.pub_dt <= CURDATE()");
 
+        // 인덱스(tmd_gdsdatam_ix03: del_yn, pub_dt, gds_no) 순서와 일치해야 Backward index scan 을 탄다
         String orderBy = switch (sort) {
-            case NEWEST -> " ORDER BY modifyDt DESC ";
-            case OLDEST -> " ORDER BY modifyDt ASC ";
+            case NEWEST -> " ORDER BY tgd.pub_dt DESC, tgd.gds_no DESC, tgd.gds_data_no DESC ";
+            case OLDEST -> " ORDER BY tgd.pub_dt ASC, tgd.gds_no ASC, tgd.gds_data_no ASC ";
             case MOST_RELEVANT -> " ";
             default -> throw new IllegalStateException("지원하지 않는 정렬 값입니다: " + sort);
         };
 
-        String grouptBy = " GROUP BY tgd.gds_data_no";
-
         select.append(" ");
         where.append(" ");
 
-        String contentSql = """
-                SELECT
-                """ + select + """
-                FROM midb.tam_custcpnyprvdmappl tcp
-                JOIN midb.tam_custcpnygdsmappl tcg ON tcg.cust_cpny_no = tcp.cust_cpny_no AND tcg.del_yn = 'N' AND tcg.use_yn = 'Y'
-                JOIN midb.tmd_prvdm tp ON tp.prvd_no = tcp.prvd_no AND tp.del_yn = 'N' AND tp.use_yn = 'Y'
-                JOIN midb.tmd_gdsm tg ON tg.gds_no = tcg.gds_no AND tg.prvd_no = tcp.prvd_no AND tg.del_yn = 'N' AND tg.use_yn = 'Y'
-                JOIN midb.tmd_gdsdatam tgd ON tgd.gds_no = tcg.gds_no AND tgd.gds_no = tcg.gds_no AND tgd.del_yn = 'N'
-                JOIN midb.tmd_gdsdatactgrl tgc ON tgc.gds_data_no = tgd.gds_data_no AND tgc.del_yn = 'N' AND tgc.gds_data_ctgr_cd = 'PUBDATE'
-                WHERE
-                """ + where + """
-                """ + grouptBy + orderBy;
+        // 조인 키 구조상 tgd 행 중복이 발생하지 않으므로 GROUP BY 없이 조회한다
+        String contentSql;
+        boolean sortableByPubDt = (keyword == null || keyword.isBlank())
+                && (sort == InsightsSortType.NEWEST || sort == InsightsSortType.OLDEST);
+        if (sortableByPubDt) {
+            // 키워드 검색이 없는 최신/오래된순 조회는 tmd_gdsdatam 을 드라이빙 테이블로 두고
+            // pub_dt 인덱스를 정렬 순서대로 스캔하면서 LIMIT 만큼만 읽고 종료한다 (전체 정렬 회피)
+            contentSql = """
+                    SELECT STRAIGHT_JOIN
+                    """ + select + """
+                    FROM midb.tmd_gdsdatam tgd FORCE INDEX (tmd_gdsdatam_ix03)
+                    JOIN midb.tam_custcpnygdsmappl tcg ON tcg.cust_cpny_no = :companyNo AND tcg.gds_no = tgd.gds_no AND tcg.del_yn = 'N' AND tcg.use_yn = 'Y'
+                    JOIN midb.tmd_gdsm tg ON tg.gds_no = tgd.gds_no AND tg.del_yn = 'N' AND tg.use_yn = 'Y'
+                    JOIN midb.tam_custcpnyprvdmappl tcp ON tcp.cust_cpny_no = tcg.cust_cpny_no AND tcp.prvd_no = tg.prvd_no
+                    JOIN midb.tmd_prvdm tp ON tp.prvd_no = tcp.prvd_no AND tp.del_yn = 'N' AND tp.use_yn = 'Y'
+                    WHERE tgd.del_yn = 'N' AND
+                    """ + where + orderBy;
+        } else {
+            contentSql = """
+                    SELECT
+                    """ + select + """
+                    FROM midb.tam_custcpnyprvdmappl tcp
+                    JOIN midb.tam_custcpnygdsmappl tcg ON tcg.cust_cpny_no = tcp.cust_cpny_no AND tcg.del_yn = 'N' AND tcg.use_yn = 'Y'
+                    JOIN midb.tmd_prvdm tp ON tp.prvd_no = tcp.prvd_no AND tp.del_yn = 'N' AND tp.use_yn = 'Y'
+                    JOIN midb.tmd_gdsm tg ON tg.gds_no = tcg.gds_no AND tg.prvd_no = tcp.prvd_no AND tg.del_yn = 'N' AND tg.use_yn = 'Y'
+                    JOIN midb.tmd_gdsdatam tgd ON tgd.gds_no = tcg.gds_no AND tgd.gds_no = tcg.gds_no AND tgd.del_yn = 'N'
+                    WHERE
+                    """ + where + orderBy;
+        }
 
         String countSql = """
                 SELECT COUNT(DISTINCT tgd.gds_data_no) AS totalCount
@@ -348,7 +364,6 @@ public class MiInsightsService {
                 JOIN midb.tmd_prvdm tp ON tp.prvd_no = tcp.prvd_no AND tp.del_yn = 'N' AND tp.use_yn = 'Y'
                 JOIN midb.tmd_gdsm tg ON tg.gds_no = tcg.gds_no AND tg.prvd_no = tcp.prvd_no AND tg.del_yn = 'N' AND tg.use_yn = 'Y'
                 JOIN midb.tmd_gdsdatam tgd ON tgd.gds_no = tcg.gds_no AND tgd.gds_no = tcg.gds_no AND tgd.del_yn = 'N'
-                JOIN midb.tmd_gdsdatactgrl tgc ON tgc.gds_data_no = tgd.gds_data_no AND tgc.del_yn = 'N' AND tgc.gds_data_ctgr_cd = 'PUBDATE'
                 WHERE
                 """
                 + where ;
