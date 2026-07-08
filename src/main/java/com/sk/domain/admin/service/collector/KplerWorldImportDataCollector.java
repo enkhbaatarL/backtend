@@ -32,7 +32,7 @@ public class KplerWorldImportDataCollector implements DataCollectorStrategy {
     private enum CODE{
         Asia("Asia_Import"),
         Europe("Europe_Import"),
-        Americas("SouthAmeria_Import"),
+        Americas("SouthAmerica_Import"),
         Total("AS_EU_SA_Import");
 
         String tbCode;
