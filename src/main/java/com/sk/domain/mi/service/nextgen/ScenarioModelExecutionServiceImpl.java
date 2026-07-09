@@ -19,6 +19,7 @@ import com.sk.domain.shared.enums.fundamentalmodel.FundamentalModelCaseStatus;
 import com.sk.domain.shared.enums.fundamentalmodel.FundamentalModelExecType;
 import com.sk.domain.shared.enums.fundamentalmodel.FundamentalModelRunStatus;
 import com.sk.domain.shared.enums.nextgen.ModelExecutionStatus;
+import com.sk.domain.shared.enums.nextgen.ModelInputMode;
 import com.sk.domain.shared.enums.nextgen.ScenarioStatus;
 import com.sk.domain.shared.repository.master.tcm.UploadedFileRepository;
 import com.sk.domain.shared.repository.master.tmd.ScenarioCaseRepository;
@@ -87,6 +88,7 @@ public class ScenarioModelExecutionServiceImpl implements ScenarioModelExecution
     public ModelExecutionAcceptRes submitModelExecution(Long scenarioId, List<MultipartFile> files) {
         MiScenario scenario = findScenarioForUpdate(scenarioId);
         rejectDiscardedScenario(scenario);
+        rejectIfMultipartModeMismatch(scenario);
         validateFiles(files);
         rejectIfActiveExecutionExists(scenarioId);
 
@@ -207,6 +209,19 @@ public class ScenarioModelExecutionServiceImpl implements ScenarioModelExecution
             throw AppErrorException.of(
                 ResultCode.Error.BIZ_RULE_VIOLATION,
                 "Discarded scenario cannot start a model execution. scenarioId: %d".formatted(scenario.getScenarioId())
+            );
+        }
+    }
+
+    private void rejectIfMultipartModeMismatch(MiScenario scenario) {
+        Long eventTypeL2Id = scenario.getScenarioGroup().getEventTypeL2().getEventTypeL2Id();
+        ModelInputMode inputMode = ModelInputMode.from(eventTypeL2Id);
+        if (inputMode != ModelInputMode.FILE_UPLOAD) {
+            throw AppHttpStatusException.of(
+                HttpStatus.CONFLICT,
+                ResultCode.Error.BIZ_RULE_VIOLATION,
+                "This scenario uses PARAMETER_PROPOSAL mode. multipart model execution is not allowed. scenarioId: %d"
+                    .formatted(scenario.getScenarioId())
             );
         }
     }

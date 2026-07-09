@@ -26,7 +26,7 @@ import org.springframework.web.bind.annotation.RequestPart;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
 
-@Tag(name = "05. Next Gen MI Model Execution API", description = "Next Gen MI MI 수급모델 실행 API입니다.")
+@Tag(name = "05-1. Next Gen MI Model Execution API", description = "Next Gen MI MI 수급모델 실행 API입니다.")
 @Slf4j
 @RestController
 @RequestMapping("/api/v1/mi/next-gen/scenarios/{scenarioId}")

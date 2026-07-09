@@ -1,8 +1,10 @@
 package com.sk.domain.mi.service.nextgen.sse;
 
 import com.sk.common.utils.JsonUtil;
+import com.sk.domain.mi.dto.response.nextgen.ModelParamProposalSseEvent;
 import com.sk.domain.mi.dto.response.nextgen.design.ScenarioDesignSseEvent;
 import com.sk.domain.mi.dto.response.nextgen.priceinterp.PriceInterpretationSseEvent;
+import com.sk.domain.mi.service.nextgen.sse.registry.ModelParamProposalSseRegistry;
 import com.sk.domain.mi.service.nextgen.sse.registry.PriceInterpretationSseRegistry;
 import com.sk.domain.mi.service.nextgen.sse.registry.ScenarioDesignSseRegistry;
 import java.nio.charset.StandardCharsets;
@@ -27,6 +29,7 @@ public class SseEventSubscriber implements MessageListener {
 
     private final ScenarioDesignSseRegistry designSseRegistry;
     private final PriceInterpretationSseRegistry priceInterpSseRegistry;
+    private final ModelParamProposalSseRegistry modelParamProposalSseRegistry;
 
     @Override
     public void onMessage(Message message, byte[] pattern) {
@@ -49,6 +52,16 @@ public class SseEventSubscriber implements MessageListener {
                 priceInterpSseRegistry.emit(event.scenarioGroupId(), event);
             } catch (Exception e) {
                 log.warn("[PriceInterp SSE] subscribe failed (deserialize): {}", e.getMessage());
+            }
+            return;
+        }
+
+        if (channel.startsWith(SseEventPublisher.MODEL_PARAM_PROPOSAL_CHANNEL_PREFIX)) {
+            try {
+                ModelParamProposalSseEvent event = JsonUtil.fromJson(body, ModelParamProposalSseEvent.class);
+                modelParamProposalSseRegistry.emit(event.scenarioId(), event);
+            } catch (Exception e) {
+                log.warn("[ModelParamProposal SSE] subscribe failed (deserialize): {}", e.getMessage());
             }
             return;
         }

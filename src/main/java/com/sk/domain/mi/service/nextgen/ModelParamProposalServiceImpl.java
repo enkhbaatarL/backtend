@@ -350,8 +350,7 @@ public class ModelParamProposalServiceImpl implements ModelParamProposalService 
     }
 
     private String resolveDisplayStatus(ModelExecutionPreparation preparation, AgentModelParamProposal proposal) {
-        if (preparation.getStatus() == ModelExecutionPreparationStatus.CONFIRMING
-            || preparation.getStatus() == ModelExecutionPreparationStatus.PREPARING_EXECUTION
+        if (preparation.getStatus() == ModelExecutionPreparationStatus.PREPARING_EXECUTION
             || preparation.getStatus() == ModelExecutionPreparationStatus.EXECUTING
             || preparation.getStatus() == ModelExecutionPreparationStatus.EXECUTION_FAILED) {
             return preparation.getStatus().name();

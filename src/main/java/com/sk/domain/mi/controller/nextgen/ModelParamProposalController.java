@@ -9,6 +9,7 @@ import com.sk.domain.mi.dto.response.nextgen.ModelExecutionOptionsRes;
 import com.sk.domain.mi.dto.response.nextgen.ModelParamProposalAcceptRes;
 import com.sk.domain.mi.dto.response.nextgen.ModelParamProposalRes;
 import com.sk.domain.mi.service.nextgen.ModelParamProposalService;
+import com.sk.domain.mi.service.nextgen.sse.registry.ModelParamProposalSseRegistry;
 import com.sk.domain.shared.enums.PermissionCondition;
 import com.sk.domain.shared.enums.Role;
 import io.swagger.v3.oas.annotations.Operation;
@@ -18,14 +19,16 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.annotation.Profile;
+import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
 @Profile("!dedicated")
-@Tag(name = "05. Next Gen MI Model Parameter Proposal API", description = "Next Gen MI 수급모델 파라미터 제안 API입니다.")
+@Tag(name = "05-2. Next Gen MI Model Parameter Proposal API", description = "Next Gen MI 수급모델 파라미터 제안 API입니다.")
 @Slf4j
 @RestController
 @RequestMapping("/api/v1/mi/next-gen/scenarios/{scenarioId}")
@@ -33,6 +36,7 @@ import org.springframework.web.bind.annotation.RestController;
 public class ModelParamProposalController {
 
     private final ModelParamProposalService modelParamProposalService;
+    private final ModelParamProposalSseRegistry sseRegistry;
 
     @ApiOrder(1)
     @Operation(
@@ -84,5 +88,22 @@ public class ModelParamProposalController {
         @Parameter(description = "Agent model parameter proposal ID", example = "10001") @PathVariable Long modelParamProposalId
     ) {
         return BaseResponseFactory.create(modelParamProposalService.getProposal(scenarioId, modelParamProposalId));
+    }
+
+    @ApiOrder(4)
+    @Operation(
+        summary = "수급모델 파라미터 제안 SSE 구독 API",
+        description = "Agent proposal 완료/실패 신호를 scenario 단위 SSE로 구독합니다. 이벤트명은 `model-parameter-proposal`입니다."
+    )
+    @ApiResponse(responseCode = "200", description = "SSE 연결 성공 (text/event-stream)")
+    @GetMapping(value = "/model-param-proposals/stream", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
+    @RequiredPermissionRules(rules = {
+        @PermissionRule(role = Role.USER, conditions = {PermissionCondition.SKGAS_COMPANY_USER_ONLY}),
+        @PermissionRule(role = Role.ADMIN, conditions = {PermissionCondition.THIRD_PARTY_ADMIN_ONLY})
+    })
+    public SseEmitter streamModelParamProposal(
+        @Parameter(description = "시나리오 ID", example = "309") @PathVariable Long scenarioId
+    ) {
+        return sseRegistry.connect(scenarioId);
     }
 }

@@ -49,7 +49,7 @@ public abstract class AbstractSseRegistry<E> {
 
         emitter.onError(e -> remove(scenarioGroupId, emitter));
 
-        send(emitter, "connected", Map.of("scenarioGroupId", scenarioGroupId));
+        send(emitter, "connected", Map.of(connectionIdName(), scenarioGroupId));
         log.debug("{} connected: groupId={}, localConnections={}", logTag(), scenarioGroupId, count(scenarioGroupId));
 
         onConnected(scenarioGroupId, emitter);
@@ -82,6 +82,13 @@ public abstract class AbstractSseRegistry<E> {
      * 로그 프리픽스
      */
     protected abstract String logTag();
+
+    /**
+     * connected 이벤트 payload의 scope key 이름.
+     */
+    protected String connectionIdName() {
+        return "scenarioGroupId";
+    }
 
     /**
      * 연결 직후 훅

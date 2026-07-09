@@ -24,6 +24,7 @@ public class SsePubSubConfig {
         container.setConnectionFactory(connectionFactory);
         container.addMessageListener(subscriber, new PatternTopic(SseEventPublisher.DESIGN_CHANNEL_PATTERN));
         container.addMessageListener(subscriber, new PatternTopic(SseEventPublisher.PRICE_INTERP_CHANNEL_PATTERN));
+        container.addMessageListener(subscriber, new PatternTopic(SseEventPublisher.MODEL_PARAM_PROPOSAL_CHANNEL_PATTERN));
         return container;
     }
 

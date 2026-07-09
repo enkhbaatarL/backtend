@@ -4,6 +4,7 @@ import com.sk.domain.shared.entity.master.tmd.ModelExecutionPreparation;
 import com.sk.domain.shared.enums.nextgen.ModelExecutionPreparationStatus;
 import java.time.LocalDateTime;
 import java.util.Collection;
+import java.util.List;
 import java.util.Optional;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Modifying;
@@ -23,6 +24,19 @@ public interface ModelExecutionPreparationRepository extends JpaRepository<Model
          ORDER BY p.execPrepId DESC
         """)
     Optional<ModelExecutionPreparation> findLatestByScenarioIdAndStatuses(
+        @Param("scenarioId") Long scenarioId,
+        @Param("statuses") Collection<ModelExecutionPreparationStatus> statuses
+    );
+
+    @Query("""
+        SELECT p
+          FROM ModelExecutionPreparation p
+         WHERE p.scenarioId = :scenarioId
+           AND p.isDeleted = false
+           AND p.status IN :statuses
+         ORDER BY p.execPrepId DESC
+        """)
+    List<ModelExecutionPreparation> findCallbackCandidates(
         @Param("scenarioId") Long scenarioId,
         @Param("statuses") Collection<ModelExecutionPreparationStatus> statuses
     );
