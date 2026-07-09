@@ -6,7 +6,7 @@
 - status: Review
 - owner: BE (platform)
 - created at: 2026-07-03
-- updated at: 2026-07-08
+- updated at: 2026-07-09
 - canonical for: 파라미터 제안의 business concept, ownership, lifecycle, 상태 전이, Excel 생성 및 기존 수급모델 실행 연결 경계
 - not canonical for:
   - endpoint, request/response, HTTP error contract: `docs/feature-specs/mi-model-parameter-proposal-backend-feature-spec.md`
@@ -21,10 +21,10 @@
   - `docs/conventions/db-object-naming-rules.md`
   - `docs/conventions/db-term-dictionary-sheet2.csv`
 - supersedes: 없음
-- last synced: 2026-07-08
+- last synced: 2026-07-09
 - open questions: 11절 참조
 - integration model: **callback = 완료 신호. Backend가 Agent proposal 테이블을 read-only 직접 조회해 결과를 서빙**(시나리오 설계와 동일). CAS/hash/snapshot 저장 없음
-- implementation readiness: ready for API implementation by slice. frontend mock/API contract is ready. real Agent read/callback implementation can start because Agent proposal DDL, Backend read permission, callback authentication, wrapper shape, and write-then-callback order are resolved. Remaining items are rollout/operation details: Agent/Backend physical topology pre-check, `tmd_mi_model_execpreph` DBA DDL approval/apply, workbook location/version, and payload sizing.
+- implementation readiness: ready for API implementation by slice. frontend mock/API contract is ready. real Agent read/callback implementation can start because Agent proposal DDL, Backend read permission, callback authentication, wrapper shape, write-then-callback order, direct same-DB read path, and `tmd_mi_model_execpreph` DBA DDL apply are resolved. Remaining items are rollout/operation details: Agent proposal table runtime visibility/권한/type 확인, execution-preparation mapping/index/constraint validate, workbook location/version, and payload sizing.
 
 ## 1. Feature Summary
 
@@ -90,10 +90,10 @@
 - shared contract:
   - `modelParamProposalId`는 Agent proposal identity이며 Backend PK로 재해석하지 않는다.
   - Backend는 Agent table을 직접 **수정하지 않고(read-only)** Agent API로만 생성/확정한다.
-  - **결과 조회는 Backend가 Agent proposal 테이블을 직접 read한다.** 이는 시나리오 설계가 Agent-write 테이블을 Backend가 `scenarioGroupRepository`로 읽는 방식과 동일하다. Agent proposal DDL과 Backend read 권한은 확정됐다. 배포 전에는 Agent/Backend 물리 토폴로지(동일 schema/instance vs view/synonym)와 key type 정합만 pre-check로 확인한다.
+  - **결과 조회는 Backend가 Agent proposal 테이블을 직접 read한다.** 이는 시나리오 설계가 Agent-write 테이블을 Backend가 `scenarioGroupRepository`로 읽는 방식과 동일하다. Agent proposal DDL과 Backend read 권한은 확정됐고, Agent proposal table은 기존 Backend DB/schema에 추가되는 직접 read 대상이다. 별도 view/synonym 또는 우회 경로는 만들지 않는다. 배포 전에는 table visibility, `SELECT` 권한, key type 정합만 검증한다.
   - 따라서 callback은 proposal 데이터를 나르지 않는 **완료 신호(signal)** 이며, Backend는 신호 수신 후 Agent 테이블을 재조회한다. 신호 유실 시 상태 재조회·폴링으로 수렴한다.
 - relationship:
-  - `Scenario 1:N ModelParamProposal` — proposal history를 위해 시나리오당 여러 row를 허용하되, **진행 중(in-flight) preparation은 시나리오당 최대 1개**로 제한한다(§3.2 in-flight 후보 + §10 generated column UNIQUE). callback correlation은 path `scenarioId` + 활성 row로 수렴한다. (`FAILED` 후 재제안 허용 여부는 Open; 허용 시에도 in-flight는 시나리오당 1개)
+  - `Scenario 1:N ModelParamProposal` — proposal history를 위해 시나리오당 여러 row를 허용하되, **진행 중(in-flight) preparation은 시나리오당 최대 1개**로 제한한다(§3.2 in-flight 후보 + §10 generated column UNIQUE). callback correlation은 path `scenarioId` + 활성 row로 수렴한다. `FAILED`/`REQUEST_FAILED` 후 재제안은 허용하되, 실패 row를 재사용하지 않고 새 execution-preparation row와 새 Agent proposal request를 만든다.
   - `ModelParamProposal 1:N ExecutionPreparation` — 같은 Agent proposal(`agnt_prpsl_id`)로 확정값 기반 수급모델 실행을 여러 번 접수할 수 있다. 실행 1회마다 새 `tmd_mi_model_execpreph` row를 만들고 input Excel 3개 세트를 새로 생성한다. 재실행 시 값 조정은 같은 `model_param_proposal_id` 재확정(Option A, §6 규칙 18)으로, 파라미터를 아예 생성부터 다시 하면 새 `model_param_proposal_id`가 발급된다.
   - `ExecutionPreparation 0..1 ScenarioCase` — 실행 접수 성공 후 해당 row에 새 `case_id`를 연결한다. 실행 상태/terminal 이력은 기존 Case/Run이 관리한다.
 
@@ -109,9 +109,9 @@ Backend orchestration 상태:
 | `PROPOSAL_PENDING` | Agent proposal 요청 접수됨, 제안 생성·사용자 검토 대기 (Agent `PROCESSING`/`PROPOSED`를 포괄) | `CONFIRMING`, `REQUEST_FAILED` |
 | `CONFIRMING` | 사용자 실행 요청을 검증하고 Agent confirmation 수행 중 | `PREPARING_EXECUTION`, `EXECUTION_FAILED` |
 | `PREPARING_EXECUTION` | Agent confirmation 성공, Excel 3개 생성 중(confirmed params 파생, case 미생성) | `EXECUTING`, `EXECUTION_FAILED` |
-| `EXECUTING` | 기존 model execution 접수 완료(case INSERT → `tcm_filel(SCNRCASE+case_id)` 기록 → dispatch) | terminal model execution은 기존 Case/Run이 관리 |
+| `EXECUTING` | 기존 model execution 접수 완료(case INSERT → `tcm_filel(SCNRCASE+case_id)` 기록 → `execprep.case_id` 저장까지 **한 트랜잭션에서 commit**, K8s dispatch는 commit **이후** 수행) | terminal model execution은 기존 Case/Run이 관리 |
 | `EXECUTION_FAILED` | confirmation 이후 Excel 생성·업로드·실행 접수 실패 | 재시도 정책 필요 |
-| `REQUEST_FAILED` | Agent proposal 생성 요청 또는 callback 처리 실패 | terminal; 재제안 정책 필요 |
+| `REQUEST_FAILED` | Agent proposal 생성 요청 또는 callback 처리 실패 | terminal; 새 proposal 생성 요청 허용 |
 
 전이 예시:
 
@@ -136,6 +136,16 @@ Backend ↔ Agent 상태 매핑:
 핵심: FE의 "검토 가능(`PROPOSED`)" 신호는 Backend 상태가 아니라 **Agent proposal 테이블 read**로 얻는다. Backend `PROPOSAL_PENDING`은 Agent `PROCESSING`과 `PROPOSED`를 모두 포괄하며, 두 세부 상태 구분은 Agent 테이블 재조회로 한다. Agent 외부 계약은 `PROCESSING/PROPOSED/CONFIRMED/FAILED`만 사용한다.
 
 in-flight 상태 후보(활성 preparation 중복 방지 대상): `REQUESTING`, `PROPOSAL_PENDING`, `CONFIRMING`, `PREPARING_EXECUTION`. `EXECUTING`은 기존 `ScenarioCase.actv_scnr_id`(RUNNING) UNIQUE가 실행 중복을 통제하므로 preparation in-flight 제약에서 제외한다(재실행 유리).
+
+팝업 current-state 조회의 business 우선순위:
+
+- FE가 Scenario만 선택한 상태에서는 최신 non-deleted execution-preparation row가 화면 상태의 1차 기준이다. 최신 proposal/preparation이 있으면 과거 실행 Case의 확정 파라미터보다 최신 preparation 상태를 우선 표시한다.
+- 최신 preparation이 proposal 생성 중이면 생성중으로, Agent `PROPOSED`이면 제안 파라미터 검토 가능으로, Agent `CONFIRMED` 또는 Backend `CONFIRMING`/`PREPARING_EXECUTION`이면 확정 후 실행 준비 상태로 본다.
+- 최신 preparation이 `case_id`와 연결되면 `ScenarioCase.lastRunId`가 가리키는 latest Run 상태를 함께 읽어 실행중, 실행 성공 후 확정 파라미터 표시, 실행 실패 상태를 구분한다.
+- A4a 팝업 current-state에서 latest Run `FAILED`는 dispatch 이후 모델 실행 실패로 보며 feature spec의 `EXECUTION_FAILED`로 표시한다. Backend confirmation/Excel/file/Case/dispatch 단계 실패도 같은 표시상태를 쓰지만, 이 경우에는 연결 Run이 없으므로 `modelExecutionStatus`가 `null`이다.
+- Case status와 `ScenarioCase.lastRunId` 기준 Run status가 불일치하거나 latest Run history가 없으면 정상 lifecycle이 아니라 데이터 정합성 오류로 본다. 이 경우 자동으로 과거 Case로 fallback하지 않고 오류를 로깅한 뒤 feature spec의 current-state 데이터 불일치 오류 계약을 따른다.
+- 최신 preparation이 없으면 아직 파라미터 제안이 없는 상태다.
+- endpoint path, response field, enum 이름은 feature spec의 Scenario 기준 current-state 조회 계약을 따른다.
 
 ### 3.3 Agent-owned configuration and proposal model
 
@@ -221,7 +231,7 @@ Agent의 `tmm_mi_model_param_proposal_m`이 proposal 계산 이력·payload를 �
 
 | 대안 | 장점 | 문제 | 판단 |
 |---|---|---|---|
-| **Agent proposal 테이블 read-only 공유 read** | **중복 저장 제거, callback을 신호로 격하(CAS/hash 불필요), 기존 시나리오 설계와 동일** | **Agent 물리 스키마 결합. DDL/read 권한은 확정, 배포 전 물리 토폴로지 pre-check 필요** | **채택** |
+| **Agent proposal 테이블 read-only 공유 read** | **중복 저장 제거, callback을 신호로 격하(CAS/hash 불필요), 기존 시나리오 설계와 동일** | **Agent 물리 스키마 결합. DDL/read 권한 및 기존 DB/schema 직접 read 경로는 확정, 배포 전 table visibility/권한/type 검증 필요** | **채택** |
 | Backend DB proposal snapshot | 재조회, 재시작, audit, idempotency, 실행 연결 가능 | proposal 데이터 이중 저장, callback CAS/hash 필요 | thin orchestration 행만 채택(proposal 데이터는 복제 안 함) |
 | Redis only | mock 구현이 빠르고 기존 validation cache와 유사 | TTL/재시작 유실, 실행 감사 불가 | mock adapter에 한정 |
 | FE round-trip only | Backend 저장 최소화 | callback 이후 FE 전달, reload, 위변조 검증, 다중 인스턴스 문제 | 채택하지 않음 |
@@ -261,6 +271,7 @@ tcm_filel: DEMAND / SUPPLY / TRADE generated files
 5. mode와 다른 실행 입력 방식을 요청하면 Backend가 거절하며 client가 mode를 override할 수 없다.
 6. 한 실행 준비 시도에서 proposal 생성 요청은 1회만 허용한다.
 7. 같은 Scenario에 `PROCESSING` proposal(=in-flight preparation) 또는 `RUNNING` model execution이 있으면 새 파라미터 생성 요청을 진입에서 차단한다(RUNNING pre-check fast-fail). `RUNNING` 판정은 `MiScenario` lock 스코프에서 `tmd_mdl_scnrcasem`을 조회하며, pre-check와 실제 실행 접수 사이 race는 기존 `ScenarioCase.actv_scnr_id` UNIQUE가 backstop으로 막는다. in-flight preparation 중복은 별도로 preparation in-flight UNIQUE가 막는다.
+   - proposal 생성이 `REQUEST_FAILED` 또는 Agent `FAILED`로 terminal 수렴한 뒤에는 같은 Scenario에서 새 proposal 생성 요청을 허용한다. 실패 row는 audit/history로 보존하고 재사용하지 않으며, 새 요청은 새 `tmd_mi_model_execpreph` row와 새 Agent proposal ID를 만든다. `REQUEST_FAILED`는 in-flight 상태가 아니므로 active preparation UNIQUE 대상이 아니다.
 8. callback(신호)의 `modelParamProposalId`, `scenarioId`, `scenarioGroupId`, `eventId`를 저장된 request snapshot과 교차 검증한다.
 9. callback은 신호이므로 중복/지연/순서역전 재전송은 Agent 테이블 재조회로 수렴하는 멱등 처리다. Backend orchestration 상태는 monotonic이며 `PROCESSING` 이후 단계에서 도착한 신호는 no-op이다. payload hash / CAS는 사용하지 않는다.
 10. FE 표에는 `values[].proposedValue`만 값 cell로 표시하며 `basecaseValue`는 표시하지 않는다. 사용자는 `proposedValue`만 수정할 수 있다.
@@ -281,6 +292,8 @@ tcm_filel: DEMAND / SUPPLY / TRADE generated files
 25. Backend는 Agent 호출 전에 `scenarioId` 기준 `REQUESTING` execution-preparation을 생성·commit하고, 외부 호출 동안 해당 DB transaction을 유지하지 않는다.
 26. Agent 응답과 callback은 Agent proposal ID를 write-once 방식으로 채운다. 같은 ID는 no-op, 다른 ID는 correlation conflict이며 기존 값을 덮어쓰지 않는다.
 27. Agent 요청 timeout 시 late callback 가능성을 보존하기 위해 preparation을 즉시 삭제하지 않는다.
+28. 팝업 current-state 조회는 최신 execution-preparation row를 과거 실행보다 우선한다. 새 proposal을 시작한 뒤에는 이전 실행의 확정 파라미터가 아니라 새 row의 생성중/제안완료/확정준비 상태를 보여준다.
+29. `EXECUTING` 전이에서 Case INSERT·`tcm_filel` 기록·`execprep.case_id` 저장은 **하나의 트랜잭션에서 commit**하고, K8s dispatch는 그 commit **이후**에 수행한다. 따라서 "Case는 존재하는데 `execprep.case_id`가 null"인 상태는 영속화되지 않는다(둘 다 commit되거나 둘 다 rollback). commit 이후 dispatch가 실패하면 Case를 만든 채 `EXECUTION_FAILED`로 전이하며, current-state는 연결 Case/Run 상태로 판정한다. 이로써 A4a에서 `case_id=null`인데 실제 실행이 진행 중인 stale/고착 window가 생기지 않는다.
 
 ## 7. Extension Considerations
 
@@ -306,6 +319,7 @@ tcm_filel: DEMAND / SUPPLY / TRADE generated files
 - model execution input mode 조회 API
 - proposal 생성 요청 API
 - proposal 상태/결과 조회 API
+- Scenario 기준 팝업 current-state 조회 API
 - Agent callback API
 - SSE completion signal
 - 사용자 확정 + model execution 접수 API
@@ -317,14 +331,15 @@ tcm_filel: DEMAND / SUPPLY / TRADE generated files
 ## 10. SQL / DBA Implications
 
 - proposal 데이터는 Agent 테이블 read이나, Backend proposal request orchestration 상태는 Agent DB에 맡길 수 없으므로 thin Backend persistence는 별도 검토가 필요하다. 단, 실제 실행 이력은 기존 `tmd_mdl_scnrcasem` / `tmd_mdl_scnrcaseh`에 남긴다.
-- Agent proposal 테이블 DDL과 Backend read 권한은 확정됐다. Backend가 read하려면 배포 전 동일 schema/instance인지 view/synonym 경유인지와 key type 정합을 확인해야 한다.
+- Agent proposal 테이블 DDL과 Backend read 권한은 확정됐다. Agent proposal table은 기존 Backend DB/schema에 추가되는 직접 read 대상이며 별도 view/synonym 경로는 만들지 않는다. 배포 전에는 Backend datasource에서 table이 보이는지, `SELECT` 권한이 적용됐는지, key type이 정합한지 확인한다.
 - 최소 index 후보:
   - Agent proposal ID non-unique index (반복 실행 이력 조회/callback 후보 조회)
   - `(scnr_id, del_yn, exec_prep_id desc)` 시나리오별 최신 preparation 조회
   - `case_id` UNIQUE nullable
 - 최근 실행 기준 파라미터 조회는 최신 `tmd_mdl_scnrcasem.case_id` → `tmd_mi_model_execpreph.case_id` → Agent proposal table 순서로 수행한다.
+- 팝업 current-state 조회는 최신 `tmd_mi_model_execpreph` row를 먼저 선택한 뒤 필요 시 Agent proposal table과 연결 Case/Run 상태를 조합한다.
 - 최근 실행 input Excel 파일 조회는 최신 `case_id` 기준 기존 `tcm_filel(SCNRCASE + case_id)` 저장 규칙을 재사용한다.
-- active(in-flight) preparation 중복 방지는 `ScenarioCase.actv_scnr_id`와 동일하게 STORED generated column + UNIQUE로 확정한다. 재실행 흐름이 이전 preparation을 soft delete하므로, 식에 **`del_yn='N'`을 반드시 포함**해 soft delete된 행이 유령 충돌을 일으키지 않게 한다.
+- active(in-flight) preparation 중복 방지는 `ScenarioCase.actv_scnr_id`와 동일하게 STORED generated column + UNIQUE로 확정한다. 재실행 흐름에서 중복 방지용으로 정리하는 대상은 `case_id`가 아직 연결되지 않은 방치 in-flight row에 한정한다. `case_id`가 연결된 executed preparation row는 A4a/A8/A9 조회와 실행 감사 경로의 기준이므로 soft delete하지 않고 보존한다. generated column 식에는 **`del_yn='N'`을 반드시 포함**해 soft delete된 in-flight 행이 유령 충돌을 일으키지 않게 한다.
 
   ```
   actv_scnr_id =
@@ -365,8 +380,8 @@ tcm_filel: DEMAND / SUPPLY / TRADE generated files
 
 Resolved and no longer P0: callback authentication, Backend read permission, Agent proposal table DDL, write-then-callback order, callback wrapper shape, and confirmation retry/idempotency policy. Canonical API details are in the feature spec.
 
-1. Agent/Backend 물리 토폴로지(동일 schema/instance vs view/synonym)와 key type 정합 pre-check. read 권한 자체는 확정.
-2. Backend execution-preparation DDL rollout: `tmd_mi_model_execpreph` table/subject DBA 최종 승인, DDL 적용, `ddl-auto=validate` 전 배포 순서 확인.
+1. Agent proposal table runtime visibility, `SELECT` 권한 적용, key type 정합 pre-check. 기존 Backend DB/schema 직접 read 경로는 확정됐고 별도 view/synonym은 사용하지 않는다.
+2. (resolved DDL apply) Backend execution-preparation DDL rollout: `tmd_mi_model_execpreph` DBA DDL은 적용 완료됐다. real runtime 전에는 entity mapping, `agnt_prpsl_id` non-unique index, `case_id` nullable unique, `actv_scnr_id` generated rule을 validate한다.
 3. required로 확정한 Agent `tableName` 필드의 Agent payload 반영 배포 시점.
 4. 원본 `DEMAND`/`SUPPLY`/`TRADE` 파일의 저장 위치, version 선택 규칙, owner.
 5. `values[].basecaseValue`/`proposedValue`와 dynamic slot-axis 값의 허용 JSON type, null, precision 정책.
@@ -376,16 +391,19 @@ Resolved and no longer P0: callback authentication, Backend read permission, Age
 
 ### P1 — 운영 전 확정
 
-1. `FAILED` proposal 이후 같은 실행 준비에서 재제안을 허용할지.
-2. `CONFIRMED` 이후 Excel 생성 실패 시 사용자가 같은 proposal로 재시도할지.
-3. proposal 보존 기간과 개인정보/민감정보 분류.
-4. SSE 재연결 시 missed event를 상태 조회로 수렴시키는 polling interval/timeout.
-5. (resolved → Option A) 값 조정 재실행은 같은 `model_param_proposal_id` 재확정으로 `confirmation_parameters`를 갱신한다(최신 스냅샷만 유지). 변경 없음 재실행은 재확정 없이 기존 confirmed 값을 재사용한다. Agent 확정 API가 이미 `CONFIRMED`인 proposal의 재확정을 허용하도록 Agent가 수정 확정했다(2026-07-09 회신) → Option A 전제 충족. 과거 실행별 확정값 복원이 요구되면 `tmd_mi_model_execpreph`에 실행별 confirmed snapshot JSON 추가를 fallback으로 검토한다.
+1. `CONFIRMED` 이후 Excel 생성 실패 시 사용자가 같은 proposal로 재시도할지.
+2. proposal 보존 기간과 개인정보/민감정보 분류.
+3. SSE 재연결 시 missed event를 상태 조회로 수렴시키는 polling interval/timeout.
+
+### Resolved Decisions
+
+1. Proposal failure retry: `FAILED`/`REQUEST_FAILED` 후 재제안은 허용한다. 실패 row는 재사용하지 않고 audit/history로 보존하며, 새 request는 새 execution-preparation row와 새 Agent proposal request를 만든다.
+2. Option A: 값 조정 재실행은 같은 `model_param_proposal_id` 재확정으로 `confirmation_parameters`를 갱신한다(최신 스냅샷만 유지). 변경 없음 재실행은 재확정 없이 기존 confirmed 값을 재사용한다. Agent 확정 API가 이미 `CONFIRMED`인 proposal의 재확정을 허용하도록 Agent가 수정 확정했다(2026-07-09 회신) → Option A 전제 충족. 과거 실행별 확정값 복원이 요구되면 `tmd_mi_model_execpreph`에 실행별 confirmed snapshot JSON 추가를 fallback으로 검토한다.
 
 ## 12. Exit Criteria / Handoff
 
 - mock API contract drafting: ready
-- real DB implementation: ready by slice. Agent read/callback/orchestration 구현은 착수 가능하고, runtime 배포는 Agent/Backend 물리 토폴로지 pre-check와 `tmd_mi_model_execpreph` DBA DDL 적용 이후 가능하다. Excel merge/dispatch 구현은 workbook location/version 및 payload sizing 확정이 필요하다.
+- real DB implementation: ready by slice. Agent read/callback/orchestration 구현은 착수 가능하고, runtime 배포 전에는 Agent proposal table visibility/권한/type 검증과 `tmd_mi_model_execpreph` entity/index/constraint validate를 수행한다. Excel merge/dispatch 구현은 workbook location/version 및 payload sizing 확정이 필요하다.
 - `backend-feature-spec` handoff:
   - endpoint family, DTO, callback, SSE, final execution request를 고정한다.
 - `erd-change-review` handoff:
@@ -419,3 +437,4 @@ Resolved and no longer P0: callback authentication, Backend read permission, Age
 - frontend/backend endpoint 계약은 feature spec을 따른다.
 - Agent Notion과 Agent DB 설계 문서는 source evidence다. Agent physical schema는 정정된 canonical DDL로, Backend physical schema는 별도 Backend DDL draft로 승격해야 한다.
 - P0 질문은 Agent 연동 없는 frontend mock 구현을 막지 않지만 real DB/Agent/Excel integration을 막는다.
+- 2026-07-09 sync note: Scenario 기준 current-state 조회 business 우선순위를 추가했다. API field와 enum은 feature spec이 canonical source다.

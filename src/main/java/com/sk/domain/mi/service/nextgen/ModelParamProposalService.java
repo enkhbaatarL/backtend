@@ -1,5 +1,6 @@
 package com.sk.domain.mi.service.nextgen;
 
+import com.sk.domain.mi.dto.response.nextgen.CurrentModelParamProposalRes;
 import com.sk.domain.mi.dto.response.nextgen.ModelExecutionOptionsRes;
 import com.sk.domain.mi.dto.response.nextgen.ModelParamProposalAcceptRes;
 import com.sk.domain.mi.dto.response.nextgen.ModelParamProposalRes;
@@ -12,6 +13,8 @@ public interface ModelParamProposalService {
     ModelExecutionOptionsRes getModelExecutionOptions(Long scenarioId);
 
     ModelParamProposalAcceptRes createProposal(Long scenarioId);
+
+    CurrentModelParamProposalRes getCurrentProposal(Long scenarioId);
 
     ModelParamProposalRes getProposal(Long scenarioId, Long modelParamProposalId);
 
