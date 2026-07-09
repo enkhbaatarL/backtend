@@ -15,6 +15,8 @@ public interface ModelExecutionPreparationRepository extends JpaRepository<Model
 
     Optional<ModelExecutionPreparation> findByScenarioIdAndAgentProposalIdAndIsDeletedFalse(Long scenarioId, Long agentProposalId);
 
+    Optional<ModelExecutionPreparation> findFirstByScenarioIdAndIsDeletedFalseOrderByExecPrepIdDesc(Long scenarioId);
+
     @Query("""
         SELECT p
           FROM ModelExecutionPreparation p

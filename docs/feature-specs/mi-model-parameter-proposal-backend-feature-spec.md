@@ -6,7 +6,7 @@
 - status: Review
 - owner: BE (platform)
 - created at: 2026-07-03
-- updated at: 2026-07-08
+- updated at: 2026-07-09
 - canonical for: frontend-facing API contract, Backend callback endpoint/minimum compatibility contract, proposed Agent integration questions
 - canonical design reference: `docs/design-docs/gas/mi-model-parameter-proposal-design.md`
 - physical schema reference: `docs/design-docs/gas/mi-model-param-proposal-execprep-erd-ddl-draft.md`
@@ -20,11 +20,11 @@
   - `docs/design-docs/gas/mi-model-parameter-proposal-design.md`
   - `docs/conventions/source-of-truth-governance.md`
 - supersedes: 없음
-- last synced: 2026-07-08
+- last synced: 2026-07-09
 - open questions: 13절 참조
 - integration model: callback = 완료 신호. Backend가 Agent proposal 테이블을 read-only 직접 조회해 결과 서빙(CAS/hash/snapshot 없음). 공유 DB read 및 read 권한은 확정(조회 가능). callback path `scenarioId`는 proposal identity가 아니라 현재 in-flight execution-preparation을 찾는 scope key다.
 - callback 인증: 확정. 기존 시나리오 설계 콜백과 동일한 Resource Server JWT 체인(`CustomJwtDecoder` HS256 self-issued + `@RequiredPermissionRules(Role.SYSTEM ...)`) 재사용. Agent는 Backend 토큰 발급 API와 발급 인풋 2종을 전달받아 JWT를 자체 발급·갱신한다.
-- implementation readiness: frontend mock ready; real Agent integration은 proposal read 계약 확정(DB DDL 수령)으로 착수 가능. 잔여는 스키마 세부(물리 토폴로지)·dimension_map ERD 정정으로 read 엔티티 착수를 막지 않음(인증·공유 read·콜백 계약·write-then-callback 순서·wrapper 셰이프·재시도 정책·proposal DDL 확정)
+- implementation readiness: frontend mock ready; real Agent integration은 proposal read 계약 확정(DB DDL 수령)으로 착수 가능. Agent proposal table은 기존 Backend DB/schema에 추가되는 직접 read 대상이며 별도 view/synonym 경로는 필요 없다. 잔여는 runtime table visibility/권한/type 검증과 dimension_map ERD 정정으로 read 엔티티 착수를 막지 않음(인증·공유 read·콜백 계약·write-then-callback 순서·wrapper 셰이프·재시도 정책·proposal DDL 확정)
 
 ## 2. Feature Goal
 
@@ -33,7 +33,7 @@ Frontend가 기존 Scenario의 기반 Event에 따라 두 가지 수급모델 �
 ### A. 파라미터 제안 대상 Event 기반 Scenario
 
 1. 파라미터 제안 생성 접수
-2. SSE 완료 신호 수신 후 상태/결과 재조회
+2. 팝업 진입 또는 SSE 완료 신호 수신 후 Scenario 기준 current-state 조회
 3. `values[].proposedValue`만 표에 표시하고 필요 시 수정
 4. 사용자 확정값으로 Agent confirmation
 5. Backend 원본 Excel 3개 생성·병합
@@ -116,6 +116,7 @@ Agent `status`는 proposal 계산 상태이고 `callback_status`는 Agent→Back
 | `GET` | `/api/v1/mi/next-gen/scenario-groups/{scenarioGroupId}/graph` | 그래프 데이터와 파라미터 제안 대상 여부 조회 |
 | `GET` | `/api/v1/mi/next-gen/scenarios/{scenarioId}/model-execution-options` | 기반 Event에 따른 실행 입력 mode 조회 |
 | `POST` | `/api/v1/mi/next-gen/scenarios/{scenarioId}/model-param-proposals` | Agent proposal 생성 접수 |
+| `GET` | `/api/v1/mi/next-gen/scenarios/{scenarioId}/model-param-proposals` | 팝업 진입용 Scenario 기준 현재 파라미터 제안/확정/실행 상태 조회 |
 | `GET` | `/api/v1/mi/next-gen/scenarios/{scenarioId}/model-param-proposals/{modelParamProposalId}` | 상태 및 proposal 결과 조회 |
 | `GET` | `/api/v1/mi/next-gen/scenarios/{scenarioId}/model-param-proposals/stream` | proposal 완료/실패 SSE 신호 구독 |
 | `POST` | `/api/v1/mi/next-gen/scenarios/{scenarioId}/model-executions` (`application/json`) | 제안 대상: 확정값으로 Excel 생성 후 실행 접수 |
@@ -201,6 +202,7 @@ callback path는 `{scenarioId}`를 경로에 둔다. `scenarioId`는 proposal id
 - Agent 응답 처리로 이미 저장된 terminal 상태를 `PROCESSING`으로 되돌리지 않는다. 응답 직전 현재 persisted status를 다시 읽어 FE에 반환한다.
 - Agent 요청 timeout 시 late callback 가능성이 있으므로 execution-preparation을 즉시 삭제하지 않고 callback/Agent 테이블 재조회로 수렴시킨다.
 - Agent 요청 결과가 “Agent 접수 실패”인지 “Agent는 접수했지만 응답만 유실”인지 불명확하면 `REQUEST_FAILED`로 닫지 않는다. 해당 row를 `REQUESTING` in-flight 상태로 유지해 `ux02(actv_scnr_id)`가 새 preparation 생성을 막게 하고, callback/read-reconcile/timeout 복구가 최종 outcome을 결정한다.
+- Agent proposal 생성이 명시적으로 실패해 최신 execution-preparation이 `REQUEST_FAILED`이거나 Agent status가 `FAILED`로 수렴한 경우, FE는 다시 `POST /model-param-proposals`를 호출할 수 있다. Backend는 실패 row를 재사용하지 않고 새 `tmd_mi_model_execpreph` row를 `REQUESTING`으로 생성한 뒤 새 Agent proposal 요청을 보낸다. 실패 row는 audit/history로 보존하며 in-flight guard 대상이 아니다.
 - Backend→FE HTTP status: `200 OK`
 
 Response data:
@@ -279,6 +281,176 @@ Flat parameter array validation/rendering:
 - phase 1 표는 long-format이다. matrix wide-format pivot은 본 계약 범위에 포함하지 않는다.
 
 **데이터 소스:** `status`/`parameters`/`failureReason`는 Backend가 **Agent proposal 테이블(`tmm_mi_model_param_proposal_m`)을 read-only로 직접 조회**해 서빙한다(callback payload를 저장·재생하지 않음). 컬럼 매핑(2026-07-07 DB DDL 확정): `status`←`status`(`PROCESSING|PROPOSED|CONFIRMED|FAILED`), `parameters`←`proposal_parameters`(또는 `CONFIRMED/EXECUTING`에서 `confirmation_parameters`), `failureReason`←`error_message`(+구조화 `error_code` 사용 가능), `completedAt`←`proposal_completed_dtm`, confirmation 시각←`confirmed_dtm`. `callback_status`/`callback_sent_dtm`은 Agent 전송 상태로 무시한다. `CONFIRMING/EXECUTING` 등 Backend 전용 상태는 Backend orchestration 행에서 덮어 얹는다. 상세는 Domain Design 3.1/3.5 참조.
+
+### 5.2.1 Scenario 기준 현재 파라미터 상태 조회
+
+`GET /api/v1/mi/next-gen/scenarios/{scenarioId}/model-param-proposals`
+
+파라미터 제안 팝업 진입 시 FE가 `scenarioId`만으로 현재 표시해야 할 상태와 파라미터 데이터를 결정하기 위한 read-only 조회다. 이 API는 생성 요청을 만들거나 Agent를 호출하지 않는다.
+
+조회 우선순위:
+
+1. Scenario의 최신 non-deleted `tmd_mi_model_execpreph` row를 찾는다. 정렬 기준은 `exec_prep_id DESC` 또는 동등한 생성시각 최신순이다.
+2. 최신 execution-preparation row가 없으면 `NOT_REQUESTED`와 `parameters=[]`를 반환한다.
+3. 최신 row가 `REQUESTING`이거나 Agent row가 아직 없거나 Agent status가 `PROCESSING`이면 `GENERATING`을 반환한다.
+4. 최신 row가 `PROPOSAL_PENDING`이고 Agent status가 `PROPOSED`이면 `PROPOSAL_READY`와 Agent `proposal_parameters`를 반환한다.
+5. 최신 row가 `CONFIRMING` 또는 `PREPARING_EXECUTION`이거나 Agent status가 `CONFIRMED`인데 아직 `case_id`가 없으면 `CONFIRMED_PENDING_EXECUTION`과 Agent `confirmation_parameters`를 반환한다.
+6. 최신 row에 `case_id`가 있고 연결된 Scenario Case/Run이 `RUNNING`이면 `EXECUTING`과 Agent `confirmation_parameters`를 반환한다.
+7. 최신 row에 `case_id`가 있고 연결된 Scenario Case/Run이 `COMPLETED`이면 `EXECUTED_CONFIRMED`와 Agent `confirmation_parameters`를 반환한다. 이것이 FE가 "수급모델 실행까지 성공한 상태"에서 보여줄 확정버전 파라미터다.
+8. 최신 row 또는 Agent row가 실패 상태면 `PROPOSAL_FAILED` 또는 `EXECUTION_FAILED`를 반환하고 `failureReason`을 채운다. `EXECUTION_FAILED`에서 Agent `confirmation_parameters`가 있으면 함께 반환할 수 있다. 연결 Run이 `FAILED`이면 dispatch 이후 모델 실행 실패로 보고 `EXECUTION_FAILED`와 `modelExecutionStatus=FAILED`를 반환한다.
+
+상태 매핑:
+
+| 기준 | 조건 | `currentState` | `parameterSource` | 비고 |
+|---|---|---|---|---|
+| execution-preparation | 최신 non-deleted row 없음 | `NOT_REQUESTED` | `NONE` | `parameters=[]` |
+| Backend status / Agent row | `REQUESTING` 또는 Agent row 없음 또는 Agent `PROCESSING` | `GENERATING` | `NONE` | `parameters=[]` |
+| Agent status | Agent `PROPOSED` | `PROPOSAL_READY` | `PROPOSAL_PARAMETERS` | Agent `proposal_parameters` |
+| Backend status / Agent status | Backend `CONFIRMING`/`PREPARING_EXECUTION` 또는 Agent `CONFIRMED`, `case_id` 없음 | `CONFIRMED_PENDING_EXECUTION` | `CONFIRMATION_PARAMETERS` | Agent `confirmation_parameters` |
+| Case/Run status | latest run `RUNNING` | `EXECUTING` | `CONFIRMATION_PARAMETERS` | `modelExecutionStatus=RUNNING` |
+| Case/Run status | latest run `COMPLETED` | `EXECUTED_CONFIRMED` | `CONFIRMATION_PARAMETERS` | `modelExecutionStatus=COMPLETED` |
+| Case/Run status | latest run `FAILED` | `EXECUTION_FAILED` | `CONFIRMATION_PARAMETERS` | dispatch 이후 모델 실행 실패. `modelExecutionStatus=FAILED` |
+| Backend status | `REQUEST_FAILED` | `PROPOSAL_FAILED` | `NONE` | Agent proposal 생성/수렴 실패 |
+| Agent status | Agent `FAILED` | `PROPOSAL_FAILED` | `NONE` | Agent proposal 실패 |
+| Backend status | `EXECUTION_FAILED` | `EXECUTION_FAILED` | `CONFIRMATION_PARAMETERS` 가능 | confirmation/Excel/file/Case/dispatch 단계 실패. `modelExecutionStatus=null` |
+
+`modelExecutionStatus`는 기존 A11 model execution status vocabulary(`RUNNING|COMPLETED|FAILED`)를 재사용한다. `case_id`가 연결됐지만 Case/Run 정합이 깨진 경우에는 8절의 데이터 불일치 오류로 처리한다. `EXECUTING` 전이는 Case INSERT와 `execprep.case_id` 저장을 한 트랜잭션에서 commit한 뒤 dispatch하므로(Domain Design 규칙 29), "Case는 존재하는데 `case_id=null`"인 상태는 영속화되지 않는다. 따라서 A4a는 이 window를 판정 대상으로 두지 않는다.
+
+동시성/신선도 규칙:
+
+- 최신 proposal/execution-preparation row가 과거 실행보다 우선한다. 즉 사용자가 새 파라미터 제안을 시작하면 이전 실행의 확정 파라미터보다 새 row의 `GENERATING`/`PROPOSAL_READY`/`CONFIRMED_PENDING_EXECUTION` 상태가 먼저 반환된다.
+- SSE는 완료 신호일 뿐이다. FE는 SSE 수신 직후 이 API를 재조회해 화면을 갱신할 수 있다.
+- 동일 Agent proposal로 값 조정 재실행(Option A)을 수행하면 Agent `confirmation_parameters`가 최신 확정값으로 갱신된다. 실행별 과거 확정값의 정확한 복원이 필요하면 별도 실행별 snapshot ERD 변경이 필요하며, 이 API는 현재 저장 정책에서 조회 가능한 최신 current-state를 반환한다.
+- `FILE_UPLOAD` mode Scenario에서 호출하면 `409 BIZ_RULE_VIOLATION`으로 거절한다. FE는 5.0 options API로 입력 mode를 먼저 확인할 수 있다.
+
+Response data examples:
+
+생성중:
+
+```json
+{
+  "scenarioId": 309,
+  "currentState": "GENERATING",
+  "parameterSource": "NONE",
+  "execPrepId": 51001,
+  "modelParamProposalId": 10001,
+  "scenarioGroupId": 61,
+  "eventId": 1378,
+  "caseId": null,
+  "runId": null,
+  "modelExecutionStatus": null,
+  "parameters": [],
+  "failureReason": null,
+  "requestedAt": "2026-07-03T15:00:00+09:00",
+  "completedAt": null,
+  "confirmedAt": null
+}
+```
+
+생성완료 + 제안 파라미터:
+
+```json
+{
+  "scenarioId": 309,
+  "currentState": "PROPOSAL_READY",
+  "parameterSource": "PROPOSAL_PARAMETERS",
+  "execPrepId": 51001,
+  "modelParamProposalId": 10001,
+  "scenarioGroupId": 61,
+  "eventId": 1378,
+  "caseId": null,
+  "runId": null,
+  "modelExecutionStatus": null,
+  "parameters": [
+    {
+      "parameterName": "Temperature",
+      "modelTarget": {
+        "modelFile": "DEMAND",
+        "modelSheet": "WeatherAdjustment",
+        "tableName": "Table2",
+        "valueFieldNames": ["Temperature"],
+        "slotAxesFieldNames": ["Country", "Year", "Month"]
+      },
+      "rationale": "한파 강도가 기온 하락으로 직접 표현되므로 Temperature 조정 대상입니다.",
+      "values": [
+        {
+          "Country": "Germany",
+          "Year": 2027,
+          "Month": 1,
+          "basecaseValue": 1.2,
+          "proposedValue": -3.8,
+          "rationale": "Germany 2027년 1월 한파 영향을 반영해 제안값을 산정했습니다."
+        }
+      ]
+    }
+  ],
+  "failureReason": null,
+  "requestedAt": "2026-07-03T15:00:00+09:00",
+  "completedAt": "2026-07-03T15:00:20+09:00",
+  "confirmedAt": null
+}
+```
+
+수급모델 실행까지 접수/완료된 확정 파라미터:
+
+```json
+{
+  "scenarioId": 309,
+  "currentState": "EXECUTED_CONFIRMED",
+  "parameterSource": "CONFIRMATION_PARAMETERS",
+  "execPrepId": 51002,
+  "modelParamProposalId": 10001,
+  "scenarioGroupId": 61,
+  "eventId": 1378,
+  "caseId": 88001,
+  "runId": "20260709_153000_abcd",
+  "modelExecutionStatus": "COMPLETED",
+  "parameters": [
+    {
+      "parameterName": "Temperature",
+      "modelTarget": {
+        "modelFile": "DEMAND",
+        "modelSheet": "WeatherAdjustment",
+        "tableName": "Table2",
+        "valueFieldNames": ["Temperature"],
+        "slotAxesFieldNames": ["Country", "Year", "Month"]
+      },
+      "rationale": "한파 강도가 기온 하락으로 직접 표현되므로 Temperature 조정 대상입니다.",
+      "values": [
+        {
+          "Country": "Germany",
+          "Year": 2027,
+          "Month": 1,
+          "basecaseValue": 1.2,
+          "proposedValue": -3.5,
+          "rationale": "Germany 2027년 1월 한파 영향을 반영해 제안값을 산정했습니다."
+        }
+      ]
+    }
+  ],
+  "failureReason": null,
+  "requestedAt": "2026-07-03T15:00:00+09:00",
+  "completedAt": "2026-07-03T15:00:20+09:00",
+  "confirmedAt": "2026-07-03T15:01:00+09:00"
+}
+```
+
+`currentState`:
+
+- `NOT_REQUESTED`: 파라미터 제안 이력이 없음. `parameters=[]`
+- `GENERATING`: Agent proposal 생성 중. `parameters=[]`
+- `PROPOSAL_READY`: Agent proposal 생성 완료. `parameters`는 `proposal_parameters`
+- `CONFIRMED_PENDING_EXECUTION`: 사용자 확정 후 실행 Case 생성 전 또는 Excel 생성 중. `parameters`는 `confirmation_parameters`
+- `EXECUTING`: 수급모델 실행 접수 후 Case/Run이 `RUNNING`. `parameters`는 `confirmation_parameters`
+- `EXECUTED_CONFIRMED`: 최신 연결 Case/Run이 `COMPLETED`. `parameters`는 실행에 사용된 확정 파라미터 기준 `confirmation_parameters`
+- `PROPOSAL_FAILED`: proposal 생성 실패. `parameters=[]`
+- `EXECUTION_FAILED`: confirmation 이후 Excel/파일/Case/dispatch 실패 또는 dispatch 이후 모델 실행 실패. 가능한 경우 `confirmation_parameters`를 반환. `modelExecutionStatus=FAILED`이면 모델 실행 실패이고, `modelExecutionStatus=null`이면 Backend confirmation/Excel/file/Case/dispatch 단계 실패다.
+
+`parameterSource`:
+
+- `NONE`: 반환할 파라미터 없음
+- `PROPOSAL_PARAMETERS`: Agent `proposal_parameters` 반환
+- `CONFIRMATION_PARAMETERS`: Agent `confirmation_parameters` 반환
 
 ### 5.3 SSE
 
@@ -450,11 +622,11 @@ Request:
 2. Agent proposal 테이블의 `proposal_parameters` array와 request `confirmationParameters` 구조 비교
 3. 변경 허용 필드가 `values[].proposedValue`뿐인지 검증
 4. 같은 Scenario에 `RUNNING` Case가 없는지 기존 active-run guard로 확인
-5. Agent proposal 상태를 재조회한다. `PROPOSED`면 Agent confirmation API를 호출한다. `CONFIRMED`이고 request `confirmationParameters`가 Agent `confirmation_parameters`와 동일하면 호출을 생략한다. `CONFIRMED`이지만 값이 다르면 같은 proposal 재확정(Option A)을 위해 Agent confirmation API 재호출이 필요하며, Agent가 CONFIRMED 상태 재확정을 허용하지 않는 환경에서는 `409 BIZ_RULE_VIOLATION`으로 거절하고 새 proposal 생성을 요구한다.
+5. Agent proposal 상태를 재조회한다. `PROPOSED`면 Agent confirmation API를 호출한다. `CONFIRMED`이고 request `confirmationParameters`가 Agent `confirmation_parameters`와 동일하면 호출을 생략한다. `CONFIRMED`이지만 값이 다르면 같은 proposal 재확정(Option A)을 위해 Agent confirmation API를 재호출해 Agent `confirmation_parameters`를 최신 확정값으로 갱신한다.
 6. Agent `CONFIRMED` 응답 확인
 7. 협의된 원본 `DEMAND`/`SUPPLY`/`TRADE` 파일 3개 로드
 8. 확정값을 지정 file/sheet/table/slot에 merge
-9. 기존 Scenario Case/Run 생성, storage upload, Kubernetes Job dispatch 재사용. 실행 1회마다 새 `case_id`를 생성한다
+9. 기존 Scenario Case/Run 생성, storage upload, Kubernetes Job dispatch 재사용. 실행 1회마다 새 `case_id`를 생성한다. Case INSERT·`tcm_filel` 기록·`execprep.case_id` 저장은 한 트랜잭션에서 commit하고 K8s dispatch는 commit 이후에 수행한다(Domain Design 규칙 29). commit 이후 dispatch 실패는 Case를 만든 채 `EXECUTION_FAILED`로 처리한다
 10. 기존 `ModelExecutionAcceptRes` 반환
 
 **재시도·멱등 (P0 resolved):** callback과 동일한 monotonic read-back 패턴으로 confirmation을 취급한다.
@@ -462,9 +634,9 @@ Request:
 - 재시도 단위는 **실행 POST 전체 재요청**이다(부분 resume 없음).
 - **동일값 재시도에 대해서는 Agent confirmation 멱등성을 계약 전제로 요구하지 않는다.** Backend가 호출 직전 proposal 상태를 재조회(5번)하고 이미 `CONFIRMED`이며 request 값이 저장값과 같으면 confirmation을 생략하므로, 재시도·응답 유실(Agent는 CONFIRMED, Backend는 응답 미수신) 상황에서도 이중 confirm이 발생하지 않는다. Agent가 추가로 confirmation을 멱등 처리하면 방어적 보너스이며 계약 전제는 아니다.
 - confirmation 성공 이후 단계(원본 로드·merge·dispatch) 실패는 Agent `CONFIRMED`를 롤백하지 않는다. 사용자가 실행 POST를 재요청하면 Backend는 `CONFIRMED`를 확인하고 confirmation을 건너뛴 뒤 Excel merge·Case/Run·dispatch를 다시 수행한다.
-- 재요청의 `confirmationParameters`가 이미 저장된 `confirmation_parameters`와 동일하면 기존 confirmed 값을 재사용한다. 다르면 같은 `modelParamProposalId` 재확정(Option A)으로 Agent `confirmation_parameters`를 갱신한 뒤 새 `tmd_mi_model_execpreph` row와 새 `case_id`로 실행한다. 단, Agent가 CONFIRMED 상태 재확정을 허용하지 않는 배포에서는 값 변경 재실행을 거절하고 새 proposal 생성을 요구한다.
+- 재요청의 `confirmationParameters`가 이미 저장된 `confirmation_parameters`와 동일하면 기존 confirmed 값을 재사용한다. 다르면 같은 `modelParamProposalId` 재확정(Option A)으로 Agent `confirmation_parameters`를 갱신한 뒤 새 `tmd_mi_model_execpreph` row와 새 `case_id`로 실행한다.
 - Case/Run 중복 가드는 **Scenario 기준 RUNNING 최대 1개**만 유지한다. 동일 proposal request에서 여러 번 실행 접수할 수 있으며, 각 접수는 새 `case_id`를 만든다. 이미 RUNNING Case가 있으면 409로 차단한다.
-- 잔여 가정: Agent가 `CONFIRMED` 시점에 `confirmation_parameters`를 저장한다(Agent DB 설계 문서에 명시됨 — 재요청/재확정 시 재검증 근거). CONFIRMED 상태 재확정 허용 여부는 Agent 계약 확인이 필요하다.
+- 확정 전제: Agent가 `CONFIRMED` 시점에 `confirmation_parameters`를 저장하고, 이미 `CONFIRMED`인 proposal의 재확정을 허용한다(Option A). 재확정 후 Agent `confirmation_parameters`는 최신 확정값으로 갱신된다.
 
 FE는 GET으로 받은 proposal array를 local form state로 유지한다. 실행 요청 시 각 row의 현재 `proposedValue`를 `confirmationParameters`에 담는다. 사용자가 수정한 row는 수정값을, 수정하지 않은 row는 Agent 생성값을 그대로 보낸다. Backend는 immutable field를 검증한 뒤 동일 confirmation array를 Agent confirmation API에 전달한다.
 
@@ -659,6 +831,23 @@ ModelParamProposalRes
   OffsetDateTime requestedAt
   OffsetDateTime completedAt
 
+CurrentModelParamProposalRes
+  Long scenarioId
+  CurrentModelParamProposalState currentState
+  ModelParamParameterSource parameterSource
+  Long execPrepId                       nullable
+  Long modelParamProposalId             nullable
+  Long scenarioGroupId                  nullable
+  Long eventId                          nullable
+  Long caseId                           nullable
+  String runId                          nullable, 연결 Case의 latest run id
+  String modelExecutionStatus           nullable, RUNNING|COMPLETED|FAILED
+  List<ModelParamPayloadItem> parameters
+  String failureReason                  nullable
+  OffsetDateTime requestedAt            nullable
+  OffsetDateTime completedAt            nullable
+  OffsetDateTime confirmedAt            nullable
+
 LatestModelParamProposalParametersRes
   Long scenarioId
   Long caseId
@@ -693,6 +882,25 @@ Status enum 후보:
 
 FE가 반드시 처리해야 하는 최소 상태는 `PROCESSING`, `PROPOSED`, `FAILED`, `EXECUTING`이다.
 
+`ModelParamProposalStatus`는 known `modelParamProposalId` 기준 A4 상태/결과 조회용 proposal-scope enum이고, `CurrentModelParamProposalState`는 `scenarioId` 기준 A4a 팝업 표시상태 projection enum이다. 두 enum은 일부 이름을 공유하지만 같은 lifecycle 축이 아니다.
+
+`CurrentModelParamProposalState`:
+
+- `NOT_REQUESTED`
+- `GENERATING`
+- `PROPOSAL_READY`
+- `CONFIRMED_PENDING_EXECUTION`
+- `EXECUTING`
+- `EXECUTED_CONFIRMED`
+- `PROPOSAL_FAILED`
+- `EXECUTION_FAILED`
+
+`ModelParamParameterSource`:
+
+- `NONE`
+- `PROPOSAL_PARAMETERS`
+- `CONFIRMATION_PARAMETERS`
+
 ## 8. Representative Error Scenarios
 
 | 상황 | HTTP | ResultCode 후보 | 처리 |
@@ -702,6 +910,7 @@ FE가 반드시 처리해야 하는 최소 상태는 `PROCESSING`, `PROPOSED`, `
 | `FILE_UPLOAD` mode에서 proposal 요청 | 409 | `BIZ_RULE_VIOLATION` | workflow 불일치 거절 |
 | `FILE_UPLOAD` mode에서 JSON execution | 409 | `BIZ_RULE_VIOLATION` | workflow 불일치 거절 |
 | `PARAMETER_PROPOSAL` mode에서 multipart execution | 409 | `BIZ_RULE_VIOLATION` | workflow 우회 거절 |
+| `FILE_UPLOAD` mode에서 current-state proposal 조회 | 409 | `BIZ_RULE_VIOLATION` | workflow 불일치 거절 |
 | `PROCESSING` proposal 존재 | 409 | `RSC_ALREADY_EXISTS` | 중복 생성 차단 |
 | Scenario model execution `RUNNING` | 409 | `RSC_ALREADY_EXISTS` | proposal/실행 차단 |
 | Agent proposal 요청 timeout | 504 | `API_TIMEOUT` | local request 생성 시 보상 필요 |
@@ -720,10 +929,13 @@ FE가 반드시 처리해야 하는 최소 상태는 `PROCESSING`, `PROPOSED`, `
 | file/sheet/table/slot mapping 실패 | 422 | `BIZ_RULE_VIOLATION` | 실행 생성하지 않음 |
 | 동일 proposal로 실행 재요청 | 200/202 기존 실행 접수 응답 | 기존 정책 | RUNNING이 없으면 새 `case_id` 실행 접수 |
 | 같은 Scenario에 RUNNING 실행 존재 | 409 | `RSC_ALREADY_EXISTS` | 기존 `ScenarioCase.actv_scnr_id` guard |
+| current-state 조회 시 Agent parameter JSON 파싱 실패 | 502 | `API_RESPONSE_ERROR` | Agent proposal table payload 불량으로 로깅 후 실패 |
+| current-state 조회 시 연결 `case_id`는 있으나 Case/Run 정합이 깨짐 | 409 | `BIZ_RULE_VIOLATION` | 데이터 불일치 상태로 로깅하고 FE에는 복구 불가 상태 반환 |
 
 ## 9. Swagger Annotation Recommendation
 
 - proposal request summary: `MI 수급모델 파라미터 제안 생성 접수 API`
+- proposal current-state query summary: `MI 수급모델 파라미터 현재 상태 조회 API`
 - proposal query summary: `MI 수급모델 파라미터 제안 상태/결과 조회 API`
 - callback summary: `[Agent 콜백] MI 수급모델 파라미터 제안 완료 API`
 - JSON execution summary: `확정 파라미터 기반 MI 수급모델 실행 접수 API`
@@ -738,7 +950,7 @@ FE가 반드시 처리해야 하는 최소 상태는 `PROCESSING`, `PROPOSED`, `
   - JSON seed + in-memory/Redis state 가능
   - Scenario별 `eventTypeL2Id` mock seed로 `inputMode`를 계산
 - real slice 권고:
-  - Agent proposal 테이블 read-only 직접 조회로 결과 서빙 (DDL/read 권한 확정, 동일 schema 배치 확인 필요)
+  - Agent proposal 테이블 read-only 직접 조회로 결과 서빙 (기존 Backend DB/schema에 Agent 테이블 추가, 별도 view/synonym 불필요, runtime table visibility/권한/type 확인 필요)
   - thin Backend execution-preparation persistence(`tmd_mi_model_execpreph`: 제안 기반 실행 준비 상태, Agent proposal ID, 실행 Case 연결; proposal 데이터·hash 없음)
   - 실제 수급모델 실행 master/history는 기존 `tmd_mdl_scnrcasem` / `tmd_mdl_scnrcaseh`가 계속 source of truth다.
   - `tmd_mi_model_execpreph` row 1건은 input Excel 3개 세트 생성과 수급모델 실행 접수 1회를 나타낸다. 같은 `scnr_id + agnt_prpsl_id`로 여러 번 실행할 수 있으므로 매 실행마다 새 `tmd_mi_model_execpreph` row와 새 `case_id`를 만든다.
@@ -755,6 +967,7 @@ FE가 반드시 처리해야 하는 최소 상태는 `PROCESSING`, `PROPOSED`, `
 ## 11. Recommended Data Access Approach
 
 - proposal state/snapshot: JPA
+- current-state 조회: 최신 execution-preparation + Agent proposal read + Case/Run 상태 조합. JPA repository projection으로 시작하고 조인이 복잡해지면 QueryDSL로 승격
 - callback 처리: Agent 테이블 재조회 → Backend orchestration 행 monotonic update + transaction (CAS 없음)
 - callback SSE publish: transaction after-commit event
 - latest/active 조회가 복잡해지면 repository projection 또는 QueryDSL
@@ -765,6 +978,7 @@ FE가 반드시 처리해야 하는 최소 상태는 `PROCESSING`, `PROPOSED`, `
 
 - controller
   - proposal frontend controller
+  - proposal current-state GET mapping 추가
   - Agent callback controller
   - JSON model execution mapping 추가
 - security
@@ -773,6 +987,7 @@ FE가 반드시 처리해야 하는 최소 상태는 `PROCESSING`, `PROPOSED`, `
   - `ResourceServerConfig.tokenByPassSecurityFilterChain` matcher에 callback path를 추가하지 않는다.
 - service
   - `ModelParamProposalService`
+  - current-state 조회 service method
   - `ModelParamProposalCallbackService`
   - `ModelInputWorkbookProvider`
   - `ModelParamWorkbookMergeService`
@@ -781,6 +996,7 @@ FE가 반드시 처리해야 하는 최소 상태는 `PROCESSING`, `PROPOSED`, `
   - proposal request/confirmation method를 Agent HTTP interface에 추가
 - DTO/enums
   - proposal/confirmation/callback/SSE/status
+  - `CurrentModelParamProposalRes`, `CurrentModelParamProposalState`, `ModelParamParameterSource`
 - persistence
   - proposal entity/repository 또는 mock store
 - resources
@@ -799,10 +1015,10 @@ FE가 반드시 처리해야 하는 최소 상태는 `PROCESSING`, `PROPOSED`, `
 
 ### P0
 
-1. proposal table read 계약은 확정(2026-07-07 DB DDL 수령, 컬럼 매핑 5.2 반영). **잔여**: (a) Agent/Backend 물리 토폴로지(동일 schema/instance vs view/synonym), (b) dimension_map ERD blocker #2(nullable UNIQUE)/#3(조건부 CHECK) 정정 — Backend 런타임 미의존, `erd-change-review`로 분리 처리.
+1. proposal table read 계약은 확정(2026-07-07 DB DDL 수령, 컬럼 매핑 5.2 반영). Agent proposal table은 기존 Backend DB/schema에 추가되는 직접 read 대상이며 별도 view/synonym 경로는 사용하지 않는다. **잔여**: (a) runtime table visibility/SELECT 권한/key type 정합 확인, (b) dimension_map ERD blocker #2(nullable UNIQUE)/#3(조건부 CHECK) 정정 — Backend 런타임 미의존, `erd-change-review`로 분리 처리.
 2. Agent callback/confirmation payload에 master의 `model_table`을 `tableName`으로 반영하는 배포 시점(required shape는 확정).
 3. 원본 Excel 3개 위치와 version 선택 규칙.
-4. Backend execution-preparation 저장안은 채택됐고 ERD/DDL draft는 작성·검토됨. 잔여: `tmd_mi_model_execpreph` table/subject DBA 최종 승인 및 DDL 적용. application 구현은 착수 가능하지만, `ddl-auto=validate`가 적용되는 real runtime 배포 전에는 DBA DDL 적용이 선행돼야 한다.
+4. (resolved) Backend execution-preparation 저장안은 채택됐고 `tmd_mi_model_execpreph` DBA DDL은 적용 완료됐다. application 구현은 착수 가능하며, real runtime 배포 전에는 entity mapping 기준 `ddl-auto=validate` 및 핵심 index/constraint 확인만 수행한다.
 5. `basecaseValue`/`proposedValue`의 null/precision/최대·최소 범위.
 6. parameter/value row 최대 건수와 JSON column size 한도(컬럼 타입은 native `JSON`+`JSON_TYPE=ARRAY` CHECK로 확정).
 7. callback 신호 유실 시 폴백 폴링 interval/timeout.
@@ -810,9 +1026,14 @@ FE가 반드시 처리해야 하는 최소 상태는 `PROCESSING`, `PROPOSED`, `
 
 ### P1
 
-1. proposal 생성 실패 후 재제안 허용 여부.
-2. Agent confirmation API가 이미 `CONFIRMED`인 proposal의 재확정을 허용하는지 여부. 허용하면 같은 Agent proposal로 값 변경 재실행을 지원하고 Agent `confirmation_parameters` 최신 snapshot을 갱신한다. 허용하지 않으면 값 변경 재실행은 새 proposal 생성으로만 지원한다. 과거 실행별 confirmed parameter 복원이 필요하면 `tmd_mi_model_execpreph`에 실행별 confirmed parameter JSON snapshot을 추가해야 한다.
-3. SSE endpoint를 scenario scope로 둘지 기존 scenario-group SSE channel에 event type을 추가할지.
+- 없음. 구현 전 확정이 필요한 P1 항목은 모두 resolved 또는 P0/P1 외 runtime verification으로 이동했다.
+
+### Resolved Decisions
+
+1. Option A 재확정: Agent confirmation API는 이미 `CONFIRMED`인 proposal의 재확정을 허용한다. 같은 Agent proposal로 값 변경 재실행을 지원하고 Agent `confirmation_parameters` 최신 snapshot을 갱신한다. 과거 실행별 confirmed parameter 복원이 필요하면 `tmd_mi_model_execpreph`에 실행별 confirmed parameter JSON snapshot을 추가해야 한다.
+2. SSE scope: endpoint는 scenario scope 신규 채널로 둔다. `GET /api/v1/mi/next-gen/scenarios/{scenarioId}/model-param-proposals/stream`을 사용하며 기존 scenario-group SSE channel에 event type을 추가하지 않는다.
+3. Agent proposal read path: Agent proposal table은 기존 Backend DB/schema에 추가된 테이블을 직접 read한다. 별도 view/synonym 또는 우회 경로는 만들지 않는다.
+4. Proposal generation retry: proposal 생성이 `REQUEST_FAILED` 또는 Agent `FAILED`로 terminal 수렴한 뒤에는 새 proposal 생성 요청을 허용한다. 실패 row는 재사용하지 않고 audit/history로 보존하며, 새 요청은 새 execution-preparation row와 새 Agent proposal request를 만든다.
 
 ## 14. Change Log / Sync Note
 
@@ -840,27 +1061,32 @@ FE가 반드시 처리해야 하는 최소 상태는 `PROCESSING`, `PROPOSED`, `
 - 2026-07-07: FE 표에서 `basecaseValue` 컬럼을 제거하고 `% {formatted valueFieldName}` 한 개에 `proposedValue`만 표시하도록 확정. 미수정 시 Agent 생성값, 수정 시 사용자 변경값을 전체 confirmation array의 `proposedValue`로 Agent confirmation API에 전달하도록 명시.
 - 2026-07-07: **P0 open question 1(write-then-callback 순서)·2(callback wrapper 셰이프)를 Agent 답변으로 확정하고 Resolved로 이동.** 순서는 Agent가 proposal 테이블 commit 이후 콜백 발행함을 명시 확정, wrapper는 `{status, message, data}`로 Agent 규약 1.2.2와 일치(실패 시 `data` null/빈 object 생략 허용, 식별자 4종+`data.status`는 `data` 내부). 5.4.3 Resolved 갱신, 남은 P0에서 두 항목 제외·재번호(잔여 1~9). implementation readiness/exit criteria의 write-then-callback 선행조건 제거.
 - 2026-07-07: **P0 confirmation 재시도 정책 확정·Resolved 이동.** 재시도 단위는 실행 POST 전체 재요청. Backend가 confirmation 호출 직전 proposal 상태를 재조회해 `PROPOSED`일 때만 호출하고 `CONFIRMED`면 생략하는 monotonic read-back으로 이중 confirm을 막으므로 **Agent confirmation 멱등성을 계약 전제로 요구하지 않는다**(있으면 방어적 보너스). 후속 단계 실패는 CONFIRMED 롤백 없이 재요청으로 merge·dispatch 재수행, 재요청 `confirmationParameters`는 저장값과 동일 필수(다르면 409). 당시 Case/Run 중복 가드는 live 실행 최대 1개로 정리했으나, 2026-07-08 multi-execution decision으로 “Scenario 기준 RUNNING 최대 1개, 실행 1회마다 새 case_id”로 정정됨. 5.5 처리 순서 5번을 read-back guard로 정정. 남은 P0 재번호(잔여 1~8).
-- 2026-07-07: **Agent proposal table DB DDL 수령·proposal read 계약 확정**(`docs/design-docs/gas/mi-agent-param-proposal.md` 3절, ERD blocker #1 해소). 컬럼 매핑을 5.2에 확정 — `completedAt`←`proposal_completed_dtm`, `failureReason`←`error_message`(+`error_code`), `parameters`←`proposal_parameters`/`confirmation_parameters`(native `JSON`+`JSON_TYPE=ARRAY`), `status` CHECK로 4종 고정. `completedAt`/`error_code`가 Agent 스키마에 이미 존재함을 P0 8에 반영. **잔여**: `scenario_id` 유일성 부재(DB 미강제 → app 가드+`modelParamProposalId` 교차검증으로 correlation, race 방지 partial-unique/lock 협의)·물리 토폴로지·dimension_map blocker #2/#3(erd-change-review). P0 1을 이 잔여로 좁힘.
+- 2026-07-07: **Agent proposal table DB DDL 수령·proposal read 계약 확정**(`docs/design-docs/gas/mi-agent-param-proposal.md` 3절, ERD blocker #1 해소). 컬럼 매핑을 5.2에 확정 — `completedAt`←`proposal_completed_dtm`, `failureReason`←`error_message`(+`error_code`), `parameters`←`proposal_parameters`/`confirmation_parameters`(native `JSON`+`JSON_TYPE=ARRAY`), `status` CHECK로 4종 고정. `completedAt`/`error_code`가 Agent 스키마에 이미 존재함을 P0 8에 반영. Agent proposal table은 기존 Backend DB/schema에 추가되는 직접 read 대상이며 별도 view/synonym 경로는 사용하지 않는다. **잔여**: `scenario_id` 유일성 부재(DB 미강제 → app 가드+`modelParamProposalId` 교차검증으로 correlation, race 방지 partial-unique/lock 협의)·runtime table visibility/권한/type 확인·dimension_map blocker #2/#3(erd-change-review). P0 1을 이 잔여로 좁힘.
 - 2026-07-07: **Backend execution-preparation 선행 생성 순서 확정.** Agent 호출 전에 `scenarioId` 기준 `REQUESTING` 행을 `modelParamProposalId=null`로 생성·commit하고 외부 호출한다. Agent 응답의 ID 또는 callback이 Agent 테이블 재조회로 확인한 ID 중 먼저 도착한 값을 write-once로 채우며, 늦은 응답은 callback 상태를 `PROCESSING`으로 되돌리지 않는다. timeout 시 late callback을 위해 preparation을 즉시 삭제하지 않는다.
 - 2026-07-08: **callback correlation을 scope-key 방식으로 재정리.** path `scenarioId`는 proposal identity가 아니라 현재 in-flight execution-preparation을 찾는 scope key다. `data.modelParamProposalId`가 있으면 in-flight 후보 검색 조건으로 사용하고, 없으면 path `scenarioId`의 현재 in-flight row에만 수렴한다. `modelParamProposalId`는 반복 실행 때문에 `tmd_mi_model_execpreph`에서 unique가 아니며 terminal/history row에 붙이지 않는다. in-flight row가 없으면 late/no-op이며 terminal/history row에 붙이지 않는다. 모호한 Agent 호출 실패는 `REQUEST_FAILED`로 닫지 않고 `REQUESTING` in-flight 상태를 유지해 callback/read-reconcile/timeout 복구로 수렴한다.
-- 2026-07-08: Backend proposal request orchestration ERD/DDL blocker를 재분류. `tmd_mi_model_execpreph` 물리명 유지, table comment `TMD_파라미터제안생성요청이력` 채택, Agent read permission/DDL/callback auth/write-then-callback은 resolved로 유지. `tmd_mi_model_execpreph`는 실행 이력이 아니며 실제 수급모델 실행 master/history는 기존 `tmd_mdl_scnrcasem` / `tmd_mdl_scnrcaseh`가 계속 소유한다. 구현 착수 가능하되 real runtime 배포는 `tmd_mi_model_execpreph` DBA DDL 적용과 Agent/Backend 물리 토폴로지 pre-check가 필요하다.
+- 2026-07-08: Backend proposal request orchestration ERD/DDL blocker를 재분류. `tmd_mi_model_execpreph` 물리명 유지, table comment `TMD_파라미터제안생성요청이력` 채택, Agent read permission/DDL/callback auth/write-then-callback은 resolved로 유지. `tmd_mi_model_execpreph`는 실행 이력이 아니며 실제 수급모델 실행 master/history는 기존 `tmd_mdl_scnrcasem` / `tmd_mdl_scnrcaseh`가 계속 소유한다. 구현 착수 가능하되 real runtime 배포는 `tmd_mi_model_execpreph` mapping/index/constraint validate와 Agent proposal table runtime visibility/권한/type 확인이 필요하다.
 - 2026-07-08: **proposal request 1건에서 여러 수급모델 실행을 허용하도록 Case linkage 전제를 정정.** 기존 `tmd_mi_model_execpreph 1:N tmd_mdl_scnrcasem` linkage 및 `tmd_mdl_scnrcasem.exec_prep_id` 추가안은 supersede. 실행 1회마다 새 `tmd_mi_model_execpreph` row와 새 `case_id`를 만들고, `tmd_mi_model_execpreph.case_id` nullable + UNIQUE 포인터로 해당 실행 Case를 연결한다. 같은 `scnr_id + agnt_prpsl_id` 반복 실행을 허용하므로 `agnt_prpsl_id` unique는 금지하고 일반 index로 둔다. 최근 실행 기준 확정/제안 파라미터 조회와 input Excel 파일 조회는 최신 Case → `tmd_mi_model_execpreph.case_id` 경로를 사용한다.
+- 2026-07-09: **Scenario 기준 current-state 조회 API 추가.** `GET /api/v1/mi/next-gen/scenarios/{scenarioId}/model-param-proposals`가 팝업 진입 시 `scenarioId`만으로 생성중/제안완료/확정 후 실행 전·실행중/최신 실행 확정 파라미터 표시 상태를 결정한다. 최신 execution-preparation row가 과거 실행보다 우선하며, 반환 파라미터 source는 `parameterSource`로 명시한다.
+- 2026-07-09: **SSE scope와 Agent proposal read path 확정.** proposal SSE는 scenario-scope 신규 endpoint(`/scenarios/{scenarioId}/model-param-proposals/stream`)로 유지하고 기존 scenario-group SSE channel에 합치지 않는다. Agent proposal table은 기존 Backend DB/schema에 추가된 테이블을 직접 read하며 별도 view/synonym 경로는 필요 없다.
+- 2026-07-09: **`tmd_mi_model_execpreph` DBA DDL 적용 완료 확인.** execution-preparation DDL 적용은 더 이상 implementation blocker가 아니며, 남은 항목은 entity mapping validate와 `agnt_prpsl_id` non-unique index / `case_id` nullable unique / `actv_scnr_id` generated rule 확인이다.
+- 2026-07-09: **Proposal 생성 실패 후 재제안 허용 정책 확정.** `REQUEST_FAILED` 또는 Agent `FAILED` terminal 후 FE는 다시 `POST /model-param-proposals`를 호출할 수 있다. Backend는 실패 row를 재사용하지 않고 새 `tmd_mi_model_execpreph` row와 새 Agent proposal request를 만든다.
 
 ## 15. Exit Criteria / Handoff
 
 - frontend mock 구현: ready
 - callback 계약(엔드포인트/인증/wrapper/순서/응답): Agent 전달 ready. 전달용 계약서는 `docs/design-docs/gas/mi-model-param-proposal-callback-contract.md`
 - real Agent/DB/Excel 구현: proposal read 계약 확정(DB DDL 수령)으로 read 엔티티/조회 착수 가능. `tmd_mi_model_execpreph`와 Agent proposal table이 DB 반영됐으므로 Agent create/callback/read 및 최신 실행 기준 파라미터/파일 조회는 mock 없이 실DB 연동 slice로 구현 가능하다. Excel merge 서비스 자체는 별도 개발 slice로 둔다.
-- Backend proposal request/execution-preparation 구현: API/service/repository 구현은 착수 가능. real runtime 배포는 `tmd_mi_model_execpreph` DBA DDL의 index 보정(`agnt_prpsl_id` non-unique, `case_id` nullable unique) 확인 후 가능하다. 실행 이력 source of truth는 기존 Case/Run이며, `tmd_mi_model_execpreph.case_id`로 제안 기반 실행 준비 row와 단일 실행 Case를 연결한다.
+- Backend proposal request/execution-preparation 구현: API/service/repository 구현은 착수 가능. `tmd_mi_model_execpreph` DBA DDL은 적용 완료됐으며, real runtime 배포 전에는 entity mapping validate와 index/constraint(`agnt_prpsl_id` non-unique, `case_id` nullable unique, `actv_scnr_id` generated) 확인을 수행한다. 실행 이력 source of truth는 기존 Case/Run이며, `tmd_mi_model_execpreph.case_id`로 제안 기반 실행 준비 row와 단일 실행 Case를 연결한다.
 - `erd-change-review` 대상:
   - Agent proposal 테이블 read-only 조회 + thin Backend execution-preparation(orchestration) 책임 분리
-  - Agent/Backend 물리 토폴로지
-  - `tmd_mi_model_execpreph.case_id` nullable unique linkage와 `agnt_prpsl_id` non-unique index DBA 반영 확인
+  - Agent proposal table runtime visibility / SELECT 권한 / key type 정합
+  - `tmd_mi_model_execpreph.case_id` nullable unique linkage와 `agnt_prpsl_id` non-unique index runtime validate
   - dimension_map ERD blocker #2(nullable UNIQUE)/#3(조건부 CHECK) 정정
   - (선택) 실행별 confirmed snapshot
   - Agent JSON root array CHECK와 payload 최대 크기
   - active/unique rule (`actv_scnr_id` unique 유지, `agnt_prpsl_id` unique 금지)
 - `spring-api-implementation`은 16절의 real integration slice 중 Agent create/callback/read와 최신 실행 기준 조회부터 구현할 수 있다.
+- current-state 조회 API는 별도 schema 없이 `spring-api-implementation`에서 `ModelParamProposalController`/`ModelParamProposalService`에 추가 구현할 수 있다.
 
 ## 16. API Slice Boundary
 
@@ -870,6 +1096,7 @@ Included:
 
 - `GET /scenarios/{scenarioId}/model-execution-options`
 - `POST /scenarios/{scenarioId}/model-param-proposals`
+- `GET /scenarios/{scenarioId}/model-param-proposals`
 - `GET /scenarios/{scenarioId}/model-param-proposals/{id}`
 - proposal SSE signal 또는 polling fallback
 - `POST /scenarios/{scenarioId}/model-executions` JSON mock
@@ -920,6 +1147,7 @@ Agent 계약 합의 후 real integration 필수 callback test case:
 - Agent proposal request/confirmation
 - 기존 ScenarioGroup의 `eventTypeL2Id` 기반 eligibility 계산
 - `POST /scenarios/{scenarioId}/model-param-proposals/callback`
+- `GET /scenarios/{scenarioId}/model-param-proposals`
 - `GET /scenarios/{scenarioId}/model-executions/latest/model-param-proposal/confirmed-parameters`
 - `GET /scenarios/{scenarioId}/model-executions/latest/model-param-proposal/proposed-parameters`
 - `GET /scenarios/{scenarioId}/model-executions/latest/input-files`

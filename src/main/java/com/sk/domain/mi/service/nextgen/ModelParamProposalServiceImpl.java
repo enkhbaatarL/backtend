@@ -6,6 +6,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.sk.common.enums.ResultCode;
 import com.sk.common.exception.AppErrorException;
 import com.sk.common.exception.AppHttpStatusException;
+import com.sk.domain.mi.dto.response.nextgen.CurrentModelParamProposalRes;
 import com.sk.domain.mi.dto.response.nextgen.ModelExecutionOptionsRes;
 import com.sk.domain.mi.dto.response.nextgen.ModelParamProposalAcceptRes;
 import com.sk.domain.mi.dto.response.nextgen.ModelParamProposalRes;
@@ -15,16 +16,22 @@ import com.sk.domain.shared.client.dto.request.ModelParamPayloadItem;
 import com.sk.domain.shared.client.dto.response.AgentModelParamConfirmationRes;
 import com.sk.domain.shared.client.dto.response.AgentModelParamProposalCreateRes;
 import com.sk.domain.shared.entity.master.tmd.ModelExecutionPreparation;
+import com.sk.domain.shared.entity.master.tmd.ScenarioCase;
+import com.sk.domain.shared.entity.master.tmd.ScenarioCaseRunHistory;
 import com.sk.domain.shared.entity.master.tmm.AgentModelParamProposal;
 import com.sk.domain.shared.entity.master.tmm.MiScenario;
 import com.sk.domain.shared.enums.fundamentalmodel.FundamentalModelCaseStatus;
 import com.sk.domain.shared.enums.fundamentalmodel.FundamentalModelExecType;
 import com.sk.domain.shared.enums.nextgen.AgentModelParamProposalStatus;
+import com.sk.domain.shared.enums.nextgen.CurrentModelParamProposalState;
 import com.sk.domain.shared.enums.nextgen.ModelExecutionPreparationStatus;
+import com.sk.domain.shared.enums.nextgen.ModelExecutionStatus;
 import com.sk.domain.shared.enums.nextgen.ModelInputMode;
+import com.sk.domain.shared.enums.nextgen.ModelParamParameterSource;
 import com.sk.domain.shared.enums.nextgen.ScenarioStatus;
 import com.sk.domain.shared.repository.master.tmd.ModelExecutionPreparationRepository;
 import com.sk.domain.shared.repository.master.tmd.ScenarioCaseRepository;
+import com.sk.domain.shared.repository.master.tmd.ScenarioCaseRunHistoryRepository;
 import com.sk.domain.shared.repository.master.tmm.AgentModelParamProposalRepository;
 import com.sk.domain.shared.repository.master.tmm.MiScenarioRepository;
 import com.sk.domain.shared.service.permissions.AuthorizationService;
@@ -64,6 +71,7 @@ public class ModelParamProposalServiceImpl implements ModelParamProposalService 
 
     private final MiScenarioRepository miScenarioRepository;
     private final ScenarioCaseRepository scenarioCaseRepository;
+    private final ScenarioCaseRunHistoryRepository scenarioCaseRunHistoryRepository;
     private final ModelExecutionPreparationRepository modelExecutionPreparationRepository;
     private final AgentModelParamProposalRepository agentModelParamProposalRepository;
     private final ModelParamProposalAgentApi modelParamProposalAgentApi;
@@ -107,6 +115,26 @@ public class ModelParamProposalServiceImpl implements ModelParamProposalService 
     }
 
     @Override
+    public CurrentModelParamProposalRes getCurrentProposal(Long scenarioId) {
+        MiScenario scenario = findScenario(scenarioId);
+        rejectIfNotParameterProposalMode(scenario);
+
+        return modelExecutionPreparationRepository.findFirstByScenarioIdAndIsDeletedFalseOrderByExecPrepIdDesc(scenarioId)
+            .map(this::toCurrentProposalResponse)
+            .orElseGet(() -> currentResponse(
+                scenarioId,
+                CurrentModelParamProposalState.NOT_REQUESTED,
+                ModelParamParameterSource.NONE,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null
+            ));
+    }
+
+    @Override
     public ModelParamProposalRes getProposal(Long scenarioId, Long modelParamProposalId) {
         ModelExecutionPreparation preparation = modelExecutionPreparationRepository
             .findByScenarioIdAndAgentProposalIdAndIsDeletedFalse(scenarioId, modelParamProposalId)
@@ -135,6 +163,291 @@ public class ModelParamProposalServiceImpl implements ModelParamProposalService 
             preparation.getCreateDt(),
             resolveCompletedAt(proposal)
         );
+    }
+
+    private CurrentModelParamProposalRes toCurrentProposalResponse(ModelExecutionPreparation preparation) {
+        Optional<AgentModelParamProposal> proposal = findAgentProposal(preparation);
+
+        if (preparation.getStatus() == ModelExecutionPreparationStatus.REQUEST_FAILED) {
+            return currentResponse(
+                preparation,
+                proposal.orElse(null),
+                CurrentModelParamProposalState.PROPOSAL_FAILED,
+                ModelParamParameterSource.NONE,
+                null,
+                null,
+                null,
+                preparation.getErrorMessage()
+            );
+        }
+
+        if (proposal.map(AgentModelParamProposal::getStatus).orElse(null) == AgentModelParamProposalStatus.FAILED) {
+            return currentResponse(
+                preparation,
+                proposal.orElse(null),
+                CurrentModelParamProposalState.PROPOSAL_FAILED,
+                ModelParamParameterSource.NONE,
+                null,
+                null,
+                null,
+                resolveFailureReason(proposal.orElseThrow())
+            );
+        }
+
+        if (preparation.getCaseId() != null) {
+            return toCaseLinkedCurrentProposalResponse(preparation, proposal.orElse(null));
+        }
+
+        if (preparation.getStatus() == ModelExecutionPreparationStatus.EXECUTION_FAILED) {
+            return currentResponse(
+                preparation,
+                proposal.orElse(null),
+                CurrentModelParamProposalState.EXECUTION_FAILED,
+                ModelParamParameterSource.CONFIRMATION_PARAMETERS,
+                null,
+                null,
+                null,
+                preparation.getErrorMessage()
+            );
+        }
+
+        AgentModelParamProposal agentProposal = proposal.orElse(null);
+        AgentModelParamProposalStatus agentStatus = agentProposal == null ? null : agentProposal.getStatus();
+
+        if (preparation.getStatus() == ModelExecutionPreparationStatus.EXECUTING) {
+            throw dataMismatch("EXECUTING preparation has no case_id. execPrepId: %d".formatted(preparation.getExecPrepId()));
+        }
+
+        if (preparation.getStatus() == ModelExecutionPreparationStatus.CONFIRMING
+            || preparation.getStatus() == ModelExecutionPreparationStatus.PREPARING_EXECUTION
+            || agentStatus == AgentModelParamProposalStatus.CONFIRMED) {
+            return currentResponse(
+                preparation,
+                agentProposal,
+                CurrentModelParamProposalState.CONFIRMED_PENDING_EXECUTION,
+                ModelParamParameterSource.CONFIRMATION_PARAMETERS,
+                null,
+                null,
+                null,
+                null
+            );
+        }
+
+        if (preparation.getStatus() == ModelExecutionPreparationStatus.REQUESTING
+            || agentProposal == null
+            || agentStatus == AgentModelParamProposalStatus.PROCESSING) {
+            return currentResponse(
+                preparation,
+                agentProposal,
+                CurrentModelParamProposalState.GENERATING,
+                ModelParamParameterSource.NONE,
+                null,
+                null,
+                null,
+                null
+            );
+        }
+
+        if (agentStatus == AgentModelParamProposalStatus.PROPOSED) {
+            return currentResponse(
+                preparation,
+                agentProposal,
+                CurrentModelParamProposalState.PROPOSAL_READY,
+                ModelParamParameterSource.PROPOSAL_PARAMETERS,
+                null,
+                null,
+                null,
+                null
+            );
+        }
+
+        throw dataMismatch(
+            "Unsupported model parameter proposal current-state combination. execPrepId: %d, backendStatus: %s, agentStatus: %s"
+                .formatted(preparation.getExecPrepId(), preparation.getStatus(), agentStatus)
+        );
+    }
+
+    private Optional<AgentModelParamProposal> findAgentProposal(ModelExecutionPreparation preparation) {
+        if (preparation.getAgentProposalId() == null) {
+            return Optional.empty();
+        }
+        return agentModelParamProposalRepository.findByModelParamProposalIdAndScenarioIdAndIsDeletedFalse(
+            preparation.getAgentProposalId(),
+            preparation.getScenarioId()
+        );
+    }
+
+    private CurrentModelParamProposalRes toCaseLinkedCurrentProposalResponse(
+        ModelExecutionPreparation preparation,
+        AgentModelParamProposal proposal
+    ) {
+        if (proposal == null) {
+            throw dataMismatch("Case-linked preparation has no Agent proposal row. execPrepId: %d".formatted(preparation.getExecPrepId()));
+        }
+
+        ScenarioCase scenarioCase = scenarioCaseRepository.findByCaseIdAndScenarioIdAndExecTypeAndIsDeletedFalse(
+                preparation.getCaseId(),
+                preparation.getScenarioId(),
+                FundamentalModelExecType.SCENARIO
+            )
+            .orElseThrow(() -> dataMismatch(
+                "Case-linked preparation has no matching scenario case. execPrepId: %d, caseId: %d"
+                    .formatted(preparation.getExecPrepId(), preparation.getCaseId())
+            ));
+
+        if (scenarioCase.getLastRunId() == null || scenarioCase.getLastRunId().isBlank()) {
+            throw dataMismatch(
+                "Case-linked preparation has no latest run id. execPrepId: %d, caseId: %d"
+                    .formatted(preparation.getExecPrepId(), preparation.getCaseId())
+            );
+        }
+
+        ScenarioCaseRunHistory latestRun = scenarioCaseRunHistoryRepository.findByRunIdAndIsDeletedFalse(scenarioCase.getLastRunId())
+            .orElseThrow(() -> dataMismatch(
+                "Case-linked preparation has no latest run history. execPrepId: %d, caseId: %d, runId: %s"
+                    .formatted(preparation.getExecPrepId(), preparation.getCaseId(), scenarioCase.getLastRunId())
+            ));
+
+        if (!preparation.getCaseId().equals(latestRun.getCaseId())) {
+            throw dataMismatch(
+                "Latest run case mismatch. execPrepId: %d, caseId: %d, runCaseId: %d"
+                    .formatted(preparation.getExecPrepId(), preparation.getCaseId(), latestRun.getCaseId())
+            );
+        }
+
+        ModelExecutionStatus modelExecutionStatus = toModelExecutionStatus(latestRun);
+        CurrentModelParamProposalState currentState = switch (modelExecutionStatus) {
+            case RUNNING -> CurrentModelParamProposalState.EXECUTING;
+            case COMPLETED -> CurrentModelParamProposalState.EXECUTED_CONFIRMED;
+            case FAILED -> CurrentModelParamProposalState.EXECUTION_FAILED;
+        };
+
+        return currentResponse(
+            preparation,
+            proposal,
+            currentState,
+            ModelParamParameterSource.CONFIRMATION_PARAMETERS,
+            scenarioCase.getCaseId(),
+            latestRun.getRunId(),
+            modelExecutionStatus,
+            modelExecutionStatus == ModelExecutionStatus.FAILED
+                ? firstNonBlank(latestRun.getErrorMessage(), latestRun.getFailureReasonCode(), preparation.getErrorMessage())
+                : null
+        );
+    }
+
+    private CurrentModelParamProposalRes currentResponse(
+        ModelExecutionPreparation preparation,
+        AgentModelParamProposal proposal,
+        CurrentModelParamProposalState currentState,
+        ModelParamParameterSource parameterSource,
+        Long caseId,
+        String runId,
+        ModelExecutionStatus modelExecutionStatus,
+        String failureReason
+    ) {
+        return currentResponse(
+            preparation.getScenarioId(),
+            currentState,
+            parameterSource,
+            preparation.getExecPrepId(),
+            preparation.getAgentProposalId(),
+            proposal,
+            caseId,
+            runId,
+            modelExecutionStatus,
+            preparation.getCreateDt(),
+            failureReason
+        );
+    }
+
+    private CurrentModelParamProposalRes currentResponse(
+        Long scenarioId,
+        CurrentModelParamProposalState currentState,
+        ModelParamParameterSource parameterSource,
+        Long execPrepId,
+        Long modelParamProposalId,
+        AgentModelParamProposal proposal,
+        Long caseId,
+        String runId,
+        ModelExecutionStatus modelExecutionStatus
+    ) {
+        return currentResponse(
+            scenarioId,
+            currentState,
+            parameterSource,
+            execPrepId,
+            modelParamProposalId,
+            proposal,
+            caseId,
+            runId,
+            modelExecutionStatus,
+            null,
+            null
+        );
+    }
+
+    private CurrentModelParamProposalRes currentResponse(
+        Long scenarioId,
+        CurrentModelParamProposalState currentState,
+        ModelParamParameterSource parameterSource,
+        Long execPrepId,
+        Long modelParamProposalId,
+        AgentModelParamProposal proposal,
+        Long caseId,
+        String runId,
+        ModelExecutionStatus modelExecutionStatus,
+        LocalDateTime requestedAt,
+        String failureReason
+    ) {
+        return new CurrentModelParamProposalRes(
+            scenarioId,
+            currentState,
+            parameterSource,
+            execPrepId,
+            modelParamProposalId,
+            proposal == null ? null : proposal.getScenarioGroupId(),
+            proposal == null ? null : proposal.getEventId(),
+            caseId,
+            runId,
+            modelExecutionStatus,
+            resolveCurrentParameters(parameterSource, proposal),
+            failureReason,
+            requestedAt,
+            proposal == null ? null : proposal.getProposalCompletedAt(),
+            proposal == null ? null : proposal.getConfirmedAt()
+        );
+    }
+
+    private JsonNode resolveCurrentParameters(ModelParamParameterSource parameterSource, AgentModelParamProposal proposal) {
+        if (proposal == null || parameterSource == ModelParamParameterSource.NONE) {
+            return objectMapper.createArrayNode();
+        }
+        return switch (parameterSource) {
+            case NONE -> objectMapper.createArrayNode();
+            case PROPOSAL_PARAMETERS -> parseArrayOrEmpty(proposal.getProposalParameters());
+            case CONFIRMATION_PARAMETERS -> parseArrayOrEmpty(proposal.getConfirmationParameters());
+        };
+    }
+
+    private ModelExecutionStatus toModelExecutionStatus(ScenarioCaseRunHistory runHistory) {
+        return ModelExecutionStatus.valueOf(runHistory.getStatus().name());
+    }
+
+    private AppHttpStatusException dataMismatch(String message) {
+        return AppHttpStatusException.of(HttpStatus.CONFLICT, ResultCode.Error.BIZ_RULE_VIOLATION, message);
+    }
+
+    private String firstNonBlank(String... values) {
+        if (values == null) {
+            return null;
+        }
+        for (String value : values) {
+            if (value != null && !value.isBlank()) {
+                return value;
+            }
+        }
+        return null;
     }
 
     @Override
