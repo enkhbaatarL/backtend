@@ -14,6 +14,7 @@ import org.apache.poi.ss.usermodel.Sheet;
  *
  * 기입 규칙:
  * - 행: 시간축(Year/Month/Period)을 제외한 slot 축을 column roles(B~F 축 컬럼)로 매칭해 설비 행을 찾는다.
+ *   row filter가 있으면 필터 컬럼 값이 일치하는 행만 후보로 본다.
  *   없는 설비 행은 만들 수 없으므로 미존재/복수 매칭 모두 실패시킨다
  * - 열: value 컬럼 범위(start~end)에서 year row/month row 값이 payload의 Year/Month와 일치하는 열을 찾는다.
  *   payload의 Period는 열 매칭에 쓰지 않는다 — Agent 출력에서 Period가 서로 모순된 사례가 있어
@@ -31,6 +32,7 @@ final class MatrixTimeColumnsWriter {
     private final Sheet sheet;
     private final MiModelParam param;
     private final ColumnRoleMap roles;
+    private final RowFilter rowFilter;
     private final String context;
 
     MatrixTimeColumnsWriter(Sheet sheet, MiModelParam param, ColumnRoleMap roles) {
@@ -38,6 +40,7 @@ final class MatrixTimeColumnsWriter {
         this.param = param;
         this.roles = roles;
         this.context = ValueRows.context(param);
+        this.rowFilter = RowFilter.parse(context, param.getBasecaseRowFilter());
         requireMatrixSpec();
     }
 
@@ -85,7 +88,7 @@ final class MatrixTimeColumnsWriter {
 
         List<Integer> keyColumns = roles.columnIndexes();
         RowScan scan = ExcelCells.scanRows(sheet, param.getBasecaseDataStartRow() - 1, keyColumns,
-            candidate -> slots.stream().allMatch(slot -> ExcelCells.matches(slot.expected(), ExcelCells.readValue(sheet, candidate, slot.columnIndex()))));
+            candidate -> matchesFacilityRow(candidate, slots));
 
         if (scan.matchedRowIndexes().isEmpty()) {
             throw ValueRows.error(context, "일치하는 설비 행이 없습니다 (matrix는 신규 행 추가 불가): %s".formatted(facilityAxes));
@@ -133,6 +136,15 @@ final class MatrixTimeColumnsWriter {
                 context, ExcelCells.cellAddress(rowIndex, columnIndex),
                 ExcelCells.display(payloadPeriod), ExcelCells.display(sheetPeriod));
         }
+    }
+
+    /** 비시간 slot 축 전체가 일치하고, row filter가 있으면 그 조건까지 만족하는 행인지 판정한다. */
+    private boolean matchesFacilityRow(int rowIndex, List<SlotCell> slots) {
+        if (rowFilter != null && !rowFilter.matches(sheet, rowIndex)) {
+            return false;
+        }
+        return slots.stream()
+            .allMatch(slot -> ExcelCells.matches(slot.expected(), ExcelCells.readValue(sheet, rowIndex, slot.columnIndex())));
     }
 
     private int resolveColumn(String axisLabel) {

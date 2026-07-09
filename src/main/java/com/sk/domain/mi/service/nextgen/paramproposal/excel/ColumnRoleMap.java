@@ -72,13 +72,16 @@ final class ColumnRoleMap {
             .findFirst();
     }
 
-    /** slot 축 키로 매칭되지 않은 잔여 role — fixed 모드의 value 컬럼. 정확히 1개가 아니면 에러. */
-    Role valueRole(Set<String> slotAxisLabels) {
+    /**
+     * slot 축 키와 row filter 컬럼으로 쓰이지 않은 잔여 role — fixed 모드의 value 컬럼.
+     */
+    Role valueRole(Set<String> slotAxisLabels, RowFilter rowFilter) {
         List<Role> remaining = roles.stream()
             .filter(role -> slotAxisLabels.stream().noneMatch(label -> role.label().equalsIgnoreCase(label.trim())))
+            .filter(role -> rowFilter == null || role.columnIndex() != rowFilter.columnIndex())
             .toList();
         if (remaining.size() != 1) {
-            throw ValueRows.error(context, "value 컬럼을 특정할 수 없습니다 (slot 축으로 안 쓰인 role이 %d개, slot 축=%s)".formatted(remaining.size(), slotAxisLabels));
+            throw ValueRows.error(context, "value 컬럼을 특정할 수 없습니다 (slot 축·row filter로 안 쓰인 role이 %d개, slot 축=%s)".formatted(remaining.size(), slotAxisLabels));
         }
         return remaining.get(0);
     }

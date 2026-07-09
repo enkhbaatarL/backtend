@@ -13,8 +13,9 @@ import org.apache.poi.ss.usermodel.Sheet;
  *
  * 기입 규칙:
  * - slot 축 키를 column roles 라벨로 매칭해 slot 컬럼을, 잔여 role 하나로 value 컬럼을 정한다
+ * - row filter(예: E=CDD)가 있으면 필터 컬럼 값이 일치하는 행만 후보로 본다 (HDD/CDD 혼재 표 대응)
  * - data start row부터 slot 컬럼 전체가 일치하는 행을 찾아 value 셀에 proposedValue를 덮어쓴다
- * - 일치 행이 없으면(원본에 없던 신규 항목) 데이터 영역 끝에 행을 추가한다
+ * - 일치 행이 없으면(원본에 없던 신규 항목) 데이터 영역 끝에 행을 추가한다. 필터가 있으면 필터 값도 기입한다
  * - 일치 행이 복수면 시트 데이터 정합 문제이므로 실패시킨다 (부분 성공 없음)
  */
 @Slf4j
@@ -26,6 +27,7 @@ final class FixedColumnsWriter {
     private final Sheet sheet;
     private final MiModelParam param;
     private final ColumnRoleMap roles;
+    private final RowFilter rowFilter;
     private final String context;
 
     FixedColumnsWriter(Sheet sheet, MiModelParam param, ColumnRoleMap roles) {
@@ -33,6 +35,7 @@ final class FixedColumnsWriter {
         this.param = param;
         this.roles = roles;
         this.context = ValueRows.context(param);
+        this.rowFilter = RowFilter.parse(context, param.getBasecaseRowFilter());
     }
 
     WriteSummary apply(List<Map<String, Object>> valueRows) {
@@ -55,11 +58,11 @@ final class FixedColumnsWriter {
         List<SlotCell> slots = slotAxes.entrySet().stream()
             .map(axis -> new SlotCell(resolveColumn(axis.getKey()), axis.getValue()))
             .toList();
-        Role valueRole = roles.valueRole(slotAxes.keySet());
+        Role valueRole = roles.valueRole(slotAxes.keySet(), rowFilter);
         double proposedValue = ValueRows.proposedValue(context, valueRow);
 
         List<Integer> keyColumns = slots.stream().map(SlotCell::columnIndex).toList();
-        RowScan scan = ExcelCells.scanRows(sheet, param.getBasecaseDataStartRow() - 1, keyColumns, rowIndex -> matchesAll(rowIndex, slots));
+        RowScan scan = ExcelCells.scanRows(sheet, param.getBasecaseDataStartRow() - 1, keyColumns, rowIndex -> matchesRow(rowIndex, slots));
 
         if (scan.matchedRowIndexes().size() > 1) {
             throw ValueRows.error(context, "slot 축에 일치하는 행이 복수입니다 (엑셀 행=%s, axes=%s)".formatted(toExcelRows(scan.matchedRowIndexes()), slotAxes));
@@ -87,13 +90,21 @@ final class FixedColumnsWriter {
             .columnIndex();
     }
 
-    private boolean matchesAll(int rowIndex, List<SlotCell> slots) {
+    /** slot 축 전체가 일치하고, row filter가 있으면 그 조건까지 만족하는 행인지 판정한다. */
+    private boolean matchesRow(int rowIndex, List<SlotCell> slots) {
+        if (rowFilter != null && !rowFilter.matches(sheet, rowIndex)) {
+            return false;
+        }
         return slots.stream()
             .allMatch(slot -> ExcelCells.matches(slot.expected(), ExcelCells.readValue(sheet, rowIndex, slot.columnIndex())));
     }
 
+    /** 신규 행에 slot 값·필터 값·proposedValue를 기입한다. 필터 값이 빠지면 이후 그 행을 다시 찾을 수 없다. */
     private void appendRow(int rowIndex, List<SlotCell> slots, Role valueRole, double proposedValue) {
         slots.forEach(slot -> ExcelCells.writeValue(sheet, rowIndex, slot.columnIndex(), slot.expected()));
+        if (rowFilter != null) {
+            ExcelCells.writeValue(sheet, rowIndex, rowFilter.columnIndex(), rowFilter.expected());
+        }
         ExcelCells.writeValue(sheet, rowIndex, valueRole.columnIndex(), proposedValue);
     }
 
