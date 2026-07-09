@@ -53,22 +53,12 @@ public class ModelParamExcelMergeService {
             }
 
             WriteSummary total = new WriteSummary(0, 0);
-            int skippedParams = 0;
-            int skippedRows = 0;
 
             for (ModelParamAdjustment adjustment : adjustments) {
-                WriteSummary summary = apply(workbooks, masters.get(adjustment.parameterName()), adjustment);
-                if (summary == null) {
-                    skippedParams++;
-                    skippedRows += adjustment.values() == null ? 0 : adjustment.values().size();
-                    continue;
-                }
-                total = WriteSummary.sum(total, summary);
+                total = WriteSummary.sum(total, apply(workbooks, masters.get(adjustment.parameterName()), adjustment));
             }
 
-            log.info("[ModelInput Merge] - DONE - parameters={} (기입 {}, skip {}) / cells: write={}, append={}, 미기입 rows={}",
-                adjustments.size(), adjustments.size() - skippedParams, skippedParams,
-                total.writeCount(), total.appendCount(), skippedRows);
+            log.info("[ModelInput Merge] - DONE - parameters={} / cells: write={}, append={}", adjustments.size(), total.writeCount(), total.appendCount());
 
             return MergedModelInputFiles.of(serialize(workbooks));
 
@@ -80,16 +70,14 @@ public class ModelParamExcelMergeService {
 
     /**
      * 확정 파라미터 1건을 대상 시트에 기입한다.
-     * read mode에 따라 기입 전략이 다름. 기입했으면 셀 집계를, 미대상 skip이면 null을 반환한다.
+     * read mode에 따라 기입 전략이 다름.
+     * 제안 미대상(use_yn=N)이어도 사용자 확정에 포함되었으면 기입한다 — 단 경고 흔적을 반드시 남긴다.
      */
     private WriteSummary apply(Map<ModelInputFile, XSSFWorkbook> workbooks, MiModelParam param, ModelParamAdjustment adjustment) {
         String context = ValueRows.context(param);
 
-        // 제안 대상(use_yn=Y)만 병합
         if (!Boolean.TRUE.equals(param.getIsUsed())) {
-            log.warn("[ModelInput Merge] - SKIP - [{}] 미기입 rows={} — 제안 미대상(use_yn=N)이라 기입하지 않음 (확정 payload에는 포함됨)",
-                context, adjustment.values() == null ? 0 : adjustment.values().size());
-            return null;
+            log.warn("[ModelInput Merge] - OFF-TARGET [{}] 제안 미대상(use_yn=N) 파라미터가 확정 payload에 포함됨 — 사용자 확정이므로 기입은 진행 rows={}", context, adjustment.values() == null ? 0 : adjustment.values().size());
         }
 
         if (adjustment.values() == null || adjustment.values().isEmpty()) {
@@ -100,8 +88,7 @@ public class ModelParamExcelMergeService {
         Sheet sheet = workbooks.get(file).getSheet(param.getModelSheet());
 
         if (sheet == null) {
-            throw SystemErrorException.of(ResultCode.Error.SYS_INTERNAL_ERROR,
-                "수급모델 입력 병합 실패 [%s] — Basecase 원본(%s)에 시트가 없습니다 (마스터-원본 정합 확인 필요)".formatted(context, file.getBasecaseFileName()));
+            throw SystemErrorException.of(ResultCode.Error.SYS_INTERNAL_ERROR, "수급모델 입력 병합 실패 [%s] — Basecase 원본(%s)에 시트가 없습니다 (마스터-원본 정합 확인 필요)".formatted(context, file.getBasecaseFileName()));
         }
 
         ColumnRoleMap roles = ColumnRoleMap.parse(context, param.getBasecaseColumnRoles());
