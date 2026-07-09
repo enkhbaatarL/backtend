@@ -41,22 +41,30 @@ final class MatrixTimeColumnsWriter {
         requireMatrixSpec();
     }
 
-    void apply(List<Map<String, Object>> valueRows) {
+    WriteSummary apply(List<Map<String, Object>> valueRows) {
         valueRows.forEach(this::applyRow);
+        return new WriteSummary(valueRows.size(), 0);
     }
 
     private void applyRow(Map<String, Object> valueRow) {
         Map<String, Object> slotAxes = ValueRows.slotAxes(context, valueRow);
+        Map<String, Object> facilityAxes = facilityAxes(slotAxes);
 
-        int rowIndex = findFacilityRow(slotAxes);
+        int rowIndex = findFacilityRow(facilityAxes);
         int columnIndex = findTimeColumn(slotAxes);
-        verifyPeriod(slotAxes, columnIndex);
 
-        ExcelCells.writeValue(sheet, rowIndex, columnIndex, ValueRows.proposedValue(context, valueRow));
+        double proposedValue = ValueRows.proposedValue(context, valueRow);
+        Object previous = ExcelCells.writeValue(sheet, rowIndex, columnIndex, proposedValue);
+        log.info("[ModelInput Merge] - WRITE - [{}] cell={} (행={}, 열={}/{}) value: {} -> {}",
+            context, ExcelCells.cellAddress(rowIndex, columnIndex), facilityAxes,
+            ExcelCells.display(slotAxes.get("Year")), ExcelCells.display(slotAxes.get("Month")),
+            ExcelCells.display(previous), ExcelCells.display(proposedValue));
+
+        verifyPeriod(slotAxes, rowIndex, columnIndex);
     }
 
-    /** 시간축을 제외한 slot 축으로 설비 행을 특정한다. */
-    private int findFacilityRow(Map<String, Object> slotAxes) {
+    /** 시간축(Year/Month/Period)을 제외한 slot 축 — 설비 행 특정 조건. */
+    private Map<String, Object> facilityAxes(Map<String, Object> slotAxes) {
         Map<String, Object> facilityAxes = new LinkedHashMap<>();
         slotAxes.forEach((key, value) -> {
             if (!isTimeAxis(key)) {
@@ -66,7 +74,11 @@ final class MatrixTimeColumnsWriter {
         if (facilityAxes.isEmpty()) {
             throw ValueRows.error(context, "행을 특정할 비시간 slot 축이 없습니다: %s".formatted(slotAxes.keySet()));
         }
+        return facilityAxes;
+    }
 
+    /** 비시간 slot 축으로 설비 행을 특정한다. */
+    private int findFacilityRow(Map<String, Object> facilityAxes) {
         List<SlotCell> slots = facilityAxes.entrySet().stream()
             .map(axis -> new SlotCell(resolveColumn(axis.getKey()), axis.getValue()))
             .toList();
@@ -109,16 +121,17 @@ final class MatrixTimeColumnsWriter {
             .formatted(year.intValue(), month.intValue(), param.getBasecaseValueStartCol(), param.getBasecaseValueEndCol()));
     }
 
-    /** payload Period는 신뢰하지 않는다 — 시트 period row와 어긋나면 경고만 남기고 진행한다. */
-    private void verifyPeriod(Map<String, Object> slotAxes, int columnIndex) {
+    /** payload Period는 신뢰하지 않는다 — 시트 period row와 어긋나면 경고만 남기고 진행한다 (기입 자체는 이미 완료). */
+    private void verifyPeriod(Map<String, Object> slotAxes, int rowIndex, int columnIndex) {
         Double payloadPeriod = ExcelCells.asNumber(slotAxes.get("Period"));
         if (payloadPeriod == null || param.getBasecasePeriodRow() == null) {
             return;
         }
         Double sheetPeriod = ExcelCells.asNumber(ExcelCells.readValue(sheet, param.getBasecasePeriodRow() - 1, columnIndex));
         if (!payloadPeriod.equals(sheetPeriod)) {
-            log.warn("[ModelInput Merge] Period 불일치 (Year/Month 기준으로 기입): [{}] payload={}, sheet={}",
-                context, payloadPeriod, sheetPeriod);
+            log.warn("[ModelInput Merge] - MISMATCH [{}] cell={} payload Period={}, sheet Period={} — Year/Month 기준으로 기입했음 (기입 자체는 정상)",
+                context, ExcelCells.cellAddress(rowIndex, columnIndex),
+                ExcelCells.display(payloadPeriod), ExcelCells.display(sheetPeriod));
         }
     }
 

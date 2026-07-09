@@ -35,11 +35,21 @@ final class FixedColumnsWriter {
         this.context = ValueRows.context(param);
     }
 
-    void apply(List<Map<String, Object>> valueRows) {
-        valueRows.forEach(this::applyRow);
+    WriteSummary apply(List<Map<String, Object>> valueRows) {
+        int writeCount = 0;
+        int appendCount = 0;
+        for (Map<String, Object> valueRow : valueRows) {
+            if (applyRow(valueRow)) {
+                writeCount++;
+            } else {
+                appendCount++;
+            }
+        }
+        return new WriteSummary(writeCount, appendCount);
     }
 
-    private void applyRow(Map<String, Object> valueRow) {
+    /** 값 1행을 기입한다. 기존 행 덮어쓰기면 true, 신규 행 추가면 false. */
+    private boolean applyRow(Map<String, Object> valueRow) {
         Map<String, Object> slotAxes = ValueRows.slotAxes(context, valueRow);
 
         List<SlotCell> slots = slotAxes.entrySet().stream()
@@ -56,12 +66,19 @@ final class FixedColumnsWriter {
         }
 
         if (scan.matchedRowIndexes().size() == 1) {
-            ExcelCells.writeValue(sheet, scan.matchedRowIndexes().get(0), valueRole.columnIndex(), proposedValue);
-            return;
+            int rowIndex = scan.matchedRowIndexes().get(0);
+            Object previous = ExcelCells.writeValue(sheet, rowIndex, valueRole.columnIndex(), proposedValue);
+            log.info("[ModelInput Merge] - WRITE  [{}] cell={} axes={} value: {} -> {}",
+                context, ExcelCells.cellAddress(rowIndex, valueRole.columnIndex()), slotAxes,
+                ExcelCells.display(previous), ExcelCells.display(proposedValue));
+            return true;
         }
 
         appendRow(scan.appendRowIndex(), slots, valueRole, proposedValue);
-        log.info("[ModelInput Merge] 신규 행 추가: [{}] 엑셀 행={}, axes={}", context, scan.appendRowIndex() + 1, slotAxes);
+        log.info("[ModelInput Merge] - APPEND [{}] cell={} axes={} value: (없음) -> {} — 원본에 없던 신규 행 추가",
+            context, ExcelCells.cellAddress(scan.appendRowIndex(), valueRole.columnIndex()), slotAxes,
+            ExcelCells.display(proposedValue));
+        return false;
     }
 
     private int resolveColumn(String axisLabel) {

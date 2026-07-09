@@ -134,8 +134,11 @@ final class ExcelCells {
         return String.valueOf(value).trim();
     }
 
-    /** 셀에 값을 기입한다. 숫자성 값은 숫자 셀로, 그 외는 문자열 셀로 쓴다. 행/셀이 없으면 생성한다. */
-    static void writeValue(Sheet sheet, int rowIndex, int columnIndex, Object value) {
+    /**
+     * 셀에 값을 기입한다. 숫자성 값은 숫자 셀로, 그 외는 문자열 셀로 쓴다. 행/셀이 없으면 생성한다.
+     * 기입 전에 있던 값을 반환한다 (로그의 이전값 -> 새값 표기용, 없었으면 null).
+     */
+    static Object writeValue(Sheet sheet, int rowIndex, int columnIndex, Object value) {
         Row row = sheet.getRow(rowIndex);
         if (row == null) {
             row = sheet.createRow(rowIndex);
@@ -144,12 +147,31 @@ final class ExcelCells {
         if (cell == null) {
             cell = row.createCell(columnIndex);
         }
+        Object previous = readValue(cell);
         Double number = asNumber(value);
         if (number != null) {
             cell.setCellValue(number);
         } else {
             cell.setCellValue(String.valueOf(value));
         }
+        return previous;
+    }
+
+    /** 엑셀 셀 주소 표기 (예: AY11) — 로그/에러는 항상 엑셀 1-based 표기로 말한다. */
+    static String cellAddress(int rowIndex, int columnIndex) {
+        return CellReference.convertNumToColString(columnIndex) + (rowIndex + 1);
+    }
+
+    /** 로그 표기용 값 문자열 — 정수성 숫자는 소수점 없이, null은 (없음). */
+    static String display(Object value) {
+        if (value == null) {
+            return "(없음)";
+        }
+        if (value instanceof Number number) {
+            double d = number.doubleValue();
+            return d == Math.rint(d) && !Double.isInfinite(d) ? String.valueOf((long) d) : String.valueOf(d);
+        }
+        return String.valueOf(value);
     }
 
 }

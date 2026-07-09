@@ -46,7 +46,7 @@ class BasecaseWorkbookProvider {
         try {
             return openFromStorage(file);
         } catch (Exception e) {
-            log.error("[ModelInput Merge] Object-Storage basecase 로드 실패 -> classpath 폴백 사용 (스토리지 원본과 다를 수 있음): bucket={}, path={}, role={}, cause={}", basecaseBucket, basecasePath, file.getCode(), e.getMessage());
+            log.error("[ModelInput Merge] - FALLBACK [{}] Object-Storage basecase 로드 실패 -> classpath 폴백 사용 (스토리지 원본과 다를 수 있음): bucket={}, path={}, cause={}", file.getCode(), basecaseBucket, basecasePath, e.getMessage());
             return openFromFallback(file);
         }
     }

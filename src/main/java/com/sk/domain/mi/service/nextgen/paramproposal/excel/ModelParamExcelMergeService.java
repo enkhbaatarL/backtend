@@ -52,9 +52,23 @@ public class ModelParamExcelMergeService {
                 workbooks.put(file, workbookProvider.open(file));
             }
 
+            WriteSummary total = new WriteSummary(0, 0);
+            int skippedParams = 0;
+            int skippedRows = 0;
+
             for (ModelParamAdjustment adjustment : adjustments) {
-                apply(workbooks, masters.get(adjustment.parameterName()), adjustment);
+                WriteSummary summary = apply(workbooks, masters.get(adjustment.parameterName()), adjustment);
+                if (summary == null) {
+                    skippedParams++;
+                    skippedRows += adjustment.values() == null ? 0 : adjustment.values().size();
+                    continue;
+                }
+                total = WriteSummary.sum(total, summary);
             }
+
+            log.info("[ModelInput Merge] - DONE - parameters={} (기입 {}, skip {}) / cells: write={}, append={}, 미기입 rows={}",
+                adjustments.size(), adjustments.size() - skippedParams, skippedParams,
+                total.writeCount(), total.appendCount(), skippedRows);
 
             return MergedModelInputFiles.of(serialize(workbooks));
 
@@ -66,15 +80,16 @@ public class ModelParamExcelMergeService {
 
     /**
      * 확정 파라미터 1건을 대상 시트에 기입한다.
-     * read mode에 따라 기입 전략이 다름.
+     * read mode에 따라 기입 전략이 다름. 기입했으면 셀 집계를, 미대상 skip이면 null을 반환한다.
      */
-    private void apply(Map<ModelInputFile, XSSFWorkbook> workbooks, MiModelParam param, ModelParamAdjustment adjustment) {
+    private WriteSummary apply(Map<ModelInputFile, XSSFWorkbook> workbooks, MiModelParam param, ModelParamAdjustment adjustment) {
         String context = ValueRows.context(param);
 
         // 제안 대상(use_yn=Y)만 병합
         if (!Boolean.TRUE.equals(param.getIsUsed())) {
-            log.warn("[ModelInput Merge] 제안 미대상(use_yn=N) 파라미터 skip — 확정 payload에 포함되었으나 기입하지 않음: [{}]", context);
-            return;
+            log.warn("[ModelInput Merge] - SKIP - [{}] 미기입 rows={} — 제안 미대상(use_yn=N)이라 기입하지 않음 (확정 payload에는 포함됨)",
+                context, adjustment.values() == null ? 0 : adjustment.values().size());
+            return null;
         }
 
         if (adjustment.values() == null || adjustment.values().isEmpty()) {
@@ -91,12 +106,10 @@ public class ModelParamExcelMergeService {
 
         ColumnRoleMap roles = ColumnRoleMap.parse(context, param.getBasecaseColumnRoles());
 
-        switch (param.getBasecaseReadMode()) {
+        return switch (param.getBasecaseReadMode()) {
             case FIXED_COLUMNS -> new FixedColumnsWriter(sheet, param, roles).apply(adjustment.values());
             case MATRIX_TIME_COLUMNS -> new MatrixTimeColumnsWriter(sheet, param, roles).apply(adjustment.values());
-        }
-
-        log.info("[ModelInput Merge] 기입 완료: [{}] rows={}", context, adjustment.values().size());
+        };
     }
 
     /**
