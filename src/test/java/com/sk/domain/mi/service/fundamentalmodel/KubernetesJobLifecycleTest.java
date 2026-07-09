@@ -39,11 +39,11 @@ class KubernetesJobLifecycleTest {
     @Mock private ScalableResource<Job> resource;
     @Mock private GracePeriodConfigurable<Deletable> foregroundDelete;
 
-    private KubernetesJobService service;
+    private KubernetesJobServiceImpl service;
 
     @BeforeEach
     void setUp() {
-        service = new KubernetesJobService(client);
+        service = new KubernetesJobServiceImpl(client);
         ReflectionTestUtils.setField(service, "namespace", "mi-model");
         ReflectionTestUtils.setField(service, "modelImage", "model:latest");
         ReflectionTestUtils.setField(service, "ttlSecondsAfterFinished", 3600);
