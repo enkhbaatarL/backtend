@@ -12,16 +12,21 @@ import com.sk.domain.shared.dto.request.file.FileDownloadReq;
 import com.sk.domain.shared.enums.Role;
 import com.sk.domain.shared.service.FileDownloadEncryptor;
 import com.sk.domain.shared.service.FileService;
+import com.sk.domain.shared.service.ObjectStorageService;
 import com.sk.domain.shared.service.permissions.AuthorizationService;
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.Parameters;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.Min;
+import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
+import java.util.Map;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpHeaders;
@@ -49,6 +54,7 @@ public class FileDedicatedController {
     private final AuthorizationService authorizationService;
     private final FileService fileService;
     private final FileDownloadEncryptor fileDownloadEncryptor;
+    private final ObjectStorageService objectStorageService;
 
     // @ApiOrder(1)
     // @Operation(summary = "파일 목록 조회", description = "파일 목록을 조회합니다.")
@@ -187,6 +193,49 @@ public class FileDedicatedController {
         httpHeaders.setContentLength(fileDataRes.fileSize());
         httpHeaders.add("Content-Disposition", "attachment; filename*=UTF-8''" + fileDataRes.fileNm());
         return new ResponseEntity<>(fileDataRes.fileData(), httpHeaders, HttpStatus.OK);
+    }
+
+    @ApiOrder(97)
+    @Parameters({
+            @Parameter(name = "bucketName", description = "버킷 이름, 비우면 설정된 기본 버킷을 사용합니다.", required = false),
+            @Parameter(name = "folderPath", description = "조회할 폴더 경로 (예: mi/excel), 비우면 버킷 최상위를 조회합니다.", required = false),
+            @Parameter(name = "recursive", description = "true이면 하위 폴더 포함 전체 파일을 평탄화하여 조회합니다. (기본값 false)", required = false)
+    })
+    @Operation(summary = "오브젝트 스토리지 폴더 조회", description = "오브젝트 스토리지 특정 폴더의 하위 폴더 목록과 파일명 목록을 조회합니다.")
+    @ApiResponse(responseCode = "200", description = "HTTP Status Code is 200")
+    @GetMapping("/object-storage/files")
+    @RequiredPermission(roles = {Role.ADMIN})
+    public BaseResponse<Map<String, List<String>>> getObjectStorageFiles(
+            @RequestParam(value = "bucketName", required = false) String bucketName,
+            @RequestParam(value = "folderPath", required = false) String folderPath,
+            @RequestParam(value = "recursive", required = false, defaultValue = "false") boolean recursive) {
+        return BaseResponseFactory.create(objectStorageService.listFolder(bucketName, folderPath, recursive));
+    }
+
+    @ApiOrder(98)
+    @Parameters({
+            @Parameter(name = "bucketName", description = "버킷 이름, 비우면 설정된 기본 버킷을 사용합니다.", required = false),
+            @Parameter(name = "filePath", description = "다운로드할 파일 Full Path (예: mi/excel/sample.xlsx)", required = true)
+    })
+    @Operation(summary = "오브젝트 스토리지 파일 다운로드", description = "오브젝트 스토리지의 특정 파일을 다운로드합니다.")
+    @ApiResponse(responseCode = "200", description = "HTTP Status Code is 200")
+    @GetMapping("/object-storage/download")
+    @RequiredPermission(roles = {Role.ADMIN})
+    public ResponseEntity<byte[]> downloadObjectStorageFile(
+            @RequestParam(value = "bucketName", required = false) String bucketName,
+            @RequestParam(value = "filePath", required = true) String filePath) throws IOException {
+
+        byte[] fileData = objectStorageService.downloadFile(objectStorageService.resolveBucketName(bucketName), filePath);
+
+        String fileNm = filePath.contains("/") ? filePath.substring(filePath.lastIndexOf('/') + 1) : filePath;
+        String encodedFileName = URLEncoder.encode(fileNm, StandardCharsets.UTF_8).replace("+", "%20");
+
+        HttpHeaders httpHeaders = new HttpHeaders();
+        httpHeaders.setContentType(MediaType.APPLICATION_OCTET_STREAM);
+        httpHeaders.setContentLength(fileData.length);
+        httpHeaders.add("Content-Disposition", "attachment; filename*=UTF-8''%s".formatted(encodedFileName));
+
+        return new ResponseEntity<>(fileData, httpHeaders, HttpStatus.OK);
     }
 
     @ApiOrder(99)
