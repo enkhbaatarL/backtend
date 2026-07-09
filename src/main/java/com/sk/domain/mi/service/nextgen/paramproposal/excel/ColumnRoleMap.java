@@ -73,15 +73,16 @@ final class ColumnRoleMap {
     }
 
     /**
-     * slot 축 키와 row filter 컬럼으로 쓰이지 않은 잔여 role — fixed 모드의 value 컬럼.
+     * slot 축·row filter가 차지하지 않은 잔여 role — fixed 모드의 value 컬럼.
+     * 라벨이 아니라 컬럼 단위로 소거한다 — HDD/CDD처럼 구분자 열과 값 열의 라벨이 같은 표에서
+     * slot 축은 첫 매칭 컬럼(구분자 열)만 차지하므로, 같은 라벨의 값 열이 잔여로 남을 수 있다.
      */
-    Role valueRole(Set<String> slotAxisLabels, RowFilter rowFilter) {
+    Role valueRole(Set<Integer> occupiedColumnIndexes) {
         List<Role> remaining = roles.stream()
-            .filter(role -> slotAxisLabels.stream().noneMatch(label -> role.label().equalsIgnoreCase(label.trim())))
-            .filter(role -> rowFilter == null || role.columnIndex() != rowFilter.columnIndex())
+            .filter(role -> !occupiedColumnIndexes.contains(role.columnIndex()))
             .toList();
         if (remaining.size() != 1) {
-            throw ValueRows.error(context, "value 컬럼을 특정할 수 없습니다 (slot 축·row filter로 안 쓰인 role이 %d개, slot 축=%s)".formatted(remaining.size(), slotAxisLabels));
+            throw ValueRows.error(context, "value 컬럼을 특정할 수 없습니다 (slot 축·row filter로 안 쓰인 role %d개: %s)".formatted(remaining.size(), remaining.stream().map(Role::label).toList()));
         }
         return remaining.get(0);
     }

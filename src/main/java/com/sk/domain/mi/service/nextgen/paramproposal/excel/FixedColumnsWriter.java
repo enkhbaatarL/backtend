@@ -3,8 +3,11 @@ package com.sk.domain.mi.service.nextgen.paramproposal.excel;
 import com.sk.domain.mi.service.nextgen.paramproposal.excel.ColumnRoleMap.Role;
 import com.sk.domain.mi.service.nextgen.paramproposal.excel.ExcelCells.RowScan;
 import com.sk.domain.shared.entity.master.tmm.MiModelParam;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
+import java.util.stream.Collectors;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.poi.ss.usermodel.Sheet;
 
@@ -58,7 +61,17 @@ final class FixedColumnsWriter {
         List<SlotCell> slots = slotAxes.entrySet().stream()
             .map(axis -> new SlotCell(resolveColumn(axis.getKey()), axis.getValue()))
             .toList();
-        Role valueRole = roles.valueRole(slotAxes.keySet(), rowFilter);
+        requireFilterConsistency(slots);
+
+        Set<Integer> occupiedColumns = slots.stream()
+            .map(SlotCell::columnIndex)
+            .collect(Collectors.toCollection(LinkedHashSet::new));
+
+        if (rowFilter != null) {
+            occupiedColumns.add(rowFilter.columnIndex());
+        }
+
+        Role valueRole = roles.valueRole(occupiedColumns);
         double proposedValue = ValueRows.proposedValue(context, valueRow);
 
         List<Integer> keyColumns = slots.stream().map(SlotCell::columnIndex).toList();
@@ -88,6 +101,23 @@ final class FixedColumnsWriter {
         return roles.byLabel(axisLabel)
             .orElseThrow(() -> ValueRows.error(context, "column roles에 없는 slot 축입니다: %s".formatted(axisLabel)))
             .columnIndex();
+    }
+
+    /**
+     * payload slot 축이 필터 컬럼을 가리키는 경우(예: 필터 E=CDD인데 payload에 HDD/CDD 축 동반)
+     * 그 값이 필터 값과 모순이면 실패시킨다 — 그대로 진행하면 다른 파라미터의 행을 건드리게 된다.
+     */
+    private void requireFilterConsistency(List<SlotCell> slots) {
+        if (rowFilter == null) {
+            return;
+        }
+        slots.stream()
+            .filter(slot -> slot.columnIndex() == rowFilter.columnIndex())
+            .filter(slot -> !ExcelCells.matches(rowFilter.expected(), slot.expected()))
+            .findFirst()
+            .ifPresent(slot -> {
+                throw ValueRows.error(context, "payload slot 값이 마스터 row filter와 모순됩니다 (필터=%s, payload=%s)".formatted(rowFilter.expected(), ExcelCells.display(slot.expected())));
+            });
     }
 
     /** slot 축 전체가 일치하고, row filter가 있으면 그 조건까지 만족하는 행인지 판정한다. */
