@@ -2,10 +2,16 @@ package com.sk.domain.test;
 
 import jakarta.servlet.http.HttpServletRequest;
 import java.io.IOException;
+import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
+import java.util.List;
 import java.util.Map;
 
 import org.springframework.context.annotation.Profile;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -23,6 +29,7 @@ import com.sk.domain.admin.dto.request.TestReq;
 import com.sk.domain.admin.dto.response.TestRes;
 import com.sk.domain.admin.dto.response.file.FileUploadRes;
 import com.sk.domain.shared.dto.response.auth.GenerateTokenRes;
+import com.sk.domain.shared.service.ObjectStorageService;
 import com.sk.domain.shared.enums.PermissionCondition;
 import com.sk.domain.shared.enums.Role;
 import com.sk.domain.shared.enums.UserRoleCd;
@@ -51,6 +58,7 @@ import lombok.extern.slf4j.Slf4j;
 public class TestController {
 
     private final TestService testService;
+    private final ObjectStorageService objectStorageService;
 
     @Operation(summary = "사용자 정보 조회 API", description = "사용자 정보를 조회합니다.")
     @ApiResponse(responseCode = "200", description = "HTTP Status Code is 200")
@@ -250,4 +258,45 @@ public class TestController {
     //         @RequestParam(value = "size", required = false, defaultValue = "1000") @Min(1) int size) {
     //     return BaseResponseFactory.create(testService.getRedisCache(key, size));
     // }
+
+
+    @Parameters({
+        @Parameter(name = "bucketName", description = "버킷 이름, 비우면 설정된 기본 버킷을 사용합니다.", required = false),
+        @Parameter(name = "folderPath", description = "조회할 폴더 경로 (예: mi/excel), 비우면 버킷 최상위를 조회합니다.", required = false),
+        @Parameter(name = "recursive", description = "true이면 하위 폴더 포함 전체 파일을 평탄화하여 조회합니다. (기본값 false)", required = false)
+    })
+    @Operation(summary = "오브젝트 스토리지 폴더 조회", description = "오브젝트 스토리지 특정 폴더의 하위 폴더 목록과 파일명 목록을 조회합니다.")
+    @ApiResponse(responseCode = "200", description = "HTTP Status Code is 200")
+    @GetMapping("/object-storage/files")
+    public BaseResponse<Map<String, List<String>>> getObjectStorageFiles(
+        @RequestParam(value = "bucketName", required = false) String bucketName,
+        @RequestParam(value = "folderPath", required = false) String folderPath,
+        @RequestParam(value = "recursive", required = false, defaultValue = "false") boolean recursive) {
+        return BaseResponseFactory.create(objectStorageService.listFolder(bucketName, folderPath, recursive));
+    }
+
+    @Parameters({
+        @Parameter(name = "bucketName", description = "버킷 이름, 비우면 설정된 기본 버킷을 사용합니다.", required = false),
+        @Parameter(name = "filePath", description = "다운로드할 파일 Full Path (예: mi/excel/sample.xlsx)", required = true)
+    })
+    @Operation(summary = "오브젝트 스토리지 파일 다운로드", description = "오브젝트 스토리지의 특정 파일을 다운로드합니다.")
+    @ApiResponse(responseCode = "200", description = "HTTP Status Code is 200")
+    @GetMapping("/object-storage/download")
+    public ResponseEntity<byte[]> downloadObjectStorageFile(
+        @RequestParam(value = "bucketName", required = false) String bucketName,
+        @RequestParam(value = "filePath", required = true) String filePath) throws IOException {
+
+        byte[] fileData = objectStorageService.downloadFile(objectStorageService.resolveBucketName(bucketName), filePath);
+
+        String fileNm = filePath.contains("/") ? filePath.substring(filePath.lastIndexOf('/') + 1) : filePath;
+        String encodedFileName = URLEncoder.encode(fileNm, StandardCharsets.UTF_8).replace("+", "%20");
+
+        HttpHeaders httpHeaders = new HttpHeaders();
+        httpHeaders.setContentType(MediaType.APPLICATION_OCTET_STREAM);
+        httpHeaders.setContentLength(fileData.length);
+        httpHeaders.add("Content-Disposition", "attachment; filename*=UTF-8''%s".formatted(encodedFileName));
+
+        return new ResponseEntity<>(fileData, httpHeaders, HttpStatus.OK);
+    }
+
 }
