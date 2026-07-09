@@ -13,7 +13,7 @@ import java.util.Set;
  * 병합 컴포넌트의 입력
  * 확정 payload(confirmation_parameters)의 항목 중 병합에 필요한 최소만 받는다.
  * 파일/시트/셀 좌표는 payload의 modelTarget이 아니라 마스터(tmm_mi_model_param_m)를 parameterName으로 조회해 해석하므로 여기서는 받지 않는다 — 호출 측 DTO 변경에 결합되지 않는다.
- * values의 각 row는 slot 축 키(마스터 column roles의 라벨과 일치: Year, Month, Country 등)와 메타 필드(basecaseValue/proposedValue/rationale)로 구성된다.
+ * values의 각 row는 slot 키(마스터 column roles의 라벨과 일치: Year, Month, Country 등)와 메타 필드(basecaseValue/proposedValue/rationale)로 구성된다.
  * 병합은 proposedValue(최종 입력값, 절대값)를 셀에 그대로 기입하며 메타 중 나머지는 무시한다.
  */
 public record ModelParamAdjustment(
@@ -24,7 +24,7 @@ public record ModelParamAdjustment(
 
 ) {
 
-    /** slot 축이 아닌 메타 필드 키 — slot 축 추출 시 제외 대상. */
+    /** slot이 아닌 메타 필드 키 — slot 추출 시 제외 대상. */
     public static final Set<String> META_FIELDS = Set.of("basecaseValue", "proposedValue", "rationale");
 
     public static ModelParamAdjustment of(String parameterName, List<Map<String, Object>> values) {

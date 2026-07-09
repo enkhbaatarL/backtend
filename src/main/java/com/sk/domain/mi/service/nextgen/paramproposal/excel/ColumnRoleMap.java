@@ -12,8 +12,8 @@ import java.util.regex.Pattern;
  * 라벨에 콤마/특수문자가 올 수 있으므로 단순 split(",")이 아니라
  * "콤마 뒤에 컬럼문자: 가 오는 위치"에서만 분리한다.
  *
- * payload의 slot 축 키는 이 라벨과 일치한다는 것이 Agent 계약이며,
- * fixed 모드의 value 컬럼은 slot 축으로 매칭되지 않은 잔여 role 하나로 도출한다.
+ * payload의 slot 키는 이 라벨과 일치한다는 것이 Agent 계약이며,
+ * fixed 모드의 value 컬럼은 slot으로 매칭되지 않은 잔여 role 하나로 도출한다.
  */
 final class ColumnRoleMap {
 
@@ -65,7 +65,7 @@ final class ColumnRoleMap {
         return roles.stream().map(Role::columnIndex).toList();
     }
 
-    /** slot 축 키(payload)를 role 라벨로 매칭해 컬럼을 찾는다. 없으면 empty. */
+    /** slot 키(payload)를 role 라벨로 매칭해 컬럼을 찾는다. 없으면 empty. */
     Optional<Role> byLabel(String label) {
         return roles.stream()
             .filter(role -> role.label().equalsIgnoreCase(label.trim()))
@@ -73,16 +73,16 @@ final class ColumnRoleMap {
     }
 
     /**
-     * slot 축·row filter가 차지하지 않은 잔여 role — fixed 모드의 value 컬럼.
+     * slot·row filter가 차지하지 않은 잔여 role — fixed 모드의 value 컬럼.
      * 라벨이 아니라 컬럼 단위로 소거한다 — HDD/CDD처럼 구분자 열과 값 열의 라벨이 같은 표에서
-     * slot 축은 첫 매칭 컬럼(구분자 열)만 차지하므로, 같은 라벨의 값 열이 잔여로 남을 수 있다.
+     * slot은 첫 매칭 컬럼(구분자 열)만 차지하므로, 같은 라벨의 값 열이 잔여로 남을 수 있다.
      */
     Role valueRole(Set<Integer> occupiedColumnIndexes) {
         List<Role> remaining = roles.stream()
             .filter(role -> !occupiedColumnIndexes.contains(role.columnIndex()))
             .toList();
         if (remaining.size() != 1) {
-            throw ValueRows.error(context, "value 컬럼을 특정할 수 없습니다 (slot 축·row filter로 안 쓰인 role %d개: %s)".formatted(remaining.size(), remaining.stream().map(Role::label).toList()));
+            throw ValueRows.error(context, "value 컬럼을 특정할 수 없습니다 (slot·row filter로 안 쓰인 role %d개: %s)".formatted(remaining.size(), remaining.stream().map(Role::label).toList()));
         }
         return remaining.get(0);
     }

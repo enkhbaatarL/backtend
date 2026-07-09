@@ -14,8 +14,9 @@ import org.apache.poi.ss.usermodel.Sheet;
 /**
  * fixed_columns 모드 기입기 - slot/value가 고정 컬럼에 있는 행 단위 표
  *
+ *
  * 기입 규칙:
- * - slot 축 키를 column roles 라벨로 매칭해 slot 컬럼을, 잔여 role 하나로 value 컬럼을 정한다
+ * - slot 키를 column roles 라벨로 매칭해 slot 컬럼을, 잔여 role 하나로 value 컬럼을 정한다
  * - row filter(예: E=CDD)가 있으면 필터 컬럼 값이 일치하는 행만 후보로 본다 (HDD/CDD 혼재 표 대응)
  * - data start row부터 slot 컬럼 전체가 일치하는 행을 찾아 value 셀에 proposedValue를 덮어쓴다
  * - 일치 행이 없으면(원본에 없던 신규 항목) 데이터 영역 끝에 행을 추가한다. 필터가 있으면 필터 값도 기입한다
@@ -78,20 +79,20 @@ final class FixedColumnsWriter {
         RowScan scan = ExcelCells.scanRows(sheet, param.getBasecaseDataStartRow() - 1, keyColumns, rowIndex -> matchesRow(rowIndex, slots));
 
         if (scan.matchedRowIndexes().size() > 1) {
-            throw ValueRows.error(context, "slot 축에 일치하는 행이 복수입니다 (엑셀 행=%s, axes=%s)".formatted(toExcelRows(scan.matchedRowIndexes()), slotAxes));
+            throw ValueRows.error(context, "slot에 일치하는 행이 복수입니다 (엑셀 행=%s, slot=%s)".formatted(toExcelRows(scan.matchedRowIndexes()), slotAxes));
         }
 
         if (scan.matchedRowIndexes().size() == 1) {
             int rowIndex = scan.matchedRowIndexes().get(0);
             Object previous = ExcelCells.writeValue(sheet, rowIndex, valueRole.columnIndex(), proposedValue);
-            log.info("[ModelInput Merge] - WRITE  [{}] cell={} axes={} value: {} -> {}",
+            log.info("[ModelInput Merge] - WRITE  [{}] cell={} slot={} value: {} -> {}",
                 context, ExcelCells.cellAddress(rowIndex, valueRole.columnIndex()), slotAxes,
                 ExcelCells.display(previous), ExcelCells.display(proposedValue));
             return true;
         }
 
         appendRow(scan.appendRowIndex(), slots, valueRole, proposedValue);
-        log.info("[ModelInput Merge] - APPEND [{}] cell={} axes={} value: (없음) -> {} — 원본에 없던 신규 행 추가",
+        log.info("[ModelInput Merge] - APPEND [{}] cell={} slot={} value: (없음) -> {} — 원본에 없던 신규 행 추가",
             context, ExcelCells.cellAddress(scan.appendRowIndex(), valueRole.columnIndex()), slotAxes,
             ExcelCells.display(proposedValue));
         return false;
@@ -99,12 +100,12 @@ final class FixedColumnsWriter {
 
     private int resolveColumn(String axisLabel) {
         return roles.byLabel(axisLabel)
-            .orElseThrow(() -> ValueRows.error(context, "column roles에 없는 slot 축입니다: %s".formatted(axisLabel)))
+            .orElseThrow(() -> ValueRows.error(context, "column roles에 없는 slot입니다: %s".formatted(axisLabel)))
             .columnIndex();
     }
 
     /**
-     * payload slot 축이 필터 컬럼을 가리키는 경우(예: 필터 E=CDD인데 payload에 HDD/CDD 축 동반)
+     * payload slot이 필터 컬럼을 가리키는 경우(예: 필터 E=CDD인데 payload에 HDD/CDD slot 동반)
      * 그 값이 필터 값과 모순이면 실패시킨다 — 그대로 진행하면 다른 파라미터의 행을 건드리게 된다.
      */
     private void requireFilterConsistency(List<SlotCell> slots) {
@@ -120,7 +121,7 @@ final class FixedColumnsWriter {
             });
     }
 
-    /** slot 축 전체가 일치하고, row filter가 있으면 그 조건까지 만족하는 행인지 판정한다. */
+    /** slot 전체가 일치하고, row filter가 있으면 그 조건까지 만족하는 행인지 판정한다. */
     private boolean matchesRow(int rowIndex, List<SlotCell> slots) {
         if (rowFilter != null && !rowFilter.matches(sheet, rowIndex)) {
             return false;

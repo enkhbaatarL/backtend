@@ -12,10 +12,12 @@ import org.apache.poi.ss.usermodel.Sheet;
 /**
  * matrix_time_columns 모드 기입기 — 월별 값이 열 방향으로 있는 matrix 표 (패키지 외부 비공개).
  *
+ * 용어: slot(좌표 축 전체) = 시간slot(Year/Month/Period) + 시간외slot(나머지, 행 특정용).
+ *
  * 기입 규칙:
- * - 행: 시간축(Year/Month/Period)을 제외한 slot 축을 column roles(B~F 축 컬럼)로 매칭해 설비 행을 찾는다.
+ * - 행: 시간외slot을 column roles(B~F 축 컬럼)로 매칭해 행을 찾는다.
  *   row filter가 있으면 필터 컬럼 값이 일치하는 행만 후보로 본다.
- *   없는 설비 행은 만들 수 없으므로 미존재/복수 매칭 모두 실패시킨다
+ *   없는 행은 만들 수 없으므로 미존재/복수 매칭 모두 실패시킨다
  * - 열: value 컬럼 범위(start~end)에서 year row/month row 값이 payload의 Year/Month와 일치하는 열을 찾는다.
  *   payload의 Period는 열 매칭에 쓰지 않는다 — Agent 출력에서 Period가 서로 모순된 사례가 있어
  *   Year+Month를 정본으로 하고, 시트 period row와 다르면 경고만 남긴다
@@ -24,7 +26,7 @@ import org.apache.poi.ss.usermodel.Sheet;
 @Slf4j
 final class MatrixTimeColumnsWriter {
 
-    private static final Set<String> TIME_AXES = Set.of("Year", "Month", "Period");
+    private static final Set<String> TIME_SLOTS = Set.of("Year", "Month", "Period");
 
     private record SlotCell(int columnIndex, Object expected) {
     }
@@ -51,58 +53,58 @@ final class MatrixTimeColumnsWriter {
 
     private void applyRow(Map<String, Object> valueRow) {
         Map<String, Object> slotAxes = ValueRows.slotAxes(context, valueRow);
-        Map<String, Object> facilityAxes = facilityAxes(slotAxes);
+        Map<String, Object> nonTimeSlots = nonTimeSlots(slotAxes);
 
-        int rowIndex = findFacilityRow(facilityAxes);
+        int rowIndex = findRow(nonTimeSlots);
         int columnIndex = findTimeColumn(slotAxes);
 
         double proposedValue = ValueRows.proposedValue(context, valueRow);
         Object previous = ExcelCells.writeValue(sheet, rowIndex, columnIndex, proposedValue);
         log.info("[ModelInput Merge] - WRITE - [{}] cell={} (행={}, 열={}/{}) value: {} -> {}",
-            context, ExcelCells.cellAddress(rowIndex, columnIndex), facilityAxes,
+            context, ExcelCells.cellAddress(rowIndex, columnIndex), nonTimeSlots,
             ExcelCells.display(slotAxes.get("Year")), ExcelCells.display(slotAxes.get("Month")),
             ExcelCells.display(previous), ExcelCells.display(proposedValue));
 
         verifyPeriod(slotAxes, rowIndex, columnIndex);
     }
 
-    /** 시간축(Year/Month/Period)을 제외한 slot 축 — 설비 행 특정 조건. */
-    private Map<String, Object> facilityAxes(Map<String, Object> slotAxes) {
-        Map<String, Object> facilityAxes = new LinkedHashMap<>();
+    /** slot에서 시간slot(Year/Month/Period)을 제외한 시간외slot — 행 특정 조건. */
+    private Map<String, Object> nonTimeSlots(Map<String, Object> slotAxes) {
+        Map<String, Object> nonTimeSlots = new LinkedHashMap<>();
         slotAxes.forEach((key, value) -> {
-            if (!isTimeAxis(key)) {
-                facilityAxes.put(key, value);
+            if (!isTimeSlot(key)) {
+                nonTimeSlots.put(key, value);
             }
         });
-        if (facilityAxes.isEmpty()) {
-            throw ValueRows.error(context, "행을 특정할 비시간 slot 축이 없습니다: %s".formatted(slotAxes.keySet()));
+        if (nonTimeSlots.isEmpty()) {
+            throw ValueRows.error(context, "행을 특정할 시간외slot이 없습니다: %s".formatted(slotAxes.keySet()));
         }
-        return facilityAxes;
+        return nonTimeSlots;
     }
 
-    /** 비시간 slot 축으로 설비 행을 특정한다. */
-    private int findFacilityRow(Map<String, Object> facilityAxes) {
-        List<SlotCell> slots = facilityAxes.entrySet().stream()
+    /** 시간외slot 전체가 일치하는 행을 특정한다. */
+    private int findRow(Map<String, Object> nonTimeSlots) {
+        List<SlotCell> slots = nonTimeSlots.entrySet().stream()
             .map(axis -> new SlotCell(resolveColumn(axis.getKey()), axis.getValue()))
             .toList();
 
         List<Integer> keyColumns = roles.columnIndexes();
         RowScan scan = ExcelCells.scanRows(sheet, param.getBasecaseDataStartRow() - 1, keyColumns,
-            candidate -> matchesFacilityRow(candidate, slots));
+            candidate -> matchesRow(candidate, slots));
 
         if (scan.matchedRowIndexes().isEmpty()) {
-            throw ValueRows.error(context, "일치하는 설비 행이 없습니다 (matrix는 신규 행 추가 불가): %s".formatted(facilityAxes));
+            throw ValueRows.error(context, "시간외slot에 일치하는 행이 없습니다 (matrix는 신규 행 추가 불가): %s".formatted(nonTimeSlots));
         }
         if (scan.matchedRowIndexes().size() > 1) {
-            throw ValueRows.error(context, "설비 행이 복수로 매칭됩니다 (엑셀 행=%s, axes=%s)".formatted(toExcelRows(scan.matchedRowIndexes()), facilityAxes));
+            throw ValueRows.error(context, "시간외slot에 일치하는 행이 복수입니다 (엑셀 행=%s, slot=%s)".formatted(toExcelRows(scan.matchedRowIndexes()), nonTimeSlots));
         }
         return scan.matchedRowIndexes().get(0);
     }
 
-    /** value 컬럼 범위에서 Year+Month 헤더가 일치하는 열을 찾는다. 연도 헤더 공백은 직전 값을 이어받는다. */
+    /** value 컬럼 범위에서 시간slot(Year+Month) 헤더가 일치하는 열을 찾는다. 연도 헤더 공백은 직전 값을 이어받는다. */
     private int findTimeColumn(Map<String, Object> slotAxes) {
-        Double year = requireTimeAxis(slotAxes, "Year");
-        Double month = requireTimeAxis(slotAxes, "Month");
+        Double year = requireTimeSlot(slotAxes, "Year");
+        Double month = requireTimeSlot(slotAxes, "Month");
 
         int yearRowIndex = param.getBasecaseYearRow() - 1;
         int monthRowIndex = param.getBasecaseMonthRow() - 1;
@@ -138,8 +140,8 @@ final class MatrixTimeColumnsWriter {
         }
     }
 
-    /** 비시간 slot 축 전체가 일치하고, row filter가 있으면 그 조건까지 만족하는 행인지 판정한다. */
-    private boolean matchesFacilityRow(int rowIndex, List<SlotCell> slots) {
+    /** 시간외slot 전체가 일치하고, row filter가 있으면 그 조건까지 만족하는 행인지 판정한다. */
+    private boolean matchesRow(int rowIndex, List<SlotCell> slots) {
         if (rowFilter != null && !rowFilter.matches(sheet, rowIndex)) {
             return false;
         }
@@ -149,20 +151,20 @@ final class MatrixTimeColumnsWriter {
 
     private int resolveColumn(String axisLabel) {
         return roles.byLabel(axisLabel)
-            .orElseThrow(() -> ValueRows.error(context, "column roles에 없는 slot 축입니다: %s".formatted(axisLabel)))
+            .orElseThrow(() -> ValueRows.error(context, "column roles에 없는 slot입니다: %s".formatted(axisLabel)))
             .columnIndex();
     }
 
-    private Double requireTimeAxis(Map<String, Object> slotAxes, String axisName) {
-        Double value = ExcelCells.asNumber(slotAxes.get(axisName));
+    private Double requireTimeSlot(Map<String, Object> slotAxes, String slotName) {
+        Double value = ExcelCells.asNumber(slotAxes.get(slotName));
         if (value == null) {
-            throw ValueRows.error(context, "matrix 열 매칭에 필요한 %s 축이 없거나 숫자가 아닙니다".formatted(axisName));
+            throw ValueRows.error(context, "matrix 열 매칭에 필요한 %s slot이 없거나 숫자가 아닙니다".formatted(slotName));
         }
         return value;
     }
 
-    private boolean isTimeAxis(String key) {
-        return TIME_AXES.stream().anyMatch(axis -> axis.equalsIgnoreCase(key.trim()));
+    private boolean isTimeSlot(String key) {
+        return TIME_SLOTS.stream().anyMatch(slot -> slot.equalsIgnoreCase(key.trim()));
     }
 
     private void requireMatrixSpec() {
