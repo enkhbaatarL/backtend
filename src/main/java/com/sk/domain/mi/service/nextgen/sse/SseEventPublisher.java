@@ -1,6 +1,7 @@
 package com.sk.domain.mi.service.nextgen.sse;
 
 import com.sk.common.utils.JsonUtil;
+import com.sk.domain.mi.dto.response.nextgen.ModelParamProposalSseEvent;
 import com.sk.domain.mi.dto.response.nextgen.design.ScenarioDesignSseEvent;
 import com.sk.domain.mi.dto.response.nextgen.priceinterp.PriceInterpretationSseEvent;
 import lombok.RequiredArgsConstructor;
@@ -27,6 +28,9 @@ public class SseEventPublisher {
     public static final String PRICE_INTERP_CHANNEL_PREFIX = "scenario-price-interp:";
     public static final String PRICE_INTERP_CHANNEL_PATTERN = PRICE_INTERP_CHANNEL_PREFIX + "*";
 
+    public static final String MODEL_PARAM_PROPOSAL_CHANNEL_PREFIX = "model-param-proposal:";
+    public static final String MODEL_PARAM_PROPOSAL_CHANNEL_PATTERN = MODEL_PARAM_PROPOSAL_CHANNEL_PREFIX + "*";
+
     private final StringRedisTemplate stringRedisTemplate;
 
     public static String designChannel(Long scenarioGroupId) {
@@ -35,6 +39,10 @@ public class SseEventPublisher {
 
     public static String priceInterpChannel(Long scenarioGroupId) {
         return PRICE_INTERP_CHANNEL_PREFIX + scenarioGroupId;
+    }
+
+    public static String modelParamProposalChannel(Long scenarioId) {
+        return MODEL_PARAM_PROPOSAL_CHANNEL_PREFIX + scenarioId;
     }
 
     /**
@@ -60,6 +68,20 @@ public class SseEventPublisher {
             log.debug("[PriceInterp SSE] published: groupId={}, type={}, result={}", event.scenarioGroupId(), event.type(), event.result());
         } catch (Exception e) {
             log.warn("[PriceInterp SSE] publish failed (serialize): groupId={}, {}", event.scenarioGroupId(), e.getMessage());
+        }
+    }
+
+    /**
+     * 수급모델 파라미터 제안 완료/실패 신호를 Redis 채널로 발행한다.
+     */
+    public void publish(ModelParamProposalSseEvent event) {
+        try {
+            String body = JsonUtil.toJson(event);
+            stringRedisTemplate.convertAndSend(modelParamProposalChannel(event.scenarioId()), body);
+            log.debug("[ModelParamProposal SSE] published: scenarioId={}, modelParamProposalId={}, status={}",
+                event.scenarioId(), event.modelParamProposalId(), event.status());
+        } catch (Exception e) {
+            log.warn("[ModelParamProposal SSE] publish failed (serialize): scenarioId={}, {}", event.scenarioId(), e.getMessage());
         }
     }
 
