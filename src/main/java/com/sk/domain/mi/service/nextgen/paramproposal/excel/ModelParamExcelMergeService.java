@@ -7,6 +7,7 @@ import com.sk.domain.shared.entity.master.tmm.MiModelParam;
 import com.sk.domain.shared.repository.master.tmm.MiModelParamRepository;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.EnumMap;
 import java.util.LinkedHashSet;
 import java.util.List;
@@ -53,12 +54,17 @@ public class ModelParamExcelMergeService {
             }
 
             WriteSummary total = new WriteSummary(0, 0);
+            List<String> details = new ArrayList<>();
 
             for (ModelParamAdjustment adjustment : adjustments) {
-                total = WriteSummary.sum(total, apply(workbooks, masters.get(adjustment.parameterName()), adjustment));
+                MiModelParam param = masters.get(adjustment.parameterName());
+                WriteSummary summary = apply(workbooks, param, adjustment);
+                total = WriteSummary.sum(total, summary);
+                details.add(describe(param, summary));
             }
 
-            log.info("[ModelInput Merge] - DONE - parameters={} / cells: write={}, append={}", adjustments.size(), total.writeCount(), total.appendCount());
+            log.info("[ModelInput Merge] - DONE - parameters={}, cells(write={}, append={}) — {}",
+                adjustments.size(), total.writeCount(), total.appendCount(), String.join(" / ", details));
 
             return MergedModelInputFiles.of(serialize(workbooks));
 
@@ -97,6 +103,22 @@ public class ModelParamExcelMergeService {
             case FIXED_COLUMNS -> new FixedColumnsWriter(sheet, param, roles).apply(adjustment.values());
             case MATRIX_TIME_COLUMNS -> new MatrixTimeColumnsWriter(sheet, param, roles).apply(adjustment.values());
         };
+    }
+
+    /**
+     * DONE 요약의 파라미터별 세그먼트.
+     * 0인 카운트는 생략하고, 제안 미대상 기입 건에는 OFF-TARGET 마커를 붙인다.
+     */
+    private String describe(MiModelParam param, WriteSummary summary) {
+        List<String> counts = new ArrayList<>();
+        if (summary.writeCount() > 0) {
+            counts.add("write=%d".formatted(summary.writeCount()));
+        }
+        if (summary.appendCount() > 0) {
+            counts.add("append=%d".formatted(summary.appendCount()));
+        }
+        String marker = Boolean.TRUE.equals(param.getIsUsed()) ? "" : " (OFF-TARGET)";
+        return "[%s] %s%s".formatted(ValueRows.context(param), String.join(", ", counts), marker);
     }
 
     /**
