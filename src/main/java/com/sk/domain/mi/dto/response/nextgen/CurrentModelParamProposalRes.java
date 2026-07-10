@@ -6,6 +6,7 @@ import com.sk.domain.shared.enums.nextgen.ModelExecutionStatus;
 import com.sk.domain.shared.enums.nextgen.ModelParamParameterSource;
 import io.swagger.v3.oas.annotations.media.Schema;
 import java.time.LocalDateTime;
+import java.util.List;
 
 public record CurrentModelParamProposalRes(
 
@@ -41,6 +42,12 @@ public record CurrentModelParamProposalRes(
 
     @Schema(description = "flat model parameter array")
     JsonNode parameters,
+
+    @Schema(description = "parameters의 modelTarget을 머지한 modelFile > modelSheet > tableName 계층")
+    List<ModelFileNode> modelFiles,
+
+    @Schema(description = "parameters의 parameterName별 표 모양 (tmm_mi_model_param_m 마스터 기준)")
+    List<ModelParamShape> parameterShapes,
 
     @Schema(description = "실패 사유")
     String failureReason,

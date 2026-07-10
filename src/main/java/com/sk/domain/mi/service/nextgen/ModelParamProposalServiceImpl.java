@@ -8,8 +8,14 @@ import com.sk.common.exception.AppErrorException;
 import com.sk.common.exception.AppHttpStatusException;
 import com.sk.domain.mi.dto.response.nextgen.CurrentModelParamProposalRes;
 import com.sk.domain.mi.dto.response.nextgen.ModelExecutionOptionsRes;
+import com.sk.domain.mi.dto.response.nextgen.ModelFileNode;
+import com.sk.domain.mi.dto.response.nextgen.ModelParamAlign;
+import com.sk.domain.mi.dto.response.nextgen.ModelParamColumn;
+import com.sk.domain.mi.dto.response.nextgen.ModelParamColumnKind;
 import com.sk.domain.mi.dto.response.nextgen.ModelParamProposalAcceptRes;
 import com.sk.domain.mi.dto.response.nextgen.ModelParamProposalRes;
+import com.sk.domain.mi.dto.response.nextgen.ModelParamShape;
+import com.sk.domain.mi.dto.response.nextgen.ModelSheetNode;
 import com.sk.domain.shared.client.ModelParamProposalAgentApi;
 import com.sk.domain.shared.client.dto.request.AgentModelParamConfirmationReq;
 import com.sk.domain.shared.client.dto.request.ModelParamPayloadItem;
@@ -19,6 +25,7 @@ import com.sk.domain.shared.entity.master.tmd.ModelExecutionPreparation;
 import com.sk.domain.shared.entity.master.tmd.ScenarioCase;
 import com.sk.domain.shared.entity.master.tmd.ScenarioCaseRunHistory;
 import com.sk.domain.shared.entity.master.tmm.AgentModelParamProposal;
+import com.sk.domain.shared.entity.master.tmm.MiModelParam;
 import com.sk.domain.shared.entity.master.tmm.MiScenario;
 import com.sk.domain.shared.enums.fundamentalmodel.FundamentalModelCaseStatus;
 import com.sk.domain.shared.enums.fundamentalmodel.FundamentalModelExecType;
@@ -33,13 +40,24 @@ import com.sk.domain.shared.repository.master.tmd.ModelExecutionPreparationRepos
 import com.sk.domain.shared.repository.master.tmd.ScenarioCaseRepository;
 import com.sk.domain.shared.repository.master.tmd.ScenarioCaseRunHistoryRepository;
 import com.sk.domain.shared.repository.master.tmm.AgentModelParamProposalRepository;
+import com.sk.domain.shared.repository.master.tmm.MiModelParamRepository;
 import com.sk.domain.shared.repository.master.tmm.MiScenarioRepository;
 import com.sk.domain.shared.service.permissions.AuthorizationService;
 import java.net.SocketTimeoutException;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.Iterator;
+import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
+import java.util.Set;
+import java.util.function.Function;
 import java.util.function.Supplier;
+import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.dao.DataIntegrityViolationException;
@@ -69,11 +87,18 @@ public class ModelParamProposalServiceImpl implements ModelParamProposalService 
         ModelExecutionPreparationStatus.PREPARING_EXECUTION
     );
 
+    /**
+     * basecase_column_roles 파싱 시 role 경계 — 콤마 뒤에 "컬럼문자:"가 올 때만 분리한다.
+     * 라벨에 콤마가 포함된 경우(예: "% change (+/-)")를 대비하며, 엑셀 병합의 ColumnRoleMap과 동일 규칙.
+     */
+    private static final Pattern COLUMN_ROLE_BOUNDARY = Pattern.compile(",(?=\\s*[A-Za-z]{1,3}:)");
+
     private final MiScenarioRepository miScenarioRepository;
     private final ScenarioCaseRepository scenarioCaseRepository;
     private final ScenarioCaseRunHistoryRepository scenarioCaseRunHistoryRepository;
     private final ModelExecutionPreparationRepository modelExecutionPreparationRepository;
     private final AgentModelParamProposalRepository agentModelParamProposalRepository;
+    private final MiModelParamRepository miModelParamRepository;
     private final ModelParamProposalAgentApi modelParamProposalAgentApi;
     private final AuthorizationService authorizationService;
     private final TransactionOperations transactionOperations;
@@ -152,13 +177,16 @@ public class ModelParamProposalServiceImpl implements ModelParamProposalService 
                     .formatted(scenarioId, modelParamProposalId)
             ));
 
+        JsonNode parameters = resolveParameters(proposal);
         return new ModelParamProposalRes(
             proposal.getModelParamProposalId(),
             proposal.getScenarioId(),
             proposal.getScenarioGroupId(),
             proposal.getEventId(),
             resolveDisplayStatus(preparation, proposal),
-            resolveParameters(proposal),
+            parameters,
+            buildModelFiles(parameters),
+            buildParameterShapes(parameters),
             resolveFailureReason(proposal),
             preparation.getCreateDt(),
             resolveCompletedAt(proposal)
@@ -400,6 +428,7 @@ public class ModelParamProposalServiceImpl implements ModelParamProposalService 
         LocalDateTime requestedAt,
         String failureReason
     ) {
+        JsonNode parameters = resolveCurrentParameters(parameterSource, proposal);
         return new CurrentModelParamProposalRes(
             scenarioId,
             currentState,
@@ -411,7 +440,9 @@ public class ModelParamProposalServiceImpl implements ModelParamProposalService 
             caseId,
             runId,
             modelExecutionStatus,
-            resolveCurrentParameters(parameterSource, proposal),
+            parameters,
+            buildModelFiles(parameters),
+            buildParameterShapes(parameters),
             failureReason,
             requestedAt,
             proposal == null ? null : proposal.getProposalCompletedAt(),
@@ -681,6 +712,176 @@ public class ModelParamProposalServiceImpl implements ModelParamProposalService 
             case PROCESSING, FAILED -> null;
         };
         return parseArrayOrEmpty(json);
+    }
+
+    private List<ModelFileNode> buildModelFiles(JsonNode parameters) {
+        Map<String, Map<String, Set<String>>> tree = new LinkedHashMap<>();
+        if (parameters != null && parameters.isArray()) {
+            for (JsonNode parameter : parameters) {
+                JsonNode modelTarget = parameter.get("modelTarget");
+                if (modelTarget == null || modelTarget.isNull()) {
+                    continue;
+                }
+                String modelFile = textOrNull(modelTarget.get("modelFile"));
+                String modelSheet = textOrNull(modelTarget.get("modelSheet"));
+                if (modelFile == null || modelSheet == null) {
+                    continue;
+                }
+                Set<String> tableNames = tree
+                    .computeIfAbsent(modelFile, key -> new LinkedHashMap<>())
+                    .computeIfAbsent(modelSheet, key -> new LinkedHashSet<>());
+                String tableName = textOrNull(modelTarget.get("tableName"));
+                if (tableName != null) {
+                    tableNames.add(tableName);
+                }
+            }
+        }
+        return tree.entrySet().stream()
+            .map(fileEntry -> new ModelFileNode(
+                fileEntry.getKey(),
+                fileEntry.getValue().entrySet().stream()
+                    .map(sheetEntry -> new ModelSheetNode(sheetEntry.getKey(), List.copyOf(sheetEntry.getValue())))
+                    .toList()
+            ))
+            .toList();
+    }
+
+    private String textOrNull(JsonNode node) {
+        return node == null || node.isNull() ? null : node.asText();
+    }
+
+    private List<ModelParamShape> buildParameterShapes(JsonNode parameters) {
+        if (parameters == null || !parameters.isArray() || parameters.isEmpty()) {
+            return List.of();
+        }
+        // parameterName 순서 유지·중복 제거. 컬럼 태깅(slot/value)과 정렬(값 타입)에 payload 원소가 필요
+        Map<String, JsonNode> paramByName = new LinkedHashMap<>();
+        for (JsonNode parameter : parameters) {
+            String parameterName = textOrNull(parameter.get("parameterName"));
+            if (parameterName == null || paramByName.containsKey(parameterName)) {
+                continue;
+            }
+            paramByName.put(parameterName, parameter);
+        }
+        if (paramByName.isEmpty()) {
+            return List.of();
+        }
+        Map<String, MiModelParam> masterByName = miModelParamRepository
+            .findByParameterNameInAndIsDeletedFalse(paramByName.keySet()).stream()
+            .collect(Collectors.toMap(MiModelParam::getParameterName, Function.identity(), (first, second) -> first));
+        return paramByName.entrySet().stream()
+            .map(entry -> {
+                MiModelParam master = masterByName.get(entry.getKey());
+                return master == null ? null : toModelParamShape(master, entry.getValue());
+            })
+            .filter(Objects::nonNull)
+            .toList();
+    }
+
+    /** payload modelTarget.slotAxesFieldNames 추출 (소문자 정규화 — 컬럼 role 라벨과 대소문자 무관 매칭). */
+    private Set<String> extractSlotAxisNames(JsonNode parameter) {
+        JsonNode modelTarget = parameter.get("modelTarget");
+        if (modelTarget == null || modelTarget.isNull()) {
+            return Set.of();
+        }
+        JsonNode slotAxes = modelTarget.get("slotAxesFieldNames");
+        if (slotAxes == null || !slotAxes.isArray()) {
+            return Set.of();
+        }
+        Set<String> names = new LinkedHashSet<>();
+        for (JsonNode name : slotAxes) {
+            String value = textOrNull(name);
+            if (value != null) {
+                names.add(value.trim().toLowerCase());
+            }
+        }
+        return names;
+    }
+
+    private ModelParamShape toModelParamShape(MiModelParam master, JsonNode parameter) {
+        Set<String> slotAxisNames = extractSlotAxisNames(parameter);
+        JsonNode values = parameter.get("values");
+        return new ModelParamShape(
+            master.getParameterName(),
+            master.getModelFile(),
+            master.getModelSheet(),
+            master.getModelTable(),
+            master.getBasecaseReadMode(),
+            parseColumnRoles(master.getBasecaseColumnRoles(), slotAxisNames, values),
+            master.getSemanticAxes()
+        );
+    }
+
+    private List<ModelParamColumn> parseColumnRoles(String columnRoles, Set<String> slotAxisNames, JsonNode values) {
+        if (columnRoles == null || columnRoles.isBlank()) {
+            return List.of();
+        }
+        List<ModelParamColumn> columns = new ArrayList<>();
+        for (String token : COLUMN_ROLE_BOUNDARY.split(columnRoles)) {
+            String trimmed = token.trim();
+            if (trimmed.isEmpty()) {
+                continue;
+            }
+            int separator = trimmed.indexOf(':');
+            String column = separator < 0 ? null : trimmed.substring(0, separator).trim();
+            String role = separator < 0 ? trimmed : trimmed.substring(separator + 1).trim();
+            ModelParamColumnKind kind = slotAxisNames.contains(role.toLowerCase())
+                ? ModelParamColumnKind.SLOT
+                : ModelParamColumnKind.VALUE;
+            columns.add(new ModelParamColumn(column, role, kind, resolveAlign(kind, role, values)));
+        }
+        return columns;
+    }
+
+    /** 데이터 타입 기준 정렬: values[] 샘플이 숫자면 RIGHT, 문자면 LEFT. 샘플이 없으면 값 컬럼은 RIGHT, 축은 LEFT. */
+    private ModelParamAlign resolveAlign(ModelParamColumnKind kind, String role, JsonNode values) {
+        JsonNode sample = sampleColumnValue(kind, role, values);
+        if (sample == null) {
+            return kind == ModelParamColumnKind.VALUE ? ModelParamAlign.RIGHT : ModelParamAlign.LEFT;
+        }
+        return sample.isNumber() ? ModelParamAlign.RIGHT : ModelParamAlign.LEFT;
+    }
+
+    private JsonNode sampleColumnValue(ModelParamColumnKind kind, String role, JsonNode values) {
+        if (values == null || !values.isArray()) {
+            return null;
+        }
+        for (JsonNode row : values) {
+            JsonNode cell = kind == ModelParamColumnKind.VALUE
+                ? firstPresent(row.get("proposedValue"), row.get("basecaseValue"))
+                : fieldIgnoreCase(row, role);
+            if (cell != null && !cell.isNull()) {
+                return cell;
+            }
+        }
+        return null;
+    }
+
+    private JsonNode firstPresent(JsonNode... nodes) {
+        for (JsonNode node : nodes) {
+            if (node != null && !node.isNull()) {
+                return node;
+            }
+        }
+        return null;
+    }
+
+    private JsonNode fieldIgnoreCase(JsonNode row, String fieldName) {
+        if (row == null || !row.isObject()) {
+            return null;
+        }
+        JsonNode exact = row.get(fieldName);
+        if (exact != null) {
+            return exact;
+        }
+        Iterator<Map.Entry<String, JsonNode>> fields = row.fields();
+        while (fields.hasNext()) {
+            Map.Entry<String, JsonNode> field = fields.next();
+            if (field.getKey().equalsIgnoreCase(fieldName)) {
+                return field.getValue();
+            }
+        }
+        return null;
     }
 
     private JsonNode parseArrayOrEmpty(String json) {
