@@ -8,8 +8,12 @@ import com.sk.common.exception.AppErrorException;
 import com.sk.common.exception.AppHttpStatusException;
 import com.sk.domain.mi.dto.response.nextgen.CurrentModelParamProposalRes;
 import com.sk.domain.mi.dto.response.nextgen.ModelExecutionOptionsRes;
+import com.sk.domain.mi.dto.response.nextgen.ModelFileNode;
+import com.sk.domain.mi.dto.response.nextgen.ModelParamColumn;
 import com.sk.domain.mi.dto.response.nextgen.ModelParamProposalAcceptRes;
 import com.sk.domain.mi.dto.response.nextgen.ModelParamProposalRes;
+import com.sk.domain.mi.dto.response.nextgen.ModelParamShape;
+import com.sk.domain.mi.dto.response.nextgen.ModelSheetNode;
 import com.sk.domain.shared.client.ModelParamProposalAgentApi;
 import com.sk.domain.shared.client.dto.request.AgentModelParamConfirmationReq;
 import com.sk.domain.shared.client.dto.request.ModelParamPayloadItem;
@@ -19,6 +23,7 @@ import com.sk.domain.shared.entity.master.tmd.ModelExecutionPreparation;
 import com.sk.domain.shared.entity.master.tmd.ScenarioCase;
 import com.sk.domain.shared.entity.master.tmd.ScenarioCaseRunHistory;
 import com.sk.domain.shared.entity.master.tmm.AgentModelParamProposal;
+import com.sk.domain.shared.entity.master.tmm.MiModelParam;
 import com.sk.domain.shared.entity.master.tmm.MiScenario;
 import com.sk.domain.shared.enums.fundamentalmodel.FundamentalModelCaseStatus;
 import com.sk.domain.shared.enums.fundamentalmodel.FundamentalModelExecType;
@@ -33,13 +38,22 @@ import com.sk.domain.shared.repository.master.tmd.ModelExecutionPreparationRepos
 import com.sk.domain.shared.repository.master.tmd.ScenarioCaseRepository;
 import com.sk.domain.shared.repository.master.tmd.ScenarioCaseRunHistoryRepository;
 import com.sk.domain.shared.repository.master.tmm.AgentModelParamProposalRepository;
+import com.sk.domain.shared.repository.master.tmm.MiModelParamRepository;
 import com.sk.domain.shared.repository.master.tmm.MiScenarioRepository;
 import com.sk.domain.shared.service.permissions.AuthorizationService;
 import java.net.SocketTimeoutException;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
+import java.util.Set;
+import java.util.function.Function;
 import java.util.function.Supplier;
+import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.dao.DataIntegrityViolationException;
@@ -74,6 +88,7 @@ public class ModelParamProposalServiceImpl implements ModelParamProposalService 
     private final ScenarioCaseRunHistoryRepository scenarioCaseRunHistoryRepository;
     private final ModelExecutionPreparationRepository modelExecutionPreparationRepository;
     private final AgentModelParamProposalRepository agentModelParamProposalRepository;
+    private final MiModelParamRepository miModelParamRepository;
     private final ModelParamProposalAgentApi modelParamProposalAgentApi;
     private final AuthorizationService authorizationService;
     private final TransactionOperations transactionOperations;
@@ -152,13 +167,16 @@ public class ModelParamProposalServiceImpl implements ModelParamProposalService 
                     .formatted(scenarioId, modelParamProposalId)
             ));
 
+        JsonNode parameters = resolveParameters(proposal);
         return new ModelParamProposalRes(
             proposal.getModelParamProposalId(),
             proposal.getScenarioId(),
             proposal.getScenarioGroupId(),
             proposal.getEventId(),
             resolveDisplayStatus(preparation, proposal),
-            resolveParameters(proposal),
+            parameters,
+            buildModelFiles(parameters),
+            buildParameterShapes(parameters),
             resolveFailureReason(proposal),
             preparation.getCreateDt(),
             resolveCompletedAt(proposal)
@@ -400,6 +418,7 @@ public class ModelParamProposalServiceImpl implements ModelParamProposalService 
         LocalDateTime requestedAt,
         String failureReason
     ) {
+        JsonNode parameters = resolveCurrentParameters(parameterSource, proposal);
         return new CurrentModelParamProposalRes(
             scenarioId,
             currentState,
@@ -411,7 +430,9 @@ public class ModelParamProposalServiceImpl implements ModelParamProposalService 
             caseId,
             runId,
             modelExecutionStatus,
-            resolveCurrentParameters(parameterSource, proposal),
+            parameters,
+            buildModelFiles(parameters),
+            buildParameterShapes(parameters),
             failureReason,
             requestedAt,
             proposal == null ? null : proposal.getProposalCompletedAt(),
@@ -681,6 +702,101 @@ public class ModelParamProposalServiceImpl implements ModelParamProposalService 
             case PROCESSING, FAILED -> null;
         };
         return parseArrayOrEmpty(json);
+    }
+
+    private List<ModelFileNode> buildModelFiles(JsonNode parameters) {
+        Map<String, Map<String, Set<String>>> tree = new LinkedHashMap<>();
+        if (parameters != null && parameters.isArray()) {
+            for (JsonNode parameter : parameters) {
+                JsonNode modelTarget = parameter.get("modelTarget");
+                if (modelTarget == null || modelTarget.isNull()) {
+                    continue;
+                }
+                String modelFile = textOrNull(modelTarget.get("modelFile"));
+                String modelSheet = textOrNull(modelTarget.get("modelSheet"));
+                if (modelFile == null || modelSheet == null) {
+                    continue;
+                }
+                Set<String> tableNames = tree
+                    .computeIfAbsent(modelFile, key -> new LinkedHashMap<>())
+                    .computeIfAbsent(modelSheet, key -> new LinkedHashSet<>());
+                String tableName = textOrNull(modelTarget.get("tableName"));
+                if (tableName != null) {
+                    tableNames.add(tableName);
+                }
+            }
+        }
+        return tree.entrySet().stream()
+            .map(fileEntry -> new ModelFileNode(
+                fileEntry.getKey(),
+                fileEntry.getValue().entrySet().stream()
+                    .map(sheetEntry -> new ModelSheetNode(sheetEntry.getKey(), List.copyOf(sheetEntry.getValue())))
+                    .toList()
+            ))
+            .toList();
+    }
+
+    private String textOrNull(JsonNode node) {
+        return node == null || node.isNull() ? null : node.asText();
+    }
+
+    private List<ModelParamShape> buildParameterShapes(JsonNode parameters) {
+        if (parameters == null || !parameters.isArray() || parameters.isEmpty()) {
+            return List.of();
+        }
+        List<String> orderedNames = new ArrayList<>();
+        for (JsonNode parameter : parameters) {
+            String parameterName = textOrNull(parameter.get("parameterName"));
+            if (parameterName != null && !orderedNames.contains(parameterName)) {
+                orderedNames.add(parameterName);
+            }
+        }
+        if (orderedNames.isEmpty()) {
+            return List.of();
+        }
+        Map<String, MiModelParam> masterByName = miModelParamRepository
+            .findByParameterNameInAndIsDeletedFalse(orderedNames).stream()
+            .collect(Collectors.toMap(MiModelParam::getParameterName, Function.identity(), (first, second) -> first));
+        return orderedNames.stream()
+            .map(masterByName::get)
+            .filter(Objects::nonNull)
+            .map(this::toModelParamShape)
+            .toList();
+    }
+
+    private ModelParamShape toModelParamShape(MiModelParam master) {
+        return new ModelParamShape(
+            master.getParameterName(),
+            master.getModelFile(),
+            master.getModelSheet(),
+            master.getModelTable(),
+            master.getBasecaseReadMode(),
+            parseColumnRoles(master.getBasecaseColumnRoles()),
+            master.getSemanticAxes()
+        );
+    }
+
+    private List<ModelParamColumn> parseColumnRoles(String columnRoles) {
+        if (columnRoles == null || columnRoles.isBlank()) {
+            return List.of();
+        }
+        List<ModelParamColumn> columns = new ArrayList<>();
+        for (String token : columnRoles.split(",")) {
+            String trimmed = token.trim();
+            if (trimmed.isEmpty()) {
+                continue;
+            }
+            int separator = trimmed.indexOf(':');
+            if (separator < 0) {
+                columns.add(new ModelParamColumn(null, trimmed));
+            } else {
+                columns.add(new ModelParamColumn(
+                    trimmed.substring(0, separator).trim(),
+                    trimmed.substring(separator + 1).trim()
+                ));
+            }
+        }
+        return columns;
     }
 
     private JsonNode parseArrayOrEmpty(String json) {
