@@ -13,7 +13,12 @@ import org.springframework.data.repository.query.Param;
 
 public interface ModelExecutionPreparationRepository extends JpaRepository<ModelExecutionPreparation, Long> {
 
-    Optional<ModelExecutionPreparation> findByScenarioIdAndAgentProposalIdAndIsDeletedFalse(Long scenarioId, Long agentProposalId);
+    Optional<ModelExecutionPreparation> findByCaseIdAndIsDeletedFalse(Long caseId);
+
+    Optional<ModelExecutionPreparation> findFirstByScenarioIdAndAgentProposalIdAndIsDeletedFalseOrderByExecPrepIdDesc(
+        Long scenarioId,
+        Long agentProposalId
+    );
 
     Optional<ModelExecutionPreparation> findFirstByScenarioIdAndIsDeletedFalseOrderByExecPrepIdDesc(Long scenarioId);
 
@@ -74,6 +79,27 @@ public interface ModelExecutionPreparationRepository extends JpaRepository<Model
         @Param("currentStatuses") Collection<ModelExecutionPreparationStatus> currentStatuses,
         @Param("nextStatus") ModelExecutionPreparationStatus nextStatus,
         @Param("errorMessage") String errorMessage,
+        @Param("actorLoginId") String actorLoginId,
+        @Param("modifiedAt") LocalDateTime modifiedAt
+    );
+
+    @Modifying(clearAutomatically = true, flushAutomatically = true)
+    @Query("""
+        UPDATE ModelExecutionPreparation p
+           SET p.caseId = :caseId,
+               p.status = :executingStatus,
+               p.errorMessage = NULL,
+               p.modifyUserId = :actorLoginId,
+               p.modifyDt = :modifiedAt
+         WHERE p.execPrepId = :execPrepId
+           AND p.status = :preparingStatus
+           AND p.caseId IS NULL
+        """)
+    int attachCaseAndMarkExecuting(
+        @Param("execPrepId") Long execPrepId,
+        @Param("caseId") Long caseId,
+        @Param("preparingStatus") ModelExecutionPreparationStatus preparingStatus,
+        @Param("executingStatus") ModelExecutionPreparationStatus executingStatus,
         @Param("actorLoginId") String actorLoginId,
         @Param("modifiedAt") LocalDateTime modifiedAt
     );

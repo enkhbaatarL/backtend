@@ -64,4 +64,17 @@ public class ModelExecutionPreparation extends BaseEntity {
         preparation.status = ModelExecutionPreparationStatus.REQUESTING;
         return preparation;
     }
+
+    public static ModelExecutionPreparation createConfirmingExecution(
+        Long scenarioId,
+        Integer requestUserNo,
+        Long agentProposalId
+    ) {
+        ModelExecutionPreparation preparation = new ModelExecutionPreparation();
+        preparation.scenarioId = scenarioId;
+        preparation.requestUserNo = requestUserNo;
+        preparation.agentProposalId = agentProposalId;
+        preparation.status = ModelExecutionPreparationStatus.CONFIRMING;
+        return preparation;
+    }
 }

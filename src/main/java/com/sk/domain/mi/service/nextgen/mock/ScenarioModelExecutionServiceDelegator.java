@@ -1,6 +1,9 @@
 package com.sk.domain.mi.service.nextgen.mock;
 
 import com.sk.domain.mi.config.NextGenMockProperties;
+import com.sk.domain.mi.dto.request.nextgen.ModelParamProposalExecutionReq;
+import com.sk.domain.mi.dto.response.nextgen.LatestModelExecutionInputFilesRes;
+import com.sk.domain.mi.dto.response.nextgen.LatestModelParamProposalParametersRes;
 import com.sk.domain.mi.dto.response.nextgen.ModelExecutionAcceptRes;
 import com.sk.domain.mi.dto.response.nextgen.ModelExecutionParameterRes;
 import com.sk.domain.mi.dto.response.nextgen.ModelExecutionStatusRes;
@@ -34,9 +37,29 @@ public class ScenarioModelExecutionServiceDelegator implements ScenarioModelExec
     }
 
     @Override
+    public ModelExecutionAcceptRes submitModelExecution(Long scenarioId, ModelParamProposalExecutionReq request) {
+        return realService.submitModelExecution(scenarioId, request);
+    }
+
+    @Override
     public ModelExecutionStatusRes getModelExecutionStatus(Long scenarioId, String runId) {
         return mockProps.getModelExecutions().getApi().isGetStatus()
             ? mockService.getModelExecutionStatus(scenarioId, runId)
             : realService.getModelExecutionStatus(scenarioId, runId);
+    }
+
+    @Override
+    public LatestModelParamProposalParametersRes getLatestConfirmedParameters(Long scenarioId) {
+        return realService.getLatestConfirmedParameters(scenarioId);
+    }
+
+    @Override
+    public LatestModelParamProposalParametersRes getLatestProposedParameters(Long scenarioId) {
+        return realService.getLatestProposedParameters(scenarioId);
+    }
+
+    @Override
+    public LatestModelExecutionInputFilesRes getLatestInputFiles(Long scenarioId) {
+        return realService.getLatestInputFiles(scenarioId);
     }
 }

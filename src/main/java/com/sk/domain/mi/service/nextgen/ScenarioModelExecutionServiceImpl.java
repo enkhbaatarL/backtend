@@ -1,21 +1,31 @@
 package com.sk.domain.mi.service.nextgen;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.sk.common.enums.ResultCode;
 import com.sk.common.exception.AppErrorException;
 import com.sk.common.exception.AppHttpStatusException;
-import com.sk.domain.admin.dto.response.file.FileUploadRes;
-import com.sk.domain.mi.dto.request.fundamentalmodel.FundamentalModelJobArgs;
+import com.sk.domain.mi.dto.request.nextgen.ModelParamProposalExecutionReq;
+import com.sk.domain.mi.dto.response.nextgen.LatestModelExecutionInputFilesRes;
+import com.sk.domain.mi.dto.response.nextgen.LatestModelParamProposalParametersRes;
 import com.sk.domain.mi.dto.response.nextgen.ModelExecutionAcceptRes;
 import com.sk.domain.mi.dto.response.nextgen.ModelExecutionFileRes;
+import com.sk.domain.mi.dto.response.nextgen.ModelExecutionInputFileRes;
 import com.sk.domain.mi.dto.response.nextgen.ModelExecutionParameterRes;
 import com.sk.domain.mi.dto.response.nextgen.ModelExecutionStatusRes;
-import com.sk.domain.mi.service.fundamentalmodel.KubernetesJobService;
+import com.sk.domain.mi.service.nextgen.execution.ModelParamExecutionCoordinator;
+import com.sk.domain.mi.service.nextgen.execution.ModelParamExecutionCoordinator.ExecutionConfirmationContext;
+import com.sk.domain.mi.service.nextgen.execution.ScenarioExecutionFileStager;
+import com.sk.domain.mi.service.nextgen.execution.ScenarioExecutionRegistrar;
+import com.sk.domain.mi.service.nextgen.execution.StagedScenarioExecutionFiles;
+import com.sk.domain.mi.service.nextgen.query.LatestModelParamProposalExecutionContextResolver;
+import com.sk.domain.mi.service.nextgen.query.LatestModelParamProposalExecutionContextResolver.LatestModelParamProposalExecutionContext;
 import com.sk.domain.shared.entity.master.tcm.UploadedFile;
 import com.sk.domain.shared.entity.master.tmd.ScenarioCase;
 import com.sk.domain.shared.entity.master.tmd.ScenarioCaseRunHistory;
+import com.sk.domain.shared.entity.master.tmm.AgentModelParamProposal;
 import com.sk.domain.shared.entity.master.tmm.MiScenario;
-import com.sk.domain.shared.enums.Role;
-import com.sk.domain.shared.enums.fundamentalmodel.FundamentalModelCaseStatus;
 import com.sk.domain.shared.enums.fundamentalmodel.FundamentalModelExecType;
 import com.sk.domain.shared.enums.fundamentalmodel.FundamentalModelRunStatus;
 import com.sk.domain.shared.enums.nextgen.ModelExecutionStatus;
@@ -24,59 +34,47 @@ import com.sk.domain.shared.enums.nextgen.ScenarioStatus;
 import com.sk.domain.shared.repository.master.tcm.UploadedFileRepository;
 import com.sk.domain.shared.repository.master.tmd.ScenarioCaseRepository;
 import com.sk.domain.shared.repository.master.tmd.ScenarioCaseRunHistoryRepository;
+import com.sk.domain.shared.repository.master.tmm.AgentModelParamProposalRepository;
 import com.sk.domain.shared.repository.master.tmm.MiScenarioRepository;
-import com.sk.domain.shared.service.FileService;
-import com.sk.domain.shared.service.permissions.AuthorizationService;
-import java.time.LocalDateTime;
-import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Optional;
-import java.util.UUID;
+import java.util.function.Function;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.TransactionStatus;
+import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.transaction.support.TransactionOperations;
-import org.springframework.transaction.support.TransactionSynchronization;
-import org.springframework.transaction.support.TransactionSynchronizationManager;
 import org.springframework.web.multipart.MultipartFile;
 
-@Slf4j
 @Service
+@Slf4j
 @RequiredArgsConstructor
 @Transactional(readOnly = true)
 public class ScenarioModelExecutionServiceImpl implements ScenarioModelExecutionService {
 
     private static final int REQUIRED_FILE_COUNT = 3;
-    private static final int TITLE_MAX_LENGTH = 200;
     private static final List<String> REQUIRED_INPUT_FILE_ROLE_KEYWORDS = List.of("DEMAND", "SUPPLY", "TRADE");
     private static final String REQUIRED_INPUT_FILE_ROLE_MESSAGE =
         "files는 파일명에 DEMAND, SUPPLY, TRADE 키워드를 각각 정확히 1개씩 포함해야 합니다.";
     private static final String FILE_RELATION_SCENARIO_CASE = "SCNRCASE";
-    private static final String CALLBACK_ACTOR = "SYSTEM";
-    private static final String JOB_SUBMIT_FAILURE_REASON = "JOB_SUBMIT_FAILED";
-    private static final String CALLBACK_PATH_TEMPLATE = "/api/v1/mi/fundamental-model/runs/%s/callback";
-    private static final DateTimeFormatter RUN_ID_TIMESTAMP_FORMATTER = DateTimeFormatter.ofPattern("yyyyMMdd_HHmmss");
 
     private final MiScenarioRepository miScenarioRepository;
     private final ScenarioCaseRepository scenarioCaseRepository;
     private final ScenarioCaseRunHistoryRepository scenarioCaseRunHistoryRepository;
     private final UploadedFileRepository uploadedFileRepository;
-    private final FileService fileService;
-    private final AuthorizationService authorizationService;
-    private final KubernetesJobService kubernetesJobService;
+    private final AgentModelParamProposalRepository agentModelParamProposalRepository;
+    private final LatestModelParamProposalExecutionContextResolver latestModelParamProposalExecutionContextResolver;
+    private final ModelParamExecutionCoordinator modelParamExecutionCoordinator;
+    private final ScenarioExecutionFileStager scenarioExecutionFileStager;
+    private final ScenarioExecutionRegistrar scenarioExecutionRegistrar;
     private final TransactionOperations transactionOperations;
-
-    @Value("${kubernetes.callback-base-url:}")
-    private String callbackBaseUrl;
+    private final ObjectMapper objectMapper;
 
     @Override
     public ModelExecutionParameterRes getModelExecutionParameters(Long scenarioId) {
@@ -84,66 +82,94 @@ public class ScenarioModelExecutionServiceImpl implements ScenarioModelExecution
     }
 
     @Override
-    @Transactional
+    @Transactional(propagation = Propagation.NOT_SUPPORTED)
     public ModelExecutionAcceptRes submitModelExecution(Long scenarioId, List<MultipartFile> files) {
-        MiScenario scenario = findScenarioForUpdate(scenarioId);
-        rejectDiscardedScenario(scenario);
-        rejectIfMultipartModeMismatch(scenario);
-        validateFiles(files);
-        rejectIfActiveExecutionExists(scenarioId);
-
-        Integer actorUserNo = authorizationService.getUserNo();
-        String actorLoginId = authorizationService.getSubject();
-        String companyCd = authorizationService.getCompanyCdWithPriority();
-        Role role = authorizationService.getCurrentRole();
-
-        ScenarioCase savedCase = createRunningScenarioCase(scenario, actorUserNo, actorLoginId);
-        List<Long> uploadedFileNos = new ArrayList<>();
+        precheckMultipartExecution(scenarioId, files);
+        StagedScenarioExecutionFiles stagedFiles = scenarioExecutionFileStager.stageSequentially(files);
         try {
-            List<ModelExecutionFileRes> uploadedFiles = uploadCaseFiles(
-                companyCd,
-                role,
-                savedCase.getCaseId(),
-                files,
-                uploadedFileNos
-            );
-
-            LocalDateTime requestedAt = LocalDateTime.now();
-            String runId = generateRunId(requestedAt);
-            ScenarioCaseRunHistory runHistory = scenarioCaseRunHistoryRepository.saveAndFlush(
-                ScenarioCaseRunHistory.createRunning(savedCase.getCaseId(), runId, actorLoginId)
-            );
-            Long runSeq = scenarioCaseRunHistoryRepository.findRunSeqByRunId(runId)
-                .orElseThrow(() -> AppErrorException.of(
-                    ResultCode.Error.RSC_NOT_FOUND,
-                    "scenario model execution run_seq not found after insert. runId: %s".formatted(runId)
-                ));
-            LocalDateTime executionBeginDt = scenarioCaseRunHistoryRepository.findExecutionBeginDtByRunId(runId)
-                .orElseThrow(() -> AppErrorException.of(
-                    ResultCode.Error.RSC_NOT_FOUND,
-                    "scenario model execution begin time not found after insert. runId: %s".formatted(runId)
-                ));
-
-            savedCase.attachLatestRun(runId, actorLoginId);
-            scenarioCaseRepository.flush();
-
-            FundamentalModelJobArgs jobArgs = buildJobArgs(savedCase.getCaseId(), scenarioId, runId, runSeq);
-            submitJobAfterCommit(savedCase.getCaseId(), runId, jobArgs);
-
-            return new ModelExecutionAcceptRes(
-                savedCase.getCaseId(),
-                scenarioId,
-                runId,
-                ModelExecutionStatus.RUNNING,
-                uploadedFiles,
-                savedCase.getCreateDt(),
-                executionBeginDt,
-                buildStatusEndpoint(scenarioId, runId)
-            );
+            ModelExecutionAcceptRes response = transactionOperations.execute(status -> {
+                MiScenario scenario = findScenarioForUpdate(scenarioId);
+                rejectDiscardedScenario(scenario);
+                rejectIfMultipartModeMismatch(scenario);
+                validateFiles(files);
+                modelParamExecutionCoordinator.rejectIfActiveExecutionExists(scenarioId);
+                return scenarioExecutionRegistrar.registerStaged(scenario, stagedFiles, null);
+            });
+            if (response == null) {
+                throw AppErrorException.of(
+                    ResultCode.Error.SYS_INTERNAL_ERROR,
+                    "multipart model execution transaction returned no response."
+                );
+            }
+            return response;
         } catch (RuntimeException e) {
-            compensateUploadedFiles(uploadedFileNos);
+            scenarioExecutionFileStager.discard(stagedFiles);
             throw e;
         }
+    }
+
+    @Override
+    @Transactional(propagation = Propagation.NOT_SUPPORTED)
+    public ModelExecutionAcceptRes submitModelExecution(
+        Long scenarioId,
+        ModelParamProposalExecutionReq request
+    ) {
+        ExecutionConfirmationContext context = beginJsonExecution(scenarioId, request);
+        StagedScenarioExecutionFiles stagedFiles = null;
+        try {
+            List<MultipartFile> files = modelParamExecutionCoordinator.confirmAndMerge(scenarioId, request, context);
+            validateFiles(files);
+            stagedFiles = scenarioExecutionFileStager.stageSequentially(files);
+            StagedScenarioExecutionFiles filesToAttach = stagedFiles;
+            ModelExecutionAcceptRes response = transactionOperations.execute(status -> {
+                MiScenario scenario = findScenarioForUpdate(scenarioId);
+                rejectDiscardedScenario(scenario);
+                rejectIfJsonModeMismatch(scenario);
+                modelParamExecutionCoordinator.rejectIfActiveExecutionExists(scenarioId);
+                validateFiles(files);
+                return scenarioExecutionRegistrar.registerStaged(scenario, filesToAttach, context.execPrepId());
+            });
+            if (response == null) {
+                throw AppErrorException.of(
+                    ResultCode.Error.SYS_INTERNAL_ERROR,
+                    "JSON model execution transaction returned no response."
+                );
+            }
+            return response;
+        } catch (RuntimeException e) {
+            scenarioExecutionFileStager.discard(stagedFiles);
+            modelParamExecutionCoordinator.markFailed(context.execPrepId(), e);
+            throw e;
+        }
+    }
+
+    private void precheckMultipartExecution(Long scenarioId, List<MultipartFile> files) {
+        transactionOperations.executeWithoutResult(status -> {
+            MiScenario scenario = findScenarioForUpdate(scenarioId);
+            rejectDiscardedScenario(scenario);
+            rejectIfMultipartModeMismatch(scenario);
+            validateFiles(files);
+            modelParamExecutionCoordinator.rejectIfActiveExecutionExists(scenarioId);
+        });
+    }
+
+    private ExecutionConfirmationContext beginJsonExecution(
+        Long scenarioId,
+        ModelParamProposalExecutionReq request
+    ) {
+        ExecutionConfirmationContext context = transactionOperations.execute(status -> {
+            MiScenario scenario = findScenarioForUpdate(scenarioId);
+            rejectDiscardedScenario(scenario);
+            rejectIfJsonModeMismatch(scenario);
+            return modelParamExecutionCoordinator.begin(scenario, request);
+        });
+        if (context == null) {
+            throw AppErrorException.of(
+                ResultCode.Error.SYS_INTERNAL_ERROR,
+                "JSON model execution preparation transaction returned no context."
+            );
+        }
+        return context;
     }
 
     @Override
@@ -177,12 +203,127 @@ public class ScenarioModelExecutionServiceImpl implements ScenarioModelExecution
         );
     }
 
-    private MiScenario findScenario(Long scenarioId) {
-        return miScenarioRepository.findByScenarioIdAndIsDeletedFalse(scenarioId)
-            .orElseThrow(() -> AppErrorException.of(
-                ResultCode.Error.RSC_NOT_FOUND,
-                "Scenario not found. scenarioId: %d".formatted(scenarioId)
-            ));
+    @Override
+    public LatestModelParamProposalParametersRes getLatestConfirmedParameters(Long scenarioId) {
+        return getLatestParameters(scenarioId, AgentModelParamProposal::getConfirmationParameters);
+    }
+
+    @Override
+    public LatestModelParamProposalParametersRes getLatestProposedParameters(Long scenarioId) {
+        return getLatestParameters(scenarioId, AgentModelParamProposal::getProposalParameters);
+    }
+
+    @Override
+    public LatestModelExecutionInputFilesRes getLatestInputFiles(Long scenarioId) {
+        LatestModelParamProposalExecutionContext context = latestModelParamProposalExecutionContextResolver.resolve(scenarioId);
+        List<UploadedFile> uploadedFiles = uploadedFileRepository.findActiveRelationshipFilesOrderByFileNoAsc(
+            Math.toIntExact(context.caseId()),
+            FILE_RELATION_SCENARIO_CASE
+        );
+
+        Map<String, List<UploadedFile>> filesByRole = new LinkedHashMap<>();
+        REQUIRED_INPUT_FILE_ROLE_KEYWORDS.forEach(role -> filesByRole.put(role, new ArrayList<>()));
+        List<Long> invalidRoleFileNos = new ArrayList<>();
+
+        for (UploadedFile uploadedFile : uploadedFiles) {
+            List<String> matchedRoles = findFileRoles(uploadedFile.getOriginalFileNm());
+            if (matchedRoles.size() != 1) {
+                invalidRoleFileNos.add(uploadedFile.getFileNo());
+                continue;
+            }
+            filesByRole.get(matchedRoles.get(0)).add(uploadedFile);
+        }
+
+        List<String> missingFileRoles = REQUIRED_INPUT_FILE_ROLE_KEYWORDS.stream()
+            .filter(role -> filesByRole.get(role).isEmpty())
+            .toList();
+        List<String> duplicateFileRoles = REQUIRED_INPUT_FILE_ROLE_KEYWORDS.stream()
+            .filter(role -> filesByRole.get(role).size() > 1)
+            .toList();
+        boolean complete = missingFileRoles.isEmpty()
+            && duplicateFileRoles.isEmpty()
+            && invalidRoleFileNos.isEmpty();
+
+        if (!complete) {
+            log.warn(
+                "Latest model execution input files are incomplete. scenarioId={}, caseId={}, missingRoles={}, duplicateRoles={}, invalidRoleFileNos={}",
+                context.scenarioId(),
+                context.caseId(),
+                missingFileRoles,
+                duplicateFileRoles,
+                invalidRoleFileNos
+            );
+        }
+
+        List<ModelExecutionInputFileRes> files = REQUIRED_INPUT_FILE_ROLE_KEYWORDS.stream()
+            .flatMap(role -> filesByRole.get(role).stream().map(file -> new ModelExecutionInputFileRes(
+                role,
+                file.getFileNo(),
+                file.getOriginalFileNm(),
+                file.getFileSize()
+            )))
+            .toList();
+
+        return new LatestModelExecutionInputFilesRes(
+            context.scenarioId(),
+            context.caseId(),
+            complete,
+            missingFileRoles,
+            files
+        );
+    }
+
+    private LatestModelParamProposalParametersRes getLatestParameters(
+        Long scenarioId,
+        Function<AgentModelParamProposal, String> parameterJsonSource
+    ) {
+        LatestModelParamProposalExecutionContext context = latestModelParamProposalExecutionContextResolver.resolve(scenarioId);
+        AgentModelParamProposal proposal = agentModelParamProposalRepository
+            .findByModelParamProposalIdAndScenarioIdAndIsDeletedFalse(
+                context.modelParamProposalId(),
+                context.scenarioId()
+            )
+            .orElseThrow(() -> {
+                log.warn(
+                    "Latest model parameter proposal execution has no active Agent proposal. scenarioId={}, caseId={}, execPrepId={}, modelParamProposalId={}",
+                    context.scenarioId(),
+                    context.caseId(),
+                    context.execPrepId(),
+                    context.modelParamProposalId()
+                );
+                return AppErrorException.of(
+                    ResultCode.Error.RSC_NOT_FOUND,
+                    "Agent model parameter proposal not found. scenarioId: %d, modelParamProposalId: %d"
+                        .formatted(context.scenarioId(), context.modelParamProposalId())
+                );
+            });
+
+        return new LatestModelParamProposalParametersRes(
+            context.scenarioId(),
+            context.caseId(),
+            context.execPrepId(),
+            context.modelParamProposalId(),
+            parseParameterArray(parameterJsonSource.apply(proposal))
+        );
+    }
+
+    private JsonNode parseParameterArray(String json) {
+        if (json == null || json.isBlank()) {
+            return objectMapper.createArrayNode();
+        }
+        try {
+            JsonNode node = objectMapper.readTree(json);
+            return node != null && node.isArray() ? node : objectMapper.createArrayNode();
+        } catch (JsonProcessingException e) {
+            throw AppErrorException.of(ResultCode.Error.API_RESPONSE_ERROR, "Agent proposal parameter JSON is invalid.");
+        }
+    }
+
+    private List<String> findFileRoles(String fileName) {
+        String normalizedFileName = Optional.ofNullable(fileName).orElse("").toUpperCase(Locale.ROOT);
+        return REQUIRED_INPUT_FILE_ROLE_KEYWORDS.stream()
+            .filter(normalizedFileName::contains)
+            .toList();
     }
 
     private MiScenario findScenarioForUpdate(Long scenarioId) {
@@ -191,17 +332,6 @@ public class ScenarioModelExecutionServiceImpl implements ScenarioModelExecution
                 ResultCode.Error.RSC_NOT_FOUND,
                 "Scenario not found. scenarioId: %d".formatted(scenarioId)
             ));
-    }
-
-    private void rejectIfActiveExecutionExists(Long scenarioId) {
-        boolean exists = scenarioCaseRepository.existsByScenarioIdAndExecTypeAndStatusAndIsDeletedFalse(
-            scenarioId,
-            FundamentalModelExecType.SCENARIO,
-            FundamentalModelCaseStatus.RUNNING
-        );
-        if (exists) {
-            throw activeExecutionConflict(scenarioId);
-        }
     }
 
     private void rejectDiscardedScenario(MiScenario scenario) {
@@ -226,35 +356,17 @@ public class ScenarioModelExecutionServiceImpl implements ScenarioModelExecution
         }
     }
 
-    private ScenarioCase createRunningScenarioCase(MiScenario scenario, Integer actorUserNo, String actorLoginId) {
-        try {
-            return scenarioCaseRepository.saveAndFlush(ScenarioCase.createScenarioRunning(
-                actorUserNo,
-                scenario.getScenarioId(),
-                buildCaseTitle(scenario),
-                "Next Gen scenario model execution",
-                actorLoginId
-            ));
-        } catch (DataIntegrityViolationException e) {
-            log.info("Active scenario execution unique guard rejected submit. scenarioId={}", scenario.getScenarioId(), e);
-            throw activeExecutionConflict(scenario.getScenarioId());
+    private void rejectIfJsonModeMismatch(MiScenario scenario) {
+        Long eventTypeL2Id = scenario.getScenarioGroup().getEventTypeL2().getEventTypeL2Id();
+        ModelInputMode inputMode = ModelInputMode.from(eventTypeL2Id);
+        if (!inputMode.isParameterProposal()) {
+            throw AppHttpStatusException.of(
+                HttpStatus.CONFLICT,
+                ResultCode.Error.BIZ_RULE_VIOLATION,
+                "This scenario uses FILE_UPLOAD mode. JSON model execution is not allowed. scenarioId: %d"
+                    .formatted(scenario.getScenarioId())
+            );
         }
-    }
-
-    private AppHttpStatusException activeExecutionConflict(Long scenarioId) {
-        return AppHttpStatusException.of(
-            HttpStatus.CONFLICT,
-            ResultCode.Error.RSC_ALREADY_EXISTS,
-            "해당 scenario에는 이미 RUNNING 상태의 model execution이 존재합니다. scenarioId: %d".formatted(scenarioId)
-        );
-    }
-
-    private String buildCaseTitle(MiScenario scenario) {
-        String title = "Scenario Model Execution - " + scenario.getTitle();
-        if (title.length() <= TITLE_MAX_LENGTH) {
-            return title;
-        }
-        return title.substring(0, TITLE_MAX_LENGTH);
     }
 
     private void validateFiles(List<MultipartFile> files) {
@@ -299,189 +411,6 @@ public class ScenarioModelExecutionServiceImpl implements ScenarioModelExecution
         return AppErrorException.of(ResultCode.Error.REQ_INVALID_PARAMETER, REQUIRED_INPUT_FILE_ROLE_MESSAGE);
     }
 
-    private List<ModelExecutionFileRes> uploadCaseFiles(
-        String companyCd,
-        Role role,
-        Long caseId,
-        List<MultipartFile> files,
-        List<Long> uploadedFileNos
-    ) {
-        Integer fileRelationshipObjectDistinguishNo = Math.toIntExact(caseId);
-        List<ModelExecutionFileRes> uploadedFiles = new ArrayList<>();
-
-        for (int index = 0; index < files.size(); index++) {
-            MultipartFile file = files.get(index);
-            FileUploadRes uploadedFile = fileService.uploadFileToRelationship(
-                companyCd,
-                role,
-                file,
-                false,
-                fileRelationshipObjectDistinguishNo,
-                FILE_RELATION_SCENARIO_CASE
-            );
-            uploadedFileNos.add(uploadedFile.fileNo());
-            uploadedFiles.add(new ModelExecutionFileRes(
-                uploadedFile.fileNo(),
-                index + 1,
-                uploadedFile.fileNm(),
-                file.getContentType(),
-                uploadedFile.fileSize()
-            ));
-        }
-
-        return uploadedFiles;
-    }
-
-    private void compensateUploadedFiles(List<Long> uploadedFileNos) {
-        for (Long fileNo : uploadedFileNos) {
-            try {
-                fileService.deleteFile(fileNo);
-            } catch (RuntimeException compensationException) {
-                log.warn("Failed to compensate scenario model execution uploaded file. fileNo={}", fileNo, compensationException);
-            }
-        }
-    }
-
-    private String generateRunId(LocalDateTime requestedAt) {
-        String suffix = UUID.randomUUID().toString().replace("-", "").substring(0, 4).toUpperCase();
-        return RUN_ID_TIMESTAMP_FORMATTER.format(requestedAt) + "_" + suffix;
-    }
-
-    private FundamentalModelJobArgs buildJobArgs(Long caseId, Long scenarioId, String runId, Long runSeq) {
-        List<UploadedFile> inputFiles = uploadedFileRepository.findActiveRelationshipFilesOrderByFileNoAsc(
-            Math.toIntExact(caseId),
-            FILE_RELATION_SCENARIO_CASE
-        );
-        String demandExcelPath = findInputFileStoragePath(inputFiles, "DEMAND");
-        String supplyExcelPath = findInputFileStoragePath(inputFiles, "SUPPLY");
-        String tradeExcelPath = findInputFileStoragePath(inputFiles, "TRADE");
-        validateRequiredInputFilePaths(demandExcelPath, supplyExcelPath, tradeExcelPath);
-
-        return FundamentalModelJobArgs.builder()
-            .caseId(caseId)
-            .scenarioId(scenarioId)
-            .runId(runId)
-            .runSeq(runSeq)
-            .demandExcelPath(demandExcelPath)
-            .supplyExcelPath(supplyExcelPath)
-            .tradeExcelPath(tradeExcelPath)
-            .callbackUrl(buildCallbackUrl(runId))
-            .build();
-    }
-
-    private String buildCallbackUrl(String runId) {
-        return normalizeCallbackBaseUrl() + CALLBACK_PATH_TEMPLATE.formatted(runId);
-    }
-
-    private String normalizeCallbackBaseUrl() {
-        if (callbackBaseUrl == null || callbackBaseUrl.isBlank()) {
-            throw AppErrorException.of(ResultCode.Error.BIZ_RULE_VIOLATION, "kubernetes.callback-base-url is required.");
-        }
-        String normalized = callbackBaseUrl.trim();
-        if (normalized.endsWith("/")) {
-            return normalized.substring(0, normalized.length() - 1);
-        }
-        return normalized;
-    }
-
-    private String findInputFileStoragePath(List<UploadedFile> inputFiles, String roleKeyword) {
-        return inputFiles.stream()
-            .filter(file -> Optional.ofNullable(file.getOriginalFileNm())
-                .orElse("")
-                .toUpperCase(Locale.ROOT)
-                .contains(roleKeyword))
-            .map(UploadedFile::getStoragePathNm)
-            .filter(path -> path != null && !path.isBlank())
-            .findFirst()
-            .orElse(null);
-    }
-
-    private void validateRequiredInputFilePaths(String demandExcelPath, String supplyExcelPath, String tradeExcelPath) {
-        if (isBlank(demandExcelPath) || isBlank(supplyExcelPath) || isBlank(tradeExcelPath)) {
-            throw AppErrorException.of(
-                ResultCode.Error.BIZ_RULE_VIOLATION,
-                "case input files must include DEMAND, SUPPLY, and TRADE storage paths."
-            );
-        }
-    }
-
-    private boolean isBlank(String value) {
-        return value == null || value.isBlank();
-    }
-
-    private void submitJobAfterCommit(Long caseId, String runId, FundamentalModelJobArgs jobArgs) {
-        Runnable submitJob = () -> submitJob(caseId, runId, jobArgs);
-        if (TransactionSynchronizationManager.isSynchronizationActive()) {
-            TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
-                @Override
-                public void afterCommit() {
-                    submitJob.run();
-                }
-            });
-            return;
-        }
-        submitJob.run();
-    }
-
-    private void submitJob(Long caseId, String runId, FundamentalModelJobArgs jobArgs) {
-        try {
-            kubernetesJobService.createFundamentalModelJob(jobArgs)
-                .whenComplete((ignored, ex) -> {
-                    if (ex != null) {
-                        log.warn("Kubernetes scenario model job creation failed: runId={}, caseId={}", runId, caseId, ex);
-                        markRunFailed(runId, caseId, rootCauseMessage(ex));
-                    }
-                });
-        } catch (RuntimeException e) {
-            log.warn("Kubernetes scenario model job creation failed: runId={}, caseId={}", runId, caseId, e);
-            markRunFailed(runId, caseId, rootCauseMessage(e));
-        }
-    }
-
-    private void markRunFailed(String runId, Long caseId, String errorMessage) {
-        transactionOperations.executeWithoutResult((TransactionStatus ignored) -> {
-            LocalDateTime failedAt = LocalDateTime.now();
-            int updateCount = scenarioCaseRunHistoryRepository.updateRunningToTerminal(
-                runId,
-                FundamentalModelRunStatus.FAILED,
-                FundamentalModelRunStatus.RUNNING,
-                failedAt,
-                JOB_SUBMIT_FAILURE_REASON,
-                truncateErrorMessage(errorMessage),
-                failedAt,
-                CALLBACK_ACTOR
-            );
-            if (updateCount > 0) {
-                scenarioCaseRepository.updateLatestRunStatus(
-                    runId,
-                    FundamentalModelCaseStatus.FAILED,
-                    failedAt,
-                    CALLBACK_ACTOR
-                );
-            } else {
-                log.info("Skip marking non-running scenario model run as failed. runId={}, caseId={}", runId, caseId);
-            }
-        });
-    }
-
-    private String rootCauseMessage(Throwable throwable) {
-        if (throwable == null) {
-            return null;
-        }
-        Throwable current = throwable;
-        while (current.getCause() != null) {
-            current = current.getCause();
-        }
-        return current.getMessage();
-    }
-
-    private String truncateErrorMessage(String errorMessage) {
-        if (errorMessage == null || errorMessage.length() <= 2000) {
-            return errorMessage;
-        }
-        return errorMessage.substring(0, 2000);
-    }
-
     private List<ModelExecutionFileRes> findInputFiles(Long caseId) {
         List<UploadedFile> uploadedFiles = uploadedFileRepository.findActiveRelationshipFilesOrderByFileNoAsc(
             Math.toIntExact(caseId),
@@ -504,9 +433,5 @@ public class ScenarioModelExecutionServiceImpl implements ScenarioModelExecution
 
     private ModelExecutionStatus toModelExecutionStatus(FundamentalModelRunStatus status) {
         return ModelExecutionStatus.valueOf(status.name());
-    }
-
-    private String buildStatusEndpoint(Long scenarioId, String runId) {
-        return "/api/v1/mi/next-gen/scenarios/%d/model-executions/%s".formatted(scenarioId, runId);
     }
 }

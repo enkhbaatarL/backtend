@@ -1,10 +1,13 @@
 package com.sk.domain.shared.repository.master.tcm;
 
 import com.sk.domain.shared.entity.master.tcm.UploadedFile;
+import jakarta.persistence.LockModeType;
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Lock;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
@@ -107,6 +110,52 @@ public interface UploadedFileRepository extends JpaRepository<UploadedFile, Long
     List<UploadedFile> findActiveRelationshipFilesOrderByFileNoAsc(
             @Param("fileRelationshipObjectDistinguishNo") Integer fileRelationshipObjectDistinguishNo,
             @Param("fileRelationshipObjectSeparateCd") String fileRelationshipObjectSeparateCd);
+
+    @Lock(LockModeType.PESSIMISTIC_WRITE)
+    @Query(value = """
+            SELECT u
+            FROM UploadedFile u
+            WHERE u.isDeleted = false
+                AND u.fileNo IN (:fileNoList)
+                AND u.fileRelationshipObjectDistinguishNo = :stagedRelationshipNo
+                AND u.fileRelationshipObjectSeparateCd = :stagedRelationshipCode
+            ORDER BY u.fileNo ASC
+            """)
+    List<UploadedFile> findStagedFilesForUpdate(
+            @Param("fileNoList") List<Long> fileNoList,
+            @Param("stagedRelationshipNo") Integer stagedRelationshipNo,
+            @Param("stagedRelationshipCode") String stagedRelationshipCode);
+
+    @Lock(LockModeType.PESSIMISTIC_WRITE)
+    @Query(value = """
+            SELECT u
+            FROM UploadedFile u
+            WHERE u.isDeleted = false
+                AND u.fileNo = :fileNo
+                AND u.fileRelationshipObjectDistinguishNo = :stagedRelationshipNo
+                AND u.fileRelationshipObjectSeparateCd = :stagedRelationshipCode
+            """)
+    Optional<UploadedFile> findStagedFileForUpdate(
+            @Param("fileNo") Long fileNo,
+            @Param("stagedRelationshipNo") Integer stagedRelationshipNo,
+            @Param("stagedRelationshipCode") String stagedRelationshipCode);
+
+    @Query(value = """
+            SELECT u
+            FROM UploadedFile u
+            WHERE u.isDeleted = false
+                AND u.fileRelationshipObjectDistinguishNo = :stagedRelationshipNo
+                AND u.fileRelationshipObjectSeparateCd = :stagedRelationshipCode
+                AND u.storagePathNm LIKE :storagePathPattern
+                AND u.createDt < :createdBefore
+            ORDER BY u.fileNo ASC
+            """)
+    List<UploadedFile> findExpiredStagedFiles(
+            @Param("stagedRelationshipNo") Integer stagedRelationshipNo,
+            @Param("stagedRelationshipCode") String stagedRelationshipCode,
+            @Param("storagePathPattern") String storagePathPattern,
+            @Param("createdBefore") LocalDateTime createdBefore,
+            Pageable pageable);
 
     @Query(value = """
             SELECT u

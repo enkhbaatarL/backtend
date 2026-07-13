@@ -16,10 +16,10 @@
   - `docs/conventions/db-term-dictionary-sheet2.csv`
 - supersedes:
   - 없음
-- last synced: 2026-07-08
+- last synced: 2026-07-10
 - open questions:
   - (resolved) table/subject 물리명은 DBA 승인으로 `tmd_mi_model_execpreph` / subject `md`로 확정 (이전 draft명 `tmd_execpreph`에서 변경). 인덱스명도 `tmd_mi_model_execpreph_{ix|ux}nn`로 정합.
-  - (resolved → Option A) 값 조정 재실행은 같은 `model_param_proposal_id`에 확정 API를 재호출해 `confirmation_parameters`를 갱신한다(최신 스냅샷만 유지, mutable). 변경 없음 재실행은 재확정 없이 기존 confirmed 값을 재사용한다. Agent 확정 API가 이미 `CONFIRMED`인 proposal의 재확정을 허용하도록 Agent가 수정 확정했다(2026-07-09 회신) → Option A 전제 충족. 과거 실행별 확정값 복원이 요구되면 그때만 `tmd_mi_model_execpreph`에 실행별 confirmed JSON snapshot을 fallback으로 추가한다.
+  - (resolved → Option A/A8 current value) 값 조정 재실행은 같은 `model_param_proposal_id`에 확정 API를 재호출해 현재 `confirmation_parameters`를 갱신한다(mutable). 변경 없음 재실행은 재확정 없이 기존 confirmed 값을 재사용한다. Agent 확정 API가 이미 `CONFIRMED`인 proposal의 재확정을 허용하도록 Agent가 수정 확정했다(2026-07-09 회신) → Option A 전제 충족. A8은 latest A6-linked Case가 연결한 proposal의 현재값을 반환하며 실행 시점 exact 복원은 현행 범위가 아니므로 execution-preparation에 confirmed JSON snapshot을 추가하지 않는다.
 
 - domain: gas / MI model execution
 - created at: 2026-07-08
@@ -38,8 +38,8 @@
 - `tmd_mi_model_execpreph`는 수급모델 실행 이력 테이블이 아니다. 실제 수급모델 실행 master/history는 기존 `tmd_mdl_scnrcasem` / `tmd_mdl_scnrcaseh`가 source of truth다.
 - `tmd_mi_model_execpreph` row 1건은 수급모델 input Excel 3개 세트를 생성하고 실행 접수하는 **실행 준비 1회**를 대표한다. 같은 `scnr_id` + `agnt_prpsl_id` 조합으로 여러 row가 생길 수 있다.
 - 수급모델 실행은 기존 `mi-scenario-model-execution-workflow-design.md` 기준을 따른다. 실행 1회마다 새 `case_id`를 만들고, 각 Case 아래에 Run history를 쌓는다. `tmd_mi_model_execpreph.case_id`는 해당 실행 준비 row가 만든 Case를 0..1로 가리키는 포인터다.
-- 최근 수급모델 실행에 사용된 confirmed parameter 조회는 최신 `ScenarioCase` → `tmd_mi_model_execpreph.case_id` → `agnt_prpsl_id` → Agent `confirmation_parameters` 경로를 사용한다. 최초 Agent 제안값 조회는 같은 `agnt_prpsl_id`의 Agent `proposal_parameters`를 사용한다.
-- 재실행 파라미터 규칙은 두 경로다. (1) **값 조정 재실행 = 같은 `model_param_proposal_id` 재확정(Option A)**: 확정 API를 같은 id에 재호출해 `confirmation_parameters`를 갱신하고, 같은 `agnt_prpsl_id`로 새 `tmd_mi_model_execpreph` row + 새 `case_id`를 만든다. Agent `proposal_parameters`(최초 제안)는 재확정으로 바뀌지 않는다. (2) **파라미터 생성부터 다시 = 새 `model_param_proposal_id`**: 새 proposal 생성 요청으로 새 `agnt_prpsl_id`를 발급한다(RUNNING pre-check 적용). 두 경우 모두 Excel 3개는 새 `case_id` 기준으로 새로 생성한다. "최신 실행 confirmed 값" 조회는 항상 최신 `case_id` 기준이라 정합하며, 값 조정 in-flight 중 재확정~새 case 생성 사이의 짧은 window에서만 직전 case가 갱신값으로 보일 수 있다(과거 실행별 정확 복원이 필요하면 execprep snapshot fallback).
+- 최근 수급모델 실행 확정 파라미터 조회(A8)는 최신 `ScenarioCase` → `tmd_mi_model_execpreph.case_id` → `agnt_prpsl_id` → Agent의 조회 시점 현재 `confirmation_parameters` 경로를 사용한다. 최초 Agent 제안값 조회는 같은 `agnt_prpsl_id`의 Agent `proposal_parameters`를 사용한다.
+- 재실행 파라미터 규칙은 두 경로다. (1) **값 조정 재실행 = 같은 `model_param_proposal_id` 재확정(Option A)**: 확정 API를 같은 id에 재호출해 현재 `confirmation_parameters`를 갱신하고, 같은 `agnt_prpsl_id`로 새 `tmd_mi_model_execpreph` row + 새 `case_id`를 만든다. Agent `proposal_parameters`(최초 제안)는 재확정으로 바뀌지 않는다. (2) **파라미터 생성부터 다시 = 새 `model_param_proposal_id`**: 새 proposal 생성 요청으로 새 `agnt_prpsl_id`를 발급한다(RUNNING pre-check 적용). 두 경우 모두 Excel 3개는 새 `case_id` 기준으로 새로 생성한다. A8은 연결 proposal의 current value 계약이므로 재확정 후 latest Case의 실제 input 값과 달라질 수 있고, 이는 허용된 동작이다. 실제 실행 input의 source of truth는 최신 `case_id`에 연결된 Excel 3개이며 execution-preparation snapshot은 두지 않는다.
 - 최근 수급모델 실행 input Excel 3개 다운로드는 최신 `ScenarioCase.case_id` 기준 기존 `tcm_filel(SCNRCASE + case_id)` 파일 조회를 사용한다. `tmd_mi_model_execpreph`에는 파일 3개 목록을 복제하지 않는다.
 - proposal 계산 데이터/payload/hash/snapshot은 저장하지 않는다. Agent `tmm_mi_model_param_proposal_m`을 read-only로 조회한다.
 - request-time snapshot(`scenario_group_id`, `mi_event_id`, `event_type_l2_id`)도 Backend에 복제하지 않는다. Agent proposal 테이블이 이를 저장하며(write-then-callback 보장으로 완료 callback 시점엔 Agent row가 이미 존재), Backend는 재조회로 cross-validate한다(business rules 8/19/20). `agnt_prpsl_id` 확정 전 window는 아직 proposal 자체가 생성 중이라 검증 대상이 없다.
@@ -178,7 +178,7 @@ actv_scnr_id INT UNSIGNED
 | `PROPOSAL_PENDING` | Agent 제안 생성/사용자 검토 대기 (Agent `PROCESSING`/`PROPOSED` 포괄) | O |
 | `CONFIRMING` | 사용자 실행 요청 검증 + Agent confirmation | O |
 | `PREPARING_EXECUTION` | confirmation 성공, Excel 3개 생성(confirmed params 파생, 아직 case 미생성) | O |
-| `EXECUTING` | 기존 model execution 접수 완료(case INSERT → `tcm_filel(SCNRCASE+case_id)` 기록 → dispatch → `execprep.case_id` 저장). 이후 실행 상태/terminal 이력은 Case/Run이 관리 | X |
+| `EXECUTING` | 기존 model execution 접수 완료(case INSERT → `tcm_filel(SCNRCASE+case_id)` 기록 → Run INSERT/Case `lastRunId` → `execprep.case_id` 저장까지 commit, 이후 dispatch). 실행 상태/terminal 이력은 Case/Run이 관리 | X |
 | `EXECUTION_FAILED` | confirmation 이후 실행 접수 실패 | X |
 | `REQUEST_FAILED` | Agent 제안 요청 실패가 확정됐거나 timeout/reconcile로 proposal 부재가 확정됨 | X |
 
@@ -257,7 +257,8 @@ WHERE exec_prep_id = :execPrepId
   AND exec_prep_stat_cd = 'PREPARING_EXECUTION';
 ```
 
-- Excel 3개 세트 생성은 `PREPARING_EXECUTION`에서 선행하고(confirmed params 파생, case_id 불필요), 파일 3개는 `EXECUTING` 전이 트랜잭션에서 발급된 `case_id`로 `tcm_filel(SCNRCASE+case_id)`에 기록한다. 즉 `EXECUTING` 전이 = `case INSERT → tcm_filel 기록 → dispatch → execprep.case_id 저장` 순서이며, 기존 `mi-scenario-model-execution-workflow-design.md` B.실행 접수 흐름과 동형이다(업로드 수신 바이트 대신 생성 바이트를 사용).
+- Excel 3개 세트 생성은 `PREPARING_EXECUTION`에서 선행하고(confirmed params 파생, case_id 불필요), 파일 3개는 `EXECUTING` 전이 트랜잭션에서 발급된 `case_id`로 `tcm_filel(SCNRCASE+case_id)`에 기록한다. 즉 DB 전이 = `case INSERT → tcm_filel 기록 → Run INSERT/Case lastRunId → execprep.case_id + EXECUTING 저장 → commit` 순서이며, dispatch는 commit 이후다. 기존 `mi-scenario-model-execution-workflow-design.md` B.실행 접수 흐름과 동형이다(업로드 수신 바이트 대신 생성 바이트를 사용).
+- commit 이후 dispatch가 실패하면 새 트랜잭션에서 RUNNING Run/Case와 해당 EXECUTING preparation을 각각 `FAILED`/`FAILED`/`EXECUTION_FAILED`로 전이한다. Case·Run commit 이전 실패는 `case_id`가 없는 preparation만 `EXECUTION_FAILED`로 닫는다.
 - 실행 1회마다 `tmd_mdl_scnrcasem`에 새 `case_id`를 만들고, 그 아래 `tmd_mdl_scnrcaseh`에 run history를 만든다.
 - `tmd_mi_model_execpreph` row 1건은 실행 준비 1회를 대표하므로 정상 실행 접수 성공 시 하나의 `case_id`만 연결된다. 같은 `agnt_prpsl_id`로 재실행하면 새 `tmd_mi_model_execpreph` row와 새 `case_id`를 만든다.
 - terminal 상태를 되돌리는 late callback은 위 guard( `IN (...)` 선행상태 조건 )로 no-op 수렴한다.
@@ -549,7 +550,7 @@ LIMIT 1;
 - DBA 적용 전에는 동일 schema 배치·키 타입만 pre-check로 확인한다(본 테이블 생성과는 독립).
 - `agnt_prpsl_id`는 반복 실행 때문에 unique가 아니어야 한다. 이미 unique로 적용된 환경은 보정 전 반복 실행이 막힌다.
 - `case_id`는 row당 실행 Case 1건 포인터로 사용한다. 이미 `case_id` 컬럼이 적용된 환경은 컬럼을 유지하고 index 이름/정의만 canonical에 맞춘다.
-- 값 조정 재실행은 Option A(같은 `model_param_proposal_id` 재확정, `confirmation_parameters` 갱신)로 확정했다. Agent 확정 API가 이미 `CONFIRMED`인 proposal의 재확정을 허용하도록 Agent가 수정 확정해(2026-07-09 회신) Option A 전제가 충족됐다. 과거 실행별 확정값을 정확히 복원해야 하는 요구가 확정되면 Agent 단일 snapshot으로 부족하므로 `tmd_mi_model_execpreph`에 실행별 confirmed parameter JSON snapshot 추가를 별도 ERD로 검토한다(fallback).
+- 값 조정 재실행은 Option A(같은 `model_param_proposal_id` 재확정, 현재 `confirmation_parameters` 갱신)로 확정했다. Agent 확정 API가 이미 `CONFIRMED`인 proposal의 재확정을 허용하도록 Agent가 수정 확정해(2026-07-09 회신) Option A 전제가 충족됐다. A8은 latest A6-linked Case와 연결된 proposal의 current value를 반환하고 실행별 exact 복원은 현행 요구사항이 아니므로 confirmed parameter JSON snapshot은 본 ERD 범위에 추가하지 않는다.
 - `retry_cnt`, 확정/실행 timestamp 컬럼은 재시도 정책(P1) 확정 후 append 검토.
 - 상태 invariant가 DB CHECK가 아니라 application validation/integration test에 의존한다.
 - erd-change-review 대상: 논리 참조의 FK 미적용 타당성, nullable unique 2종, non-unique `agnt_prpsl_id` 반복 실행 index, generated column `del_yn` 포함 식.

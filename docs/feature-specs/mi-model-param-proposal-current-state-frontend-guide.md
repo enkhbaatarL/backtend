@@ -1,5 +1,20 @@
 # 수급모델 파라미터 제안 — 프론트 통합 가이드
 
+## Document Control
+
+- status: Review
+- canonical for: FE integration guidance
+- owner: Shared
+- source documents:
+  - `docs/feature-specs/mi-model-parameter-proposal-backend-feature-spec.md`
+- depends on:
+  - `docs/design-docs/gas/mi-model-parameter-proposal-design.md`
+- supersedes:
+  - 이 문서의 이전 A4a top-level `parameters`/navigation-only `modelFiles`/`parameterShapes` 안내
+- last synced: 2026-07-13
+- open questions:
+  - 없음
+
 > Base path: `/api/v1/mi/next-gen/scenarios/{scenarioId}`
 > 대상 기능: 수급모델 실행 전, Agent가 파라미터를 제안하고 사용자가 검토·확정해 실행으로 넘기는 흐름.
 
@@ -35,11 +50,10 @@ FE ──④ SSE 받으면 다시 ② GET──▶ 최신 상태로 화면 갱�
 | C | GET | `/model-param-proposals` | **현재 상태 조회 (핵심)** | 팝업 진입 / SSE 수신 후 |
 | D | GET | `/model-param-proposals/{modelParamProposalId}` | 특정 제안 상세 | 특정 제안 결과 상세 필요 시 |
 | E | GET | `/model-param-proposals/stream` | SSE 구독 (text/event-stream) | 진행 중 상태일 때 |
-| F | POST | `/model-executions` | 확정 파라미터로 **수급모델 실행 트리거** ⚠️ **구현 전** | 확정 후 실행 |
+| F | POST | `/model-executions` | 확정 파라미터로 **수급모델 실행 트리거** | 확정 후 실행 |
 | — | POST | `/model-param-proposals/callback` | **Agent→BE 콜백** (FE 사용 X) | — |
 
-> ⚠️ **F. POST `/model-executions`는 아직 구현 전입니다.** 경로만 우선 안내하며, 요청/응답 스펙은 확정 후 갱신 예정.
-> 이 API가 확정→실행을 트리거하면, 이 API 묶음이 그 결과를 `currentState`(`CONFIRMED_PENDING_EXECUTION`/`EXECUTING`/`EXECUTED_CONFIRMED`)로 반영해 보여줍니다.
+> F가 확정→실행을 트리거하면, 이 API 묶음이 그 결과를 `currentState`(`CONFIRMED_PENDING_EXECUTION`/`EXECUTING`/`EXECUTED_CONFIRMED`)로 반영해 보여줍니다.
 
 모든 응답은 공통 `BaseResponse<T>` 래핑입니다(`{ code, message, data }` 형태). 아래 필드 설명은 `data` 기준.
 
@@ -90,16 +104,64 @@ FE ──④ SSE 받으면 다시 ② GET──▶ 최신 상태로 화면 갱�
 | 필드 | 설명 |
 |---|---|
 | `currentState` | **화면용 정규화 상태 (8종)** — 이것만 보고 분기 |
-| `parameterSource` | `parameters`의 출처: `NONE` / `PROPOSAL_PARAMETERS`(제안값) / `CONFIRMATION_PARAMETERS`(확정값) |
-| `parameters` | flat 파라미터 배열 (출처는 `parameterSource`) |
-| `modelFiles` | `parameters`를 `modelFile > modelSheet > tableName` 계층으로 머지한 트리 (탐색 UI용) |
+| `parameterSource` | tree parameter의 출처: `NONE` / `PROPOSAL_PARAMETERS`(제안값) / `CONFIRMATION_PARAMETERS`(확정값) |
+| `modelFiles` | `modelFile > modelSheet > modelTable > parameter` 단일 tree. `parameterSource=NONE`이면 `[]` |
 | `failureReason` | 실패 상태에서만 채워짐 |
 | `execPrepId` / `modelParamProposalId` | BE preparation ID / Agent 제안 ID |
 | `scenarioGroupId` / `eventId` | 참조용 |
 | `caseId` / `runId` / `modelExecutionStatus` | 실행 단계 진입 후 채워짐 (`RUNNING`/`COMPLETED`/`FAILED`) |
+| `executionInputFiles` | `EXECUTED_CONFIRMED`에서만 다운로드용 파일 metadata 객체, 그 외 상태는 `null` |
 | `requestedAt` / `completedAt` / `confirmedAt` | 요청 / 제안완료 / 확정 시각 |
 
 > **주의**: 필드는 상태에 따라 채워지는 것만 유효합니다. §3의 "필드 신뢰 규칙" 표를 반드시 따르세요.
+
+A4a parameter/rendering tree:
+
+```text
+modelFiles[]
+└── modelSheets[]
+    └── modelTables[]
+        └── parameters[]
+            ├── parameter   // A6 전송 대상
+            └── rendering   // 화면 전용, A6 전송 제외
+```
+
+- `parameter`는 `parameterName`, `modelTarget`, `rationale`, `values[]`를 가진 Agent flat parameter JSON field shape입니다.
+- `rendering`은 `readMode`, `columns[]`, `semanticAxes`만 포함합니다.
+- 좌표는 tree path와 `parameter.modelTarget`에서 읽습니다. `rendering`에는 좌표를 반복하지 않습니다.
+- file/sheet/table/parameter 배열은 Agent payload의 최초 등장 순서를 유지합니다.
+- top-level `parameters`와 `parameterShapes`는 A4a 응답에 존재하지 않습니다.
+- 특정 proposal 상세 GET(D)의 기존 `parameters`/`modelFiles`/`parameterShapes` 응답은 변경되지 않습니다.
+
+A4a execution input download:
+
+- `currentState === "EXECUTED_CONFIRMED"`일 때만 `executionInputFiles`가 객체로 내려옵니다. 다른 상태에서는 항상 `null`입니다.
+- `executionInputFiles.files[]`의 `fileNo`, `fileNm`, `fileSize`를 그대로 `POST /api/v1/file-management/download/file` body에 전달합니다.
+- `complete=false`이면 `missingFileRoles`와 실제 존재하는 partial/empty `files`를 확인해 다운로드 불가 또는 부분 누락 상태를 표시합니다.
+- 별도 `GET .../model-executions/latest/input-files` API는 호출하지 않습니다.
+
+### C-1. A4a → F(A6) 실행 request mapping
+
+```javascript
+const confirmationParameters = data.modelFiles.flatMap(file =>
+  file.modelSheets.flatMap(sheet =>
+    sheet.modelTables.flatMap(table =>
+      table.parameters.map(leaf => leaf.parameter)
+    )
+  )
+);
+
+const request = {
+  modelParamProposalId: data.modelParamProposalId,
+  confirmationParameters
+};
+```
+
+- 모든 leaf의 `parameter`만 tree 순서대로 flatten합니다.
+- 사용자가 편집하는 실행값은 각 value row의 `proposedValue`입니다.
+- `parameterName`, `modelTarget`, slot-axis key/value, `basecaseValue`, parameter/value `rationale`는 유지합니다.
+- `rendering`, file/sheet/table wrapper, checkbox/row index/validation message 같은 FE 전용 값은 보내지 않습니다.
+- F request wire contract는 이번 A4a 응답 변경으로 달라지지 않습니다.
 
 ---
 
@@ -162,7 +224,7 @@ EXECUTED_CONFIRMED  (종료)
 - 진행 중 상태(`GENERATING`, `CONFIRMED_PENDING_EXECUTION`, `EXECUTING`)에서 POST하면 `409`(이미 진행 중).
 
 ### 3.3 상태별 필드 신뢰 규칙
-| currentState | parameterSource | parameters | case/run 필드 | failureReason | 화면 권장 |
+| currentState | parameterSource | modelFiles | case/run 필드 | failureReason | 화면 권장 |
 |---|---|---|---|---|---|
 | `NOT_REQUESTED` | `NONE` | `[]` | null | null | "제안 요청" 버튼 |
 | `GENERATING` | `NONE` | `[]` | null | null | 로딩/진행 표시 + SSE 구독 |
@@ -171,10 +233,11 @@ EXECUTED_CONFIRMED  (종료)
 | `EXECUTING` | `CONFIRMATION_PARAMETERS` | 확정값 | `RUNNING` | null | 실행 진행 표시 |
 | `EXECUTED_CONFIRMED` | `CONFIRMATION_PARAMETERS` | 확정값 | `COMPLETED` | null | 완료 표시 |
 | `PROPOSAL_FAILED` | `NONE` | `[]` | null | 채워짐 | 실패 메시지 + 재요청 |
-| `EXECUTION_FAILED` | `CONFIRMATION_PARAMETERS` | 확정값 | `FAILED`(상황에 따라) | 채워짐 | 실패 메시지 + 재요청 |
+| `EXECUTION_FAILED` | confirmation payload가 있으면 `CONFIRMATION_PARAMETERS`, 없으면 `NONE` | 확정값 tree 또는 `[]` | `FAILED`(상황에 따라) | 채워짐 | 실패 메시지 + 재요청 |
 
-> `parameterSource == NONE`이면 `parameters`는 항상 빈 배열(`[]`).
+> `parameterSource == NONE`이면 `modelFiles`는 항상 빈 배열(`[]`).
 > `PROPOSAL_PARAMETERS`(검토 대상 제안값)와 `CONFIRMATION_PARAMETERS`(확정된 값)를 UI에서 구분하세요.
+> `executionInputFiles`는 `EXECUTED_CONFIRMED`에서만 non-null이며 파일 존재 여부와 무관하게 다른 상태에서는 노출하지 않습니다.
 
 ---
 
@@ -193,7 +256,7 @@ EXECUTED_CONFIRMED  (종료)
 권장 패턴:
 1. 팝업 진입 → GET(C)로 `currentState` 확인 후 화면 그림.
 2. `GENERATING`이면 SSE(E) 구독.
-3. SSE 이벤트 수신 → **다시 GET(C)** 로 최신 `currentState`·`parameters` 재조회해 갱신.
+3. SSE 이벤트 수신 → **다시 GET(C)** 로 최신 `currentState`·`modelFiles` 재조회해 갱신.
    (SSE 페이로드는 "갱신하라"는 트리거로만 쓰고, 실제 표시 데이터는 GET 응답을 신뢰)
 
 ---
@@ -207,7 +270,7 @@ EXECUTED_CONFIRMED  (종료)
 | 폐기(DISCARDED) 시나리오 요청 | `400` | `BIZ_RULE_VIOLATION` |
 | 시나리오/제안 리소스 없음 | `404` | `RSC_NOT_FOUND` |
 | Agent 통신 타임아웃/실패 | `5xx` | `API_TIMEOUT` 등. 타임아웃 시 요청은 접수 상태 유지될 수 있음 |
-| 데이터 정합성 충돌 | `409` | `BIZ_RULE_VIOLATION` (내부 상태 불일치) |
+| payload 없음/파싱 실패, parameter/rendering 누락·중복·좌표 불일치 | `409` | `BIZ_RULE_VIOLATION` (불완전 tree를 반환하지 않음) |
 
 > 타임아웃(`API_TIMEOUT`)으로 POST가 실패해도 BE가 요청을 `REQUESTING`으로 유지하는 경우가 있어,
 > **재시도 전 GET(C)로 현재 상태를 먼저 확인**하는 것이 안전합니다.
@@ -218,7 +281,7 @@ EXECUTED_CONFIRMED  (종료)
 
 - **Q. POST 응답 오면 제안 완료?** — 아니요. 접수(생성 시작)일 뿐. 완료는 SSE + GET으로 확인.
 - **Q. 폴링 vs SSE?** — 기본은 SSE. SSE 연결이 어려운 환경이면 GET(C) 폴링으로 대체 가능(상태는 GET이 항상 정답).
-- **Q. `parameters`를 어디서 그리나?** — 상태별 `parameterSource`로 판단. `NONE`이면 표시할 파라미터 없음.
+- **Q. 파라미터를 어디서 그리나?** — `modelFiles[].modelSheets[].modelTables[].parameters[]`를 사용. `parameterSource=NONE`이면 `modelFiles=[]`.
 - **Q. 재요청은 언제 되나?** — 종료(성공/실패) 상태에서만. 진행 중이면 `409`.
 - **Q. 제안값 vs 확정값?** — `PROPOSAL_READY`까지는 제안값(`PROPOSAL_PARAMETERS`), 확정 이후는 확정값(`CONFIRMATION_PARAMETERS`).
 - **Q. `caseId`/`runId`는 언제 생기나?** — 확정→실행 단계 진입 후. 그 전에는 `null`.

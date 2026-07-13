@@ -2,14 +2,19 @@ package com.sk.domain.shared.entity.master.tcm;
 
 import com.sk.common.converter.BooleanToYNAttributeConverter;
 import com.sk.domain.shared.entity.base.BaseEntity;
-import jakarta.persistence.*;
+import jakarta.persistence.Column;
+import jakarta.persistence.Convert;
+import jakarta.persistence.Entity;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
+import jakarta.persistence.Id;
+import jakarta.persistence.Table;
+import java.time.LocalDateTime;
 import lombok.AccessLevel;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import org.hibernate.annotations.Comment;
-
-import java.time.LocalDateTime;
 
 @Getter
 @Entity
@@ -115,6 +120,15 @@ public class UploadedFile extends BaseEntity {
     public void update(String storagePathNm, Integer fileRelationshipObjectDistinguishNo, String fileRelationshipObjectSeparateCd,
             String fileValidEndDt) {
         this.storagePathNm = storagePathNm;
+        this.fileRelationshipObjectDistinguishNo = fileRelationshipObjectDistinguishNo;
+        this.fileRelationshipObjectSeparateCd = fileRelationshipObjectSeparateCd;
+        this.fileValidEndDt = fileValidEndDt;
+    }
+
+    public void attachToRelationship(
+            Integer fileRelationshipObjectDistinguishNo,
+            String fileRelationshipObjectSeparateCd,
+            String fileValidEndDt) {
         this.fileRelationshipObjectDistinguishNo = fileRelationshipObjectDistinguishNo;
         this.fileRelationshipObjectSeparateCd = fileRelationshipObjectSeparateCd;
         this.fileValidEndDt = fileValidEndDt;

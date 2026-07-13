@@ -23,6 +23,11 @@ public interface ScenarioCaseRepository extends JpaRepository<ScenarioCase, Long
         FundamentalModelExecType execType
     );
 
+    Optional<ScenarioCase> findFirstByScenarioIdAndExecTypeAndIsDeletedFalseOrderByCaseIdDesc(
+        Long scenarioId,
+        FundamentalModelExecType execType
+    );
+
     boolean existsByScenarioIdAndExecTypeAndStatusAndIsDeletedFalse(
         Long scenarioId,
         FundamentalModelExecType execType,

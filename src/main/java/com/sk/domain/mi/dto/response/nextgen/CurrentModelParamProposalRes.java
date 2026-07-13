@@ -1,6 +1,5 @@
 package com.sk.domain.mi.dto.response.nextgen;
 
-import com.fasterxml.jackson.databind.JsonNode;
 import com.sk.domain.shared.enums.nextgen.CurrentModelParamProposalState;
 import com.sk.domain.shared.enums.nextgen.ModelExecutionStatus;
 import com.sk.domain.shared.enums.nextgen.ModelParamParameterSource;
@@ -40,14 +39,11 @@ public record CurrentModelParamProposalRes(
     @Schema(description = "기존 수급모델 실행 상태", implementation = ModelExecutionStatus.class, example = "COMPLETED")
     ModelExecutionStatus modelExecutionStatus,
 
-    @Schema(description = "flat model parameter array")
-    JsonNode parameters,
-
-    @Schema(description = "parameters의 modelTarget을 머지한 modelFile > modelSheet > tableName 계층")
-    List<ModelFileNode> modelFiles,
-
-    @Schema(description = "parameters의 parameterName별 표 모양 (tmm_mi_model_param_m 마스터 기준)")
-    List<ModelParamShape> parameterShapes,
+    @Schema(
+        description = "A4a 전용 modelFile > modelSheet > modelTable > parameter/rendering tree. parameterSource=NONE이면 빈 배열",
+        requiredMode = Schema.RequiredMode.REQUIRED
+    )
+    List<CurrentModelParamFileRes> modelFiles,
 
     @Schema(description = "실패 사유")
     String failureReason,

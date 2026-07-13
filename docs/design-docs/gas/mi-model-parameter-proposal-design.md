@@ -6,11 +6,12 @@
 - status: Review
 - owner: BE (platform)
 - created at: 2026-07-03
-- updated at: 2026-07-09
+- updated at: 2026-07-10
 - canonical for: 파라미터 제안의 business concept, ownership, lifecycle, 상태 전이, Excel 생성 및 기존 수급모델 실행 연결 경계
 - not canonical for:
   - endpoint, request/response, HTTP error contract: `docs/feature-specs/mi-model-parameter-proposal-backend-feature-spec.md`
-  - physical DDL 및 DBA rollout: 후속 ERD/DDL draft
+  - execution-preparation physical DDL 및 DBA rollout: `docs/design-docs/gas/mi-model-param-proposal-execprep-erd-ddl-draft.md`
+  - Case/Run/file relation physical schema 및 rollout: `docs/design-docs/gas/scenario-case-execution-erd-ddl-draft.md`
   - Agent API: Notion `api 정의 (frontend-backend-agent)`는 외부 evidence이며 repository canonical source가 아님
   - Agent schema/DDL: `docs/design-docs/gas/mi-agent-param-proposal.md`는 Agent 소유 schema 초안이며 Backend canonical DDL이 아님
 - source documents:
@@ -21,7 +22,7 @@
   - `docs/conventions/db-object-naming-rules.md`
   - `docs/conventions/db-term-dictionary-sheet2.csv`
 - supersedes: 없음
-- last synced: 2026-07-09
+- last synced: 2026-07-10
 - open questions: 11절 참조
 - integration model: **callback = 완료 신호. Backend가 Agent proposal 테이블을 read-only 직접 조회해 결과를 서빙**(시나리오 설계와 동일). CAS/hash/snapshot 저장 없음
 - implementation readiness: ready for API implementation by slice. frontend mock/API contract is ready. real Agent read/callback implementation can start because Agent proposal DDL, Backend read permission, callback authentication, wrapper shape, write-then-callback order, direct same-DB read path, and `tmd_mi_model_execpreph` DBA DDL apply are resolved. Remaining items are rollout/operation details: Agent proposal table runtime visibility/권한/type 확인, execution-preparation mapping/index/constraint validate, workbook location/version, and payload sizing.
@@ -142,7 +143,7 @@ in-flight 상태 후보(활성 preparation 중복 방지 대상): `REQUESTING`, 
 - FE가 Scenario만 선택한 상태에서는 최신 non-deleted execution-preparation row가 화면 상태의 1차 기준이다. 최신 proposal/preparation이 있으면 과거 실행 Case의 확정 파라미터보다 최신 preparation 상태를 우선 표시한다.
 - 최신 preparation이 proposal 생성 중이면 생성중으로, Agent `PROPOSED`이면 제안 파라미터 검토 가능으로, Agent `CONFIRMED` 또는 Backend `CONFIRMING`/`PREPARING_EXECUTION`이면 확정 후 실행 준비 상태로 본다.
 - 최신 preparation이 `case_id`와 연결되면 `ScenarioCase.lastRunId`가 가리키는 latest Run 상태를 함께 읽어 실행중, 실행 성공 후 확정 파라미터 표시, 실행 실패 상태를 구분한다.
-- A4a 팝업 current-state에서 latest Run `FAILED`는 dispatch 이후 모델 실행 실패로 보며 feature spec의 `EXECUTION_FAILED`로 표시한다. Backend confirmation/Excel/file/Case/dispatch 단계 실패도 같은 표시상태를 쓰지만, 이 경우에는 연결 Run이 없으므로 `modelExecutionStatus`가 `null`이다.
+- A4a 팝업 current-state에서 latest Run `FAILED`는 dispatch 또는 dispatch 이후 모델 실행 실패로 보며 feature spec의 `EXECUTION_FAILED`로 표시한다. Backend confirmation/Excel/file/Case·Run commit 이전 단계 실패도 같은 표시상태를 쓰지만, 이 경우에는 연결 Run이 없으므로 `modelExecutionStatus`가 `null`이다.
 - Case status와 `ScenarioCase.lastRunId` 기준 Run status가 불일치하거나 latest Run history가 없으면 정상 lifecycle이 아니라 데이터 정합성 오류로 본다. 이 경우 자동으로 과거 Case로 fallback하지 않고 오류를 로깅한 뒤 feature spec의 current-state 데이터 불일치 오류 계약을 따른다.
 - 최신 preparation이 없으면 아직 파라미터 제안이 없는 상태다.
 - endpoint path, response field, enum 이름은 feature spec의 Scenario 기준 current-state 조회 계약을 따른다.
@@ -275,9 +276,9 @@ tcm_filel: DEMAND / SUPPLY / TRADE generated files
 8. callback(신호)의 `modelParamProposalId`, `scenarioId`, `scenarioGroupId`, `eventId`를 저장된 request snapshot과 교차 검증한다.
 9. callback은 신호이므로 중복/지연/순서역전 재전송은 Agent 테이블 재조회로 수렴하는 멱등 처리다. Backend orchestration 상태는 monotonic이며 `PROCESSING` 이후 단계에서 도착한 신호는 no-op이다. payload hash / CAS는 사용하지 않는다.
 10. FE 표에는 `values[].proposedValue`만 값 cell로 표시하며 `basecaseValue`는 표시하지 않는다. 사용자는 `proposedValue`만 수정할 수 있다.
-11. `parameterName`, `modelTarget`, parameter/value rationale, slot-axis 값과 `basecaseValue`는 Agent proposal 조회 결과 기준 immutable이다.
+11. `parameterName`, `modelTarget`, slot-axis 값과 `basecaseValue`는 Agent proposal 조회 결과 기준 immutable이다. parameter/value `rationale`은 required transport field지만 사용자 편집 대상 또는 Excel 실행 입력이 아니며 Agent confirmation 저장 과정에서 보정될 수 있으므로 Backend의 구조·실행 동일성 비교에서는 문자열 일치를 요구하지 않는다.
 12. 최종 실행 요청은 전체 confirmation parameter array를 보낸다. 사용자가 수정한 row는 수정된 `proposedValue`, 수정하지 않은 row는 Agent가 생성한 원본 `proposedValue`를 그대로 포함한다.
-13. Backend는 확정 시점의 Agent proposal array와 비교해 `values[].proposedValue` 변경만 허용하고, 검증된 전체 array를 Agent confirmation API로 전달한다.
+13. Backend는 확정 시점의 Agent proposal array와 parameter/model target/slot identity 및 `basecaseValue` 구조를 비교하고 `values[].proposedValue`의 numeric 유효성을 검증한 뒤 전체 array를 Agent confirmation API로 전달한다. rationale은 required string 여부만 검증하고 문자열 차이는 허용한다.
 14. Agent confirmation 성공 후에만 Excel 3개 생성과 기존 model execution 접수를 진행한다.
 15. Excel 병합은 Agent `modelTarget`의 required `modelFile`, `modelSheet`, `tableName`, `valueFieldNames`, `slotAxesFieldNames`를 사용한다.
 16. 생성된 파일명은 기존 `DEMAND`/`SUPPLY`/`TRADE` 역할 검증을 통과해야 한다.
@@ -293,13 +294,16 @@ tcm_filel: DEMAND / SUPPLY / TRADE generated files
 26. Agent 응답과 callback은 Agent proposal ID를 write-once 방식으로 채운다. 같은 ID는 no-op, 다른 ID는 correlation conflict이며 기존 값을 덮어쓰지 않는다.
 27. Agent 요청 timeout 시 late callback 가능성을 보존하기 위해 preparation을 즉시 삭제하지 않는다.
 28. 팝업 current-state 조회는 최신 execution-preparation row를 과거 실행보다 우선한다. 새 proposal을 시작한 뒤에는 이전 실행의 확정 파라미터가 아니라 새 row의 생성중/제안완료/확정준비 상태를 보여준다.
-29. `EXECUTING` 전이에서 Case INSERT·`tcm_filel` 기록·`execprep.case_id` 저장은 **하나의 트랜잭션에서 commit**하고, K8s dispatch는 그 commit **이후**에 수행한다. 따라서 "Case는 존재하는데 `execprep.case_id`가 null"인 상태는 영속화되지 않는다(둘 다 commit되거나 둘 다 rollback). commit 이후 dispatch가 실패하면 Case를 만든 채 `EXECUTION_FAILED`로 전이하며, current-state는 연결 Case/Run 상태로 판정한다. 이로써 A4a에서 `case_id=null`인데 실제 실행이 진행 중인 stale/고착 window가 생기지 않는다.
+29. `EXECUTING` 전이에서 Case INSERT·`tcm_filel` Case attachment(직접 INSERT 또는 staged row metadata 전이)·Run INSERT·Case `lastRunId`·`execprep.case_id + EXECUTING` 저장은 **하나의 트랜잭션에서 commit**하고, K8s dispatch는 그 commit **이후**에 수행한다. 따라서 "Case는 존재하는데 `execprep.case_id`가 null"인 상태는 영속화되지 않는다(모두 commit되거나 모두 rollback). commit 이후 dispatch가 실패하면 새 트랜잭션에서 RUNNING Run/Case를 `FAILED`, 연결 preparation을 `EXECUTION_FAILED`로 전이하며, current-state는 연결 Case/Run의 `FAILED` 상태로 판정한다. Case·Run commit 이전 실패는 `case_id` 없이 `EXECUTION_FAILED`로 전이한다. 이로써 A4a에서 `case_id=null`인데 실제 실행이 진행 중인 stale/고착 window가 생기지 않는다.
+30. Object Storage I/O를 위 transaction 밖으로 분리한다. JSON과 multipart 실행 모두 파일 3개를 Scenario lock 없이 **직렬로** 최종 `SCNRCASE/{uuid}` object key에 먼저 업로드하고, 기존 `tcm_filel`의 `file_rel_obj_spt_cd = 'TEMP'`, `file_rel_obj_dstg_no = 0` 조합을 durable staged marker로 기록한다. 별도 staging table/column/common-code는 추가하지 않는다. 최종 transaction의 atomic 대상은 staged row INSERT가 아니라 staged row 3건을 `SCNRCASE + case_id`로 attach하는 metadata 전이이며, 이 transaction 안에는 Object Storage copy/move/delete를 넣지 않는다. staging 중 다른 실행이 먼저 시작되면 최종 lock/unique guard에서 409로 거절하고 staged file 즉시 삭제 비용을 수용한다. process crash 잔여 `TEMP/0 + SCNRCASE storage path` row/object TTL은 24시간이다. 업로드 병렬화는 transaction 분리 효과 측정 후 별도 변경으로 검토한다.
+31. 최근 실행 확정 파라미터 조회(A8)는 최신 A6-linked Case가 연결한 Agent proposal의 조회 시점 현재 `confirmation_parameters`를 반환한다. 같은 proposal의 재확정으로 이 값이 갱신되면 해당 Case 실행 시점에 사용된 값과 달라질 수 있으며, 이는 현행 요구사항에서 허용한다. 실제 실행 input의 source of truth는 Case에 연결된 `DEMAND`/`SUPPLY`/`TRADE` 파일 3개다. 실행별 exact confirmed parameter 복원은 지원하지 않으며 Backend execution-preparation에 confirmed JSON snapshot을 저장하지 않는다.
+32. 팝업 current-state가 `EXECUTED_CONFIRMED`일 때만 A4a가 선택한 최신 execution-preparation의 `case_id`로 실행 input 파일 metadata를 함께 반환한다. 다른 상태에서는 해당 projection을 `null`로 반환한다. 이는 성공 실행만 다운로드하도록 노출하는 현행 UI 정책이며, 독립 latest input-file API는 만들지 않는다. 향후 다운로드 가능 상태가 추가되면 allow-list를 확장한다.
 
 ## 7. Extension Considerations
 
-- proposal history UI가 필요해질 수 있으므로 Scenario당 여러 proposal row를 허용하는 1:N 형태를 유지한다. (원본 proposal 이력과 사용자 확정값은 모두 Agent 테이블이 보관하므로 Backend는 별도 confirmed snapshot을 저장하지 않는다.)
+- proposal history UI가 필요해질 수 있으므로 Scenario당 여러 proposal row를 허용하는 1:N 형태를 유지한다. Agent 테이블은 각 proposal의 원본 `proposal_parameters`와 현재 `confirmation_parameters`를 보관하며 Backend는 실행별 confirmed snapshot을 저장하지 않는다.
 - Excel mapping schema가 변경될 수 있으므로 Agent proposal 테이블의 원본 JSON은 lossless하게(Agent 소유) 유지된다.
-- 사용자 수정 필드가 `values[].proposedValue` 외로 확장되면 mutable field allow-list를 versioning해야 한다.
+- 사용자 편집 필드가 `values[].proposedValue` 외로 확장되면 mutable field allow-list를 versioning해야 한다. Agent가 보정할 수 있는 rationale은 사용자 편집 필드가 아니며 실행 동일성 비교 제외 필드다.
 - Agent contract version 또는 proposal schema version 필드를 후속 검토한다.
 - callback의 `completedAt`, structured `errorCode`는 Agent 확장 후보지만 Backend 수신 시각과 wrapper `message`로 시작할 수 있다.
 
@@ -323,9 +327,9 @@ tcm_filel: DEMAND / SUPPLY / TRADE generated files
 - Agent callback API
 - SSE completion signal
 - 사용자 확정 + model execution 접수 API
-- 가장 최근 수급모델 실행에 사용된 확정 파라미터 조회 API
+- 가장 최근 수급모델 실행과 연결된 proposal의 현재 확정 파라미터 조회 API
 - 가장 최근 수급모델 실행의 원 Agent 제안 파라미터 조회 API
-- 가장 최근 수급모델 실행 input Excel 3개 파일 조회 API
+- Scenario current-state 응답의 성공 실행 input Excel 3개 파일 projection
 - flat parameter array와 `values[].proposedValue` 단일 mutable field validation
 
 ## 10. SQL / DBA Implications
@@ -338,7 +342,7 @@ tcm_filel: DEMAND / SUPPLY / TRADE generated files
   - `case_id` UNIQUE nullable
 - 최근 실행 기준 파라미터 조회는 최신 `tmd_mdl_scnrcasem.case_id` → `tmd_mi_model_execpreph.case_id` → Agent proposal table 순서로 수행한다.
 - 팝업 current-state 조회는 최신 `tmd_mi_model_execpreph` row를 먼저 선택한 뒤 필요 시 Agent proposal table과 연결 Case/Run 상태를 조합한다.
-- 최근 실행 input Excel 파일 조회는 최신 `case_id` 기준 기존 `tcm_filel(SCNRCASE + case_id)` 저장 규칙을 재사용한다.
+- 성공 실행 input Excel 파일 projection은 A4a가 선택한 execution-preparation의 `case_id` 기준 기존 `tcm_filel(SCNRCASE + case_id)` 저장 규칙을 재사용한다. A8/A9의 latest Case resolver와 혼합하지 않는다.
 - active(in-flight) preparation 중복 방지는 `ScenarioCase.actv_scnr_id`와 동일하게 STORED generated column + UNIQUE로 확정한다. 재실행 흐름에서 중복 방지용으로 정리하는 대상은 `case_id`가 아직 연결되지 않은 방치 in-flight row에 한정한다. `case_id`가 연결된 executed preparation row는 A4a/A8/A9 조회와 실행 감사 경로의 기준이므로 soft delete하지 않고 보존한다. generated column 식에는 **`del_yn='N'`을 반드시 포함**해 soft delete된 in-flight 행이 유령 충돌을 일으키지 않게 한다.
 
   ```
@@ -398,7 +402,9 @@ Resolved and no longer P0: callback authentication, Backend read permission, Age
 ### Resolved Decisions
 
 1. Proposal failure retry: `FAILED`/`REQUEST_FAILED` 후 재제안은 허용한다. 실패 row는 재사용하지 않고 audit/history로 보존하며, 새 request는 새 execution-preparation row와 새 Agent proposal request를 만든다.
-2. Option A: 값 조정 재실행은 같은 `model_param_proposal_id` 재확정으로 `confirmation_parameters`를 갱신한다(최신 스냅샷만 유지). 변경 없음 재실행은 재확정 없이 기존 confirmed 값을 재사용한다. Agent 확정 API가 이미 `CONFIRMED`인 proposal의 재확정을 허용하도록 Agent가 수정 확정했다(2026-07-09 회신) → Option A 전제 충족. 과거 실행별 확정값 복원이 요구되면 `tmd_mi_model_execpreph`에 실행별 confirmed snapshot JSON 추가를 fallback으로 검토한다.
+2. Option A와 A8 current-value 의미: 값 조정 재실행은 같은 `model_param_proposal_id` 재확정으로 현재 `confirmation_parameters`를 갱신한다. 변경 없음 재실행은 재확정 없이 기존 confirmed 값을 재사용한다. Agent 확정 API가 이미 `CONFIRMED`인 proposal의 재확정을 허용하도록 Agent가 수정 확정했다(2026-07-09 회신) → Option A 전제 충족. A8은 latest A6-linked Case와 연결된 proposal의 현재값을 반환하며 실행 시점 exact 복원은 현행 요구사항이 아니다. 따라서 `tmd_mi_model_execpreph`에 confirmed snapshot JSON을 추가하지 않는다.
+3. Execution file staging persistence: 별도 staging table/status를 만들지 않고 기존 `tcm_filel`의 `TEMP/0` relation을 durable staged marker로 사용한다. schema/DDL/common-code 추가는 없다.
+4. Execution file staging lifecycle: object는 처음부터 최종 `SCNRCASE/{uuid}` key에 직렬 업로드하고 Case attach는 metadata-only로 수행한다. 최종 conflict의 보상 삭제 비용을 수용하고 crash orphan TTL은 24시간으로 한다. JSON/multipart 모두 적용하며 staged `file_no`는 attachment 전 외부에 노출하지 않는다.
 
 ## 12. Exit Criteria / Handoff
 
@@ -410,7 +416,7 @@ Resolved and no longer P0: callback authentication, Backend read permission, Age
   - Agent proposal 테이블 read-only 조회 + thin Backend execution-preparation(orchestration) 책임 분리
   - Agent proposal ID non-unique index (반복 실행 허용)
   - active(in-flight) preparation uniqueness — `del_yn` 포함 STORED generated column + UNIQUE
-  - confirmed snapshot은 Backend에 저장하지 않음(Agent proposal 테이블이 확정값 보관)
+  - confirmed snapshot은 Backend에 저장하지 않음(A8은 Agent proposal 테이블의 현재 확정값 조회)
   - `tmd_mi_model_execpreph.case_id` nullable UNIQUE 포인터로 execution-preparation row 1건과 Case 1건을 연결
 - implementation readiness: ready for API implementation by slice; full real execution rollout depends on the P0 rollout items above.
 
@@ -438,3 +444,7 @@ Resolved and no longer P0: callback authentication, Backend read permission, Age
 - Agent Notion과 Agent DB 설계 문서는 source evidence다. Agent physical schema는 정정된 canonical DDL로, Backend physical schema는 별도 Backend DDL draft로 승격해야 한다.
 - P0 질문은 Agent 연동 없는 frontend mock 구현을 막지 않지만 real DB/Agent/Excel integration을 막는다.
 - 2026-07-09 sync note: Scenario 기준 current-state 조회 business 우선순위를 추가했다. API field와 enum은 feature spec이 canonical source다.
+- 2026-07-10 sync note: A6 구현 전 실제 confirmation sample을 반영해 rationale은 required이지만 실행 동일성 비교에서 제외했다. Case/file/Run/`case_id` commit 이후 dispatch하고, dispatch 실패는 연결 Run/Case/preparation을 함께 실패 처리하는 경계를 명확히 했다.
+- 2026-07-10 sync note: execution file staging은 기존 `tcm_filel TEMP/0` marker, 최종 `SCNRCASE/{uuid}` 선업로드, metadata-only Case attach, final conflict 보상 삭제, 24시간 orphan TTL, JSON/multipart 공통 적용, 직렬 업로드로 확정했다. 별도 schema/DDL은 없다.
+- 2026-07-10 sync note: A8은 최신 A6-linked Case와 연결된 proposal의 조회 시점 현재 Agent `confirmation_parameters`를 반환한다. 실행 시점 immutable snapshot/exact 복원은 현행 범위가 아니며 실제 실행 input은 Case 연결 파일 3개가 소유하므로 execprep confirmed JSON snapshot을 추가하지 않는다.
+- 2026-07-13 sync note: 독립 latest input-file API는 만들지 않고 A4a `executionInputFiles`로 병합했다. A4a의 최신 execution-preparation이 `EXECUTED_CONFIRMED`일 때만 같은 `case_id`의 파일 metadata를 노출하며, 다른 상태는 `null`이다. A8/A9 latest Case 조회 책임은 유지한다.
