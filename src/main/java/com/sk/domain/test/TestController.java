@@ -1,46 +1,51 @@
 package com.sk.domain.test;
 
-import jakarta.servlet.http.HttpServletRequest;
-import java.io.IOException;
-import java.util.Map;
-
-import org.springframework.context.annotation.Profile;
-import org.springframework.http.MediaType;
-import org.springframework.web.bind.annotation.DeleteMapping;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.RequestPart;
-import org.springframework.web.bind.annotation.RestController;
-import org.springframework.web.multipart.MultipartFile;
-
 import com.sk.common.annotation.RequiredPermission;
+import com.sk.common.enums.ResultCode;
+import com.sk.common.exception.SystemErrorException;
 import com.sk.common.model.BaseResponse;
 import com.sk.common.model.BaseResponseFactory;
+import com.sk.common.utils.DateUtil;
 import com.sk.domain.admin.dto.request.TestReq;
 import com.sk.domain.admin.dto.response.TestRes;
 import com.sk.domain.admin.dto.response.file.FileUploadRes;
+import com.sk.domain.mi.service.nextgen.paramproposal.excel.MergedModelInputFiles;
+import com.sk.domain.mi.service.nextgen.paramproposal.excel.ModelInputFile;
+import com.sk.domain.mi.service.nextgen.paramproposal.excel.ModelParamAdjustment;
+import com.sk.domain.mi.service.nextgen.paramproposal.excel.ModelParamExcelMergeService;
 import com.sk.domain.shared.dto.response.auth.GenerateTokenRes;
 import com.sk.domain.shared.enums.PermissionCondition;
 import com.sk.domain.shared.enums.Role;
 import com.sk.domain.shared.enums.UserRoleCd;
-
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
-import io.swagger.v3.oas.annotations.Parameters;
 import io.swagger.v3.oas.annotations.headers.Header;
 import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.ExampleObject;
 import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
-import jakarta.validation.constraints.Min;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.context.annotation.Profile;
+import org.springframework.core.io.InputStreamResource;
+import org.springframework.http.ContentDisposition;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
+
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
+import java.nio.charset.StandardCharsets;
+import java.util.zip.ZipEntry;
+import java.util.zip.ZipOutputStream;
 
 @Profile("!dedicated")
 @Tag(name = "00. 테스트 샘플 API", description = "테스트 샘플 API 입니다.")
@@ -51,6 +56,7 @@ import lombok.extern.slf4j.Slf4j;
 public class TestController {
 
     private final TestService testService;
+    private final ModelParamExcelMergeService modelParamExcelMergeService;
 
     @Operation(summary = "사용자 정보 조회 API", description = "사용자 정보를 조회합니다.")
     @ApiResponse(responseCode = "200", description = "HTTP Status Code is 200")
@@ -250,4 +256,45 @@ public class TestController {
     //         @RequestParam(value = "size", required = false, defaultValue = "1000") @Min(1) int size) {
     //     return BaseResponseFactory.create(testService.getRedisCache(key, size));
     // }
+
+    @Operation(
+            summary = "확정 파라미터 병합 결과 다운로드 테스트",
+            description = """
+                    확정 파라미터(confirmation_parameters) JSON array를 그대로 body로 보내면 병합 컴포넌트를 태워 결과 입력 파일 3개(Demand/Supply/Trade)를 zip으로 내려받습니다. <br>
+                    body는 tmm_mi_model_param_proposal_m.confirmation_parameters 컬럼 값을 그대로 붙여넣으면 됩니다. <br>
+                    응답: `merged-model-input-{오늘날짜}.zip` (병합 대상 없는 파일은 원본 그대로 포함). <br>
+                    좌표 결함이 있으면 400 (`수급모델 입력 병합 실패 [파라미터 | 파일>시트] — 사유`).
+                    """
+    )
+    @ApiResponse(responseCode = "200", description = "병합 및 다운로드 성공")
+    @PostMapping(value = "/model-inputs/merge/download", consumes = MediaType.APPLICATION_JSON_VALUE, produces = "application/zip")
+    public ResponseEntity<InputStreamResource> downloadMerged(@RequestBody String confirmationParametersJson) {
+        MergedModelInputFiles merged = modelParamExcelMergeService.merge(ModelParamAdjustment.listFromJson(confirmationParametersJson));
+
+        byte[] data = zipModelInputs(merged);
+        String filename = "merged-model-input-%s.zip".formatted(DateUtil.currentYmd());
+
+        HttpHeaders headers = new HttpHeaders();
+        headers.setContentType(MediaType.parseMediaType("application/zip"));
+        headers.setContentDisposition(ContentDisposition.attachment().filename(filename).build());
+        headers.setContentLength(data.length);
+
+        return new ResponseEntity<>(new InputStreamResource(new ByteArrayInputStream(data)), headers, HttpStatus.OK);
+    }
+
+    private byte[] zipModelInputs(MergedModelInputFiles merged) {
+        try (ByteArrayOutputStream out = new ByteArrayOutputStream();
+             ZipOutputStream zip = new ZipOutputStream(out)) {
+            for (ModelInputFile file : ModelInputFile.values()) {
+                zip.putNextEntry(new ZipEntry(file.getBasecaseFileName()));
+                zip.write(merged.content(file));
+                zip.closeEntry();
+            }
+            zip.finish();
+            return out.toByteArray();
+        } catch (IOException e) {
+            throw SystemErrorException.of(ResultCode.Error.SYS_INTERNAL_ERROR, "병합 결과 zip 생성에 실패했습니다.");
+        }
+    }
+
 }

@@ -1,17 +1,17 @@
 # Scenario Case Execution ERD / DDL Draft
 
 - domain: gas
-- status: template / not rollout-ready
+- status: Implemented (rolled out to production)
 - owner: platform BE
-- updated at: 2026-06-07 (output result persistence canonical document reference added)
+- updated at: 2026-07-10 (real DB rollout confirmed complete; model-execution staging no-schema decision added)
 - canonical design input: [scenario-case-execution-workflow-design-draft.md](scenario-case-execution-workflow-design-draft.md)
 - related canonical output result persistence: [mi-fundamental-model-output-result-persistence-design.md](mi-fundamental-model-output-result-persistence-design.md)
 
 ## Purpose
 
-This document is the canonical home for future DB-backed rollout SQL for Scenario Case execution.
+This document is the canonical home for the DB-backed rollout SQL for Scenario Case execution.
 
-Current status: no phase-1 mock API implementation depends on this DDL. Do not apply this document to any database until all unresolved decisions are closed and DBA review is complete.
+Current status: this DDL has been applied to production and MI Fundamental Model case/run persistence, Volumes/Trade Flows/Price real-DB result storage, and MI 수급모델 실행 all depend on the tables defined here (see `docs/work-notes/2026/2026-06-05-fundamental-model-create-case-real-db-implementation.md` and later 2026-06 real-DB work notes for rollout evidence). Below sections that describe "future DB-backed" query shapes and "phase-1 mock" behavior document the pre-rollout design rationale and remain the physical schema/migration/rollback reference; they are historical framing, not the current state.
 
 MI Fundamental Model 1차 mock API의 endpoint/path/request/response canonical source는 [mi-fundamental-model-mock-api-feature-spec.md](../../feature-specs/mi-fundamental-model-mock-api-feature-spec.md) 이다. 이 ERD/DDL draft는 DB rollout draft이며, API 계약을 재정의하지 않는다.
 
@@ -141,7 +141,8 @@ WHERE case_id = :case_id
 - `run_id` format and PK (2026-05-21): backend-generated `run_id` format is `yyyymmdd_hhmmss_XXXX`. `tmd_mdl_scnrcaseh.run_id` is `VARCHAR(20) PRIMARY KEY`. `tmd_mdl_scnrcasem.last_run_id` is `VARCHAR(20)`.
 - `run_seq` surrogate key (2026-05-22, type fixed 2026-06-11): `tmd_mdl_scnrcaseh`에 `run_seq INT UNSIGNED AUTO_INCREMENT UNIQUE`를 추가한다. `file_rel_obj_dstg_no`가 `INT UNSIGNED` 계열이어서 `run_id`(`VARCHAR(20)`)를 직접 저장할 수 없는 제약을 해결하기 위한 surrogate key다. output 파일은 `SCNRCASEH` / `run_seq`로 `tcm_filel`에 연결한다. `run_id`는 model pod 연동 키로 그대로 유지한다. Java 타입은 unsigned 범위를 보존하기 위해 `Long`을 사용한다. 이전 "no separate surrogate key" 결정과 `BIGINT UNSIGNED` 후보는 이 결정으로 superseded된다.
 - `last_run_id` column (2026-05-19, 2026-05-21 length updated): added to `tmd_mdl_scnrcasem` as `VARCHAR(20) NULL`, an application-validated latest execution pointer. No physical FK to `tmd_mdl_scnrcaseh.run_id`. Update order and the `case_stat_cd` / `last_run_id` invariant are enforced by the application within a single transaction. See workflow design draft §2 and §5.
-- input file linkage strategy (2026-06-05): DB-backed `POST /cases`는 `TEMP/0` 임시 relation을 거치지 않고 `case_id` 확보 후 `SCNRCASE + case_id` relation으로 직접 업로드한다. 파일 3개 중 하나라도 실패하면 API 전체를 실패로 처리하며, 이미 성공한 업로드 분은 `createCase()` service가 file delete primitive를 호출해 보상 삭제한다.
+- Fundamental Model input file linkage strategy (2026-06-05): DB-backed `POST /api/v1/mi/fundamental-model/cases`는 `TEMP/0` 임시 relation을 거치지 않고 `case_id` 확보 후 `SCNRCASE + case_id` relation으로 직접 업로드한다. 파일 3개 중 하나라도 실패하면 API 전체를 실패로 처리하며, 이미 성공한 업로드 분은 `createCase()` service가 file delete primitive를 호출해 보상 삭제한다. 아래 Next Gen Scenario model-execution staging 결정과 endpoint 범위가 다르다.
+- model-execution staging persistence (2026-07-10): 장기 transaction 개선을 위한 staged upload는 별도 table/column/status를 만들지 않고 기존 `tcm_filel`의 `file_rel_obj_spt_cd = 'TEMP'`, `file_rel_obj_dstg_no = 0` relation을 durable marker로 재사용한다. object key는 처음부터 최종 `SCNRCASE/{uuid}` prefix를 사용한다. 최종 Case transaction은 marker row를 `SCNRCASE + case_id`로 attach하는 metadata update만 수행하고 Object Storage copy/move/delete를 포함하지 않는다. 따라서 기존 `FileService.updateFile()`의 TEMP move 동작을 staging finalization에 재사용하지 않고 internal metadata-only attach primitive를 사용한다. crash orphan 식별자는 `TEMP/0 + SCNRCASE storage path`, TTL은 24시간이며 cleanup은 bounded batch와 실제 `EXPLAIN`으로 기존 `tcm_filel_ix01` 사용성을 검증한다. 이 결정은 no new table, no new column, no new common-code, no immediate index/DBA rollout action으로 분류한다.
 - `tcm_filel` compatibility / index coverage (2026-06-05): 운영 DB에서 `tcm_filel.file_rel_obj_dstg_no = INT UNSIGNED`, `tcm_filel_ix01 (file_rel_obj_spt_cd, file_rel_obj_dstg_no)` 존재를 확인했다. `WHERE del_yn = 'N' AND file_rel_obj_spt_cd = 'SCNRCASE' AND file_rel_obj_dstg_no = :case_id` EXPLAIN 결과 `key = tcm_filel_ix01`, `type = ref`, `rows` small, no full scan으로 확인되었다.
 - Result payload / pointer columns (2026-05-19): `req_param_json` and `rslt_data_json` are not in scope. Request information is tracked via case metadata and `tcm_filel` linkage; result payload/files are owned by the external model. Revisit only when a result-query / download feature spec is defined.
 - `scenario_id` column-name removal (2026-05-20, superseded by 2026-06-10 `scnr_id` re-introduction): the old `scenario_id` column name and physical FK assumption were removed. The current proposed model uses nullable `scnr_id` as an application-validated logical scenario reference for MI supply-model rows.
@@ -370,7 +371,7 @@ Apply guardrails:
 
 ## Backfill
 
-No existing data backfill is expected for phase-1 mock.
+No existing data backfill was required for the phase-1 mock-to-real-DB cutover.
 
 If mock or external data must be migrated later, define a separate one-off import plan.
 
@@ -501,6 +502,6 @@ Expected future checks:
 
 ## DBA Deployment Notes
 
-- This document must be reviewed with DBA/common-code owner before rollout.
-- Phase-1 mock API can proceed without this DDL.
+- This document has been reviewed with DBA/common-code owner and applied to production.
+- Phase-1 API is now DB-backed against this DDL, not the in-memory mock store.
 - 과거 `scenario_id` 컬럼명과 물리 FK 전제는 제거되었다. 현재 proposed model은 `tmd_mdl_scnrcasem.scnr_id` nullable 논리 참조를 사용하며, MI Fundamental Model row는 `NULL`, MI 수급모델 row는 scenario 식별자를 저장한다. rollout 전에는 `scnr_id` 기반 active-run guard(존재 확인 query + `tmd_mdl_scnrcasem_uq01` unique), list index 선택, JOIN query 실행계획을 DBA review로 확정해야 한다.

@@ -20,10 +20,12 @@ import com.sk.domain.shared.enums.fundamentalmodel.FundamentalModelRunStatus;
 import com.sk.domain.shared.enums.nextgen.IndexName;
 import com.sk.domain.shared.repository.master.tmd.projection.MiBasePriceRow;
 import com.sk.domain.shared.repository.master.tmd.projection.QMiBasePriceRow;
+import com.sk.domain.shared.repository.master.tmd.projection.QScenarioLatestRunRow;
 import com.sk.domain.shared.repository.master.tmd.projection.QScenarioPriceRow;
 import com.sk.domain.shared.repository.master.tmd.projection.QScenarioRunStateRow;
 import com.sk.domain.shared.repository.master.tmd.projection.ScenarioCaseDetailRow;
 import com.sk.domain.shared.repository.master.tmd.projection.ScenarioCaseListRow;
+import com.sk.domain.shared.repository.master.tmd.projection.ScenarioLatestRunRow;
 import com.sk.domain.shared.repository.master.tmd.projection.ScenarioPriceRow;
 import com.sk.domain.shared.repository.master.tmd.projection.ScenarioRunStateRow;
 import java.util.List;
@@ -165,6 +167,28 @@ public class CustomScenarioCaseRepositoryImpl implements CustomScenarioCaseRepos
                 scenarioCaseRunPrice.isDeleted.isFalse()
             )
             .orderBy(scenarioCaseRunPrice.periodKey.asc())
+            .fetch();
+    }
+
+    @Override
+    public List<ScenarioLatestRunRow> findLatestCompletedRunIdByScenarioIds(List<Long> scenarioIds) {
+
+        if (scenarioIds == null || scenarioIds.isEmpty()) {
+            return List.of();
+        }
+        return queryFactory
+            .select(new QScenarioLatestRunRow(
+                scenarioCase.scenarioId,
+                scenarioCaseRunHistory.runId
+            ))
+            .from(scenarioCase)
+            .innerJoin(scenarioCaseRunHistory).on(scenarioCaseRunHistory.runId.eq(scenarioCase.lastRunId))
+            .where(
+                scenarioCase.scenarioId.in(scenarioIds),
+                scenarioCase.isDeleted.isFalse(),
+                scenarioCaseRunHistory.isDeleted.isFalse(),
+                scenarioCaseRunHistory.runSeq.eq(latestCompletedRunSeq())
+            )
             .fetch();
     }
 

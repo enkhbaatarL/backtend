@@ -159,8 +159,9 @@ public class EventMockService {
             detail.createdAt(), detail.updatedAt(), detail.latestRecordFirstCreated(),
             detail.signalType(), detail.signalTypeLabel(), detail.isScenarioSuggested(), detail.scenarioSuggestReason(),
             status, status == null ? null : status.getLabel(),
+            design.step(), design.step() == null ? null : design.step().getLabel(),
             occupied, occupied ? design.occupantUserId() : null, null,
-            detail.aiInsights(), detail.impactAnalysis(), detail.driverTreeScoreboard(), detail.relatedEventScenario());
+            detail.aiInsights(), detail.impactAnalysis(), detail.driverTreeScoreboard(), detail.institutionViewSynthesis(), detail.relatedEventScenario());
     }
 
     public PaginationRes<EventRelatedRecordRes> getEventRecords(Long eventId, int page, int size) {
@@ -194,7 +195,9 @@ public class EventMockService {
             ScenarioDesignDisplayStatus status = ScenarioDesignDisplayStatus.of(info.status(), true);
             boolean occupied = info.status() == ScenarioGroupStatus.CREATING;
             return EventDesignAvailabilityRes.of(
-                eventId, status, occupied, occupied ? info.occupantUserId() : null, null, info.scenarioGroupId());
+                eventId, status,
+                occupied ? ScenarioDesignDisplayStatus.CreatingStep.of(info.stage()) : null,
+                occupied, occupied ? info.occupantUserId() : null, null, info.scenarioGroupId());
         }
         // ② 세션 없으면 이벤트의 정적 설계 상태(사전 그룹) — event-list와 일관
         EventListItemRes event = eventById(eventId);
@@ -205,8 +208,9 @@ public class EventMockService {
         if (scenarioGroupMockService.isGroupDeleted(event.scenarioGroupId())) {
             return EventDesignAvailabilityRes.designable(eventId);
         }
+
         return EventDesignAvailabilityRes.of(
-            eventId, event.scenarioDesignStatus(), false, null, null, event.scenarioGroupId());
+            eventId, event.scenarioDesignStatus(), null, false, null, null, event.scenarioGroupId());
     }
 
     /**
@@ -221,16 +225,19 @@ public class EventMockService {
             ScenarioDesignDisplayStatus status = ScenarioDesignDisplayStatus.of(info.status(), true);
             // 점유 = 설계중(creating). 점유자는 세션의 실제 시작 사용자.
             Long occupant = status == ScenarioDesignDisplayStatus.CREATING ? info.occupantUserId() : null;
-            return new DesignDisplay(status, info.scenarioGroupId(), occupant);
+            ScenarioDesignDisplayStatus.CreatingStep step =
+                status == ScenarioDesignDisplayStatus.CREATING ? ScenarioDesignDisplayStatus.CreatingStep.of(info.stage()) : null;
+            return new DesignDisplay(status, info.scenarioGroupId(), occupant, step);
         }
         if (scenarioGroupMockService.isGroupDeleted(staticGroupId)) {
-            return new DesignDisplay(ScenarioDesignDisplayStatus.DESIGNABLE, null, null);
+            return new DesignDisplay(ScenarioDesignDisplayStatus.DESIGNABLE, null, null, null);
         }
-        // 정적 fixture는 점유자 정보가 없음 — 라이브 세션이 있을 때만 점유자를 안다.
-        return new DesignDisplay(staticStatus, staticGroupId, null);
+        // 정적 fixture는 점유자·진행단계 정보가 없음 — 라이브 세션이 있을 때만 안다.
+        return new DesignDisplay(staticStatus, staticGroupId, null, null);
     }
 
-    private record DesignDisplay(ScenarioDesignDisplayStatus status, Long scenarioGroupId, Long occupantUserId) {}
+    private record DesignDisplay(ScenarioDesignDisplayStatus status, Long scenarioGroupId, Long occupantUserId,
+                                 ScenarioDesignDisplayStatus.CreatingStep step) {}
 
     /** 목록 아이템에 라이브 설계 상태(상태/그룹/점유)를 덮어쓴 새 아이템을 만든다 (DTO는 그대로, 조립은 mock에서). */
     private EventListItemRes overlayLiveDesign(EventListItemRes item) {
@@ -243,6 +250,7 @@ public class EventMockService {
             item.latestRecordFirstCreated(), item.signalType(), item.signalTypeLabel(),
             item.isScenarioSuggested(), item.scenarioSuggestReason(),
             status, status == null ? null : status.getLabel(),
+            design.step(), design.step() == null ? null : design.step().getLabel(),
             design.scenarioGroupId(), occupied, design.occupantUserId(), null, item.indexImpacts());
     }
 

@@ -104,6 +104,7 @@ public class EventController {
             - `isScenarioSuggested`: 시나리오화 추천 여부
             - `scenarioSuggestReason`: 시나리오화 추천 근거
             - `scenarioDesignStatus` / `scenarioDesignStatusLabel`: `designable`(설계가능) / `unavailable`(설계불가, 매칭 dimension template 없음) / `creating`(설계중) / `created`(설계완료)
+            - `designStep` / `designStepLabel`: 설계중(`creating`) 세부 진행 단계 — `step1`(분기항목 설계) / `step2`(Signpost 설계). 설계중이 아니면 null
             - `scenarioGroupId`: 활성 시나리오 그룹 ID (없으면 null, `created`일 때 이동 대상)
             - `occupied`: 설계 점유 여부 (설계중이면 true)
             - `occupantUserId`: 점유 사용자 ID (점유 중이 아니면 null)
@@ -148,10 +149,12 @@ public class EventController {
             - `isScenarioSuggested`: 시나리오화 추천 여부
             - `scenarioSuggestReason`: 시나리오화 추천 근거 (추천 아님일 때 null)
             - `scenarioDesignStatus` / `scenarioDesignStatusLabel`: `designable`(설계가능) / `unavailable`(설계불가, 매칭 dimension template 없음) / `creating`(설계중) / `created`(설계완료)
+            - `designStep` / `designStepLabel`: 설계중(`creating`) 세부 진행 단계 — `step1`(분기항목 설계) / `step2`(Signpost 설계). 설계중이 아니면 null
             - `occupied`: 설계 점유 여부 (설계중이면 true)
             - `occupantUserId` / `occupantUserName`: 점유 사용자 ID/명 (점유 중이 아니면 null)
             - `eventTypeLv1` / `eventTypeLv1Label` / `eventTypeLv2` / `eventTypeLv2Label`
             - `createdAt`, `updatedAt`, `latestRecordFirstCreated`(최신 연관 레코드 최초 생성일시)
+            - `institutionViewSynthesis`: 기관 전망 View 종합 — 기관전망 섹션 상단의 전체 요약
 
             <br><br>
             ### impactAnalysis 필드
@@ -288,6 +291,7 @@ public class EventController {
             ### content 항목 필드 (예정)
             - `eventId`: 이벤트 ID
             - `scenarioDesignStatus` / `scenarioDesignStatusLabel`: `designable`(설계가능) / `unavailable`(설계불가, 매칭 dimension template 없음) / `creating`(설계중) / `created`(설계완료)
+            - `designStep` / `designStepLabel`: 설계중(`creating`) 세부 진행 단계 — `step1`(분기항목 설계) / `step2`(Signpost 설계). 설계중이 아니면 null
             - `occupied`: 점유 여부 / `occupantUserId`: 점유 사용자 ID (없으면 null) / `occupantUserName`: 점유 사용자명 (없으면 null)
             - `scenarioGroupId`: 활성 시나리오 그룹 ID (없으면 null)
             """

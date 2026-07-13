@@ -503,6 +503,14 @@ public class FundamentalModelCaseServiceImpl implements FundamentalModelCaseServ
 
         LocalDateTime processedAt = LocalDateTime.now();
         if (runHistory.getStatus() != FundamentalModelRunStatus.RUNNING) {
+            if (isBackendForcedTerminal(runHistory)) {
+                log.info(
+                    "LATE_CALLBACK_IGNORED backend-forced terminal run. runId={}, failureReason={}",
+                    runId,
+                    runHistory.getFailureReasonCode()
+                );
+                return new FundamentalModelRunCallbackRes(runId, runHistory.getStatus(), processedAt);
+            }
             if (isSameTerminalPayload(runHistory, request)) {
                 return new FundamentalModelRunCallbackRes(runId, runHistory.getStatus(), processedAt);
             }
@@ -531,6 +539,14 @@ public class FundamentalModelCaseServiceImpl implements FundamentalModelCaseServ
                     ResultCode.Error.RSC_NOT_FOUND,
                     "fundamental model run not found. runId: %s".formatted(runId)
                 ));
+            if (isBackendForcedTerminal(refreshedRun)) {
+                log.info(
+                    "LATE_CALLBACK_IGNORED backend-forced terminal run after concurrent transition. runId={}, failureReason={}",
+                    runId,
+                    refreshedRun.getFailureReasonCode()
+                );
+                return new FundamentalModelRunCallbackRes(runId, refreshedRun.getStatus(), processedAt);
+            }
             if (isSameTerminalPayload(refreshedRun, request)) {
                 return new FundamentalModelRunCallbackRes(runId, refreshedRun.getStatus(), processedAt);
             }
@@ -540,12 +556,15 @@ public class FundamentalModelCaseServiceImpl implements FundamentalModelCaseServ
             );
         }
 
-        scenarioCaseRepository.updateLatestRunStatus(
+        int caseUpdateCount = scenarioCaseRepository.updateLatestRunStatus(
             runId,
             FundamentalModelCaseStatus.valueOf(request.status().name()),
             processedAt,
             CALLBACK_ACTOR
         );
+        if (caseUpdateCount == 0) {
+            log.info("Callback did not update case because run is not the active latest run. runId={}", runId);
+        }
 
         return new FundamentalModelRunCallbackRes(runId, request.status(), processedAt);
     }
@@ -1588,9 +1607,14 @@ public class FundamentalModelCaseServiceImpl implements FundamentalModelCaseServ
         String requestFailureReason = request.status() == FundamentalModelRunStatus.FAILED ? request.failureReason() : null;
         String requestErrorMessage = request.status() == FundamentalModelRunStatus.FAILED ? request.errorMessage() : null;
         return runHistory.getStatus() == request.status()
-            && Objects.equals(runHistory.getExecutionEndDt(), request.finishedAt())
             && Objects.equals(runHistory.getFailureReasonCode(), requestFailureReason)
             && Objects.equals(runHistory.getErrorMessage(), requestErrorMessage);
+    }
+
+    private boolean isBackendForcedTerminal(ScenarioCaseRunHistory runHistory) {
+        return runHistory.getStatus() == FundamentalModelRunStatus.FAILED
+            && ("TIMEOUT".equals(runHistory.getFailureReasonCode())
+                || "SCENARIO_CANCELLED".equals(runHistory.getFailureReasonCode()));
     }
 
     private ScenarioCase findActiveCase(Long caseId) {

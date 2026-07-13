@@ -6,6 +6,7 @@ import com.sk.domain.shared.enums.nextgen.IndexName;
 import com.sk.domain.shared.repository.master.tmd.projection.MiBasePriceRow;
 import com.sk.domain.shared.repository.master.tmd.projection.ScenarioCaseDetailRow;
 import com.sk.domain.shared.repository.master.tmd.projection.ScenarioCaseListRow;
+import com.sk.domain.shared.repository.master.tmd.projection.ScenarioLatestRunRow;
 import com.sk.domain.shared.repository.master.tmd.projection.ScenarioPriceRow;
 import com.sk.domain.shared.repository.master.tmd.projection.ScenarioRunStateRow;
 import java.util.List;
@@ -20,6 +21,12 @@ public interface CustomScenarioCaseRepository {
     List<ScenarioPriceRow> findLatestCompletedPricesByScenarioIds(List<Long> scenarioIds, IndexName indexName, PeriodUnitSeparateCd periodUnit);
 
     List<ScenarioRunStateRow> findScenarioRunStates(List<Long> scenarioIds);
+
+    /**
+     * 시나리오별 최신 완료(케이스·실행 모두 COMPLETED) 실행의 run_id.
+     * 가격전망 해석 재실행 stale 판정용 — 결과 scenarioId 집합 = 수급모델 실행 완료(executed) 시나리오.
+     */
+    List<ScenarioLatestRunRow> findLatestCompletedRunIdByScenarioIds(List<Long> scenarioIds);
 
     /** MI Base 기준선 가격 — exec_type_cd=MI_BASE 케이스 중 최신 1건(case_id 최대)의 가격 결과. */
     List<MiBasePriceRow> findLatestMiBasePrices(IndexName indexName, PeriodUnitSeparateCd periodUnit);

@@ -8,11 +8,14 @@ import com.amazonaws.services.s3.model.CannedAccessControlList;
 import com.amazonaws.services.s3.model.DeleteObjectRequest;
 import com.amazonaws.services.s3.model.GeneratePresignedUrlRequest;
 import com.amazonaws.services.s3.model.GroupGrantee;
+import com.amazonaws.services.s3.model.ListObjectsV2Request;
+import com.amazonaws.services.s3.model.ListObjectsV2Result;
 import com.amazonaws.services.s3.model.ObjectMetadata;
 import com.amazonaws.services.s3.model.Permission;
 import com.amazonaws.services.s3.model.PutObjectRequest;
 import com.amazonaws.services.s3.model.S3Object;
 import com.amazonaws.services.s3.model.S3ObjectInputStream;
+import com.amazonaws.services.s3.model.S3ObjectSummary;
 import com.amazonaws.util.IOUtils;
 import com.sk.common.utils.PathUtil;
 import java.io.ByteArrayInputStream;
@@ -21,7 +24,11 @@ import java.io.InputStream;
 import java.net.URL;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.ArrayList;
 import java.util.Date;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
@@ -63,6 +70,67 @@ public class ObjectStorageService {
 
     public S3Object getObject(String bucketName, String fileName) {
         return objectStorageClient.getObject(bucketName, fileName);
+    }
+
+    /**
+    * 버킷 이름이 비어 있으면 설정된 기본 버킷 이름을 반환한다.
+    *
+    * @param bucketName 버킷 이름
+    * @return 결정된 버킷 이름
+    */
+    public String resolveBucketName(String bucketName) {
+        return (bucketName == null || bucketName.isBlank()) ? commBucketName : bucketName;
+    }
+
+    /**
+    * 특정 폴더의 하위 폴더 목록과 파일명 목록을 조회한다.
+    * 버킷 이름이 비어 있으면 설정된 기본 버킷을 사용한다.
+    * recursive가 true이면 폴더 구분 없이 해당 경로 아래 전체 파일을 평탄화하여 조회한다.
+    *
+    * @param bucketName 버킷 이름
+    * @param folderPath 폴더 경로
+    * @param recursive 하위 폴더 전체 조회 여부
+    * @return folders(하위 폴더 목록), files(파일 목록)
+    */
+    public Map<String, List<String>> listFolder(String bucketName, String folderPath, boolean recursive) {
+        String targetBucketName = resolveBucketName(bucketName);
+        String normalizedPrefix = (folderPath == null || folderPath.isBlank()) ? "" : PathUtil.IncludeTrailingPathDelimiter(folderPath.replace("\\", "/"));
+
+        ListObjectsV2Request request = new ListObjectsV2Request()
+                .withBucketName(targetBucketName)
+                .withPrefix(normalizedPrefix)
+                .withMaxKeys(1000);
+
+        if (!recursive) {
+            request.withDelimiter("/");
+        }
+
+        List<String> folders = new ArrayList<>();
+        List<String> files = new ArrayList<>();
+
+        ListObjectsV2Result result;
+        do {
+            result = objectStorageClient.listObjectsV2(request);
+
+            folders.addAll(result.getCommonPrefixes());
+
+            for (S3ObjectSummary objectSummary : result.getObjectSummaries()) {
+                String key = objectSummary.getKey();
+                if (key.equals(normalizedPrefix)) {
+                    continue;
+                }
+                files.add(key);
+            }
+
+            request.setContinuationToken(result.getNextContinuationToken());
+        } while (result.isTruncated());
+
+        log.info("List folder completed. bucket={}, prefix={}, recursive={}, folders={}, files={}", targetBucketName, normalizedPrefix, recursive, folders.size(), files.size());
+
+        Map<String, List<String>> listing = new LinkedHashMap<>();
+        listing.put("folders", folders);
+        listing.put("files", files);
+        return listing;
     }
 
     public S3ObjectInputStream getObjectContent(String bucketName, String fileName) {

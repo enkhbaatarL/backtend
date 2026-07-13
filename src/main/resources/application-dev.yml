@@ -120,6 +120,10 @@ api:
     url: http://skmip-skgas-agent-scenario-app-dev.mi-skgas-dev.svc.cluster.local:8000
     connection-timeout: 1s
     read-timeout: 60s
+  price-interpretation-agent:
+    url: http://agent-interpret-skgas-app-dev.mi-skgas-dev.svc.cluster.local:8000
+    connection-timeout: 1s
+    read-timeout: 60s
 
 mail:
   except-company-no: 2013

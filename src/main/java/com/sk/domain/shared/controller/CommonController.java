@@ -123,8 +123,8 @@ public class CommonController {
 
             <br><br>
             ### 피드백 유형 코드 (feedbackTypeCd)
-            - `data_error`: 데이터 오류
-            - `ui_improvement`: UI 개선
+            - `agent_output`: Agent Output
+            - `ux_ui`: UX/UI
             - `feature_suggestion`: 기능 제안
             - `etc`: 기타
             """

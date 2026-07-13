@@ -21,19 +21,27 @@ import java.io.IOException;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.text.Normalizer;
+import java.time.LocalDateTime;
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
+import java.util.stream.Collectors;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipOutputStream;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.io.FilenameUtils;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.support.TransactionSynchronization;
+import org.springframework.transaction.support.TransactionSynchronizationManager;
 import org.springframework.web.multipart.MultipartFile;
 
 @Slf4j
@@ -41,13 +49,16 @@ import org.springframework.web.multipart.MultipartFile;
 @Transactional(readOnly = true)
 @RequiredArgsConstructor
 public class FileService {
+    private static final String TEMP_DIR = "TEMP";
+    private static final int STAGED_RELATIONSHIP_NO = 0;
+    private static final String INTERNAL_STAGED_FINAL_RELATIONSHIP_CODE = "SCNRCASE";
+    private static final String FILE_NO_MESSAGE_FORMAT = "file no: %d";
+    private static final String FILE_DOWNLOAD_ERROR_MESSAGE = "파일 다운로드 중 오류가 발생했습니다.";
+    private static final String FILE_URL_ERROR_MESSAGE = "파일 URL 생성 중 오류가 발생했습니다.";
     private final UploadedFileRepository uploadedFileRepository;
     private final ObjectStorageService objectStorageService;
     private final FileEncryptionPolicy fileEncryptionPolicy;
     private final FileCryptoApiClient fileCryptoApiClient;
-
-    private final String TEMP_DIR = "TEMP";
-
     @Value("${ncp.storage.end-point}")
     private String endPoint;
 
@@ -60,11 +71,6 @@ public class FileService {
     @Value("${server.domain}")
     private String serverDomain;
 
-    // public void getAll() {
-    // objectStorageService.getAll();
-    // return;
-    // }
-
     /**
     * 파일를 조회한다.
     *
@@ -74,7 +80,9 @@ public class FileService {
     public UploadedFile getFile(Long fileNo) {
         return uploadedFileRepository.findByFileNo(fileNo)
                 .orElseThrow(
-                        () -> AppErrorException.of(ResultCode.Error.RSC_NOT_FOUND, String.format("file no: %d", fileNo)));
+                        () -> AppErrorException.of(
+                                ResultCode.Error.RSC_NOT_FOUND,
+                                FILE_NO_MESSAGE_FORMAT.formatted(fileNo)));
     }
 
     /**
@@ -148,8 +156,60 @@ public class FileService {
                 file,
                 isPublic,
                 null,
-                fileRelationshipObjectSeparateCode,
-                fileRelationshipObjectDistinguishNo);
+                UploadDestination.relationship(
+                        fileRelationshipObjectDistinguishNo,
+                        fileRelationshipObjectSeparateCode));
+    }
+
+    /**
+     * Object는 최종 relation prefix에 업로드하고 metadata는 TEMP/0 staged marker로 기록한다.
+     * Scenario lock/Case transaction 밖에서 호출해야 한다.
+     */
+    @Transactional(propagation = Propagation.NOT_SUPPORTED)
+    public FileUploadRes uploadStagedFileToRelationshipPath(
+            String companyCd,
+            Role role,
+            MultipartFile file,
+            boolean isPublic,
+            String finalRelationshipCode) {
+        if (finalRelationshipCode == null || finalRelationshipCode.isBlank()) {
+            throw AppErrorException.of(ResultCode.Error.REQ_INVALID_PARAMETER, "파일 relation 정보가 올바르지 않습니다.");
+        }
+
+        return upload(
+                companyCd,
+                role,
+                file,
+                isPublic,
+                null,
+                UploadDestination.staged(finalRelationshipCode));
+    }
+
+    private void registerUploadedObjectRollbackCompensation(UploadedFile uploadedFile) {
+        if (!TransactionSynchronizationManager.isSynchronizationActive()) {
+            return;
+        }
+
+        String bucketName;
+        String filePath;
+        try {
+            bucketName = getBucketName(uploadedFile.getStoragePathNm());
+            filePath = getFilePath(uploadedFile.getStoragePathNm());
+        } catch (MalformedURLException e) {
+            throw AppErrorException.of(
+                ResultCode.Error.SYS_INTERNAL_ERROR,
+                "uploaded file storage path is invalid. fileNo: %d".formatted(uploadedFile.getFileNo())
+            );
+        }
+
+        TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
+            @Override
+            public void afterCompletion(int status) {
+                if (status != TransactionSynchronization.STATUS_COMMITTED) {
+                    deleteUploadedObjectQuietly(bucketName, filePath);
+                }
+            }
+        });
     }
 
     /**
@@ -184,7 +244,7 @@ public class FileService {
      * @return FileUploadRes
      */
     private FileUploadRes upload(String companyCd, Role role, MultipartFile file, boolean isPublic, String fileHash, String separateCode) {
-        return upload(companyCd, role, file, isPublic, fileHash, separateCode, 0);
+        return upload(companyCd, role, file, isPublic, fileHash, UploadDestination.temporary(separateCode));
     }
 
     private FileUploadRes upload(
@@ -193,8 +253,7 @@ public class FileService {
             MultipartFile file,
             boolean isPublic,
             String fileHash,
-            String separateCode,
-            Integer fileRelationshipObjectDistinguishNo) {
+            UploadDestination destination) {
         if (file == null) {
             throw AppErrorException.of(ResultCode.Error.FILE_INVALID);
         }
@@ -215,12 +274,11 @@ public class FileService {
             String bucketName = RoleUtil.isAdmin(role) || RoleUtil.isSubAdmin(role) ? commBucketName : prefix + customerCompanyCd;
             String storageFileNm = UUID.randomUUID().toString().concat(getFileExtension(file.getOriginalFilename()));
             String storagePathNm = PathUtil.IncludeTrailingPathDelimiter(endPoint) + PathUtil.IncludeTrailingPathDelimiter(bucketName)
-                    + PathUtil.IncludeTrailingPathDelimiter(separateCode)
+                    + PathUtil.IncludeTrailingPathDelimiter(destination.storageDirectory())
                     + storageFileNm;
-            String fileRelationshipObjectSeparateCd = separateCode;
 
             // Object Storage 저장
-            String fileName = PathUtil.IncludeTrailingPathDelimiter(separateCode) + storageFileNm;
+            String fileName = PathUtil.IncludeTrailingPathDelimiter(destination.storageDirectory()) + storageFileNm;
             String fileUrl;
             if (fileEncryptionPolicy.isEnabled(companyCd, originalFileNm)) {
                 byte[] decryptedFileData = fileCryptoApiClient.decrypt(file.getBytes(), originalFileNm);
@@ -247,14 +305,15 @@ public class FileService {
                     fileExtNm,
                     mimeTypeNm,
                     DateUtil.endYmd(),
-                    fileRelationshipObjectDistinguishNo,
-                    fileRelationshipObjectSeparateCd,
+                    destination.relationshipNo(),
+                    destination.relationshipCode(),
                     fileHash));
+            registerUploadedObjectRollbackCompensation(savedUploadedFile);
 
             return FileUploadRes.of(savedUploadedFile.getFileNo(), originalFileNm, fileSize, fileUrl);
         } catch (Exception e) {
             deleteUploadedObjectQuietly(uploadedBucketName, uploadedFileName);
-            throw AppErrorException.of(ResultCode.Error.SYS_INTERNAL_ERROR, "파일 업로드 중 오류가 발생했습니다." + e.getMessage());
+            throw internalFileException("파일 업로드 중 오류가 발생했습니다.", e);
         }
     }
 
@@ -280,7 +339,10 @@ public class FileService {
         long metadataStartedAt = System.nanoTime();
         UploadedFile uploadedFile = uploadedFileRepository.findByFileNo(dto.fileNo())
                 .orElseThrow(
-                        () -> AppErrorException.of(ResultCode.Error.RSC_NOT_FOUND, String.format("file no: %d", dto.fileNo())));
+                        () -> AppErrorException.of(
+                                ResultCode.Error.RSC_NOT_FOUND,
+                                FILE_NO_MESSAGE_FORMAT.formatted(dto.fileNo())));
+        ensureNotInternalStagedFile(uploadedFile);
         long metadataMs = elapsedMs(metadataStartedAt);
 
         if (!(uploadedFile.getOriginalFileNm().equals(dto.fileNm()) && uploadedFile.getFileSize().equals(dto.fileSize()))) {
@@ -305,7 +367,7 @@ public class FileService {
 
             return FileDownloadRes.of(uploadedFile.getFileNo(), uploadedFile.getOriginalFileNm(), uploadedFile.getFileSize(), fileData);
         } catch (Exception e) {
-            throw AppErrorException.of(ResultCode.Error.SYS_INTERNAL_ERROR, "파일 다운로드 중 오류가 발생했습니다." + e.getMessage());
+            throw internalFileException(FILE_DOWNLOAD_ERROR_MESSAGE, e);
         }
     }
 
@@ -324,24 +386,7 @@ public class FileService {
     }
 
     public byte[] downloadFiles(List<FileDownloadReq> list, String companyCd) {
-        List<Long> fileNoList = list.stream()
-                .map(FileDownloadReq::fileNo)
-                .toList();
-        List<UploadedFile> uploadedFiles = uploadedFileRepository.findByFileNoList(fileNoList);
-        if (uploadedFiles.isEmpty() || uploadedFiles.size() != new HashSet<>(fileNoList).size()) {
-            throw AppErrorException.of(ResultCode.Error.RSC_NOT_FOUND, String.format("file no: %s", fileNoList));
-        }
-        for (UploadedFile f1 : uploadedFiles) {
-            for (FileDownloadReq f2 : list) {
-                if (f1.getFileNo().equals(f2.fileNo())) {
-                    if (f1.getOriginalFileNm().equals(f2.fileNm()) && f1.getFileSize().equals(f2.fileSize())) {
-                        continue;
-                    } else {
-                        throw AppErrorException.of(ResultCode.Error.FILE_ACCESS_DENIED);
-                    }
-                }
-            }
-        }
+        List<UploadedFile> uploadedFiles = validateDownloadRequests(list);
 
         try (ByteArrayOutputStream baos = new ByteArrayOutputStream();
                 ZipOutputStream zos = new ZipOutputStream(baos)) {
@@ -374,8 +419,35 @@ public class FileService {
 
             return baos.toByteArray();
         } catch (IOException e) {
-            throw AppErrorException.of(ResultCode.Error.SYS_INTERNAL_ERROR, "파일 다운로드 중 오류가 발생했습니다." + e.getMessage());
+            throw internalFileException(FILE_DOWNLOAD_ERROR_MESSAGE, e);
         }
+    }
+
+    private List<UploadedFile> validateDownloadRequests(List<FileDownloadReq> list) {
+        List<Long> fileNoList = list.stream()
+                .map(FileDownloadReq::fileNo)
+                .toList();
+        List<UploadedFile> uploadedFiles = uploadedFileRepository.findByFileNoList(fileNoList);
+        if (uploadedFiles.isEmpty() || uploadedFiles.size() != new HashSet<>(fileNoList).size()) {
+            throw AppErrorException.of(ResultCode.Error.RSC_NOT_FOUND, String.format("file no: %s", fileNoList));
+        }
+        uploadedFiles.forEach(this::ensureNotInternalStagedFile);
+
+        Map<Long, UploadedFile> uploadedFileByNo = uploadedFiles.stream()
+                .collect(Collectors.toMap(UploadedFile::getFileNo, uploadedFile -> uploadedFile));
+        for (FileDownloadReq request : list) {
+            UploadedFile uploadedFile = uploadedFileByNo.get(request.fileNo());
+            if (!matchesDownloadRequest(uploadedFile, request)) {
+                throw AppErrorException.of(ResultCode.Error.FILE_ACCESS_DENIED);
+            }
+        }
+        return uploadedFiles;
+    }
+
+    private boolean matchesDownloadRequest(UploadedFile uploadedFile, FileDownloadReq request) {
+        return uploadedFile != null
+                && uploadedFile.getOriginalFileNm().equals(request.fileNm())
+                && uploadedFile.getFileSize().equals(request.fileSize());
     }
 
     /**
@@ -383,63 +455,87 @@ public class FileService {
     * 2개 이상일 경우, 주어진 file 이름으로 zip 압축을 하고,
     * 1개일 경우 주어진 URL 의 단일 파일로 다운로드 한다.
     *
-    * @param filePathList 파일번호목록
-    * @return byte[]
+    * @param urlList 파일 URL 목록
+    * @param zipFileName ZIP 파일명
+    * @return FileDownloadRes
     */
     public FileDownloadRes directDownloadFiles(List<String> urlList, String zipFileName) {
-        try{
-            if(urlList.size() == 1){
-                String bucketName = getBucketName(urlList.get(0));
-                String filePath = getFilePath(urlList.get(0));
-                S3ObjectInputStream s3is = objectStorageService.getObjectContent(bucketName, filePath);
-                byte[] fileData = IOUtils.toByteArray(s3is);
-                String fileName = getFileName(urlList.get(0));
-                return FileDownloadRes.of(0L, fileName, (long)fileData.length, fileData);
-            }
-        }catch (IOException e) {
-            throw AppErrorException.of(ResultCode.Error.SYS_INTERNAL_ERROR, "파일 다운로드 중 오류가 발생했습니다." + e.getMessage());
+        if (urlList.size() == 1) {
+            return directDownloadFile(urlList.get(0));
         }
 
+        return directDownloadFilesAsZip(urlList, zipFileName);
+    }
+
+    private FileDownloadRes directDownloadFile(String url) {
+        try {
+            String bucketName = getBucketName(url);
+            String filePath = getFilePath(url);
+            String fileName = getFileName(url);
+            return readDirectDownloadFile(bucketName, filePath, fileName);
+        } catch (IOException e) {
+            throw internalFileException(FILE_DOWNLOAD_ERROR_MESSAGE, e);
+        }
+    }
+
+    private FileDownloadRes readDirectDownloadFile(String bucketName, String filePath, String fileName)
+            throws IOException {
+        try (S3ObjectInputStream s3is = objectStorageService.getObjectContent(bucketName, filePath)) {
+            byte[] fileData = IOUtils.toByteArray(s3is);
+            return FileDownloadRes.of(0L, fileName, (long) fileData.length, fileData);
+        }
+    }
+
+    private FileDownloadRes directDownloadFilesAsZip(List<String> urlList, String zipFileName) {
         try (ByteArrayOutputStream baos = new ByteArrayOutputStream();
                 ZipOutputStream zos = new ZipOutputStream(baos)) {
-
             Set<String> addedNames = new HashSet<>();
             for (String url : urlList) {
-                String bucketName = getBucketName(url);
-                String filePath = getFilePath(url);
-                String fileName = getFileName(url);
-
-                // S3에서 스트림으로 읽어와 바로 ZIP에 쓰기
-                try (S3ObjectInputStream s3is = objectStorageService.getObjectContent(bucketName, filePath)) {
-                    if (s3is == null)
-                        continue;
-
-                    // 중복된 파일 이름 처리
-                    if (!addedNames.add(fileName)) {
-                        String base = FilenameUtils.getBaseName(fileName); // report
-                        String ext = FilenameUtils.getExtension(fileName); // pdf
-                        int idx = 1;
-                        while (!addedNames.add(
-                                fileName = base + "_" + idx++ + (ext.isEmpty() ? "" : "." + ext)))
-                            ;
-                    }
-
-                    zos.putNextEntry(new ZipEntry(fileName));
-                    byte[] buffer = new byte[4096];
-                    int len;
-                    while ((len = s3is.read(buffer)) != -1) {
-                        zos.write(buffer, 0, len);
-                    }
-                    zos.closeEntry();
-                }
+                writeDirectDownloadZipEntry(zos, url, addedNames);
             }
             zos.finish();
 
             byte[] fileData = baos.toByteArray();
             return FileDownloadRes.of(0L, zipFileName, (long)fileData.length, fileData);
         } catch (IOException e) {
-            throw AppErrorException.of(ResultCode.Error.SYS_INTERNAL_ERROR, "파일 다운로드 중 오류가 발생했습니다." + e.getMessage());
+            throw internalFileException(FILE_DOWNLOAD_ERROR_MESSAGE, e);
         }
+    }
+
+    private void writeDirectDownloadZipEntry(ZipOutputStream zos, String url, Set<String> addedNames)
+            throws IOException {
+        String bucketName = getBucketName(url);
+        String filePath = getFilePath(url);
+
+        try (S3ObjectInputStream s3is = objectStorageService.getObjectContent(bucketName, filePath)) {
+            if (s3is == null) {
+                return;
+            }
+
+            String fileName = uniqueFileName(getFileName(url), addedNames);
+            zos.putNextEntry(new ZipEntry(fileName));
+            byte[] buffer = new byte[4096];
+            int len;
+            while ((len = s3is.read(buffer)) != -1) {
+                zos.write(buffer, 0, len);
+            }
+            zos.closeEntry();
+        }
+    }
+
+    private String uniqueFileName(String fileName, Set<String> addedNames) {
+        if (addedNames.add(fileName)) {
+            return fileName;
+        }
+
+        String base = FilenameUtils.getBaseName(fileName);
+        String extension = FilenameUtils.getExtension(fileName);
+        int index = 1;
+        String candidate;
+        do {
+            candidate = base + "_" + index++ + (extension.isEmpty() ? "" : "." + extension);
+        } while (!addedNames.add(candidate));
+        return candidate;
     }
 
     /**
@@ -452,7 +548,8 @@ public class FileService {
     public UploadedFile deleteFile(Long fileNo) {
         UploadedFile uploadedFile = uploadedFileRepository.findByFileNo(fileNo)
                 .orElseThrow(
-                        () -> AppErrorException.of(ResultCode.Error.RSC_NOT_FOUND, String.format("file no: %d", fileNo)));
+                        () -> AppErrorException.of(ResultCode.Error.RSC_NOT_FOUND, FILE_NO_MESSAGE_FORMAT.formatted(fileNo)));
+        ensureNotInternalStagedFile(uploadedFile);
         try {
             String bucketName = getBucketName(uploadedFile.getStoragePathNm());
             String filePath = getFilePath(uploadedFile.getStoragePathNm());
@@ -461,7 +558,7 @@ public class FileService {
 
             objectStorageService.deleteFile(bucketName, filePath);
         } catch (Exception e) {
-            throw AppErrorException.of(ResultCode.Error.SYS_INTERNAL_ERROR, "파일 삭제 중 오류가 발생했습니다." + e.getMessage());
+            throw internalFileException("파일 삭제 중 오류가 발생했습니다.", e);
         }
 
         return uploadedFile;
@@ -488,7 +585,7 @@ public class FileService {
 
                 objectStorageService.deleteFile(bucketName, filePath);
             } catch (Exception e) {
-                throw AppErrorException.of(ResultCode.Error.SYS_INTERNAL_ERROR, "파일 삭제 중 오류가 발생했습니다." + e.getMessage());
+                throw internalFileException("파일 삭제 중 오류가 발생했습니다.", e);
             }
         });
     }
@@ -509,7 +606,10 @@ public class FileService {
             String fileValidEndDt) {
         UploadedFile uploadedFile = uploadedFileRepository.findByFileNo(fileNo)
                 .orElseThrow(
-                        () -> AppErrorException.of(ResultCode.Error.RSC_NOT_FOUND, String.format("file no: %d", fileNo)));
+                        () -> AppErrorException.of(
+                                ResultCode.Error.RSC_NOT_FOUND,
+                                FILE_NO_MESSAGE_FORMAT.formatted(fileNo)));
+        ensureNotInternalStagedFile(uploadedFile);
 
         if (uploadedFile.getFileRelationshipObjectSeparateCd() == null || uploadedFile.getFileRelationshipObjectSeparateCd().equals(TEMP_DIR)) {
             try {
@@ -524,7 +624,7 @@ public class FileService {
 
                 objectStorageService.moveFile(bucketName, oldPath, newPath);
             } catch (Exception e) {
-                throw AppErrorException.of(ResultCode.Error.SYS_INTERNAL_ERROR, "파일 수정 중 오류가 발생했습니다." + e.getMessage());
+                throw internalFileException("파일 수정 중 오류가 발생했습니다.", e);
             }
         } else {
             uploadedFile.update(uploadedFile.getStoragePathNm(), fileRelationshipObjectDistinguishNo, fileRelationshipObjectSeparateCode, fileValidEndDt);
@@ -541,21 +641,110 @@ public class FileService {
     public String getUrl(Long fileNo) {
         UploadedFile uploadedFile = uploadedFileRepository.findByFileNo(fileNo)
                 .orElseThrow(
-                        () -> AppErrorException.of(ResultCode.Error.RSC_NOT_FOUND, String.format("file no: %d", fileNo)));
+                        () -> AppErrorException.of(
+                                ResultCode.Error.RSC_NOT_FOUND,
+                                FILE_NO_MESSAGE_FORMAT.formatted(fileNo)));
+        ensureNotInternalStagedFile(uploadedFile);
         try {
             String bucketName = getBucketName(uploadedFile.getStoragePathNm());
             String filePath = getFilePath(uploadedFile.getStoragePathNm());
 
             return objectStorageService.getUrl(bucketName, filePath);
         } catch (Exception e) {
-            throw AppErrorException.of(ResultCode.Error.SYS_INTERNAL_ERROR, "파일 URL 생성 중 오류가 발생했습니다." + e.getMessage());
+            throw internalFileException(FILE_URL_ERROR_MESSAGE, e);
         }
+    }
+
+    /**
+     * 현재 transaction에서 TEMP/0 staged row를 최종 relation에 metadata-only로 연결한다.
+     */
+    @Transactional(propagation = Propagation.MANDATORY)
+    public List<UploadedFile> attachStagedFilesToRelationship(
+            List<Long> fileNoList,
+            Integer fileRelationshipObjectDistinguishNo,
+            String fileRelationshipObjectSeparateCode,
+            String fileValidEndDt) {
+        if (fileNoList == null || fileNoList.isEmpty()
+                || fileRelationshipObjectDistinguishNo == null
+                || fileRelationshipObjectSeparateCode == null
+                || fileRelationshipObjectSeparateCode.isBlank()) {
+            throw AppErrorException.of(ResultCode.Error.REQ_INVALID_PARAMETER, "staged file relation 정보가 올바르지 않습니다.");
+        }
+
+        Set<Long> distinctFileNos = new HashSet<>(fileNoList);
+        if (distinctFileNos.size() != fileNoList.size()) {
+            throw AppErrorException.of(ResultCode.Error.REQ_INVALID_PARAMETER, "staged fileNo는 중복될 수 없습니다.");
+        }
+
+        List<UploadedFile> stagedFiles = uploadedFileRepository.findStagedFilesForUpdate(
+                fileNoList,
+                STAGED_RELATIONSHIP_NO,
+                TEMP_DIR);
+        boolean allExpectedRowsLocked = stagedFiles.size() == fileNoList.size()
+                && stagedFiles.stream().map(UploadedFile::getFileNo).collect(java.util.stream.Collectors.toSet())
+                .equals(distinctFileNos);
+        boolean allUseFinalStoragePath = stagedFiles.stream()
+                .allMatch(file -> isInternalStagedFile(file, fileRelationshipObjectSeparateCode));
+        if (!allExpectedRowsLocked || !allUseFinalStoragePath) {
+            throw AppErrorException.of(
+                    ResultCode.Error.BIZ_RULE_VIOLATION,
+                    "staged files cannot be attached from current state.");
+        }
+
+        stagedFiles.forEach(file -> file.attachToRelationship(
+                fileRelationshipObjectDistinguishNo,
+                fileRelationshipObjectSeparateCode,
+                fileValidEndDt));
+        uploadedFileRepository.flush();
+        return stagedFiles;
+    }
+
+    /**
+     * staged row 하나를 lock한 뒤 object와 metadata를 함께 정리한다.
+     * Scenario/Case transaction과 분리된 보상·TTL 정리 전용 경계다.
+     */
+    @Transactional
+    public boolean deleteStagedFile(Long fileNo, String finalRelationshipCode) {
+        Optional<UploadedFile> stagedFile = uploadedFileRepository.findStagedFileForUpdate(
+                fileNo,
+                STAGED_RELATIONSHIP_NO,
+                TEMP_DIR);
+        if (stagedFile.isEmpty() || !isInternalStagedFile(stagedFile.orElseThrow(), finalRelationshipCode)) {
+            return false;
+        }
+
+        UploadedFile uploadedFile = stagedFile.orElseThrow();
+        try {
+            String bucketName = getBucketName(uploadedFile.getStoragePathNm());
+            String filePath = getFilePath(uploadedFile.getStoragePathNm());
+            objectStorageService.deleteFile(bucketName, filePath);
+            uploadedFile.softDelete();
+            return true;
+        } catch (Exception e) {
+            throw AppErrorException.of(ResultCode.Error.SYS_INTERNAL_ERROR, "staged 파일 삭제 중 오류가 발생했습니다.");
+        }
+    }
+
+    public List<UploadedFile> findExpiredStagedFiles(
+            String finalRelationshipCode,
+            LocalDateTime createdBefore,
+            int batchSize) {
+        if (batchSize <= 0) {
+            throw AppErrorException.of(ResultCode.Error.REQ_INVALID_PARAMETER, "staged file cleanup batchSize는 1 이상이어야 합니다.");
+        }
+        return uploadedFileRepository.findExpiredStagedFiles(
+                STAGED_RELATIONSHIP_NO,
+                TEMP_DIR,
+                storagePathPattern(finalRelationshipCode),
+                createdBefore,
+                PageRequest.of(0, batchSize));
     }
 
     public String getUrl(UploadedFile uploadedFile) {
         if (uploadedFile == null) {
             throw AppErrorException.of(ResultCode.Error.SYS_INTERNAL_ERROR, "업로드된 파일이 없습니다.");
         }
+        ensureNotInternalStagedFile(uploadedFile);
 
         try {
             String bucketName = getBucketName(uploadedFile.getStoragePathNm());
@@ -563,14 +752,17 @@ public class FileService {
 
             return objectStorageService.getUrl(bucketName, filePath);
         } catch (Exception e) {
-            throw AppErrorException.of(ResultCode.Error.SYS_INTERNAL_ERROR, "파일 URL 생성 중 오류가 발생했습니다." + e.getMessage());
+            throw internalFileException(FILE_URL_ERROR_MESSAGE, e);
         }
     }
 
     public String getSecureUrl(Long fileNo) {
         UploadedFile uploadedFile = uploadedFileRepository.findByFileNo(fileNo)
                 .orElseThrow(
-                        () -> AppErrorException.of(ResultCode.Error.RSC_NOT_FOUND, String.format("file no: %d", fileNo)));
+                        () -> AppErrorException.of(
+                                ResultCode.Error.RSC_NOT_FOUND,
+                                FILE_NO_MESSAGE_FORMAT.formatted(fileNo)));
+        ensureNotInternalStagedFile(uploadedFile);
         try {
             String bucketName = getBucketName(uploadedFile.getStoragePathNm());
             String filePath = getFilePath(uploadedFile.getStoragePathNm());
@@ -578,7 +770,7 @@ public class FileService {
             return PathUtil.IncludeTrailingPathDelimiter(serverDomain) + PathUtil.IncludeTrailingPathDelimiter("images")
                     + PathUtil.IncludeTrailingPathDelimiter(bucketName) + filePath;
         } catch (Exception e) {
-            throw AppErrorException.of(ResultCode.Error.SYS_INTERNAL_ERROR, "파일 URL 생성 중 오류가 발생했습니다." + e.getMessage());
+            throw internalFileException(FILE_URL_ERROR_MESSAGE, e);
         }
     }
 
@@ -586,6 +778,7 @@ public class FileService {
         if (uploadedFile == null) {
             throw AppErrorException.of(ResultCode.Error.SYS_INTERNAL_ERROR, "업로드된 파일이 없습니다.");
         }
+        ensureNotInternalStagedFile(uploadedFile);
 
         try {
             String bucketName = getBucketName(uploadedFile.getStoragePathNm());
@@ -595,7 +788,7 @@ public class FileService {
                     + PathUtil.IncludeTrailingPathDelimiter(bucketName) + filePath;
 
         } catch (Exception e) {
-            throw AppErrorException.of(ResultCode.Error.SYS_INTERNAL_ERROR, "파일 URL 생성 중 오류가 발생했습니다." + e.getMessage());
+            throw internalFileException(FILE_URL_ERROR_MESSAGE, e);
         }
     }
 
@@ -612,8 +805,36 @@ public class FileService {
 
             return objectStorageService.getPresignedUrl(bucketName, filePath);
         } catch (Exception e) {
-            throw AppErrorException.of(ResultCode.Error.SYS_INTERNAL_ERROR, "파일 URL 생성 중 오류가 발생했습니다." + e.getMessage());
+            throw internalFileException(FILE_URL_ERROR_MESSAGE, e);
         }
+    }
+
+    private void ensureNotInternalStagedFile(UploadedFile uploadedFile) {
+        if (isInternalStagedFile(uploadedFile, INTERNAL_STAGED_FINAL_RELATIONSHIP_CODE)) {
+            throw AppErrorException.of(
+                    ResultCode.Error.RSC_NOT_FOUND,
+                    FILE_NO_MESSAGE_FORMAT.formatted(uploadedFile.getFileNo()));
+        }
+    }
+
+    private AppErrorException internalFileException(String message, Exception cause) {
+        log.error(message, cause);
+        return AppErrorException.of(ResultCode.Error.SYS_INTERNAL_ERROR, message);
+    }
+
+    private boolean isInternalStagedFile(UploadedFile uploadedFile, String finalRelationshipCode) {
+        return uploadedFile != null
+                && Integer.valueOf(STAGED_RELATIONSHIP_NO).equals(uploadedFile.getFileRelationshipObjectDistinguishNo())
+                && TEMP_DIR.equals(uploadedFile.getFileRelationshipObjectSeparateCd())
+                && uploadedFile.getStoragePathNm() != null
+                && uploadedFile.getStoragePathNm().contains("/" + finalRelationshipCode + "/");
+    }
+
+    private String storagePathPattern(String finalRelationshipCode) {
+        if (finalRelationshipCode == null || finalRelationshipCode.isBlank()) {
+            throw AppErrorException.of(ResultCode.Error.REQ_INVALID_PARAMETER, "finalRelationshipCode is required.");
+        }
+        return "%/" + finalRelationshipCode + "/%";
     }
 
     public List<UploadedFile> fileExist(String fileName, String fileHash) {
@@ -687,5 +908,23 @@ public class FileService {
             throw AppErrorException.of(ResultCode.Error.SYS_INTERNAL_ERROR, "URL에 파일 경로 정보가 포함되어 있지 않습니다.");
         }
         return segments[segments.length - 1]; // 마지막 요소가 파일 이름
+    }
+
+    private record UploadDestination(
+            String storageDirectory,
+            Integer relationshipNo,
+            String relationshipCode) {
+
+        private static UploadDestination temporary(String separateCode) {
+            return new UploadDestination(separateCode, STAGED_RELATIONSHIP_NO, separateCode);
+        }
+
+        private static UploadDestination relationship(Integer relationshipNo, String relationshipCode) {
+            return new UploadDestination(relationshipCode, relationshipNo, relationshipCode);
+        }
+
+        private static UploadDestination staged(String finalRelationshipCode) {
+            return new UploadDestination(finalRelationshipCode, STAGED_RELATIONSHIP_NO, TEMP_DIR);
+        }
     }
 }

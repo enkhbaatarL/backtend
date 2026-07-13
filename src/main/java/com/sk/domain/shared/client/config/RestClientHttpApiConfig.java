@@ -5,6 +5,8 @@ import com.sk.common.http.RestClientDefaultConfig;
 import com.sk.domain.shared.client.AuthTokenApi;
 import com.sk.domain.shared.client.AxPlatformApi;
 import com.sk.domain.shared.client.ModelAgentApi;
+import com.sk.domain.shared.client.ModelParamProposalAgentApi;
+import com.sk.domain.shared.client.PriceInterpretationAgentApi;
 import com.sk.domain.shared.client.ScenarioDesignAgentApi;
 import com.sk.domain.shared.client.service.InMemoryTokenProvider;
 import com.sk.domain.shared.config.FileCryptoApiProperties;
@@ -74,6 +76,30 @@ public class RestClientHttpApiConfig {
             .connectionTimeout(connectTimeout)
             .readTimeout(readTimeout)
             .build(ScenarioDesignAgentApi.class);
+    }
+
+    @Bean
+    public PriceInterpretationAgentApi priceInterpretationAgentApi(@Value("${api.price-interpretation-agent.url:http://40.82.137.178:8003}") String url,
+                                                                   @Value("${api.price-interpretation-agent.connection-timeout:1s}") Duration connectTimeout,
+                                                                   @Value("${api.price-interpretation-agent.read-timeout:60s}") Duration readTimeout) {
+
+        return new RestClientBuilder()
+            .url(url)
+            .connectionTimeout(connectTimeout)
+            .readTimeout(readTimeout)
+            .build(PriceInterpretationAgentApi.class);
+    }
+
+    @Bean
+    public ModelParamProposalAgentApi modelParamProposalAgentApi(@Value("${api.model-param-proposal-agent.url:http://40.82.137.178:8002}") String url,
+                                                                 @Value("${api.model-param-proposal-agent.connection-timeout:1s}") Duration connectTimeout,
+                                                                 @Value("${api.model-param-proposal-agent.read-timeout:60s}") Duration readTimeout) {
+
+        return new RestClientBuilder()
+            .url(url)
+            .connectionTimeout(connectTimeout)
+            .readTimeout(readTimeout)
+            .build(ModelParamProposalAgentApi.class);
     }
 
     @Bean

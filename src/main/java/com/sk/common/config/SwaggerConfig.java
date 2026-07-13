@@ -32,7 +32,7 @@ import org.springframework.core.annotation.AnnotationUtils;
 public class SwaggerConfig {
 
     // note: 안정화 후 투머치 문서 모두 삭제예정
-    private static final String SW_VERSION_BASE = "v1.2.62";
+    private static final String SW_VERSION_BASE = "v1.2.63";
     private static final DateTimeFormatter SW_DEPLOY_DATE_FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
 
     @Bean
@@ -133,6 +133,13 @@ public class SwaggerConfig {
   | 시나리오 상태 변경 | %s |
   | 시나리오 그룹 삭제 | %s |
   | 시나리오 그룹 CME 벤치마크 그래프 (dedicated 전용) | %s |
+  | **시나리오별 가격전망 해석** | |
+  | 가격전망 해석 SSE 구독 | %s |
+  | 가격전망 해석 조회 | %s |
+  | 가격전망 해석 생성 | %s |
+  | 가격전망 해석 수정 | %s |
+  | 가격전망 해석 초기화 | %s |
+  | 가격전망 해석 생성 콜백 (Agent용) | %s |
   | **Model Execution** | |
   | 수급모델 실행 요청 | %s |
   | 수급모델 실행 상태 조회 | %s |
@@ -155,6 +162,20 @@ public class SwaggerConfig {
 
   ## 수정사항
   <details open>
+    <summary><strong>v1.2.63 (2026-07-06)</strong></summary>
+
+  - [Price Interpretation — 신규 도메인]
+    - 시나리오별 가격전망 해석 API 추가: SSE 구독 / section 조회 / 생성 / 수정 / 초기화 (태그 04-1)
+    - Agent 생성 콜백 수신 API 추가 (태그 04-2, `POST .../price-interpretations/callback`)
+    - 시나리오 그룹 상세 응답에 가격전망 해석 section(`priceInterpretation`) embed
+    - 생성은 증분 + 재실행: (수급모델 실행완료 AND (해석 미보유 / 실패 / 수급모델 재실행됨)) 시나리오만 대상
+    - 수정은 last-write-wins, 초기화는 시나리오 개별 — Agent 원본 복원
+  - [Swagger]
+    - 데이터 소스 현황에 시나리오별 가격전망 해석 섹션 추가 (생성 API mock 시 지연 후 콜백 도착까지 시뮬레이션)
+
+  </details>
+
+  <details>
     <summary><strong>v1.2.62 (2026-06-18)</strong></summary>
 
   - [Event]
@@ -376,6 +397,12 @@ public class SwaggerConfig {
             label(mockProps.getScenarioGroups().getApi().isUpdateScenarioStatus()),
             label(mockProps.getScenarioGroups().getApi().isDeleteGroup()),
             label(false), // CME 벤치마크 — 항상 실 DB(midb-skgas), mock 없음
+            label(false), // 가격전망 해석 SSE 구독 — 항상 실동작
+            label(false), // 가격전망 해석 조회 — 항상 실 DB
+            label(mockProps.getPriceInterpretations().getApi().isGenerate()),
+            label(false), // 가격전망 해석 수정 — 항상 실 DB
+            label(false), // 가격전망 해석 초기화 — 항상 실 DB
+            label(false), // 가격전망 해석 생성 콜백 — 항상 실 DB
             label(mockProps.getModelExecutions().getApi().isSubmit()),
             label(mockProps.getModelExecutions().getApi().isGetStatus()),
             label(false),

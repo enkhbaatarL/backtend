@@ -13,7 +13,7 @@ import com.sk.domain.mi.dto.response.nextgen.design.ScenarioDesignStageRes;
 import com.sk.domain.mi.dto.response.nextgen.design.ScenarioDesignStateRes;
 import com.sk.domain.mi.dto.response.nextgen.design.ScenarioDimensionTemplateRes;
 import com.sk.domain.mi.service.nextgen.ScenarioDesignService;
-import com.sk.domain.mi.service.nextgen.sse.ScenarioDesignSseRegistry;
+import com.sk.domain.mi.service.nextgen.sse.registry.ScenarioDesignSseRegistry;
 import com.sk.domain.shared.enums.PermissionCondition;
 import com.sk.domain.shared.enums.Role;
 import io.swagger.v3.oas.annotations.Operation;
