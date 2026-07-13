@@ -1,7 +1,6 @@
 package com.sk.domain.mi.service.nextgen;
 
 import com.sk.domain.mi.dto.request.nextgen.ModelParamProposalExecutionReq;
-import com.sk.domain.mi.dto.response.nextgen.LatestModelExecutionInputFilesRes;
 import com.sk.domain.mi.dto.response.nextgen.LatestModelParamProposalParametersRes;
 import com.sk.domain.mi.dto.response.nextgen.ModelExecutionAcceptRes;
 import com.sk.domain.mi.dto.response.nextgen.ModelExecutionParameterRes;
@@ -22,6 +21,4 @@ public interface ScenarioModelExecutionService {
     LatestModelParamProposalParametersRes getLatestConfirmedParameters(Long scenarioId);
 
     LatestModelParamProposalParametersRes getLatestProposedParameters(Long scenarioId);
-
-    LatestModelExecutionInputFilesRes getLatestInputFiles(Long scenarioId);
 }

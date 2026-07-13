@@ -11,11 +11,14 @@ import java.util.List;
 public record PriceInterpretationAgentReq(
     Long scenarioGroupId,
     Long requestUserId,
-    List<Long> scenarioIds
+    List<String> scenarioIds
 ) {
 
     public static PriceInterpretationAgentReq of(Long scenarioGroupId, Long requestUserId, List<Long> scenarioIds) {
-        return new PriceInterpretationAgentReq(scenarioGroupId, requestUserId, scenarioIds);
+        List<String> scenarioIdTexts = scenarioIds == null
+            ? List.of()
+            : scenarioIds.stream().map(String::valueOf).toList();
+        return new PriceInterpretationAgentReq(scenarioGroupId, requestUserId, scenarioIdTexts);
     }
 
 }

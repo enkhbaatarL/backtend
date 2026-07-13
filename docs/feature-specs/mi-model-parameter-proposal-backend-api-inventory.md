@@ -3,8 +3,19 @@
 ## Document Control
 
 - domain: gas / MI model execution
-- status: Draft (구현 착수 전 API inventory)
-- owner: BE (platform)
+- status: Review
+- canonical for: Reference only
+- owner: BE
+- source documents:
+  - `docs/feature-specs/mi-model-parameter-proposal-backend-feature-spec.md`
+- depends on:
+  - `docs/design-docs/gas/mi-model-parameter-proposal-design.md`
+  - `docs/design-docs/gas/mi-model-param-proposal-execprep-erd-ddl-draft.md`
+- supersedes:
+  - 없음
+- last synced: 2026-07-13
+- open questions:
+  - 4절 참조
 - created at: 2026-07-08
 - updated at: 2026-07-13
 - purpose: "MI 파라미터 제안 기반 수급모델 실행 준비" 기능 구현을 위해 개발/변경해야 할 Backend API를 빠짐없이 도출하고, 기존 재사용 대상과 신규 대상을 구분한다.
@@ -16,6 +27,7 @@
   - `docs/design-docs/gas/mi-scenario-model-execution-workflow-design.md` (기존 case/run 실행 흐름)
 - note: 이 문서는 canonical 계약을 대체하지 않는다. endpoint/DTO 계약은 feature-spec, lifecycle는 design doc이 canonical이다.
 - change log:
+  - 2026-07-13: A4a/A4/A8/A9의 Agent parameter read response에 response-only `groupedRationales[]` projection을 추가한다. 세부 grouping/numeric/error 계약은 canonical feature spec 5.2.2를 참조하며 A6/X2/B1 및 Agent 저장 JSON은 변경하지 않는다.
   - 2026-07-13: 독립 A10 input-file GET은 만들지 않고 A4a `executionInputFiles`로 병합했다. A4a가 선택한 최신 execution-preparation이 `EXECUTED_CONFIRMED`일 때만 같은 `caseId`의 파일 metadata를 반환하고, 그 외 상태는 `null`이다. A8/A9 latest Case anchor는 유지한다.
   - 2026-07-13: A4a response summary를 canonical feature spec 5.2.1의 `modelFiles > modelSheets > modelTables > parameters > {parameter, rendering}` tree로 동기화. 상세 필드/null/error 계약은 inventory에 중복 정의하지 않고 canonical spec을 참조한다.
   - 2026-07-08: 최초 작성.
@@ -70,13 +82,13 @@ Agent 팀이 로컬 연동 테스트용으로 제공한 VM 배포 endpoint다. �
 | A1 | `GET /api/v1/mi/next-gen/scenario-groups/{scenarioGroupId}/graph` | 그래프 + `parameterProposalTarget` | **변경(완료)** — 필드 이미 존재 | 없음 | +`parameterProposalTarget:boolean` | `MiScenarioGroup.eventTypeL2` | spec 4, 5.0.1 | — |
 | A2 | `GET .../scenarios/{scenarioId}/model-execution-options` | 실행 입력 mode 조회 | **신규** | 없음 | res: `inputMode`, `parameterProposalAvailable`, `fileUploadAvailable` | `ModelInputMode.from(eventTypeL2Id)` (기존 enum) | spec 5.0; design 3.4 | — |
 | A3 | `POST .../scenarios/{scenarioId}/model-param-proposals` | 제안 생성 접수 | **신규** | (신규 row) `REQUESTING` → `PROPOSAL_PENDING` / `REQUEST_FAILED` | req: **body 없음** / res: `ModelParamProposalAcceptRes`(id, status=PROCESSING, statusEndpoint) | Agent client(X1), `tmd_mi_model_execpreph` insert(선행 commit), RUNNING pre-check, `ux02(actv_scnr_id)` | spec 5.1; design 3.6 | 모호한 Agent 실패는 `REQUEST_FAILED`로 닫지 않고 `REQUESTING` 유지 |
-| A4a | `GET .../scenarios/{scenarioId}/model-param-proposals` | 팝업 current-state 조회 | **신규** | 없음(read) | res: `CurrentModelParamProposalRes`(`currentState`, `parameterSource`, ids, `modelFiles` tree, nullable `executionInputFiles`, failureReason). 상세 contract는 canonical spec 5.2.1 참조 | 최신 `tmd_mi_model_execpreph` → Agent proposal/master read → 연결 Case/Run; `EXECUTED_CONFIRMED`이면 같은 `caseId`의 `tcm_filel` 조회 | spec 5.2.1/5.7; design 3.2/6 | 최신 preparation row가 과거 실행보다 우선. 성공 상태만 파일 metadata 노출. 실행별 historical confirmed snapshot은 미보장 |
-| A4 | `GET .../scenarios/{scenarioId}/model-param-proposals/{modelParamProposalId}` | 상태/결과 조회 | **신규** | 없음(read) | res: `ModelParamProposalRes`(status, `parameters[]`=flat array, failureReason) | **Agent proposal 테이블 read-only**(R1) + orchestration 상태 overlay | spec 5.2; Agent doc 3 | 기존 DB/schema 직접 read. runtime table visibility/권한/type 확인 |
+| A4a | `GET .../scenarios/{scenarioId}/model-param-proposals` | 팝업 current-state 조회 | **신규** | 없음(read) | res: `CurrentModelParamProposalRes`(`currentState`, `parameterSource`, ids, `modelFiles` tree의 `parameter.groupedRationales`, nullable `executionInputFiles`, failureReason). 상세 contract는 canonical spec 5.2.1/5.2.2 참조 | 최신 `tmd_mi_model_execpreph` → Agent proposal/master read → 연결 Case/Run; `EXECUTED_CONFIRMED`이면 같은 `caseId`의 `tcm_filel` 조회 | spec 5.2.1/5.2.2/5.7; design 3.2/6 | 최신 preparation row가 과거 실행보다 우선. 성공 상태만 파일 metadata 노출. 실행별 historical confirmed snapshot은 미보장 |
+| A4 | `GET .../scenarios/{scenarioId}/model-param-proposals/{modelParamProposalId}` | 상태/결과 조회 | **신규** | 없음(read) | res: `ModelParamProposalRes`(status, `parameters[]`=Agent flat data + response-only `groupedRationales`, failureReason) | **Agent proposal 테이블 read-only**(R1) + orchestration 상태 overlay | spec 5.2/5.2.2; Agent doc 3 | 기존 DB/schema 직접 read. runtime table visibility/권한/type 확인 |
 | A5 | `GET .../scenarios/{scenarioId}/model-param-proposals/stream` | 완료/실패 SSE 신호 | **신규** | 없음 | SSE event `model-parameter-proposal` {scenarioId, id, status} | after-commit SSE publish | spec 5.3; design 6 rule 24 | scenario-scope 신규 SSE로 확정. 기존 group SSE 채널에 합치지 않음 |
 | A6 | `POST .../scenarios/{scenarioId}/model-executions` **(application/json)** | 확정값→Excel 생성→실행 접수 | **변경(기존 path 재사용) + 핸들러·확정·merge 신규** | `CONFIRMING`→`PREPARING_EXECUTION`→`EXECUTING` / `EXECUTION_FAILED` | req: `ModelParamProposalExecutionReq`(id, `confirmationParameters[]`) / res: 기존 `ModelExecutionAcceptRes`, 202 | Agent confirmation(X2), Excel merge(D-POI), 기존 Case/Run/Job dispatch, `tcm_filel`, B2 콜백 | spec 5.5; design 6 | 재확정 = Option A **설계 결정 확정**(O1 Resolved), Agent 배포/검증 gate 필요. A7과 같은 no-profile controller에 구현 완료(O5 Resolved) |
 | A7 | `POST .../scenarios/{scenarioId}/model-executions` **(multipart/form-data)** | 파일 3개 업로드 실행 | **기존재사용 + 변경** | — (기존 case/run) | 기존 `files` part | `inputMode=FILE_UPLOAD` 가드 추가 | spec 5.8; workflow design | `consumes` 분기, inputMode↔Content-Type 일치 검증 |
-| A8 | `GET .../model-executions/latest/model-param-proposal/confirmed-parameters` | 최근 실행 연결 proposal의 현재 확정 파라미터 | **신규** | 없음 | res: `LatestModelParamProposalParametersRes` (조회 시점 Agent `confirmation_parameters`) | 공통 `LatestModelParamProposalExecutionContext.modelParamProposalId`→Agent read(R1) | spec 5.5.1/5.6; DDL draft | 실행 시점 immutable snapshot 미보장은 현행 요구상 허용. execprep snapshot 없음 |
-| A9 | `GET .../model-executions/latest/model-param-proposal/proposed-parameters` | 최근 실행 원 제안 파라미터 | **신규** | 없음 | 위와 동일 shape (Agent `proposal_parameters`) | 공통 `LatestModelParamProposalExecutionContext.modelParamProposalId`→Agent read(R1) | spec 5.5.1/5.6; DDL draft | — |
+| A8 | `GET .../model-executions/latest/model-param-proposal/confirmed-parameters` | 최근 실행 연결 proposal의 현재 확정 파라미터 | **신규** | 없음 | res: `LatestModelParamProposalParametersRes` (조회 시점 Agent `confirmation_parameters` + response-only `groupedRationales`) | 공통 `LatestModelParamProposalExecutionContext.modelParamProposalId`→Agent read(R1) | spec 5.2.2/5.5.1/5.6; DDL draft | 실행 시점 immutable snapshot 미보장은 현행 요구상 허용. execprep snapshot 없음 |
+| A9 | `GET .../model-executions/latest/model-param-proposal/proposed-parameters` | 최근 실행 원 제안 파라미터 | **신규** | 없음 | 위와 동일 response projection shape (Agent `proposal_parameters` + response-only `groupedRationales`) | 공통 `LatestModelParamProposalExecutionContext.modelParamProposalId`→Agent read(R1) | spec 5.2.2/5.5.1/5.6; DDL draft | — |
 | A10 | 독립 endpoint 없음 | input Excel metadata는 A4a `executionInputFiles`로 병합 | **미생성** | 없음 | `EXECUTED_CONFIRMED`에서 `complete`, `missingFileRoles[]`, `files[]`; 다른 상태는 `null` | A4a가 선택한 `caseId`→`tcm_filel(SCNRCASE+case_id)` | spec 5.2.1/5.7 | latest Case resolver를 별도 호출하지 않음 |
 | A11 | `GET .../scenarios/{scenarioId}/model-executions/{runId}` | 실행 상태 조회(폴링) | **기존재사용** | — | 기존 `ModelExecutionStatusRes` | 기존 Case/Run | workflow design; F4 | — |
 | A12 | `POST /api/v1/file-management/download/file` | 파일 바이너리 다운로드 | **기존재사용** | — | req: `FileDownloadReq`(`fileNo`, `fileNm`, `fileSize`) / res: binary `ResponseEntity<byte[]>` | 기존 File Management | spec 5.7 | A4a `executionInputFiles.files[]`의 동명 3필드를 body로 전달. GET/fileNo-only 계약 아님 |
@@ -180,6 +192,7 @@ Agent 팀이 로컬 연동 테스트용으로 제공한 VM 배포 endpoint다. �
 - **O4 — 원본 workbook 위치·version 규칙** (P0): `ModelInputWorkbookProvider` 구현 blocker.
 - **O5 — 프로파일/컨트롤러 배치 → RESOLVED (2026-07-10, 2026-07-13 sync).** A6 JSON과 A7 multipart submit은 `@Profile`이 없는 `ScenarioModelExecutionDedicatedController`에 함께 구현돼 모든 profile에서 mapping이 활성화된다. B1 callback과 A11 status GET은 `@Profile("!dedicated")`에 구현됐다. A8/A9 후속 GET도 A11과 같은 `ScenarioModelExecutionController`(`!dedicated`)에 배치하고, input file metadata는 A4a 응답에 포함한다. B2는 controller 이름과 무관하게 profile 제한이 없다.
 - **O6 — 부수**: JSON precision/최대 row·column size(P0), 신호 유실 폴백 폴링 interval, X3 토큰 발급 API 계약(3절 ③). SSE scope는 scenario-scope 신규 SSE로 resolved.
+- **O7 — duplicate-slot A6/Excel 호환성**: A4a/A4/A8/A9 GET은 duplicate value row를 보존하고 `groupedRationales`만 별도 계산한다. 현재 A6 validator는 동일 slot identity를 거절한다. 동일 좌표 row의 `basecaseValue`/`proposedValue`가 다르면 FE 병합, first/last 선택, Excel overwrite를 금지하고 실행 좌표 계약을 먼저 확정한다.
 
 ---
 
@@ -187,5 +200,5 @@ Agent 팀이 로컬 연동 테스트용으로 제공한 VM 배포 endpoint다. �
 
 - **신규 개발**: FE용 8개(A2·A3·A4a·A4·A5·A6·A8·A9; A10은 A4a에 병합) + inbound callback 1개(B1) + outbound Agent client 2개(X1·X2) + Agent 테이블 read repository(R1) + 내부 서비스 4종(계층 D).
 - **기존재사용**: A1(완료)·A7(가드만 추가·변경)·A11·A12·**B2(model terminal callback)** 및 Case/Run/Job dispatch/`tcm_filel`/콜백 JWT 인프라.
-- **리스크 상태**: 최대 리스크였던 **O1(재확정 허용 여부)는 Backend 설계 결정 Resolved** — Option A 경로 확정. SSE scope, proposal 실패 후 재제안 정책, `tmd_mi_model_execpreph` DBA DDL 적용도 resolved. 실제 연동 전 Agent 배포/검증 gate는 남아 있으며, 남은 blocker는 O2/O4(Agent table runtime visibility/권한/type 확인·workbook 위치)로 좁혀짐. O3는 runtime validate 확인 항목이다.
+- **리스크 상태**: 최대 리스크였던 **O1(재확정 허용 여부)는 Backend 설계 결정 Resolved** — Option A 경로 확정. SSE scope, proposal 실패 후 재제안 정책, `tmd_mi_model_execpreph` DBA DDL 적용도 resolved. 실제 연동 전 Agent 배포/검증 gate는 남아 있으며, 기존 blocker O2/O4(Agent table runtime visibility/권한/type 확인·workbook 위치)와 이번 read projection에 드러난 O7 duplicate-slot A6/Excel 실행 좌표 확인이 남아 있다. O3는 runtime validate 확인 항목이다.
 - **착수 가능**: Agent create/callback/read(A3·B1·A4a·A4·A8·A9)와 최신 실행 기준 조회는 mock 없이 실DB slice로 구현 가능(feature-spec 15·16절). Excel merge(D)는 별도 slice.

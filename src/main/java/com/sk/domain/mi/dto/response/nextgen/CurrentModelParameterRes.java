@@ -15,6 +15,12 @@ public record CurrentModelParameterRes(
     @Schema(description = "Agent parameter-level rationale")
     String rationale,
 
+    @Schema(
+        description = "화면 표시용 response-only rationale grouping. rendering kind=SLOT 축과 결합 rationale을 포함하고 TIME_AXIS는 제외하며 A6 request에서는 제외",
+        requiredMode = Schema.RequiredMode.REQUIRED
+    )
+    List<Map<String, Object>> groupedRationales,
+
     @Schema(description = "dynamic slot-axis key를 보존하는 Agent parameter value rows", requiredMode = Schema.RequiredMode.REQUIRED)
     List<Map<String, Object>> values
 ) {

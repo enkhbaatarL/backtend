@@ -17,7 +17,7 @@ public record LatestModelParamProposalParametersRes(
     @Schema(description = "Agent model parameter proposal ID", example = "10001")
     Long modelParamProposalId,
 
-    @Schema(description = "flat model parameter array")
+    @Schema(description = "Agent flat model parameter data에 response-only groupedRationales를 추가한 parameter array")
     JsonNode parameters
 
 ) {

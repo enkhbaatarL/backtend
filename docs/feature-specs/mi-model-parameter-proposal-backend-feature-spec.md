@@ -18,15 +18,16 @@
   - `https://app.notion.com/p/38f263ff004c80719d14de5702d946b9`
   - contract snapshot: 2026-07-03
   - re-reviewed at 2026-07-06
+  - response-only `groupedRationales` implementation request: 2026-07-13
 - depends on:
   - `docs/design-docs/gas/mi-model-parameter-proposal-design.md`
   - `docs/conventions/source-of-truth-governance.md`
 - supersedes: 없음
 - last synced: 2026-07-13
-- open questions: 13절 참조
+- open questions: 13절 및 duplicate-slot Agent payload의 A6/Excel 실행 좌표 호환성 참조
 - integration model: callback = 완료 신호. Backend가 Agent proposal 테이블을 read-only 직접 조회해 결과 서빙(CAS/hash/snapshot 없음). 공유 DB read 및 read 권한은 확정(조회 가능). callback path `scenarioId`는 proposal identity가 아니라 현재 in-flight execution-preparation을 찾는 scope key다.
 - callback 인증: 확정. 기존 시나리오 설계 콜백과 동일한 Resource Server JWT 체인(`CustomJwtDecoder` HS256 self-issued + `@RequiredPermissionRules(Role.SYSTEM ...)`) 재사용. Agent는 Backend 토큰 발급 API와 발급 인풋 2종을 전달받아 JWT를 자체 발급·갱신한다.
-- implementation readiness: frontend mock ready; real Agent integration은 proposal read 계약 확정(DB DDL 수령)으로 착수 가능. Agent proposal table은 기존 Backend DB/schema에 추가되는 직접 read 대상이며 별도 view/synonym 경로는 필요 없다. 잔여는 runtime table visibility/권한/type 검증과 dimension_map ERD 정정으로 read 엔티티 착수를 막지 않음(인증·공유 read·콜백 계약·write-then-callback 순서·wrapper 셰이프·재시도 정책·proposal DDL 확정)
+- implementation readiness: frontend mock ready; real Agent integration은 proposal read 계약 확정(DB DDL 수령)으로 착수 가능. A4a/A4/A8/A9 response-only `groupedRationales` projection 계약은 구현 가능하며 schema 변경은 없다. SLOT-only grouping은 기존 `tmm_mi_model_param_m` read-only master 일괄 조회를 사용한다. Agent proposal table은 기존 Backend DB/schema에 추가되는 직접 read 대상이며 별도 view/synonym 경로는 필요 없다. 잔여는 runtime table visibility/권한/type 검증과 dimension_map ERD 정정으로 read 엔티티 착수를 막지 않음(인증·공유 read·콜백 계약·write-then-callback 순서·wrapper 셰이프·재시도 정책·proposal DDL 확정)
 
 ## 2. Feature Goal
 
@@ -311,13 +312,16 @@ Flat parameter array validation/rendering:
 - 값 header는 value field의 camel-case를 공백으로 분리한 label을 사용해 `% {label}` 하나만 생성한다.
 - 예: `slotAxesFieldNames=[Country,Year,Month]`, `valueFieldNames=[Temperature]`이면 `Country | Year | Month | % Temperature`다.
 - 각 `values[]` item은 `slotAxesFieldNames`에 선언된 key를 빠짐없이 포함하고 추가 slot-axis key를 포함하지 않는다.
-- 같은 parameter 안에서 slot-axis 값의 조합은 유일해야 한다.
+- A4a/A4/A8/A9 read response에서는 같은 parameter 안의 duplicate slot-axis 조합을 허용하고 원본 `values[]` row를 모두 보존한다. 이 read 규칙은 아래 5.2.2의 `groupedRationales` projection에만 적용된다.
+- A6 execution request는 기존 계약대로 slot-axis 조합의 유일성을 요구하며 `ModelParamConfirmationValidator`가 duplicate slot identity를 거절한다. duplicate Agent payload의 실행 좌표 의미가 확정되기 전까지 이 execution 규칙을 완화하지 않는다.
 - `basecaseValue`는 Agent 원본 비교·검증용으로 payload에 유지하지만 화면에는 표시하지 않는다.
 - FE value cell은 `proposedValue`를 표시하며 사용자 수정도 동일 필드에 반영한다.
 - 사용자가 값을 수정하지 않아도 조회한 원본 `proposedValue` 그대로 실행 요청할 수 있다.
 - phase 1 표는 long-format이다. matrix wide-format pivot은 본 계약 범위에 포함하지 않는다.
 
 **데이터 소스:** `status`/`parameters`/`failureReason`는 Backend가 **Agent proposal 테이블(`tmm_mi_model_param_proposal_m`)을 read-only로 직접 조회**해 서빙한다(callback payload를 저장·재생하지 않음). 컬럼 매핑(2026-07-07 DB DDL 확정): `status`←`status`(`PROCESSING|PROPOSED|CONFIRMED|FAILED`), `parameters`←`proposal_parameters`(또는 `CONFIRMED/EXECUTING`에서 `confirmation_parameters`), `failureReason`←`error_message`(+구조화 `error_code` 사용 가능), `completedAt`←`proposal_completed_dtm`, confirmation 시각←`confirmed_dtm`. `callback_status`/`callback_sent_dtm`은 Agent 전송 상태로 무시한다. `CONFIRMING/EXECUTING` 등 Backend 전용 상태는 Backend orchestration 행에서 덮어 얹는다. 상세는 Domain Design 3.1/3.5 참조.
+
+A4의 `parameters[]` 각 원소에는 5.2.2의 response-only `groupedRationales[]`를 추가한다. Agent 저장 JSON과 기존 `parameters[]`/`values[]` 내용·순서는 변경하지 않는다.
 
 ### 5.2.1 Scenario 기준 현재 파라미터 상태 조회
 
@@ -382,7 +386,7 @@ modelFiles[]
 | `modelSheets[].modelTables` | array | required, non-empty |
 | `modelTables[].tableName` | string | required, non-blank |
 | `modelTables[].parameters` | array | required, non-empty |
-| `parameters[].parameter` | object | required, Agent flat parameter와 동일한 JSON field shape |
+| `parameters[].parameter` | object | required, Agent flat parameter field에 response-only `groupedRationales[]`를 추가한 shape |
 | `parameters[].rendering` | object | required, rendering master projection |
 
 `parameter` fields:
@@ -394,9 +398,10 @@ modelFiles[]
 - `modelTarget.valueFieldNames[]`
 - `modelTarget.slotAxesFieldNames[]`
 - parameter-level `rationale`
+- response-only `groupedRationales[]`
 - `values[]`
 
-`values[]`는 dynamic slot-axis key와 `basecaseValue`, `proposedValue`, `rationale`를 포함하는 Agent payload 의미를 그대로 보존한다. Public response DTO는 MI response package가 소유하며 Agent client request DTO Java class를 직접 공유하지 않는다.
+`values[]`는 dynamic slot-axis key와 `basecaseValue`, `proposedValue`, `rationale`를 포함하는 Agent payload 의미를 그대로 보존한다. `groupedRationales`는 기존 데이터를 대체하지 않는 별도 read projection이며 세부 계약은 5.2.2를 따른다. Public response DTO는 MI response package가 소유하며 Agent client request DTO Java class를 직접 공유하지 않는다.
 
 `rendering` fields:
 
@@ -431,8 +436,9 @@ Compatibility and A6 mapping:
 
 - FE는 기존 top-level `parameters`, navigation-only `modelFiles`, `parameterShapes`를 production contract로 소비하지 않는다는 합의에 따라 동일 endpoint에서 새 tree로 in-place 교체한다. 실제 소비자가 발견되면 구현을 중단하고 version/additive migration 전략을 다시 합의한다.
 - A6 `POST .../model-executions` request는 `{ "modelParamProposalId": ..., "confirmationParameters": [...] }`를 유지한다.
-- FE는 모든 `data.modelFiles[].modelSheets[].modelTables[].parameters[].parameter`를 최초 tree 순서대로 flatten해 `confirmationParameters[]`로 보낸다.
+- FE는 모든 `data.modelFiles[].modelSheets[].modelTables[].parameters[].parameter`를 최초 tree 순서대로 flatten하되 response-only `groupedRationales`를 제거한 뒤 `confirmationParameters[]`로 보낸다.
 - tree wrapper와 `rendering`은 A6로 전송하지 않는다.
+- `groupedRationales`는 A6 request, Agent X2 confirmation, B1 callback, Agent 저장 JSON에 포함하지 않는다.
 - A4a tree response slice implementation readiness: `ready`. 이 문서의 다른 endpoint 관련 P0 open question은 A4a response projection 구현을 막지 않는다.
 
 Response data examples:
@@ -628,6 +634,104 @@ Response data examples:
 - `NONE`: 반환할 파라미터 없음, `modelFiles=[]`
 - `PROPOSAL_PARAMETERS`: Agent `proposal_parameters`를 tree로 반환
 - `CONFIRMATION_PARAMETERS`: Agent `confirmation_parameters`를 tree로 반환
+
+### 5.2.2 A4a/A4/A8/A9 공통 response-only grouped rationale projection
+
+다음 네 public GET은 Agent parameter를 응답할 때 각 parameter object에 `groupedRationales[]`를 추가한다. 추가 public GET endpoint는 만들지 않는다.
+
+| API | response path |
+|---|---|
+| A4a current-state GET | `modelFiles[].modelSheets[].modelTables[].parameters[].parameter.groupedRationales` |
+| A4 proposal-detail GET | `parameters[].groupedRationales` |
+| A8 latest confirmed parameters GET | `parameters[].groupedRationales` |
+| A9 latest proposed parameters GET | `parameters[].groupedRationales` |
+
+목적과 shape:
+
+- `groupedRationales`는 같은 고정 행(`rendering.columns.kind=SLOT`)에 속한 시간별 value-level rationale을 화면에서 함께 표시하기 위한 Backend read projection이다.
+- grouping 축은 `modelTarget.slotAxesFieldNames` 중 parameter master의 `basecase_column_roles`와 일치하여 `rendering.columns.kind=SLOT`으로 해석되는 field만 사용한다.
+- `MATRIX_TIME_COLUMNS`의 `TIME_AXIS` field(예: `Year`, `Month`, `Period`)는 grouped item과 그룹 key에서 제외한다.
+- 각 grouped item은 SLOT field를 `modelTarget.slotAxesFieldNames`의 선언 순서대로 포함하고 마지막에 `rationale`을 포함한다.
+- parameter-level `rationale`, 원본 `values[]`, 모든 value row와 `values[].rationale`, `basecaseValue`, `proposedValue`, dynamic slot-axis key/value 및 배열 순서는 그대로 보존한다.
+- 동일 slot 조합의 `values[]` row를 병합·삭제·재정렬하지 않는다. `groupedRationales`는 기존 데이터를 대체하지 않는다.
+
+그룹 key와 순서:
+
+- 그룹핑은 각 parameter 내부에서 독립적으로 수행한다. 서로 다른 parameter의 row는 절대 같은 그룹이 되지 않는다.
+- 그룹 key는 위 규칙으로 해석된 `SLOT` field의 값만으로 구성한다.
+- `TIME_AXIS` field 값이 달라도 `SLOT` field 값이 모두 같으면 같은 그룹이다.
+- `basecaseValue`, `proposedValue`, parameter/value `rationale`은 그룹 key에 포함하지 않는다.
+- 문자열과 boolean slot은 JSON 타입과 값을 그대로 비교한다.
+- 숫자 slot은 A6 의미값 canonicalization과 일관되게 숫자값으로 비교한다. 따라서 JSON number `1`과 `1.0`은 같은 그룹이다.
+- 숫자값 기준으로 같은 그룹이더라도 grouped item의 slot 값은 그 그룹이 최초 등장한 `values[]` element의 원래 JSON number 표현과 타입을 보존한다. 예를 들어 최초 값이 `1.0`이면 출력도 `1.0`이다.
+- 그룹 배열은 해당 slot 조합이 `values[]`에 최초 등장한 순서를 유지한다.
+- grouped item의 dynamic property 순서는 `slotAxesFieldNames` 중 SLOT field의 원래 순서이며 `rationale`은 마지막 property다.
+
+Rationale 결합:
+
+- 같은 그룹의 `values[].rationale`을 value row의 원래 등장 순서대로 `\n` 하나로 연결한다.
+- rationale 문자열은 trim하거나 중복 제거하지 않는다.
+- 그룹에 value row가 하나뿐이면 그 row의 rationale 문자열을 그대로 사용한다.
+
+예시:
+
+```json
+{
+  "parameterName": "LiqUtilAdjustment",
+  "modelTarget": {
+    "modelFile": "Supply",
+    "modelSheet": "LiqUtilAdjustment",
+    "tableName": "table1",
+    "valueFieldNames": ["LiqUtilAdjustment"],
+    "slotAxesFieldNames": ["Country", "LNG Plant", "Year", "Month", "Period"]
+  },
+  "rationale": "기존 parameter rationale",
+  "groupedRationales": [
+    {
+      "Country": "Algeria",
+      "LNG Plant": "Arzew GL1Z",
+      "rationale": "A\nB"
+    }
+  ],
+  "values": [
+    {
+      "Country": "Algeria",
+      "LNG Plant": "Arzew GL1Z",
+      "Year": 2027,
+      "Month": 1,
+      "Period": 109,
+      "basecaseValue": 0.2,
+      "proposedValue": 0.21,
+      "rationale": "A"
+    },
+    {
+      "Country": "Algeria",
+      "LNG Plant": "Arzew GL1Z",
+      "Year": 2027,
+      "Month": 2,
+      "Period": 110,
+      "basecaseValue": 0.2,
+      "proposedValue": 0.22,
+      "rationale": "B"
+    }
+  ]
+}
+```
+
+Validation/error boundary:
+
+- 공통 projection component는 endpoint가 유효한 parameter array를 선택·파싱한 이후 response copy에만 필드를 추가한다. endpoint별 status/empty/null/error 판단을 통합하거나 변경하지 않는다.
+- 공통 projection은 parameter name으로 `tmm_mi_model_param_m` master를 일괄 조회해 SLOT 축을 해석한다. master 누락·중복 또는 SLOT 축을 하나도 해석할 수 없는 metadata 불일치는 endpoint의 기존 데이터 불일치/error 정책으로 실패한다.
+- required slot-axis field가 value row에 없거나 projection에 필요한 `modelTarget.slotAxesFieldNames`, `values[]`, `values[].rationale`가 유효하지 않으면 해당 row를 조용히 제외하거나 빈 `groupedRationales`로 정상화하지 않는다. endpoint의 기존 데이터 불일치/error 정책으로 실패한다.
+- 특히 A8/A9의 parameter JSON이 `null`, blank, non-array, malformed JSON이면 기존 `API_RESPONSE_ERROR`와 `Agent proposal parameter JSON is invalid.` message를 유지하며 빈 배열로 반환하지 않는다.
+- A4a의 non-`NONE` payload 정합성 오류는 기존 `409 BIZ_RULE_VIOLATION` 정책을 유지한다. A4의 status별 empty array와 기존 parse/error 정책도 유지한다.
+
+Wire/storage boundary:
+
+- `groupedRationales`는 Agent `proposal_parameters`/`confirmation_parameters` 저장 JSON에 쓰지 않는다.
+- A6 `confirmationParameters[]`, Agent X2 confirmation request의 `ModelParamPayloadItem[]`, B1 callback의 optional `proposalParameters`에 포함하지 않는다.
+- `ModelParamPayloadItem`과 `AgentModelParamProposal` entity는 변경하지 않는다.
+- A4a typed response와 A4/A8/A9 JSON response는 동일한 공통 projection component를 사용하며 입력 Agent JSON tree를 직접 mutate하지 않는다.
 
 ### 5.3 SSE
 
@@ -871,6 +975,7 @@ endpoint별 추가 조회:
 
 1. context의 `modelParamProposalId`로 Agent proposal 테이블을 read-only 조회한다.
 2. confirmed endpoint는 Agent `confirmation_parameters`, proposed endpoint는 Agent `proposal_parameters`를 반환한다.
+3. A8/A9 모두 각 `parameters[]` 원소에 5.2.2의 response-only `groupedRationales[]`를 추가한다. Agent 저장 JSON은 변경하지 않는다.
 
 confirmed endpoint(A8) 의미:
 
@@ -898,6 +1003,14 @@ Response data:
         "slotAxesFieldNames": ["Country", "Year", "Month"]
       },
       "rationale": "한파 강도가 기온 하락으로 직접 표현되므로 Temperature 조정 대상입니다.",
+      "groupedRationales": [
+        {
+          "Country": "Germany",
+          "Year": 2027,
+          "Month": 1,
+          "rationale": "Germany 2027년 1월 한파 영향을 반영해 제안값을 산정했습니다."
+        }
+      ],
       "values": [
         {
           "Country": "Germany",
@@ -915,6 +1028,7 @@ Response data:
 
 - latest Case/execprep 404는 5.5.1 공통 실패 규칙을 따른다.
 - 같은 Agent proposal의 값 변경 재실행은 Agent `confirmation_parameters`를 갱신하는 Option A를 따른다. A8의 current-value 의미와 과거 실행별 exact snapshot 비지원은 위 계약으로 확정됐다.
+- A8/A9 parameter JSON이 `null`, blank, non-array, malformed JSON이면 `API_RESPONSE_ERROR`와 `Agent proposal parameter JSON is invalid.`을 유지한다. response projection이 이를 빈 배열로 정상화하지 않는다.
 
 ### 5.7 A4a 성공 실행 input Excel 파일 projection
 
@@ -1036,6 +1150,8 @@ ModelTarget
   List<String> slotAxesFieldNames    required, non-empty, immutable
 ```
 
+`groupedRationales`는 위 request DTO 어디에도 존재하지 않는다. FE는 A4a/A4/A8/A9 응답에서 이 response-only field를 제거한 뒤 A6 `confirmationParameters[]`를 구성하며, Backend는 X2 Agent confirmation에도 기존 `ModelParamPayloadItem[]`만 전송한다. B1 callback input contract도 변경하지 않는다.
+
 `proposal_parameters`와 `confirmation_parameters`는 모두 flat parameter array다. Backend는 parameter identity(`parameterName + modelTarget`), slot-axis 값 조합, `basecaseValue`를 기준으로 구조를 비교한다. `basecaseValue` key는 항상 존재해야 하지만 값은 `null` 또는 numeric을 허용하며, proposal과 confirmation의 `null ↔ null`은 동일 구조다. `null ↔ numeric` 또는 서로 다른 numeric 값은 immutable basecase 변경으로 거절한다. `values[].proposedValue`는 사용자 확정값이므로 달라질 수 있다. parameter/value `rationale`은 required string이지만 Agent confirmation 저장 과정에서 달라질 수 있고 Excel 병합에 사용되지 않으므로 문자열 동일성 및 동일값 재시도 판정에서 제외한다. JSON object property/array 순서와 numeric lexical form(`-3.5`, `-3.50`)도 동일성 판정에서 제외하고 DTO 역직렬화 후 의미값으로 비교한다.
 
 `values[]` validation:
@@ -1064,7 +1180,7 @@ ModelParamProposalRes
   Long scenarioGroupId
   Long eventId
   ModelParamProposalStatus status
-  List<ModelParamPayloadItem> parameters
+  List<ResponseModelParamPayloadItem> parameters response-only groupedRationales 포함
   String failureReason
   OffsetDateTime requestedAt
   OffsetDateTime completedAt
@@ -1107,6 +1223,7 @@ CurrentModelParameterRes
   String parameterName                  required
   CurrentModelParamTargetRes modelTarget required
   String rationale                      required
+  List<Map<String, Object>> groupedRationales required, non-null, 5.2.2 dynamic slot-axis projection
   List<Map<String, Object>> values      required, non-empty, dynamic slot-axis keys 보존
 
 CurrentModelParamTargetRes
@@ -1126,7 +1243,7 @@ LatestModelParamProposalParametersRes
   Long caseId
   Long execPrepId
   Long modelParamProposalId
-  List<ModelParamPayloadItem> parameters
+  List<ResponseModelParamPayloadItem> parameters response-only groupedRationales 포함
 
 ModelExecutionInputFilesRes
   boolean complete                    required; DEMAND/SUPPLY/TRADE 각각 1개면 true
@@ -1140,6 +1257,8 @@ ModelExecutionInputFileRes
   Long fileSize
 
 ```
+
+`ResponseModelParamPayloadItem`은 설명용 response shape 이름이며 Agent request DTO `ModelParamPayloadItem`을 변경하거나 재사용한다는 뜻이 아니다. Java 구현에서 A4/A8/A9는 response-owned `JsonNode` copy를 사용할 수 있고, A4a는 `CurrentModelParameterRes`가 response field를 소유한다. 네 GET의 세부 grouped field 계약은 5.2.2가 canonical이다.
 
 `ModelParamProposalCallbackAckRes`와 `CallbackDisposition`은 Agent-facing confirmed DTO가 아니다. 협의 전 callback 성공 응답은 `BaseResponse<Void>`를 사용한다.
 
@@ -1205,10 +1324,12 @@ FE가 반드시 처리해야 하는 최소 상태는 `PROCESSING`, `PROPOSED`, `
 | 같은 Scenario에 RUNNING 실행 존재 | 409 | `RSC_ALREADY_EXISTS` | 기존 `ScenarioCase.actv_scnr_id` guard |
 | A4a `EXECUTED_CONFIRMED` Case의 input file role 일부/전체 누락 | 200 | `SUC-000` | `executionInputFiles.complete=false`, `missingFileRoles`, partial/empty `files` 반환 후 데이터 불완전 로그 |
 | A4a `parameterSource`가 non-`NONE`인데 payload가 null/blank/non-array/empty/invalid JSON | 409 | `BIZ_RULE_VIOLATION` | 정상 empty tree로 숨기지 않고 고정 public message로 실패 |
+| A4a grouped projection에 필요한 slot-axis/rationale field 누락 또는 타입 불일치 | 409 | `BIZ_RULE_VIOLATION` | 해당 value row를 제외하거나 빈 grouped array로 숨기지 않고 기존 current-state 데이터 불일치 정책으로 실패 |
 | A4a parameter composite identity 중복 | 409 | `BIZ_RULE_VIOLATION` | 임의 중복 제거 금지 |
 | A4a rendering master 누락 또는 중복 | 409 | `BIZ_RULE_VIOLATION` | parameter leaf 누락 또는 임의 선택 금지 |
 | A4a payload/master file·sheet·table 좌표 불일치 | 409 | `BIZ_RULE_VIOLATION` | case-sensitive exact match 실패, raw 좌표 비노출 |
 | current-state 조회 시 연결 `case_id`는 있으나 Case/Run 정합이 깨짐 | 409 | `BIZ_RULE_VIOLATION` | 데이터 불일치 상태로 로깅하고 FE에는 복구 불가 상태 반환 |
+| A8/A9 Agent parameter JSON이 null/blank/non-array/malformed | 5xx | `API_RESPONSE_ERROR` | `Agent proposal parameter JSON is invalid.` 유지, 빈 배열 정상화 금지 |
 
 ## 9. Swagger Annotation Recommendation
 
@@ -1220,6 +1341,8 @@ FE가 반드시 처리해야 하는 최소 상태는 `PROCESSING`, `PROPOSED`, `
 - callback controller는 Agent-facing tag로 분리한다.
 - callback operation은 Bearer security scheme(`Role.SYSTEM` 등 `@RequiredPermissionRules`)을 명시한다. 기존 시나리오 설계 콜백과 동일한 self-issued JWT를 재사용한다.
 - flat parameter array, dynamic slot-axis key, `valueFieldNames.size=1`, `values[].proposedValue` 단일 mutable field 규칙을 description과 example에 명확히 기록한다.
+- A4a/A4/A8/A9 response `parameters` 설명에는 Agent raw array가 아니라 5.2.2의 response-only `groupedRationales` projection이 추가된 shape임을 명시한다.
+- A4a `CurrentModelParamLeafRes.parameter` 설명에는 `groupedRationales`가 화면 표시용이고 A6 전송 전에 제거해야 함을 명시한다. A6 request DTO와 Agent client DTO에는 이 field를 추가하지 않는다.
 
 ## 10. Data/Model Impact
 
@@ -1240,6 +1363,9 @@ FE가 반드시 처리해야 하는 최소 상태는 `PROCESSING`, `PROPOSED`, `
   - parameter master와 dimension mapping은 Backend에서 복제하지 않는다.
   - proposal table은 Agent lifecycle의 source이며 Backend Case/Run orchestration source가 아니다.
   - `proposal_parameters`, `confirmation_parameters`는 JSON root array다. 기존 `JSON_TYPE = 'ARRAY'` CHECK를 유지한다.
+- response-only `groupedRationales` projection:
+  - schema, DDL, entity, repository, query, Agent JSON 저장 변경 없음
+  - 조회 시 response copy에만 계산하며 `proposal_parameters`/`confirmation_parameters`를 다시 저장하지 않음
 - 정확한 DDL은 `erd-change-review` 이후 별도 canonical draft에서 관리한다.
 
 ## 11. Recommended Data Access Approach
@@ -1250,6 +1376,7 @@ FE가 반드시 처리해야 하는 최소 상태는 `PROCESSING`, `PROPOSED`, `
 - callback SSE publish: transaction after-commit event
 - A8/A9 latest anchor: JPA repository projection 또는 공통 resolver/helper 한 곳에서 `LatestModelParamProposalExecutionContext`를 구성한다. 두 endpoint가 Case/execprep 선택 predicate와 404를 각각 구현하지 않는다.
 - A4a input files: current-state 조회에서 이미 선택한 execution-preparation의 `caseId`를 사용하고 latest Case resolver를 별도로 호출하지 않는다.
+- grouped rationale projection: data access 변경 없이 service 계층의 공통 response projector를 사용한다. A4a/A4/A8/A9가 같은 grouping 구현을 공유하고 endpoint별 parser/error policy는 기존 service에 남긴다.
 - latest/active 조회가 복잡해지면 repository projection 또는 QueryDSL
 - Excel merge: Apache POI service
 - file upload/dispatch: 기존 `ScenarioModelExecutionServiceImpl` 내부 책임을 reusable collaborator로 추출
@@ -1272,12 +1399,14 @@ FE가 반드시 처리해야 하는 최소 상태는 `PROCESSING`, `PROPOSED`, `
   - `ModelInputWorkbookProvider`
   - `ModelParamWorkbookMergeService`
   - A8/A9 공통 `LatestModelParamProposalExecutionContext` resolver/helper
+  - A4a/A4/A8/A9 공통 response-only `groupedRationales` projector (`service/nextgen/paramproposal`)
   - 기존 execution pipeline reusable method 추출
 - client
   - proposal request/confirmation method를 Agent HTTP interface에 추가
 - DTO/enums
   - proposal/confirmation/callback/SSE/status
-  - `CurrentModelParamProposalRes`, `CurrentModelParamProposalState`, `ModelParamParameterSource`
+  - `CurrentModelParamProposalRes`, `CurrentModelParameterRes`, `CurrentModelParamProposalState`, `ModelParamParameterSource`
+  - A4/A8/A9 response `JsonNode` Swagger description은 response projection을 명시하되 `ModelParamPayloadItem` request DTO는 변경하지 않음
 - persistence
   - proposal entity/repository 또는 mock store
   - latest Scenario Case + linked execution-preparation 공통 projection/query
@@ -1305,6 +1434,7 @@ FE가 반드시 처리해야 하는 최소 상태는 `PROCESSING`, `PROPOSED`, `
 6. parameter/value row 최대 건수와 JSON column size 한도(컬럼 타입은 native `JSON`+`JSON_TYPE=ARRAY` CHECK로 확정).
 7. callback 신호 유실 시 폴백 폴링 interval/timeout.
 8. `schemaVersion`, `completedAt`, `errorCode` 확장 필요 여부 — `completedAt`(`proposal_completed_dtm`)·`error_code`는 Agent 테이블에 **이미 컬럼 존재**, `schemaVersion`만 미존재. `errorMessage`는 wrapper `message`와 중복됨.
+9. duplicate-slot Agent payload의 A6/Excel 실행 좌표 의미. A4a/A4/A8/A9 read response는 duplicate value row를 보존하고 rationale만 별도 그룹핑한다. A6 validator는 현재 duplicate slot identity를 거절하며, 서로 다른 `basecaseValue`/`proposedValue`가 같은 Excel 좌표를 가리키는 경우 first/last 선택·row 병합·writer overwrite를 허용하지 않는다. 대표/실제 payload 감사 후 실행 계약을 별도 확정한다.
 
 ### P1
 
@@ -1320,6 +1450,8 @@ FE가 반드시 처리해야 하는 최소 상태는 `PROCESSING`, `PROPOSED`, `
 
 ## 14. Change Log / Sync Note
 
+- 2026-07-13: **`groupedRationales` grouping key를 rendering `SLOT` 축으로 한정.** 동일한 고정 설비 행의 시간별 rationale을 결합하도록 parameter master `basecase_column_roles`와 일치하는 slot axis만 key/output에 포함하고 `MATRIX_TIME_COLUMNS`의 `TIME_AXIS`(`Year`/`Month`/`Period` 등)는 제외한다. A4a/A4/A8/A9에 공통 적용하며 Agent 저장 JSON, A6/X2/B1 contract, schema는 변경하지 않는다.
+- 2026-07-13: **A4a/A4/A8/A9 response-only `groupedRationales` contract 추가.** 최초 계약은 parameter별 `slotAxesFieldNames` 전체 값으로 그룹핑하는 규칙이었으나 같은 날 SLOT-only grouping 결정으로 대체되었다. 최초 그룹/axis 순서와 원본 `values[]` 보존, rationale `\n` 결합, trim/dedup 금지, 숫자 canonicalization 규칙은 유지한다.
 - 2026-07-13: **A10을 A4a 성공 실행 파일 projection으로 병합.** 독립 `GET .../model-executions/latest/input-files` endpoint는 만들지 않는다. A4a는 자신이 선택한 최신 execution-preparation이 `EXECUTED_CONFIRMED`일 때만 같은 row의 `caseId`로 `executionInputFiles`를 반환하고, 그 외 상태에서는 `null`을 반환한다. 기존 `complete`/`missingFileRoles`/partial files 및 공통 File Management 다운로드 계약은 유지한다. A8/A9의 latest Case anchor는 변경하지 않는다.
 - 2026-07-13: A4a current-state 응답을 top-level `parameters`/`parameterShapes`와 navigation-only `modelFiles`에서 `modelFiles > modelSheets > modelTables > parameters > {parameter, rendering}` tree로 in-place 교체. A4a 전용 MI response DTO 경계, 순서/composite identity, rendering master 일괄 조회 및 409 정합성 규칙, A6 flatten mapping을 고정했다. 특정 proposal 상세 GET, Agent/A6 wire contract, schema/DDL은 변경하지 않는다.
 - 2026-07-03: 사용자 설명과 Agent Notion 문서를 기준으로 최초 작성.
@@ -1366,6 +1498,7 @@ FE가 반드시 처리해야 하는 최소 상태는 `PROCESSING`, `PROPOSED`, `
 
 ## 15. Exit Criteria / Handoff
 
+- A4a/A4/A8/A9 `groupedRationales` read contract: `ready`. 공통 response projector로 구현하며 schema/ERD/repository/query 변경이 없어 이번 slice의 `new-domain-model-design`/`erd-change-review`는 생략한다. A6 duplicate-slot 실행 의미는 projection 구현과 분리된 open question이다.
 - frontend mock 구현: ready
 - callback 계약(엔드포인트/인증/wrapper/순서/응답): Agent 전달 ready. 전달용 계약서는 `docs/design-docs/gas/mi-model-param-proposal-callback-contract.md`
 - real Agent/DB/Excel 구현: proposal read 계약 확정(DB DDL 수령)으로 read 엔티티/조회 착수 가능. `tmd_mi_model_execpreph`와 Agent proposal table이 DB 반영됐으므로 Agent create/callback/read, 최신 실행 기준 파라미터 조회, A4a 성공 실행 파일 projection은 mock 없이 실DB 연동 slice로 구현 가능하다. Excel merge 서비스 자체는 별도 개발 slice로 둔다.
@@ -1456,3 +1589,33 @@ Agent 계약 합의 후 real integration 필수 callback test case:
 - Apache POI merge
 - generated file 3개 upload
 - 기존 Case/Run/Job dispatch 연결
+
+### Slice 3 — 2026-07-13 response-only grouped rationale projection
+
+Included:
+
+- A4a `parameter.groupedRationales`
+- A4/A8/A9 `parameters[].groupedRationales`
+- A4a typed DTO와 A4/A8/A9 `JsonNode`가 공유하는 response projector
+- FE A4a→A6 mapping에서 `groupedRationales` 제거
+- 공통 grouping, 네 GET service/serialization, A6 non-propagation 회귀 테스트
+
+Excluded:
+
+- 신규 endpoint
+- A6 request DTO, X2 `ModelParamPayloadItem`, B1 callback, A5 SSE 변경
+- Agent entity/저장 JSON, schema/DDL, repository/query 변경
+- duplicate slot의 A6 validator 또는 Excel writer 동작 완화
+
+Verification:
+
+```bash
+./gradlew test --tests '*ModelParameterResponseProjectorTest'
+./gradlew test --tests 'com.sk.domain.mi.service.nextgen.ModelParamProposalServiceImplTest'
+./gradlew test --tests 'com.sk.domain.mi.service.nextgen.ScenarioModelExecutionServiceImplTest'
+./gradlew test --tests 'com.sk.domain.mi.controller.nextgen.ScenarioModelExecutionControllerTest'
+./gradlew test --tests 'com.sk.domain.mi.service.nextgen.CurrentModelParamProposalSerializationTest'
+./gradlew test --tests 'com.sk.domain.mi.service.nextgen.paramproposal.ModelParamConfirmationValidatorTest'
+./gradlew test --tests 'com.sk.domain.mi.service.nextgen.execution.ModelParamExecutionCoordinatorTest'
+./gradlew compileTestJava
+```
