@@ -39,6 +39,9 @@ public record CurrentModelParamProposalRes(
     @Schema(description = "기존 수급모델 실행 상태", implementation = ModelExecutionStatus.class, example = "COMPLETED")
     ModelExecutionStatus modelExecutionStatus,
 
+    @Schema(description = "성공한 실행의 DEMAND/SUPPLY/TRADE input 파일 projection. EXECUTED_CONFIRMED 외 상태에서는 null")
+    ModelExecutionInputFilesRes executionInputFiles,
+
     @Schema(
         description = "A4a 전용 modelFile > modelSheet > modelTable > parameter/rendering tree. parameterSource=NONE이면 빈 배열",
         requiredMode = Schema.RequiredMode.REQUIRED

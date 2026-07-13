@@ -128,7 +128,7 @@ modelFiles[]
 ```
 
 - `parameter`는 Agent flat parameter의 `parameterName`, `modelTarget`, parameter-level `rationale`, 원본 `values[]`를 모두 유지하고 화면 표시용 response-only `groupedRationales[]`를 추가한 shape입니다.
-- `groupedRationales[]`는 같은 `slotAxesFieldNames` 조합의 value-level rationale을 원래 순서대로 `\n` 연결한 표시용 projection입니다. 기존 parameter rationale이나 `values[]`를 대체하지 않습니다.
+- `groupedRationales[]`는 `rendering.columns.kind=SLOT`인 고정 행 축 조합이 같은 value-level rationale을 시간 순서대로 `\n` 연결한 표시용 projection입니다. `TIME_AXIS`(`Year`/`Month`/`Period` 등)는 grouped item과 grouping key에서 제외되며, 기존 parameter rationale이나 `values[]`를 대체하지 않습니다.
 - `rendering`은 `readMode`, `columns[]`, `semanticAxes`만 포함합니다.
 - 좌표는 tree path와 `parameter.modelTarget`에서 읽습니다. `rendering`에는 좌표를 반복하지 않습니다.
 - file/sheet/table/parameter 배열은 Agent payload의 최초 등장 순서를 유지합니다.

@@ -7,11 +7,9 @@ import com.sk.common.enums.ResultCode;
 import com.sk.common.exception.AppErrorException;
 import com.sk.common.exception.AppHttpStatusException;
 import com.sk.domain.mi.dto.request.nextgen.ModelParamProposalExecutionReq;
-import com.sk.domain.mi.dto.response.nextgen.LatestModelExecutionInputFilesRes;
 import com.sk.domain.mi.dto.response.nextgen.LatestModelParamProposalParametersRes;
 import com.sk.domain.mi.dto.response.nextgen.ModelExecutionAcceptRes;
 import com.sk.domain.mi.dto.response.nextgen.ModelExecutionFileRes;
-import com.sk.domain.mi.dto.response.nextgen.ModelExecutionInputFileRes;
 import com.sk.domain.mi.dto.response.nextgen.ModelExecutionParameterRes;
 import com.sk.domain.mi.dto.response.nextgen.ModelExecutionStatusRes;
 import com.sk.domain.mi.service.nextgen.execution.ModelParamExecutionCoordinator;
@@ -19,6 +17,8 @@ import com.sk.domain.mi.service.nextgen.execution.ModelParamExecutionCoordinator
 import com.sk.domain.mi.service.nextgen.execution.ScenarioExecutionFileStager;
 import com.sk.domain.mi.service.nextgen.execution.ScenarioExecutionRegistrar;
 import com.sk.domain.mi.service.nextgen.execution.StagedScenarioExecutionFiles;
+import com.sk.domain.mi.service.nextgen.paramproposal.ModelParamSlotAxisResolver;
+import com.sk.domain.mi.service.nextgen.paramproposal.ModelParamSlotAxisResolver.InvalidSlotAxisMetadataException;
 import com.sk.domain.mi.service.nextgen.paramproposal.ModelParameterResponseProjector;
 import com.sk.domain.mi.service.nextgen.paramproposal.ModelParameterResponseProjector.InvalidParameterPayloadException;
 import com.sk.domain.mi.service.nextgen.query.LatestModelParamProposalExecutionContextResolver;
@@ -27,6 +27,7 @@ import com.sk.domain.shared.entity.master.tcm.UploadedFile;
 import com.sk.domain.shared.entity.master.tmd.ScenarioCase;
 import com.sk.domain.shared.entity.master.tmd.ScenarioCaseRunHistory;
 import com.sk.domain.shared.entity.master.tmm.AgentModelParamProposal;
+import com.sk.domain.shared.entity.master.tmm.MiModelParam;
 import com.sk.domain.shared.entity.master.tmm.MiScenario;
 import com.sk.domain.shared.enums.fundamentalmodel.FundamentalModelExecType;
 import com.sk.domain.shared.enums.fundamentalmodel.FundamentalModelRunStatus;
@@ -37,14 +38,18 @@ import com.sk.domain.shared.repository.master.tcm.UploadedFileRepository;
 import com.sk.domain.shared.repository.master.tmd.ScenarioCaseRepository;
 import com.sk.domain.shared.repository.master.tmd.ScenarioCaseRunHistoryRepository;
 import com.sk.domain.shared.repository.master.tmm.AgentModelParamProposalRepository;
+import com.sk.domain.shared.repository.master.tmm.MiModelParamRepository;
 import com.sk.domain.shared.repository.master.tmm.MiScenarioRepository;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import java.util.function.Function;
+import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
@@ -71,6 +76,7 @@ public class ScenarioModelExecutionServiceImpl implements ScenarioModelExecution
     private final ScenarioCaseRunHistoryRepository scenarioCaseRunHistoryRepository;
     private final UploadedFileRepository uploadedFileRepository;
     private final AgentModelParamProposalRepository agentModelParamProposalRepository;
+    private final MiModelParamRepository miModelParamRepository;
     private final LatestModelParamProposalExecutionContextResolver latestModelParamProposalExecutionContextResolver;
     private final ModelParamExecutionCoordinator modelParamExecutionCoordinator;
     private final ScenarioExecutionFileStager scenarioExecutionFileStager;
@@ -78,6 +84,7 @@ public class ScenarioModelExecutionServiceImpl implements ScenarioModelExecution
     private final TransactionOperations transactionOperations;
     private final ObjectMapper objectMapper;
     private final ModelParameterResponseProjector modelParameterResponseProjector;
+    private final ModelParamSlotAxisResolver modelParamSlotAxisResolver;
 
     @Override
     public ModelExecutionParameterRes getModelExecutionParameters(Long scenarioId) {
@@ -216,66 +223,6 @@ public class ScenarioModelExecutionServiceImpl implements ScenarioModelExecution
         return getLatestParameters(scenarioId, AgentModelParamProposal::getProposalParameters);
     }
 
-    @Override
-    public LatestModelExecutionInputFilesRes getLatestInputFiles(Long scenarioId) {
-        LatestModelParamProposalExecutionContext context = latestModelParamProposalExecutionContextResolver.resolve(scenarioId);
-        List<UploadedFile> uploadedFiles = uploadedFileRepository.findActiveRelationshipFilesOrderByFileNoAsc(
-            Math.toIntExact(context.caseId()),
-            FILE_RELATION_SCENARIO_CASE
-        );
-
-        Map<String, List<UploadedFile>> filesByRole = new LinkedHashMap<>();
-        REQUIRED_INPUT_FILE_ROLE_KEYWORDS.forEach(role -> filesByRole.put(role, new ArrayList<>()));
-        List<Long> invalidRoleFileNos = new ArrayList<>();
-
-        for (UploadedFile uploadedFile : uploadedFiles) {
-            List<String> matchedRoles = findFileRoles(uploadedFile.getOriginalFileNm());
-            if (matchedRoles.size() != 1) {
-                invalidRoleFileNos.add(uploadedFile.getFileNo());
-                continue;
-            }
-            filesByRole.get(matchedRoles.get(0)).add(uploadedFile);
-        }
-
-        List<String> missingFileRoles = REQUIRED_INPUT_FILE_ROLE_KEYWORDS.stream()
-            .filter(role -> filesByRole.get(role).isEmpty())
-            .toList();
-        List<String> duplicateFileRoles = REQUIRED_INPUT_FILE_ROLE_KEYWORDS.stream()
-            .filter(role -> filesByRole.get(role).size() > 1)
-            .toList();
-        boolean complete = missingFileRoles.isEmpty()
-            && duplicateFileRoles.isEmpty()
-            && invalidRoleFileNos.isEmpty();
-
-        if (!complete) {
-            log.warn(
-                "Latest model execution input files are incomplete. scenarioId={}, caseId={}, missingRoles={}, duplicateRoles={}, invalidRoleFileNos={}",
-                context.scenarioId(),
-                context.caseId(),
-                missingFileRoles,
-                duplicateFileRoles,
-                invalidRoleFileNos
-            );
-        }
-
-        List<ModelExecutionInputFileRes> files = REQUIRED_INPUT_FILE_ROLE_KEYWORDS.stream()
-            .flatMap(role -> filesByRole.get(role).stream().map(file -> new ModelExecutionInputFileRes(
-                role,
-                file.getFileNo(),
-                file.getOriginalFileNm(),
-                file.getFileSize()
-            )))
-            .toList();
-
-        return new LatestModelExecutionInputFilesRes(
-            context.scenarioId(),
-            context.caseId(),
-            complete,
-            missingFileRoles,
-            files
-        );
-    }
-
     private LatestModelParamProposalParametersRes getLatestParameters(
         Long scenarioId,
         Function<AgentModelParamProposal, String> parameterJsonSource
@@ -319,10 +266,73 @@ public class ScenarioModelExecutionServiceImpl implements ScenarioModelExecution
             if (node == null || !node.isArray()) {
                 throw invalidAgentParameterJson();
             }
-            return modelParameterResponseProjector.projectParameterArray(node);
-        } catch (JsonProcessingException | InvalidParameterPayloadException e) {
+            return modelParameterResponseProjector.projectParameterArray(
+                node,
+                resolveGroupedRationaleSlotAxes(node)
+            );
+        } catch (JsonProcessingException | InvalidParameterPayloadException | InvalidSlotAxisMetadataException e) {
             throw invalidAgentParameterJson();
         }
+    }
+
+    private List<List<String>> resolveGroupedRationaleSlotAxes(JsonNode parameters) {
+        if (parameters == null || !parameters.isArray()) {
+            throw new InvalidSlotAxisMetadataException();
+        }
+        if (parameters.isEmpty()) {
+            return List.of();
+        }
+
+        Set<String> parameterNames = new LinkedHashSet<>();
+        for (JsonNode parameter : parameters) {
+            parameterNames.add(requiredGroupingParameterName(parameter));
+        }
+        Map<String, List<MiModelParam>> mastersByName = miModelParamRepository
+            .findByParameterNameInAndIsDeletedFalse(parameterNames)
+            .stream()
+            .collect(Collectors.groupingBy(
+                MiModelParam::getParameterName,
+                LinkedHashMap::new,
+                Collectors.toList()
+            ));
+
+        List<List<String>> groupingAxes = new ArrayList<>();
+        for (JsonNode parameter : parameters) {
+            String parameterName = requiredGroupingParameterName(parameter);
+            List<MiModelParam> masters = mastersByName.get(parameterName);
+            if (masters == null || masters.size() != 1) {
+                throw new InvalidSlotAxisMetadataException();
+            }
+            groupingAxes.add(modelParamSlotAxisResolver.resolve(
+                masters.get(0).getBasecaseColumnRoles(),
+                requiredGroupingSlotAxes(parameter)
+            ));
+        }
+        return List.copyOf(groupingAxes);
+    }
+
+    private String requiredGroupingParameterName(JsonNode parameter) {
+        JsonNode parameterName = parameter == null ? null : parameter.get("parameterName");
+        if (parameterName == null || !parameterName.isTextual() || parameterName.textValue().isBlank()) {
+            throw new InvalidSlotAxisMetadataException();
+        }
+        return parameterName.textValue();
+    }
+
+    private List<String> requiredGroupingSlotAxes(JsonNode parameter) {
+        JsonNode modelTarget = parameter == null ? null : parameter.get("modelTarget");
+        JsonNode slotAxes = modelTarget == null ? null : modelTarget.get("slotAxesFieldNames");
+        if (slotAxes == null || !slotAxes.isArray() || slotAxes.isEmpty()) {
+            throw new InvalidSlotAxisMetadataException();
+        }
+        List<String> axes = new ArrayList<>();
+        for (JsonNode axis : slotAxes) {
+            if (!axis.isTextual() || axis.textValue().isBlank()) {
+                throw new InvalidSlotAxisMetadataException();
+            }
+            axes.add(axis.textValue());
+        }
+        return List.copyOf(axes);
     }
 
     private AppErrorException invalidAgentParameterJson() {
@@ -330,13 +340,6 @@ public class ScenarioModelExecutionServiceImpl implements ScenarioModelExecution
             ResultCode.Error.API_RESPONSE_ERROR,
             "Agent proposal parameter JSON is invalid."
         );
-    }
-
-    private List<String> findFileRoles(String fileName) {
-        String normalizedFileName = Optional.ofNullable(fileName).orElse("").toUpperCase(Locale.ROOT);
-        return REQUIRED_INPUT_FILE_ROLE_KEYWORDS.stream()
-            .filter(normalizedFileName::contains)
-            .toList();
     }
 
     private MiScenario findScenarioForUpdate(Long scenarioId) {

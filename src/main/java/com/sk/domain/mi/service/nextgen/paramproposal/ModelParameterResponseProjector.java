@@ -24,28 +24,33 @@ public class ModelParameterResponseProjector {
 
     private final ObjectMapper objectMapper;
 
-    public JsonNode projectParameterArray(JsonNode parameterArray) {
+    public JsonNode projectParameterArray(JsonNode parameterArray, List<List<String>> groupingAxesByParameter) {
         if (parameterArray == null || !parameterArray.isArray()) {
             throw invalid("parameter payload must be an array.");
         }
+        if (groupingAxesByParameter == null || groupingAxesByParameter.size() != parameterArray.size()) {
+            throw invalid("parameter grouping axes must match the parameter payload.");
+        }
 
         JsonNode projected = parameterArray.deepCopy();
+        int parameterIndex = 0;
         for (JsonNode parameter : projected) {
             if (!(parameter instanceof ObjectNode parameterObject)) {
                 throw invalid("parameter payload contains a non-object item.");
             }
-            addGroupedRationales(parameterObject);
+            addGroupedRationales(parameterObject, groupingAxesByParameter.get(parameterIndex));
+            parameterIndex++;
         }
         return projected;
     }
 
-    public CurrentModelParameterRes projectParameter(CurrentModelParameterRes parameter) {
+    public CurrentModelParameterRes projectParameter(CurrentModelParameterRes parameter, List<String> groupingAxes) {
         if (parameter == null) {
             throw invalid("parameter must not be null.");
         }
         try {
             ObjectNode parameterObject = objectMapper.valueToTree(parameter);
-            addGroupedRationales(parameterObject);
+            addGroupedRationales(parameterObject, groupingAxes);
             return objectMapper.convertValue(parameterObject, CurrentModelParameterRes.class);
         } catch (InvalidParameterPayloadException e) {
             throw e;
@@ -54,8 +59,9 @@ public class ModelParameterResponseProjector {
         }
     }
 
-    private void addGroupedRationales(ObjectNode parameter) {
+    private void addGroupedRationales(ObjectNode parameter, List<String> groupingAxes) {
         List<String> slotAxes = slotAxes(parameter);
+        validateGroupingAxes(slotAxes, groupingAxes);
         JsonNode valuesNode = parameter.get("values");
         if (valuesNode == null || !valuesNode.isArray() || valuesNode.isEmpty()) {
             throw invalid("parameter values must be a non-empty array.");
@@ -67,13 +73,20 @@ public class ModelParameterResponseProjector {
                 throw invalid("parameter values contain a non-object item.");
             }
 
-            List<CanonicalSlot> canonicalSlots = new ArrayList<>(slotAxes.size());
-            ObjectNode groupedItem = objectMapper.createObjectNode();
+            Map<String, JsonNode> slotValues = new LinkedHashMap<>();
             for (String slotAxis : slotAxes) {
                 JsonNode slotValue = valueObject.get(slotAxis);
                 if (slotValue == null) {
                     throw invalid("parameter value is missing a required slot axis.");
                 }
+                canonicalSlot(slotValue);
+                slotValues.put(slotAxis, slotValue);
+            }
+
+            List<CanonicalSlot> canonicalSlots = new ArrayList<>(groupingAxes.size());
+            ObjectNode groupedItem = objectMapper.createObjectNode();
+            for (String slotAxis : groupingAxes) {
+                JsonNode slotValue = slotValues.get(slotAxis);
                 canonicalSlots.add(canonicalSlot(slotValue));
                 groupedItem.set(slotAxis, slotValue.deepCopy());
             }
@@ -93,6 +106,16 @@ public class ModelParameterResponseProjector {
             .map(GroupAccumulator::toResponseItem)
             .forEach(groupedRationales::add);
         parameter.set(GROUPED_RATIONALES_FIELD, groupedRationales);
+    }
+
+    private void validateGroupingAxes(List<String> slotAxes, List<String> groupingAxes) {
+        if (groupingAxes == null) {
+            throw invalid("parameter grouping axes must not be null.");
+        }
+        Set<String> uniqueGroupingAxes = new LinkedHashSet<>(groupingAxes);
+        if (uniqueGroupingAxes.size() != groupingAxes.size() || !slotAxes.containsAll(groupingAxes)) {
+            throw invalid("parameter grouping axes must be unique declared slot axes.");
+        }
     }
 
     private List<String> slotAxes(ObjectNode parameter) {

@@ -6,7 +6,6 @@ import com.sk.common.annotation.RequiredPermissionRules;
 import com.sk.common.enums.ResultCode;
 import com.sk.common.model.BaseResponse;
 import com.sk.common.model.BaseResponseFactory;
-import com.sk.domain.mi.dto.response.nextgen.LatestModelExecutionInputFilesRes;
 import com.sk.domain.mi.dto.response.nextgen.LatestModelParamProposalParametersRes;
 import com.sk.domain.mi.dto.response.nextgen.ModelExecutionStatusRes;
 import com.sk.domain.mi.service.nextgen.ScenarioModelExecutionService;
@@ -96,23 +95,6 @@ public class ScenarioModelExecutionController {
     }
 
     @ApiOrder(8)
-    @Operation(
-        summary = "최근 실행 input 파일 조회 API",
-        description = "최신 A6 실행 Case에 연결된 DEMAND/SUPPLY/TRADE 입력 파일 metadata를 조회합니다."
-    )
-    @ApiResponse(responseCode = "200", description = "조회 성공")
-    @GetMapping("/model-executions/latest/input-files")
-    @RequiredPermissionRules(rules = {
-        @PermissionRule(role = Role.USER, conditions = {PermissionCondition.SKGAS_COMPANY_USER_ONLY}),
-        @PermissionRule(role = Role.ADMIN, conditions = {PermissionCondition.THIRD_PARTY_ADMIN_ONLY})
-    })
-    public BaseResponse<LatestModelExecutionInputFilesRes> getLatestInputFiles(
-        @Parameter(description = "시나리오 ID", example = "309") @PathVariable Long scenarioId
-    ) {
-        return BaseResponseFactory.create(scenarioModelExecutionService.getLatestInputFiles(scenarioId));
-    }
-
-    @ApiOrder(9)
     @Operation(
         summary = "[mockapi 전용] 수급모델 실행 데이터 초기화 API",
         description = """

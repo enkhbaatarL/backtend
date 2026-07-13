@@ -15,6 +15,7 @@ import com.sk.domain.mi.dto.response.nextgen.CurrentModelParamSheetRes;
 import com.sk.domain.mi.dto.response.nextgen.CurrentModelParamTableRes;
 import com.sk.domain.mi.dto.response.nextgen.CurrentModelParamTargetRes;
 import com.sk.domain.mi.dto.response.nextgen.CurrentModelParameterRes;
+import com.sk.domain.mi.dto.response.nextgen.ModelExecutionInputFilesRes;
 import com.sk.domain.mi.dto.response.nextgen.ModelExecutionOptionsRes;
 import com.sk.domain.mi.dto.response.nextgen.ModelFileNode;
 import com.sk.domain.mi.dto.response.nextgen.ModelParamAlign;
@@ -24,9 +25,12 @@ import com.sk.domain.mi.dto.response.nextgen.ModelParamProposalAcceptRes;
 import com.sk.domain.mi.dto.response.nextgen.ModelParamProposalRes;
 import com.sk.domain.mi.dto.response.nextgen.ModelParamShape;
 import com.sk.domain.mi.dto.response.nextgen.ModelSheetNode;
+import com.sk.domain.mi.service.nextgen.paramproposal.ModelParamSlotAxisResolver;
+import com.sk.domain.mi.service.nextgen.paramproposal.ModelParamSlotAxisResolver.InvalidSlotAxisMetadataException;
 import com.sk.domain.mi.service.nextgen.paramproposal.ModelParameterResponseProjector;
 import com.sk.domain.mi.service.nextgen.paramproposal.ModelParameterResponseProjector.InvalidParameterPayloadException;
 import com.sk.domain.mi.service.nextgen.paramproposal.excel.ModelInputFile;
+import com.sk.domain.mi.service.nextgen.query.ModelExecutionInputFilesProjector;
 import com.sk.domain.shared.client.ModelParamProposalAgentApi;
 import com.sk.domain.shared.client.dto.request.AgentModelParamConfirmationReq;
 import com.sk.domain.shared.client.dto.request.ModelParamPayloadItem;
@@ -119,6 +123,8 @@ public class ModelParamProposalServiceImpl implements ModelParamProposalService 
     private final TransactionOperations transactionOperations;
     private final ObjectMapper objectMapper;
     private final ModelParameterResponseProjector modelParameterResponseProjector;
+    private final ModelParamSlotAxisResolver modelParamSlotAxisResolver;
+    private final ModelExecutionInputFilesProjector modelExecutionInputFilesProjector;
 
     @Override
     public ModelExecutionOptionsRes getModelExecutionOptions(Long scenarioId) {
@@ -449,6 +455,11 @@ public class ModelParamProposalServiceImpl implements ModelParamProposalService 
         LocalDateTime requestedAt,
         String failureReason
     ) {
+        ModelExecutionInputFilesRes executionInputFiles = resolveExecutionInputFiles(
+            scenarioId,
+            currentState,
+            caseId
+        );
         return new CurrentModelParamProposalRes(
             scenarioId,
             currentState,
@@ -460,12 +471,27 @@ public class ModelParamProposalServiceImpl implements ModelParamProposalService 
             caseId,
             runId,
             modelExecutionStatus,
+            executionInputFiles,
             buildCurrentModelFiles(parameterSource, proposal),
             failureReason,
             requestedAt,
             proposal == null ? null : proposal.getProposalCompletedAt(),
             proposal == null ? null : proposal.getConfirmedAt()
         );
+    }
+
+    private ModelExecutionInputFilesRes resolveExecutionInputFiles(
+        Long scenarioId,
+        CurrentModelParamProposalState currentState,
+        Long caseId
+    ) {
+        if (currentState != CurrentModelParamProposalState.EXECUTED_CONFIRMED) {
+            return null;
+        }
+        if (caseId == null) {
+            throw dataMismatch("EXECUTED_CONFIRMED current-state has no case_id. scenarioId: %d".formatted(scenarioId));
+        }
+        return modelExecutionInputFilesProjector.project(scenarioId, caseId);
     }
 
     private ModelParamParameterSource executionFailureParameterSource(AgentModelParamProposal proposal) {
@@ -757,10 +783,73 @@ public class ModelParamProposalServiceImpl implements ModelParamProposalService 
         };
         JsonNode parameters = parseArrayOrEmpty(json);
         try {
-            return modelParameterResponseProjector.projectParameterArray(parameters);
-        } catch (InvalidParameterPayloadException e) {
+            return modelParameterResponseProjector.projectParameterArray(
+                parameters,
+                resolveGroupedRationaleSlotAxes(parameters)
+            );
+        } catch (InvalidParameterPayloadException | InvalidSlotAxisMetadataException e) {
             throw invalidAgentParameterJson();
         }
+    }
+
+    private List<List<String>> resolveGroupedRationaleSlotAxes(JsonNode parameters) {
+        if (parameters == null || !parameters.isArray()) {
+            throw new InvalidSlotAxisMetadataException();
+        }
+        if (parameters.isEmpty()) {
+            return List.of();
+        }
+
+        Set<String> parameterNames = new LinkedHashSet<>();
+        for (JsonNode parameter : parameters) {
+            parameterNames.add(requiredGroupingParameterName(parameter));
+        }
+        Map<String, List<MiModelParam>> mastersByName = miModelParamRepository
+            .findByParameterNameInAndIsDeletedFalse(parameterNames)
+            .stream()
+            .collect(Collectors.groupingBy(
+                MiModelParam::getParameterName,
+                LinkedHashMap::new,
+                Collectors.toList()
+            ));
+
+        List<List<String>> groupingAxes = new ArrayList<>();
+        for (JsonNode parameter : parameters) {
+            String parameterName = requiredGroupingParameterName(parameter);
+            List<MiModelParam> masters = mastersByName.get(parameterName);
+            if (masters == null || masters.size() != 1) {
+                throw new InvalidSlotAxisMetadataException();
+            }
+            groupingAxes.add(modelParamSlotAxisResolver.resolve(
+                masters.get(0).getBasecaseColumnRoles(),
+                requiredGroupingSlotAxes(parameter)
+            ));
+        }
+        return List.copyOf(groupingAxes);
+    }
+
+    private String requiredGroupingParameterName(JsonNode parameter) {
+        JsonNode parameterName = parameter == null ? null : parameter.get("parameterName");
+        if (parameterName == null || !parameterName.isTextual() || parameterName.textValue().isBlank()) {
+            throw new InvalidSlotAxisMetadataException();
+        }
+        return parameterName.textValue();
+    }
+
+    private List<String> requiredGroupingSlotAxes(JsonNode parameter) {
+        JsonNode modelTarget = parameter == null ? null : parameter.get("modelTarget");
+        JsonNode slotAxes = modelTarget == null ? null : modelTarget.get("slotAxesFieldNames");
+        if (slotAxes == null || !slotAxes.isArray() || slotAxes.isEmpty()) {
+            throw new InvalidSlotAxisMetadataException();
+        }
+        List<String> axes = new ArrayList<>();
+        for (JsonNode axis : slotAxes) {
+            if (!axis.isTextual() || axis.textValue().isBlank()) {
+                throw new InvalidSlotAxisMetadataException();
+            }
+            axes.add(axis.textValue());
+        }
+        return List.copyOf(axes);
     }
 
     private List<CurrentModelParamFileRes> buildCurrentModelFiles(
@@ -805,9 +894,21 @@ public class ModelParamProposalServiceImpl implements ModelParamProposalService 
                 throw currentParameterMismatch();
             }
 
+            CurrentModelParameterRes projectedParameter;
+            try {
+                projectedParameter = modelParameterResponseProjector.projectParameter(
+                    parameter,
+                    modelParamSlotAxisResolver.resolve(
+                        master.getBasecaseColumnRoles(),
+                        target.slotAxesFieldNames()
+                    )
+                );
+            } catch (InvalidParameterPayloadException | InvalidSlotAxisMetadataException e) {
+                throw currentParameterMismatch();
+            }
             CurrentModelParamLeafRes leaf = new CurrentModelParamLeafRes(
-                parameter,
-                toCurrentRendering(master, parameter)
+                projectedParameter,
+                toCurrentRendering(master, projectedParameter)
             );
             tree.computeIfAbsent(target.modelFile(), key -> new LinkedHashMap<>())
                 .computeIfAbsent(target.modelSheet(), key -> new LinkedHashMap<>())
@@ -889,18 +990,13 @@ public class ModelParamProposalServiceImpl implements ModelParamProposalService 
             }
             values.add(objectMapper.convertValue(valueNode, DYNAMIC_VALUE_TYPE));
         }
-        CurrentModelParameterRes parameter = new CurrentModelParameterRes(
+        return new CurrentModelParameterRes(
             parameterName,
             target,
             rationale,
             null,
             List.copyOf(values)
         );
-        try {
-            return modelParameterResponseProjector.projectParameter(parameter);
-        } catch (InvalidParameterPayloadException e) {
-            throw currentParameterMismatch();
-        }
     }
 
     private String requiredText(JsonNode node) {

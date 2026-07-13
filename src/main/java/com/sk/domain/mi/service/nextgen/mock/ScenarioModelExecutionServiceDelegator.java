@@ -2,7 +2,6 @@ package com.sk.domain.mi.service.nextgen.mock;
 
 import com.sk.domain.mi.config.NextGenMockProperties;
 import com.sk.domain.mi.dto.request.nextgen.ModelParamProposalExecutionReq;
-import com.sk.domain.mi.dto.response.nextgen.LatestModelExecutionInputFilesRes;
 import com.sk.domain.mi.dto.response.nextgen.LatestModelParamProposalParametersRes;
 import com.sk.domain.mi.dto.response.nextgen.ModelExecutionAcceptRes;
 import com.sk.domain.mi.dto.response.nextgen.ModelExecutionParameterRes;
@@ -56,10 +55,5 @@ public class ScenarioModelExecutionServiceDelegator implements ScenarioModelExec
     @Override
     public LatestModelParamProposalParametersRes getLatestProposedParameters(Long scenarioId) {
         return realService.getLatestProposedParameters(scenarioId);
-    }
-
-    @Override
-    public LatestModelExecutionInputFilesRes getLatestInputFiles(Long scenarioId) {
-        return realService.getLatestInputFiles(scenarioId);
     }
 }

@@ -27,7 +27,7 @@
 - open questions: 13절 및 duplicate-slot Agent payload의 A6/Excel 실행 좌표 호환성 참조
 - integration model: callback = 완료 신호. Backend가 Agent proposal 테이블을 read-only 직접 조회해 결과 서빙(CAS/hash/snapshot 없음). 공유 DB read 및 read 권한은 확정(조회 가능). callback path `scenarioId`는 proposal identity가 아니라 현재 in-flight execution-preparation을 찾는 scope key다.
 - callback 인증: 확정. 기존 시나리오 설계 콜백과 동일한 Resource Server JWT 체인(`CustomJwtDecoder` HS256 self-issued + `@RequiredPermissionRules(Role.SYSTEM ...)`) 재사용. Agent는 Backend 토큰 발급 API와 발급 인풋 2종을 전달받아 JWT를 자체 발급·갱신한다.
-- implementation readiness: frontend mock ready; real Agent integration은 proposal read 계약 확정(DB DDL 수령)으로 착수 가능. A4a/A4/A8/A9 response-only `groupedRationales` projection 계약은 구현 가능하며 schema/query 변경이 없다. Agent proposal table은 기존 Backend DB/schema에 추가되는 직접 read 대상이며 별도 view/synonym 경로는 필요 없다. 잔여는 runtime table visibility/권한/type 검증과 dimension_map ERD 정정으로 read 엔티티 착수를 막지 않음(인증·공유 read·콜백 계약·write-then-callback 순서·wrapper 셰이프·재시도 정책·proposal DDL 확정)
+- implementation readiness: frontend mock ready; real Agent integration은 proposal read 계약 확정(DB DDL 수령)으로 착수 가능. A4a/A4/A8/A9 response-only `groupedRationales` projection 계약은 구현 가능하며 schema 변경은 없다. SLOT-only grouping은 기존 `tmm_mi_model_param_m` read-only master 일괄 조회를 사용한다. Agent proposal table은 기존 Backend DB/schema에 추가되는 직접 read 대상이며 별도 view/synonym 경로는 필요 없다. 잔여는 runtime table visibility/권한/type 검증과 dimension_map ERD 정정으로 read 엔티티 착수를 막지 않음(인증·공유 read·콜백 계약·write-then-callback 순서·wrapper 셰이프·재시도 정책·proposal DDL 확정)
 
 ## 2. Feature Goal
 
@@ -648,21 +648,24 @@ Response data examples:
 
 목적과 shape:
 
-- `groupedRationales`는 같은 slot 조합에 속한 value-level rationale을 화면에서 함께 표시하기 위한 Backend read projection이다.
-- 각 grouped item은 `modelTarget.slotAxesFieldNames`에 선언된 dynamic slot-axis field를 그 선언 순서대로 포함하고 마지막에 `rationale`을 포함한다.
+- `groupedRationales`는 같은 고정 행(`rendering.columns.kind=SLOT`)에 속한 시간별 value-level rationale을 화면에서 함께 표시하기 위한 Backend read projection이다.
+- grouping 축은 `modelTarget.slotAxesFieldNames` 중 parameter master의 `basecase_column_roles`와 일치하여 `rendering.columns.kind=SLOT`으로 해석되는 field만 사용한다.
+- `MATRIX_TIME_COLUMNS`의 `TIME_AXIS` field(예: `Year`, `Month`, `Period`)는 grouped item과 그룹 key에서 제외한다.
+- 각 grouped item은 SLOT field를 `modelTarget.slotAxesFieldNames`의 선언 순서대로 포함하고 마지막에 `rationale`을 포함한다.
 - parameter-level `rationale`, 원본 `values[]`, 모든 value row와 `values[].rationale`, `basecaseValue`, `proposedValue`, dynamic slot-axis key/value 및 배열 순서는 그대로 보존한다.
 - 동일 slot 조합의 `values[]` row를 병합·삭제·재정렬하지 않는다. `groupedRationales`는 기존 데이터를 대체하지 않는다.
 
 그룹 key와 순서:
 
 - 그룹핑은 각 parameter 내부에서 독립적으로 수행한다. 서로 다른 parameter의 row는 절대 같은 그룹이 되지 않는다.
-- 그룹 key는 `modelTarget.slotAxesFieldNames`에 선언된 모든 field의 값만으로 구성한다.
+- 그룹 key는 위 규칙으로 해석된 `SLOT` field의 값만으로 구성한다.
+- `TIME_AXIS` field 값이 달라도 `SLOT` field 값이 모두 같으면 같은 그룹이다.
 - `basecaseValue`, `proposedValue`, parameter/value `rationale`은 그룹 key에 포함하지 않는다.
 - 문자열과 boolean slot은 JSON 타입과 값을 그대로 비교한다.
 - 숫자 slot은 A6 의미값 canonicalization과 일관되게 숫자값으로 비교한다. 따라서 JSON number `1`과 `1.0`은 같은 그룹이다.
 - 숫자값 기준으로 같은 그룹이더라도 grouped item의 slot 값은 그 그룹이 최초 등장한 `values[]` element의 원래 JSON number 표현과 타입을 보존한다. 예를 들어 최초 값이 `1.0`이면 출력도 `1.0`이다.
 - 그룹 배열은 해당 slot 조합이 `values[]`에 최초 등장한 순서를 유지한다.
-- grouped item의 dynamic property 순서는 `slotAxesFieldNames` 순서이며 `rationale`은 마지막 property다.
+- grouped item의 dynamic property 순서는 `slotAxesFieldNames` 중 SLOT field의 원래 순서이며 `rationale`은 마지막 property다.
 
 Rationale 결합:
 
@@ -674,38 +677,41 @@ Rationale 결합:
 
 ```json
 {
-  "parameterName": "EnergyAdjustment",
+  "parameterName": "LiqUtilAdjustment",
   "modelTarget": {
     "modelFile": "Supply",
-    "modelSheet": "EnergyAdjustment",
+    "modelSheet": "LiqUtilAdjustment",
     "tableName": "table1",
-    "valueFieldNames": ["Adjustment"],
-    "slotAxesFieldNames": ["Year", "Country", "Energy Source"]
+    "valueFieldNames": ["LiqUtilAdjustment"],
+    "slotAxesFieldNames": ["Country", "LNG Plant", "Year", "Month", "Period"]
   },
   "rationale": "기존 parameter rationale",
   "groupedRationales": [
     {
-      "Year": 2027,
-      "Country": "KR",
-      "Energy Source": "LNG",
+      "Country": "Algeria",
+      "LNG Plant": "Arzew GL1Z",
       "rationale": "A\nB"
     }
   ],
   "values": [
     {
+      "Country": "Algeria",
+      "LNG Plant": "Arzew GL1Z",
       "Year": 2027,
-      "Country": "KR",
-      "Energy Source": "LNG",
-      "basecaseValue": 10,
-      "proposedValue": 11,
+      "Month": 1,
+      "Period": 109,
+      "basecaseValue": 0.2,
+      "proposedValue": 0.21,
       "rationale": "A"
     },
     {
+      "Country": "Algeria",
+      "LNG Plant": "Arzew GL1Z",
       "Year": 2027,
-      "Country": "KR",
-      "Energy Source": "LNG",
-      "basecaseValue": 10,
-      "proposedValue": 12,
+      "Month": 2,
+      "Period": 110,
+      "basecaseValue": 0.2,
+      "proposedValue": 0.22,
       "rationale": "B"
     }
   ]
@@ -715,6 +721,7 @@ Rationale 결합:
 Validation/error boundary:
 
 - 공통 projection component는 endpoint가 유효한 parameter array를 선택·파싱한 이후 response copy에만 필드를 추가한다. endpoint별 status/empty/null/error 판단을 통합하거나 변경하지 않는다.
+- 공통 projection은 parameter name으로 `tmm_mi_model_param_m` master를 일괄 조회해 SLOT 축을 해석한다. master 누락·중복 또는 SLOT 축을 하나도 해석할 수 없는 metadata 불일치는 endpoint의 기존 데이터 불일치/error 정책으로 실패한다.
 - required slot-axis field가 value row에 없거나 projection에 필요한 `modelTarget.slotAxesFieldNames`, `values[]`, `values[].rationale`가 유효하지 않으면 해당 row를 조용히 제외하거나 빈 `groupedRationales`로 정상화하지 않는다. endpoint의 기존 데이터 불일치/error 정책으로 실패한다.
 - 특히 A8/A9의 parameter JSON이 `null`, blank, non-array, malformed JSON이면 기존 `API_RESPONSE_ERROR`와 `Agent proposal parameter JSON is invalid.` message를 유지하며 빈 배열로 반환하지 않는다.
 - A4a의 non-`NONE` payload 정합성 오류는 기존 `409 BIZ_RULE_VIOLATION` 정책을 유지한다. A4의 status별 empty array와 기존 parse/error 정책도 유지한다.
@@ -1443,7 +1450,8 @@ FE가 반드시 처리해야 하는 최소 상태는 `PROCESSING`, `PROPOSED`, `
 
 ## 14. Change Log / Sync Note
 
-- 2026-07-13: **A4a/A4/A8/A9 response-only `groupedRationales` contract 추가.** parameter별 `slotAxesFieldNames` 전체 값으로 그룹핑하고 최초 그룹/axis 순서와 원본 `values[]`를 보존한다. rationale은 원래 순서대로 `\n` 연결하며 trim/dedup하지 않는다. JSON number `1`과 `1.0`은 같은 그룹으로 비교하되 출력 slot 값은 최초 row의 원래 JSON 표현을 유지한다. Agent 저장 JSON, A6/X2/B1 contract, schema/query는 변경하지 않으며 A6 duplicate-slot 거절 규칙은 실행 좌표 계약이 별도 확정될 때까지 유지한다.
+- 2026-07-13: **`groupedRationales` grouping key를 rendering `SLOT` 축으로 한정.** 동일한 고정 설비 행의 시간별 rationale을 결합하도록 parameter master `basecase_column_roles`와 일치하는 slot axis만 key/output에 포함하고 `MATRIX_TIME_COLUMNS`의 `TIME_AXIS`(`Year`/`Month`/`Period` 등)는 제외한다. A4a/A4/A8/A9에 공통 적용하며 Agent 저장 JSON, A6/X2/B1 contract, schema는 변경하지 않는다.
+- 2026-07-13: **A4a/A4/A8/A9 response-only `groupedRationales` contract 추가.** 최초 계약은 parameter별 `slotAxesFieldNames` 전체 값으로 그룹핑하는 규칙이었으나 같은 날 SLOT-only grouping 결정으로 대체되었다. 최초 그룹/axis 순서와 원본 `values[]` 보존, rationale `\n` 결합, trim/dedup 금지, 숫자 canonicalization 규칙은 유지한다.
 - 2026-07-13: **A10을 A4a 성공 실행 파일 projection으로 병합.** 독립 `GET .../model-executions/latest/input-files` endpoint는 만들지 않는다. A4a는 자신이 선택한 최신 execution-preparation이 `EXECUTED_CONFIRMED`일 때만 같은 row의 `caseId`로 `executionInputFiles`를 반환하고, 그 외 상태에서는 `null`을 반환한다. 기존 `complete`/`missingFileRoles`/partial files 및 공통 File Management 다운로드 계약은 유지한다. A8/A9의 latest Case anchor는 변경하지 않는다.
 - 2026-07-13: A4a current-state 응답을 top-level `parameters`/`parameterShapes`와 navigation-only `modelFiles`에서 `modelFiles > modelSheets > modelTables > parameters > {parameter, rendering}` tree로 in-place 교체. A4a 전용 MI response DTO 경계, 순서/composite identity, rendering master 일괄 조회 및 409 정합성 규칙, A6 flatten mapping을 고정했다. 특정 proposal 상세 GET, Agent/A6 wire contract, schema/DDL은 변경하지 않는다.
 - 2026-07-03: 사용자 설명과 Agent Notion 문서를 기준으로 최초 작성.
