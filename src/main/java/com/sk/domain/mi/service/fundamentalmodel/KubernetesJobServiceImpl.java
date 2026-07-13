@@ -26,7 +26,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
 
 @Service
-@Profile("!local")
+@Profile("!testdb")
 @RequiredArgsConstructor
 public class KubernetesJobServiceImpl implements KubernetesJobService {
 

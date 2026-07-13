@@ -309,14 +309,24 @@ public class ScenarioModelExecutionServiceImpl implements ScenarioModelExecution
 
     private JsonNode parseParameterArray(String json) {
         if (json == null || json.isBlank()) {
-            return objectMapper.createArrayNode();
+            throw invalidAgentParameterJson();
         }
         try {
             JsonNode node = objectMapper.readTree(json);
-            return node != null && node.isArray() ? node : objectMapper.createArrayNode();
+            if (node == null || !node.isArray()) {
+                throw invalidAgentParameterJson();
+            }
+            return node;
         } catch (JsonProcessingException e) {
-            throw AppErrorException.of(ResultCode.Error.API_RESPONSE_ERROR, "Agent proposal parameter JSON is invalid.");
+            throw invalidAgentParameterJson();
         }
+    }
+
+    private AppErrorException invalidAgentParameterJson() {
+        return AppErrorException.of(
+            ResultCode.Error.API_RESPONSE_ERROR,
+            "Agent proposal parameter JSON is invalid."
+        );
     }
 
     private List<String> findFileRoles(String fileName) {
