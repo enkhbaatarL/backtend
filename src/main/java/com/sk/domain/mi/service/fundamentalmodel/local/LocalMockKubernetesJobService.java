@@ -42,7 +42,7 @@ import org.springframework.web.client.RestClient;
  */
 @Slf4j
 @Service
-@Profile("local")
+@Profile("testdb")
 @RequiredArgsConstructor
 public class LocalMockKubernetesJobService implements KubernetesJobService {
 
