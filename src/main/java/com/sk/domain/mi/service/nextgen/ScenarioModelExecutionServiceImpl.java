@@ -19,6 +19,8 @@ import com.sk.domain.mi.service.nextgen.execution.ModelParamExecutionCoordinator
 import com.sk.domain.mi.service.nextgen.execution.ScenarioExecutionFileStager;
 import com.sk.domain.mi.service.nextgen.execution.ScenarioExecutionRegistrar;
 import com.sk.domain.mi.service.nextgen.execution.StagedScenarioExecutionFiles;
+import com.sk.domain.mi.service.nextgen.paramproposal.ModelParameterResponseProjector;
+import com.sk.domain.mi.service.nextgen.paramproposal.ModelParameterResponseProjector.InvalidParameterPayloadException;
 import com.sk.domain.mi.service.nextgen.query.LatestModelParamProposalExecutionContextResolver;
 import com.sk.domain.mi.service.nextgen.query.LatestModelParamProposalExecutionContextResolver.LatestModelParamProposalExecutionContext;
 import com.sk.domain.shared.entity.master.tcm.UploadedFile;
@@ -75,6 +77,7 @@ public class ScenarioModelExecutionServiceImpl implements ScenarioModelExecution
     private final ScenarioExecutionRegistrar scenarioExecutionRegistrar;
     private final TransactionOperations transactionOperations;
     private final ObjectMapper objectMapper;
+    private final ModelParameterResponseProjector modelParameterResponseProjector;
 
     @Override
     public ModelExecutionParameterRes getModelExecutionParameters(Long scenarioId) {
@@ -316,8 +319,8 @@ public class ScenarioModelExecutionServiceImpl implements ScenarioModelExecution
             if (node == null || !node.isArray()) {
                 throw invalidAgentParameterJson();
             }
-            return node;
-        } catch (JsonProcessingException e) {
+            return modelParameterResponseProjector.projectParameterArray(node);
+        } catch (JsonProcessingException | InvalidParameterPayloadException e) {
             throw invalidAgentParameterJson();
         }
     }

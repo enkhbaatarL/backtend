@@ -11,9 +11,10 @@
   - `docs/design-docs/gas/mi-model-parameter-proposal-design.md`
 - supersedes:
   - 이 문서의 이전 A4a top-level `parameters`/navigation-only `modelFiles`/`parameterShapes` 안내
+  - A4a `leaf.parameter` 전체를 그대로 A6 `confirmationParameters[]`로 전송하던 예시
 - last synced: 2026-07-13
 - open questions:
-  - 없음
+  - duplicate-slot Agent payload는 GET에서 모든 `values[]`를 보존하지만 현재 A6 validator가 동일 slot identity를 거절하므로 실행 좌표 계약 확인이 필요함
 
 > Base path: `/api/v1/mi/next-gen/scenarios/{scenarioId}`
 > 대상 기능: 수급모델 실행 전, Agent가 파라미터를 제안하고 사용자가 검토·확정해 실행으로 넘기는 흐름.
@@ -122,16 +123,17 @@ modelFiles[]
 └── modelSheets[]
     └── modelTables[]
         └── parameters[]
-            ├── parameter   // A6 전송 대상
+            ├── parameter   // groupedRationales 제거 후 A6 전송
             └── rendering   // 화면 전용, A6 전송 제외
 ```
 
-- `parameter`는 `parameterName`, `modelTarget`, `rationale`, `values[]`를 가진 Agent flat parameter JSON field shape입니다.
+- `parameter`는 Agent flat parameter의 `parameterName`, `modelTarget`, parameter-level `rationale`, 원본 `values[]`를 모두 유지하고 화면 표시용 response-only `groupedRationales[]`를 추가한 shape입니다.
+- `groupedRationales[]`는 같은 `slotAxesFieldNames` 조합의 value-level rationale을 원래 순서대로 `\n` 연결한 표시용 projection입니다. 기존 parameter rationale이나 `values[]`를 대체하지 않습니다.
 - `rendering`은 `readMode`, `columns[]`, `semanticAxes`만 포함합니다.
 - 좌표는 tree path와 `parameter.modelTarget`에서 읽습니다. `rendering`에는 좌표를 반복하지 않습니다.
 - file/sheet/table/parameter 배열은 Agent payload의 최초 등장 순서를 유지합니다.
 - top-level `parameters`와 `parameterShapes`는 A4a 응답에 존재하지 않습니다.
-- 특정 proposal 상세 GET(D)의 기존 `parameters`/`modelFiles`/`parameterShapes` 응답은 변경되지 않습니다.
+- 특정 proposal 상세 GET(D)의 `parameters[]`에도 동일한 response-only `groupedRationales[]`가 추가됩니다. 기존 `modelFiles`/`parameterShapes`와 원본 parameter/value data는 유지됩니다.
 
 A4a execution input download:
 
@@ -146,7 +148,10 @@ A4a execution input download:
 const confirmationParameters = data.modelFiles.flatMap(file =>
   file.modelSheets.flatMap(sheet =>
     sheet.modelTables.flatMap(table =>
-      table.parameters.map(leaf => leaf.parameter)
+      table.parameters.map(leaf => {
+        const { groupedRationales, ...confirmationParameter } = leaf.parameter;
+        return confirmationParameter;
+      })
     )
   )
 );
@@ -157,11 +162,12 @@ const request = {
 };
 ```
 
-- 모든 leaf의 `parameter`만 tree 순서대로 flatten합니다.
+- 모든 leaf의 `parameter`를 tree 순서대로 flatten하되 화면 표시용 `groupedRationales`는 제거합니다.
 - 사용자가 편집하는 실행값은 각 value row의 `proposedValue`입니다.
-- `parameterName`, `modelTarget`, slot-axis key/value, `basecaseValue`, parameter/value `rationale`는 유지합니다.
-- `rendering`, file/sheet/table wrapper, checkbox/row index/validation message 같은 FE 전용 값은 보내지 않습니다.
+- `parameterName`, `modelTarget`, parameter-level `rationale`, 원본 `values[]`, dynamic slot-axis key/value, `basecaseValue`, `proposedValue`, `values[].rationale`는 유지합니다.
+- `groupedRationales`, `rendering`, file/sheet/table tree wrapper, checkbox/row index/validation message 같은 FE 표시/구조 전용 값은 A6 request에서 제외합니다.
 - F request wire contract는 이번 A4a 응답 변경으로 달라지지 않습니다.
+- duplicate slot row가 있더라도 FE가 `values[]`를 병합하거나 first/last 값을 선택해서 A6 validation을 우회하면 안 됩니다. 현재 A6는 duplicate slot identity를 거절하며 실행 좌표 의미는 별도 확인 대상입니다.
 
 ---
 
@@ -172,7 +178,7 @@ const request = {
 | 필드 | 설명 |
 |---|---|
 | `status` | FE 표시 상태 문자열 (Agent status 또는 BE overlay status) |
-| `parameters` / `modelFiles` | 제안/확정 파라미터와 계층 트리 |
+| `parameters` / `modelFiles` | 제안/확정 파라미터와 계층 트리. `parameters[]`에는 화면 표시용 `groupedRationales[]`가 추가됨 |
 | `failureReason` | 실패 사유 |
 | `modelParamProposalId` / `scenarioId` / `scenarioGroupId` / `eventId` | 식별자 |
 | `requestedAt` / `completedAt` | 요청 / 완료(또는 확정) 시각 |

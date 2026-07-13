@@ -24,6 +24,8 @@ import com.sk.domain.mi.dto.response.nextgen.ModelParamProposalAcceptRes;
 import com.sk.domain.mi.dto.response.nextgen.ModelParamProposalRes;
 import com.sk.domain.mi.dto.response.nextgen.ModelParamShape;
 import com.sk.domain.mi.dto.response.nextgen.ModelSheetNode;
+import com.sk.domain.mi.service.nextgen.paramproposal.ModelParameterResponseProjector;
+import com.sk.domain.mi.service.nextgen.paramproposal.ModelParameterResponseProjector.InvalidParameterPayloadException;
 import com.sk.domain.mi.service.nextgen.paramproposal.excel.ModelInputFile;
 import com.sk.domain.shared.client.ModelParamProposalAgentApi;
 import com.sk.domain.shared.client.dto.request.AgentModelParamConfirmationReq;
@@ -116,6 +118,7 @@ public class ModelParamProposalServiceImpl implements ModelParamProposalService 
     private final AuthorizationService authorizationService;
     private final TransactionOperations transactionOperations;
     private final ObjectMapper objectMapper;
+    private final ModelParameterResponseProjector modelParameterResponseProjector;
 
     @Override
     public ModelExecutionOptionsRes getModelExecutionOptions(Long scenarioId) {
@@ -752,7 +755,12 @@ public class ModelParamProposalServiceImpl implements ModelParamProposalService 
             case CONFIRMED -> proposal.getConfirmationParameters();
             case PROCESSING, FAILED -> null;
         };
-        return parseArrayOrEmpty(json);
+        JsonNode parameters = parseArrayOrEmpty(json);
+        try {
+            return modelParameterResponseProjector.projectParameterArray(parameters);
+        } catch (InvalidParameterPayloadException e) {
+            throw invalidAgentParameterJson();
+        }
     }
 
     private List<CurrentModelParamFileRes> buildCurrentModelFiles(
@@ -881,7 +889,18 @@ public class ModelParamProposalServiceImpl implements ModelParamProposalService 
             }
             values.add(objectMapper.convertValue(valueNode, DYNAMIC_VALUE_TYPE));
         }
-        return new CurrentModelParameterRes(parameterName, target, rationale, List.copyOf(values));
+        CurrentModelParameterRes parameter = new CurrentModelParameterRes(
+            parameterName,
+            target,
+            rationale,
+            null,
+            List.copyOf(values)
+        );
+        try {
+            return modelParameterResponseProjector.projectParameter(parameter);
+        } catch (InvalidParameterPayloadException e) {
+            throw currentParameterMismatch();
+        }
     }
 
     private String requiredText(JsonNode node) {
@@ -1154,8 +1173,15 @@ public class ModelParamProposalServiceImpl implements ModelParamProposalService 
             JsonNode node = objectMapper.readTree(json);
             return node != null && node.isArray() ? node : objectMapper.createArrayNode();
         } catch (JsonProcessingException e) {
-            throw AppErrorException.of(ResultCode.Error.API_RESPONSE_ERROR, "Agent proposal parameter JSON is invalid.");
+            throw invalidAgentParameterJson();
         }
+    }
+
+    private AppErrorException invalidAgentParameterJson() {
+        return AppErrorException.of(
+            ResultCode.Error.API_RESPONSE_ERROR,
+            "Agent proposal parameter JSON is invalid."
+        );
     }
 
     private String resolveFailureReason(AgentModelParamProposal proposal) {

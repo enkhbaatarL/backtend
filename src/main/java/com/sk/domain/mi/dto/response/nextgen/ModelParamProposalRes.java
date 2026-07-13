@@ -22,7 +22,7 @@ public record ModelParamProposalRes(
     @Schema(description = "FE 표시 상태. Agent status 또는 Backend overlay status", example = "PROPOSED")
     String status,
 
-    @Schema(description = "flat model parameter array")
+    @Schema(description = "Agent flat model parameter data에 response-only groupedRationales를 추가한 parameter array")
     JsonNode parameters,
 
     @Schema(description = "parameters의 modelTarget을 머지한 modelFile > modelSheet > tableName 계층")
