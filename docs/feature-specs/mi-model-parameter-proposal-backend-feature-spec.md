@@ -131,7 +131,7 @@ Agent `status`는 proposal 계산 상태이고 `callback_status`는 Agent→Back
 | `GET` | `/api/v1/mi/next-gen/scenarios/{scenarioId}/model-param-proposals` | 팝업 진입용 Scenario 기준 현재 파라미터 제안/확정/실행 상태 조회 |
 | `GET` | `/api/v1/mi/next-gen/scenarios/{scenarioId}/model-param-proposals/{modelParamProposalId}` | 상태 및 proposal 결과 조회 |
 | `GET` | `/api/v1/mi/next-gen/scenarios/{scenarioId}/model-param-proposals/stream` | proposal 완료/실패 SSE 신호 구독 |
-| `POST` | `/api/v1/mi/next-gen/scenarios/{scenarioId}/model-executions` (`application/json`) | 제안 대상: 확정값으로 Excel 생성 후 실행 접수 |
+| `POST` | `/api/v1/mi/next-gen/scenarios/{scenarioId}/model-executions/from-parameters` (`application/json`) | 제안 대상: 파라미터 확정 후 Excel 생성·실행 접수 |
 | `POST` | `/api/v1/mi/next-gen/scenarios/{scenarioId}/model-executions` (`multipart/form-data`) | 비대상: 사용자 Excel 3개 업로드 후 기존 실행 접수 |
 | `GET` | `/api/v1/mi/next-gen/scenarios/{scenarioId}/model-executions/latest/model-param-proposal/confirmed-parameters` | 가장 최근 수급모델 실행과 연결된 proposal의 현재 확정 파라미터 조회 |
 | `GET` | `/api/v1/mi/next-gen/scenarios/{scenarioId}/model-executions/latest/model-param-proposal/proposed-parameters` | 가장 최근 수급모델 실행의 원 Agent 제안 파라미터 조회 |
@@ -142,7 +142,7 @@ Agent `status`는 proposal 계산 상태이고 `callback_status`는 Agent→Back
 |---|---|---|
 | `POST` | `/api/v1/mi/next-gen/scenarios/{scenarioId}/model-param-proposals/callback` | Agent proposal 완료/실패 결과 수신 |
 
-두 `POST /model-executions` 계약은 모두 active contract다. Backend는 Scenario의 기반 Event에서 도출한 `inputMode`와 `Content-Type`의 일치를 검증한다. Spring mapping은 `consumes`로 구분한다.
+두 실행 접수 계약은 모두 active contract이며 path를 분리한다. Backend는 Scenario의 기반 Event에서 도출한 `inputMode`와 endpoint의 일치를 검증한다. JSON 파라미터 확정 실행은 `/model-executions/from-parameters`, multipart 파일 업로드 실행은 `/model-executions`만 사용한다. 기존 JSON path 사용자가 없음을 확인했으므로 구 JSON mapping은 deprecated alias 없이 즉시 제거한다.
 
 Agent-facing callback의 endpoint/path와 외부 URL은 Backend가 결정한다. Backend는 확정 URL을 Agent 팀에 전달하고, Agent는 `callbackBaseUrl + callbackPath` 등의 배포 설정값으로 등록한다. proposal request body로 callback 정보를 전달하는 방식은 현재 confirmed contract가 아니다.
 
@@ -435,7 +435,7 @@ Top-level fields:
 Compatibility and A6 mapping:
 
 - FE는 기존 top-level `parameters`, navigation-only `modelFiles`, `parameterShapes`를 production contract로 소비하지 않는다는 합의에 따라 동일 endpoint에서 새 tree로 in-place 교체한다. 실제 소비자가 발견되면 구현을 중단하고 version/additive migration 전략을 다시 합의한다.
-- A6 `POST .../model-executions` request는 `{ "modelParamProposalId": ..., "confirmationParameters": [...] }`를 유지한다.
+- A6 `POST .../model-executions/from-parameters` request는 `{ "modelParamProposalId": ..., "confirmationParameters": [...] }`를 유지한다.
 - FE는 모든 `data.modelFiles[].modelSheets[].modelTables[].parameters[].parameter`를 최초 tree 순서대로 flatten하되 response-only `groupedRationales`를 제거한 뒤 `confirmationParameters[]`로 보낸다.
 - tree wrapper와 `rendering`은 A6로 전송하지 않는다.
 - `groupedRationales`는 A6 request, Agent X2 confirmation, B1 callback, Agent 저장 JSON에 포함하지 않는다.
@@ -859,7 +859,7 @@ flat callback DTO는 Notion wrapper와 직접 충돌하므로 Agent 동의 전�
 
 ### 5.5 사용자 확정 및 Model Execution 접수
 
-`POST /api/v1/mi/next-gen/scenarios/{scenarioId}/model-executions`
+`POST /api/v1/mi/next-gen/scenarios/{scenarioId}/model-executions/from-parameters`
 
 - `Content-Type: application/json`
 - Backend→FE HTTP status: `202 Accepted`
@@ -1450,6 +1450,7 @@ FE가 반드시 처리해야 하는 최소 상태는 `PROCESSING`, `PROPOSED`, `
 
 ## 14. Change Log / Sync Note
 
+- 2026-07-13: **A6 JSON execution path 분리.** 동일한 `POST /model-executions`에 JSON/multipart 계약을 함께 노출할 때 SpringDoc/OpenAPI operation이 혼합되는 문제를 제거하기 위해 A6 JSON path를 `POST /scenarios/{scenarioId}/model-executions/from-parameters`로 이동했다. A7 multipart path는 기존 `/model-executions`를 유지한다. 기존 JSON path 사용자가 없음을 확인해 deprecated alias 없이 즉시 이동하며 request/response/permission/service/schema는 변경하지 않는다.
 - 2026-07-13: **`groupedRationales` grouping key를 rendering `SLOT` 축으로 한정.** 동일한 고정 설비 행의 시간별 rationale을 결합하도록 parameter master `basecase_column_roles`와 일치하는 slot axis만 key/output에 포함하고 `MATRIX_TIME_COLUMNS`의 `TIME_AXIS`(`Year`/`Month`/`Period` 등)는 제외한다. A4a/A4/A8/A9에 공통 적용하며 Agent 저장 JSON, A6/X2/B1 contract, schema는 변경하지 않는다.
 - 2026-07-13: **A4a/A4/A8/A9 response-only `groupedRationales` contract 추가.** 최초 계약은 parameter별 `slotAxesFieldNames` 전체 값으로 그룹핑하는 규칙이었으나 같은 날 SLOT-only grouping 결정으로 대체되었다. 최초 그룹/axis 순서와 원본 `values[]` 보존, rationale `\n` 결합, trim/dedup 금지, 숫자 canonicalization 규칙은 유지한다.
 - 2026-07-13: **A10을 A4a 성공 실행 파일 projection으로 병합.** 독립 `GET .../model-executions/latest/input-files` endpoint는 만들지 않는다. A4a는 자신이 선택한 최신 execution-preparation이 `EXECUTED_CONFIRMED`일 때만 같은 row의 `caseId`로 `executionInputFiles`를 반환하고, 그 외 상태에서는 `null`을 반환한다. 기존 `complete`/`missingFileRoles`/partial files 및 공통 File Management 다운로드 계약은 유지한다. A8/A9의 latest Case anchor는 변경하지 않는다.
@@ -1525,7 +1526,7 @@ Included:
 - `GET /scenarios/{scenarioId}/model-param-proposals`
 - `GET /scenarios/{scenarioId}/model-param-proposals/{id}`
 - proposal SSE signal 또는 polling fallback
-- `POST /scenarios/{scenarioId}/model-executions` JSON mock
+- `POST /scenarios/{scenarioId}/model-executions/from-parameters` JSON mock
 - mock DTO/enum/seed/state transition
 - `eventTypeL2Id` 제외 목록 기반 `PARAMETER_PROPOSAL`/`FILE_UPLOAD` 분기
 
