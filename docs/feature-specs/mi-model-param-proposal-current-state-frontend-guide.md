@@ -47,7 +47,7 @@ FE ──④ SSE 받으면 다시 ② GET──▶ 최신 상태로 화면 갱�
 
 | # | Method | Path (base 이하) | 용도 | FE 사용 시점 |
 |---|---|---|---|---|
-| A | GET | `/model-execution-options` | 입력 방식 + 기존 가격전망해석 초기화 영향 조회 | 팝업/버튼 노출 및 초기화 확인 판단 |
+| A | GET | `/model-execution-options` | 입력 방식 조회 | 팝업/버튼 노출 판단 |
 | B | POST | `/model-param-proposals` | 제안 생성 **요청 접수** | "제안 요청" 클릭 |
 | C | GET | `/model-param-proposals` | **현재 상태 조회 (핵심)** | 팝업 진입 / SSE 수신 후 |
 | D | GET | `/model-param-proposals/{modelParamProposalId}` | 특정 제안 상세 | 특정 제안 결과 상세 필요 시 |
@@ -63,8 +63,8 @@ FE ──④ SSE 받으면 다시 ② GET──▶ 최신 상태로 화면 갱�
 
 ## 2. 엔드포인트별 상세
 
-### A. GET `/model-execution-options` — 입력 방식·가격전망해석 영향 조회
-이 시나리오가 **파라미터 제안 대상인지 / 파일 업로드 대상인지**, 기존 가격전망해석 초기화 확인이 필요한지 판단.
+### A. GET `/model-execution-options` — 입력 방식 조회
+이 시나리오가 **파라미터 제안 대상인지 / 파일 업로드 대상인지** 판단.
 
 응답 (`ModelExecutionOptionsRes`):
 | 필드 | 예시 | 설명 |
@@ -73,20 +73,8 @@ FE ──④ SSE 받으면 다시 ② GET──▶ 최신 상태로 화면 갱�
 | `inputMode` | `PARAMETER_PROPOSAL` \| `FILE_UPLOAD` | 입력 방식 |
 | `parameterProposalAvailable` | true | 제안 기능 사용 가능 여부 |
 | `fileUploadAvailable` | false | 파일 업로드 사용 가능 여부 |
-| `hasPriceInterpretation` | true | 해당 시나리오의 비삭제 가격전망해석 row 존재 여부. 생성중/성공/실패 포함 |
-| `hasPriceInterpretationModification` | true | Agent 원본과 현재 공유본이 달라 현재 사용자 수정본이 존재하는지 여부. 작성자 필터 없이 타인 수정 포함 |
-| `priceInterpretationResetRequired` | true | 수급모델 실행 시 기존 해석 삭제 확인이 필요한지 여부 |
 
 > `inputMode`는 시나리오의 EventTypeL2로 BE가 판정합니다. `FILE_UPLOAD`면 이하 제안 API는 전부 `409`.
-
-`priceInterpretationResetRequired=true`이면 실행 전에 아래 팝업을 표시합니다.
-
-> 기존 수정 내역을 초기화하고 새로 생성하시겠습니까?
-
-- 취소: 실행 POST를 호출하지 않습니다.
-- 확인: F request의 `priceInterpretationResetConfirmed=true`로 호출합니다.
-- `hasPriceInterpretationModification`은 수정 이벤트 목록이나 과거 이력 존재를 뜻하지 않습니다. 현재 Agent 원본과 공유 최신본이 다른지 여부입니다.
-- GET 뒤 상태가 바뀔 수 있으므로 Backend는 실행 POST에서 다시 확인합니다. POST가 `BIZ_PRICE_INTERP_RESET_CONFIRMATION_REQUIRED`를 반환하면 options를 재조회하고 팝업을 다시 표시합니다.
 
 ---
 
@@ -171,7 +159,6 @@ const confirmationParameters = data.modelFiles.flatMap(file =>
 
 const request = {
   modelParamProposalId: data.modelParamProposalId,
-  priceInterpretationResetConfirmed: options.priceInterpretationResetRequired,
   confirmationParameters
 };
 ```
@@ -180,8 +167,8 @@ const request = {
 - 사용자가 편집하는 실행값은 각 value row의 `proposedValue`입니다.
 - `parameterName`, `modelTarget`, parameter-level `rationale`, 원본 `values[]`, dynamic slot-axis key/value, `basecaseValue`, `proposedValue`, `values[].rationale`는 유지합니다.
 - `groupedRationales`, `rendering`, file/sheet/table tree wrapper, checkbox/row index/validation message 같은 FE 표시/구조 전용 값은 A6 request에서 제외합니다.
-- F request에는 A에서 사용자가 확인한 결과인 `priceInterpretationResetConfirmed`를 함께 보냅니다. 기존 가격전망해석이 없으면 `false` 또는 생략할 수 있습니다.
-- 실행 접수가 성공하면 대상 시나리오의 기존 가격전망해석 Agent 원본과 현재 수정본은 삭제됩니다. 수급모델 실행이 가격전망해석을 자동 생성하지는 않으므로 새 수급모델 완료 뒤 가격전망해석 생성 기능을 별도로 사용합니다.
+- F request에는 가격전망해석 관련 확인 field를 보내지 않습니다. Backend가 최종 실행 등록 transaction에서 대상 시나리오의 active 가격전망해석 row가 있으면 자동 soft delete합니다.
+- 실행 접수가 성공하면 대상 시나리오의 기존 가격전망해석 row는 일반 조회에서 제외되고, Agent 원본과 현재 수정본은 삭제 row에 보존됩니다. 수급모델 실행이 가격전망해석을 자동 생성하거나 완료 run당 1회 생성 규칙을 검증하지는 않으므로, 새 수급모델 완료 뒤 가격전망해석 도메인의 생성 기능을 별도로 사용합니다.
 - duplicate slot row가 있더라도 FE가 `values[]`를 병합하거나 first/last 값을 선택해서 A6 validation을 우회하면 안 됩니다. 현재 A6는 duplicate slot identity를 거절하며 실행 좌표 의미는 별도 확인 대상입니다.
 
 ---
@@ -292,7 +279,6 @@ EXECUTED_CONFIRMED  (종료)
 | 시나리오/제안 리소스 없음 | `404` | `RSC_NOT_FOUND` |
 | Agent 통신 타임아웃/실패 | `5xx` | `API_TIMEOUT` 등. 타임아웃 시 요청은 접수 상태 유지될 수 있음 |
 | payload 없음/파싱 실패, parameter/rendering 누락·중복·좌표 불일치 | `409` | `BIZ_RULE_VIOLATION` (불완전 tree를 반환하지 않음) |
-| 기존 가격전망해석이 있으나 초기화 확인 없이 실행 | `409` | `BIZ_PRICE_INTERP_RESET_CONFIRMATION_REQUIRED`; options 재조회 후 팝업 재표시 |
 
 > 타임아웃(`API_TIMEOUT`)으로 POST가 실패해도 BE가 요청을 `REQUESTING`으로 유지하는 경우가 있어,
 > **재시도 전 GET(C)로 현재 상태를 먼저 확인**하는 것이 안전합니다.

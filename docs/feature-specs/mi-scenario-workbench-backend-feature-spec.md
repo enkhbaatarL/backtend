@@ -47,7 +47,7 @@
 | Design scenario generation 결과 조회 | 구현 완료 (real DB/Agent 연동) | `GET /design/generate/{requestId}/scenarios` |
 | Design scenario generation callback | 구현 완료, 운영 배포 확인 | `POST /design/callback`. Redis 기반 failure cache, SSE 발행까지 확인됨(2026-06-30) |
 | MI 수급모델 실행 | 구현 완료 (real DB, 2026-06-19) | `tmd_mdl_scnrcasem`/`tmd_mdl_scnrcaseh` 통합 저장, timeout scheduler 코드 구현 완료(2026-06-22, feature flag 기본 비활성) |
-| 가격전망해석 | 구현 완료, 재실행 초기화 연계 미반영 | 생성뿐 아니라 시나리오별 공유 최신본 수정/Agent 원본 초기화 API가 존재한다. 수급모델 재실행 사전 영향 조회와 접수 시 삭제는 2026-07-14 계약 추가, 구현 대기 |
+| 가격전망해석 | 구현 완료, 재실행 초기화 연계 미반영 | 생성뿐 아니라 시나리오별 공유 최신본 수정/Agent 원본 초기화 API가 존재한다. 수급모델 실행 final transaction의 대상 Scenario active row 자동 soft delete는 2026-07-14 계약 확정, 구현 대기 |
 | Fundamental model | 구현 완료 (real DB, 2026-06-05~2026-06-19) | case CRUD/run/callback/Volumes/Trade Flows/Price 모두 real DB. 상세는 `mi-fundamental-model-mock-api-feature-spec.md` §12 참고 |
 | Scenario 생성 (직접 생성, Design generation과 별개) | 미구현 | 본 문서의 설계 범위만 유지 |
 
@@ -953,26 +953,23 @@ Dispatch accept response:
 - 실행 접수는 새 case row와 run history row를 생성하고 즉시 `RUNNING` 상태로 시작한다. 별도 `PENDING` 단계는 두지 않는다.
 - 상태 조회와 callback은 backend 발급 `runId` 를 기준으로 한다.
 - callback은 실행 상태 전이만 담당하며 scenario 상세조회용 결과 데이터 생성 또는 materialization은 담당하지 않는다.
-- 재실행 전에 기존 가격전망해석과 현재 수정본 존재 여부를 조회하고, 기존 해석이 있으면 사용자 확인 후 해당 시나리오의 해석을 삭제하면서 새 실행을 접수한다.
+- 최종 실행 등록 transaction에서 active 가격전망해석 row가 있으면 해당 시나리오의 해석을 soft delete하면서 새 실행을 접수한다.
 
 ## 7.2 API Sequence
 
 ### Flow A. MI 수급모델 실행 접수
 
-1. Frontend는 팝업 진입 시 `GET /api/v1/mi/next-gen/scenarios/{scenarioId}/model-execution-options`를 호출한다.
-2. `priceInterpretationResetRequired=true`이면 `기존 수정 내역을 초기화하고 새로 생성하시겠습니까?` 안내 팝업을 표시한다.
-3. 사용자가 취소하면 실행 POST를 호출하지 않는다. 확인하면 request에 `priceInterpretationResetConfirmed=true`를 전달한다.
-4. 사용자가 시나리오 1개와 입력 파일 3개를 선택한다.
-5. `POST /api/v1/mi/next-gen/scenarios/{scenarioId}/model-executions`를 `multipart/form-data`로 호출한다. 파라미터 제안 방식은 `POST .../model-executions/from-parameters`를 사용하며 같은 확인 규칙을 적용한다.
-6. backend는 `scenarioId` 존재 여부, 실행 가능 여부, 입력 mode와 active 가격전망해석 존재 여부를 확인한다. active 해석이 있는데 확인값이 없으면 `409 Conflict`로 거절한다.
-7. backend는 동일 `scnr_id` 기준 `RUNNING` case가 있으면 중복 실행으로 거절한다.
-8. backend는 입력 파일 3개를 검증하고 storage(S3)에 업로드한다. 업로드 실패 시 이미 올라간 파일을 보상 삭제한다.
-9. 최종 실행 등록 transaction에서 active 가격전망해석을 다시 조회한다. 확인값이 `true`면 대상 시나리오의 active 가격전망해석 row를 삭제한다.
-10. 같은 transaction에서 `tmd_mdl_scnrcasem`에 `exec_type_cd = 'SCENARIO'`, `scnr_id = :scenarioId`, `case_stat_cd = 'RUNNING'` row를 생성한다.
-11. backend는 입력 파일을 `tcm_filel(file_rel_obj_spt_cd = 'SCNRCASE', file_rel_obj_dstg_no = case_id)`로 연결한다.
-12. backend는 `runId`를 발급하고 `tmd_mdl_scnrcaseh`에 `exec_stat_cd = 'RUNNING'` row를 생성한다.
-13. backend는 `run_seq`를 조회한 뒤 Kubernetes Job 또는 외부 모델 실행에 `caseId`, `runId`, `runSeq`, callback URL, 입력 파일 참조를 전달한다.
-14. 응답은 `caseId`, `scenarioId`, `runId`, `status = RUNNING`, 업로드 파일 참조, 상태 조회 endpoint를 반환한다.
+1. 사용자가 시나리오 1개와 입력 파일 3개를 선택한다.
+2. `POST /api/v1/mi/next-gen/scenarios/{scenarioId}/model-executions`를 `multipart/form-data`로 호출한다. 파라미터 제안 방식은 `POST .../model-executions/from-parameters`를 사용한다.
+3. backend는 `scenarioId` 존재 여부, 실행 가능 여부와 입력 mode를 확인한다.
+4. backend는 동일 `scnr_id` 기준 `RUNNING` case가 있으면 중복 실행으로 거절한다.
+5. backend는 입력 파일 3개를 검증하고 storage(S3)에 업로드한다. 업로드 실패 시 이미 올라간 파일을 보상 삭제한다.
+6. 최종 실행 등록 transaction에서 대상 시나리오의 active 가격전망해석 row를 write lock으로 조회한다. row가 있으면 `del_yn='Y'`로 soft delete하고 없으면 no-op으로 처리한다.
+7. 같은 transaction에서 `tmd_mdl_scnrcasem`에 `exec_type_cd = 'SCENARIO'`, `scnr_id = :scenarioId`, `case_stat_cd = 'RUNNING'` row를 생성한다.
+8. backend는 입력 파일을 `tcm_filel(file_rel_obj_spt_cd = 'SCNRCASE', file_rel_obj_dstg_no = case_id)`로 연결한다.
+9. backend는 `runId`를 발급하고 `tmd_mdl_scnrcaseh`에 `exec_stat_cd = 'RUNNING'` row를 생성한다.
+10. backend는 `run_seq`를 조회한 뒤 Kubernetes Job 또는 외부 모델 실행에 `caseId`, `runId`, `runSeq`, callback URL, 입력 파일 참조를 전달한다.
+11. 응답은 `caseId`, `scenarioId`, `runId`, `status = RUNNING`, 업로드 파일 참조, 상태 조회 endpoint를 반환한다.
 
 ### Flow B. MI 수급모델 실행 상태 조회
 
@@ -1004,19 +1001,18 @@ Dispatch accept response:
 
 ## 7.2.2 Execution Re-Submission Rule
 
-> 가격전망해석 무효화 lifecycle의 정본은 `docs/design-docs/gas/price-forecast-interpretation-domain-design.md`, exact API field/error contract의 정본은 `docs/feature-specs/mi-model-parameter-proposal-backend-feature-spec.md` 5.0/5.5/5.8이다. 이 절은 F4 실행 접수와 같은 transaction에 참여해야 한다는 경계만 요약한다.
+> 가격전망해석 무효화 lifecycle의 정본은 `docs/design-docs/gas/price-forecast-interpretation-domain-design.md`다. API shape는 변경하지 않으며, 이 절은 F4 실행 접수와 같은 transaction에 참여해야 한다는 경계만 요약한다.
 
 - scenario 기준 active execution은 최대 1건만 허용한다.
 - `scnr_id` 기준 `RUNNING` row가 있으면 새 접수를 거절한다.
 - latest case가 `COMPLETED` 또는 `FAILED` 이면 새 접수를 허용한다.
 - 재접수는 기존 row update가 아니라 새 입력 파일 3개 업로드 + 새 `tmd_mdl_scnrcasem` row + 새 `tmd_mdl_scnrcaseh` row insert다.
 - 동시성 최후 방어선은 `actv_scnr_id` generated column + `UNIQUE (actv_scnr_id)` 이다.
-- 재접수 영향 조회는 기존 `GET .../model-execution-options`가 담당한다. active 가격전망해석 row 존재 시 `hasPriceInterpretation=true`, 현재 Agent 원본과 공유 최신본이 다르면 `hasPriceInterpretationModification=true`, 삭제 확인이 필요하면 `priceInterpretationResetRequired=true`를 반환한다.
-- `hasPriceInterpretationModification`은 현재 수정본 존재 여부이며 별도 수정 history 조회가 아니다. 가격전망해석은 작성자별 소유가 아닌 공유 row이므로 타인 수정도 같은 판정에 포함한다.
-- 두 실행 POST는 `priceInterpretationResetConfirmed`를 수용한다. active 가격전망해석이 있고 값이 `false`이면 `409 BIZ_PRICE_INTERP_RESET_CONFIRMATION_REQUIRED`로 거절한다.
-- 확인값이 `true`이면 해당 `scenarioId`의 active 가격전망해석 row 삭제와 새 Case/Run 생성을 같은 transaction에서 수행한다. 실패 시 둘 다 rollback한다.
+- 두 실행 POST의 request/response 계약은 변경하지 않는다. 가격전망해석 존재 여부를 options API에 추가하지 않고 사용자 확인값도 받지 않는다.
+- 최종 실행 등록 transaction에서 해당 `scenarioId`의 active 가격전망해석 row를 조회한다. row가 있으면 soft delete하고 없으면 no-op으로 처리한 뒤 새 Case/Run을 생성하며, 실패 시 모두 rollback한다.
 - 삭제 범위는 재실행 대상 시나리오 한 건이다. 같은 Scenario Group의 다른 시나리오 해석은 유지한다.
 - 수급모델 재실행은 가격전망해석 Agent 생성을 자동 호출하지 않는다. 새 실행 완료 뒤 기존 가격전망해석 생성 API를 별도로 호출한다.
+- 가격전망해석의 완료 run당 1회 생성 제한, Agent 요청, callback 처리는 가격전망해석 도메인 책임이다. F4는 해당 규칙을 검증하지 않고 실행 등록 시 active row 조회·삭제만 담당한다.
 
 ## 7.2.3 Execution Status, Duplicate, And Timeout Rule
 
@@ -1081,7 +1077,6 @@ Dispatch accept response:
 
 - `scenarioId` path variable
 - `files` (`@RequestPart`) — 입력 파일 3개
-- `priceInterpretationResetConfirmed` — optional boolean multipart field, 기본값 `false`
 - `requestedBy` 는 인증 컨텍스트에서 추출
 
 #### Validation
@@ -1092,7 +1087,7 @@ Dispatch accept response:
 - 동일 `scnr_id` 기준 `RUNNING` row가 있으면 중복 접수로 거절한다.
 - 업로드 실패 시 이미 올라간 파일을 보상 삭제한다.
 - 동일 scenario의 active execution 중복 차단은 application validation과 DB unique helper로 함께 보장한다.
-- active 가격전망해석이 있으면 `priceInterpretationResetConfirmed=true`여야 한다. Backend는 file staging 전 선확인과 최종 transaction 재확인을 모두 수행한다.
+- 최종 실행 등록 transaction에서 active 가격전망해석이 있으면 자동 soft delete한 뒤 Case/Run을 생성한다.
 
 #### External model / Job handoff draft
 
@@ -1174,13 +1169,12 @@ Dispatch accept response:
 - 존재하지 않는 `runId`
 - path `scenarioId` 와 `runId` 의 case/scenario 연결 불일치
 - 장시간 callback 미도착으로 timeout 처리된 execution
-- 기존 가격전망해석이 있으나 `priceInterpretationResetConfirmed`가 누락되거나 `false`인 재실행 요청
 
 ## 7.5 Swagger Annotation Recommendation
 
 - `summary`: `MI 수급모델 실행 접수`
 - `description`: `선택한 scenario에 입력 파일 3개를 업로드하고 통합 case/run 실행을 RUNNING 상태로 접수합니다.`
-- 실행 접수 description에는 기존 가격전망해석이 있으면 확인값이 필요하며, 접수 시 해당 시나리오의 Agent 원본/현재 수정본이 삭제된다는 내용을 포함한다.
+- 실행 접수 description에는 기존 가격전망해석이 있으면 접수 transaction에서 해당 시나리오의 Agent 원본/현재 수정본 row를 soft delete한다는 내용을 포함한다.
 - `summary`: `MI 수급모델 실행 상태 조회`
 - `description`: `runId 기준으로 MI 수급모델 실행 상태를 polling 용도로 조회합니다.`
 - `next-gen` slice에는 별도 callback endpoint를 노출하지 않는다.
@@ -1194,9 +1188,9 @@ Dispatch accept response:
 - 입력 파일 3개는 `tcm_filel` 의 `SCNRCASE + case_id` 관계로 보관한다.
 - 공유 callback은 `tmd_mdl_scnrcaseh.exec_stat_cd` 와 latest run일 때 `tmd_mdl_scnrcasem.case_stat_cd` 를 terminal 상태로 갱신한다.
 - scenario 상세조회용 결과 데이터는 execution status row와 분리된 read source를 가진다.
-- 가격전망해석은 `tmm_mi_scenario_prc_interp_m` 한 row에 Agent 원본과 현재 공유 수정본을 함께 보관한다. 재실행 접수 시 대상 시나리오의 active row를 제거하므로 별도 수정 history table 삭제는 없다.
-- 현재 `(scenario_id, del_yn)` unique 제약에서 재실행을 반복해도 soft-deleted row가 중복되지 않도록 재실행 무효화는 물리 삭제를 기본안으로 한다. Scenario Group 삭제의 기존 soft-delete 정책은 변경하지 않는다.
-- 신규 table/column은 필요하지 않다. 실제 DB 제약과 delete 권한은 구현 전 확인한다.
+- 가격전망해석은 `tmm_mi_scenario_prc_interp_m` 한 row에 Agent 원본과 현재 공유 수정본을 함께 보관한다. 재실행 접수 시 대상 시나리오의 active row 전체를 soft delete하므로 별도 수정 history table 삭제는 없다.
+- 재실행 무효화는 `del_yn='Y'` soft delete를 사용한다. 반복 삭제 row 보존과 active row 최대 1건을 함께 만족하는 functional unique의 DB 적용이 완료됐다.
+- 정확한 제약식과 DBA rollout은 `docs/design-docs/gas/price-forecast-interpretation-erd-ddl-draft.md`를 따른다.
 
 ## 7.7 Recommended Data Access Approach
 
@@ -1223,7 +1217,6 @@ Dispatch accept response:
 - Job dispatch 실패 시 transaction 경계와 파일 보상 범위
 - callback 완료 전 결과 row 존재를 backend가 검증할지 여부
 - scenario lifecycle cancellation과 model execution submit이 동시에 발생할 때 신규 RUNNING case가 cancellation 대상 밖에 생성되지 않도록 scenario row lock 또는 동등한 serialization 규칙이 필요하다.
-- 가격전망해석 callback에 generation/source correlation이 없어 삭제 전 요청의 지연 callback이 이후 새 `GENERATING` row에 반영될 수 있다. 상세 위험과 대안은 `price-forecast-interpretation-domain-design.md` 7.2절을 따른다.
 - scheduler flag가 비활성인 환경에서는 Job cleanup SLA가 보장되지 않는다. production 활성화 전 DBA index 검증, dedicated single-replica 조건, Kubernetes RBAC를 함께 충족해야 한다.
 
 ## 7.10 Exit Criteria / Handoff
@@ -1232,7 +1225,7 @@ Dispatch accept response:
 - 스키마/DBA rollout 상세는 [scenario-case-execution-erd-ddl-draft.md](../design-docs/gas/scenario-case-execution-erd-ddl-draft.md)를 따른다.
 - timeout scheduler는 코드 구현 완료(2026-06-22)됐으며, DBA index 검증 전까지 feature flag 기본 비활성 상태로 운영 활성화만 남아 있다.
 - scenario lifecycle cancellation과 Kubernetes active Job reconciliation은 설계 확정, 구현 대기 상태다. API path/response shape와 schema는 변경하지 않는다.
-- 가격전망해석 재실행 영향 조회/확인/삭제 API 계약은 2026-07-14 확정됐다. 조회 slice는 구현 가능하고 schema 변경은 없다. 삭제 mutation의 production 적용은 stale callback correlation 정책 확정 전까지 blocked이며, 이후 두 실행 접수 경로가 공통 transaction 경계를 사용해야 한다.
+- 가격전망해석 자동 soft-delete 내부 실행 계약과 반복 soft delete용 functional unique DB 적용은 2026-07-14 완료됐다. 두 실행 접수 경로가 공통 transaction 경계를 사용하며 mutation 구현은 ready다. 완료 run당 1회 생성과 가격전망해석 callback lifecycle은 해당 도메인 담당자의 별도 책임이다.
 
 ## 8. Recommended Build Order
 
@@ -1461,7 +1454,7 @@ Dispatch accept response:
 - `F3`, `F4` 는 command service + transaction 중심 구현
 - `F5` 는 read/query와 execution/file download 책임을 분리 구현
 - 모든 API는 `BaseResponse<T>` 래퍼 사용
-- MI 수급모델 실행 workflow는 `실행 option/가격전망해석 영향 조회 -> 필요 시 초기화 확인 -> 입력 파일 준비 및 실행 접수 -> 실행 상태 조회 -> 실행 완료 콜백` 계약을 따른다.
+- MI 수급모델 실행 workflow는 `입력 파일 준비 -> final transaction의 기존 가격전망해석 자동 soft delete 및 실행 접수 -> 실행 상태 조회 -> 실행 완료 콜백` 계약을 따른다.
 - MI 수급모델 실행은 latest execution이 `RUNNING` 이면 중복 접수를 차단하고, terminal 상태면 새 case/run을 생성하는 규칙을 따른다.
 - fundamental model workflow는 `목록 조회 -> 실행 -> output 조회 -> 파일 다운로드` 4단계 계약을 따른다.
 
