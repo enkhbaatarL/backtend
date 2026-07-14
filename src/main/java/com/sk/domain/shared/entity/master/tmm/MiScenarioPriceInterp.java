@@ -13,7 +13,6 @@ import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
-import jakarta.persistence.UniqueConstraint;
 import java.time.Duration;
 import java.time.LocalDateTime;
 import lombok.AccessLevel;
@@ -26,9 +25,11 @@ import org.hibernate.annotations.Comment;
 /**
  * 시나리오별 가격전망 해석
  *
- * 시나리오 1 : 활성 가격전망해석 1 (논리 규칙). soft delete를 고려해 유니크는 (scenario_id, del_yn) 복합키다 —
- * 삭제된 row(del_yn=Y)와 새 활성 row(del_yn=N)가 공존할 수 있어 재생성 시 중복키가 나지 않는다.
- * 따라서 물리적으로는 시나리오당 row가 복수일 수 있어 매핑은 ManyToOne이다 (MiSignpost와 동일 패턴).
+ * 시나리오 1 : 활성 가격전망해석 1 (논리 규칙). 이 규칙은 DB의 함수 기반 유니크 인덱스
+ * (scenario_id, case when del_yn = 'N' then 'N' end)가 강제한다 — 활성 row(del_yn=N)는 키 값이 (scenario_id, 'N')이라 시나리오당 1개만 허용되고, 삭제 row(del_yn=Y)는 키 값이 NULL이라
+ * 유니크 검사 대상에서 빠져 무제한 공존한다. 수급모델 재실행에 따른 soft delete가 반복돼도 충돌하지 않는다.
+ * 함수 기반 인덱스는 JPA 어노테이션으로 표현할 수 없어 @Table에 유니크를 선언하지 않는다 (DDL이 원본).
+ * 물리적으로는 시나리오당 row가 복수일 수 있어 매핑은 ManyToOne이다 (MiSignpost와 동일 패턴).
  *
  * Agent 생성 원본(generatedContent)과 사용자 수정본(currentContent)을 함께 보관한다.
  * 초기화는 Agent 재호출 없이 currentContent = generatedContent로 복원한다.
@@ -43,12 +44,7 @@ import org.hibernate.annotations.Comment;
 @Getter
 @Entity
 @Comment("시나리오별 가격전망 해석")
-@Table(
-    name = "tmm_mi_scenario_prc_interp_m",
-    uniqueConstraints = {
-        @UniqueConstraint(name = "tmm_mi_scenario_prc_interp_m_uq01", columnNames = {"scenario_id", "del_yn"})
-    }
-)
+@Table(name = "tmm_mi_scenario_prc_interp_m")
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 public class MiScenarioPriceInterp extends BaseEntity {
 
