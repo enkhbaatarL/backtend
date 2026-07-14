@@ -1,7 +1,8 @@
 package com.sk.domain.mi.dto.response.nextgen;
 
-import com.fasterxml.jackson.databind.JsonNode;
+import com.sk.domain.shared.enums.nextgen.ModelParamParameterSource;
 import io.swagger.v3.oas.annotations.media.Schema;
+import java.util.List;
 
 public record LatestModelParamProposalParametersRes(
 
@@ -17,8 +18,18 @@ public record LatestModelParamProposalParametersRes(
     @Schema(description = "Agent model parameter proposal ID", example = "10001")
     Long modelParamProposalId,
 
-    @Schema(description = "Agent flat model parameter data에 response-only groupedRationales를 추가한 parameter array")
-    JsonNode parameters
+    @Schema(
+        description = "반환 파라미터 출처",
+        implementation = ModelParamParameterSource.class,
+        example = "CONFIRMATION_PARAMETERS"
+    )
+    ModelParamParameterSource parameterSource,
+
+    @Schema(
+        description = "A4a와 동일한 modelFile > modelSheet > modelTable > parameter/rendering tree",
+        requiredMode = Schema.RequiredMode.REQUIRED
+    )
+    List<CurrentModelParamFileRes> modelFiles
 
 ) {
 }

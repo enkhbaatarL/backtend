@@ -7,12 +7,13 @@
 - owner: Shared
 - source documents:
   - `docs/feature-specs/mi-model-parameter-proposal-backend-feature-spec.md`
+  - `docs/design-docs/gas/price-forecast-interpretation-domain-design.md`
 - depends on:
   - `docs/design-docs/gas/mi-model-parameter-proposal-design.md`
 - supersedes:
   - 이 문서의 이전 A4a top-level `parameters`/navigation-only `modelFiles`/`parameterShapes` 안내
   - A4a `leaf.parameter` 전체를 그대로 A6 `confirmationParameters[]`로 전송하던 예시
-- last synced: 2026-07-13
+- last synced: 2026-07-14
 - open questions:
   - duplicate-slot Agent payload는 GET에서 모든 `values[]`를 보존하지만 현재 A6 validator가 동일 slot identity를 거절하므로 실행 좌표 계약 확인이 필요함
 
@@ -46,12 +47,12 @@ FE ──④ SSE 받으면 다시 ② GET──▶ 최신 상태로 화면 갱�
 
 | # | Method | Path (base 이하) | 용도 | FE 사용 시점 |
 |---|---|---|---|---|
-| A | GET | `/model-execution-options` | 입력 방식(제안 대상 여부) 조회 | 팝업/버튼 노출 판단 |
+| A | GET | `/model-execution-options` | 입력 방식 조회 | 팝업/버튼 노출 판단 |
 | B | POST | `/model-param-proposals` | 제안 생성 **요청 접수** | "제안 요청" 클릭 |
 | C | GET | `/model-param-proposals` | **현재 상태 조회 (핵심)** | 팝업 진입 / SSE 수신 후 |
 | D | GET | `/model-param-proposals/{modelParamProposalId}` | 특정 제안 상세 | 특정 제안 결과 상세 필요 시 |
 | E | GET | `/model-param-proposals/stream` | SSE 구독 (text/event-stream) | 진행 중 상태일 때 |
-| F | POST | `/model-executions` | 확정 파라미터로 **수급모델 실행 트리거** | 확정 후 실행 |
+| F | POST | `/model-executions/from-parameters` | 확정 파라미터로 **수급모델 실행 트리거** | 확정 후 실행 |
 | — | POST | `/model-param-proposals/callback` | **Agent→BE 콜백** (FE 사용 X) | — |
 
 > F가 확정→실행을 트리거하면, 이 API 묶음이 그 결과를 `currentState`(`CONFIRMED_PENDING_EXECUTION`/`EXECUTING`/`EXECUTED_CONFIRMED`)로 반영해 보여줍니다.
@@ -166,7 +167,8 @@ const request = {
 - 사용자가 편집하는 실행값은 각 value row의 `proposedValue`입니다.
 - `parameterName`, `modelTarget`, parameter-level `rationale`, 원본 `values[]`, dynamic slot-axis key/value, `basecaseValue`, `proposedValue`, `values[].rationale`는 유지합니다.
 - `groupedRationales`, `rendering`, file/sheet/table tree wrapper, checkbox/row index/validation message 같은 FE 표시/구조 전용 값은 A6 request에서 제외합니다.
-- F request wire contract는 이번 A4a 응답 변경으로 달라지지 않습니다.
+- F request에는 가격전망해석 관련 확인 field를 보내지 않습니다. Backend가 최종 실행 등록 transaction에서 대상 시나리오의 active 가격전망해석 row가 있으면 자동 soft delete합니다.
+- 실행 접수가 성공하면 대상 시나리오의 기존 가격전망해석 row는 일반 조회에서 제외되고, Agent 원본과 현재 수정본은 삭제 row에 보존됩니다. 수급모델 실행이 가격전망해석을 자동 생성하거나 완료 run당 1회 생성 규칙을 검증하지는 않으므로, 새 수급모델 완료 뒤 가격전망해석 도메인의 생성 기능을 별도로 사용합니다.
 - duplicate slot row가 있더라도 FE가 `values[]`를 병합하거나 first/last 값을 선택해서 A6 validation을 우회하면 안 됩니다. 현재 A6는 duplicate slot identity를 거절하며 실행 좌표 의미는 별도 확인 대상입니다.
 
 ---

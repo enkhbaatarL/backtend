@@ -1,10 +1,12 @@
 package com.sk.domain.shared.repository.master.tmm;
 
 import com.sk.domain.shared.entity.master.tmm.MiScenarioPriceInterp;
+import jakarta.persistence.LockModeType;
 import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Lock;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
@@ -34,6 +36,17 @@ public interface MiScenarioPriceInterpRepository extends JpaRepository<MiScenari
         """)
     Optional<MiScenarioPriceInterp> findActiveByGroupIdAndScenarioId(@Param("scenarioGroupId") Long scenarioGroupId,
                                                                      @Param("scenarioId") Long scenarioId);
+
+    /**
+     * 수급모델 실행 전 단일 시나리오의 활성 가격전망 해석을 write lock으로 조회한다.
+     */
+    @Lock(LockModeType.PESSIMISTIC_WRITE)
+    @Query("""
+        select p from MiScenarioPriceInterp p
+        where p.scenario.scenarioId = :scenarioId
+          and p.isDeleted = false
+        """)
+    Optional<MiScenarioPriceInterp> findActiveByScenarioIdForUpdate(@Param("scenarioId") Long scenarioId);
 
     /**
      * 여러 시나리오의 가격전망 해석 (생성 착수·접수 실패 복구용 일괄 조회).

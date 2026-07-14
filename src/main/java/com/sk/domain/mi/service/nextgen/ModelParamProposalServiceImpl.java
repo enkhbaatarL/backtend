@@ -1,20 +1,13 @@
 package com.sk.domain.mi.service.nextgen;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.sk.common.enums.ResultCode;
 import com.sk.common.exception.AppErrorException;
 import com.sk.common.exception.AppHttpStatusException;
 import com.sk.domain.mi.dto.response.nextgen.CurrentModelParamFileRes;
-import com.sk.domain.mi.dto.response.nextgen.CurrentModelParamLeafRes;
 import com.sk.domain.mi.dto.response.nextgen.CurrentModelParamProposalRes;
-import com.sk.domain.mi.dto.response.nextgen.CurrentModelParamRenderingRes;
-import com.sk.domain.mi.dto.response.nextgen.CurrentModelParamSheetRes;
-import com.sk.domain.mi.dto.response.nextgen.CurrentModelParamTableRes;
-import com.sk.domain.mi.dto.response.nextgen.CurrentModelParamTargetRes;
-import com.sk.domain.mi.dto.response.nextgen.CurrentModelParameterRes;
 import com.sk.domain.mi.dto.response.nextgen.ModelExecutionInputFilesRes;
 import com.sk.domain.mi.dto.response.nextgen.ModelExecutionOptionsRes;
 import com.sk.domain.mi.dto.response.nextgen.ModelFileNode;
@@ -29,6 +22,8 @@ import com.sk.domain.mi.service.nextgen.paramproposal.ModelParamSlotAxisResolver
 import com.sk.domain.mi.service.nextgen.paramproposal.ModelParamSlotAxisResolver.InvalidSlotAxisMetadataException;
 import com.sk.domain.mi.service.nextgen.paramproposal.ModelParameterResponseProjector;
 import com.sk.domain.mi.service.nextgen.paramproposal.ModelParameterResponseProjector.InvalidParameterPayloadException;
+import com.sk.domain.mi.service.nextgen.paramproposal.ModelParameterTreeProjector;
+import com.sk.domain.mi.service.nextgen.paramproposal.ModelParameterTreeProjector.InvalidModelParameterTreeException;
 import com.sk.domain.mi.service.nextgen.paramproposal.excel.ModelInputFile;
 import com.sk.domain.mi.service.nextgen.query.ModelExecutionInputFilesProjector;
 import com.sk.domain.shared.client.ModelParamProposalAgentApi;
@@ -93,8 +88,6 @@ import org.springframework.web.client.RestClientResponseException;
 @Transactional(readOnly = true)
 public class ModelParamProposalServiceImpl implements ModelParamProposalService {
 
-    private static final TypeReference<Map<String, Object>> DYNAMIC_VALUE_TYPE = new TypeReference<>() {};
-
     private static final List<ModelExecutionPreparationStatus> REQUEST_CREATE_TRANSITION_FROM = List.of(
         ModelExecutionPreparationStatus.REQUESTING,
         ModelExecutionPreparationStatus.PROPOSAL_PENDING
@@ -124,6 +117,7 @@ public class ModelParamProposalServiceImpl implements ModelParamProposalService 
     private final ObjectMapper objectMapper;
     private final ModelParameterResponseProjector modelParameterResponseProjector;
     private final ModelParamSlotAxisResolver modelParamSlotAxisResolver;
+    private final ModelParameterTreeProjector modelParameterTreeProjector;
     private final ModelExecutionInputFilesProjector modelExecutionInputFilesProjector;
 
     @Override
@@ -472,7 +466,7 @@ public class ModelParamProposalServiceImpl implements ModelParamProposalService 
             runId,
             modelExecutionStatus,
             executionInputFiles,
-            buildCurrentModelFiles(parameterSource, proposal),
+            projectCurrentModelFiles(parameterSource, proposal),
             failureReason,
             requestedAt,
             proposal == null ? null : proposal.getProposalCompletedAt(),
@@ -852,7 +846,7 @@ public class ModelParamProposalServiceImpl implements ModelParamProposalService 
         return List.copyOf(axes);
     }
 
-    private List<CurrentModelParamFileRes> buildCurrentModelFiles(
+    private List<CurrentModelParamFileRes> projectCurrentModelFiles(
         ModelParamParameterSource parameterSource,
         AgentModelParamProposal proposal
     ) {
@@ -868,177 +862,11 @@ public class ModelParamProposalServiceImpl implements ModelParamProposalService 
             case PROPOSAL_PARAMETERS -> proposal.getProposalParameters();
             case CONFIRMATION_PARAMETERS -> proposal.getConfirmationParameters();
         };
-        List<CurrentModelParameterRes> parameters = parseCurrentParameters(json);
-        Map<String, List<MiModelParam>> mastersByName = miModelParamRepository
-            .findByParameterNameInAndIsDeletedFalse(parameters.stream()
-                .map(CurrentModelParameterRes::parameterName)
-                .collect(Collectors.toCollection(LinkedHashSet::new)))
-            .stream()
-            .collect(Collectors.groupingBy(
-                MiModelParam::getParameterName,
-                LinkedHashMap::new,
-                Collectors.toList()
-            ));
-
-        Map<String, Map<String, Map<String, List<CurrentModelParamLeafRes>>>> tree = new LinkedHashMap<>();
-        for (CurrentModelParameterRes parameter : parameters) {
-            List<MiModelParam> masters = mastersByName.get(parameter.parameterName());
-            if (masters == null || masters.size() != 1) {
-                throw currentParameterMismatch();
-            }
-            MiModelParam master = masters.get(0);
-            CurrentModelParamTargetRes target = parameter.modelTarget();
-            if (!Objects.equals(target.modelFile(), master.getModelFile())
-                || !Objects.equals(target.modelSheet(), master.getModelSheet())
-                || !Objects.equals(target.tableName(), master.getModelTable())) {
-                throw currentParameterMismatch();
-            }
-
-            CurrentModelParameterRes projectedParameter;
-            try {
-                projectedParameter = modelParameterResponseProjector.projectParameter(
-                    parameter,
-                    modelParamSlotAxisResolver.resolve(
-                        master.getBasecaseColumnRoles(),
-                        target.slotAxesFieldNames()
-                    )
-                );
-            } catch (InvalidParameterPayloadException | InvalidSlotAxisMetadataException e) {
-                throw currentParameterMismatch();
-            }
-            CurrentModelParamLeafRes leaf = new CurrentModelParamLeafRes(
-                projectedParameter,
-                toCurrentRendering(master, projectedParameter)
-            );
-            tree.computeIfAbsent(target.modelFile(), key -> new LinkedHashMap<>())
-                .computeIfAbsent(target.modelSheet(), key -> new LinkedHashMap<>())
-                .computeIfAbsent(target.tableName(), key -> new ArrayList<>())
-                .add(leaf);
-        }
-
-        return tree.entrySet().stream()
-            .map(fileEntry -> new CurrentModelParamFileRes(
-                fileEntry.getKey(),
-                fileEntry.getValue().entrySet().stream()
-                    .map(sheetEntry -> new CurrentModelParamSheetRes(
-                        sheetEntry.getKey(),
-                        sheetEntry.getValue().entrySet().stream()
-                            .map(tableEntry -> new CurrentModelParamTableRes(
-                                tableEntry.getKey(),
-                                List.copyOf(tableEntry.getValue())
-                            ))
-                            .toList()
-                    ))
-                    .toList()
-            ))
-            .toList();
-    }
-
-    private List<CurrentModelParameterRes> parseCurrentParameters(String json) {
-        if (json == null || json.isBlank()) {
-            throw currentParameterMismatch();
-        }
-        JsonNode root;
         try {
-            root = objectMapper.readTree(json);
-        } catch (JsonProcessingException e) {
+            return modelParameterTreeProjector.project(json);
+        } catch (InvalidModelParameterTreeException e) {
             throw currentParameterMismatch();
         }
-        if (root == null || !root.isArray() || root.isEmpty()) {
-            throw currentParameterMismatch();
-        }
-
-        List<CurrentModelParameterRes> parameters = new ArrayList<>();
-        Set<CurrentParameterIdentity> identities = new LinkedHashSet<>();
-        for (JsonNode node : root) {
-            CurrentModelParameterRes parameter = parseCurrentParameter(node);
-            CurrentParameterIdentity identity = CurrentParameterIdentity.from(parameter);
-            if (!identities.add(identity)) {
-                throw currentParameterMismatch();
-            }
-            parameters.add(parameter);
-        }
-        return List.copyOf(parameters);
-    }
-
-    private CurrentModelParameterRes parseCurrentParameter(JsonNode node) {
-        if (node == null || !node.isObject()) {
-            throw currentParameterMismatch();
-        }
-        String parameterName = requiredText(node.get("parameterName"));
-        String rationale = requiredText(node.get("rationale"));
-        JsonNode targetNode = node.get("modelTarget");
-        if (targetNode == null || !targetNode.isObject()) {
-            throw currentParameterMismatch();
-        }
-        CurrentModelParamTargetRes target = new CurrentModelParamTargetRes(
-            requiredText(targetNode.get("modelFile")),
-            requiredText(targetNode.get("modelSheet")),
-            requiredText(targetNode.get("tableName")),
-            requiredStringList(targetNode.get("valueFieldNames")),
-            requiredStringList(targetNode.get("slotAxesFieldNames"))
-        );
-
-        JsonNode valuesNode = node.get("values");
-        if (valuesNode == null || !valuesNode.isArray() || valuesNode.isEmpty()) {
-            throw currentParameterMismatch();
-        }
-        List<Map<String, Object>> values = new ArrayList<>();
-        for (JsonNode valueNode : valuesNode) {
-            if (!valueNode.isObject()) {
-                throw currentParameterMismatch();
-            }
-            values.add(objectMapper.convertValue(valueNode, DYNAMIC_VALUE_TYPE));
-        }
-        return new CurrentModelParameterRes(
-            parameterName,
-            target,
-            rationale,
-            null,
-            List.copyOf(values)
-        );
-    }
-
-    private String requiredText(JsonNode node) {
-        if (node == null || !node.isTextual() || node.textValue().isBlank()) {
-            throw currentParameterMismatch();
-        }
-        return node.textValue();
-    }
-
-    private List<String> requiredStringList(JsonNode node) {
-        if (node == null || !node.isArray() || node.isEmpty()) {
-            throw currentParameterMismatch();
-        }
-        List<String> values = new ArrayList<>();
-        for (JsonNode valueNode : node) {
-            values.add(requiredText(valueNode));
-        }
-        return List.copyOf(values);
-    }
-
-    private CurrentModelParamRenderingRes toCurrentRendering(
-        MiModelParam master,
-        CurrentModelParameterRes parameter
-    ) {
-        Set<String> slotAxisNames = parameter.modelTarget().slotAxesFieldNames().stream()
-            .map(axis -> axis.toLowerCase())
-            .collect(Collectors.toCollection(LinkedHashSet::new));
-        JsonNode values = objectMapper.valueToTree(parameter.values());
-        List<ModelParamColumn> columns = parseColumnRoles(master.getBasecaseColumnRoles(), slotAxisNames, values);
-        if (master.getBasecaseReadMode() == BasecaseReadMode.MATRIX_TIME_COLUMNS) {
-            columns = appendMatrixColumns(
-                columns,
-                parameter.modelTarget().slotAxesFieldNames(),
-                parameter.modelTarget().valueFieldNames(),
-                values
-            );
-        }
-        return new CurrentModelParamRenderingRes(
-            master.getBasecaseReadMode(),
-            columns,
-            master.getSemanticAxes()
-        );
     }
 
     private AppHttpStatusException currentParameterMismatch() {
@@ -1308,25 +1136,4 @@ public class ModelParamProposalServiceImpl implements ModelParamProposalService 
         return message.substring(0, 1000);
     }
 
-    private record CurrentParameterIdentity(
-        String parameterName,
-        String modelFile,
-        String modelSheet,
-        String tableName,
-        List<String> valueFieldNames,
-        List<String> slotAxesFieldNames
-    ) {
-
-        private static CurrentParameterIdentity from(CurrentModelParameterRes parameter) {
-            CurrentModelParamTargetRes target = parameter.modelTarget();
-            return new CurrentParameterIdentity(
-                parameter.parameterName(),
-                target.modelFile(),
-                target.modelSheet(),
-                target.tableName(),
-                target.valueFieldNames(),
-                target.slotAxesFieldNames()
-            );
-        }
-    }
 }

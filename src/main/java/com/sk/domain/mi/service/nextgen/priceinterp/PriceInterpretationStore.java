@@ -22,6 +22,7 @@ import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
+import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
 /**
@@ -226,6 +227,16 @@ public class PriceInterpretationStore {
         }
         row.reset();
         return row;
+    }
+
+    /**
+     * [수급모델 실행 전 무효화]
+     * 최종 실행 등록 transaction에서 대상 시나리오의 활성 가격전망 해석만 soft delete 한다.
+     */
+    @Transactional(propagation = Propagation.MANDATORY)
+    public void softDeleteForModelExecution(Long scenarioId) {
+        priceInterpRepository.findActiveByScenarioIdForUpdate(scenarioId)
+            .ifPresent(MiScenarioPriceInterp::softDelete);
     }
 
     /**

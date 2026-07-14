@@ -6,6 +6,7 @@ import com.sk.common.exception.AppHttpStatusException;
 import com.sk.common.utils.DateUtil;
 import com.sk.domain.mi.dto.request.fundamentalmodel.FundamentalModelJobArgs;
 import com.sk.domain.mi.dto.response.nextgen.ModelExecutionAcceptRes;
+import com.sk.domain.mi.service.nextgen.priceinterp.PriceInterpretationStore;
 import com.sk.domain.shared.entity.master.tcm.UploadedFile;
 import com.sk.domain.shared.entity.master.tmd.ScenarioCase;
 import com.sk.domain.shared.entity.master.tmd.ScenarioCaseRunHistory;
@@ -50,6 +51,7 @@ public class ScenarioExecutionRegistrar {
     private final FileService fileService;
     private final AuthorizationService authorizationService;
     private final ScenarioModelJobDispatcher jobDispatcher;
+    private final PriceInterpretationStore priceInterpretationStore;
 
     @Value("${kubernetes.callback-base-url:}")
     private String callbackBaseUrl;
@@ -64,6 +66,7 @@ public class ScenarioExecutionRegistrar {
         Integer actorUserNo = authorizationService.getUserNo();
         String actorLoginId = authorizationService.getSubject();
 
+        priceInterpretationStore.softDeleteForModelExecution(scenarioId);
         ScenarioCase savedCase = createRunningScenarioCase(scenario, actorUserNo, actorLoginId);
         fileService.attachStagedFilesToRelationship(
             stagedFiles.fileNos(),
