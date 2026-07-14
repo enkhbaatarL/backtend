@@ -60,11 +60,11 @@ public class ScenarioModelExecutionDedicatedController {
 
     @ApiOrder(5)
     @Operation(
-        summary = "MI 파라미터 확정값 기반 수급모델 실행 접수 API",
+        summary = "파라미터를 확정하고 인풋파일 생성하여 수급모델 실행 접수 API",
         description = "Agent 확정값으로 입력 Excel 3개를 생성한 뒤 MI 수급모델 실행을 비동기로 접수합니다."
     )
     @ApiResponse(responseCode = "202", description = "비동기 실행 접수 성공")
-    @PostMapping(value = "/model-executions", consumes = MediaType.APPLICATION_JSON_VALUE)
+    @PostMapping(value = "/model-executions/from-parameters", consumes = MediaType.APPLICATION_JSON_VALUE)
     @RequiredPermissionRules(rules = {
         @PermissionRule(role = Role.USER, conditions = {PermissionCondition.SKGAS_COMPANY_USER_ONLY}),
         @PermissionRule(role = Role.ADMIN, conditions = {PermissionCondition.THIRD_PARTY_ADMIN_ONLY})
