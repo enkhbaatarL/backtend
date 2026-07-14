@@ -1,8 +1,5 @@
 package com.sk.domain.mi.service.nextgen;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.sk.common.enums.ResultCode;
 import com.sk.common.exception.AppErrorException;
 import com.sk.common.exception.AppHttpStatusException;
@@ -17,39 +14,32 @@ import com.sk.domain.mi.service.nextgen.execution.ModelParamExecutionCoordinator
 import com.sk.domain.mi.service.nextgen.execution.ScenarioExecutionFileStager;
 import com.sk.domain.mi.service.nextgen.execution.ScenarioExecutionRegistrar;
 import com.sk.domain.mi.service.nextgen.execution.StagedScenarioExecutionFiles;
-import com.sk.domain.mi.service.nextgen.paramproposal.ModelParamSlotAxisResolver;
-import com.sk.domain.mi.service.nextgen.paramproposal.ModelParamSlotAxisResolver.InvalidSlotAxisMetadataException;
-import com.sk.domain.mi.service.nextgen.paramproposal.ModelParameterResponseProjector;
-import com.sk.domain.mi.service.nextgen.paramproposal.ModelParameterResponseProjector.InvalidParameterPayloadException;
+import com.sk.domain.mi.service.nextgen.paramproposal.ModelParameterTreeProjector;
+import com.sk.domain.mi.service.nextgen.paramproposal.ModelParameterTreeProjector.InvalidModelParameterTreeException;
 import com.sk.domain.mi.service.nextgen.query.LatestModelParamProposalExecutionContextResolver;
 import com.sk.domain.mi.service.nextgen.query.LatestModelParamProposalExecutionContextResolver.LatestModelParamProposalExecutionContext;
 import com.sk.domain.shared.entity.master.tcm.UploadedFile;
 import com.sk.domain.shared.entity.master.tmd.ScenarioCase;
 import com.sk.domain.shared.entity.master.tmd.ScenarioCaseRunHistory;
 import com.sk.domain.shared.entity.master.tmm.AgentModelParamProposal;
-import com.sk.domain.shared.entity.master.tmm.MiModelParam;
 import com.sk.domain.shared.entity.master.tmm.MiScenario;
 import com.sk.domain.shared.enums.fundamentalmodel.FundamentalModelExecType;
 import com.sk.domain.shared.enums.fundamentalmodel.FundamentalModelRunStatus;
 import com.sk.domain.shared.enums.nextgen.ModelExecutionStatus;
 import com.sk.domain.shared.enums.nextgen.ModelInputMode;
+import com.sk.domain.shared.enums.nextgen.ModelParamParameterSource;
 import com.sk.domain.shared.enums.nextgen.ScenarioStatus;
 import com.sk.domain.shared.repository.master.tcm.UploadedFileRepository;
 import com.sk.domain.shared.repository.master.tmd.ScenarioCaseRepository;
 import com.sk.domain.shared.repository.master.tmd.ScenarioCaseRunHistoryRepository;
 import com.sk.domain.shared.repository.master.tmm.AgentModelParamProposalRepository;
-import com.sk.domain.shared.repository.master.tmm.MiModelParamRepository;
 import com.sk.domain.shared.repository.master.tmm.MiScenarioRepository;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
-import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Optional;
-import java.util.Set;
-import java.util.function.Function;
-import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
@@ -76,15 +66,12 @@ public class ScenarioModelExecutionServiceImpl implements ScenarioModelExecution
     private final ScenarioCaseRunHistoryRepository scenarioCaseRunHistoryRepository;
     private final UploadedFileRepository uploadedFileRepository;
     private final AgentModelParamProposalRepository agentModelParamProposalRepository;
-    private final MiModelParamRepository miModelParamRepository;
     private final LatestModelParamProposalExecutionContextResolver latestModelParamProposalExecutionContextResolver;
     private final ModelParamExecutionCoordinator modelParamExecutionCoordinator;
     private final ScenarioExecutionFileStager scenarioExecutionFileStager;
     private final ScenarioExecutionRegistrar scenarioExecutionRegistrar;
     private final TransactionOperations transactionOperations;
-    private final ObjectMapper objectMapper;
-    private final ModelParameterResponseProjector modelParameterResponseProjector;
-    private final ModelParamSlotAxisResolver modelParamSlotAxisResolver;
+    private final ModelParameterTreeProjector modelParameterTreeProjector;
 
     @Override
     public ModelExecutionParameterRes getModelExecutionParameters(Long scenarioId) {
@@ -215,17 +202,17 @@ public class ScenarioModelExecutionServiceImpl implements ScenarioModelExecution
 
     @Override
     public LatestModelParamProposalParametersRes getLatestConfirmedParameters(Long scenarioId) {
-        return getLatestParameters(scenarioId, AgentModelParamProposal::getConfirmationParameters);
+        return getLatestParameters(scenarioId, ModelParamParameterSource.CONFIRMATION_PARAMETERS);
     }
 
     @Override
     public LatestModelParamProposalParametersRes getLatestProposedParameters(Long scenarioId) {
-        return getLatestParameters(scenarioId, AgentModelParamProposal::getProposalParameters);
+        return getLatestParameters(scenarioId, ModelParamParameterSource.PROPOSAL_PARAMETERS);
     }
 
     private LatestModelParamProposalParametersRes getLatestParameters(
         Long scenarioId,
-        Function<AgentModelParamProposal, String> parameterJsonSource
+        ModelParamParameterSource parameterSource
     ) {
         LatestModelParamProposalExecutionContext context = latestModelParamProposalExecutionContextResolver.resolve(scenarioId);
         AgentModelParamProposal proposal = agentModelParamProposalRepository
@@ -248,91 +235,23 @@ public class ScenarioModelExecutionServiceImpl implements ScenarioModelExecution
                 );
             });
 
-        return new LatestModelParamProposalParametersRes(
-            context.scenarioId(),
-            context.caseId(),
-            context.execPrepId(),
-            context.modelParamProposalId(),
-            parseParameterArray(parameterJsonSource.apply(proposal))
-        );
-    }
-
-    private JsonNode parseParameterArray(String json) {
-        if (json == null || json.isBlank()) {
-            throw invalidAgentParameterJson();
-        }
+        String parameterJson = switch (parameterSource) {
+            case CONFIRMATION_PARAMETERS -> proposal.getConfirmationParameters();
+            case PROPOSAL_PARAMETERS -> proposal.getProposalParameters();
+            case NONE -> throw new IllegalArgumentException("parameterSource must select Agent parameters.");
+        };
         try {
-            JsonNode node = objectMapper.readTree(json);
-            if (node == null || !node.isArray()) {
-                throw invalidAgentParameterJson();
-            }
-            return modelParameterResponseProjector.projectParameterArray(
-                node,
-                resolveGroupedRationaleSlotAxes(node)
+            return new LatestModelParamProposalParametersRes(
+                context.scenarioId(),
+                context.caseId(),
+                context.execPrepId(),
+                context.modelParamProposalId(),
+                parameterSource,
+                modelParameterTreeProjector.projectAllowingEmpty(parameterJson)
             );
-        } catch (JsonProcessingException | InvalidParameterPayloadException | InvalidSlotAxisMetadataException e) {
+        } catch (InvalidModelParameterTreeException e) {
             throw invalidAgentParameterJson();
         }
-    }
-
-    private List<List<String>> resolveGroupedRationaleSlotAxes(JsonNode parameters) {
-        if (parameters == null || !parameters.isArray()) {
-            throw new InvalidSlotAxisMetadataException();
-        }
-        if (parameters.isEmpty()) {
-            return List.of();
-        }
-
-        Set<String> parameterNames = new LinkedHashSet<>();
-        for (JsonNode parameter : parameters) {
-            parameterNames.add(requiredGroupingParameterName(parameter));
-        }
-        Map<String, List<MiModelParam>> mastersByName = miModelParamRepository
-            .findByParameterNameInAndIsDeletedFalse(parameterNames)
-            .stream()
-            .collect(Collectors.groupingBy(
-                MiModelParam::getParameterName,
-                LinkedHashMap::new,
-                Collectors.toList()
-            ));
-
-        List<List<String>> groupingAxes = new ArrayList<>();
-        for (JsonNode parameter : parameters) {
-            String parameterName = requiredGroupingParameterName(parameter);
-            List<MiModelParam> masters = mastersByName.get(parameterName);
-            if (masters == null || masters.size() != 1) {
-                throw new InvalidSlotAxisMetadataException();
-            }
-            groupingAxes.add(modelParamSlotAxisResolver.resolve(
-                masters.get(0).getBasecaseColumnRoles(),
-                requiredGroupingSlotAxes(parameter)
-            ));
-        }
-        return List.copyOf(groupingAxes);
-    }
-
-    private String requiredGroupingParameterName(JsonNode parameter) {
-        JsonNode parameterName = parameter == null ? null : parameter.get("parameterName");
-        if (parameterName == null || !parameterName.isTextual() || parameterName.textValue().isBlank()) {
-            throw new InvalidSlotAxisMetadataException();
-        }
-        return parameterName.textValue();
-    }
-
-    private List<String> requiredGroupingSlotAxes(JsonNode parameter) {
-        JsonNode modelTarget = parameter == null ? null : parameter.get("modelTarget");
-        JsonNode slotAxes = modelTarget == null ? null : modelTarget.get("slotAxesFieldNames");
-        if (slotAxes == null || !slotAxes.isArray() || slotAxes.isEmpty()) {
-            throw new InvalidSlotAxisMetadataException();
-        }
-        List<String> axes = new ArrayList<>();
-        for (JsonNode axis : slotAxes) {
-            if (!axis.isTextual() || axis.textValue().isBlank()) {
-                throw new InvalidSlotAxisMetadataException();
-            }
-            axes.add(axis.textValue());
-        }
-        return List.copyOf(axes);
     }
 
     private AppErrorException invalidAgentParameterJson() {

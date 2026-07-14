@@ -8,7 +8,7 @@ public record CurrentModelParamFileRes(
     @Schema(description = "Agent parameter payload의 모델 파일 좌표", example = "Demand")
     String modelFile,
 
-    @Schema(description = "해당 파일에 속한 A4a 모델 시트 tree", requiredMode = Schema.RequiredMode.REQUIRED)
+    @Schema(description = "해당 파일에 속한 모델 시트 tree", requiredMode = Schema.RequiredMode.REQUIRED)
     List<CurrentModelParamSheetRes> modelSheets
 ) {
 }

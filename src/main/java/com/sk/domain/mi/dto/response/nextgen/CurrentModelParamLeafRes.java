@@ -5,7 +5,7 @@ import io.swagger.v3.oas.annotations.media.Schema;
 public record CurrentModelParamLeafRes(
 
     @Schema(
-        description = "Agent parameter data에 response-only groupedRationales를 추가한 A4a response shape. A6 전송 전 groupedRationales 제거 필요",
+        description = "Agent parameter data에 response-only groupedRationales를 추가한 tree response shape. A6 전송 전 groupedRationales 제거 필요",
         requiredMode = Schema.RequiredMode.REQUIRED
     )
     CurrentModelParameterRes parameter,

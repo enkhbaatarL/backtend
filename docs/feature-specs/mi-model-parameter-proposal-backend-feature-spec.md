@@ -6,9 +6,10 @@
 - status: Review
 - owner: BE (platform)
 - created at: 2026-07-03
-- updated at: 2026-07-13
+- updated at: 2026-07-14
 - canonical for: frontend-facing API contract, Backend callback endpoint/minimum compatibility contract, proposed Agent integration questions
 - canonical design reference: `docs/design-docs/gas/mi-model-parameter-proposal-design.md`
+- price interpretation rerun reference: `docs/design-docs/gas/price-forecast-interpretation-domain-design.md`
 - physical schema references:
   - execution preparation: `docs/design-docs/gas/mi-model-param-proposal-execprep-erd-ddl-draft.md`
   - Case/Run/file relation: `docs/design-docs/gas/scenario-case-execution-erd-ddl-draft.md`
@@ -23,7 +24,7 @@
   - `docs/design-docs/gas/mi-model-parameter-proposal-design.md`
   - `docs/conventions/source-of-truth-governance.md`
 - supersedes: 없음
-- last synced: 2026-07-13
+- last synced: 2026-07-14
 - open questions: 13절 및 duplicate-slot Agent payload의 A6/Excel 실행 좌표 호환성 참조
 - integration model: callback = 완료 신호. Backend가 Agent proposal 테이블을 read-only 직접 조회해 결과 서빙(CAS/hash/snapshot 없음). 공유 DB read 및 read 권한은 확정(조회 가능). callback path `scenarioId`는 proposal identity가 아니라 현재 in-flight execution-preparation을 찾는 scope key다.
 - callback 인증: 확정. 기존 시나리오 설계 콜백과 동일한 Resource Server JWT 체인(`CustomJwtDecoder` HS256 self-issued + `@RequiredPermissionRules(Role.SYSTEM ...)`) 재사용. Agent는 Backend 토큰 발급 API와 발급 인풋 2종을 전달받아 JWT를 자체 발급·갱신한다.
@@ -51,6 +52,8 @@ Frontend가 기존 Scenario의 기반 Event에 따라 두 가지 수급모델 �
 
 기존 multipart 파일 업로드 실행 계약은 계속 지원하며 제거·deprecated하지 않는다.
 
+두 실행 흐름 모두 수급모델 재실행 전에 해당 시나리오의 기존 가격전망해석 원본/현재 수정본 존재 여부를 확인한다. 기존 해석이 있으면 Frontend가 사용자 확인을 받은 뒤 실행 request에 `priceInterpretationResetConfirmed=true`를 전달하고, Backend는 최종 실행 등록 transaction에서 해당 시나리오의 해석 row를 제거한다.
+
 ## 3. Canonical References
 
 - lifecycle/business rules: `docs/design-docs/gas/mi-model-parameter-proposal-design.md`
@@ -61,6 +64,8 @@ Frontend가 기존 Scenario의 기반 Event에 따라 두 가지 수급모델 �
 
 ### Source-of-truth Responsibilities
 
+- 가격전망해석 재실행 무효화 범위/lifecycle: `docs/design-docs/gas/price-forecast-interpretation-domain-design.md`
+- A2/A6/A7의 가격전망해석 관련 field, validation, HTTP error: 본 feature spec 5.0/5.5/5.8
 - A8/A9 조회 대상, 공통 404, request/response 계약: 본 feature spec 5.5.1/5.6
 - A4a 성공 실행 input file projection과 다운로드 계약: 본 feature spec 5.2.1/5.7
 - physical table/column, join, index, EXPLAIN, rollout: `docs/design-docs/gas/mi-model-param-proposal-execprep-erd-ddl-draft.md`
@@ -126,7 +131,7 @@ Agent `status`는 proposal 계산 상태이고 `callback_status`는 Agent→Back
 | Method | Path | 목적 |
 |---|---|---|
 | `GET` | `/api/v1/mi/next-gen/scenario-groups/{scenarioGroupId}/graph` | 그래프 데이터와 파라미터 제안 대상 여부 조회 |
-| `GET` | `/api/v1/mi/next-gen/scenarios/{scenarioId}/model-execution-options` | 기반 Event에 따른 실행 입력 mode 조회 |
+| `GET` | `/api/v1/mi/next-gen/scenarios/{scenarioId}/model-execution-options` | 기반 Event에 따른 실행 입력 mode와 가격전망해석 초기화 영향 조회 |
 | `POST` | `/api/v1/mi/next-gen/scenarios/{scenarioId}/model-param-proposals` | Agent proposal 생성 접수 |
 | `GET` | `/api/v1/mi/next-gen/scenarios/{scenarioId}/model-param-proposals` | 팝업 진입용 Scenario 기준 현재 파라미터 제안/확정/실행 상태 조회 |
 | `GET` | `/api/v1/mi/next-gen/scenarios/{scenarioId}/model-param-proposals/{modelParamProposalId}` | 상태 및 proposal 결과 조회 |
@@ -142,7 +147,7 @@ Agent `status`는 proposal 계산 상태이고 `callback_status`는 Agent→Back
 |---|---|---|
 | `POST` | `/api/v1/mi/next-gen/scenarios/{scenarioId}/model-param-proposals/callback` | Agent proposal 완료/실패 결과 수신 |
 
-두 실행 접수 계약은 모두 active contract이며 path를 분리한다. Backend는 Scenario의 기반 Event에서 도출한 `inputMode`와 endpoint의 일치를 검증한다. JSON 파라미터 확정 실행은 `/model-executions/from-parameters`, multipart 파일 업로드 실행은 `/model-executions`만 사용한다. 기존 JSON path 사용자가 없음을 확인했으므로 구 JSON mapping은 deprecated alias 없이 즉시 제거한다.
+두 실행 접수 계약은 모두 active contract이며 path를 분리한다. Backend는 Scenario의 기반 Event에서 도출한 `inputMode`와 endpoint의 일치를 검증한다. JSON 파라미터 확정 실행은 `/model-executions/from-parameters`, multipart 파일 업로드 실행은 `/model-executions`만 사용한다. 두 request 모두 `priceInterpretationResetConfirmed`를 수용하며, active 가격전망해석이 있으면 `true`일 때만 실행을 접수한다. 기존 JSON path 사용자가 없음을 확인했으므로 구 JSON mapping은 deprecated alias 없이 즉시 제거한다.
 
 Agent-facing callback의 endpoint/path와 외부 URL은 Backend가 결정한다. Backend는 확정 URL을 Agent 팀에 전달하고, Agent는 `callbackBaseUrl + callbackPath` 등의 배포 설정값으로 등록한다. proposal request body로 callback 정보를 전달하는 방식은 현재 confirmed contract가 아니다.
 
@@ -154,14 +159,17 @@ callback path는 `{scenarioId}`를 경로에 둔다. `scenarioId`는 proposal id
 
 `GET /api/v1/mi/next-gen/scenarios/{scenarioId}/model-execution-options`
 
-팝업 진입 시 FE가 호출해 실행 입력 UI를 결정한다.
+팝업 진입 시 FE가 호출해 실행 입력 UI와 가격전망해석 초기화 확인 필요 여부를 결정한다.
 
 ```json
 {
   "scenarioId": 309,
   "inputMode": "PARAMETER_PROPOSAL",
   "parameterProposalAvailable": true,
-  "fileUploadAvailable": false
+  "fileUploadAvailable": false,
+  "hasPriceInterpretation": true,
+  "hasPriceInterpretationModification": true,
+  "priceInterpretationResetRequired": true
 }
 ```
 
@@ -177,6 +185,11 @@ callback path는 `{scenarioId}`를 경로에 둔다. `scenarioId`는 proposal id
 - `PARAMETER_PROPOSAL`이면 `parameterProposalAvailable=true`, `fileUploadAvailable=false`다.
 - `FILE_UPLOAD`이면 `parameterProposalAvailable=false`, `fileUploadAvailable=true`다.
 - dimension mapping 존재 여부는 `inputMode` 응답을 변경하지 않는다. 상세 business rule은 canonical design의 3.4절과 6절을 따른다.
+- `hasPriceInterpretation`은 path `scenarioId`의 비삭제 `MiScenarioPriceInterp` row 존재 여부다. 작성자/수정자 조건을 사용하지 않으며 `GENERATING`, `GENERATED`, `FAILED`를 모두 포함한다.
+- `hasPriceInterpretationModification`은 active row의 Agent 원본과 현재 공유본이 null-safe 비교로 다를 때 `true`다. 별도 수정 history table이나 수정 이벤트 목록 존재를 뜻하지 않는다.
+- `priceInterpretationResetRequired`는 v1에서 `hasPriceInterpretation`과 동일하다. active row가 있으면 현재 수정본 유무와 무관하게 기존 해석이 수급모델 재실행으로 삭제되므로 `true`다.
+- `priceInterpretationResetRequired=true`이면 FE는 `기존 수정 내역을 초기화하고 새로 생성하시겠습니까?` 안내 팝업을 표시한다.
+- 이 GET은 advisory read다. 실제 삭제 필요 여부는 실행 POST의 최종 transaction에서 재조회한다.
 
 ### 5.0.1 Scenario Group 그래프 대상 여부 조회
 
@@ -720,7 +733,7 @@ Rationale 결합:
 
 Validation/error boundary:
 
-- 공통 projection component는 endpoint가 유효한 parameter array를 선택·파싱한 이후 response copy에만 필드를 추가한다. endpoint별 status/empty/null/error 판단을 통합하거나 변경하지 않는다.
+- A4a/A8/A9 공통 tree projector는 endpoint가 선택한 raw Agent parameter JSON의 파싱, master 검증, grouped rationale/rendering 생성, tree 조립을 담당한다. endpoint별 조회 anchor와 public error mapping은 각 서비스 경계가 유지한다. A4는 기존 flat response projection을 유지한다.
 - 공통 projection은 parameter name으로 `tmm_mi_model_param_m` master를 일괄 조회해 SLOT 축을 해석한다. master 누락·중복 또는 SLOT 축을 하나도 해석할 수 없는 metadata 불일치는 endpoint의 기존 데이터 불일치/error 정책으로 실패한다.
 - required slot-axis field가 value row에 없거나 projection에 필요한 `modelTarget.slotAxesFieldNames`, `values[]`, `values[].rationale`가 유효하지 않으면 해당 row를 조용히 제외하거나 빈 `groupedRationales`로 정상화하지 않는다. endpoint의 기존 데이터 불일치/error 정책으로 실패한다.
 - 특히 A8/A9의 parameter JSON이 `null`, blank, non-array, malformed JSON이면 기존 `API_RESPONSE_ERROR`와 `Agent proposal parameter JSON is invalid.` message를 유지하며 빈 배열로 반환하지 않는다.
@@ -871,6 +884,7 @@ Request:
 ```json
 {
   "modelParamProposalId": 10001,
+  "priceInterpretationResetConfirmed": true,
   "confirmationParameters": [
     {
       "parameterName": "Temperature",
@@ -899,7 +913,7 @@ Request:
 
 처리 순서:
 
-1. Scenario, permission, proposal ownership/status 검증
+1. Scenario, permission, proposal ownership/status 검증. active 가격전망해석이 있으면 `priceInterpretationResetConfirmed=true`인지 선확인해 Agent confirmation/file staging 전에 미확인 요청을 거절한다.
 2. Agent proposal 테이블의 `proposal_parameters` array와 request `confirmationParameters`의 parameter/model target/slot identity 및 `basecaseValue` 구조 비교
 3. `values[].proposedValue`가 numeric인지 검증한다. parameter/value `rationale`은 required string이지만 Agent confirmation에서 보정될 수 있고 Excel 실행 입력에 쓰이지 않으므로 문자열 동일성 비교에서는 제외한다.
 4. 같은 Scenario에 `RUNNING` Case가 없는지 기존 active-run guard로 확인
@@ -907,7 +921,7 @@ Request:
 6. Agent `CONFIRMED` 응답 확인
 7. 협의된 원본 `DEMAND`/`SUPPLY`/`TRADE` 파일 3개 로드
 8. 확정값을 지정 file/sheet/table/slot에 merge
-9. 기존 Scenario Case/Run 생성과 Kubernetes Job dispatch를 재사용한다. 파일 3개는 Scenario lock/Case transaction 전에 직렬로 Object Storage의 최종 `SCNRCASE/{uuid}` key에 업로드하고, `tcm_filel`에는 Case 미연결 `TEMP/0` staged row로 기록한다. 최종 짧은 transaction에서 Scenario lock/active guard를 재검증하고 Case INSERT·staged row 3건의 `SCNRCASE + case_id` metadata-only attachment·Run INSERT·Case `lastRunId`·`execprep.case_id + EXECUTING`을 함께 commit한다. 이 transaction에는 Object Storage copy/move/delete를 넣지 않으며 K8s dispatch는 commit 이후 수행한다(Domain Design 규칙 29~30). 최종 lock/unique conflict는 409로 반환하고 staged file 즉시 삭제 비용을 수용한다. commit 이후 dispatch 실패는 Case/Run을 `FAILED`, 연결 preparation을 `EXECUTION_FAILED`로 처리한다. Run에는 `failureReasonCode=JOB_SUBMIT_FAILED`, `errorMessage=Model execution dispatch failed.`만 저장하고 실제 exception stack/root cause는 실행 식별자와 함께 server log에만 기록한다.
+9. 기존 Scenario Case/Run 생성과 Kubernetes Job dispatch를 재사용한다. 파일 3개는 Scenario lock/Case transaction 전에 직렬로 Object Storage의 최종 `SCNRCASE/{uuid}` key에 업로드하고, `tcm_filel`에는 Case 미연결 `TEMP/0` staged row로 기록한다. 최종 짧은 transaction에서 Scenario lock/active guard와 가격전망해석 존재 여부를 재검증한다. active 가격전망해석이 새로 생겼거나 남아 있는데 `priceInterpretationResetConfirmed=false`면 409로 rollback한다. 확인값이 `true`면 해당 시나리오의 active 가격전망해석 row를 물리 삭제하고, Case INSERT·staged row 3건의 `SCNRCASE + case_id` metadata-only attachment·Run INSERT·Case `lastRunId`·`execprep.case_id + EXECUTING`을 함께 commit한다. 이 transaction에는 Object Storage copy/move/delete를 넣지 않으며 K8s dispatch는 commit 이후 수행한다(Domain Design 규칙 29~30). 최종 lock/unique conflict는 409로 반환하고 staged file 즉시 삭제 비용을 수용한다. commit 이후 dispatch 실패는 Case/Run을 `FAILED`, 연결 preparation을 `EXECUTION_FAILED`로 처리하며 삭제한 기존 가격전망해석은 복원하지 않는다. Run에는 `failureReasonCode=JOB_SUBMIT_FAILED`, `errorMessage=Model execution dispatch failed.`만 저장하고 실제 exception stack/root cause는 실행 식별자와 함께 server log에만 기록한다.
 10. 기존 `ModelExecutionAcceptRes` 반환
 
 Staging lifecycle:
@@ -974,8 +988,9 @@ physical join/index/EXPLAIN은 canonical DDL draft `docs/design-docs/gas/mi-mode
 endpoint별 추가 조회:
 
 1. context의 `modelParamProposalId`로 Agent proposal 테이블을 read-only 조회한다.
-2. confirmed endpoint는 Agent `confirmation_parameters`, proposed endpoint는 Agent `proposal_parameters`를 반환한다.
-3. A8/A9 모두 각 `parameters[]` 원소에 5.2.2의 response-only `groupedRationales[]`를 추가한다. Agent 저장 JSON은 변경하지 않는다.
+2. confirmed endpoint는 Agent `confirmation_parameters`, proposed endpoint는 Agent `proposal_parameters`를 선택한다.
+3. 선택한 payload를 A4a와 동일한 공통 projector로 변환해 `modelFiles > modelSheets > modelTables > parameters > {parameter, rendering}` tree를 반환한다. `parameter.groupedRationales`와 `rendering.readMode`, `rendering.columns`, `rendering.semanticAxes`의 세부 계약은 5.2.1/5.2.2를 따른다. Agent 저장 JSON은 변경하지 않는다.
+4. confirmed endpoint의 `parameterSource`는 `CONFIRMATION_PARAMETERS`, proposed endpoint는 `PROPOSAL_PARAMETERS`다.
 
 confirmed endpoint(A8) 의미:
 
@@ -992,33 +1007,56 @@ Response data:
   "caseId": 88001,
   "execPrepId": 51001,
   "modelParamProposalId": 10001,
-  "parameters": [
+  "parameterSource": "CONFIRMATION_PARAMETERS",
+  "modelFiles": [
     {
-      "parameterName": "Temperature",
-      "modelTarget": {
-        "modelFile": "DEMAND",
-        "modelSheet": "WeatherAdjustment",
-        "tableName": "Table2",
-        "valueFieldNames": ["Temperature"],
-        "slotAxesFieldNames": ["Country", "Year", "Month"]
-      },
-      "rationale": "한파 강도가 기온 하락으로 직접 표현되므로 Temperature 조정 대상입니다.",
-      "groupedRationales": [
+      "modelFile": "Demand",
+      "modelSheets": [
         {
-          "Country": "Germany",
-          "Year": 2027,
-          "Month": 1,
-          "rationale": "Germany 2027년 1월 한파 영향을 반영해 제안값을 산정했습니다."
-        }
-      ],
-      "values": [
-        {
-          "Country": "Germany",
-          "Year": 2027,
-          "Month": 1,
-          "basecaseValue": 1.2,
-          "proposedValue": -3.5,
-          "rationale": "Germany 2027년 1월 한파 영향을 반영해 제안값을 산정했습니다."
+          "modelSheet": "WeatherAdjustment",
+          "modelTables": [
+            {
+              "tableName": "table1",
+              "parameters": [
+                {
+                  "parameter": {
+                    "parameterName": "Temperature",
+                    "modelTarget": {
+                      "modelFile": "Demand",
+                      "modelSheet": "WeatherAdjustment",
+                      "tableName": "table1",
+                      "valueFieldNames": ["Temperature"],
+                      "slotAxesFieldNames": ["Country", "Year", "Month"]
+                    },
+                    "rationale": "한파 강도가 기온 하락으로 직접 표현되므로 Temperature 조정 대상입니다.",
+                    "groupedRationales": [
+                      {
+                        "Country": "Germany",
+                        "Year": 2027,
+                        "Month": 1,
+                        "rationale": "Germany 2027년 1월 한파 영향을 반영해 제안값을 산정했습니다."
+                      }
+                    ],
+                    "values": [
+                      {
+                        "Country": "Germany",
+                        "Year": 2027,
+                        "Month": 1,
+                        "basecaseValue": 1.2,
+                        "proposedValue": -3.5,
+                        "rationale": "Germany 2027년 1월 한파 영향을 반영해 제안값을 산정했습니다."
+                      }
+                    ]
+                  },
+                  "rendering": {
+                    "readMode": "FIXED_COLUMNS",
+                    "columns": [],
+                    "semanticAxes": null
+                  }
+                }
+              ]
+            }
+          ]
         }
       ]
     }
@@ -1029,6 +1067,9 @@ Response data:
 - latest Case/execprep 404는 5.5.1 공통 실패 규칙을 따른다.
 - 같은 Agent proposal의 값 변경 재실행은 Agent `confirmation_parameters`를 갱신하는 Option A를 따른다. A8의 current-value 의미와 과거 실행별 exact snapshot 비지원은 위 계약으로 확정됐다.
 - A8/A9 parameter JSON이 `null`, blank, non-array, malformed JSON이면 `API_RESPONSE_ERROR`와 `Agent proposal parameter JSON is invalid.`을 유지한다. response projection이 이를 빈 배열로 정상화하지 않는다.
+- 기존 A8/A9 empty-array 동작은 유지한다. Agent parameter JSON이 유효한 `[]`이면 `parameterSource`는 endpoint별 값으로 유지하고 `modelFiles=[]`를 반환한다. A4a non-`NONE` source의 empty payload 409 계약과는 구분한다.
+- 공통 projector의 parameter/master/좌표/grouped-rationale/rendering 검증이 실패해도 A8/A9 경계에서는 동일한 `API_RESPONSE_ERROR`와 public message로 매핑한다. A4a의 `409 BIZ_RULE_VIOLATION` data mismatch 계약을 A8/A9에 노출하지 않는다.
+- A8/A9 응답에는 `parameters`를 포함하지 않는다. A4a envelope의 `currentState`, `modelExecutionStatus`, `executionInputFiles`, `failureReason`, timestamp도 추가하지 않는다.
 
 ### 5.7 A4a 성공 실행 input Excel 파일 projection
 
@@ -1104,6 +1145,8 @@ Response data:
 - `Content-Type: multipart/form-data`
 - `FILE_UPLOAD` mode에서만 허용
 - 기존 `files` request part에 `DEMAND`/`SUPPLY`/`TRADE` 파일 3개를 전달한다.
+- optional boolean form field `priceInterpretationResetConfirmed`를 전달한다. 생략 시 `false`로 처리한다.
+- active 가격전망해석이 있으면 파일 staging 전 선확인과 최종 실행 등록 transaction 재확인을 모두 수행한다. 확인값이 `false`면 409로 거절하고, `true`면 해당 시나리오의 active 가격전망해석 row 삭제와 Case/Run 생성을 한 transaction으로 commit한다.
 - 기존 validation, Case/Run 생성, Job dispatch, `ModelExecutionAcceptRes` 계약을 유지한다. 내부 storage 경계는 5.5와 동일하게 최종 `SCNRCASE/{uuid}` 선업로드 → `TEMP/0` staged metadata → 짧은 transaction의 metadata-only Case attachment를 사용한다.
 - 파라미터 제안 기능 도입으로 제거하거나 deprecated하지 않는다.
 
@@ -1134,6 +1177,7 @@ AgentModelParamConfirmationData
 
 ModelParamProposalExecutionReq
   Long modelParamProposalId          required
+  boolean priceInterpretationResetConfirmed optional, default false
   List<ModelParamPayloadItem> confirmationParameters required, non-empty
 
 ModelParamPayloadItem
@@ -1167,6 +1211,15 @@ ModelTarget
 ## 7. Response DTO Draft
 
 ```text
+ModelExecutionOptionsRes
+  Long scenarioId
+  ModelInputMode inputMode
+  boolean parameterProposalAvailable
+  boolean fileUploadAvailable
+  boolean hasPriceInterpretation
+  boolean hasPriceInterpretationModification
+  boolean priceInterpretationResetRequired
+
 ModelParamProposalAcceptRes
   Long modelParamProposalId
   Long scenarioId
@@ -1243,7 +1296,8 @@ LatestModelParamProposalParametersRes
   Long caseId
   Long execPrepId
   Long modelParamProposalId
-  List<ResponseModelParamPayloadItem> parameters response-only groupedRationales 포함
+  ModelParamParameterSource parameterSource required; A8=CONFIRMATION_PARAMETERS, A9=PROPOSAL_PARAMETERS
+  List<CurrentModelParamFileRes> modelFiles required, non-null; 5.2.1과 동일한 tree
 
 ModelExecutionInputFilesRes
   boolean complete                    required; DEMAND/SUPPLY/TRADE 각각 1개면 true
@@ -1258,7 +1312,7 @@ ModelExecutionInputFileRes
 
 ```
 
-`ResponseModelParamPayloadItem`은 설명용 response shape 이름이며 Agent request DTO `ModelParamPayloadItem`을 변경하거나 재사용한다는 뜻이 아니다. Java 구현에서 A4/A8/A9는 response-owned `JsonNode` copy를 사용할 수 있고, A4a는 `CurrentModelParameterRes`가 response field를 소유한다. 네 GET의 세부 grouped field 계약은 5.2.2가 canonical이다.
+`ResponseModelParamPayloadItem`은 설명용 response shape 이름이며 Agent request DTO `ModelParamPayloadItem`을 변경하거나 재사용한다는 뜻이 아니다. Java 구현에서 A4는 response-owned `JsonNode` copy를 사용할 수 있고, A4a/A8/A9 tree는 `CurrentModelParameterRes`가 response field를 소유한다. 네 GET의 세부 grouped field 계약은 5.2.2가 canonical이다.
 
 `ModelParamProposalCallbackAckRes`와 `CallbackDisposition`은 Agent-facing confirmed DTO가 아니다. 협의 전 callback 성공 응답은 `BaseResponse<Void>`를 사용한다.
 
@@ -1322,6 +1376,8 @@ FE가 반드시 처리해야 하는 최소 상태는 `PROCESSING`, `PROPOSED`, `
 | commit 이후 Kubernetes Job dispatch 실패 | 202 접수 후 비동기 `FAILED` 수렴 | `JOB_SUBMIT_FAILED` | Case/Run/preparation 실패 전이. API/DB에는 고정 public message만 사용하고 root cause는 server log에만 기록 |
 | 동일 proposal로 실행 재요청 | 200/202 기존 실행 접수 응답 | 기존 정책 | RUNNING이 없으면 새 `case_id` 실행 접수 |
 | 같은 Scenario에 RUNNING 실행 존재 | 409 | `RSC_ALREADY_EXISTS` | 기존 `ScenarioCase.actv_scnr_id` guard |
+| active 가격전망해석이 있으나 실행 request의 `priceInterpretationResetConfirmed`가 누락/false | 409 | 신규 `BIZ_PRICE_INTERP_RESET_CONFIRMATION_REQUIRED` (`BIZ-007`) | 가격전망해석/Case/Run을 변경하지 않고 확인 팝업 재표시 |
+| options 조회 뒤 가격전망해석이 새로 생성됐고 실행 request 확인값이 false | 409 | `BIZ_PRICE_INTERP_RESET_CONFIRMATION_REQUIRED` | final transaction 재조회로 무확인 삭제 차단 |
 | A4a `EXECUTED_CONFIRMED` Case의 input file role 일부/전체 누락 | 200 | `SUC-000` | `executionInputFiles.complete=false`, `missingFileRoles`, partial/empty `files` 반환 후 데이터 불완전 로그 |
 | A4a `parameterSource`가 non-`NONE`인데 payload가 null/blank/non-array/empty/invalid JSON | 409 | `BIZ_RULE_VIOLATION` | 정상 empty tree로 숨기지 않고 고정 public message로 실패 |
 | A4a grouped projection에 필요한 slot-axis/rationale field 누락 또는 타입 불일치 | 409 | `BIZ_RULE_VIOLATION` | 해당 value row를 제외하거나 빈 grouped array로 숨기지 않고 기존 current-state 데이터 불일치 정책으로 실패 |
@@ -1330,6 +1386,7 @@ FE가 반드시 처리해야 하는 최소 상태는 `PROCESSING`, `PROPOSED`, `
 | A4a payload/master file·sheet·table 좌표 불일치 | 409 | `BIZ_RULE_VIOLATION` | case-sensitive exact match 실패, raw 좌표 비노출 |
 | current-state 조회 시 연결 `case_id`는 있으나 Case/Run 정합이 깨짐 | 409 | `BIZ_RULE_VIOLATION` | 데이터 불일치 상태로 로깅하고 FE에는 복구 불가 상태 반환 |
 | A8/A9 Agent parameter JSON이 null/blank/non-array/malformed | 5xx | `API_RESPONSE_ERROR` | `Agent proposal parameter JSON is invalid.` 유지, 빈 배열 정상화 금지 |
+| A8/A9 tree projection의 master/좌표/grouped-rationale/rendering 정합성 실패 | 5xx | `API_RESPONSE_ERROR` | A4a의 409를 노출하지 않고 기존 A8/A9 public error로 매핑 |
 
 ## 9. Swagger Annotation Recommendation
 
@@ -1338,6 +1395,8 @@ FE가 반드시 처리해야 하는 최소 상태는 `PROCESSING`, `PROPOSED`, `
 - proposal query summary: `MI 수급모델 파라미터 제안 상태/결과 조회 API`
 - callback summary: `[Agent 콜백] MI 수급모델 파라미터 제안 완료 API`
 - JSON execution summary: `확정 파라미터 기반 MI 수급모델 실행 접수 API`
+- model execution options description: 실행 입력 mode와 `priceInterpretationResetRequired`를 함께 조회하며, `true`이면 지정 안내 팝업 후 실행 request에 확인값을 전달하도록 명시한다.
+- JSON/multipart execution description: active 가격전망해석이 있으면 `priceInterpretationResetConfirmed=true`가 필요하고, 접수 transaction에서 해당 시나리오 해석을 삭제함을 명시한다.
 - callback controller는 Agent-facing tag로 분리한다.
 - callback operation은 Bearer security scheme(`Role.SYSTEM` 등 `@RequiredPermissionRules`)을 명시한다. 기존 시나리오 설계 콜백과 동일한 self-issued JWT를 재사용한다.
 - flat parameter array, dynamic slot-axis key, `valueFieldNames.size=1`, `values[].proposedValue` 단일 mutable field 규칙을 description과 example에 명확히 기록한다.
@@ -1366,6 +1425,11 @@ FE가 반드시 처리해야 하는 최소 상태는 `PROCESSING`, `PROPOSED`, `
 - response-only `groupedRationales` projection:
   - schema, DDL, entity, repository, query, Agent JSON 저장 변경 없음
   - 조회 시 response copy에만 계산하며 `proposal_parameters`/`confirmation_parameters`를 다시 저장하지 않음
+- 가격전망해석 재실행 연계:
+  - 신규 table/column 없음
+  - A2는 기존 `MiScenarioPriceInterp` active row를 사용자 필터 없이 조회한다.
+  - A6/A7 최종 실행 등록 transaction은 해당 시나리오 active 가격전망해석 row 삭제와 Case/Run 생성을 원자적으로 수행한다.
+  - 현재 `(scenario_id, del_yn)` unique에서 반복 soft delete 충돌을 피하고 기존 원본/수정본 복구를 제공하지 않는 요구에 맞춰 재실행 무효화는 physical delete를 사용한다. 그룹 삭제의 기존 soft delete는 변경하지 않는다.
 - 정확한 DDL은 `erd-change-review` 이후 별도 canonical draft에서 관리한다.
 
 ## 11. Recommended Data Access Approach
@@ -1377,6 +1441,7 @@ FE가 반드시 처리해야 하는 최소 상태는 `PROCESSING`, `PROPOSED`, `
 - A8/A9 latest anchor: JPA repository projection 또는 공통 resolver/helper 한 곳에서 `LatestModelParamProposalExecutionContext`를 구성한다. 두 endpoint가 Case/execprep 선택 predicate와 404를 각각 구현하지 않는다.
 - A4a input files: current-state 조회에서 이미 선택한 execution-preparation의 `caseId`를 사용하고 latest Case resolver를 별도로 호출하지 않는다.
 - grouped rationale projection: data access 변경 없이 service 계층의 공통 response projector를 사용한다. A4a/A4/A8/A9가 같은 grouping 구현을 공유하고 endpoint별 parser/error policy는 기존 service에 남긴다.
+- 가격전망해석 영향 조회/삭제: JPA active row 단건 조회 및 physical delete. A2 GET은 advisory이며 A6/A7 final transaction recheck가 삭제 여부의 source of truth다.
 - latest/active 조회가 복잡해지면 repository projection 또는 QueryDSL
 - Excel merge: Apache POI service
 - file upload/dispatch: 기존 `ScenarioModelExecutionServiceImpl` 내부 책임을 reusable collaborator로 추출
@@ -1385,15 +1450,17 @@ FE가 반드시 처리해야 하는 최소 상태는 `PROCESSING`, `PROPOSED`, `
 
 - controller
   - proposal frontend controller
+  - model execution options 응답에 가격전망해석 영향 field 추가
   - proposal current-state GET mapping 추가
   - Agent callback controller
-  - JSON model execution mapping 추가
+  - JSON/multipart model execution request에 `priceInterpretationResetConfirmed` 추가
 - security
   - callback endpoint는 기존 시나리오 설계 콜백과 동일하게 표준 Resource Server JWT chain(`CustomJwtDecoder`, HS256 self-issued) + `@RequiredPermissionRules(Role.SYSTEM ...)`을 재사용한다.
   - Agent는 Backend 토큰 발급 API와 발급 인풋 2종으로 JWT를 자체 발급·갱신한다. dedicated static token/HMAC/외부 OAuth2 도입은 없다.
   - `ResourceServerConfig.tokenByPassSecurityFilterChain` matcher에 callback path를 추가하지 않는다.
 - service
   - `ModelParamProposalService`
+  - `PriceInterpretationStore` active row impact 조회/재실행 삭제
   - current-state 조회 service method
   - `ModelParamProposalCallbackService`
   - `ModelInputWorkbookProvider`
@@ -1409,6 +1476,7 @@ FE가 반드시 처리해야 하는 최소 상태는 `PROCESSING`, `PROPOSED`, `
   - A4/A8/A9 response `JsonNode` Swagger description은 response projection을 명시하되 `ModelParamPayloadItem` request DTO는 변경하지 않음
 - persistence
   - proposal entity/repository 또는 mock store
+  - `MiScenarioPriceInterpRepository` active scenario row 조회/physical delete
   - latest Scenario Case + linked execution-preparation 공통 projection/query
 - resources
   - mock proposal JSON seed
@@ -1435,6 +1503,7 @@ FE가 반드시 처리해야 하는 최소 상태는 `PROCESSING`, `PROPOSED`, `
 7. callback 신호 유실 시 폴백 폴링 interval/timeout.
 8. `schemaVersion`, `completedAt`, `errorCode` 확장 필요 여부 — `completedAt`(`proposal_completed_dtm`)·`error_code`는 Agent 테이블에 **이미 컬럼 존재**, `schemaVersion`만 미존재. `errorMessage`는 wrapper `message`와 중복됨.
 9. duplicate-slot Agent payload의 A6/Excel 실행 좌표 의미. A4a/A4/A8/A9 read response는 duplicate value row를 보존하고 rationale만 별도 그룹핑한다. A6 validator는 현재 duplicate slot identity를 거절하며, 서로 다른 `basecaseValue`/`proposedValue`가 같은 Excel 좌표를 가리키는 경우 first/last 선택·row 병합·writer overwrite를 허용하지 않는다. 대표/실제 payload 감사 후 실행 계약을 별도 확정한다.
+10. 가격전망해석 callback에는 generation/source correlation이 없어 재실행으로 삭제한 이전 생성 요청의 late callback이 이후 새 `GENERATING` row에 반영될 수 있다. `generationId`/`sourceRunId` callback echo 또는 generation lifecycle 차단 정책을 가격전망해석 Agent 계약에서 별도 확정한다.
 
 ### P1
 
@@ -1449,6 +1518,9 @@ FE가 반드시 처리해야 하는 최소 상태는 `PROCESSING`, `PROPOSED`, `
 4. Proposal generation retry: proposal 생성이 `REQUEST_FAILED` 또는 Agent `FAILED`로 terminal 수렴한 뒤에는 새 proposal 생성 요청을 허용한다. 실패 row는 재사용하지 않고 audit/history로 보존하며, 새 요청은 새 execution-preparation row와 새 Agent proposal request를 만든다.
 
 ## 14. Change Log / Sync Note
+
+- 2026-07-14: **A8/A9 응답 tree 계약 및 projector 공통화.** flat `parameters`를 제거하고 endpoint별 `parameterSource`와 A4a 동일 `modelFiles > modelSheets > modelTables > parameters > {parameter, rendering}` tree를 반환한다. A4a/A8/A9는 raw Agent JSON 파싱, parameter-name batch master 조회, 좌표 검증, grouped rationale/rendering, tree 조립을 공통 projector로 수행한다. latest Case/current-value 의미와 endpoint별 409/API_RESPONSE_ERROR 경계는 유지하며 schema/DDL은 변경하지 않는다.
+- 2026-07-14: **수급모델 재실행 시 가격전망해석 초기화 계약 추가.** A2 options 응답에 active 해석/현재 수정본/초기화 필요 flag를 추가하고, A6/A7 request에 `priceInterpretationResetConfirmed`를 추가했다. active 해석 + 확인=false는 409, 확인=true는 대상 시나리오 해석 row 삭제와 Case/Run 생성을 공통 final transaction에서 원자 commit한다. 별도 수정 history는 없으며 수급모델 재실행이 가격전망해석 Agent 생성을 자동 호출하지 않는다.
 
 - 2026-07-13: **A6 JSON execution path 분리.** 동일한 `POST /model-executions`에 JSON/multipart 계약을 함께 노출할 때 SpringDoc/OpenAPI operation이 혼합되는 문제를 제거하기 위해 A6 JSON path를 `POST /scenarios/{scenarioId}/model-executions/from-parameters`로 이동했다. A7 multipart path는 기존 `/model-executions`를 유지한다. 기존 JSON path 사용자가 없음을 확인해 deprecated alias 없이 즉시 이동하며 request/response/permission/service/schema는 변경하지 않는다.
 - 2026-07-13: **`groupedRationales` grouping key를 rendering `SLOT` 축으로 한정.** 동일한 고정 설비 행의 시간별 rationale을 결합하도록 parameter master `basecase_column_roles`와 일치하는 slot axis만 key/output에 포함하고 `MATRIX_TIME_COLUMNS`의 `TIME_AXIS`(`Year`/`Month`/`Period` 등)는 제외한다. A4a/A4/A8/A9에 공통 적용하며 Agent 저장 JSON, A6/X2/B1 contract, schema는 변경하지 않는다.
@@ -1499,7 +1571,9 @@ FE가 반드시 처리해야 하는 최소 상태는 `PROCESSING`, `PROPOSED`, `
 
 ## 15. Exit Criteria / Handoff
 
-- A4a/A4/A8/A9 `groupedRationales` read contract: `ready`. 공통 response projector로 구현하며 schema/ERD/repository/query 변경이 없어 이번 slice의 `new-domain-model-design`/`erd-change-review`는 생략한다. A6 duplicate-slot 실행 의미는 projection 구현과 분리된 open question이다.
+- 가격전망해석 재실행 영향 조회 API contract: `ready`. schema 변경 없이 options DTO와 JPA active row 조회를 구현할 수 있다.
+- 가격전망해석 확인/삭제 mutation: `blocked by open questions`. 두 실행 request와 공통 final transaction 계약은 고정됐지만, stale price-interpretation callback이 이후 새 row를 오염시키지 않도록 generation/source correlation 정책을 먼저 확정해야 production 구현을 완료할 수 있다.
+- A4a/A4/A8/A9 `groupedRationales` read contract: `ready`. A4a/A8/A9는 공통 tree projector를, A4는 공통 grouped-rationale primitive를 사용한다. schema/ERD/repository query 계약 변경이 없어 이번 slice의 `new-domain-model-design`/`erd-change-review`는 생략한다. A6 duplicate-slot 실행 의미는 projection 구현과 분리된 open question이다.
 - frontend mock 구현: ready
 - callback 계약(엔드포인트/인증/wrapper/순서/응답): Agent 전달 ready. 전달용 계약서는 `docs/design-docs/gas/mi-model-param-proposal-callback-contract.md`
 - real Agent/DB/Excel 구현: proposal read 계약 확정(DB DDL 수령)으로 read 엔티티/조회 착수 가능. `tmd_mi_model_execpreph`와 Agent proposal table이 DB 반영됐으므로 Agent create/callback/read, 최신 실행 기준 파라미터 조회, A4a 성공 실행 파일 projection은 mock 없이 실DB 연동 slice로 구현 가능하다. Excel merge 서비스 자체는 별도 개발 slice로 둔다.
