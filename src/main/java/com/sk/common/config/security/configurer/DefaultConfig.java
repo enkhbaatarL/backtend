@@ -17,6 +17,7 @@ import org.springframework.web.cors.CorsConfigurationSource;
 public class DefaultConfig {
 
     private final CorsConfigurationSource corsConfigurationSource;
+    private final CustomAuthenticationEntryPoint customAuthenticationEntryPoint;
 
     @Bean
     @Order(5)
@@ -30,7 +31,7 @@ public class DefaultConfig {
                 .anyRequest().authenticated()
             )
             .exceptionHandling(exceptions -> exceptions
-                .authenticationEntryPoint(new CustomAuthenticationEntryPoint())
+                .authenticationEntryPoint(customAuthenticationEntryPoint)
                 .accessDeniedHandler(new CustomAccessDeniedHandler())
             ).sessionManagement(session -> session
                 .sessionCreationPolicy(SessionCreationPolicy.STATELESS));
