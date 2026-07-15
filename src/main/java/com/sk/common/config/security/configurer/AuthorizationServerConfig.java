@@ -46,6 +46,7 @@ public class AuthorizationServerConfig {
     private final CustomOauthAuthenticationSuccessHandler customOauthAuthenticationSuccessHandler;
 
     private final CorsConfigurationSource corsConfigurationSource;
+    private final CustomAuthenticationEntryPoint customAuthenticationEntryPoint;
 
     @Bean
     @Order(1)
@@ -69,7 +70,7 @@ public class AuthorizationServerConfig {
             .securityMatcher("/api/v1/oauth2/token") // Authorization Server 경로 제한
             .with(authorizationServerConfigurer, withDefaults())
             .exceptionHandling(exceptions -> exceptions
-                .authenticationEntryPoint(new CustomAuthenticationEntryPoint())
+                .authenticationEntryPoint(customAuthenticationEntryPoint)
                 .accessDeniedHandler(new CustomAccessDeniedHandler())
             )
             .authorizeHttpRequests(authorize -> authorize

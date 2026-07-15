@@ -33,6 +33,7 @@ public class ResourceServerConfig {
     private final CustomJwtDecoder customJwtDecoder;
     private final ExceptionHandlerFilter exceptionHandlerFilter;
     private final CustomJwtAuthenticationConverter customJwtAuthenticationConverter;
+    private final CustomAuthenticationEntryPoint customAuthenticationEntryPoint;
 
     @Bean
     @Order(3)
@@ -71,7 +72,7 @@ public class ResourceServerConfig {
                 .jwt(jwt -> jwt
                     .decoder(customJwtDecoder)
                     .jwtAuthenticationConverter(customJwtAuthenticationConverter))
-                .authenticationEntryPoint(new CustomAuthenticationEntryPoint())
+                .authenticationEntryPoint(customAuthenticationEntryPoint)
                 .accessDeniedHandler(new CustomAccessDeniedHandler())
             )
             .sessionManagement(session -> session

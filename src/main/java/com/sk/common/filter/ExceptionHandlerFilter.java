@@ -26,8 +26,10 @@ public class ExceptionHandlerFilter extends OncePerRequestFilter implements Orde
         try {
             filterChain.doFilter(request, response);
         } catch (Exception e) {
-            log.error("Error occurred in filter chain : {}", e.getMessage(), e);
-            handlerExceptionResolver.resolveException(request, response, null, e);
+            // 로깅은 위임받은 GlobalExceptionHandler가 담당하므로 여기서는 중복 로깅하지 않고, resolver가 처리하지 못한 예외만 최후 방어선으로 남긴다
+            if (handlerExceptionResolver.resolveException(request, response, null, e) == null) {
+                log.error("Unresolved error in filter chain : {}", e.getMessage(), e);
+            }
         }
 
     }
