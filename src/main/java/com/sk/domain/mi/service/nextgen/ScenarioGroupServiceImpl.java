@@ -368,6 +368,7 @@ public class ScenarioGroupServiceImpl implements ScenarioGroupService {
      * [시나리오 판정 상태 변경]
      * - 실현 시 같은 그룹의 나머지 시나리오는 모두 폐기로 캐스케이드 (그룹 내 실현은 항상 1개), 함께 폐기된 ID는 응답 discardedScenarioIds로 전달
      * - 그룹 status는 매 변경마다 재도출: 실현 시나리오가 있으면 realized, 없으면 created 환원
+     * - 폐기되는 시나리오(직접 폐기 + 실현 캐스케이드 폐기)는 연계된 수급모델 실행도 함께 soft delete (실행 중 건은 실패 처리 후 삭제)
      */
     @Override
     @Transactional
@@ -396,6 +397,10 @@ public class ScenarioGroupServiceImpl implements ScenarioGroupService {
         // 그룹 status 재도출: '그룹 realized = 실현 시나리오 존재' 불변식을 실현/되돌림/폐기 모든 변경 경로에서 유지한다.
         boolean anyRealized = scenarios.stream().anyMatch(s -> s.getStatus() == ScenarioStatus.REALIZED);
         target.getScenarioGroup().deriveStatus(anyRealized);
+
+        //  폐기되는 시나리오의 수급모델 실행을 함께 soft delete
+        List<Long> executionDeleteTargetIds = status == ScenarioDisplayStatus.DISCARDED ? List.of(scenarioId) : discardedScenarioIds;
+        softDeleteScenarioExecutions(executionDeleteTargetIds);
 
         return ScenarioStatusRes.of(scenarioId, status, discardedScenarioIds);
     }
