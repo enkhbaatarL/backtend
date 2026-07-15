@@ -1,6 +1,8 @@
 package com.sk.domain.shared.service;
 
 import com.sk.domain.shared.config.FileEncryptionProperties;
+import com.sk.domain.shared.enums.DownloadEncryptionDecision;
+import com.sk.domain.shared.enums.Role;
 import java.util.Locale;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
@@ -18,6 +20,22 @@ public class FileEncryptionPolicy {
 
     public boolean isEnabled(String companyCd, String fileName) {
         return isEnabled() && isEnabledCompany(companyCd) && isTargetExtension(fileName);
+    }
+
+    public DownloadEncryptionDecision evaluateDownload(Role role, String companyCd, String fileName) {
+        if (!isEnabled()) {
+            return DownloadEncryptionDecision.FEATURE_DISABLED;
+        }
+        if (!isTargetExtension(fileName)) {
+            return DownloadEncryptionDecision.EXTENSION_NOT_TARGET;
+        }
+        if (role != Role.USER) {
+            return DownloadEncryptionDecision.ROLE_NOT_TARGET;
+        }
+        if (!isEnabledCompany(companyCd)) {
+            return DownloadEncryptionDecision.COMPANY_NOT_TARGET;
+        }
+        return DownloadEncryptionDecision.ENCRYPT;
     }
 
     public boolean isEnabledCompany(String companyCd) {

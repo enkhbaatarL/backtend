@@ -12,6 +12,7 @@ import com.sk.domain.admin.dto.response.file.FileUploadRes;
 import com.sk.domain.shared.client.FileCryptoApiClient;
 import com.sk.domain.shared.dto.request.file.FileDownloadReq;
 import com.sk.domain.shared.entity.master.tcm.UploadedFile;
+import com.sk.domain.shared.enums.DownloadEncryptionDecision;
 import com.sk.domain.shared.enums.FileRelationshipObjectSeparateCode;
 import com.sk.domain.shared.enums.Role;
 import com.sk.domain.shared.repository.master.tcm.UploadedFileRepository;
@@ -382,10 +383,10 @@ public class FileService {
     * @return byte[]
     */
     public byte[] downloadFiles(List<FileDownloadReq> list) {
-        return downloadFiles(list, null);
+        return downloadFiles(list, null, null);
     }
 
-    public byte[] downloadFiles(List<FileDownloadReq> list, String companyCd) {
+    public byte[] downloadFiles(List<FileDownloadReq> list, Role role, String companyCd) {
         List<UploadedFile> uploadedFiles = validateDownloadRequests(list);
 
         try (ByteArrayOutputStream baos = new ByteArrayOutputStream();
@@ -401,7 +402,8 @@ public class FileService {
                         continue;
 
                     zos.putNextEntry(new ZipEntry(fileName));
-                    if (fileEncryptionPolicy.isEnabled(companyCd, fileName)) {
+                    DownloadEncryptionDecision decision = fileEncryptionPolicy.evaluateDownload(role, companyCd, fileName);
+                    if (decision.shouldEncrypt()) {
                         byte[] plainData = IOUtils.toByteArray(s3is);
                         byte[] encryptedData = fileCryptoApiClient.encrypt(plainData, fileName);
                         zos.write(encryptedData);

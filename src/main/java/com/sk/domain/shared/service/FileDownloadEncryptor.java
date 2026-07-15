@@ -1,6 +1,7 @@
 package com.sk.domain.shared.service;
 
 import com.sk.domain.shared.client.FileCryptoApiClient;
+import com.sk.domain.shared.enums.DownloadEncryptionDecision;
 import com.sk.domain.shared.enums.Role;
 import com.sk.domain.shared.service.permissions.AuthorizationService;
 import java.util.Locale;
@@ -17,9 +18,10 @@ import org.springframework.stereotype.Component;
  *
  * <p>케이스 처리:
  * <ul>
- *   <li>대상 확장자가 아니면 회사 식별 없이 평문 그대로 반환한다. (어떤 회사 기준으로도 암호화 대상이 아님)</li>
- *   <li>대상 확장자면 회사코드를 반드시 확인한다. 식별이 불가능하면 예외가 그대로 전파되어 fail-closed 된다.</li>
- *   <li>회사코드가 암호화 대상 고객사(SKGAS)일 때만 암호화하고, 그 외 고객사는 평문으로 반환한다.</li>
+ *   <li>feature flag가 꺼져 있거나 대상 확장자가 아니면 인증 컨텍스트 조회 없이 평문을 반환한다.</li>
+ *   <li>{@link Role#USER}가 아니면 회사 식별 없이 평문을 반환한다.</li>
+ *   <li>USER의 회사코드 식별이 불가능하면 예외가 그대로 전파되어 fail-closed 된다.</li>
+ *   <li>최종 암호화 여부와 skip reason은 {@link FileEncryptionPolicy#evaluateDownload(Role, String, String)}가 결정한다.</li>
  * </ul>
  */
 @Slf4j
@@ -35,21 +37,22 @@ public class FileDownloadEncryptor {
         long startedAt = System.nanoTime();
 
         if (!fileEncryptionPolicy.isEnabled()) {
-            return skipEncryption(fileName, plainData, "feature_disabled", startedAt);
+            DownloadEncryptionDecision decision = fileEncryptionPolicy.evaluateDownload(null, null, fileName);
+            return skipEncryption(fileName, plainData, decision, startedAt);
         }
 
         if (!fileEncryptionPolicy.isTargetExtension(fileName)) {
-            return skipEncryption(fileName, plainData, "extension_not_target", startedAt);
+            DownloadEncryptionDecision decision = fileEncryptionPolicy.evaluateDownload(null, null, fileName);
+            return skipEncryption(fileName, plainData, decision, startedAt);
         }
 
         Role role = authorizationService.getCurrentRole();
-        if (Role.USER != role) {
-            return skipEncryption(fileName, plainData, "role_not_target", startedAt);
-        }
-
-        String companyCd = authorizationService.getCompanyCdWithPriority();
-        if (!fileEncryptionPolicy.isEnabledCompany(companyCd)) {
-            return skipEncryption(fileName, plainData, "company_not_target", startedAt);
+        String companyCd = Role.USER == role
+                ? authorizationService.getCompanyCdWithPriority()
+                : null;
+        DownloadEncryptionDecision decision = fileEncryptionPolicy.evaluateDownload(role, companyCd, fileName);
+        if (!decision.shouldEncrypt()) {
+            return skipEncryption(fileName, plainData, decision, startedAt);
         }
 
         long cryptoStartedAt = System.nanoTime();
@@ -64,11 +67,15 @@ public class FileDownloadEncryptor {
         return encryptedData;
     }
 
-    private byte[] skipEncryption(String fileName, byte[] plainData, String reason, long startedAt) {
+    private byte[] skipEncryption(
+            String fileName,
+            byte[] plainData,
+            DownloadEncryptionDecision decision,
+            long startedAt) {
         log.info(
                 "File download encryption skipped. extension={}, reason={}, elapsedMs={}",
                 extensionForLog(fileName),
-                reason,
+                decision.skipReason(),
                 elapsedMs(startedAt));
         return plainData;
     }
