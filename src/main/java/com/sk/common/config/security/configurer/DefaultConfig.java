@@ -26,7 +26,7 @@ public class DefaultConfig {
             .cors(cors -> cors.configurationSource(corsConfigurationSource))
             .csrf(AbstractHttpConfigurer::disable)
             .authorizeHttpRequests(auth -> auth
-                .requestMatchers("/swagger-ui/**","/v3/api-docs/**").permitAll()
+                .requestMatchers("/swagger-ui/**","/v3/api-docs/**","/favicon.ico").permitAll()
                 .anyRequest().authenticated()
             )
             .exceptionHandling(exceptions -> exceptions

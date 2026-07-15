@@ -33,7 +33,7 @@ public class HttpLoggingFilter extends OncePerRequestFilter implements Ordered {
     // Custom Header Key
     private static final String X_COMPANY_NO_KEY = "X-Company-No";
 
-    private final List<String> passUriStartsWith = List.of("/swagger-ui", "/v3/api-docs");
+    private final List<String> passUriStartsWith = List.of("/swagger-ui", "/v3/api-docs", "/favicon.ico");
     private final AtomicLong id = new AtomicLong(0);
 
     private final AuthorizationService authorizationService;
