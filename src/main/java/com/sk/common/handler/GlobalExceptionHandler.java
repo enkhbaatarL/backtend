@@ -22,11 +22,15 @@ import com.sk.common.model.BaseResponseFactory;
 import com.sk.common.utils.MDCUtil;
 import io.jsonwebtoken.MalformedJwtException;
 import io.jsonwebtoken.security.SignatureException;
+import jakarta.servlet.DispatcherType;
+import jakarta.servlet.http.HttpServletRequest;
+import java.io.IOException;
 import java.net.SocketTimeoutException;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.catalina.connector.ClientAbortException;
 import org.apache.commons.lang3.ObjectUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.ConversionNotSupportedException;
@@ -356,9 +360,14 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
         return createAndLogResponse("Response Write Error", ex, INTERNAL_SERVER_ERROR, ResultCode.Error.SYS_INTERNAL_ERROR, details);
     }
 
+    /**
+     * 클라이언트가 연결을 끊어 응답 스트림을 더 쓸 수 없는 상태입니다. (SSE 연결 중 브라우저 종료 등)
+     * 응답을 쓸 곳이 없고 서버가 취할 조치도 없으므로, 응답 생성 없이 DEBUG만 남기고 종료합니다.
+     */
     @Override
     protected ResponseEntity<Object> handleAsyncRequestNotUsableException(AsyncRequestNotUsableException ex, WebRequest request) {
-        return createAndLogResponse("Async Request Not Usable", ex, SERVICE_UNAVAILABLE, ResultCode.Error.SYS_INTERNAL_ERROR, ex.getMessage());
+        log.debug("[Client Disconnected] {}", ex.getMessage());
+        return null;
     }
 
     @Override
@@ -432,6 +441,19 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
     @ExceptionHandler(AmazonS3Exception.class)
     private ResponseEntity<Object> handleAmazonS3Exception(AmazonS3Exception ex) {
         return createAndLogResponse("Object Storage Access Error", ex, INTERNAL_SERVER_ERROR, ResultCode.Error.S3_ACCESS_ERROR, ex.getMessage());
+    }
+
+    /**
+     * IOException은 클라이언트 연결 중단인 경우에만 조용히 처리하고, 그 외에는 기존대로 ERROR + 500으로 응답합니다.
+     */
+    @ExceptionHandler(IOException.class)
+    private ResponseEntity<Object> handleIOException(IOException ex, HttpServletRequest request) {
+        boolean clientDisconnect = request.getDispatcherType() == DispatcherType.ASYNC || ex instanceof ClientAbortException;
+        if (clientDisconnect) {
+            log.debug("[Client Disconnected] {}", ex.getMessage());
+            return null;
+        }
+        return createAndLogResponse("Unhandled IO Error", ex, INTERNAL_SERVER_ERROR, ResultCode.Error.SYS_INTERNAL_ERROR, ex.getMessage());
     }
 
     @ExceptionHandler(Exception.class)
