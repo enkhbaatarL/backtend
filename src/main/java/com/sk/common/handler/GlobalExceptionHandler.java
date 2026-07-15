@@ -236,10 +236,6 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
      */
     @Override
     protected ResponseEntity<Object> handleNoResourceFoundException(NoResourceFoundException ex, HttpHeaders headers, HttpStatusCode status, WebRequest request) {
-        // 파비콘은 브라우저가 HTML 페이지(로그 뷰어, Swagger 등) 렌더링 시 자동 요청하는 것으로, 미보유가 정상이므로 로그 없이 404만 응답한다
-        if (ex.getResourcePath().endsWith("favicon.ico")) {
-            return ResponseEntity.notFound().build();
-        }
         return createAndLogResponse("Resource Not Found", ex, NOT_FOUND, ResultCode.Error.RSC_PATH_NOT_FOUND, ex.getResourcePath());
     }
 
@@ -254,6 +250,9 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
      */
     @Override
     protected ResponseEntity<Object> handleNoHandlerFoundException(NoHandlerFoundException ex, HttpHeaders headers, HttpStatusCode status, WebRequest request) {
+        if (ex.getRequestURL().endsWith("favicon.ico")) {
+            return ResponseEntity.notFound().build();
+        }
         return createAndLogResponse("Handler Not Found", ex, NOT_FOUND, ResultCode.Error.RSC_PATH_NOT_FOUND, ex.getRequestURL());
     }
 
