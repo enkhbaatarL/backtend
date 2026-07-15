@@ -2,7 +2,7 @@
 
 ## Document Control
 
-- status: Draft
+- status: Approved
 - canonical for: Business rules
 - owner: BE
 - source documents:
@@ -10,11 +10,12 @@
   - `docs/work-notes/2026/2026-06-16-file-crypto-single-file-hook-implementation.md`
   - `docs/work-notes/2026/2026-06-19-file-crypto-zip-download-design.md`
   - `docs/work-notes/2026/2026-06-19-file-crypto-admin-company-context.md`
+  - `docs/work-notes/2026/2026-07-15-file-download-encryption-condition-investigation.md`
 - depends on:
   - 외부 암복호화 서비스 API 계약
 - supersedes:
   - 없음
-- last synced: 2026-06-19
+- last synced: 2026-07-15
 - open questions:
   - ZIP 대상 엔트리 암호화 적용 전 최대 파일 크기, 최대 파일 수, 동시 요청 제한을 운영값으로 확인해야 한다.
 
@@ -26,8 +27,8 @@
 특정 고객사(SKGAS)에 한해, MS Office 문서 확장자 파일을 대상으로 **전송 구간(클라이언트 ↔ 서버) 암호화**를 적용한다.
 
 - **업로드**: 클라이언트가 *암호화된 파일*을 전송 → 서버가 **복호화** → Object Storage에 **평문 저장**
-- **다운로드**: Object Storage에서 평문 read → 서버가 **암호화** → 클라이언트에 **암호문 전달**
-- **ZIP 다운로드**: Object Storage에서 각 파일 평문 read → 대상 Office 파일만 **개별 암호화** → 암호화된 엔트리를 ZIP에 포함하여 클라이언트에 전달
+- **다운로드**: `Role.USER` 요청이면 Object Storage에서 평문 read → 서버가 **암호화** → 클라이언트에 **암호문 전달**
+- **ZIP 다운로드**: `Role.USER` 요청이면 Object Storage에서 각 파일 평문 read → 대상 Office 파일만 **개별 암호화** → 암호화된 엔트리를 ZIP에 포함하여 클라이언트에 전달
 
 즉, 저장소(at-rest)는 현재와 동일하게 평문을 유지하고, **특정 고객사와의 경계에서만** 암복호화가 일어난다. 이렇게 하면 내부 처리(정형데이터 파싱 등)는 모두 평문 그대로 동작한다.
 
@@ -37,15 +38,16 @@
 | --- | --- |
 | 고객사 | 유효 고객사 코드가 `SKGAS` |
 | 확장자 | MS Office (`xlsx, xls, xlsm, docx, doc, docm, pptx, ppt, pptm`) |
+| 다운로드 역할 | `Role.USER` (단건 및 ZIP 공통) |
 
-두 조건을 **모두** 만족할 때만 암복호화를 수행한다.
+업로드 복호화는 고객사와 확장자 조건을 모두 만족할 때 수행한다. 단건 및 ZIP 다운로드 암호화는 고객사, 확장자, `Role.USER` 조건을 모두 만족할 때 수행한다.
 
 유효 고객사 코드는 다음 우선순위로 판단한다.
 
-1. 요청 header `X-Company-No`가 있으면 해당 `customerCompanyNo`로 조회한 `customerCompanyCd`
-2. `X-Company-No`가 없으면 JWT claim의 `companyNo`로 조회한 `customerCompanyCd`
+1. 타사 접근 권한이 있는 `Role.ADMIN` 요청에 `X-Company-No`가 있으면 해당 `customerCompanyNo`로 조회한 `customerCompanyCd`
+2. 그 외에는 JWT claim의 `companyNo`로 조회한 `customerCompanyCd`
 
-따라서 Admin 사용자가 자신의 JWT `companyCd`가 `SKGAS`가 아니더라도 `X-Company-No`로 SKGAS 고객사 컨텍스트를 선택해 파일 업로드/다운로드를 수행하면 암복호화 대상이 된다. 반대로 `X-Company-No`가 없으면 기존처럼 로그인 사용자의 회사 컨텍스트 기준으로 판단한다.
+따라서 Admin 사용자가 자신의 JWT `companyCd`가 `SKGAS`가 아니더라도 허용된 `X-Company-No`로 SKGAS 고객사 컨텍스트를 선택하면 업로드 복호화 대상이 될 수 있다. 다운로드 암호화는 `Role.USER` 전용이므로 USER의 `X-Company-No`는 무시하고 JWT `companyNo` 기준 고객사를 사용한다.
 
 ## 2. 현재 구조 (적용 지점)
 
@@ -62,7 +64,7 @@
 
 ## 3. 설계
 
-핵심 원칙: `if (고객사 && 확장자)` 분기를 컨트롤러/서비스 곳곳에 흩뿌리지 않고 **정책 컴포넌트 한 곳**으로 모은다. 업로드, 단건 다운로드, ZIP 다운로드의 외부 전달 경계에서 같은 정책을 사용한다.
+핵심 원칙: 고객사와 확장자 분기는 **정책 컴포넌트 한 곳**으로 모으고, 다운로드 경계에서는 단건과 ZIP 모두 `Role.USER` 조건을 먼저 적용한다.
 
 ### 3.1 설정 (환경변수/시크릿 주입)
 
@@ -103,33 +105,80 @@ external:
 
 ### 3.2 `FileEncryptionPolicy` (단일 진실 공급원)
 
+업로드와 다운로드의 조건을 구분한다.
+
+- 업로드 복호화: feature flag + 고객사 + 확장자
+- 다운로드 암호화: feature flag + 확장자 + `Role.USER` + 고객사
+
+다운로드 조건은 boolean 조합을 호출부에 반복하지 않고 `DownloadEncryptionDecision`으로 평가한다. enum은 최종 암호화 여부와 skip reason을 함께 제공해 단건 로그와 ZIP 분기가 같은 의미를 사용하게 한다.
+
+```java
+public enum DownloadEncryptionDecision {
+    ENCRYPT(null),
+    FEATURE_DISABLED("feature_disabled"),
+    EXTENSION_NOT_TARGET("extension_not_target"),
+    ROLE_NOT_TARGET("role_not_target"),
+    COMPANY_NOT_TARGET("company_not_target");
+
+    private final String skipReason;
+
+    DownloadEncryptionDecision(String skipReason) {
+        this.skipReason = skipReason;
+    }
+
+    public boolean shouldEncrypt() {
+        return this == ENCRYPT;
+    }
+
+    public String skipReason() {
+        return skipReason;
+    }
+}
+```
+
 ```java
 @Component
 @RequiredArgsConstructor
 public class FileEncryptionPolicy {
 
-    private final FileEncryptionProperties props;   // enabled-company-cds, target-extensions
+    private final FileEncryptionProperties properties;
 
-    /** 유효 고객사 + 확장자 두 조건을 모두 만족할 때만 true */
-    public boolean isEnabled(String effectiveCompanyCd, String fileName) {
-        return effectiveCompanyCd != null
-            && props.getEnabledCompanyCds().contains(effectiveCompanyCd)
-            && hasTargetExtension(fileName);
+    /** 업로드 복호화 등 역할과 무관한 공통 feature + 고객사 + 확장자 정책 */
+    public boolean isEnabled(String companyCd, String fileName) {
+        return isEnabled() && isEnabledCompany(companyCd) && isTargetExtension(fileName);
     }
 
-    private boolean hasTargetExtension(String fileName) {
-        if (fileName == null) return false;
-        int dot = fileName.lastIndexOf('.');
-        if (dot < 0) return false;
-        String ext = fileName.substring(dot + 1).toLowerCase();   // 대소문자 무시
-        return props.getTargetExtensions().contains(ext);
+    /** 단건 및 ZIP 다운로드가 함께 사용하는 최종 decision */
+    public DownloadEncryptionDecision evaluateDownload(
+            Role role,
+            String companyCd,
+            String fileName) {
+
+        if (!isEnabled()) {
+            return DownloadEncryptionDecision.FEATURE_DISABLED;
+        }
+        if (!isTargetExtension(fileName)) {
+            return DownloadEncryptionDecision.EXTENSION_NOT_TARGET;
+        }
+        if (role != Role.USER) {
+            return DownloadEncryptionDecision.ROLE_NOT_TARGET;
+        }
+        if (!isEnabledCompany(companyCd)) {
+            return DownloadEncryptionDecision.COMPANY_NOT_TARGET;
+        }
+        return DownloadEncryptionDecision.ENCRYPT;
     }
+
+    // isEnabled(), isEnabledCompany(), isTargetExtension()은 기존 구현을 유지한다.
 }
 ```
 
-- "SKGAS인지", "Office 확장자인지" 판단이 **이 클래스 한 곳**에만 존재한다.
+- feature flag, "SKGAS인지", "Office 확장자인지", 다운로드 `Role.USER`인지 판단이 **이 클래스 한 곳**에만 존재한다.
 - `FileEncryptionPolicy`에 전달하는 회사코드는 `AuthorizationService.getCompanyCdWithPriority()` 또는 업로드 호출부에서 이미 해석한 유효 고객사 코드여야 한다.
 - 인증 컨텍스트가 없는 SYSTEM/비동기 흐름에서는 `companyCd == null` → 자동으로 `false`.
+- decision 평가 순서는 `feature flag → 확장자 → 역할 → 고객사`로 고정한다.
+- `FileDownloadEncryptor`는 불필요한 인증/고객사 조회를 피하기 위해 기존 `isEnabled()`/`isTargetExtension()` 선검사를 유지할 수 있다. 단, 실제 암호화 호출 전에는 반드시 `evaluateDownload(...) == ENCRYPT`를 확인하며 역할·고객사 조건을 별도로 재정의하지 않는다.
+- ZIP controller의 `Role.USER ? companyCd : null`은 불필요한 고객사 조회를 피하기 위한 인증 컨텍스트 해석일 뿐 최종 암호화 정책이 아니다. 최종 판정은 ZIP entry마다 `evaluateDownload(...)`가 담당한다.
 
 ### 3.3 외부 암복호화 API 연동 흐름
 
@@ -289,12 +338,17 @@ if (policy.isEnabled(companyCd, file.getOriginalFilename())) {
 
 `FileService.downloadFile()`에서 기존 `fileNm` + `fileSize` 검증을 먼저 수행한다. 이때 `fileSize`는 DB에 저장된 **평문 파일 크기** 기준이며, SKGAS 클라이언트도 상세/목록 API에서 받은 `fileNo`, `fileNm`, `fileSize`를 그대로 다운로드 요청에 전달한다.
 
-검증 통과 후 Object Storage에서 평문 파일을 읽고, 요청자 고객사와 확장자가 암호화 대상이면 외부 암복호화 서비스에 업로드한 뒤 암호화 API와 결과 다운로드 API를 순서대로 호출한다. MI Platform은 암호문을 임시 Object Storage에 다시 업로드하지 않는다. 암호문 산출물의 저장, 수명, 정리는 암복호화 서비스 책임이다.
+검증 통과 후 Object Storage에서 평문 파일을 읽고, 요청 역할이 `Role.USER`이며 요청자 고객사와 확장자가 암호화 대상이면 외부 암복호화 서비스에 업로드한 뒤 암호화 API와 결과 다운로드 API를 순서대로 호출한다. MI Platform은 암호문을 임시 Object Storage에 다시 업로드하지 않는다. 암호문 산출물의 저장, 수명, 정리는 암복호화 서비스 책임이다.
 
 ```java
 byte[] data = objectStorageService.downloadFile(bucketName, filePath);
-String companyCd = authorizationService.getCompanyCdWithPriority();   // X-Company-No 우선
-if (policy.isEnabled(companyCd, uploadedFile.getOriginalFileNm())) {
+Role role = authorizationService.getCurrentRole();
+String companyCd = role == Role.USER ? authorizationService.getCompanyCdWithPriority() : null;
+DownloadEncryptionDecision decision = policy.evaluateDownload(
+        role,
+        companyCd,
+        uploadedFile.getOriginalFileNm());
+if (decision.shouldEncrypt()) {
     data = fileCryptoApiClient.encrypt(data, uploadedFile.getOriginalFileNm());
 }
 ```
@@ -310,7 +364,7 @@ if (policy.isEnabled(companyCd, uploadedFile.getOriginalFileNm())) {
 
 ### 3.6 길목 훅 — MI Platform ZIP 다운로드
 
-`POST /api/v1/file-management/download`는 여러 파일을 하나의 ZIP으로 압축해 반환한다. 이 경로도 SKGAS 요청자가 MS Office 확장자 파일을 다운로드하는 외부 전달 경계이므로 암호화 적용 대상이다.
+`POST /api/v1/file-management/download`는 여러 파일을 하나의 ZIP으로 압축해 반환한다. 이 경로도 `Role.USER`인 SKGAS 요청자가 MS Office 확장자 파일을 다운로드하는 외부 전달 경계이므로 암호화 적용 대상이다.
 
 정책은 **ZIP 컨테이너 전체 암호화가 아니라, ZIP 내부 대상 파일 엔트리의 개별 암호화**다.
 
@@ -319,16 +373,23 @@ if (policy.isEnabled(companyCd, uploadedFile.getOriginalFileNm())) {
 1. 요청 body의 각 `fileNo`, `fileNm`, `fileSize`를 기존과 동일하게 DB의 `tcm_filel` 저장값과 대조한다.
 2. 검증 기준의 `fileSize`는 업로드 시 저장된 **평문 파일 크기**이며, 암호화 결과 크기와 비교하지 않는다.
 3. 각 파일을 Object Storage에서 평문으로 읽는다.
-4. 요청자 고객사와 원본 파일명이 `FileEncryptionPolicy` 대상이면 해당 파일 byte를 외부 암복호화 서비스로 암호화한다.
+4. 요청 역할이 `Role.USER`이고 요청자 고객사와 원본 파일명이 `FileEncryptionPolicy` 대상이면 해당 파일 byte를 외부 암복호화 서비스로 암호화한다.
 5. 암호화된 byte를 원본 파일명 그대로 ZIP 엔트리에 쓴다.
-6. 비대상 고객사 또는 비대상 확장자 파일은 평문 byte를 ZIP 엔트리에 쓴다.
+6. USER가 아닌 역할, 비대상 고객사 또는 비대상 확장자 파일은 평문 byte를 ZIP 엔트리에 쓴다.
 7. 하나의 ZIP 안에 대상/비대상 파일이 섞이면 대상 Office 엔트리만 암호화하고 나머지 엔트리는 기존처럼 평문으로 포함한다.
 
 ```java
-String requesterCompanyCd = authorizationService.getCompanyCdWithPriority();
+Role role = authorizationService.getCurrentRole();
+String requesterCompanyCd = role == Role.USER
+        ? authorizationService.getCompanyCdWithPriority()
+        : null;
 for (UploadedFile file : uploadedFiles) {
     byte[] entryData = objectStorageService.downloadFile(bucketName, filePath);
-    if (policy.isEnabled(requesterCompanyCd, file.getOriginalFileNm())) {
+    DownloadEncryptionDecision decision = policy.evaluateDownload(
+            role,
+            requesterCompanyCd,
+            file.getOriginalFileNm());
+    if (decision.shouldEncrypt()) {
         entryData = fileCryptoApiClient.encrypt(entryData, file.getOriginalFileNm());
     }
     zos.putNextEntry(new ZipEntry(file.getOriginalFileNm()));
@@ -348,9 +409,9 @@ for (UploadedFile file : uploadedFiles) {
 
 | 구분 | 책임 |
 | --- | --- |
-| `FileDedicatedController.downloadFiles(...)` | 인증된 요청자의 유효 고객사 코드를 조회하고 ZIP 다운로드 서비스 호출에 전달 |
-| `FileService.downloadFiles(...)` | 파일 metadata 검증, Object Storage 평문 조회, 대상 엔트리 암호화, ZIP 생성 |
-| `FileEncryptionPolicy` | 요청자 고객사 + 원본 파일명 확장자 기반 대상 판단 |
+| `FileDedicatedController.downloadFiles(...)` | 요청 역할과 USER일 때의 유효 고객사 코드를 ZIP 다운로드 서비스 호출에 전달. 최종 암호화 여부는 결정하지 않음 |
+| `FileService.downloadFiles(...)` | 파일 metadata 검증, entry별 공통 download decision 평가, Object Storage 평문 조회, 대상 엔트리 암호화, ZIP 생성 |
+| `FileEncryptionPolicy` | 단건/ZIP 공통 download decision의 단일 진실 공급원 |
 | `FileCryptoApiClient` | ZIP 엔트리에 쓰기 전 대상 파일 byte 암호화 |
 
 `Content-Disposition`의 ZIP 파일명과 HTTP response `Content-Length`는 최종 ZIP byte 기준이다. ZIP 내부 각 엔트리명은 기존 원본 파일명을 유지한다. `tcm_filel.file_size`와 클라이언트가 요청에 전달하는 `fileSize`는 계속 평문 파일 크기 기준이다.
@@ -362,14 +423,15 @@ for (UploadedFile file : uploadedFiles) {
 | 항목 | 종류 | 비고 |
 | --- | --- | --- |
 | `FileEncryptionProperties` | 신규 | `@ConfigurationProperties(prefix="file.encryption")` |
-| `FileEncryptionPolicy` | 신규 | 대상 고객사/확장자 판단 단일 진실 공급원 |
+| `DownloadEncryptionDecision` | 추가 | 단건/ZIP 공통 암호화 여부와 skip reason |
+| `FileEncryptionPolicy` | 수정 | 업로드 공통 정책 유지 + 다운로드 decision 단일 진실 공급원 |
 | `FileCryptoApiProperties` | 신규 | `@ConfigurationProperties(prefix="external.file-crypto")` |
 | `FileCryptoApiClient` | 신규 | 암복호화 서비스 upload/status/encrypt/decrypt/download API 연동 |
 | `FileService.upload()` | 수정 | 업로드 복호화 훅, `fileSize` 평문 기준 저장 |
 | `FileService.downloadFile()` | 유지 | 단건 다운로드 metadata 검증 및 Object Storage 평문 조회 |
 | `FileDedicatedController.downloadFile()` | 수정 | 외부 전달 직전 단건 다운로드 암호화 훅 |
-| `FileDedicatedController.downloadFiles()` | 수정 | 요청자 회사코드를 ZIP 다운로드 처리로 전달 |
-| `FileService.downloadFiles()` | 수정 | ZIP 내부 대상 Office 엔트리를 압축 전 개별 암호화 |
+| `FileDedicatedController.downloadFiles()` | 수정 | 요청자 역할과 회사코드를 ZIP 다운로드 처리로 전달 |
+| `FileService.downloadFiles()` | 수정 | 공통 download decision으로 ZIP 내부 대상 Office 엔트리를 압축 전 개별 암호화 |
 | `AuthorizationService.getCompanyCdWithPriority()` | 신규/사용 | Admin의 `X-Company-No` 고객사 컨텍스트를 암호화 정책에 반영 |
 | `directDownloadFiles()` | 보류 | URL 직접 다운로드는 별도 설계 후 적용 |
 | `application-*.yml` | 수정 | `file.encryption.*`, `external.file-crypto.*` 추가 |
@@ -390,8 +452,12 @@ for (UploadedFile file : uploadedFiles) {
 ## 6. 결정 사항 (확정)
 
 - 적용 대상 고객사: 유효 고객사 코드가 `SKGAS`
-- 유효 고객사 코드: `X-Company-No`로 조회한 고객사 코드 우선, 없으면 JWT `companyNo`로 조회한 고객사 코드
+- 유효 고객사 코드: 타사 접근 권한이 있는 ADMIN의 `X-Company-No`만 우선하며, 그 외에는 JWT `companyNo`로 조회한 고객사 코드
 - 적용 확장자: MS Office 문서 (`xlsx, xls, xlsm, docx, doc, docm, pptx, ppt, pptm`)
+- 다운로드 암호화 대상 역할: `Role.USER` (단건 및 ZIP 공통)
+- 다운로드 조건의 canonical owner: `FileEncryptionPolicy.evaluateDownload(...)`
+- 다운로드 decision 평가 순서: feature flag → 확장자 → 역할 → 고객사
+- skip reason: `feature_disabled`, `extension_not_target`, `role_not_target`, `company_not_target`
 - 암복호화 방식: MI Platform 내부 AES 유틸이 아니라 외부 암복호화 서비스 API 사용
 - 암복호화 API 호출 순서: 암복호화 서비스 `upload` → `status` → 필요한 경우 `encrypt` 또는 `decrypt` → 필요한 경우 암복호화 서비스 `download`
 - 암복호화용 upload/download API는 MI Platform의 기존 파일 upload/download API와 별개
@@ -439,7 +505,7 @@ for (UploadedFile file : uploadedFiles) {
 
 ## 8. Implementation Readiness
 
-- readiness: `ready after minor cleanup`
-- ZIP 다운로드 암호화 정책은 구현 가능한 수준으로 확정되었다.
+- readiness: `ready`
+- 단건/ZIP 공통 다운로드 decision과 계층 책임이 구현 가능한 수준으로 확정되었다.
 - 구현 전 운영값 확인 필요: 최대 파일 크기, ZIP당 최대 파일 수, 외부 암복호화 서비스 동시 호출 제한.
-- 구현 시 검증 필요: SKGAS + Office ZIP 엔트리는 암호화되고, 비대상 엔트리는 기존과 동일하게 포함되며, `fileNm`/`fileSize` 검증은 평문 DB metadata 기준으로 유지된다.
+- 구현 시 검증 필요: policy decision matrix, 단건/ZIP 동일 decision 적용, SKGAS + Office ZIP 엔트리 암호화, 비대상 엔트리 평문 streaming, `fileNm`/`fileSize` 평문 DB metadata 검증 유지.

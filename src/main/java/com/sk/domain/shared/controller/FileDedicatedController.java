@@ -133,8 +133,11 @@ public class FileDedicatedController {
             @RequestParam(value = "prefix", required = true) String prefix,
             @RequestBody @Valid List<FileDownloadReq> body) throws UnsupportedEncodingException {
 
-        String companyCd = authorizationService.getCompanyCdWithPriority();
-        byte[] fileData = fileService.downloadFiles(body, companyCd);
+        Role role = authorizationService.getCurrentRole();
+        String companyCd = Role.USER == role
+                ? authorizationService.getCompanyCdWithPriority()
+                : null;
+        byte[] fileData = fileService.downloadFiles(body, role, companyCd);
         String encodedFileName = URLEncoder.encode(prefix.concat("_").concat(DateUtil.currentYYYYMMDDHHMMSS()).concat(".zip"),
                 StandardCharsets.UTF_8.toString()).replace("+", "%20");
 
