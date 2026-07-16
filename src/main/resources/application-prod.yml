@@ -120,7 +120,7 @@ api:
     connection-timeout: 1s
     read-timeout: 60s
   price-interpretation-agent:
-    url: http://agent-interpret-skgas.prod.mip-skgas.svc.cluster.local:8000
+    url: http://agent-interpret-skgas-app-prod.mi-skgas.svc.cluster.local:8000
     connection-timeout: 1s
     read-timeout: 60s
   model-param-proposal-agent:
