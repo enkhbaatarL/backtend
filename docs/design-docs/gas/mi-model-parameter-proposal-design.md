@@ -6,8 +6,8 @@
 - status: Review
 - owner: BE (platform)
 - created at: 2026-07-03
-- updated at: 2026-07-10
-- canonical for: 파라미터 제안의 business concept, ownership, lifecycle, 상태 전이, Excel 생성 및 기존 수급모델 실행 연결 경계
+- updated at: 2026-07-16
+- canonical for: 파라미터 제안의 business concept, access scope, lifecycle, 상태 전이, Excel 생성 및 기존 수급모델 실행 연결 경계
 - not canonical for:
   - endpoint, request/response, HTTP error contract: `docs/feature-specs/mi-model-parameter-proposal-backend-feature-spec.md`
   - execution-preparation physical DDL 및 DBA rollout: `docs/design-docs/gas/mi-model-param-proposal-execprep-erd-ddl-draft.md`
@@ -22,7 +22,7 @@
   - `docs/conventions/db-object-naming-rules.md`
   - `docs/conventions/db-term-dictionary-sheet2.csv`
 - supersedes: 없음
-- last synced: 2026-07-10
+- last synced: 2026-07-16
 - open questions: 11절 참조
 - integration model: **callback = 완료 신호. Backend가 Agent proposal 테이블을 read-only 직접 조회해 결과를 서빙**(시나리오 설계와 동일). CAS/hash/snapshot 저장 없음
 - implementation readiness: ready for API implementation by slice. frontend mock/API contract is ready. real Agent read/callback implementation can start because Agent proposal DDL, Backend read permission, callback authentication, wrapper shape, write-then-callback order, direct same-DB read path, and `tmd_mi_model_execpreph` DBA DDL apply are resolved. Remaining items are rollout/operation details: Agent proposal table runtime visibility/권한/type 확인, execution-preparation mapping/index/constraint validate, workbook location/version, and payload sizing.
@@ -79,7 +79,7 @@
 
 수급모델 실행 전 한 번의 파라미터 제안 생성과 사용자 확정을 대표하는 transaction/history 성격의 resource다.
 
-- owner: 요청 사용자
+- access scope: Scenario 문맥 공유. 요청 사용자별 proposal 소유권을 두지 않는다.
 - target: 기존 `Scenario`
 - upstream owner: Agent가 proposal 계산 및 Agent-side proposal row를 소유
 - Backend owner:
@@ -90,6 +90,8 @@
   사용자 확정값(confirmation payload)은 Agent confirmation API가 Agent proposal 테이블에 저장하므로 Backend는 confirmed snapshot을 복제하지 않는다.
 - shared contract:
   - `modelParamProposalId`는 Agent proposal identity이며 Backend PK로 재해석하지 않는다.
+  - execution-preparation의 `req_usr_no`는 요청자를 추적하는 audit/provenance 정보다. 조회·확정·실행·재실행 시 현재 사용자와 비교하는 접근 제어 조건으로 사용하지 않는다.
+  - 동일 Scenario 문맥의 다른 사용자는 기존 proposal을 조회·확정·실행·재실행할 수 있다. 이 기능은 기존 endpoint 공통 접근 조건 외에 proposal 요청자 기준의 별도 ACL을 추가하지 않는다.
   - Backend는 Agent table을 직접 **수정하지 않고(read-only)** Agent API로만 생성/확정한다.
   - **결과 조회는 Backend가 Agent proposal 테이블을 직접 read한다.** 이는 시나리오 설계가 Agent-write 테이블을 Backend가 `scenarioGroupRepository`로 읽는 방식과 동일하다. Agent proposal DDL과 Backend read 권한은 확정됐고, Agent proposal table은 기존 Backend DB/schema에 추가되는 직접 read 대상이다. 별도 view/synonym 또는 우회 경로는 만들지 않는다. 배포 전에는 table visibility, `SELECT` 권한, key type 정합만 검증한다.
   - 따라서 callback은 proposal 데이터를 나르지 않는 **완료 신호(signal)** 이며, Backend는 신호 수신 후 Agent 테이블을 재조회한다. 신호 유실 시 상태 재조회·폴링으로 수렴한다.
@@ -194,7 +196,7 @@ Scenario의 기반 Event가 어떤 수급모델 실행 입력 workflow를 사용
 
 Backend execution-preparation은 Agent proposal ID를 받은 뒤 생성하지 않는다. 동일 Scenario의 동시 제안 요청을 먼저 차단하고 callback이 Agent HTTP 응답보다 먼저 도착하는 경우에도 대상을 찾을 수 있도록 다음 순서를 사용한다.
 
-1. Scenario, permission, `inputMode`, active preparation/model execution 중복을 검증한다.
+1. Scenario, 기존 endpoint 공통 접근 조건, `inputMode`, active preparation/model execution 중복을 검증한다. proposal 요청자와 현재 사용자의 동일성은 검증하지 않는다.
 2. `scenarioId`, 요청자, 요청 시점 snapshot과 Backend 상태 `REQUESTING`을 가진 execution-preparation을 생성하고 commit한다. 이 시점의 Agent proposal ID는 `null`이다.
 3. 선행 transaction이 끝난 뒤 Agent proposal 요청 API를 호출한다. 외부 호출 동안 DB transaction을 열어두지 않는다.
 4. Agent HTTP 응답 경로는 응답의 Agent proposal ID를, callback 경로는 Agent proposal 테이블 재조회로 확인한 ID를 조건부 저장한다. 두 경로 중 먼저 도착한 값이 write-once로 설정된다.
@@ -207,7 +209,7 @@ Agent 요청이 명시적으로 실패하면 preparation에 실패 상태와 사
 
 ### 4.1 권고안: Agent proposal table과 분리된 Backend proposal request orchestration table
 
-Agent의 `tmm_mi_model_param_proposal_m`이 proposal 계산 이력·payload를 소유하고 **Backend가 이를 read-only로 직접 조회**하므로, Backend는 proposal 데이터를 복제 저장하지 않는다. Backend persistence가 필요한 최소 이유는 proposal 자체 보관이나 수급모델 실행 이력 저장이 아니라 Agent가 모르는 **Backend execution-preparation 상태, 사용자 ownership, Case 연결**이다. 사용자 확정 파라미터(confirmation payload)는 Agent confirmation API가 Agent proposal 테이블에 저장하므로 Backend는 별도 confirmed snapshot을 복제하지 않는다. 실제 수급모델 실행 master/history는 `tmd_mdl_scnrcasem` / `tmd_mdl_scnrcaseh`가 계속 source of truth다.
+Agent의 `tmm_mi_model_param_proposal_m`이 proposal 계산 이력·payload를 소유하고 **Backend가 이를 read-only로 직접 조회**하므로, Backend는 proposal 데이터를 복제 저장하지 않는다. Backend persistence가 필요한 최소 이유는 proposal 자체 보관이나 수급모델 실행 이력 저장이 아니라 Agent가 모르는 **Backend execution-preparation 상태, 요청자 audit/provenance, Case 연결**이다. 사용자 확정 파라미터(confirmation payload)는 Agent confirmation API가 Agent proposal 테이블에 저장하므로 Backend는 별도 confirmed snapshot을 복제하지 않는다. 실제 수급모델 실행 master/history는 `tmd_mdl_scnrcasem` / `tmd_mdl_scnrcaseh`가 계속 source of truth다.
 
 후속 ERD review 대상 후보는 Agent proposal ID를 external reference로 갖는 **thin Backend execution-preparation 행**이다(proposal 데이터 snapshot·hash 없이 실행 준비 상태와 Case 포인터만 저장). 물리명 `tmd_mi_model_execpreph`는 유지하되, 업무 의미는 `수급모델 실행 이력`이 아니라 `파라미터 제안 기반 수급모델 실행 준비 이력`이다. 기존 `tmm_mdlparamrecmh` 후보명은 보류한다.
 
@@ -220,7 +222,7 @@ Agent의 `tmm_mi_model_param_proposal_m`이 proposal 계산 이력·payload를 �
 | Scenario ID | `scnr_id` | 대상 Scenario logical reference |
 | active(in-flight) Scenario ID | `actv_scnr_id` | STORED generated column. in-flight 상태 **AND** `del_yn='N'`이면 `scnr_id`, 아니면 NULL. UNIQUE로 시나리오당 in-flight 1건 보장. 표준단어 `ACTV`(활성) + `SCNR`(시나리오)를 사용하며 기존 `ScenarioCase.actv_scnr_id` 패턴과 정합 |
 | Scenario Case ID | `case_id` | 실행 접수 후 기존 `tmd_mdl_scnrcasem` Case 포인터, nullable, UNIQUE. 실행 1회 준비 row 하나가 Case 하나에 연결된다 |
-| request user | `req_usr_no` | 요청자/소유자 |
+| request user | `req_usr_no` | 요청자 audit/provenance. 접근 제어 조건으로 사용하지 않음 |
 | orchestration status | naming review 필요 | Agent status와 분리된 Backend lifecycle status (monotonic, §3.2 7종) |
 | failure reason | `fail_rsn_ctnt` 후보 | Backend orchestration 실패 사유 |
 | requested/confirmed timestamps | naming review 필요 | lifecycle timestamp |
@@ -266,7 +268,7 @@ tcm_filel: DEMAND / SUPPLY / TRADE generated files
 ## 6. Business Rules
 
 1. 제안 요청 대상 Scenario는 존재하고 삭제되지 않아야 한다.
-2. 요청 사용자는 기존 Next Gen Scenario/Model Execution permission을 만족해야 한다.
+2. 요청 사용자는 기존 Next Gen Scenario/Model Execution endpoint의 공통 접근 조건을 따른다. Proposal은 요청 사용자별 소유권이나 별도 ACL을 추가하지 않으며, `req_usr_no` 불일치는 조회·확정·실행·재실행 거절 사유가 아니다.
 3. `PARAMETER_PROPOSAL` mode Scenario만 proposal 생성과 JSON execution을 사용할 수 있다.
 4. `FILE_UPLOAD` mode Scenario는 proposal 생성을 거절하고 기존 multipart execution만 사용할 수 있다.
 5. mode와 다른 실행 입력 방식을 요청하면 Backend가 거절하며 client가 mode를 override할 수 없다.
@@ -439,7 +441,7 @@ Resolved and no longer P0: callback authentication, Backend read permission, Age
 
 ## 14. Document Control / Source-of-Truth Notes
 
-- 이 문서는 business lifecycle, ownership, 상태 전이, Excel merge와 기존 실행 aggregate 연결의 canonical source다.
+- 이 문서는 business lifecycle, access scope, 상태 전이, Excel merge와 기존 실행 aggregate 연결의 canonical source다.
 - frontend/backend endpoint 계약은 feature spec을 따른다.
 - Agent Notion과 Agent DB 설계 문서는 source evidence다. Agent physical schema는 정정된 canonical DDL로, Backend physical schema는 별도 Backend DDL draft로 승격해야 한다.
 - P0 질문은 Agent 연동 없는 frontend mock 구현을 막지 않지만 real DB/Agent/Excel integration을 막는다.
@@ -448,3 +450,4 @@ Resolved and no longer P0: callback authentication, Backend read permission, Age
 - 2026-07-10 sync note: execution file staging은 기존 `tcm_filel TEMP/0` marker, 최종 `SCNRCASE/{uuid}` 선업로드, metadata-only Case attach, final conflict 보상 삭제, 24시간 orphan TTL, JSON/multipart 공통 적용, 직렬 업로드로 확정했다. 별도 schema/DDL은 없다.
 - 2026-07-10 sync note: A8은 최신 A6-linked Case와 연결된 proposal의 조회 시점 현재 Agent `confirmation_parameters`를 반환한다. 실행 시점 immutable snapshot/exact 복원은 현행 범위가 아니며 실제 실행 input은 Case 연결 파일 3개가 소유하므로 execprep confirmed JSON snapshot을 추가하지 않는다.
 - 2026-07-13 sync note: 독립 latest input-file API는 만들지 않고 A4a `executionInputFiles`로 병합했다. A4a의 최신 execution-preparation이 `EXECUTED_CONFIRMED`일 때만 같은 `case_id`의 파일 metadata를 노출하며, 다른 상태는 `null`이다. A8/A9 latest Case 조회 책임은 유지한다.
+- 2026-07-16 sync note: proposal은 Scenario 문맥에서 공유하며 요청 사용자별 소유권을 두지 않는 것으로 정정했다. `req_usr_no`는 요청자 audit/provenance 정보일 뿐 접근 제어 predicate가 아니며, 다른 사용자의 기존 proposal 조회·확정·실행·재실행을 막지 않는다.

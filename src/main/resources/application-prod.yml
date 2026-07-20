@@ -123,6 +123,10 @@ api:
     url: http://agent-interpret-skgas-app-prod.mi-skgas.svc.cluster.local:8000
     connection-timeout: 1s
     read-timeout: 60s
+  model-param-proposal-agent:
+    url: http://agent-parameter-skgas-app-prod.mi-skgas.svc.cluster.local:8000
+    connection-timeout: 1s
+    read-timeout: 60s
 
 mail:
   except-company-no: 2013

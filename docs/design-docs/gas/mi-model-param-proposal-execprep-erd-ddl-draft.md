@@ -16,7 +16,7 @@
   - `docs/conventions/db-term-dictionary-sheet2.csv`
 - supersedes:
   - 없음
-- last synced: 2026-07-10
+- last synced: 2026-07-16
 - open questions:
   - (resolved) table/subject 물리명은 DBA 승인으로 `tmd_mi_model_execpreph` / subject `md`로 확정 (이전 draft명 `tmd_execpreph`에서 변경). 인덱스명도 `tmd_mi_model_execpreph_{ix|ux}nn`로 정합.
   - (resolved → Option A/A8 current value) 값 조정 재실행은 같은 `model_param_proposal_id`에 확정 API를 재호출해 현재 `confirmation_parameters`를 갱신한다(mutable). 변경 없음 재실행은 재확정 없이 기존 confirmed 값을 재사용한다. Agent 확정 API가 이미 `CONFIRMED`인 proposal의 재확정을 허용하도록 Agent가 수정 확정했다(2026-07-09 회신) → Option A 전제 충족. A8은 latest A6-linked Case가 연결한 proposal의 현재값을 반환하며 실행 시점 exact 복원은 현행 범위가 아니므로 execution-preparation에 confirmed JSON snapshot을 추가하지 않는다.
@@ -27,7 +27,7 @@
 
 ## Source Documents
 
-- [mi-model-parameter-proposal-design.md](/Users/hoduhomil/source/mip/backend/docs/design-docs/gas/mi-model-parameter-proposal-design.md) — canonical business/lifecycle/ownership
+- [mi-model-parameter-proposal-design.md](/Users/hoduhomil/source/mip/backend/docs/design-docs/gas/mi-model-parameter-proposal-design.md) — canonical business/lifecycle/access scope
 - [mi-agent-param-proposal.md](/Users/hoduhomil/source/mip/backend/docs/design-docs/gas/mi-agent-param-proposal.md) — Agent 소유 schema 초안 (`tmm_mi_model_param_proposal_m`, PK `model_param_proposal_id INT UNSIGNED`)
 - [mi-scenario-generation-request-erd-ddl-draft.md](/Users/hoduhomil/source/mip/backend/docs/design-docs/gas/mi-scenario-generation-request-erd-ddl-draft.md) — 동일 도메인 백엔드 orchestration 요청 테이블 포맷 선례
 - 참조 명명/사전: [db-object-naming-rules.md](/Users/hoduhomil/source/mip/backend/docs/conventions/db-object-naming-rules.md), [db-term-dictionary-sheet2.csv](/Users/hoduhomil/source/mip/backend/docs/conventions/db-term-dictionary-sheet2.csv)
@@ -35,6 +35,7 @@
 ## Decision Summary
 
 - canonical write aggregate는 파라미터 제안 기반 수급모델 실행 준비 이력 단일 테이블 `tmd_mi_model_execpreph` 하나다. child detail 테이블은 만들지 않는다.
+- `req_usr_no`는 execution-preparation 요청자를 기록하는 audit/provenance 컬럼이다. 사용자별 proposal 소유권이나 조회·확정·실행·재실행 접근 제어 predicate가 아니며, 이번 정정으로 물리 컬럼/타입/nullability/DDL은 변경하지 않는다.
 - `tmd_mi_model_execpreph`는 수급모델 실행 이력 테이블이 아니다. 실제 수급모델 실행 master/history는 기존 `tmd_mdl_scnrcasem` / `tmd_mdl_scnrcaseh`가 source of truth다.
 - `tmd_mi_model_execpreph` row 1건은 수급모델 input Excel 3개 세트를 생성하고 실행 접수하는 **실행 준비 1회**를 대표한다. 같은 `scnr_id` + `agnt_prpsl_id` 조합으로 여러 row가 생길 수 있다.
 - 수급모델 실행은 기존 `mi-scenario-model-execution-workflow-design.md` 기준을 따른다. 실행 1회마다 새 `case_id`를 만들고, 각 Case 아래에 Run history를 쌓는다. `tmd_mi_model_execpreph.case_id`는 해당 실행 준비 row가 만든 Case를 0..1로 가리키는 포인터다.
@@ -128,7 +129,7 @@ FK 적용 판단:
 | `mod_dtm` | `DATETIME` | N |  | 수정일시 |
 | `del_yn` | `CHAR(1)` | N |  | 삭제여부 |
 | `scnr_id` | `INT UNSIGNED` | N | IX | 대상 시나리오ID (`tmm_mi_scenario_m.scenario_id` 논리참조) |
-| `req_usr_no` | `INT UNSIGNED` | N |  | 요청사용자번호(소유자) |
+| `req_usr_no` | `INT UNSIGNED` | N |  | 요청사용자번호(audit/provenance, 접근 제어 조건 아님) |
 | `exec_prep_stat_cd` | `VARCHAR(30)` | N |  | 파라미터제안기반실행준비상태코드 (Backend orchestration status). 최장값 `PREPARING_EXECUTION`(19자) + 헤드룸 |
 | `agnt_prpsl_id` | `INT UNSIGNED` | Y | IX | 에이전트제안ID. 선행 생성 시 NULL, 응답/callback에서 row 단위 write-once 저장. 반복 실행으로 중복 허용 |
 | `case_id` | `INT UNSIGNED` | Y | UK | 시나리오케이스ID. 실행 접수 성공 후 기존 `tmd_mdl_scnrcasem` Case를 가리키는 포인터 |
@@ -140,6 +141,7 @@ FK 적용 판단:
 Nullable 판단:
 
 - `scnr_id`: preparation은 항상 시나리오를 대상으로 하므로 NOT NULL. (`ScenarioCase.scnr_id`는 INDEPENDENT 케이스 때문에 nullable이지만 여기서는 해당 없음)
+- `req_usr_no`: execution-preparation 생성 요청자를 추적하므로 NOT NULL. 저장 목적은 audit/provenance이며 현재 사용자와 비교하는 ownership/authorization 조건으로 사용하지 않는다.
 - `agnt_prpsl_id`: 선행 `REQUESTING` insert 시점엔 미확정이므로 nullable. Agent 응답/callback에서 row 단위 write-once로 채운다. 같은 proposal로 반복 실행할 수 있으므로 중복을 허용한다.
 - `case_id`: 실행 접수 전까지 nullable. 실행 접수 성공 후 새 `case_id`를 저장한다.
 - `actv_scnr_id`: active(in-flight) 상태 + 미삭제일 때만 값을 가진다. 그 외 NULL. 표준단어 `ACTV`(활성) + `SCNR`(시나리오)를 사용한다.

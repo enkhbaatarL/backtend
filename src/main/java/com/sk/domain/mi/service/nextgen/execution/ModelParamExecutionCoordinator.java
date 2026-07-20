@@ -102,7 +102,7 @@ public class ModelParamExecutionCoordinator {
         ModelExecutionPreparation preparation;
         if (activePreparation.isPresent()) {
             preparation = activePreparation.orElseThrow();
-            validateReusablePendingPreparation(preparation, request.modelParamProposalId(), actorUserNo);
+            validateReusablePendingPreparation(preparation, request.modelParamProposalId());
             int transitioned = modelExecutionPreparationRepository.transitionStatus(
                 preparation.getExecPrepId(),
                 List.of(ModelExecutionPreparationStatus.PROPOSAL_PENDING),
@@ -121,7 +121,7 @@ public class ModelParamExecutionCoordinator {
                     request.modelParamProposalId()
                 )
                 .orElseThrow(() -> proposalPreparationNotFound(scenarioId, request.modelParamProposalId()));
-            validateRepeatExecutionSource(latest, actorUserNo, scenarioId);
+            validateRepeatExecutionSource(latest, scenarioId);
             try {
                 preparation = modelExecutionPreparationRepository.saveAndFlush(
                     ModelExecutionPreparation.createConfirmingExecution(
@@ -275,23 +275,19 @@ public class ModelParamExecutionCoordinator {
 
     private void validateReusablePendingPreparation(
         ModelExecutionPreparation preparation,
-        Long modelParamProposalId,
-        Integer actorUserNo
+        Long modelParamProposalId
     ) {
         if (preparation.getStatus() != ModelExecutionPreparationStatus.PROPOSAL_PENDING
             || preparation.getCaseId() != null
             || !Objects.equals(preparation.getAgentProposalId(), modelParamProposalId)) {
             throw activePreparationConflict(preparation.getScenarioId());
         }
-        validatePreparationOwner(preparation, actorUserNo);
     }
 
     private void validateRepeatExecutionSource(
         ModelExecutionPreparation preparation,
-        Integer actorUserNo,
         Long scenarioId
     ) {
-        validatePreparationOwner(preparation, actorUserNo);
         if (preparation.getStatus() != ModelExecutionPreparationStatus.EXECUTING
             && preparation.getStatus() != ModelExecutionPreparationStatus.EXECUTION_FAILED) {
             throw AppHttpStatusException.of(
@@ -300,12 +296,6 @@ public class ModelParamExecutionCoordinator {
                 "model parameter proposal cannot be reused from current preparation status. scenarioId: %d"
                     .formatted(scenarioId)
             );
-        }
-    }
-
-    private void validatePreparationOwner(ModelExecutionPreparation preparation, Integer actorUserNo) {
-        if (!Objects.equals(preparation.getRequestUserNo(), actorUserNo)) {
-            throw proposalPreparationNotFound(preparation.getScenarioId(), preparation.getAgentProposalId());
         }
     }
 

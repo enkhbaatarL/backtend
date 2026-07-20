@@ -6,7 +6,7 @@
 - status: Review
 - owner: BE (platform)
 - created at: 2026-07-03
-- updated at: 2026-07-14
+- updated at: 2026-07-16
 - canonical for: frontend-facing API contract, Backend callback endpoint/minimum compatibility contract, proposed Agent integration questions
 - canonical design reference: `docs/design-docs/gas/mi-model-parameter-proposal-design.md`
 - price interpretation rerun reference: `docs/design-docs/gas/price-forecast-interpretation-domain-design.md`
@@ -24,7 +24,7 @@
   - `docs/design-docs/gas/mi-model-parameter-proposal-design.md`
   - `docs/conventions/source-of-truth-governance.md`
 - supersedes: 없음
-- last synced: 2026-07-14
+- last synced: 2026-07-16
 - open questions: 13절 및 duplicate-slot Agent payload의 A6/Excel 실행 좌표 호환성 참조
 - integration model: callback = 완료 신호. Backend가 Agent proposal 테이블을 read-only 직접 조회해 결과 서빙(CAS/hash/snapshot 없음). 공유 DB read 및 read 권한은 확정(조회 가능). callback path `scenarioId`는 proposal identity가 아니라 현재 in-flight execution-preparation을 찾는 scope key다.
 - callback 인증: 확정. 기존 시나리오 설계 콜백과 동일한 Resource Server JWT 체인(`CustomJwtDecoder` HS256 self-issued + `@RequiredPermissionRules(Role.SYSTEM ...)`) 재사용. Agent는 Backend 토큰 발급 API와 발급 인풋 2종을 전달받아 JWT를 자체 발급·갱신한다.
@@ -906,7 +906,7 @@ Request:
 
 처리 순서:
 
-1. Scenario, permission, proposal ownership/status 검증.
+1. Scenario 존재·상태, proposal의 Scenario 연결 및 status를 검증한다. Proposal 요청 사용자와 현재 사용자의 동일성은 검증하지 않는다.
 2. Agent proposal 테이블의 `proposal_parameters` array와 request `confirmationParameters`의 parameter/model target/slot identity 및 `basecaseValue` 구조 비교
 3. `values[].proposedValue`가 numeric인지 검증한다. parameter/value `rationale`은 required string이지만 Agent confirmation에서 보정될 수 있고 Excel 실행 입력에 쓰이지 않으므로 문자열 동일성 비교에서는 제외한다.
 4. 같은 Scenario에 `RUNNING` Case가 없는지 기존 active-run guard로 확인
@@ -916,6 +916,12 @@ Request:
 8. 확정값을 지정 file/sheet/table/slot에 merge
 9. 기존 Scenario Case/Run 생성과 Kubernetes Job dispatch를 재사용한다. 파일 3개는 Scenario lock/Case transaction 전에 직렬로 Object Storage의 최종 `SCNRCASE/{uuid}` key에 업로드하고, `tcm_filel`에는 Case 미연결 `TEMP/0` staged row로 기록한다. 최종 짧은 transaction에서 Scenario lock/active guard 뒤 해당 시나리오의 active 가격전망해석 row를 write lock으로 조회한다. row가 있으면 `del_yn='Y'`로 soft delete하고 없으면 no-op으로 처리한 뒤, Case INSERT·staged row 3건의 `SCNRCASE + case_id` metadata-only attachment·Run INSERT·Case `lastRunId`·`execprep.case_id + EXECUTING`을 함께 commit한다. 이 transaction에는 Object Storage copy/move/delete를 넣지 않으며 K8s dispatch는 commit 이후 수행한다(Domain Design 규칙 29~30). 최종 lock/unique conflict는 기존 정책대로 처리하고 staged file 즉시 삭제 비용을 수용한다. commit 이후 dispatch 실패는 Case/Run을 `FAILED`, 연결 preparation을 `EXECUTION_FAILED`로 처리하며 soft delete한 기존 가격전망해석은 복원하지 않는다. Run에는 `failureReasonCode=JOB_SUBMIT_FAILED`, `errorMessage=Model execution dispatch failed.`만 저장하고 실제 exception stack/root cause는 실행 식별자와 함께 server log에만 기록한다.
 10. 기존 `ModelExecutionAcceptRes` 반환
+
+Proposal requester access rule:
+
+- `tmd_mi_model_execpreph.req_usr_no`는 요청자 audit/provenance 정보이며 API 접근 제어 조건이 아니다.
+- 동일 Scenario 문맥의 다른 사용자가 기존 proposal을 조회·확정·실행·재실행하는 것을 `req_usr_no` 불일치로 거절하지 않는다.
+- endpoint의 공통 접근 조건과 proposal의 `scenarioId` 연결 검증은 유지하되 proposal 요청자 기준의 별도 ACL은 적용하지 않는다. Business access scope는 canonical domain design 3.1·6절을 따른다.
 
 Staging lifecycle:
 
@@ -1501,6 +1507,7 @@ FE가 반드시 처리해야 하는 최소 상태는 `PROCESSING`, `PROPOSED`, `
 
 ## 14. Change Log / Sync Note
 
+- 2026-07-16: **Proposal 요청자 access scope 정정.** Proposal은 Scenario 문맥에서 공유하며 요청 사용자별 소유권을 두지 않는다. `tmd_mi_model_execpreph.req_usr_no`는 audit/provenance 정보로만 사용하고 현재 사용자와 비교하지 않는다. 동일 Scenario 문맥의 다른 사용자가 기존 proposal을 조회·확정·실행·재실행할 수 있으며 API/schema shape 변경은 없다.
 - 2026-07-14: **A8/A9 응답 tree 계약 및 projector 공통화.** flat `parameters`를 제거하고 endpoint별 `parameterSource`와 A4a 동일 `modelFiles > modelSheets > modelTables > parameters > {parameter, rendering}` tree를 반환한다. A4a/A8/A9는 raw Agent JSON 파싱, parameter-name batch master 조회, 좌표 검증, grouped rationale/rendering, tree 조립을 공통 projector로 수행한다. latest Case/current-value 의미와 endpoint별 409/API_RESPONSE_ERROR 경계는 유지하며 schema/DDL은 변경하지 않는다.
 - 2026-07-14: **수급모델 재실행 시 가격전망해석 자동 soft delete 계약 확정.** A2 options 응답과 A6/A7 request는 변경하지 않는다. 두 실행 경로가 합류하는 공통 final transaction에서 대상 시나리오의 active 해석 row가 있으면 soft delete하고, Case/Run 생성을 원자 commit한다. 수급모델 재실행은 가격전망해석 Agent 생성을 자동 호출하지 않는다.
 - 2026-07-14: **가격전망해석 functional unique 적용 완료.** `scenario_id`와 active일 때만 `'N'`을 반환하는 functional key를 조합해 active row 최대 1건과 deleted row 다건 보존을 함께 강제한다. schema blocker를 해제하며 정확한 DDL/DBA rollout은 `price-forecast-interpretation-erd-ddl-draft.md`가 소유한다.
