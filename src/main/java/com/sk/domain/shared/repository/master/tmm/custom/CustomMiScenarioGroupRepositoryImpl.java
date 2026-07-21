@@ -15,6 +15,7 @@ import com.querydsl.core.types.dsl.BooleanExpression;
 import com.querydsl.jpa.JPQLQuery;
 import com.querydsl.jpa.impl.JPAQuery;
 import com.querydsl.jpa.impl.JPAQueryFactory;
+import com.sk.common.utils.FullTextSearchUtil;
 import com.sk.domain.mi.dto.request.nextgen.ScenarioGroupListReq;
 import com.sk.domain.shared.entity.master.tmm.MiScenario;
 import com.sk.domain.shared.entity.master.tmm.MiSignpost;
@@ -101,8 +102,9 @@ public class CustomMiScenarioGroupRepositoryImpl implements CustomMiScenarioGrou
         if (request.endDate() != null) {
             where.and(miScenarioGroup.createDt.lt(request.endDate().plusDays(1).atStartOfDay()));
         }
+        // note: ngram FULLTEXT BOOLEAN MODE 검색 (공백 토큰 OR, 중간 단어 부분매칭) (요청 2026-07-20)
         if (request.keyword() != null && !request.keyword().isBlank()) {
-            where.and(miScenarioGroup.title.contains(request.keyword().trim()));
+            where.and(FullTextSearchUtil.matchBoolean(miScenarioGroup.title, request.keyword()));
         }
         return where;
     }
@@ -171,9 +173,9 @@ public class CustomMiScenarioGroupRepositoryImpl implements CustomMiScenarioGrou
         if (request.endDate() != null) {
             where.and(miScenario.createDt.lt(request.endDate().plusDays(1).atStartOfDay()));
         }
-        // 개별 모드 키워드는 시나리오명 검색
+        // note: ngram FULLTEXT BOOLEAN MODE 검색 (공백 토큰 OR, 중간 단어 부분매칭) (요청 2026-07-20)
         if (request.keyword() != null && !request.keyword().isBlank()) {
-            where.and(miScenario.title.contains(request.keyword().trim()));
+            where.and(FullTextSearchUtil.matchBoolean(miScenario.title, request.keyword()));
         }
         return where;
     }

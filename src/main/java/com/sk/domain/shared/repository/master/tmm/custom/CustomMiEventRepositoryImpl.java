@@ -27,6 +27,7 @@ import com.querydsl.core.types.dsl.NumberExpression;
 import com.querydsl.jpa.JPAExpressions;
 import com.querydsl.jpa.JPQLQuery;
 import com.querydsl.jpa.impl.JPAQueryFactory;
+import com.sk.common.utils.FullTextSearchUtil;
 import com.sk.common.utils.JsonUtil;
 import com.sk.domain.mi.dto.request.nextgen.EventListReq;
 import com.sk.domain.shared.entity.master.tmm.QMiScenarioGroup;
@@ -256,7 +257,8 @@ public class CustomMiEventRepositoryImpl implements CustomMiEventRepository {
             return;
         }
         // note: 이벤트명 표기를 one_line_summary 로 바꿨으므로 검색 기준도 동기화 (요청 2026-06-08)
-        where.and(miEvent.oneLineSummary.contains(keyword.trim()));
+        // note: ngram FULLTEXT BOOLEAN MODE 검색 (공백 토큰 OR, 중간 단어 부분매칭) (요청 2026-07-20)
+        where.and(FullTextSearchUtil.matchBoolean(miEvent.oneLineSummary, keyword));
     }
 
     private OrderSpecifier<?> buildEventOrder(EventListReq request) {
