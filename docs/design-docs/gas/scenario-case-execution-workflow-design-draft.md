@@ -3,12 +3,12 @@
 - domain: gas
 - status: implemented (real DB rollout complete; workflow/domain semantics remain canonical)
 - owner: platform BE
-- updated at: 2026-07-06 (scenario lifecycle cancellation 및 Job reconciliation 결정 반영)
+- updated at: 2026-07-23 (model container resource requests source-of-truth 참조 반영)
 - role: Scenario Case 업로드, 비동기 실행, 상태 추적, timeout 처리의 backend workflow와 persistence를 정리하는 설계 문서
 - canonical for: shared Scenario Case/run lifecycle, callback idempotency, timeout and backend-forced terminal semantics
 - upstream sources: `mi-scenario-workbench-backend-feature-spec.md`, `mi-scenario-model-execution-workflow-design.md`
 - dependencies: canonical DDL draft, scheduler-enabled dedicated deployment, Kubernetes RBAC
-- last sync date: 2026-07-06
+- last sync date: 2026-07-23
 
 > 빠른 진입점:
 > - 이 문서는 `Scenario Case -> Execution History -> run_id/status` 흐름의 workflow/domain semantics source로 사용한다.
@@ -602,11 +602,10 @@ mi:
 ```
 
 - 세부 값은 운영 환경과 모델 이미지 배포 방식에 맞춰 조정한다.
-- image pull secret, service account/RBAC, object storage credential, callback auth secret, resource requests/limits, Job TTL은 운영 배포 전 별도 보안/운영 설계에서 확정한다. retry/backoff는 §4의 "Kubernetes Job Pod 실행 재시도 정책"에 따라 `0`으로 고정한다.
+- image pull secret, service account/RBAC, object storage credential, callback auth secret, resource limits, Job TTL은 운영 배포 전 별도 보안/운영 설계에서 확정한다. model container resource requests는 [mi-fundamental-model-agent-model-interface-draft.md](mi-fundamental-model-agent-model-interface-draft.md)의 확정 결정을 따른다. retry/backoff는 §4의 "Kubernetes Job Pod 실행 재시도 정책"에 따라 `0`으로 고정한다.
 - `Job.spec.activeDeadlineSeconds` 는 현재 적용하지 않는다 (2026-06-22). Backend timeout 처리 뒤에도 model Pod를 강제 종료하지 않아 운영자가 Pod 로그를 확인할 수 있게 한다.
 - `ttlSecondsAfterFinished = 3600` 은 terminal Job(`Complete` 또는 `Failed`)이 된 뒤 1시간 보존 후 정리하는 설정이다. 실행 중인 Pod를 종료하는 timeout 설정이 아니다.
 - scenario lifecycle cancellation/timeout Job reconciliation 구현 전에는 Backend terminal 전이 뒤에도 Pod가 계속 실행할 수 있다. 구현 후 scheduler는 `FAILED + TIMEOUT` 또는 `FAILED + SCENARIO_CANCELLED` 상태이며 Kubernetes에서 아직 active인 managed Job만 삭제한다. 정상 terminal Job은 TTL 1시간 보존을 유지한다.
-- image pull secret, service account/RBAC, object storage credential, callback auth secret, resource requests/limits, retry/backoff, Job TTL은 운영 배포 전 별도 보안/운영 설계에서 확정한다.
 
 ## Open Questions
 

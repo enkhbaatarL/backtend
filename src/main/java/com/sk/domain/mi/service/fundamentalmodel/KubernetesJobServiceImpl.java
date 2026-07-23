@@ -8,6 +8,8 @@ import io.fabric8.kubernetes.api.model.EnvFromSource;
 import io.fabric8.kubernetes.api.model.EnvFromSourceBuilder;
 import io.fabric8.kubernetes.api.model.LocalObjectReference;
 import io.fabric8.kubernetes.api.model.LocalObjectReferenceBuilder;
+import io.fabric8.kubernetes.api.model.Quantity;
+import io.fabric8.kubernetes.api.model.ResourceRequirementsBuilder;
 import io.fabric8.kubernetes.api.model.batch.v1.Job;
 import io.fabric8.kubernetes.api.model.batch.v1.JobBuilder;
 import io.fabric8.kubernetes.client.KubernetesClient;
@@ -239,7 +241,11 @@ public class KubernetesJobServiceImpl implements KubernetesJobService {
 
         ContainerBuilder builder = new ContainerBuilder()
             .withName("fundamental-model")
-            .withImage(modelImage);
+            .withImage(modelImage)
+            .withResources(new ResourceRequirementsBuilder()
+                .addToRequests("cpu", new Quantity("1500m", ""))
+                .addToRequests("memory", new Quantity("1Gi", ""))
+                .build());
 
         applyEnvFrom(builder);
 
