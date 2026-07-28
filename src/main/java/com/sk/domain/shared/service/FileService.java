@@ -346,6 +346,7 @@ public class FileService {
         ensureNotInternalStagedFile(uploadedFile);
         long metadataMs = elapsedMs(metadataStartedAt);
 
+        // 26.07.28 취약점 진단 검토, '누락된 널 값 검사-102129,102130,102131,102132,102133,102134,102135,102136,102137,102138', 오탐 -> uploadedFile은 orElseThrow()로 not null 보장됨.
         if (!(uploadedFile.getOriginalFileNm().equals(dto.fileNm()) && uploadedFile.getFileSize().equals(dto.fileSize()))) {
             throw AppErrorException.of(ResultCode.Error.FILE_ACCESS_DENIED);
         }
@@ -768,6 +769,7 @@ public class FileService {
                                 ResultCode.Error.RSC_NOT_FOUND,
                                 FILE_NO_MESSAGE_FORMAT.formatted(fileNo)));
         ensureNotInternalStagedFile(uploadedFile);
+        // 26.07.28 취약점 진단 검토, '누락된 널 값 검사-102139,102140', 오탐 -> uploadedFile은 orElseThrow()로 not null 보장됨.
         try {
             String bucketName = getBucketName(uploadedFile.getStoragePathNm());
             String filePath = getFilePath(uploadedFile.getStoragePathNm());
