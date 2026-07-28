@@ -908,6 +908,10 @@ public class MiDashboardService {
 
         // 월별 평균 계산
         for (LocalDate periodDate : monthlyDates) {
+
+            // 26.07.28 취약점 진단 수정, '누락된 널 값 검사-102154,102156'
+            if (periodDate == null) continue;
+
             String periodStr = switch (chartPredictSetting.getDefaultPeriodUnitSeparateCd()) {
                 case W -> {
                     int diff = DayOfWeek.WEDNESDAY.getValue() - periodDate.getDayOfWeek().getValue();
