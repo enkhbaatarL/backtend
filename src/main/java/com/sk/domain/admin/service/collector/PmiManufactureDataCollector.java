@@ -93,6 +93,12 @@ public class PmiManufactureDataCollector implements DataCollectorStrategy {
                 String predictedMonthStr = matcher.group(2); // May
 
                 LocalDate actualDate = DateUtil.fromYyyyMmDdEng(actualDateStr);
+
+                // 26.07.28 취약점 진단 수정, '누락된 널 값 검사-102142,102144'
+                if (actualDate == null) {
+                    throw new IllegalArgumentException("Failed to parse actual date. input: " + value);
+                }
+
                 String actualDateFormatted = DateUtil.toYmd(actualDate);
 
                 // 예측 날짜 처리
