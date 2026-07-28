@@ -62,6 +62,7 @@ import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.function.Function;
@@ -503,7 +504,8 @@ public class MiDataDetailService {
         // 로그: 최종적으로 값이 변경된 경우
         boolean intervalChanged = !initialInterval.equals(currentInterval);
         boolean rangeChanged = !initialRange.equals(currentRange);
-        boolean datesChanged = !initialStartDate.equals(currentStartDate) || !initialEndDate.equals(currentEndDate);
+        // 26.07.28 취약점 진단 수정, '누락된 널 값 검사-102166,102168'
+        boolean datesChanged = !Objects.equals(initialStartDate, currentStartDate) || !Objects.equals(initialEndDate, currentEndDate);
 
         if (intervalChanged || rangeChanged || datesChanged) {
             log.info("[Chart Parameter Soft-Validation Summary]: Parameters adjusted. Initial: Range={}, Interval={}, Dates={}-{}. Final:   Range={}, Interval={}, Dates={}-{}.",
