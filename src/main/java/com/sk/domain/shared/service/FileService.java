@@ -552,6 +552,7 @@ public class FileService {
                 .orElseThrow(
                         () -> AppErrorException.of(ResultCode.Error.RSC_NOT_FOUND, FILE_NO_MESSAGE_FORMAT.formatted(fileNo)));
         ensureNotInternalStagedFile(uploadedFile);
+        // 26.07.28 취약점 진단 검토, '누락된 널 값 검사-102124,102125,102126', 오탐 -> uploadedFile은 orElseThrow()로 not null 보장됨.
         try {
             String bucketName = getBucketName(uploadedFile.getStoragePathNm());
             String filePath = getFilePath(uploadedFile.getStoragePathNm());
@@ -613,6 +614,7 @@ public class FileService {
                                 FILE_NO_MESSAGE_FORMAT.formatted(fileNo)));
         ensureNotInternalStagedFile(uploadedFile);
 
+        // 26.07.28 취약점 진단 검토, '누락된 널 값 검사-102119,102120,102121,102122,102123', 오탐 -> uploadedFile은 orElseThrow()로 not null 보장됨.
         if (uploadedFile.getFileRelationshipObjectSeparateCd() == null || uploadedFile.getFileRelationshipObjectSeparateCd().equals(TEMP_DIR)) {
             try {
                 String bucketName = getBucketName(uploadedFile.getStoragePathNm());
@@ -629,6 +631,7 @@ public class FileService {
                 throw internalFileException("파일 수정 중 오류가 발생했습니다.", e);
             }
         } else {
+            // 26.07.28 취약점 진단 검토, '누락된 널 값 검사-102117,102118', 오탐 -> uploadedFile은 orElseThrow()로 not null 보장됨.
             uploadedFile.update(uploadedFile.getStoragePathNm(), fileRelationshipObjectDistinguishNo, fileRelationshipObjectSeparateCode, fileValidEndDt);
         }
         return uploadedFile;
