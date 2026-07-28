@@ -265,6 +265,11 @@ public class MiDashboardHistoryService {
      */
     private List<HistoryDataRes> buildHistoryData(ChartPredictSettingDetail forecast1, ChartPredictSettingDetail forecast2, ChartPredictSettingDetail counterpart, LocalDate fulfillDate) {
 
+        // 26.07.28 취약점 진단 수정, '누락된 널 값 검사-102157'
+        if (fulfillDate == null) {
+            throw AppErrorException.of(ResultCode.Error.REQ_INVALID_PARAMETER, "fulfillDate is required.");
+        }
+
         List<TargetPredictResultData> forecastResults1 = getPredictResultData(forecast1.getGoodsDataSourceDetail(), fulfillDate);
 
         // 1. 예측 결과 날짜 추출
