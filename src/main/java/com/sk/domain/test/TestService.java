@@ -110,6 +110,12 @@ public class TestService {
     @Transactional
     public GenerateTokenRes adminLogin(TestReq.adminLogin testLoginReq, HttpServletResponse response) {
         ServletRequestAttributes attributes = (ServletRequestAttributes) RequestContextHolder.getRequestAttributes();
+
+        // 26.07.29 취약점 진단 수정, '표준 라이브러리의 널 반환 값 역참조-102275' -> getRequestAttributes()는 요청 스레드 밖에서 null 반환
+        if (attributes == null) {
+            throw AppErrorException.of(ResultCode.Error.AUTH_REQUIRED, "Request context is not available.");
+        }
+
         HttpServletRequest request = attributes.getRequest();
         String clientIp = request.getRemoteAddr();
 
