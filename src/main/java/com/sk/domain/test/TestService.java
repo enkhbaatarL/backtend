@@ -157,6 +157,7 @@ public class TestService {
     public String delete(Integer id) {
         CustomerCompany customerCompany = customerCompanyRepository.findByCustomerCompanyNoAndIsDeletedFalse(id)
                 .orElseThrow();
+        // 26.07.29 취약점 진단 검토, '표준 라이브러리의 널 반환 값 역참조-102276', 오탐 -> orElseThrow()는 null을 반환하지 않는 계약 (empty면 NoSuchElementException).
         customerCompany.softDelete();
         return "ok";
     }
