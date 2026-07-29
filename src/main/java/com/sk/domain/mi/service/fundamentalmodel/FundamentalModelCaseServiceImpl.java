@@ -987,6 +987,7 @@ public class FundamentalModelCaseServiceImpl implements FundamentalModelCaseServ
             if (typeTotals == null) {
                 typeTotals = zeroValues(responsePeriodKeys);
             }
+            // 26.07.29 취약점 진단 검토, '누락된 널 값 검사-102234', 오탐 -> typeTotals는 직전 분기에서 zeroValues(신규 맵 반환)로 초기화되어 not null 보장됨.
             appendVolumeBucketRows(type, region, bucket, responsePeriodKeys, typeTotals, responseRows);
         }
         if (typeTotals == null) {
@@ -999,6 +1000,7 @@ public class FundamentalModelCaseServiceImpl implements FundamentalModelCaseServ
             null,
             VolumesRowKind.TYPE_TOTAL,
             TOTAL_LABEL,
+            // 26.07.29 취약점 진단 검토, '누락된 널 값 검사-102233', 오탐 -> typeTotals는 위 null 검사 후 반환 분기로 not null 보장됨.
             toResponseValues(typeTotals, responsePeriodKeys)
         ));
         return responsePeriodKeys;
