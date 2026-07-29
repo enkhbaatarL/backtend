@@ -729,6 +729,7 @@ public class FileService {
         }
 
         UploadedFile uploadedFile = stagedFile.orElseThrow();
+        // 26.07.29 취약점 진단 검토, '표준 라이브러리의 널 반환 값 역참조-102246,102247,102248', 오탐 -> 위 isEmpty() 검사로 present가 보장되며 orElseThrow()는 null을 반환하지 않는 계약.
         try {
             String bucketName = getBucketName(uploadedFile.getStoragePathNm());
             String filePath = getFilePath(uploadedFile.getStoragePathNm());
