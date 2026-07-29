@@ -274,6 +274,7 @@ public class MariAgentGatewayService {
         ServerSentEvent<String> event,
         ChatbotTalkQna qna
     ) {
+        // 26.07.29 취약점 진단 검토, '표준 라이브러리의 널 반환 값 역참조-102203', 오탐 -> 단락 평가로 data()의 null 검사 후 접근하며, ServerSentEvent는 불변 객체라 재호출 반환값이 동일함.
         if (event == null || event.data() == null || event.data().trim().isEmpty()) {
             return Flux.empty();
         }
