@@ -543,7 +543,8 @@ public class FileService {
         int index = 1;
         String candidate;
         do {
-            candidate = base + "_" + index++ + (extension.isEmpty() ? "" : "." + extension);
+            // 26.07.29 취약점 진단 수정, '표준 라이브러리의 널 반환 값 역참조-102150'
+            candidate = base + "_" + index++ + (extension == null || extension.isEmpty() ? "" : "." + extension);
         } while (!addedNames.add(candidate));
         return candidate;
     }
