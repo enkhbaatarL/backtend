@@ -4654,9 +4654,11 @@ public class MiForecastService {
 
         return chartPredictSettingDetailRes.chartPredictSettingDetails().stream()
             .filter(ChartPredictSettingDetail::getIsChartLinePredictVal)
-            .filter(detail -> detail.getGoodsDataSourceDetail() != null)
-            .filter(detail -> goodsDataSourceNo
-                == detail.getGoodsDataSourceDetail().getGoodsDataSourceNo())
+            // 26.07.29 취약점 진단 수정, '누락된 널 값 검사-102175'
+            .filter(detail -> {
+                GoodsDataSourceDetail gds = detail.getGoodsDataSourceDetail();
+                return gds != null && goodsDataSourceNo == gds.getGoodsDataSourceNo();
+            })
             .map(detail -> detail.getAssociatedGoodsDataSourceDetail() != null
                 ? detail.getAssociatedGoodsDataSourceDetail().getGoodsDataSourceNo()
                 : null)
