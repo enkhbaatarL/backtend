@@ -157,6 +157,7 @@ public class MiMariAgentController {
         @RequestBody @Valid QnaReq.Insert qnaReq,
         @UserResolve User user
     ) {
+        // 26.07.29 취약점 진단 검토, '표준 라이브러리의 널 반환 값 역참조-102277', 오탐 -> sseTimeout은 @Value 주입 필드로 프로퍼티 누락 시 기동 실패하므로 런타임에 null 불가.
         SseEmitter emitter = new SseEmitter(sseTimeout.toMillis());
         log.info("Creating SSE connection - chatRoomId: {}, user: {}", chatRoomId,
             user.getUserNo());
