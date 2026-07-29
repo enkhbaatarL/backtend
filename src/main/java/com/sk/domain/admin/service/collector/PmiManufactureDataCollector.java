@@ -83,6 +83,12 @@ public class PmiManufactureDataCollector implements DataCollectorStrategy {
         for (int i = 0; i < columnNames.size(); i++) {
             String value = i < record.size() ? record.get(i) : null;
             if (i == DATE_COLUMN_INDEX) { // 첫 열 데이터는 전처리 후 저장
+
+                // 26.07.29 취약점 진단 수정, '널 역참조-102145' -> 레코드 열 수 부족 시 value가 null
+                if (value == null) {
+                    throw new IllegalArgumentException("Missing date column value. recordNumber: " + record.getRecordNumber());
+                }
+
                 // 입력 파싱
                 Matcher matcher = INPUT_PATTERN.matcher(value.trim());
                 if (!matcher.matches()) {
@@ -118,6 +124,12 @@ public class PmiManufactureDataCollector implements DataCollectorStrategy {
                 rowData.add(predictedDateFormatted);
 
             } else if (i == TIME_COLUMN_INDEX) {
+
+                // 26.07.29 취약점 진단 수정, '널 역참조-102143' -> 레코드 열 수 부족 시 value가 null
+                if (value == null) {
+                    throw new IllegalArgumentException("Missing time column value. recordNumber: " + record.getRecordNumber());
+                }
+
                 int time = parseTime(value);
                 rowData.add(time);
             } else {
