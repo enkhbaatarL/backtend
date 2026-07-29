@@ -96,7 +96,8 @@ public class GieEuChartMaker implements CustomChartMaker<MiMarketDataRes>{
     public MiMarketDataRes getDashboardChart(Integer companyNo, PermissionRes permissionRes) {
 
         ValidationResult<GoodsDataSourceDetail> validationResult = validatedGoodsDataSource.ensureExists(goodsDataSourceNo);
-        GoodsDataSourceDetail mainGoodsDataSource = validationResult.data();
+        // 26.07.29 취약점 진단 수정, '널 역참조-102206,102207,102208,102209' -> ensureExists 실패 시 data()가 null이므로 getOrThrow()로 교체
+        GoodsDataSourceDetail mainGoodsDataSource = validationResult.getOrThrow();
         GoodsData mainGoodsData = mainGoodsDataSource.getGoodsData();
         Goods mainGoods = mainGoodsData.getGoods();
 

@@ -102,10 +102,11 @@ public class UsExportChartMaker implements CustomChartMaker<MiMarketDataRes>{
         LocalDate END_DATE = LocalDate.now();
 
         ValidationResult<GoodsDataSourceDetail> validationResult = validatedGoodsDataSource.ensureExists(marketDashboardDataSourceNo);
-        GoodsDataSourceDetail mainGoodsDataSource = validationResult.data();
+        // 26.07.29 취약점 진단 수정, '널 역참조-102227,102228,102229,102230,102231,102232' -> ensureExists 실패 시 data()가 null이므로 getOrThrow()로 교체
+        GoodsDataSourceDetail mainGoodsDataSource = validationResult.getOrThrow();
 
         ValidationResult<GoodsDataSourceDetail> validationResultMtd = validatedGoodsDataSource.ensureExists(goodsDataSourceNo);
-        GoodsDataSourceDetail mainGoodsDataSourceMtd = validationResultMtd.data();
+        GoodsDataSourceDetail mainGoodsDataSourceMtd = validationResultMtd.getOrThrow();
 
         GoodsData mainGoodsData = mainGoodsDataSource.getGoodsData();
         Goods mainGoods = mainGoodsData.getGoods();
