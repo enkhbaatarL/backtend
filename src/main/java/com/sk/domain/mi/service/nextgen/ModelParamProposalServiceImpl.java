@@ -237,6 +237,7 @@ public class ModelParamProposalServiceImpl implements ModelParamProposalService 
                 null,
                 null,
                 null,
+                // 26.07.29 취약점 진단 검토, '표준 라이브러리의 널 반환 값 역참조-102244', 오탐 -> if 조건이 FAILED 상태 매칭으로 proposal의 present를 보장하며, orElseThrow()는 null을 반환하지 않는 계약.
                 resolveFailureReason(proposal.orElseThrow())
             );
         }
