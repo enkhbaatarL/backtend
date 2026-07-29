@@ -4223,6 +4223,10 @@ public class MiForecastService {
         }
 
         for (LocalDate periodDate : periodDates) {
+
+            // 26.07.29 취약점 진단 수정, '누락된 널 값 검사-102176'
+            if (periodDate == null) continue;
+
             String periodStr = switch (chartPredictSetting.getDefaultPeriodUnitSeparateCd()) {
                 case W -> {
                     int diff = DayOfWeek.WEDNESDAY.getValue() - periodDate.getDayOfWeek().getValue();
