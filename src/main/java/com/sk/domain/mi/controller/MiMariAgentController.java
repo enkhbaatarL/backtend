@@ -345,6 +345,7 @@ public class MiMariAgentController {
             result.put("success", false);
             result.put("message", "No active Mari Agent stream to cancel.");
             result.put("qnaNo", null);
+            // 26.07.29 취약점 진단 검토, '누락된 널 값 검사-102182', 오탐 -> chatRoomId는 필수 PathVariable로 Spring이 not null 보장.
             result.put("chatRoomId", chatRoomId.toString());
 
             return BaseResponseFactory.create(result);
