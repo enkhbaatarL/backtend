@@ -6185,6 +6185,7 @@ public class MiForecastService {
                     .endDate(DateUtil.toYmd(cursor))
                     .unit(axisUnit.label)
                     .build());
+                // 26.07.29 취약점 진단 검토, '누락된 널 값 검사-102172', 오탐 -> cursor는 startDate에서 plusDays로만 갱신되어 not null이며 루프 조건에서 이미 역참조됨.
                 cursor = cursor.plusDays(1);
             }
             return dates;
@@ -6204,6 +6205,7 @@ public class MiForecastService {
                 .unit(axisUnit.label)
                 .build());
 
+            // 26.07.29 취약점 진단 검토, '누락된 널 값 검사-102171', 오탐 -> periodStart는 getPeriodStart의 switch 결과로 not null이며 위 isBefore에서 이미 역참조됨.
             cursorEnd = periodStart.minusDays(1);
         }
 
