@@ -1052,9 +1052,11 @@ public class MiForecastService {
                 }
 
                 List<ChartPredictSettingDetail> predictDetails = predictDetailsAll.stream()
-                    .filter(detail -> detail.getAssociatedGoodsDataSourceDetail() != null)
-                    .filter(detail -> goodsDataSourceNo.equals(
-                        detail.getAssociatedGoodsDataSourceDetail().getGoodsDataSourceNo()))
+                    // 26.07.29 취약점 진단 수정, '누락된 널 값 검사-102201'
+                    .filter(detail -> {
+                        GoodsDataSourceDetail associatedGds = detail.getAssociatedGoodsDataSourceDetail();
+                        return associatedGds != null && goodsDataSourceNo.equals(associatedGds.getGoodsDataSourceNo());
+                    })
                     .toList();
                 if (predictDetails.isEmpty()) {
                     return ForecastTargetAccuracyRes.of(null, target.predictChartDetailExpn(), null);
@@ -2055,9 +2057,11 @@ public class MiForecastService {
 
         ChartPredictSettingDetail matchedDetail = predictDetails.stream()
             .filter(detail -> Boolean.TRUE.equals(detail.getIsChartLinePredictVal()))
-            .filter(detail -> detail.getGoodsDataSourceDetail() != null)
+            // 26.07.29 취약점 진단 수정, '누락된 널 값 검사-102200'
             .filter(detail -> {
-                String query = detail.getGoodsDataSourceDetail().getQueryConditionCntt();
+                GoodsDataSourceDetail gds = detail.getGoodsDataSourceDetail();
+                if (gds == null) return false;
+                String query = gds.getQueryConditionCntt();
                 return query != null && query.contains(mnemonicCd);
             })
             .findFirst()
@@ -2883,9 +2887,11 @@ public class MiForecastService {
             chartPredictSettingDetailRes.chartPredictSettingDetails();
         if (goodsDataSourceNo != null) {
             chartPredictSettingDetails = chartPredictSettingDetails.stream()
-                .filter(detail -> detail.getAssociatedGoodsDataSourceDetail() != null)
-                .filter(detail -> goodsDataSourceNo.equals(
-                    detail.getAssociatedGoodsDataSourceDetail().getGoodsDataSourceNo()))
+                // 26.07.29 취약점 진단 수정, '누락된 널 값 검사-102181'
+                .filter(detail -> {
+                    GoodsDataSourceDetail associatedGds = detail.getAssociatedGoodsDataSourceDetail();
+                    return associatedGds != null && goodsDataSourceNo.equals(associatedGds.getGoodsDataSourceNo());
+                })
                 .toList();
         }
 
@@ -3029,6 +3035,10 @@ public class MiForecastService {
 
         List<List<Object>> rows = new ArrayList<>();
         for (YearMonth yearMonth : rowMonths) {
+
+            // 26.07.29 취약점 진단 수정, '누락된 널 값 검사-102180'
+            if (yearMonth == null) continue;
+
             List<Object> values = new ArrayList<>();
             values.add(formatSpecialTableDateLabelV2(yearMonth, groupingUnit));
             for (SpecialTableColumn column : columns) {
