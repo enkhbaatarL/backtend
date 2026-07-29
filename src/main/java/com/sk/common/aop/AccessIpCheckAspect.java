@@ -66,7 +66,14 @@ public class AccessIpCheckAspect {
         User user = userRepository.findByUserNoAndIsDeletedFalse(Integer.parseInt(userNo))
             .orElseThrow(() -> AppErrorException.of(ResultCode.Error.AUTH_REQUIRED, "User is not authenticated"));
 
-        HttpServletRequest request = ((ServletRequestAttributes) RequestContextHolder.getRequestAttributes()).getRequest();
+        // 26.07.29 취약점 진단 수정, '표준 라이브러리의 널 반환 값 역참조-102108'
+        ServletRequestAttributes attributes = (ServletRequestAttributes) RequestContextHolder.getRequestAttributes();
+
+        if (attributes == null) {
+            throw AppErrorException.of(ResultCode.Error.AUTH_REQUIRED, "Request context is not available.");
+        }
+
+        HttpServletRequest request = attributes.getRequest();
 
         // 허용 IP 검증
         commonService.checkIp(user, request);
