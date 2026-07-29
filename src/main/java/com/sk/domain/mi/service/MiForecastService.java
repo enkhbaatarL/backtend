@@ -802,6 +802,7 @@ public class MiForecastService {
         LocalDate baseDate = calculateBaseDate(today,
             chartPredictSetting.getPredictPeriodMonthsCnt(),
             chartPredictSetting.getPredictPeriodUnitSeparateCd());
+        // 26.07.29 취약점 진단 검토, '누락된 널 값 검사-102173', 오탐 -> today는 LocalDate.now() 반환값으로 not null 보장됨.
         LocalDate startDate = calculateStartDate(today, totalPeriod);
 
         validatePeriodLength(startDate, baseDate, axisUnit);
