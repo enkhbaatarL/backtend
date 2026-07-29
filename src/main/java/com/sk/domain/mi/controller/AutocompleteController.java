@@ -39,6 +39,7 @@ public class AutocompleteController {
     // 검색어 사용 기록
     @PostMapping("/topic/use")
     public BaseResponse<Void> recordUsage(@RequestParam String term) {
+        // 26.07.29 취약점 진단 검토, '표준 라이브러리의 널 반환 값 역참조-102281', 오탐 -> term은 필수 RequestParam으로 Spring이 not null 보장(누락 시 400).
         autocompleteService.incrementFrequency(term);
         return BaseResponseFactory.create(Success.OK);
     }
