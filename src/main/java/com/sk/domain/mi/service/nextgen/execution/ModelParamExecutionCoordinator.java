@@ -102,6 +102,7 @@ public class ModelParamExecutionCoordinator {
         ModelExecutionPreparation preparation;
         if (activePreparation.isPresent()) {
             preparation = activePreparation.orElseThrow();
+            // 26.07.29 취약점 진단 검토, '표준 라이브러리의 널 반환 값 역참조-102250,102252', 오탐 -> 위 isPresent() 검사로 present가 보장되며 orElseThrow()는 null을 반환하지 않는 계약.
             validateReusablePendingPreparation(preparation, request.modelParamProposalId());
             int transitioned = modelExecutionPreparationRepository.transitionStatus(
                 preparation.getExecPrepId(),
@@ -136,6 +137,7 @@ public class ModelParamExecutionCoordinator {
             }
         }
 
+        // 26.07.29 취약점 진단 검토, '표준 라이브러리의 널 반환 값 역참조-102251', 오탐 -> preparation은 양 분기에서 각각 orElseThrow()/saveAndFlush()로 할당되어 not null 보장됨.
         return new ExecutionConfirmationContext(preparation.getExecPrepId(), confirmationRequired);
     }
 
