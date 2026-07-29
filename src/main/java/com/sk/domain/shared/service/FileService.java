@@ -406,6 +406,7 @@ public class FileService {
                     DownloadEncryptionDecision decision = fileEncryptionPolicy.evaluateDownload(role, companyCd, fileName);
                     if (decision.shouldEncrypt()) {
                         byte[] plainData = IOUtils.toByteArray(s3is);
+                        // 26.07.28 취약점 진단 검토, '누락된 널 값 검사-102265', 오탐 -> fileName은 originalFileNm 필수값이며 상단 ZipEntry 생성 시점에 non null이 보장됨.
                         byte[] encryptedData = fileCryptoApiClient.encrypt(plainData, fileName);
                         zos.write(encryptedData);
                     } else {
@@ -651,6 +652,7 @@ public class FileService {
                                 ResultCode.Error.RSC_NOT_FOUND,
                                 FILE_NO_MESSAGE_FORMAT.formatted(fileNo)));
         ensureNotInternalStagedFile(uploadedFile);
+        // 26.07.28 취약점 진단 검토, '누락된 널 값 검사-102188,102189', 오탐 -> uploadedFile은 orElseThrow()로 not null 보장됨.
         try {
             String bucketName = getBucketName(uploadedFile.getStoragePathNm());
             String filePath = getFilePath(uploadedFile.getStoragePathNm());
