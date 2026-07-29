@@ -387,6 +387,7 @@ public class TemplateFieldValueResolver {
 
     private String readImageAsBase64(String imagePath) throws IOException {
         ClassPathResource resource = new ClassPathResource(imagePath);
+        // 26.07.29 취약점 진단 검토, '표준 라이브러리의 널 반환 값 역참조-102146', 오탐 -> ClassPathResource.getInputStream()은 리소스 미존재 시 FileNotFoundException을 던지며 null을 반환하지 않는 계약.
         try (InputStream inputStream = resource.getInputStream()) {
             byte[] imageBytes = inputStream.readAllBytes();
             return "data:" + MIME_TYPE + ";base64," + Base64.getEncoder().encodeToString(imageBytes);
