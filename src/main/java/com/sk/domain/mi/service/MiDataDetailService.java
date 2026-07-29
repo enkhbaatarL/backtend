@@ -645,6 +645,7 @@ public class MiDataDetailService {
         RawDataQueryContext queryContext = prepareRawDataQueryContext(gds, DateUtil.toYmd(startDate), DateUtil.toYmd(endDate));
 
         // Count 쿼리 실행
+        // 26.07.29 취약점 진단 검토, '누락된 널 값 검사-102169,102170', 오탐 -> gds는 getValidatedGoodsDataSource의 orElseThrow()로 not null 보장됨.
         List<Map<String, Object>> countQuery = mybatisDynamicQueryService.getDynamicData(DynamicDataReq.ofCountQuery(gds, queryContext.whereClause()));
         int totalElements = extractTotalElements(countQuery);
 
