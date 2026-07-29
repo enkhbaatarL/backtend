@@ -126,6 +126,13 @@ public class MariAgentGatewayService {
                 qna.getChatbotTalk().getChatbotTalkUuid(),
                 modelAgentRes != null && modelAgentRes.output() != null);
 
+            // 26.07.29 취약점 진단 수정, '누락된 널 값 검사-102183'
+            if (modelAgentRes == null) {
+                log.error("[Model-Agent] invoke response is null. qnaNo: {}, chatRoomId: {}", qna.getChatbotTalkQnaNo(), qna.getChatbotTalk().getChatbotTalkUuid());
+                qna.updateFailResult(AnswerStatusCd.FAIL_AGENT_COMMUNICATION);
+                return Optional.empty();
+            }
+
             AnswerRes answerRes = AnswerRes.of(modelAgentRes.output());
             qna.updateCompleteResult(answerRes);
 
