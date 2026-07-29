@@ -263,17 +263,23 @@ public class FileService {
             throw AppErrorException.of(ResultCode.Error.FILE_SIZE_ERROR);
         }
 
+        // 26.07.29 취약점 진단 수정, '표준 라이브러리의 널 반환 값 역참조-102127'
+        String rawFileName = file.getOriginalFilename();
+        if (rawFileName == null) {
+            throw AppErrorException.of(ResultCode.Error.REQ_INVALID, "파일명이 없습니다.");
+        }
+
         String uploadedBucketName = null;
         String uploadedFileName = null;
         try {
-            String originalFileNm = Normalizer.normalize(file.getOriginalFilename(), Normalizer.Form.NFC);
+            String originalFileNm = Normalizer.normalize(rawFileName, Normalizer.Form.NFC);
             String fileExtNm = originalFileNm.substring(originalFileNm.lastIndexOf('.') + 1).toLowerCase();
             long fileSize = file.getSize();
             String mimeTypeNm = file.getContentType();
 
             String customerCompanyCd = companyCd.toLowerCase();
             String bucketName = RoleUtil.isAdmin(role) || RoleUtil.isSubAdmin(role) ? commBucketName : prefix + customerCompanyCd;
-            String storageFileNm = UUID.randomUUID().toString().concat(getFileExtension(file.getOriginalFilename()));
+            String storageFileNm = UUID.randomUUID().toString().concat(getFileExtension(rawFileName));
             String storagePathNm = PathUtil.IncludeTrailingPathDelimiter(endPoint) + PathUtil.IncludeTrailingPathDelimiter(bucketName)
                     + PathUtil.IncludeTrailingPathDelimiter(destination.storageDirectory())
                     + storageFileNm;
