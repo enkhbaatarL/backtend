@@ -1394,8 +1394,11 @@ public class MiNewsletterService {
                     newsletterMaster, PublishStatusCode.PUBLISHED);
 
         NewsletterPublishHistory currentPubHist = publishHistories.stream()
-            .filter(publishHistory -> publishHistory.getIssueNo() != null)
-            .filter(publishHistory -> publishHistory.getIssueNo().equals(basePublishHistory.getIssueNo()))
+            // 26.07.29 취약점 진단 수정, '누락된 널 값 검사-102202'
+            .filter(publishHistory -> {
+                Integer issueNo = publishHistory.getIssueNo();
+                return issueNo != null && issueNo.equals(basePublishHistory.getIssueNo());
+            })
             .findFirst()
             .orElse(null);
 
