@@ -1501,6 +1501,11 @@ public class MiForecastService {
                 predictDetails, companyNo, goodsDataSourceNo, true, false);
         results = limitListFor2015(companyNo, results);
 
+        // 26.07.29 취약점 진단 수정, '누락된 널 값 검사-102177'
+        if (results == null) {
+            results = Collections.emptyList();
+        }
+
         return createForecastRecordExcel(companyNo, results);
     }
 
