@@ -5144,12 +5144,18 @@ public class MiForecastService {
         List<ChartPredictSettingDetail> chartPredictSettingDetails = chartPredictSettingDetailRes.chartPredictSettingDetails();
         if (goodsDataSourceNo != null) {
             chartPredictSettingDetails = chartPredictSettingDetails.stream()
-                .filter(detail -> detail.getAssociatedGoodsDataSourceDetail() != null)
-                .filter(detail -> goodsDataSourceNo.equals(
-                    detail.getAssociatedGoodsDataSourceDetail().getGoodsDataSourceNo()))
+                // 26.07.29 취약점 진단 수정, '누락된 널 값 검사-102178'
+                .filter(detail -> {
+                    GoodsDataSourceDetail associatedGds = detail.getAssociatedGoodsDataSourceDetail();
+                    return associatedGds != null && goodsDataSourceNo.equals(associatedGds.getGoodsDataSourceNo());
+                })
                 .toList();
         }
         chartPredictSettingDetails = distinctByGoodsData(chartPredictSettingDetails);
+        // 26.07.29 취약점 진단 수정, '누락된 널 값 검사-102179'
+        if (chartPredictSettingDetails == null) {
+            chartPredictSettingDetails = Collections.emptyList();
+        }
         boolean isTwoPeriodCompany = companyNo == 2015 || companyNo == 2013;
         List<AvailableForecastKey> availableDates =
             getAvailableDates(chartPredictSettingDetails, isScheduled, isTwoPeriodCompany, companyNo);
