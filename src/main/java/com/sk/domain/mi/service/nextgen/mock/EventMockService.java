@@ -200,6 +200,10 @@ public class EventMockService {
                 occupied, occupied ? info.occupantUserId() : null, null, info.scenarioGroupId());
         }
         // ② 세션 없으면 이벤트의 정적 설계 상태(사전 그룹) — event-list와 일관
+        // 26.07.29 취약점 진단 수정, '누락된 널 값 검사-102253'
+        if (eventId == null) {
+            return EventDesignAvailabilityRes.designable(null);
+        }
         EventListItemRes event = eventById(eventId);
         if (event == null || event.scenarioDesignStatus() == null) {
             return EventDesignAvailabilityRes.designable(eventId);

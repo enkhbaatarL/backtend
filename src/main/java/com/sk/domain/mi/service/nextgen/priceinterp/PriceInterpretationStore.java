@@ -90,6 +90,7 @@ public class PriceInterpretationStore {
             case GENERATING, GENERATED -> true;
             case FAILED -> interp.getCurrentContent() != null;
         };
+        // 26.07.29 취약점 진단 검토, '누락된 널 값 검사-102254', 오탐 -> interp는 메서드 진입부 null 검사 후 즉시 반환으로 not null 보장됨.
         return visible ? PriceInterpretationItemRes.of(scenario, interp) : null;
     }
 

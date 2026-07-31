@@ -461,7 +461,7 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
 
     @ExceptionHandler(Exception.class)
     private ResponseEntity<Object> handleUncaughtException(Exception ex) {
-        return createAndLogResponse("Unhandled Internal Error", ex, INTERNAL_SERVER_ERROR, ResultCode.Error.SYS_INTERNAL_ERROR, ex.getMessage());
+        return createAndLogResponse("Unhandled Internal Error", ex, INTERNAL_SERVER_ERROR, ResultCode.Error.SYS_INTERNAL_ERROR, null);
     }
 
 }

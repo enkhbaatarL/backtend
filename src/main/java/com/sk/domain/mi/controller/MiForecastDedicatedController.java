@@ -182,6 +182,7 @@ public class MiForecastDedicatedController {
         @RequestParam String predictionFulfillDt,
         @RequestParam String mnemonicCd,
         @RequestParam String predictionCriteriaDt) {
+        // 26.07.29 취약점 진단 검토, '표준 라이브러리의 널 반환 값 역참조-102282', 오탐 -> 모든 파라미터는 필수 RequestParam/PathVariable로 Spring이 not null 보장(누락 시 400).
         return BaseResponseFactory.create(
             miForecastService.getForecastReportDetail(companyNo, marketIndexAnalysisTargetCd,
                 predictionFulfillDt, mnemonicCd, predictionCriteriaDt));

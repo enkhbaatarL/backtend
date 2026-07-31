@@ -39,6 +39,7 @@ public class ExcelParsedUtil {
      */
     public static Workbook createWorkbook(MultipartFile file) throws IOException {
         String fileName = validateFile(file);
+        // 26.07.29 취약점 진단 검토, '표준 라이브러리의 널 반환 값 역참조-102111,102112,102113', 오탐 -> MultipartFile.getInputStream()은 null을 반환하지 않는 계약(실패 시 IOException)이며 file은 validateFile에서 null/empty 검증됨.
         InputStream inputStream = file.getInputStream();
         if (fileName.endsWith(".xlsx")) {
             Workbook workbook = StreamingReader.builder().rowCacheSize(100).bufferSize(4096).open(inputStream);

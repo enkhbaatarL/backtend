@@ -87,6 +87,10 @@ public class ModelParameterResponseProjector {
             ObjectNode groupedItem = objectMapper.createObjectNode();
             for (String slotAxis : groupingAxes) {
                 JsonNode slotValue = slotValues.get(slotAxis);
+                // 26.07.29 취약점 진단 수정, '표준 라이브러리의 널 반환 값 역참조-102242,102243' -> Map.get은 널 반환 API
+                if (slotValue == null) {
+                    throw invalid("parameter grouping axis has no slot value.");
+                }
                 canonicalSlots.add(canonicalSlot(slotValue));
                 groupedItem.set(slotAxis, slotValue.deepCopy());
             }

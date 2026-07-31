@@ -263,17 +263,23 @@ public class FileService {
             throw AppErrorException.of(ResultCode.Error.FILE_SIZE_ERROR);
         }
 
+        // 26.07.29 취약점 진단 수정, '표준 라이브러리의 널 반환 값 역참조-102127'
+        String rawFileName = file.getOriginalFilename();
+        if (rawFileName == null) {
+            throw AppErrorException.of(ResultCode.Error.REQ_INVALID, "파일명이 없습니다.");
+        }
+
         String uploadedBucketName = null;
         String uploadedFileName = null;
         try {
-            String originalFileNm = Normalizer.normalize(file.getOriginalFilename(), Normalizer.Form.NFC);
+            String originalFileNm = Normalizer.normalize(rawFileName, Normalizer.Form.NFC);
             String fileExtNm = originalFileNm.substring(originalFileNm.lastIndexOf('.') + 1).toLowerCase();
             long fileSize = file.getSize();
             String mimeTypeNm = file.getContentType();
 
             String customerCompanyCd = companyCd.toLowerCase();
             String bucketName = RoleUtil.isAdmin(role) || RoleUtil.isSubAdmin(role) ? commBucketName : prefix + customerCompanyCd;
-            String storageFileNm = UUID.randomUUID().toString().concat(getFileExtension(file.getOriginalFilename()));
+            String storageFileNm = UUID.randomUUID().toString().concat(getFileExtension(rawFileName));
             String storagePathNm = PathUtil.IncludeTrailingPathDelimiter(endPoint) + PathUtil.IncludeTrailingPathDelimiter(bucketName)
                     + PathUtil.IncludeTrailingPathDelimiter(destination.storageDirectory())
                     + storageFileNm;
@@ -346,6 +352,7 @@ public class FileService {
         ensureNotInternalStagedFile(uploadedFile);
         long metadataMs = elapsedMs(metadataStartedAt);
 
+        // 26.07.28 취약점 진단 검토, '누락된 널 값 검사-102129,102130,102131,102132,102133,102134,102135,102136,102137,102138', 오탐 -> uploadedFile은 orElseThrow()로 not null 보장됨.
         if (!(uploadedFile.getOriginalFileNm().equals(dto.fileNm()) && uploadedFile.getFileSize().equals(dto.fileSize()))) {
             throw AppErrorException.of(ResultCode.Error.FILE_ACCESS_DENIED);
         }
@@ -405,6 +412,7 @@ public class FileService {
                     DownloadEncryptionDecision decision = fileEncryptionPolicy.evaluateDownload(role, companyCd, fileName);
                     if (decision.shouldEncrypt()) {
                         byte[] plainData = IOUtils.toByteArray(s3is);
+                        // 26.07.28 취약점 진단 검토, '누락된 널 값 검사-102265', 오탐 -> fileName은 originalFileNm 필수값이며 상단 ZipEntry 생성 시점에 non null이 보장됨.
                         byte[] encryptedData = fileCryptoApiClient.encrypt(plainData, fileName);
                         zos.write(encryptedData);
                     } else {
@@ -535,7 +543,8 @@ public class FileService {
         int index = 1;
         String candidate;
         do {
-            candidate = base + "_" + index++ + (extension.isEmpty() ? "" : "." + extension);
+            // 26.07.29 취약점 진단 수정, '표준 라이브러리의 널 반환 값 역참조-102150'
+            candidate = base + "_" + index++ + (extension == null || extension.isEmpty() ? "" : "." + extension);
         } while (!addedNames.add(candidate));
         return candidate;
     }
@@ -552,6 +561,7 @@ public class FileService {
                 .orElseThrow(
                         () -> AppErrorException.of(ResultCode.Error.RSC_NOT_FOUND, FILE_NO_MESSAGE_FORMAT.formatted(fileNo)));
         ensureNotInternalStagedFile(uploadedFile);
+        // 26.07.28 취약점 진단 검토, '누락된 널 값 검사-102124,102125,102126', 오탐 -> uploadedFile은 orElseThrow()로 not null 보장됨.
         try {
             String bucketName = getBucketName(uploadedFile.getStoragePathNm());
             String filePath = getFilePath(uploadedFile.getStoragePathNm());
@@ -613,6 +623,7 @@ public class FileService {
                                 FILE_NO_MESSAGE_FORMAT.formatted(fileNo)));
         ensureNotInternalStagedFile(uploadedFile);
 
+        // 26.07.28 취약점 진단 검토, '누락된 널 값 검사-102119,102120,102121,102122,102123', 오탐 -> uploadedFile은 orElseThrow()로 not null 보장됨.
         if (uploadedFile.getFileRelationshipObjectSeparateCd() == null || uploadedFile.getFileRelationshipObjectSeparateCd().equals(TEMP_DIR)) {
             try {
                 String bucketName = getBucketName(uploadedFile.getStoragePathNm());
@@ -629,6 +640,7 @@ public class FileService {
                 throw internalFileException("파일 수정 중 오류가 발생했습니다.", e);
             }
         } else {
+            // 26.07.28 취약점 진단 검토, '누락된 널 값 검사-102117,102118', 오탐 -> uploadedFile은 orElseThrow()로 not null 보장됨.
             uploadedFile.update(uploadedFile.getStoragePathNm(), fileRelationshipObjectDistinguishNo, fileRelationshipObjectSeparateCode, fileValidEndDt);
         }
         return uploadedFile;
@@ -647,6 +659,7 @@ public class FileService {
                                 ResultCode.Error.RSC_NOT_FOUND,
                                 FILE_NO_MESSAGE_FORMAT.formatted(fileNo)));
         ensureNotInternalStagedFile(uploadedFile);
+        // 26.07.28 취약점 진단 검토, '누락된 널 값 검사-102188,102189', 오탐 -> uploadedFile은 orElseThrow()로 not null 보장됨.
         try {
             String bucketName = getBucketName(uploadedFile.getStoragePathNm());
             String filePath = getFilePath(uploadedFile.getStoragePathNm());
@@ -716,6 +729,7 @@ public class FileService {
         }
 
         UploadedFile uploadedFile = stagedFile.orElseThrow();
+        // 26.07.29 취약점 진단 검토, '표준 라이브러리의 널 반환 값 역참조-102246,102247,102248', 오탐 -> 위 isEmpty() 검사로 present가 보장되며 orElseThrow()는 null을 반환하지 않는 계약.
         try {
             String bucketName = getBucketName(uploadedFile.getStoragePathNm());
             String filePath = getFilePath(uploadedFile.getStoragePathNm());
@@ -765,6 +779,7 @@ public class FileService {
                                 ResultCode.Error.RSC_NOT_FOUND,
                                 FILE_NO_MESSAGE_FORMAT.formatted(fileNo)));
         ensureNotInternalStagedFile(uploadedFile);
+        // 26.07.28 취약점 진단 검토, '누락된 널 값 검사-102139,102140', 오탐 -> uploadedFile은 orElseThrow()로 not null 보장됨.
         try {
             String bucketName = getBucketName(uploadedFile.getStoragePathNm());
             String filePath = getFilePath(uploadedFile.getStoragePathNm());

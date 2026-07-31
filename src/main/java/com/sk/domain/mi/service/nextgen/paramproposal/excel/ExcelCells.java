@@ -149,6 +149,7 @@ final class ExcelCells {
         }
         Object previous = readValue(cell);
         Double number = asNumber(value);
+        // 26.07.29 취약점 진단 검토, '누락된 널 값 검사-102245', 오탐 -> cell은 위 null 검사 분기에서 createCell로 생성되어 not null 보장됨.
         if (number != null) {
             cell.setCellValue(number);
         } else {

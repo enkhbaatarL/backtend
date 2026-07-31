@@ -325,7 +325,14 @@ public class BlockExecutionClassifier {
             return;
         }
         for (BlockDataSourceSpec.TransformRule rule : spec.transform()) {
-            if (rule == null || !TRANSFORM_TYPES.contains(rule.type()) || StringUtils.isBlank(rule.sourcePath())
+
+            // 26.07.29 취약점 진단 수정, '누락된 널 값 검사-102236,102237,102238,102239,102240,102241'
+            if (rule == null) {
+                errors.add("UNSUPPORTED_DATA_SRC_SPEC_KEY");
+                continue;
+            }
+
+            if (!TRANSFORM_TYPES.contains(rule.type()) || StringUtils.isBlank(rule.sourcePath())
                 || !SOURCE_PATH_PATTERN.matcher(rule.sourcePath()).matches()) {
                 errors.add("UNSUPPORTED_DATA_SRC_SPEC_KEY");
             }
@@ -349,9 +356,12 @@ public class BlockExecutionClassifier {
         String expectedLegacyRef = translateLegacyRef(block, spec);
         String actualLegacyRef = StringUtils.trimToNull(block.dataSourceRef());
         if (expectedLegacyRef == null) {
-            if (actualLegacyRef != null && !"MAIN_CHART".equals(spec.locator().kind())) {
+
+            // 26.07.29 취약점 진단 수정, '누락된 널 값 검사-102235'
+            if (actualLegacyRef != null && (spec.locator() == null || !"MAIN_CHART".equals(spec.locator().kind()))) {
                 errors.add("CANONICAL_LEGACY_CONFLICT");
             }
+
         } else if (actualLegacyRef != null && !Objects.equals(expectedLegacyRef, actualLegacyRef)) {
             errors.add("CANONICAL_LEGACY_CONFLICT");
         }

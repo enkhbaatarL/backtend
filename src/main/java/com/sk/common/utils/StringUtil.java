@@ -15,18 +15,19 @@ public class StringUtil {
     }
 
     public static String stripNewlinesAndTabs(String inputStr) {
-        if (inputStr == null)
-            return null;
+        if (inputStr == null) return null;
         return inputStr.replaceAll("[\r\n]+", "");
     }
 
     public static String maskAll(String input) {
+        if (input == null) return null;
         return "*".repeat(Math.max(8, input.length()));
     }
 
+    // 26.07.28 취약점 진단 수정, '누락된 널 값 검사-102116'
     public static String maskPartial(String input, int prefix, int suffix) {
-        if (input == null || input.length() <= prefix + suffix)
-            return "*".repeat(input.length());
+        if (input == null) return null;
+        if (input.length() <= prefix + suffix) return "*".repeat(input.length());
         StringBuilder sb = new StringBuilder();
         sb.append(input, 0, prefix);
         sb.append("*".repeat(input.length() - prefix - suffix));

@@ -126,6 +126,13 @@ public class MariAgentGatewayService {
                 qna.getChatbotTalk().getChatbotTalkUuid(),
                 modelAgentRes != null && modelAgentRes.output() != null);
 
+            // 26.07.29 취약점 진단 수정, '누락된 널 값 검사-102183'
+            if (modelAgentRes == null) {
+                log.error("[Model-Agent] invoke response is null. qnaNo: {}, chatRoomId: {}", qna.getChatbotTalkQnaNo(), qna.getChatbotTalk().getChatbotTalkUuid());
+                qna.updateFailResult(AnswerStatusCd.FAIL_AGENT_COMMUNICATION);
+                return Optional.empty();
+            }
+
             AnswerRes answerRes = AnswerRes.of(modelAgentRes.output());
             qna.updateCompleteResult(answerRes);
 
@@ -267,6 +274,7 @@ public class MariAgentGatewayService {
         ServerSentEvent<String> event,
         ChatbotTalkQna qna
     ) {
+        // 26.07.29 취약점 진단 검토, '표준 라이브러리의 널 반환 값 역참조-102203', 오탐 -> 단락 평가로 data()의 null 검사 후 접근하며, ServerSentEvent는 불변 객체라 재호출 반환값이 동일함.
         if (event == null || event.data() == null || event.data().trim().isEmpty()) {
             return Flux.empty();
         }

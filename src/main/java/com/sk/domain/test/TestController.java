@@ -195,6 +195,7 @@ public class TestController {
 
     @GetMapping("/encodeToBase64")
     public String encodeToBase64(@RequestParam("plaintext") String plaintext) {
+        // 26.07.29 취약점 진단 검토, '표준 라이브러리의 널 반환 값 역참조-102279', 오탐 -> plaintext는 필수 RequestParam으로 Spring이 not null 보장(누락 시 400).
         return testService.encodeToBase64(plaintext.getBytes());
     }
 

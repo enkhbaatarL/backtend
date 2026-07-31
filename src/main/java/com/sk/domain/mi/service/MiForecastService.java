@@ -802,6 +802,7 @@ public class MiForecastService {
         LocalDate baseDate = calculateBaseDate(today,
             chartPredictSetting.getPredictPeriodMonthsCnt(),
             chartPredictSetting.getPredictPeriodUnitSeparateCd());
+        // 26.07.29 취약점 진단 검토, '누락된 널 값 검사-102173', 오탐 -> today는 LocalDate.now() 반환값으로 not null 보장됨.
         LocalDate startDate = calculateStartDate(today, totalPeriod);
 
         validatePeriodLength(startDate, baseDate, axisUnit);
@@ -1051,9 +1052,11 @@ public class MiForecastService {
                 }
 
                 List<ChartPredictSettingDetail> predictDetails = predictDetailsAll.stream()
-                    .filter(detail -> detail.getAssociatedGoodsDataSourceDetail() != null)
-                    .filter(detail -> goodsDataSourceNo.equals(
-                        detail.getAssociatedGoodsDataSourceDetail().getGoodsDataSourceNo()))
+                    // 26.07.29 취약점 진단 수정, '누락된 널 값 검사-102201'
+                    .filter(detail -> {
+                        GoodsDataSourceDetail associatedGds = detail.getAssociatedGoodsDataSourceDetail();
+                        return associatedGds != null && goodsDataSourceNo.equals(associatedGds.getGoodsDataSourceNo());
+                    })
                     .toList();
                 if (predictDetails.isEmpty()) {
                     return ForecastTargetAccuracyRes.of(null, target.predictChartDetailExpn(), null);
@@ -1499,6 +1502,11 @@ public class MiForecastService {
             : buildForecastRecordResultsForTwoPeriodCompany(rows, chartPredictSettingDetails,
                 predictDetails, companyNo, goodsDataSourceNo, true, false);
         results = limitListFor2015(companyNo, results);
+
+        // 26.07.29 취약점 진단 수정, '누락된 널 값 검사-102177'
+        if (results == null) {
+            results = Collections.emptyList();
+        }
 
         return createForecastRecordExcel(companyNo, results);
     }
@@ -2049,9 +2057,11 @@ public class MiForecastService {
 
         ChartPredictSettingDetail matchedDetail = predictDetails.stream()
             .filter(detail -> Boolean.TRUE.equals(detail.getIsChartLinePredictVal()))
-            .filter(detail -> detail.getGoodsDataSourceDetail() != null)
+            // 26.07.29 취약점 진단 수정, '누락된 널 값 검사-102200'
             .filter(detail -> {
-                String query = detail.getGoodsDataSourceDetail().getQueryConditionCntt();
+                GoodsDataSourceDetail gds = detail.getGoodsDataSourceDetail();
+                if (gds == null) return false;
+                String query = gds.getQueryConditionCntt();
                 return query != null && query.contains(mnemonicCd);
             })
             .findFirst()
@@ -2877,9 +2887,11 @@ public class MiForecastService {
             chartPredictSettingDetailRes.chartPredictSettingDetails();
         if (goodsDataSourceNo != null) {
             chartPredictSettingDetails = chartPredictSettingDetails.stream()
-                .filter(detail -> detail.getAssociatedGoodsDataSourceDetail() != null)
-                .filter(detail -> goodsDataSourceNo.equals(
-                    detail.getAssociatedGoodsDataSourceDetail().getGoodsDataSourceNo()))
+                // 26.07.29 취약점 진단 수정, '누락된 널 값 검사-102181'
+                .filter(detail -> {
+                    GoodsDataSourceDetail associatedGds = detail.getAssociatedGoodsDataSourceDetail();
+                    return associatedGds != null && goodsDataSourceNo.equals(associatedGds.getGoodsDataSourceNo());
+                })
                 .toList();
         }
 
@@ -3023,6 +3035,10 @@ public class MiForecastService {
 
         List<List<Object>> rows = new ArrayList<>();
         for (YearMonth yearMonth : rowMonths) {
+
+            // 26.07.29 취약점 진단 수정, '누락된 널 값 검사-102180'
+            if (yearMonth == null) continue;
+
             List<Object> values = new ArrayList<>();
             values.add(formatSpecialTableDateLabelV2(yearMonth, groupingUnit));
             for (SpecialTableColumn column : columns) {
@@ -4222,6 +4238,10 @@ public class MiForecastService {
         }
 
         for (LocalDate periodDate : periodDates) {
+
+            // 26.07.29 취약점 진단 수정, '누락된 널 값 검사-102176'
+            if (periodDate == null) continue;
+
             String periodStr = switch (chartPredictSetting.getDefaultPeriodUnitSeparateCd()) {
                 case W -> {
                     int diff = DayOfWeek.WEDNESDAY.getValue() - periodDate.getDayOfWeek().getValue();
@@ -4653,9 +4673,11 @@ public class MiForecastService {
 
         return chartPredictSettingDetailRes.chartPredictSettingDetails().stream()
             .filter(ChartPredictSettingDetail::getIsChartLinePredictVal)
-            .filter(detail -> detail.getGoodsDataSourceDetail() != null)
-            .filter(detail -> goodsDataSourceNo
-                == detail.getGoodsDataSourceDetail().getGoodsDataSourceNo())
+            // 26.07.29 취약점 진단 수정, '누락된 널 값 검사-102175'
+            .filter(detail -> {
+                GoodsDataSourceDetail gds = detail.getGoodsDataSourceDetail();
+                return gds != null && goodsDataSourceNo == gds.getGoodsDataSourceNo();
+            })
             .map(detail -> detail.getAssociatedGoodsDataSourceDetail() != null
                 ? detail.getAssociatedGoodsDataSourceDetail().getGoodsDataSourceNo()
                 : null)
@@ -5132,12 +5154,18 @@ public class MiForecastService {
         List<ChartPredictSettingDetail> chartPredictSettingDetails = chartPredictSettingDetailRes.chartPredictSettingDetails();
         if (goodsDataSourceNo != null) {
             chartPredictSettingDetails = chartPredictSettingDetails.stream()
-                .filter(detail -> detail.getAssociatedGoodsDataSourceDetail() != null)
-                .filter(detail -> goodsDataSourceNo.equals(
-                    detail.getAssociatedGoodsDataSourceDetail().getGoodsDataSourceNo()))
+                // 26.07.29 취약점 진단 수정, '누락된 널 값 검사-102178'
+                .filter(detail -> {
+                    GoodsDataSourceDetail associatedGds = detail.getAssociatedGoodsDataSourceDetail();
+                    return associatedGds != null && goodsDataSourceNo.equals(associatedGds.getGoodsDataSourceNo());
+                })
                 .toList();
         }
         chartPredictSettingDetails = distinctByGoodsData(chartPredictSettingDetails);
+        // 26.07.29 취약점 진단 수정, '누락된 널 값 검사-102179'
+        if (chartPredictSettingDetails == null) {
+            chartPredictSettingDetails = Collections.emptyList();
+        }
         boolean isTwoPeriodCompany = companyNo == 2015 || companyNo == 2013;
         List<AvailableForecastKey> availableDates =
             getAvailableDates(chartPredictSettingDetails, isScheduled, isTwoPeriodCompany, companyNo);
@@ -6185,6 +6213,7 @@ public class MiForecastService {
                     .endDate(DateUtil.toYmd(cursor))
                     .unit(axisUnit.label)
                     .build());
+                // 26.07.29 취약점 진단 검토, '누락된 널 값 검사-102172', 오탐 -> cursor는 startDate에서 plusDays로만 갱신되어 not null이며 루프 조건에서 이미 역참조됨.
                 cursor = cursor.plusDays(1);
             }
             return dates;
@@ -6204,6 +6233,7 @@ public class MiForecastService {
                 .unit(axisUnit.label)
                 .build());
 
+            // 26.07.29 취약점 진단 검토, '누락된 널 값 검사-102171', 오탐 -> periodStart는 getPeriodStart의 switch 결과로 not null이며 위 isBefore에서 이미 역참조됨.
             cursorEnd = periodStart.minusDays(1);
         }
 

@@ -55,7 +55,8 @@ public class DefaultDataCollector implements DataCollectorStrategy {
 
                 // 데이터 파싱
                 Object[] rowData = addObjects(ExcelParsedUtil.parseCsvRecord(record, actualColumns, criteriaDt), conditionMap, dbColumns);
-                if (rowData.length > 0)
+                // 26.07.28 취약점 진단 수정, '누락된 널 값 검사-102141'
+                if (rowData != null && rowData.length > 0)
                     result.add(rowData);
             }
         }

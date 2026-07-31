@@ -65,7 +65,10 @@ import java.nio.charset.StandardCharsets;
 import java.time.DayOfWeek;
 import java.time.Duration;
 import java.time.LocalDate;
+import java.time.YearMonth;
 import java.time.format.DateTimeFormatter;
+import java.time.format.DateTimeParseException;
+import java.time.format.ResolverStyle;
 import java.time.temporal.ChronoUnit;
 import java.time.temporal.TemporalAdjusters;
 import java.util.ArrayList;
@@ -118,6 +121,8 @@ public class MiDashboardService {
     private static final String MARKET_DATA_PREDICT_DATE_COLUMN_NAME = "prdc_fulf_dt"; // 예측 수행 날짜 컬럼명
     private static final String DASHBOARD_CHART_DATA_TABLE_HEADER_UNIT = "Unit"; // 차트 데이터 테이블 헤더 단위 컬럼명
     private static final String EXCEL_SHEET_NAME = "dashboard_chart";
+    private static final DateTimeFormatter PREDICT_MONTH_FORMATTER =
+            DateTimeFormatter.ofPattern("uuuuMM").withResolverStyle(ResolverStyle.STRICT);
     private final GoodsDataRepository goodsDataRepository;
     private final ChartPredictSettingRepository chartPredictSettingRepository;
     private final CustomerCompanyRepository customerCompanyRepository;
@@ -295,6 +300,7 @@ public class MiDashboardService {
      * @return byte[]z
      */
     public FileDownloadRes getDashboardSummaryFileDownload(int companyNo, String date, String predictDate, String zipFileName) {
+        YearMonth targetMonth = parseOptionalPredictMonth(predictDate);
         String currentDate = DateUtil.toYmd(LocalDate.now());
         CustomerCompany customerCompany = customerCompanyRepository.findActiveByCustomerCompanyNo(companyNo, currentDate)
                 .orElseThrow(() -> AppErrorException.of(ResultCode.Error.RSC_NOT_FOUND, String.format("고객회사 조회 실패: %s", companyNo)));
@@ -316,7 +322,7 @@ public class MiDashboardService {
         }
 
         // 대시보드 요약 데이터 조회
-        List<DashboardSummary> summaries = getDashboardSummaries(chartPredictSettingDetails, date, predictDate);
+        List<DashboardSummary> summaries = getDashboardSummariesForMonth(chartPredictSettingDetails, date, targetMonth);
 
         if (summaries == null || summaries.isEmpty()) {
             log.warn("No dashboard summaries found for companyNo: {}, date: {}, predictDate: {}",
@@ -348,10 +354,15 @@ public class MiDashboardService {
     @Transactional
     public List<DashboardSummary> getDashboardSummaries(List<ChartPredictSettingDetail> chartPredictSettingDetails, String date,
             String predictDate) {
+        return getDashboardSummariesForMonth(chartPredictSettingDetails, date, parseOptionalPredictMonth(predictDate));
+    }
+
+    private List<DashboardSummary> getDashboardSummariesForMonth(List<ChartPredictSettingDetail> chartPredictSettingDetails, String date,
+            YearMonth targetMonth) {
         String baseDate = date != null ? date : DateUtil.toYmd(LocalDate.now());
 
-        String startDate = predictDate != null ? DateUtil.toYmd(DateUtil.parseDate(predictDate).withDayOfMonth(1)) : null;
-        String endDate = predictDate != null ? DateUtil.toYmd(DateUtil.parseDate(predictDate).with(TemporalAdjusters.lastDayOfMonth())) : null;
+        String startDate = targetMonth != null ? DateUtil.toYmd(targetMonth.atDay(1)) : null;
+        String endDate = targetMonth != null ? DateUtil.toYmd(targetMonth.atEndOfMonth()) : null;
 
         return chartPredictSettingDetails.stream()
                 .filter(chartPredictSettingDetail -> chartPredictSettingDetail.getIsChartLinePredictVal())
@@ -406,6 +417,19 @@ public class MiDashboardService {
                         map -> map.values().stream()
                                 .map(DashboardSummary::of)
                                 .collect(Collectors.toList())));
+    }
+
+    private YearMonth parseOptionalPredictMonth(String predictDate) {
+        if (predictDate == null) {
+            return null;
+        }
+
+        try {
+            return YearMonth.parse(predictDate, PREDICT_MONTH_FORMATTER);
+        } catch (DateTimeParseException e) {
+            throw AppErrorException.of(ResultCode.Error.REQ_INVALID_PARAMETER,
+                    "predictDate는 yyyyMM 형식이어야 합니다.");
+        }
     }
 
     /**
@@ -908,6 +932,10 @@ public class MiDashboardService {
 
         // 월별 평균 계산
         for (LocalDate periodDate : monthlyDates) {
+
+            // 26.07.28 취약점 진단 수정, '누락된 널 값 검사-102154,102156'
+            if (periodDate == null) continue;
+
             String periodStr = switch (chartPredictSetting.getDefaultPeriodUnitSeparateCd()) {
                 case W -> {
                     int diff = DayOfWeek.WEDNESDAY.getValue() - periodDate.getDayOfWeek().getValue();

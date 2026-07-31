@@ -1,5 +1,7 @@
 package com.sk.domain.mi.service.chart;
 
+import com.sk.common.enums.ResultCode;
+import com.sk.common.exception.AppErrorException;
 import com.sk.common.utils.CombineUtil;
 import com.sk.common.utils.DateBindingUtil;
 import com.sk.common.utils.DateUtil;
@@ -56,6 +58,11 @@ public class ChartGenerationService {
      * @return 처리된 차트 데이터
      */
     public Chart generateChartData(GoodsDataSourceDetail gds, ChartSettingsContext contextV3, boolean isVisible, boolean isMainChart, Boolean isYAxisSeparated) {
+
+        // 26.07.28 취약점 진단 수정, '누락된 널 값 검사-102162,102163,102164'
+        if (gds == null) {
+            throw AppErrorException.of(ResultCode.Error.REQ_INVALID_PARAMETER, "goodsDataSourceDetail is required.");
+        }
 
         // 컬럼 정보 추출
         Map<String, String> columnExpressions = getColumnExpressions(gds);
@@ -136,8 +143,11 @@ public class ChartGenerationService {
 
         // 각 비교 데이터소스에 대한 차트 데이터 생성 (비교군 차트 권한체크)
         return comparisons.stream()
-            .filter(comparison -> comparison.getCompareGoodsDataSourceDetail() != null)
-            .filter(comparison -> goodsViewableMap.getOrDefault(comparison.getCompareGoodsDataSourceDetail().getGoodsData().getGoods().getGoodsNo(), false))
+            // 26.07.28 취약점 진단 수정, '누락된 널 값 검사-102165'
+            .filter(comparison -> {
+                GoodsDataSourceDetail compareGds = comparison.getCompareGoodsDataSourceDetail();
+                return compareGds != null && goodsViewableMap.getOrDefault(compareGds.getGoodsData().getGoods().getGoodsNo(), false);
+            })
             .map(comparison -> {
                 List<Integer> finalizedCompIds = settingsContext.finalizedCompIds();
                 boolean isVisible = finalizedCompIds.contains(comparison.getId().getCompareGoodsDataSourceNo());

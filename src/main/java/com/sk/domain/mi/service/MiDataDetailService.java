@@ -62,6 +62,7 @@ import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.function.Function;
@@ -503,7 +504,8 @@ public class MiDataDetailService {
         // 로그: 최종적으로 값이 변경된 경우
         boolean intervalChanged = !initialInterval.equals(currentInterval);
         boolean rangeChanged = !initialRange.equals(currentRange);
-        boolean datesChanged = !initialStartDate.equals(currentStartDate) || !initialEndDate.equals(currentEndDate);
+        // 26.07.28 취약점 진단 수정, '누락된 널 값 검사-102166,102168'
+        boolean datesChanged = !Objects.equals(initialStartDate, currentStartDate) || !Objects.equals(initialEndDate, currentEndDate);
 
         if (intervalChanged || rangeChanged || datesChanged) {
             log.info("[Chart Parameter Soft-Validation Summary]: Parameters adjusted. Initial: Range={}, Interval={}, Dates={}-{}. Final:   Range={}, Interval={}, Dates={}-{}.",
@@ -643,6 +645,7 @@ public class MiDataDetailService {
         RawDataQueryContext queryContext = prepareRawDataQueryContext(gds, DateUtil.toYmd(startDate), DateUtil.toYmd(endDate));
 
         // Count 쿼리 실행
+        // 26.07.29 취약점 진단 검토, '누락된 널 값 검사-102169,102170', 오탐 -> gds는 getValidatedGoodsDataSource의 orElseThrow()로 not null 보장됨.
         List<Map<String, Object>> countQuery = mybatisDynamicQueryService.getDynamicData(DynamicDataReq.ofCountQuery(gds, queryContext.whereClause()));
         int totalElements = extractTotalElements(countQuery);
 
@@ -671,6 +674,7 @@ public class MiDataDetailService {
         GoodsDataSourceDetail gds = getValidatedGoodsDataSource(gdsNo, gdNo, goodsNo);
         RawDataQueryContext queryContext = prepareRawDataQueryContext(gds, DateUtil.toYmd(startDate), DateUtil.toYmd(endDate));
 
+        // 26.07.28 취약점 진단 검토, '누락된 널 값 검사-102161', 오탐 -> gds는 getValidatedGoodsDataSource의 orElseThrow()로 not null 보장됨.
         List<Map<String, Object>> dataQuery = mybatisDynamicQueryService.getDynamicData(DynamicDataReq.of(gds, queryContext.whereClause(), queryContext.dateColumn()));
 
         // 테이블 응답 생성
@@ -716,6 +720,12 @@ public class MiDataDetailService {
      * @return RawDataQueryContext 객체
      */
     private RawDataQueryContext prepareRawDataQueryContext(GoodsDataSourceDetail gds, String startDate, String endDate) {
+
+        // 26.07.28 취약점 진단 수정, '누락된 널 값 검사-102158,102159,102160'
+        if (gds == null) {
+            throw AppErrorException.of(ResultCode.Error.REQ_INVALID_PARAMETER, "goodsDataSourceDetail is required.");
+        }
+
         Map<String, String> columnExpressions = getColumnExpressions(gds);
 
         List<String> columns = CombineUtil.getSelectColumnList(gds.getTableColumnListNm());

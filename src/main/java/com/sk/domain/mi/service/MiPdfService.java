@@ -87,6 +87,11 @@ public class MiPdfService {
             byte[] bytes = objectStorageService.downloadFile(bucket, imagePath);
             BufferedImage bufferedImage = PdfUtil.byteArrayToImage(bytes);
 
+            // 26.07.29 취약점 진단 수정, '표준 라이브러리의 널 반환 값 역참조-102187' -> ImageIO.read는 미인식 포맷에서 예외 대신 null 반환
+            if (bufferedImage == null) {
+                throw SystemErrorException.of(ResultCode.Error.SYS_INTERNAL_ERROR, "이미지 변환에 실패했습니다. imagePath: %s".formatted(imagePath));
+            }
+
             // 회사명#사번#날짜
             String waterMark = StringUtil.joinPoundSignNonNull(user.getCustomerCompany().getCustomerCompanyNm(), user.getUserLoginId(), DateUtil.currentYmdHyphen());
             BufferedImage addTextWatermark = PdfUtil.addTextWatermarkRGB(bufferedImage, waterMark);

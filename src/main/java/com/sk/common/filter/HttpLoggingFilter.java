@@ -55,7 +55,8 @@ public class HttpLoggingFilter extends OncePerRequestFilter implements Ordered {
             return;
         }
 
-        while (headerNames.hasMoreElements()) {
+        // 26.07.29 취약점 진단 수정, '표준 라이브러리의 널 반환 값 역참조-102109,102110'
+        while (headerNames != null && headerNames.hasMoreElements()) {
             String headerName = headerNames.nextElement();
             String headerValue = request.getHeader(headerName);
             log.debug("Header: {}={}", headerName, headerValue);
