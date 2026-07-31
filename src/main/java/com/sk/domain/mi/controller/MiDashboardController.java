@@ -40,6 +40,7 @@ import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.Parameters;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.validation.constraints.Pattern;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
@@ -119,6 +120,7 @@ public class MiDashboardController {
 	public ResponseEntity<byte[]> getDashboardSummaryFileDownload(
 			@PathVariable("companyNo") Integer companyNo,
 			@RequestParam(value = "date", required = true) String date,
+			@Pattern(regexp = "^[0-9]{4}(0[1-9]|1[0-2])$", message = "predictDate는 yyyyMM 형식이어야 합니다.")
 			@RequestParam(value = "predictDate", required = false) String predictDate) throws UnsupportedEncodingException {
 
 		String FILE_PREFIX = "dashboard_summary";

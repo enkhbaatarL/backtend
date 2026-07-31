@@ -228,7 +228,7 @@ public class MiDashboardHistoryService {
                 return r;
             }
             List<DashboardSummary> dashboardSummaries = miDashboardService.getDashboardSummaries(settingDetailForCheckDownload, DateUtil.toYmd(fulfillDate),
-                r.date().length() == 6 ? r.date()+"01" : r.date());
+                r.date().substring(0, 6));
             boolean download = false;
             for(DashboardSummary dashboardSummary : dashboardSummaries){
                 if(org.springframework.util.StringUtils.hasText(dashboardSummary.explanatoryFilePath())){
