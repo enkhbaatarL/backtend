@@ -4,6 +4,8 @@ import static com.sk.domain.mi.service.MiMarketDataService.MAIN_MARKET_DATA_STAR
 import static com.sk.domain.mi.service.chart.TechnicalIndicatorService.PERIOD_MEDIUM;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.sk.common.enums.ResultCode;
+import com.sk.common.exception.SystemErrorException;
 import com.sk.common.model.ValidationResult;
 import com.sk.common.utils.DateUtil;
 import com.sk.domain.mi.conversion.UnitConversionService;
@@ -264,7 +266,7 @@ public class UsExportChartMaker implements CustomChartMaker<MiMarketDataRes>{
         }
     }
 
-    private static List<MarketDataChartRawData> convertToDashBoardData(List<Map<String, Object>> rawData,
+    static List<MarketDataChartRawData> convertToDashBoardData(List<Map<String, Object>> rawData,
         String dateColumnName,
         String defaultDataColumnName) {
         if (rawData == null || rawData.isEmpty()) {
@@ -276,7 +278,7 @@ public class UsExportChartMaker implements CustomChartMaker<MiMarketDataRes>{
         LocalDate day = null;
         LocalDate lastDay = null;
         for(Map<String,Object> data : rawData){
-            day = DateUtil.parseDate(data.get(dateColumnName));
+            day = parseRequiredMarketDate(data.get(dateColumnName), dateColumnName);
             if(lastDay != null && lastDay.getMonthValue() != day.getMonthValue()){
                 result.add(MarketDataChartRawData.builder()
                     .date(DateUtil.toYmdHyphen(LocalDate.of(lastDay.getYear(), lastDay.getMonthValue(), lastDay.getDayOfMonth())))
@@ -313,7 +315,8 @@ public class UsExportChartMaker implements CustomChartMaker<MiMarketDataRes>{
 
         // 마지막 데이터
         Map<String, Object> lastData = rawData.get(rawData.size() -1);
-        LocalDate thisEndDay = DateUtil.fromIsoToLocalDate(lastData.get(dateColumnName).toString());
+        LocalDate thisEndDay = parseRequiredIsoMarketDate(
+            lastData.get(dateColumnName), dateColumnName);
         LocalDate thisStartDay = LocalDate.of(thisEndDay.getYear(), thisEndDay.getMonthValue(), 1);
         BigDecimal lastValue = BigDecimal.valueOf(lastChartRawData.value());
         if(lastValue.equals(BigDecimal.ZERO)) return result;
@@ -322,7 +325,7 @@ public class UsExportChartMaker implements CustomChartMaker<MiMarketDataRes>{
         BigDecimal mom = BigDecimal.ZERO;
         for(int i = rawData.size() - 1 ; i >= 0 ; i--){
             Map<String, Object> data = rawData.get(i);
-            LocalDate date = DateUtil.fromIsoToLocalDate(data.get(dateColumnName).toString());
+            LocalDate date = parseRequiredIsoMarketDate(data.get(dateColumnName), dateColumnName);
             if(date.getYear() == thisEndDay.getYear()
                 && date.getMonthValue() == thisEndDay.getMonthValue()-1
                 && date.getDayOfMonth() >= thisStartDay.getDayOfMonth()
@@ -337,7 +340,7 @@ public class UsExportChartMaker implements CustomChartMaker<MiMarketDataRes>{
         BigDecimal yoy = BigDecimal.ZERO;
         for(int i = rawData.size() - 1 ; i >= 0 ; i--){
             Map<String, Object> data = rawData.get(i);
-            LocalDate date = DateUtil.fromIsoToLocalDate(data.get(dateColumnName).toString());
+            LocalDate date = parseRequiredIsoMarketDate(data.get(dateColumnName), dateColumnName);
             if(date.getYear() == thisEndDay.getYear() -1
                 && date.getMonthValue() == thisEndDay.getMonthValue()
                 && date.getDayOfMonth() >= thisStartDay.getDayOfMonth()
@@ -358,5 +361,43 @@ public class UsExportChartMaker implements CustomChartMaker<MiMarketDataRes>{
         ));
 
         return result;
+    }
+
+    private static LocalDate parseRequiredMarketDate(Object rawDate, String columnName) {
+        try {
+            LocalDate parsedDate = DateUtil.parseDate(rawDate);
+            if (parsedDate != null) {
+                return parsedDate;
+            }
+        } catch (RuntimeException exception) {
+            log.error("Invalid required market date. source: {}, column: {}",
+                CUSTOM_ID, columnName, exception);
+            throw SystemErrorException.of(ResultCode.Error.SYS_INTERNAL_ERROR);
+        }
+
+        log.error("Invalid required market date. source: {}, column: {}", CUSTOM_ID, columnName);
+        throw SystemErrorException.of(ResultCode.Error.SYS_INTERNAL_ERROR);
+    }
+
+    private static LocalDate parseRequiredIsoMarketDate(Object rawDate, String columnName) {
+        if (rawDate == null) {
+            log.error("Invalid required market date. source: {}, column: {}",
+                CUSTOM_ID, columnName);
+            throw SystemErrorException.of(ResultCode.Error.SYS_INTERNAL_ERROR);
+        }
+
+        try {
+            LocalDate parsedDate = DateUtil.fromIsoToLocalDate(rawDate.toString());
+            if (parsedDate != null) {
+                return parsedDate;
+            }
+        } catch (RuntimeException exception) {
+            log.error("Invalid required market date. source: {}, column: {}",
+                CUSTOM_ID, columnName, exception);
+            throw SystemErrorException.of(ResultCode.Error.SYS_INTERNAL_ERROR);
+        }
+
+        log.error("Invalid required market date. source: {}, column: {}", CUSTOM_ID, columnName);
+        throw SystemErrorException.of(ResultCode.Error.SYS_INTERNAL_ERROR);
     }
 }

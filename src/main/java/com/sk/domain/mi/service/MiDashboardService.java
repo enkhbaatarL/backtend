@@ -4,6 +4,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.sk.common.config.database.DataSourceContextHolder;
 import com.sk.common.enums.ResultCode;
 import com.sk.common.exception.AppErrorException;
+import com.sk.common.exception.SystemErrorException;
 import com.sk.common.utils.CombineUtil;
 import com.sk.common.utils.DateBindingUtil;
 import com.sk.common.utils.DateUtil;
@@ -762,12 +763,16 @@ public class MiDashboardService {
                         if (chartPredictSettingDetail.getIsChartLinePredictVal() && !rawData.isEmpty()) {
                             String baseYm = DateUtil.toYearMonth(baseDate);
                             List<Map<String, Object>> baseYmRawData = rawData.stream()
-                                .filter(
-                                    r->((String)r.get(MARKET_DATA_PREDICT_DATE_COLUMN_NAME)).substring(0, 6).equals(baseYm)
-                                )
-                                .toList();
+                                    .filter(row -> requireForecastDate(
+                                            row.get(MARKET_DATA_PREDICT_DATE_COLUMN_NAME))
+                                            .substring(0, 6)
+                                            .equals(baseYm))
+                                    .toList();
                             if(baseYmRawData.isEmpty()) return null;
-                            lastUpdated = DateUtil.parseDate(baseYmRawData.get(baseYmRawData.size() - 1).get(MARKET_DATA_PREDICT_DATE_COLUMN_NAME));
+                            lastUpdated = parseRequiredMarketDate(
+                                    baseYmRawData.get(baseYmRawData.size() - 1)
+                                            .get(MARKET_DATA_PREDICT_DATE_COLUMN_NAME),
+                                    MARKET_DATA_PREDICT_DATE_COLUMN_NAME);
                             dashboardDataSource = DashboardDataSource.of(goodsDataSource, chartPredictSettingDetail);
                         }
 
@@ -878,7 +883,7 @@ public class MiDashboardService {
         Map<String, String> monthlyPredictDates = new TreeMap<>(); // prdc_fulf_dt 저장
         for (Map<String, Object> row : rawData) {
             String period = null;
-            LocalDate localDate = DateUtil.parseDate(row.get(dateColumnName));
+            LocalDate localDate = parseRequiredMarketDate(row.get(dateColumnName), dateColumnName);
             period = switch (chartPredictSetting.getDefaultPeriodUnitSeparateCd()) {
                 case W -> {
                   int diff = DayOfWeek.WEDNESDAY.getValue() - localDate.getDayOfWeek().getValue();
@@ -900,7 +905,7 @@ public class MiDashboardService {
 
             // 예측 데이터인 경우에만 예측수행날짜가 있다
             if (isPredict) {
-                predictDate = (String) row.get(MARKET_DATA_PREDICT_DATE_COLUMN_NAME);
+                predictDate = requireForecastDate(row.get(MARKET_DATA_PREDICT_DATE_COLUMN_NAME));
                 // 예측 수행 날짜가 다르면 skip ( 제외 )
                 if(predictDate.equals(DateUtil.toYmd(lastUpdated))){
                     monthlyPredictDates.put(period, predictDate);
@@ -984,6 +989,32 @@ public class MiDashboardService {
             periodAverages.add(dashboardChartRawData);
         }
         return periodAverages;
+    }
+
+    private LocalDate parseRequiredMarketDate(Object rawDate, String columnName) {
+        try {
+            LocalDate parsedDate = DateUtil.parseDate(rawDate);
+            if (parsedDate != null) {
+                return parsedDate;
+            }
+        } catch (RuntimeException exception) {
+            log.error("Invalid required market date. column: {}", columnName, exception);
+            throw SystemErrorException.of(ResultCode.Error.SYS_INTERNAL_ERROR);
+        }
+
+        log.error("Invalid required market date. column: {}", columnName);
+        throw SystemErrorException.of(ResultCode.Error.SYS_INTERNAL_ERROR);
+    }
+
+    private String requireForecastDate(Object rawDate) {
+        if (!(rawDate instanceof String forecastDate) || forecastDate.length() < 6) {
+            log.error("Invalid required market date. column: {}",
+                    MARKET_DATA_PREDICT_DATE_COLUMN_NAME);
+            throw SystemErrorException.of(ResultCode.Error.SYS_INTERNAL_ERROR);
+        }
+
+        parseRequiredMarketDate(forecastDate, MARKET_DATA_PREDICT_DATE_COLUMN_NAME);
+        return forecastDate;
     }
 
     /**

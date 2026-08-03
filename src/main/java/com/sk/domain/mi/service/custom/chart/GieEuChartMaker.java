@@ -1,6 +1,8 @@
 package com.sk.domain.mi.service.custom.chart;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.sk.common.enums.ResultCode;
+import com.sk.common.exception.SystemErrorException;
 import com.sk.common.model.ValidationResult;
 import com.sk.common.utils.DateUtil;
 import com.sk.domain.mi.conversion.dto.BollingerBandResult;
@@ -14,7 +16,6 @@ import com.sk.domain.mi.dto.response.marketData.charts.graph.MarketDataChartRawD
 import com.sk.domain.mi.dto.response.marketData.charts.metaData.MarketMetaData;
 import com.sk.domain.mi.service.MiMarketDataService;
 import com.sk.domain.mi.service.MiMarketDynamicQueryService;
-import com.sk.domain.mi.service.chart.ChartBundleFactory;
 import com.sk.domain.mi.validator.GoodsDataSourceValidator;
 import com.sk.domain.shared.entity.master.tif.GieEu;
 import com.sk.domain.shared.entity.master.tmd.Goods;
@@ -29,7 +30,12 @@ import java.math.BigDecimal;
 import java.time.Duration;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
 import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -43,35 +49,79 @@ import org.springframework.transaction.annotation.Transactional;
 @Slf4j
 public class GieEuChartMaker implements CustomChartMaker<MiMarketDataRes>{
 
+    private static final String CUSTOM_ID = "gie-eu";
+    private static final String CUSTOM_DATA_CACHE_KEY = "data_source:"+CUSTOM_ID+":%d";
     private final GoodsDataSourceValidator validatedGoodsDataSource;
     private final AuthorizationService authorizationService;
     private final StringRedisTemplate redisTemplate;
     private final ObjectMapper objectMapper;
     private final MiMarketDynamicQueryService miMarketDynamicQueryService;
-
     private final GoodsDataSourceDetailRepository goodsDataSourceDetailRepository;
     private final GieEuRepository gieEuRepository;
-
     @Value("${custom.gie-eu.goods-data-source-no}")
     private Integer goodsDataSourceNo;
     @Value("${custom.gie-eu.card-index:7}")
     private Short cardIndex;
 
-    private static final String CUSTOM_ID = "gie-eu";
-    private static final String CUSTOM_DATA_CACHE_KEY = "data_source:"+CUSTOM_ID+":%d";
+    public static List<Series> createBollingerBandsIndicator(List<BollingerBandResult> results, List<String> finalizedIndicators) {
 
-    private enum SeriesLabel {
-        upper("max"),
-        middle("avg"),
-        lower("min");
+        Map<SeriesLabel, List<BigDecimal>> series = Map.of(
+            SeriesLabel.upper, results.stream().map(BollingerBandResult::upper).toList(),
+            SeriesLabel.middle, results.stream().map(BollingerBandResult::middle).toList(),
+            SeriesLabel.lower, results.stream().map(BollingerBandResult::lower).toList()
+        );
 
-        final String display;
-        SeriesLabel(String display){
-            this.display = display;
+        RenderAs renderAs = RenderAs.Y5;
+
+        List<Series> seriesList = new ArrayList<>();
+
+        series.forEach((seriesLabel, value) -> {
+            String renderingId = renderAs.getRenderingId(seriesLabel.name());
+            String label = String.format("%s(%s)", renderAs.getDisplayDescription(), seriesLabel.getDisplay());
+            // 마지막 설정을 읽어 오기 위해서는 BB 로 표시 해야함.
+            seriesList.add(Series.of(renderingId, label, renderAs, value, finalizedIndicators.contains("BB")));
+        });
+
+        return seriesList;
+    }
+
+    static List<MarketDataChartRawData> convertToDashBoardData(List<Map<String, Object>> rawData,
+                                                               String dateColumnName,
+                                                               String defaultDataColumnName,
+                                                               LocalDate start, LocalDate end) {
+        if (rawData == null || rawData.isEmpty()) {
+            return Collections.emptyList();
         }
-        String getDisplay(){
-            return display;
+
+        return rawData.stream()
+            .map(row -> {
+                LocalDate date = parseRequiredMarketDate(row.get(dateColumnName), dateColumnName);
+                Object rawValue = row.get(defaultDataColumnName);
+                Double value = rawValue == null ? null : Double.parseDouble(rawValue.toString());
+                return new GieEuSourceRow(date, value);
+            })
+            .filter(row -> !row.date().isBefore(start) && !row.date().isAfter(end))
+            .map(row -> MarketDataChartRawData.builder()
+                .date(DateUtil.toYmdHyphen(row.date()))
+                .value(row.value())
+                .build())
+            .toList();
+    }
+
+    private static LocalDate parseRequiredMarketDate(Object rawDate, String columnName) {
+        try {
+            LocalDate parsedDate = DateUtil.parseDate(rawDate);
+            if (parsedDate != null) {
+                return parsedDate;
+            }
+        } catch (RuntimeException exception) {
+            log.error("Invalid required market date. source: {}, column: {}",
+                CUSTOM_ID, columnName, exception);
+            throw SystemErrorException.of(ResultCode.Error.SYS_INTERNAL_ERROR);
         }
+
+        log.error("Invalid required market date. source: {}, column: {}", CUSTOM_ID, columnName);
+        throw SystemErrorException.of(ResultCode.Error.SYS_INTERNAL_ERROR);
     }
 
     @Override
@@ -252,7 +302,6 @@ public class GieEuChartMaker implements CustomChartMaker<MiMarketDataRes>{
         return MiMarketDataRes.of(isPermitted, marketMetaData, mainChart, compareCharts);
     }
 
-
     @Override
     public Indicator createBollingerBandData(List<String> timestamps, List<BigDecimal> series,
                                              List<String> finalizedIndicators) {
@@ -283,53 +332,6 @@ public class GieEuChartMaker implements CustomChartMaker<MiMarketDataRes>{
         return timestamps.stream().map(t->BollingerBandResult.of(mid.get(t), upper.get(t), lower.get(t))).toList();
     }
 
-    public static List<Series> createBollingerBandsIndicator(List<BollingerBandResult> results, List<String> finalizedIndicators) {
-
-        Map<SeriesLabel, List<BigDecimal>> series = Map.of(
-            SeriesLabel.upper, results.stream().map(BollingerBandResult::upper).toList(),
-            SeriesLabel.middle, results.stream().map(BollingerBandResult::middle).toList(),
-            SeriesLabel.lower, results.stream().map(BollingerBandResult::lower).toList()
-        );
-
-        RenderAs renderAs = RenderAs.Y5;
-
-        List<Series> seriesList = new ArrayList<>();
-
-        series.forEach((seriesLabel, value) -> {
-            String renderingId = renderAs.getRenderingId(seriesLabel.name());
-            String label = String.format("%s(%s)", renderAs.getDisplayDescription(), seriesLabel.getDisplay());
-            // 마지막 설정을 읽어 오기 위해서는 BB 로 표시 해야함.
-            seriesList.add(Series.of(renderingId, label, renderAs, value, finalizedIndicators.contains("BB")));
-        });
-
-        return seriesList;
-    }
-
-    private static List<MarketDataChartRawData> convertToDashBoardData(List<Map<String, Object>> rawData,
-                                                                       String dateColumnName,
-                                                                       String defaultDataColumnName,
-                                                                       LocalDate start, LocalDate end) {
-        if (rawData == null || rawData.isEmpty()) {
-            return Collections.emptyList();
-        }
-
-        return rawData.stream()
-            .map(r->{
-                String date = DateUtil.toYmdHyphen(DateUtil.parseDate(r.get(dateColumnName)));
-                Object value = r.get(defaultDataColumnName);
-
-                return MarketDataChartRawData.builder()
-                    .date(date)
-                    .value(value == null ? null : Double.parseDouble(value.toString()))
-                    .build()
-                    ;
-            }).filter(data->{
-                LocalDate date = DateUtil.fromYmdHyphen(data.date());
-                return date.isAfter(start.minusDays(1)) && date.isBefore(end.plusDays(1));
-            })
-            .toList();
-    }
-
     private LocalDate getLastGieEuCurrent(){
         Optional<GieEu> lastGieEuOptional = gieEuRepository.findFirstByCodeInOrderByDateDesc(Arrays.asList(
             GieEu.GIE_EU_CODE_CURRENT
@@ -355,5 +357,22 @@ public class GieEuChartMaker implements CustomChartMaker<MiMarketDataRes>{
         saveToMarketDataCache(cacheKey, miMarketDataCache);
 
         return MiMarketDataRes.of(true, marketMetaData, mainChart, compareCharts);
+    }
+
+    private enum SeriesLabel {
+        upper("max"),
+        middle("avg"),
+        lower("min");
+
+        final String display;
+        SeriesLabel(String display){
+            this.display = display;
+        }
+        String getDisplay(){
+            return display;
+        }
+    }
+
+    private record GieEuSourceRow(LocalDate date, Double value) {
     }
 }

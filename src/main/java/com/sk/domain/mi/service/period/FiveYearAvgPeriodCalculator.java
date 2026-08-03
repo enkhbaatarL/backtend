@@ -1,6 +1,5 @@
 package com.sk.domain.mi.service.period;
 
-import com.sk.common.utils.DateUtil;
 import com.sk.domain.mi.dto.response.marketData.charts.calculatePeriodChange.CalculatePeriodChangeValue;
 import com.sk.domain.shared.entity.master.tif.GieEu;
 import com.sk.domain.shared.entity.master.tmd.GoodsDataSourceDetail;
@@ -42,7 +41,7 @@ public class FiveYearAvgPeriodCalculator extends AbstractPeriodCalculator{
         }
 
         Map<String,Object> lastDayEntity = rawData.get(rawData.size() -1);
-        LocalDate today = DateUtil.parseDate(lastDayEntity.get(dateColumnName));
+        LocalDate today = parseRequiredMarketDate(lastDayEntity.get(dateColumnName), dateColumnName);
 
         Optional<GieEu> past5yAvg = gieEuRepository.findByCodeAndDate(GieEu.GIE_EU_CODE_PAST_5Y_AVG, today.atStartOfDay());
         if(past5yAvg.isEmpty()) return null;

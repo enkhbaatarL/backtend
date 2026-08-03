@@ -10,9 +10,13 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.sk.common.config.database.DataSourceContextHolder;
 import com.sk.common.enums.ResultCode;
 import com.sk.common.exception.AppErrorException;
+import com.sk.common.exception.SystemErrorException;
 import com.sk.domain.admin.service.MybatisDynamicQueryService;
+import com.sk.domain.mi.dto.response.dashboard.charts.graph.DashboardChartRawData;
+import com.sk.domain.shared.entity.master.tcm.ChartPredictSetting;
 import com.sk.domain.shared.entity.master.tcm.ChartPredictSettingDetail;
 import com.sk.domain.shared.entity.master.tmd.GoodsDataSourceDetail;
+import com.sk.domain.shared.enums.PeriodUnitSeparateCd;
 import com.sk.domain.shared.mapper.dynamic.DashboardMapper;
 import com.sk.domain.shared.repository.master.tcm.ChartPredictSettingDetailRepository;
 import com.sk.domain.shared.repository.master.tcm.ChartPredictSettingRepository;
@@ -21,13 +25,18 @@ import com.sk.domain.shared.repository.master.tmd.GoodsDataRepository;
 import com.sk.domain.shared.repository.master.tmd.GoodsDataSourceDetailRepository;
 import com.sk.domain.shared.service.FileService;
 import com.sk.domain.shared.service.permissions.AuthorizationService;
+import java.math.BigDecimal;
+import java.time.LocalDate;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.NullSource;
 import org.junit.jupiter.params.provider.ValueSource;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
@@ -147,5 +156,143 @@ class MiDashboardServiceTest {
                                 .isEqualTo(ResultCode.Error.REQ_INVALID_PARAMETER));
 
         then(customerCompanyRepository).shouldHaveNoInteractions();
+    }
+
+    @Test
+    @DisplayName("빈 시장 데이터는 기존 기간별 null 값을 유지한다")
+    void keepEmptyMarketDataShape() {
+        ChartPredictSetting setting = monthlySetting();
+        List<LocalDate> monthlyDates = List.of(
+                LocalDate.of(2025, 6, 1),
+                LocalDate.of(2025, 7, 1));
+
+        List<DashboardChartRawData> result = miDashboardService.calculateAverages(
+                monthlyDates, List.of(), "date", "value", false, null, setting);
+
+        assertThat(result).containsExactly(
+                DashboardChartRawData.ofActual("2025-06", null),
+                DashboardChartRawData.ofActual("2025-07", null));
+    }
+
+    @Test
+    @DisplayName("nullable value와 정상 평균 계산 결과를 유지한다")
+    void keepNullableValueAndNormalAverage() {
+        ChartPredictSetting setting = monthlySetting();
+        Map<String, Object> nullableValueRow = marketRow("20250615", null);
+        Map<String, Object> normalValueRow = marketRow(
+                "20250715", new BigDecimal("12.345"));
+
+        List<DashboardChartRawData> result = miDashboardService.calculateAverages(
+                List.of(LocalDate.of(2025, 6, 1), LocalDate.of(2025, 7, 1)),
+                List.of(nullableValueRow, normalValueRow),
+                "date",
+                "value",
+                false,
+                null,
+                setting);
+
+        assertThat(result).containsExactly(
+                DashboardChartRawData.ofActual("2025-06", 0.0),
+                DashboardChartRawData.ofActual("2025-07", 12.35));
+    }
+
+    @ParameterizedTest(name = "[{index}] requiredDate={0}")
+    @NullSource
+    @ValueSource(strings = {"", "invalid", "20251301"})
+    @DisplayName("null 또는 invalid 필수 날짜는 공개 detail 없는 내부 오류로 처리한다")
+    void rejectInvalidRequiredMarketDate(String requiredDate) {
+        ChartPredictSetting setting = mock(ChartPredictSetting.class);
+        Map<String, Object> invalidRow = marketRow(requiredDate, 10.0);
+
+        assertThatThrownBy(() -> miDashboardService.calculateAverages(
+                List.of(LocalDate.of(2025, 6, 1)),
+                List.of(invalidRow),
+                "date",
+                "value",
+                false,
+                null,
+                setting))
+                .isInstanceOfSatisfying(SystemErrorException.class, exception -> {
+                    assertThat(exception.getErrorCode())
+                            .isEqualTo(ResultCode.Error.SYS_INTERNAL_ERROR);
+                    assertThat(exception.getAdditionalMessage()).isNull();
+                });
+    }
+
+    @Test
+    @DisplayName("정상 row와 invalid 날짜가 섞여도 invalid row를 skip하지 않는다")
+    void rejectMixedInvalidRequiredMarketDate() {
+        ChartPredictSetting setting = monthlySetting();
+
+        assertThatThrownBy(() -> miDashboardService.calculateAverages(
+                List.of(LocalDate.of(2025, 6, 1)),
+                List.of(marketRow("20250601", 10.0), marketRow("invalid", 20.0)),
+                "date",
+                "value",
+                false,
+                null,
+                setting))
+                .isInstanceOfSatisfying(SystemErrorException.class,
+                        exception -> assertThat(exception.getAdditionalMessage()).isNull());
+    }
+
+    @ParameterizedTest(name = "[{index}] forecastDate={0}")
+    @NullSource
+    @ValueSource(strings = {"", "2025", "invalid", "20251301"})
+    @DisplayName("invalid 예측 수행일은 skip 없이 공개 detail 없는 내부 오류로 처리한다")
+    void rejectInvalidForecastDate(String forecastDate) {
+        ChartPredictSetting setting = monthlySetting();
+        Map<String, Object> forecastRow = forecastRow(forecastDate, 10.0);
+
+        assertThatThrownBy(() -> miDashboardService.calculateAverages(
+                List.of(LocalDate.of(2025, 6, 1)),
+                List.of(forecastRow),
+                "date",
+                "value",
+                true,
+                LocalDate.of(2025, 6, 1),
+                setting))
+                .isInstanceOfSatisfying(SystemErrorException.class, exception -> {
+                    assertThat(exception.getErrorCode())
+                            .isEqualTo(ResultCode.Error.SYS_INTERNAL_ERROR);
+                    assertThat(exception.getAdditionalMessage()).isNull();
+                });
+    }
+
+    @Test
+    @DisplayName("정상 예측 수행일의 기존 평균과 predictDate를 유지한다")
+    void keepValidForecastAverage() {
+        ChartPredictSetting setting = monthlySetting();
+
+        List<DashboardChartRawData> result = miDashboardService.calculateAverages(
+                List.of(LocalDate.of(2025, 6, 1)),
+                List.of(forecastRow("20250601", 10.0)),
+                "date",
+                "value",
+                true,
+                LocalDate.of(2025, 6, 1),
+                setting);
+
+        assertThat(result).containsExactly(
+                DashboardChartRawData.ofForecast("2025-06", "20250601", 10.0));
+    }
+
+    private ChartPredictSetting monthlySetting() {
+        ChartPredictSetting setting = mock(ChartPredictSetting.class);
+        given(setting.getDefaultPeriodUnitSeparateCd()).willReturn(PeriodUnitSeparateCd.M);
+        return setting;
+    }
+
+    private Map<String, Object> marketRow(Object date, Object value) {
+        Map<String, Object> row = new HashMap<>();
+        row.put("date", date);
+        row.put("value", value);
+        return row;
+    }
+
+    private Map<String, Object> forecastRow(Object forecastDate, Object value) {
+        Map<String, Object> row = marketRow("20250615", value);
+        row.put("prdc_fulf_dt", forecastDate);
+        return row;
     }
 }
