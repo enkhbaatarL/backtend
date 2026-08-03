@@ -12,10 +12,11 @@ import com.sk.domain.shared.entity.master.tmd.User;
 import com.sk.domain.shared.enums.Extension;
 import com.sk.domain.shared.repository.master.tcm.UploadedFileRepository;
 import com.sk.domain.shared.service.ObjectStorageService;
+import com.sk.domain.shared.service.StorageLocation;
+import com.sk.domain.shared.service.StorageLocationParser;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.commons.lang3.tuple.Pair;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.thymeleaf.util.StringUtils;
@@ -30,6 +31,7 @@ public class MiPdfService {
 
     private final UploadedFileRepository uploadedFileRepository;
     private final ObjectStorageService objectStorageService;
+    private final StorageLocationParser storageLocationParser;
 
     /**
      * 파일 메타데이터를 반환한다.
@@ -77,14 +79,16 @@ public class MiPdfService {
 
         try {
 
-            Pair<String, String> bucketInfo = StringUtil.extractBucketAndPath(uploadedFile.getStoragePathNm());
-            String bucket = bucketInfo.getLeft();
-            String fullPath = bucketInfo.getRight();
-            String prefix = StringUtil.stripFileExtension(fullPath);
-            String imageName = StringUtils.concat(StringUtil.formatPageNumber(page), ".", Extension.JPEG.getCode());
+            StorageLocation storageLocation =
+                    storageLocationParser.parse(uploadedFile.getStoragePathNm());
+            String prefix = StringUtil.stripFileExtension(storageLocation.key());
+            String imageName = StringUtils.concat(
+                    StringUtil.formatPageNumber(page),
+                    ".",
+                    Extension.JPEG.getCode());
             String imagePath = StringUtils.concat(prefix, "/", imageName);
 
-            byte[] bytes = objectStorageService.downloadFile(bucket, imagePath);
+            byte[] bytes = objectStorageService.downloadFile(storageLocation.bucket(), imagePath);
             BufferedImage bufferedImage = PdfUtil.byteArrayToImage(bytes);
 
             // 26.07.29 취약점 진단 수정, '표준 라이브러리의 널 반환 값 역참조-102187' -> ImageIO.read는 미인식 포맷에서 예외 대신 null 반환

@@ -1,6 +1,5 @@
 package com.sk.domain.mi.service.period;
 
-import com.sk.common.utils.DateUtil;
 import com.sk.domain.mi.dto.response.marketData.charts.calculatePeriodChange.CalculatePeriodChangeValue;
 import com.sk.domain.shared.entity.master.tmd.GoodsDataSourceDetail;
 import com.sk.domain.shared.enums.marketData.CalculatePeriodChangeType;
@@ -27,7 +26,7 @@ public class WoWPeriodCalculator extends AbstractPeriodCalculator{
         }
 
         Map<String,Object> lastDayEntity = rawData.get(rawData.size() -1);
-        LocalDate today = DateUtil.parseDate(lastDayEntity.get(dateColumnName));
+        LocalDate today = parseRequiredMarketDate(lastDayEntity.get(dateColumnName), dateColumnName);
 
         // 이번 주
         LocalDate thisWeekStart = today.minusDays(today.getDayOfWeek().getValue() % 7); // 일요일

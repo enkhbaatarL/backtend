@@ -1,12 +1,12 @@
 package com.sk.domain.mi.service.period;
 
+import com.sk.common.enums.ResultCode;
+import com.sk.common.exception.SystemErrorException;
 import com.sk.common.utils.DateUtil;
 import com.sk.domain.mi.dto.response.marketData.charts.calculatePeriodChange.CalculatePeriodChangeValue;
-import com.sk.domain.shared.enums.marketData.CalculatePeriodChangeType;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.LocalDate;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import lombok.extern.slf4j.Slf4j;
@@ -40,7 +40,7 @@ public abstract class AbstractPeriodCalculator implements PeriodCalculator{
                 continue;
             }
 
-            LocalDate date = DateUtil.parseDate(row.get(dateColumnName));
+            LocalDate date = parseRequiredMarketDate(row.get(dateColumnName), dateColumnName);
 
             if (!date.isBefore(currentStartDate) && !date.isAfter(currentEndDate)) {
                 currentSum += val;
@@ -61,6 +61,23 @@ public abstract class AbstractPeriodCalculator implements PeriodCalculator{
         double previousAvg = previousSum / previousCount;
 
         return calculateChangeRate(currentAvg, previousAvg);
+    }
+
+    protected LocalDate parseRequiredMarketDate(Object rawDate, String columnName) {
+        try {
+            LocalDate parsedDate = DateUtil.parseDate(rawDate);
+            if (parsedDate != null) {
+                return parsedDate;
+            }
+        } catch (RuntimeException exception) {
+            log.error("Invalid required market date. source: period-calculator, column: {}",
+                columnName, exception);
+            throw SystemErrorException.of(ResultCode.Error.SYS_INTERNAL_ERROR);
+        }
+
+        log.error("Invalid required market date. source: period-calculator, column: {}",
+            columnName);
+        throw SystemErrorException.of(ResultCode.Error.SYS_INTERNAL_ERROR);
     }
 
     protected CalculatePeriodChangeValue calculateChangeRate(double currentValue, double previousValue){

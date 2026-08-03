@@ -10,7 +10,6 @@ import jakarta.persistence.EntityManager;
 import jakarta.persistence.PersistenceContext;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.commons.lang3.tuple.Pair;
 import org.apache.pdfbox.Loader;
 import org.apache.pdfbox.pdmodel.PDDocument;
 import org.apache.pdfbox.rendering.ImageType;
@@ -38,6 +37,7 @@ public class PdfToImagesProcessor {
     private int dpiValue;
 
     private final ObjectStorageService objectStorageService;
+    private final StorageLocationParser storageLocationParser;
 
     @Transactional(propagation = Propagation.REQUIRES_NEW)
     public void process(UploadedFile uploadedFile) throws IOException {
@@ -49,14 +49,14 @@ public class PdfToImagesProcessor {
 
         log.info("[PDF-TO-IMAGES] Processing fileNo: {}", fileNo);
 
-        Pair<String, String> bucketInfo = StringUtil.extractBucketAndPath(storagePathNm);
-        String bucket = bucketInfo.getLeft();
-        String fullPath = bucketInfo.getRight();
-        String prefix = StringUtil.stripFileExtension(fullPath);
+        StorageLocation storageLocation = storageLocationParser.parse(storagePathNm);
+        String prefix = StringUtil.stripFileExtension(storageLocation.key());
 
-        log.info("[PDF-TO-IMAGES] -> Bucket: {}, Path: {}", bucket, fullPath);
+        log.info("[PDF-TO-IMAGES] -> Storage location validated. fileNo: {}", fileNo);
 
-        byte[] pdfBytes = objectStorageService.downloadFile(bucketInfo.getLeft(), bucketInfo.getRight());
+        byte[] pdfBytes = objectStorageService.downloadFile(
+                storageLocation.bucket(),
+                storageLocation.key());
         PDDocument document = Loader.loadPDF(pdfBytes);
         PDFRenderer renderer = new PDFRenderer(document);
         int numberOfPages = document.getNumberOfPages();
@@ -78,7 +78,13 @@ public class PdfToImagesProcessor {
                     byte[] imageBytes = PdfUtil.imageToJpegByteArray(image, 0.85f);
 
                     try (ByteArrayInputStream imageInputStream = new ByteArrayInputStream(imageBytes)) {
-                        objectStorageService.uploadFile(imageInputStream, bucket, imagePath, false, "image/jpeg", imageBytes.length);
+                        objectStorageService.uploadFile(
+                                imageInputStream,
+                                storageLocation.bucket(),
+                                imagePath,
+                                false,
+                                "image/jpeg",
+                                imageBytes.length);
                         log.debug("[PDF-TO-IMAGES] -> Uploaded page {} as '{}'", pageNo, imagePath);
                     }
 
