@@ -111,6 +111,20 @@ public interface UploadedFileRepository extends JpaRepository<UploadedFile, Long
             @Param("fileRelationshipObjectDistinguishNo") Integer fileRelationshipObjectDistinguishNo,
             @Param("fileRelationshipObjectSeparateCd") String fileRelationshipObjectSeparateCd);
 
+    @Query(value = """
+            SELECT u
+            FROM UploadedFile u
+            WHERE u.isDeleted = false
+                AND u.fileRelationshipObjectDistinguishNo = :fileRelationshipObjectDistinguishNo
+                AND u.fileRelationshipObjectSeparateCd = :fileRelationshipObjectSeparateCd
+                AND (u.fileValidEndDt IS NULL OR u.fileValidEndDt >= FUNCTION('DATE_FORMAT', CURRENT_DATE, '%Y%m%d'))
+            ORDER BY u.fileNo DESC
+            """)
+    List<UploadedFile> findActiveRelationshipFilesOrderByFileNoDesc(
+            @Param("fileRelationshipObjectDistinguishNo") Integer fileRelationshipObjectDistinguishNo,
+            @Param("fileRelationshipObjectSeparateCd") String fileRelationshipObjectSeparateCd
+    );
+
     @Lock(LockModeType.PESSIMISTIC_WRITE)
     @Query(value = """
             SELECT u

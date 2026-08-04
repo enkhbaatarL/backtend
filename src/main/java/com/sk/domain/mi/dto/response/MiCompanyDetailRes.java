@@ -57,13 +57,17 @@ public record MiCompanyDetailRes(
     List<ScreenElementNode> floating,
 
     @Schema(description = "기본 랜딩 화면요소 코드")
-    String defaultLandingCd
+    String defaultLandingCd,
+
+    @Schema(description = "회사 로고 이미지 URL, 회사 전용 로고가 없으면 null",
+        example = "https://dev-mi.sk.com/images/sk-mi-d-osb-03/CPNYLOGO/3f2a8c1e-0d44-4b7b-9a11-2c5e7f6d8a90.png")
+    String logoUrl
 
 ) {
 
     @Builder
     public MiCompanyDetailRes(Integer customerCompanyNo, String customerCompanyNm, String customerCompanyCd, String customerCompanyMipUrl, Boolean isQualitative, Boolean isMari, Boolean isFuture, Boolean isNewsletter, List<ScreenElementNode> menus, List<ScreenElementNode> floating, String defaultLandingCd) {
-        this(customerCompanyNo, customerCompanyNm, customerCompanyCd, customerCompanyMipUrl, isQualitative, isMari, isFuture, null, isNewsletter, menus, floating, defaultLandingCd);
+        this(customerCompanyNo, customerCompanyNm, customerCompanyCd, customerCompanyMipUrl, isQualitative, isMari, isFuture, null, isNewsletter, menus, floating, defaultLandingCd, null);
     }
 
     public static MiCompanyDetailRes of(CustomerCompany customerCompany, String miDefaultDomain,

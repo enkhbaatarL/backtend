@@ -32,6 +32,7 @@ public class MiCompanyService {
     private final ScreenElementRepository screenElementRepository;
     private final CustomerCompanyScreenElementMappingRepository customerCompanyScreenElementMappingRepository;
     private final MiForecastService miForecastService;
+    private final MiCompanyLogoService miCompanyLogoService;
 
     /**
      * 고객사 회사 목록 조회
@@ -75,7 +76,8 @@ public class MiCompanyService {
         MiCompanyDetailRes.MiCompanyDetailResBuilder builder = miCompanyDetailRes.toBuilder()
             .menus(trees.menus())
             .floating(trees.floating())
-            .defaultLandingCd(defaultLandingCd);
+            .defaultLandingCd(defaultLandingCd)
+            .logoUrl(miCompanyLogoService.resolveLogoUrl(companyNo));
 
         if (customerCompanyMarketCategory != null) {
             builder.newsMarketCategoryCode(customerCompanyMarketCategory.getNwsMrktCtgrCd());
