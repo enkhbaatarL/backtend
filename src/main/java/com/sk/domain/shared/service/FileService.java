@@ -163,6 +163,25 @@ public class FileService {
     }
 
     /**
+     * 고객회사 로고를 업로드 한다.
+     *
+     * @param companyCd 회사코드
+     * @param role 역할
+     * @param file 로고 파일
+     * @param customerCompanyNo 고객회사번호
+     * @return FileUploadRes
+     */
+    @Transactional
+    public FileUploadRes uploadCompanyLogo(String companyCd, Role role, MultipartFile file, Integer customerCompanyNo) {
+        if (customerCompanyNo == null) throw AppErrorException.of(ResultCode.Error.REQ_INVALID_PARAMETER, "고객회사번호가 필요합니다.");
+
+        return upload(companyCd, role, file, true, null,
+                UploadDestination.relationship(customerCompanyNo,FileRelationshipObjectSeparateCode.CPNYLOGO.getCode()),
+                commBucketName
+        );
+    }
+
+    /**
      * Object는 최종 relation prefix에 업로드하고 metadata는 TEMP/0 staged marker로 기록한다.
      * Scenario lock/Case transaction 밖에서 호출해야 한다.
      */
@@ -248,13 +267,11 @@ public class FileService {
         return upload(companyCd, role, file, isPublic, fileHash, UploadDestination.temporary(separateCode));
     }
 
-    private FileUploadRes upload(
-            String companyCd,
-            Role role,
-            MultipartFile file,
-            boolean isPublic,
-            String fileHash,
-            UploadDestination destination) {
+    private FileUploadRes upload(String companyCd, Role role, MultipartFile file, boolean isPublic, String fileHash, UploadDestination destination) {
+        return upload(companyCd, role, file, isPublic, fileHash, destination, null);
+    }
+
+    private FileUploadRes upload(String companyCd, Role role, MultipartFile file, boolean isPublic, String fileHash, UploadDestination destination, String bucketNameOverride) {
         if (file == null) {
             throw AppErrorException.of(ResultCode.Error.FILE_INVALID);
         }
@@ -278,7 +295,7 @@ public class FileService {
             String mimeTypeNm = file.getContentType();
 
             String customerCompanyCd = companyCd.toLowerCase();
-            String bucketName = RoleUtil.isAdmin(role) || RoleUtil.isSubAdmin(role) ? commBucketName : prefix + customerCompanyCd;
+            String bucketName = bucketNameOverride != null ? bucketNameOverride : (RoleUtil.isAdmin(role) || RoleUtil.isSubAdmin(role) ? commBucketName : prefix + customerCompanyCd);
             String storageFileNm = UUID.randomUUID().toString().concat(getFileExtension(rawFileName));
             String storagePathNm = PathUtil.IncludeTrailingPathDelimiter(endPoint) + PathUtil.IncludeTrailingPathDelimiter(bucketName)
                     + PathUtil.IncludeTrailingPathDelimiter(destination.storageDirectory())

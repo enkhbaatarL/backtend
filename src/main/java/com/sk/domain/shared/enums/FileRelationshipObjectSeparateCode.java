@@ -11,7 +11,8 @@ public enum FileRelationshipObjectSeparateCode {
   BBS("BBS", "게시판"),
   GDATS("GDATS", "상품정형데이타"),
   GUDAT("GUDAT", "상품비정형데이타"),
-  NWSTOP("NWSTOP", "뉴스토픽");
+  NWSTOP("NWSTOP", "뉴스토픽"),
+  CPNYLOGO("CPNYLOGO", "고객회사로고");
 
   private final String code;
   private final String name;

@@ -201,6 +201,7 @@ ncp:
     secret-key: ${SKT_MI_NCP_STORAGE_SECRET_KEY:ncp_iam_BPKMKRRKYkr1QTOUW8Cw88go1lYEO8iEfL}
     bucket-name: skt-mi-d-osb-01
     prefix: skt-mi-d-osb-ss-
+    browser-accessible: true
 
 aes:
   secret-key: ${SKT_MI_AES_SECRET_KEY:35f2c3fbe8388a5e}
