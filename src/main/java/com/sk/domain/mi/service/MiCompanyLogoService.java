@@ -5,9 +5,11 @@ import com.sk.common.exception.AppErrorException;
 import com.sk.domain.admin.dto.response.file.FileUploadRes;
 import com.sk.domain.mi.dto.response.MiCompanyLogoRes;
 import com.sk.domain.shared.entity.master.tcm.UploadedFile;
+import com.sk.domain.shared.entity.master.tmd.CustomerCompany;
 import com.sk.domain.shared.enums.FileRelationshipObjectSeparateCode;
 import com.sk.domain.shared.enums.Role;
 import com.sk.domain.shared.repository.master.tcm.UploadedFileRepository;
+import com.sk.domain.shared.repository.master.tmd.CustomerCompanyRepository;
 import com.sk.domain.shared.service.FileService;
 import com.sk.domain.shared.service.permissions.AuthorizationService;
 import java.io.IOException;
@@ -37,17 +39,20 @@ public class MiCompanyLogoService {
     private static final Set<String> ALLOWED_IMAGE_FORMATS = Set.of("png", "jpeg");
 
     private final UploadedFileRepository uploadedFileRepository;
+    private final CustomerCompanyRepository customerCompanyRepository;
     private final AuthorizationService authorizationService;
     private final FileService fileService;
     private final DataSize maxLogoFileSize;
     private final boolean storageBrowserAccessible;
 
     public MiCompanyLogoService(UploadedFileRepository uploadedFileRepository,
+                                CustomerCompanyRepository customerCompanyRepository,
                                 AuthorizationService authorizationService,
                                 FileService fileService,
                                 @Value("${mi.company-logo.max-file-size:3MB}") DataSize maxLogoFileSize,
                                 @Value("${ncp.storage.browser-accessible:false}") boolean storageBrowserAccessible) {
         this.uploadedFileRepository = uploadedFileRepository;
+        this.customerCompanyRepository = customerCompanyRepository;
         this.authorizationService = authorizationService;
         this.fileService = fileService;
         this.maxLogoFileSize = maxLogoFileSize;
@@ -56,25 +61,40 @@ public class MiCompanyLogoService {
 
     /**
      * 현재 컨텍스트 회사의 로고를 등록하거나 교체한다.
-     * 새 파일을 올린 뒤 교체 이전에 활성 상태였던 로고 파일을 모두 삭제한다.
+     * 대상 회사는 토큰 컨텍스트에서만 결정되므로 호출자가 타사를 지정할 수 없다.
      *
      * @param file 로고 파일
      * @return MiCompanyLogoRes
      */
     @Transactional
     public MiCompanyLogoRes changeLogo(MultipartFile file) {
+        return changeLogo(authorizationService.getCompanyNoWithPriority(), file);
+    }
 
-        Integer companyNo = authorizationService.getCompanyNoWithPriority();
-        String companyCd = authorizationService.getCompanyCdWithPriority();
-        Role role = authorizationService.getCurrentRole();
+    /**
+     * 지정한 고객회사의 로고를 등록하거나 교체한다.
+     * 새 파일을 올린 뒤 교체 이전에 활성 상태였던 로고 파일을 모두 삭제한다.
+     * 대상 회사를 인자로 받으므로 호출부에서 타사 접근 권한을 통제해야 한다.
+     *
+     * @param companyNo 고객회사번호
+     * @param file 로고 파일
+     * @return MiCompanyLogoRes
+     */
+    @Transactional
+    public MiCompanyLogoRes changeLogo(Integer companyNo, MultipartFile file) {
 
+        // 대상 회사를 먼저 확정한다. 없는 회사면 파일을 읽기 전에 실패해야 원인이 분명하다.
+        CustomerCompany customerCompany = getCustomerCompany(companyNo);
         validateLogoFile(file);
 
+        Role role = authorizationService.getCurrentRole();
+
+        // 업로드 이전 시점의 활성 로고만 정리 대상으로 확정한다. 업로드 이후에 조회하면 신규 파일까지 지워진다.
         List<Long> previousLogoFileNos = findActiveLogoFiles(companyNo).stream()
                 .map(UploadedFile::getFileNo)
                 .toList();
 
-        FileUploadRes uploaded = fileService.uploadCompanyLogo(companyCd, role, file, companyNo);
+        FileUploadRes uploaded = fileService.uploadCompanyLogo(customerCompany.getCustomerCompanyCd(), role, file, companyNo);
         UploadedFile logoFile = uploadedFileRepository.findByFileNoAndIsDeletedFalse(uploaded.fileNo())
                 .orElseThrow(() -> AppErrorException.of(ResultCode.Error.SYS_INTERNAL_ERROR, "업로드된 로고 파일을 찾을 수 없습니다. fileNo: %d".formatted(uploaded.fileNo())));
 
@@ -92,7 +112,19 @@ public class MiCompanyLogoService {
      */
     @Transactional
     public MiCompanyLogoRes removeLogo() {
-        Integer companyNo = authorizationService.getCompanyNoWithPriority();
+        return removeLogo(authorizationService.getCompanyNoWithPriority());
+    }
+
+    /**
+     * 지정한 고객회사의 전용 로고를 해제하여 기본 로고를 사용하도록 되돌린다.
+     * 등록된 로고가 없어도 오류 없이 성공하는 멱등 연산이다.
+     *
+     * @param companyNo 고객회사번호
+     * @return MiCompanyLogoRes
+     */
+    @Transactional
+    public MiCompanyLogoRes removeLogo(Integer companyNo) {
+        getCustomerCompany(companyNo);
 
         List<Long> logoFileNos = findActiveLogoFiles(companyNo).stream()
                 .map(UploadedFile::getFileNo)
@@ -111,8 +143,31 @@ public class MiCompanyLogoService {
      * @return MiCompanyLogoRes
      */
     public MiCompanyLogoRes getLogo() {
-        Integer companyNo = authorizationService.getCompanyNoWithPriority();
+        return getLogo(authorizationService.getCompanyNoWithPriority());
+    }
+
+    /**
+     * 지정한 고객회사의 로고 정보를 조회한다.
+     *
+     * @param companyNo 고객회사번호
+     * @return MiCompanyLogoRes
+     */
+    public MiCompanyLogoRes getLogo(Integer companyNo) {
+        getCustomerCompany(companyNo);
         return MiCompanyLogoRes.of(companyNo, resolveLogoUrl(companyNo));
+    }
+
+    /**
+     * 고객회사를 조회한다.
+     * 존재하지 않는 회사번호로 로고를 다루면 조용히 성공하는 대신 실패시킨다.
+     *
+     * @param companyNo 고객회사번호
+     * @return CustomerCompany
+     */
+    private CustomerCompany getCustomerCompany(Integer companyNo) {
+        if (companyNo == null) throw AppErrorException.of(ResultCode.Error.REQ_INVALID_PARAMETER, "고객회사번호가 필요합니다.");
+        return customerCompanyRepository.findByCustomerCompanyNoAndIsDeletedFalse(companyNo)
+                .orElseThrow(() -> AppErrorException.of(ResultCode.Error.RSC_NOT_FOUND, "customer company no: %d".formatted(companyNo)));
     }
 
     /**
@@ -175,7 +230,14 @@ public class MiCompanyLogoService {
             Iterator<ImageReader> readers = ImageIO.getImageReaders(imageStream);
             if (!readers.hasNext()) return null;
 
-            return readers.next().getFormatName().toLowerCase(Locale.ROOT);
+            ImageReader reader = readers.next();
+
+            try {
+                return reader.getFormatName().toLowerCase(Locale.ROOT);
+            } finally {
+                reader.dispose();
+            }
+
         } catch (IOException e) {
             log.error("로고 파일을 읽지 못했습니다.", e);
             throw AppErrorException.of(ResultCode.Error.FILE_INVALID, "로고 파일을 읽지 못했습니다.");
