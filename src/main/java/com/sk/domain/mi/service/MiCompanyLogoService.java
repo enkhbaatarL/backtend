@@ -83,9 +83,10 @@ public class MiCompanyLogoService {
     @Transactional
     public MiCompanyLogoRes changeLogo(Integer companyNo, MultipartFile file) {
 
+        // 대상 회사를 먼저 확정한다. 없는 회사면 파일을 읽기 전에 실패해야 원인이 분명하다.
+        CustomerCompany customerCompany = getCustomerCompany(companyNo);
         validateLogoFile(file);
 
-        CustomerCompany customerCompany = getCustomerCompany(companyNo);
         Role role = authorizationService.getCurrentRole();
 
         // 업로드 이전 시점의 활성 로고만 정리 대상으로 확정한다. 업로드 이후에 조회하면 신규 파일까지 지워진다.
@@ -229,7 +230,14 @@ public class MiCompanyLogoService {
             Iterator<ImageReader> readers = ImageIO.getImageReaders(imageStream);
             if (!readers.hasNext()) return null;
 
-            return readers.next().getFormatName().toLowerCase(Locale.ROOT);
+            ImageReader reader = readers.next();
+
+            try {
+                return reader.getFormatName().toLowerCase(Locale.ROOT);
+            } finally {
+                reader.dispose();
+            }
+
         } catch (IOException e) {
             log.error("로고 파일을 읽지 못했습니다.", e);
             throw AppErrorException.of(ResultCode.Error.FILE_INVALID, "로고 파일을 읽지 못했습니다.");
