@@ -16,8 +16,6 @@ import com.sk.domain.mi.dto.response.nextgen.ScenarioGroupRunStatusRes;
 import com.sk.domain.mi.dto.response.nextgen.ScenarioIndividualListRes;
 import com.sk.domain.mi.dto.response.nextgen.ScenarioStatusRes;
 import com.sk.domain.mi.service.nextgen.ScenarioGroupService;
-import com.sk.domain.mi.service.nextgen.mock.ScenarioDesignMockService;
-import com.sk.domain.mi.service.nextgen.mock.ScenarioGroupMockService;
 import com.sk.domain.shared.enums.PermissionCondition;
 import com.sk.domain.shared.enums.Role;
 import com.sk.domain.shared.enums.nextgen.GraphPeriodUnit;
@@ -35,7 +33,6 @@ import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
@@ -50,8 +47,6 @@ import org.springframework.web.bind.annotation.RestController;
 public class ScenarioGroupController {
 
     private final ScenarioGroupService scenarioGroupService;
-    private final ScenarioGroupMockService scenarioGroupMockService;
-    private final ScenarioDesignMockService scenarioDesignMockService;
 
     @ApiOrder(1)
     @Operation(
@@ -331,26 +326,6 @@ public class ScenarioGroupController {
         @Parameter(description = "시나리오 그룹 ID", example = "1") @PathVariable Long scenarioGroupId
     ) {
         scenarioGroupService.deleteScenarioGroup(scenarioGroupId);
-        return BaseResponseFactory.create(ResultCode.Success.OK);
-    }
-
-    @ApiOrder(9)
-    @Operation(
-        summary = "[mockapi 전용] 시나리오 상태/삭제 초기화 API",
-        description = """
-            상태 변경 API로 바꾼 **모든 시나리오 판정 상태**와 그룹 삭제 API로 삭제한 **모든 그룹/시나리오를 초기 설정값으로 되돌립니다.** <br>
-            테스트/데모 반복 시 사용하는 mock 전용 API입니다. (실 DB 연동 없음 / 변경분은 mock 메모리에만 존재) <br>
-            """
-    )
-    @ApiResponse(responseCode = "200", description = "초기화 성공")
-    @PostMapping("/scenario-status/reset")
-    @RequiredPermissionRules(rules = {
-        @PermissionRule(role = Role.USER, conditions = {PermissionCondition.SKGAS_COMPANY_USER_ONLY}),
-        @PermissionRule(role = Role.ADMIN, conditions = {PermissionCondition.THIRD_PARTY_ADMIN_ONLY})
-    })
-    public BaseResponse<Void> resetScenarioStatus() {
-        scenarioGroupMockService.resetScenarioStatus(); // 상태/삭제/실행중 + materialize된 그룹 → fixture 복원
-        scenarioDesignMockService.resetSessions();      // 설계 세션 초기화 → 이벤트 가용성까지 처음 상태로
         return BaseResponseFactory.create(ResultCode.Success.OK);
     }
 

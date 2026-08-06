@@ -1,7 +1,6 @@
 package com.sk.common.config;
 
 import com.sk.common.annotation.ApiOrder;
-import com.sk.domain.mi.config.NextGenMockProperties;
 import io.swagger.v3.oas.models.Components;
 import io.swagger.v3.oas.models.OpenAPI;
 import io.swagger.v3.oas.models.Operation;
@@ -88,8 +87,7 @@ public class SwaggerConfig {
 
     @Bean
     public GroupedOpenApi nextGenApi(@Qualifier("sortPathsOpenApiCustomizer") OpenApiCustomizer sortPathsOpenApiCustomizer,
-                                               @Qualifier("apiOrderOperationCustomizer") OperationCustomizer apiOrderOperationCustomizer,
-                                               NextGenMockProperties mockProps) {
+                                               @Qualifier("apiOrderOperationCustomizer") OperationCustomizer apiOrderOperationCustomizer) {
 
         String swDeployDate = LocalDateTime.now().format(SW_DEPLOY_DATE_FORMATTER);
 
@@ -101,62 +99,6 @@ public class SwaggerConfig {
   |------|------|
   | **버전** | %s |
   | **배포일** | %s |
-
-  ---
-
-  ## 🔀 데이터 소스 현황
-
-  | API | 데이터 |
-  |-----|--------|
-  | **이벤트** | |
-  | 이벤트 유형 L1 조회 | %s |
-  | 이벤트 목록 | %s |
-  | 이벤트 상세 | %s |
-  | 이벤트 관련 레코드 | %s |
-  | 이벤트 기관전망 | %s |
-  | 이벤트 설계가능 조회 | %s |
-  | **시나리오 설계** | |
-  | 설계 시작 (step1 진입) | %s |
-  | 설계 상태 조회 | %s |
-  | 분기항목/분기기준 템플릿 조회 | %s |
-  | 변경사항 검토 요청 | %s |
-  | Signpost 생성 (step2 진입) | %s |
-  | 최종 확정 | %s |
-  | 설계 초기화 | %s |
-  | **시나리오 그룹** | |
-  | 시나리오 그룹 목록 | %s |
-  | 시나리오 개별 목록 | %s |
-  | 시나리오 그룹 가격전망 그래프 | %s |
-  | 시나리오 그룹 그래프 엑셀 다운로드 | %s |
-  | 시나리오 그룹 상세 | %s |
-  | 시나리오 상세 | %s |
-  | 시나리오 상태 변경 | %s |
-  | 시나리오 그룹 삭제 | %s |
-  | 시나리오 그룹 CME 벤치마크 그래프 (dedicated 전용) | %s |
-  | **시나리오별 가격전망 해석** | |
-  | 가격전망 해석 SSE 구독 | %s |
-  | 가격전망 해석 조회 | %s |
-  | 가격전망 해석 생성 | %s |
-  | 가격전망 해석 수정 | %s |
-  | 가격전망 해석 초기화 | %s |
-  | 가격전망 해석 생성 콜백 (Agent용) | %s |
-  | **Model Execution** | |
-  | 수급모델 실행 요청 | %s |
-  | 수급모델 실행 상태 조회 | %s |
-  | **Fundamental Model Case** | |
-  | Fundamental Model Case 목록 | %s |
-  | Fundamental Model Case 업로드 | %s |
-  | Fundamental Model Case 상세 | %s |
-  | Fundamental Model Case 수정 | %s |
-  | Fundamental Model Case 삭제 | %s |
-  | Fundamental Model Case 실행 요청 | %s |
-  | Fundamental Model Case 상태 조회 | %s |
-  | Fundamental Model Volumes 필터 옵션 조회 | %s |
-  | Fundamental Model Volumes 데이터 조회 | %s |
-  | Fundamental Model Trade Flows 데이터 조회 | %s |
-  | Fundamental Model Price 데이터 조회 | %s |
-  | **Fundamental Model Run** | |
-  | Fundamental Model Run 콜백 | %s |
 
   ---
 
@@ -374,50 +316,7 @@ public class SwaggerConfig {
   ---
   """.formatted(
             SW_VERSION_BASE,
-            swDeployDate,
-            label(false),
-            label(mockProps.getEvents().getApi().isGetList()),
-            label(mockProps.getEvents().getApi().isGetDetail()),
-            label(mockProps.getEvents().getApi().isGetRecords()),
-            label(mockProps.getEvents().getApi().isGetOutlooks()),
-            label(mockProps.getEvents().getApi().isDesignAvailability()),
-            label(mockProps.getDesign().getApi().isStart()),
-            label(mockProps.getDesign().getApi().isGetState()),
-            label(mockProps.getDesign().getApi().isGetDimensionTemplates()),
-            label(mockProps.getDesign().getApi().isValidate()),
-            label(mockProps.getDesign().getApi().isCreateSignposts()),
-            label(mockProps.getDesign().getApi().isConfirm()),
-            label(mockProps.getDesign().getApi().isReset()),
-            label(mockProps.getScenarioGroups().getApi().isGetList()),
-            label(mockProps.getScenarioGroups().getApi().isGetScenarios()),
-            label(mockProps.getScenarioGroups().getApi().isGetGraph()),
-            label(false), // 그래프 엑셀 다운로드 — dedicated 전용, 실 DB(midb + CME midb-skgas) 합본, mock 없음
-            label(mockProps.getScenarioGroups().getApi().isGetDetail()),
-            label(mockProps.getScenarioGroups().getApi().isGetScenarioDetail()),
-            label(mockProps.getScenarioGroups().getApi().isUpdateScenarioStatus()),
-            label(mockProps.getScenarioGroups().getApi().isDeleteGroup()),
-            label(false), // CME 벤치마크 — 항상 실 DB(midb-skgas), mock 없음
-            label(false), // 가격전망 해석 SSE 구독 — 항상 실동작
-            label(false), // 가격전망 해석 조회 — 항상 실 DB
-            label(mockProps.getPriceInterpretations().getApi().isGenerate()),
-            label(false), // 가격전망 해석 수정 — 항상 실 DB
-            label(false), // 가격전망 해석 초기화 — 항상 실 DB
-            label(false), // 가격전망 해석 생성 콜백 — 항상 실 DB
-            label(mockProps.getModelExecutions().getApi().isSubmit()),
-            label(mockProps.getModelExecutions().getApi().isGetStatus()),
-            label(false),
-            label(false),
-            label(false),
-            label(false),
-            label(false),
-            label(false),
-            label(false),
-            label(false),
-            label(false),
-            label(false),
-            label(false),
-            label(false),
-            label(false)
+            swDeployDate
         );
 
         return GroupedOpenApi.builder()
@@ -433,10 +332,6 @@ public class SwaggerConfig {
             ))
             .addOperationCustomizer(apiOrderOperationCustomizer)
             .build();
-    }
-
-    private String label(boolean isMock) {
-        return isMock ? "🟡 Mock" : "🟢 DB";
     }
 
     @Bean
