@@ -1,5 +1,7 @@
 package com.sk.common.utils;
 
+import com.sk.domain.shared.enums.PeriodUnitSeparateCd;
+import com.sk.domain.shared.enums.chart.Range;
 import java.sql.Timestamp;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -11,11 +13,7 @@ import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeParseException;
 import java.time.temporal.TemporalAdjusters;
 import java.util.Locale;
-
 import org.apache.commons.lang3.tuple.Pair;
-
-import com.sk.domain.shared.enums.PeriodUnitSeparateCd;
-import com.sk.domain.shared.enums.chart.Range;
 
 /**
  * LocalDate 관련 유틸리티 클래스
@@ -179,8 +177,10 @@ public final class DateUtil {
             int month = Integer.parseInt(s.substring(5, 7));
             return LocalDate.of(year, month, 1);
         }
-        // yyyy-MM-dd[ T]HH:mm:ss[.SSS][XXX] 등: 앞 10글자만
-        if (s.length() >= 10 && s.charAt(4) == '-' && s.charAt(7) == '-') {
+        // yyyy-MM-dd[ T]HH:mm:ss[.SSS][XXX] 등: 날짜부만 사용.
+        // SQL 삽입 방지: 앞 10글자만 잘라 쓰지 않고, 전체가 datetime 형식과 완전히 일치할 때만 파싱한다.
+        // (뒤에 임의 문자열이 붙은 입력은 여기서 걸러져 null을 반환한다.)
+        if (s.matches("\\d{4}-\\d{2}-\\d{2}[ T]\\d{2}:\\d{2}(:\\d{2})?(\\.\\d+)?([+-]\\d{2}:?\\d{2}|Z)?")) {
             return LocalDate.parse(s.substring(0, 10));
         }
 
