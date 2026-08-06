@@ -29,7 +29,7 @@ import org.springframework.web.bind.annotation.RequestPart;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
 
-@Tag(name = "6. MI Fundamental Model Case API", description = "MI Fundamental Model Scenario Case mock API입니다.")
+@Tag(name = "6. MI Fundamental Model Case API", description = "MI Fundamental Model Scenario Case API입니다.")
 @Slf4j
 @RestController
 @RequestMapping("/api/v1/mi/fundamental-model/cases")

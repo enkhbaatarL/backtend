@@ -15,7 +15,7 @@ public record FundamentalModelCaseListItemRes(
     @Schema(description = "case 최신 상태", implementation = FundamentalModelCaseStatus.class, example = "RUNNING")
     FundamentalModelCaseStatus status,
 
-    @Schema(description = "case 업로더 이름. mock에서는 고정값입니다.", example = "홍길동")
+    @Schema(description = "case 업로더 이름", example = "홍길동")
     String assigneeName,
 
     @Schema(description = "case 생성 시각")

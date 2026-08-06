@@ -49,24 +49,6 @@ public record ScenarioIndividualItemRes(
 
 ) {
 
-    public static ScenarioIndividualItemRes of(ScenarioGroupListItemRes group, ScenarioRowRes row) {
-        return new ScenarioIndividualItemRes(
-            row.scenarioId(),
-            row.scenarioName(),
-            row.baseCase(),
-            row.displayOrder(),
-            // mock 전용 경로: mock 데이터에 시나리오 자체 일시가 없어 그룹 일시로 대체
-            group.createdAt(),
-            group.updatedAt(),
-            new ScenarioGroupRefRes(group.scenarioGroupId(), group.groupName(), group.createdAt()),
-            row.dimensions(),
-            row.probability(),
-            row.adjustedProbability(),
-            row.status(),
-            row.statusLabel()
-        );
-    }
-
     /** 개별 모드 base row + 조립된 dimensions → 응답 행. */
     public static ScenarioIndividualItemRes of(ScenarioIndividualBaseRow row, List<ScenarioDimensionRes> dimensions,
                                                Integer adjustedProbability) {
