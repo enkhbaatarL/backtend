@@ -73,12 +73,4 @@ public record ScenarioDetailViewRes(
         );
     }
 
-    /** 재분배 확률만 바꾼 사본 (mock 등 후처리용). */
-    public ScenarioDetailViewRes withAdjustedProbability(Integer value) {
-        return new ScenarioDetailViewRes(
-            scenarioId, scenarioGroupId, scenarioName, baseCase, displayOrder, createdAt, updatedAt, narrative,
-            probability, value, dimensions, signpostDefinitions, signpostMonitorings
-        );
-    }
-
 }
