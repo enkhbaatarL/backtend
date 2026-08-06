@@ -319,8 +319,13 @@ public class GieEuChartMaker implements CustomChartMaker<MiMarketDataRes>{
     }
 
     private List<BollingerBandResult> getMinMaxAvg5Years(List<String> timestamps){
-        LocalDateTime start = DateUtil.fromYmd(timestamps.get(0)).atTime(0,0,0);
-        LocalDateTime end = DateUtil.fromYmd(timestamps.get(timestamps.size()-1)).atTime(0,0,0);
+        if (timestamps == null || timestamps.isEmpty()) {
+            log.error("Missing required market timestamps. source: {}", CUSTOM_ID);
+            throw SystemErrorException.of(ResultCode.Error.SYS_INTERNAL_ERROR);
+        }
+
+        LocalDateTime start = parseRequiredTimestamp(timestamps.get(0), "start");
+        LocalDateTime end = parseRequiredTimestamp(timestamps.get(timestamps.size()-1), "end");
 
         Map<String, BigDecimal> upper = gieEuRepository.findAllByCodeAndDateBetween(GieEu.GIE_EU_CODE_PAST_5Y_MAX, start, end)
             .stream().collect(Collectors.toMap(i -> DateUtil.toYmd(i.getDate()), GieEu::getFull));
@@ -330,6 +335,23 @@ public class GieEuChartMaker implements CustomChartMaker<MiMarketDataRes>{
             .stream().collect(Collectors.toMap(i -> DateUtil.toYmd(i.getDate()), GieEu::getFull));
 
         return timestamps.stream().map(t->BollingerBandResult.of(mid.get(t), upper.get(t), lower.get(t))).toList();
+    }
+
+    private static LocalDateTime parseRequiredTimestamp(String timestamp, String boundary) {
+        try {
+            LocalDate parsedDate = DateUtil.fromYmd(timestamp);
+            if (parsedDate != null) {
+                return parsedDate.atStartOfDay();
+            }
+        } catch (RuntimeException exception) {
+            log.error("Invalid required market timestamp. source: {}, boundary: {}",
+                CUSTOM_ID, boundary, exception);
+            throw SystemErrorException.of(ResultCode.Error.SYS_INTERNAL_ERROR);
+        }
+
+        log.error("Invalid required market timestamp. source: {}, boundary: {}",
+            CUSTOM_ID, boundary);
+        throw SystemErrorException.of(ResultCode.Error.SYS_INTERNAL_ERROR);
     }
 
     private LocalDate getLastGieEuCurrent(){
