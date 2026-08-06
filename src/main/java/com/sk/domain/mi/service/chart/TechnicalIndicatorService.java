@@ -57,6 +57,10 @@ public class TechnicalIndicatorService {
         List<BigDecimal> mainSeries = extractMajorMetricSeries(chart);
         List<String> timestamps = chart.timestamps();
 
+        if (timestamps == null) {
+            throw SystemErrorException.of(ResultCode.Error.SYS_INTERNAL_ERROR);
+        }
+
         if (mainSeries.isEmpty() || timestamps.isEmpty()) {
             return Collections.emptyList();
         }

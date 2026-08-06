@@ -8,8 +8,8 @@ import com.sk.domain.mi.dto.response.agent.talk.AnswerRes;
 import com.sk.domain.mi.exception.AgentStreamException;
 import com.sk.domain.mi.service.agent.stream.StreamEventHandler;
 import com.sk.domain.shared.client.ModelAgentApi;
-import com.sk.domain.shared.client.dto.request.ModelAgentHeaders;
 import com.sk.domain.shared.client.dto.request.ContentProviderAccess;
+import com.sk.domain.shared.client.dto.request.ModelAgentHeaders;
 import com.sk.domain.shared.client.dto.request.ModelAgentReq;
 import com.sk.domain.shared.client.dto.response.ModelAgentRes;
 import com.sk.domain.shared.client.dto.response.ModelAgentStreamBody;
@@ -47,14 +47,13 @@ import reactor.core.publisher.Flux;
 public class MariAgentGatewayService {
 
     private static final ObjectMapper objectMapper = new ObjectMapper();
+    private static final int LOG_PREVIEW_MAX = 400;
     private final AuthorizationService authorizationService;
-
     private final ModelAgentApi modelAgentApi;
     private final TokenQuotaGuard tokenQuotaGuard;
     private final Map<String, StreamEventHandler> streamEventHandlerNameMap;
     private final Map<String, StreamEventHandler> streamEventHandlerMap = new HashMap<>();
     private final GoodsRepository goodsRepository;
-    String currentRunId;
     @Value("${api.model-agent.app-id}")
     private String appId;
     private WebClient webClient;
@@ -64,6 +63,17 @@ public class MariAgentGatewayService {
     private String agentApiKey;
     @Value("${api.model-agent.read-timeout:10s}")
     private Duration agentReadTimeout;
+
+    private static String previewForLog(String text, int max) {
+        if (text == null) {
+            return "";
+        }
+        String normalized = text.replace('\n', ' ');
+        if (normalized.length() <= max) {
+            return normalized;
+        }
+        return normalized.substring(0, max) + "...";
+    }
 
     @PostConstruct
     public void init() {
@@ -75,19 +85,6 @@ public class MariAgentGatewayService {
             this.streamEventHandlerMap.put(streamEventHandler.getEventDataType(),
                 streamEventHandler);
         }
-    }
-
-    private static final int LOG_PREVIEW_MAX = 400;
-
-    private static String previewForLog(String text, int max) {
-        if (text == null) {
-            return "";
-        }
-        String normalized = text.replace('\n', ' ');
-        if (normalized.length() <= max) {
-            return normalized;
-        }
-        return normalized.substring(0, max) + "...";
     }
 
     @Transactional
@@ -362,8 +359,6 @@ public class MariAgentGatewayService {
     private void handleMetadataEvent(String chunk) throws JsonProcessingException {
         Map<String, Object> metadata = objectMapper.readValue(chunk, Map.class);
         String runId = (String) metadata.get("run_id");
-        this.currentRunId = runId;
-
         log.info("Received metadata event - run_id: {}", runId);
     }
 

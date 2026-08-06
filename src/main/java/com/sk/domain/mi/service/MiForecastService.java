@@ -1223,8 +1223,9 @@ public class MiForecastService {
             return PaginationRes.toRes(new PageImpl<>(List.of(), PageRequest.of(page - 1, size), 0));
         }
 
+        // SQL 삽입 방지: 원본 요청 문자열이 아닌 파싱·정규화된 날짜(yyyyMMdd)만 쿼리에 사용
         String dateRangeWhere = String.format("%s BETWEEN '%s' AND '%s'",
-            MARKET_DATA_PREDICT_DATE_COLUMN_NAME, startDate, endDate);
+            MARKET_DATA_PREDICT_DATE_COLUMN_NAME, DateUtil.toYmd(start), DateUtil.toYmd(end));
         List<String> conditionList = predictDetails.stream()
             .map(ChartPredictSettingDetail::getGoodsDataSourceDetail)
             .filter(Objects::nonNull)
@@ -1406,8 +1407,9 @@ public class MiForecastService {
             return createEmptyForecastRecordExcel(companyNo);
         }
 
+        // SQL 삽입 방지: 원본 요청 문자열이 아닌 파싱·정규화된 날짜(yyyyMMdd)만 쿼리에 사용
         String dateRangeWhere = String.format("%s BETWEEN '%s' AND '%s'",
-            MARKET_DATA_PREDICT_DATE_COLUMN_NAME, startDate, endDate);
+            MARKET_DATA_PREDICT_DATE_COLUMN_NAME, DateUtil.toYmd(start), DateUtil.toYmd(end));
         List<String> conditionList = predictDetails.stream()
             .map(ChartPredictSettingDetail::getGoodsDataSourceDetail)
             .filter(Objects::nonNull)
