@@ -9,6 +9,7 @@ import java.util.List;
 import com.sk.domain.mi.dto.request.nextgen.EventListReq;
 import com.sk.domain.shared.repository.master.tmm.projection.EventDesignAvailabilityRow;
 import com.sk.domain.shared.repository.master.tmm.projection.EventDetailRow;
+import com.sk.domain.shared.repository.master.tmm.projection.EventLinkedScenarioGroupRow;
 import com.sk.domain.shared.repository.master.tmm.projection.EventListRow;
 import com.sk.domain.shared.repository.master.tmm.projection.EventOutlookRow;
 
@@ -21,5 +22,7 @@ public interface CustomMiEventRepository {
     Page<EventOutlookRow> findEventOutlooks(Long eventId, int page, int size);
 
     List<EventDesignAvailabilityRow> findDesignAvailability(List<Long> eventIds);
+
+    List<EventLinkedScenarioGroupRow> findLinkedScenarioGroups(Long eventId);
 
 }

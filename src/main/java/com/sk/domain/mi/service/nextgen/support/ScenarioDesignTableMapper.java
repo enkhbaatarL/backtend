@@ -10,7 +10,6 @@ import com.sk.domain.mi.dto.response.nextgen.design.DesignEditTable;
 import com.sk.domain.mi.dto.response.nextgen.design.DesignScenarioRow;
 import com.sk.domain.mi.dto.response.nextgen.design.DesignTable;
 import com.sk.domain.mi.dto.response.nextgen.design.ScenarioDesignTable;
-import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.LinkedHashMap;
@@ -59,8 +58,10 @@ public final class ScenarioDesignTableMapper {
 
     /**
      * FE 확정 표 → Agent 표(확정 요청 프록시용). 검토 변환에 더해 narrative·확률(metrics)·baseCase·Signpost까지 채운다.
+     * 확률은 FE의 정수 퍼센트를 그룹의 엔진 스케일로 되돌려 보낸다 — v4(ratioScale)는 0~1 비율,
+     * v1은 정수 그대로 (스케일을 섞어 보내면 Agent가 그대로 저장해 표시가 100배 어긋난다).
      */
-    public static ScenarioDesignTable toAgentConfirmTable(DesignConfirmTable table) {
+    public static ScenarioDesignTable toAgentConfirmTable(DesignConfirmTable table, boolean ratioScale) {
         if (table == null) {
             return new ScenarioDesignTable(List.of(), List.of());
         }
@@ -79,7 +80,7 @@ public final class ScenarioDesignTableMapper {
                         cells.put(d.key(), d.value());
                     }
                 }
-                ScenarioDesignTable.Metrics metrics = new ScenarioDesignTable.Metrics(r.probability() == null ? null : BigDecimal.valueOf(r.probability()), null);
+                ScenarioDesignTable.Metrics metrics = new ScenarioDesignTable.Metrics(ScenarioProbabilityAllocator.toEngineScale(r.probability(), ratioScale), null);
                 List<ScenarioDesignTable.Signpost> signposts = r.signposts() == null ? List.of() : r.signposts().stream().map(ScenarioDesignTableMapper::toAgentSignpost).toList();
                 return new ScenarioDesignTable.Row(r.scenarioId(), r.displayOrder(), r.scenarioName(), r.narrative(), cells, metrics, r.baseCase() ? "Y" : "N", signposts);
             })
@@ -112,7 +113,7 @@ public final class ScenarioDesignTableMapper {
                 .toList();
 
         List<ScenarioDimensionColumnRes> columns = headers.stream()
-            .map(h -> new ScenarioDimensionColumnRes(h.key(), h.label()))
+            .map(h -> new ScenarioDimensionColumnRes(h.key(), h.label(), null, null))
             .toList();
 
         List<DesignScenarioRow> rows = (agentTable.rows() == null ? List.<ScenarioDesignTable.Row>of() : agentTable.rows()).stream()
@@ -120,9 +121,10 @@ public final class ScenarioDesignTableMapper {
                 Map<String, String> cells = row.cells() == null ? Map.of() : row.cells();
                 List<ScenarioDimensionRes> dimensions = headers.stream()
                     // value 자체가 표시값이라 valueLabel=value
-                    .map(h -> new ScenarioDimensionRes(h.key(), h.label(), cells.get(h.key()), cells.get(h.key())))
+                    .map(h -> new ScenarioDimensionRes(h.key(), h.label(), cells.get(h.key()), cells.get(h.key()), null, null, null))
                     .toList();
-                return DesignScenarioRow.of(row.scenarioId(), row.displayOrder(), row.title(), "Y".equalsIgnoreCase(row.baselineYn()), dimensions, null, null, null);
+                return DesignScenarioRow.of(row.scenarioId(), row.displayOrder(), row.title(), "Y".equalsIgnoreCase(row.baselineYn()),
+                    null, null, null, dimensions, null, null, null);
             })
             .toList();
 

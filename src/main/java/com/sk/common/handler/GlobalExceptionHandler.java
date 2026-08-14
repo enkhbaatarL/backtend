@@ -13,6 +13,7 @@ import static org.springframework.http.HttpStatus.UNSUPPORTED_MEDIA_TYPE;
 import com.amazonaws.services.s3.model.AmazonS3Exception;
 import com.sk.common.enums.ResultCode;
 import com.sk.common.exception.AppErrorException;
+import com.sk.common.exception.AgentDesignApiException;
 import com.sk.common.exception.AppHttpStatusException;
 import com.sk.common.exception.CustomAuthenticationException;
 import com.sk.common.exception.CustomAuthorizationException;
@@ -434,6 +435,26 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
     @ExceptionHandler(AppHttpStatusException.class)
     private ResponseEntity<Object> handleAppHttpStatusError(AppHttpStatusException ex) {
         return createAndLogResponse("Client Error", ex, ex.getHttpStatus(), ex.getErrorCode(), ex.getAdditionalMessage());
+    }
+
+    /**
+     * 시나리오 설계 Agent(v4) 오류 응답 처리.
+     * HTTP status는 Agent 응답을 그대로 통과시키고, Agent 오류 body의 data 원문(error_name,
+     * scenarioGroupId, operationId)을 BaseResponse.data로 보존한다 — FE가 계약대로 error_name 분기와
+     * 기존 리소스 ID 재사용(operationId 재연결, scenarioGroupId 상세 이동)을 하는 데 필요하다.
+     * 중복 정책 충돌(409 등)은 예상 가능한 업무 응답이라 error가 아닌 warn으로 남긴다.
+     */
+    @ExceptionHandler(AgentDesignApiException.class)
+    private ResponseEntity<Object> handleAgentDesignApiError(AgentDesignApiException ex) {
+        String detailMessage = StringUtils.defaultIfBlank(ex.getAgentMessage(), "N/A");
+        log.warn("[Design Agent V4] agent 오류 응답 통과: status={}, code={}, message={}", ex.getHttpStatus().value(), ex.getErrorCode().getCode(), detailMessage);
+        MDCUtil.setValue(MDCUtil.RESPONSE_ERROR_MSG, "%s(%s) - %s".formatted(ex.getErrorCode().getMessage(), ex.getErrorCode().getCode(), detailMessage));
+
+        BaseResponse<Object> body = ex.getAgentData() == null
+            ? new BaseResponse<>(ex.getErrorCode().getCode(), detailMessage)
+            : new BaseResponse<>(ex.getErrorCode().getCode(), detailMessage, ex.getAgentData());
+
+        return ResponseEntity.status(ex.getHttpStatus()).body(body);
     }
 
     @ExceptionHandler(SystemErrorException.class)

@@ -14,6 +14,7 @@ public record ScenarioGroupBaseRow(
     LocalDateTime createDt,
     LocalDateTime modifyDt,
     String dimensionSelected,
+    String dimensionDefinitions,
     ScenarioGroupStatus status,
     ScenarioGroupStage stage,
     Long requestUserId

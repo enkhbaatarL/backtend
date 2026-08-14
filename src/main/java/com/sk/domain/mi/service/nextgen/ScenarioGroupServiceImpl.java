@@ -103,7 +103,7 @@ public class ScenarioGroupServiceImpl implements ScenarioGroupService {
 
         Map<Long, ScenarioGroupListItemRes> itemsByGroupId = new LinkedHashMap<>();
         for (ScenarioGroupBaseRow base : bases) {
-            GroupDimensionTemplate template = templates.getOrDefault(base.eventTypeL2Id(), GroupDimensionTemplate.EMPTY);
+            GroupDimensionTemplate template = ScenarioDimensionMapper.resolve(base.dimensionDefinitions(), templates, base.eventTypeL2Id());
             List<String> selectedKeys = ScenarioDimensionMapper.parseSelectedKeys(base.dimensionSelected());
 
             List<ScenarioDimensionColumnRes> dimensionColumns = template.columns(selectedKeys);
@@ -111,7 +111,7 @@ public class ScenarioGroupServiceImpl implements ScenarioGroupService {
             Map<Long, Integer> adjusted = ScenarioProbabilityAllocator.redistributeRows(groupScenarios);
             List<ScenarioRowRes> scenarios = groupScenarios.stream()
                 .map(s -> ScenarioRowRes.of(s, template.dimensions(selectedKeys, s.dimensionValues()),
-                    adjusted.get(s.scenarioId())))
+                    adjusted.get(s.scenarioId()), template.isDefinitionBased()))
                 .toList();
 
             itemsByGroupId.put(base.scenarioGroupId(), ScenarioGroupListItemRes.of(base, dimensionColumns, scenarios));
@@ -154,12 +154,12 @@ public class ScenarioGroupServiceImpl implements ScenarioGroupService {
 
         Map<Long, ScenarioIndividualItemRes> itemsByScenarioId = new LinkedHashMap<>();
         for (ScenarioIndividualBaseRow base : bases) {
-            GroupDimensionTemplate template = templates.getOrDefault(base.eventTypeL2Id(), GroupDimensionTemplate.EMPTY);
+            GroupDimensionTemplate template = ScenarioDimensionMapper.resolve(base.dimensionDefinitions(), templates, base.eventTypeL2Id());
             List<String> selectedKeys = ScenarioDimensionMapper.parseSelectedKeys(base.dimensionSelected());
             List<ScenarioDimensionRes> dimensions = template.dimensions(selectedKeys, base.dimensionValues());
 
             itemsByScenarioId.put(base.scenarioId(),
-                ScenarioIndividualItemRes.of(base, dimensions, adjusted.get(base.scenarioId())));
+                ScenarioIndividualItemRes.of(base, dimensions, adjusted.get(base.scenarioId()), template.isDefinitionBased()));
         }
 
         return new ScenarioIndividualListRes(
@@ -310,9 +310,10 @@ public class ScenarioGroupServiceImpl implements ScenarioGroupService {
         ScenarioGroupDetailBaseRow base = scenarioGroupRepository.findScenarioGroupDetail(scenarioGroupId)
             .orElseThrow(() -> AppErrorException.of(ResultCode.Error.RSC_NOT_FOUND, "Scenario group not found: %d".formatted(scenarioGroupId)));
 
-        GroupDimensionTemplate template = ScenarioDimensionMapper.parseTemplates(
-                scenarioGroupRepository.findTemplatesByEventTypeL2Ids(List.of(base.eventTypeL2Id()))
-            ).getOrDefault(base.eventTypeL2Id(), GroupDimensionTemplate.EMPTY);
+        GroupDimensionTemplate template = ScenarioDimensionMapper.resolve(
+            base.dimensionDefinitions(),
+            ScenarioDimensionMapper.parseTemplates(scenarioGroupRepository.findTemplatesByEventTypeL2Ids(List.of(base.eventTypeL2Id()))),
+            base.eventTypeL2Id());
 
         List<String> selectedKeys = ScenarioDimensionMapper.parseSelectedKeys(base.dimensionSelected());
 
@@ -324,7 +325,8 @@ public class ScenarioGroupServiceImpl implements ScenarioGroupService {
                 s,
                 template.dimensions(selectedKeys, s.dimensionValues()),
                 ScenarioDisplayStatus.from(s.status()),
-                adjusted.get(s.scenarioId())
+                adjusted.get(s.scenarioId()),
+                template.isDefinitionBased()
             ))
             .toList();
 
@@ -344,8 +346,10 @@ public class ScenarioGroupServiceImpl implements ScenarioGroupService {
         ScenarioDetailBaseRow base = scenarioGroupRepository.findScenarioDetail(scenarioGroupId, scenarioId)
             .orElseThrow(() -> AppErrorException.of(ResultCode.Error.RSC_NOT_FOUND, "Scenario not found: scenarioGroupId=%d, scenarioId=%d".formatted(scenarioGroupId, scenarioId)));
 
-        GroupDimensionTemplate template = ScenarioDimensionMapper.parseTemplates(scenarioGroupRepository.findTemplatesByEventTypeL2Ids(List.of(base.eventTypeL2Id())))
-            .getOrDefault(base.eventTypeL2Id(), GroupDimensionTemplate.EMPTY);
+        GroupDimensionTemplate template = ScenarioDimensionMapper.resolve(
+            base.dimensionDefinitions(),
+            ScenarioDimensionMapper.parseTemplates(scenarioGroupRepository.findTemplatesByEventTypeL2Ids(List.of(base.eventTypeL2Id()))),
+            base.eventTypeL2Id());
 
         List<String> selectedKeys = ScenarioDimensionMapper.parseSelectedKeys(base.dimensionSelected());
 
@@ -361,7 +365,7 @@ public class ScenarioGroupServiceImpl implements ScenarioGroupService {
 
         Map<Long, Integer> adjusted = ScenarioProbabilityAllocator.redistributeRows(scenarioGroupRepository.findScenariosByGroupId(scenarioGroupId));
 
-        return ScenarioDetailViewRes.of(base, dimensions, adjusted.get(scenarioId), signpostDefinitions, signpostMonitorings);
+        return ScenarioDetailViewRes.of(base, dimensions, adjusted.get(scenarioId), template.isDefinitionBased(), signpostDefinitions, signpostMonitorings);
     }
 
     /**

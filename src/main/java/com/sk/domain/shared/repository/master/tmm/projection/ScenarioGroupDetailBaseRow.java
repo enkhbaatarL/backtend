@@ -11,6 +11,7 @@ public record ScenarioGroupDetailBaseRow(
     String summary,
     Integer scenarioCount,
     String dimensionSelected,
+    String dimensionDefinitions,
     Long eventTypeL2Id,
     // base event
     Long eventId,

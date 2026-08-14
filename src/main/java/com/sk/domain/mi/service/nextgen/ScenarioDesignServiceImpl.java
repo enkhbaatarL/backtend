@@ -16,9 +16,10 @@ import com.sk.domain.mi.service.nextgen.design.ScenarioDesignValidationStore;
 import com.sk.domain.mi.service.nextgen.support.ScenarioDesignTableMapper;
 import com.sk.domain.mi.service.nextgen.support.ScenarioDimensionMapper;
 import com.sk.domain.mi.service.nextgen.support.ScenarioDimensionMapper.GroupDimensionTemplate;
+import com.sk.domain.mi.service.nextgen.support.ScenarioProbabilityAllocator;
 import com.sk.domain.shared.client.ScenarioDesignAgentApi;
 import com.sk.domain.shared.client.dto.request.ScenarioConfirmationAgentReq;
-import com.sk.domain.shared.client.dto.request.ScenarioGroupCreateAgentReq;
+import com.sk.domain.shared.client.dto.request.ScenarioGroupCreateV4AgentReq;
 import com.sk.domain.shared.client.dto.request.ScenarioSignpostsAgentReq;
 import com.sk.domain.shared.client.dto.request.ScenarioValidationAgentReq;
 import com.sk.domain.shared.client.dto.response.ScenarioDesignAgentRes;
@@ -26,6 +27,7 @@ import com.sk.domain.shared.entity.master.tmm.MiScenario;
 import com.sk.domain.shared.entity.master.tmm.MiScenarioGroup;
 import com.sk.domain.shared.enums.nextgen.ScenarioGroupStage;
 import com.sk.domain.shared.enums.nextgen.ScenarioGroupStatus;
+import com.sk.domain.shared.repository.master.tmm.MiScenarioGroupEventRepository;
 import com.sk.domain.shared.repository.master.tmm.MiScenarioGroupRepository;
 import com.sk.domain.shared.repository.master.tmm.projection.ScenarioGroupDetailBaseRow;
 import com.sk.domain.shared.service.permissions.AuthorizationService;
@@ -52,6 +54,7 @@ import java.util.stream.Collectors;
 public class ScenarioDesignServiceImpl implements ScenarioDesignService {
 
     private final MiScenarioGroupRepository scenarioGroupRepository;
+    private final MiScenarioGroupEventRepository scenarioGroupEventRepository;
     private final ScenarioDesignValidationStore validationStore;
     private final ScenarioDesignFailureStore failureStore;
     private final EventDesignLockStore eventDesignLockStore;
@@ -76,11 +79,12 @@ public class ScenarioDesignServiceImpl implements ScenarioDesignService {
 
         try {
 
-            if (scenarioGroupRepository.existsByMiEvent_MiEventIdAndIsDeletedFalse(miEventId)) {
+            if (scenarioGroupEventRepository.existsByMiEvent_MiEventIdAndIsDeletedFalseAndScenarioGroup_IsDeletedFalse(miEventId)) {
                 throw AppErrorException.of(ResultCode.Error.BIZ_DESIGN_OCCUPIED, "이미 설계 중이거나 완료된 이벤트입니다. (eventId=%d)".formatted(miEventId));
             }
 
-            ScenarioDesignAgentRes res = callAgent(() -> scenarioDesignAgentApi.createScenarioGroup(ScenarioGroupCreateAgentReq.of(miEventId, userId)), "startDesign");
+            // 구 v1 create 경로는 Agent에서 제거됨 — 콜백 호환 v4 API에 단일 이벤트를 배열로 감싸 전달 (실측 OpenAPI 기준)
+            ScenarioDesignAgentRes res = callAgent(() -> scenarioDesignAgentApi.createScenarioGroup(ScenarioGroupCreateV4AgentReq.of(List.of(miEventId), userId)), "startDesign");
             return toStageRes(res);
 
         } finally {
@@ -104,11 +108,14 @@ public class ScenarioDesignServiceImpl implements ScenarioDesignService {
         ScenarioGroupStage stage = group.getStage();
         boolean occupied = status == ScenarioGroupStatus.CREATING;
 
-        // 분기항목 헤더: event_type_l2 template + dimension_selected (그룹 상세/이벤트 연관시나리오와 동일)
-        Long eventTypeL2Id = group.getEventTypeL2().getEventTypeL2Id();
-        GroupDimensionTemplate template = ScenarioDimensionMapper
-            .parseTemplates(scenarioGroupRepository.findTemplatesByEventTypeL2Ids(List.of(eventTypeL2Id)))
-            .getOrDefault(eventTypeL2Id, GroupDimensionTemplate.EMPTY);
+        // 분기항목 헤더: v4는 그룹의 dimension_definitions, v1은 기준 이벤트 L2 template + dimension_selected
+        Long eventTypeL2Id = scenarioGroupRepository.findEventTypeL2IdByScenarioGroupId(scenarioGroupId).orElse(null);
+        GroupDimensionTemplate template = ScenarioDimensionMapper.resolve(
+            group.getDimensionDefinitions(),
+            eventTypeL2Id == null
+                ? Map.of()
+                : ScenarioDimensionMapper.parseTemplates(scenarioGroupRepository.findTemplatesByEventTypeL2Ids(List.of(eventTypeL2Id))),
+            eventTypeL2Id);
 
         List<String> selectedKeys = ScenarioDimensionMapper.parseSelectedKeys(group.getDimensionSelected());
         List<ScenarioDimensionColumnRes> columns = template.columns(selectedKeys);
@@ -135,8 +142,9 @@ public class ScenarioDesignServiceImpl implements ScenarioDesignService {
                 .map(s -> DesignScenarioRow.of(
                     s.getScenarioId(), s.getDisplayOrder(), s.getTitle(),
                     Boolean.TRUE.equals(s.getIsBaseline()),
+                    null, null, null,
                     template.dimensions(selectedKeys, s.getDimensionValues()),
-                    s.getProbabilityScore() == null ? null : s.getProbabilityScore().intValue(),
+                    ScenarioProbabilityAllocator.toDisplayPercent(s.getProbabilityScore(), template.isDefinitionBased()),
                     s.getNarrative(),
                     signpostsByScenario.getOrDefault(s.getScenarioId(), List.of())))
                 .toList();
@@ -157,6 +165,7 @@ public class ScenarioDesignServiceImpl implements ScenarioDesignService {
             .map(s -> DesignScenarioRow.of(
                 s.getScenarioId(), s.getDisplayOrder(), s.getTitle(),
                 Boolean.TRUE.equals(s.getIsBaseline()),
+                null, null, null,
                 template.dimensions(selectedKeys, s.getDimensionValues()),
                 null, null, null))
             .toList();
@@ -231,10 +240,15 @@ public class ScenarioDesignServiceImpl implements ScenarioDesignService {
     @Override
     public ScenarioDesignStageRes confirmDesign(Long scenarioGroupId, ScenarioConfirmationReq request) {
 
+        MiScenarioGroup group = scenarioGroupRepository.findByScenarioGroupIdAndIsDeletedFalse(scenarioGroupId)
+            .orElseThrow(() -> AppErrorException.of(ResultCode.Error.RSC_NOT_FOUND, "Scenario group not found: %s".formatted(scenarioGroupId)));
+
         ScenarioConfirmationReq.GroupEdit edit = request.scenarioGroup();
         ScenarioConfirmationAgentReq.GroupEdit groupEdit = edit == null ? null : new ScenarioConfirmationAgentReq.GroupEdit(edit.title(), edit.summary(), edit.description());
 
-        ScenarioDesignTable table = ScenarioDesignTableMapper.toAgentConfirmTable(request.table());
+        // 확률 스케일은 그룹 엔진 기준 — v4(definitions 기반)는 0~1 비율로 되돌려 보낸다 (2026-08-14 실통 확정)
+        boolean ratioScale = ScenarioDimensionMapper.isDefinitionBased(group.getDimensionDefinitions());
+        ScenarioDesignTable table = ScenarioDesignTableMapper.toAgentConfirmTable(request.table(), ratioScale);
 
         ScenarioDesignAgentRes res = callAgent(() -> scenarioDesignAgentApi.confirm(scenarioGroupId, ScenarioConfirmationAgentReq.of(groupEdit, table)), "confirmDesign");
 

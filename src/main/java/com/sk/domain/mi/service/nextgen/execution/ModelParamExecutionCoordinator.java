@@ -260,12 +260,15 @@ public class ModelParamExecutionCoordinator {
             ));
     }
 
+    /**
+     * 제안 스냅샷이 실행 대상 시나리오의 것인지 대조한다.
+     * scenarioId + scenarioGroupId 로 결속이 고정된다. 과거의 eventId 대조는 그룹의 직접 이벤트 컬럼 제거
+     * (멀티 이벤트, migration 0023)로 삭제 — 다중 이벤트 그룹은 proposal.mi_event_id 가 null 이기도 하다.
+     */
     private void validateAgentProposalSnapshot(MiScenario scenario, AgentModelParamProposal agentProposal) {
         Long scenarioGroupId = scenario.getScenarioGroup().getScenarioGroupId();
-        Long eventId = scenario.getScenarioGroup().getMiEvent().getMiEventId();
         if (!Objects.equals(agentProposal.getScenarioId(), scenario.getScenarioId())
-            || !Objects.equals(agentProposal.getScenarioGroupId(), scenarioGroupId)
-            || !Objects.equals(agentProposal.getEventId(), eventId)) {
+            || !Objects.equals(agentProposal.getScenarioGroupId(), scenarioGroupId)) {
             throw AppHttpStatusException.of(
                 HttpStatus.CONFLICT,
                 ResultCode.Error.BIZ_RULE_VIOLATION,

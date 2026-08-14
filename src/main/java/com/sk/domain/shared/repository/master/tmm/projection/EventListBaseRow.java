@@ -21,7 +21,8 @@ public record EventListBaseRow(
     ScenarioGroupStatus scenarioGroupStatus,
     ScenarioGroupStage scenarioGroupStage,
     Long requestUserId,
-    boolean templateAvailable
+    boolean templateAvailable,
+    Long scenarioGroupCount
 ) {
 
     @QueryProjection

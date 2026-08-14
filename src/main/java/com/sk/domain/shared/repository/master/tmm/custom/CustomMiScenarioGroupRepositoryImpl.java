@@ -6,15 +6,18 @@ import static com.sk.domain.shared.entity.master.tmm.QMiEventTypeL2.miEventTypeL
 import static com.sk.domain.shared.entity.master.tmm.QMiScenario.miScenario;
 import static com.sk.domain.shared.entity.master.tmm.QMiScenarioDimensionTemplate.miScenarioDimensionTemplate;
 import static com.sk.domain.shared.entity.master.tmm.QMiScenarioGroup.miScenarioGroup;
+import static com.sk.domain.shared.entity.master.tmm.QMiScenarioGroupEvent.miScenarioGroupEvent;
 import static com.sk.domain.shared.entity.master.tmm.QMiSignpost.miSignpost;
 import static com.sk.domain.shared.entity.master.tmm.QMiSignpostEvent.miSignpostEvent;
 
 import com.querydsl.core.BooleanBuilder;
 import com.querydsl.core.types.OrderSpecifier;
 import com.querydsl.core.types.dsl.BooleanExpression;
+import com.querydsl.jpa.JPAExpressions;
 import com.querydsl.jpa.JPQLQuery;
 import com.querydsl.jpa.impl.JPAQuery;
 import com.querydsl.jpa.impl.JPAQueryFactory;
+import com.sk.domain.shared.entity.master.tmm.QMiScenarioGroupEvent;
 import com.sk.common.utils.FullTextSearchUtil;
 import com.sk.domain.mi.dto.request.nextgen.ScenarioGroupListReq;
 import com.sk.domain.shared.entity.master.tmm.MiScenario;
@@ -24,6 +27,7 @@ import com.sk.domain.shared.enums.nextgen.ScenarioStatus;
 import com.sk.domain.shared.repository.master.tmm.projection.QScenarioBaseRow;
 import com.sk.domain.shared.repository.master.tmm.projection.QScenarioDetailBaseRow;
 import com.sk.domain.shared.repository.master.tmm.projection.QScenarioDimensionTemplateRow;
+import com.sk.domain.shared.repository.master.tmm.projection.QScenarioGroupBaseEventRow;
 import com.sk.domain.shared.repository.master.tmm.projection.QScenarioGroupBaseRow;
 import com.sk.domain.shared.repository.master.tmm.projection.QScenarioGroupDetailBaseRow;
 import com.sk.domain.shared.repository.master.tmm.projection.QScenarioIndividualBaseRow;
@@ -32,6 +36,7 @@ import com.sk.domain.shared.repository.master.tmm.projection.QScenarioSignpostRo
 import com.sk.domain.shared.repository.master.tmm.projection.ScenarioBaseRow;
 import com.sk.domain.shared.repository.master.tmm.projection.ScenarioDetailBaseRow;
 import com.sk.domain.shared.repository.master.tmm.projection.ScenarioDimensionTemplateRow;
+import com.sk.domain.shared.repository.master.tmm.projection.ScenarioGroupBaseEventRow;
 import com.sk.domain.shared.repository.master.tmm.projection.ScenarioGroupBaseRow;
 import com.sk.domain.shared.repository.master.tmm.projection.ScenarioGroupDetailBaseRow;
 import com.sk.domain.shared.repository.master.tmm.projection.ScenarioIndividualBaseRow;
@@ -50,6 +55,23 @@ public class CustomMiScenarioGroupRepositoryImpl implements CustomMiScenarioGrou
 
     private final JPAQueryFactory queryFactory;
 
+    /**
+     * 그룹의 기준 이벤트 매핑 행 조인 조건 (활성 매핑 중 최소 ID = display_order 첫 이벤트).
+     *
+     * 멀티 이벤트 그룹은 매핑이 N행이므로, 단일 값 파생(eventTypeL2Id, base event)은 기준 행 1건으로
+     * 고정해 목록 행 중복과 페이지네이션 붕괴를 막는다. v1 그룹은 backfill로 항상 1행이라 동작이 동일하다.
+     */
+    private BooleanExpression primaryGroupEventJoin() {
+        QMiScenarioGroupEvent groupEventSub = new QMiScenarioGroupEvent("groupEventSub");
+        return miScenarioGroupEvent.scenarioGroup.eq(miScenarioGroup)
+            .and(miScenarioGroupEvent.scenarioGroupEventId.eq(
+                JPAExpressions.select(groupEventSub.scenarioGroupEventId.min())
+                    .from(groupEventSub)
+                    .where(
+                        groupEventSub.scenarioGroup.eq(miScenarioGroup),
+                        groupEventSub.isDeleted.isFalse())));
+    }
+
     @Override
     public Page<ScenarioGroupBaseRow> findScenarioGroupPage(ScenarioGroupListReq request) {
 
@@ -64,18 +86,20 @@ public class CustomMiScenarioGroupRepositoryImpl implements CustomMiScenarioGrou
         List<ScenarioGroupBaseRow> rows = queryFactory
             .select(new QScenarioGroupBaseRow(
                 miScenarioGroup.scenarioGroupId,
-                miScenarioGroup.eventTypeL2.eventTypeL2Id,
+                miScenarioGroupEvent.eventTypeL2.eventTypeL2Id,
                 miScenarioGroup.title,
                 miScenarioGroup.summary,
                 miScenarioGroup.scenarioCount,
                 miScenarioGroup.createDt,
                 miScenarioGroup.modifyDt,
                 miScenarioGroup.dimensionSelected,
+                miScenarioGroup.dimensionDefinitions,
                 miScenarioGroup.status,
                 miScenarioGroup.stage,
                 miScenarioGroup.requestUserId
             ))
             .from(miScenarioGroup)
+            .leftJoin(miScenarioGroupEvent).on(primaryGroupEventJoin())
             .where(where)
             .orderBy(order, miScenarioGroup.scenarioGroupId.desc())
             .offset(pageable.getOffset())
@@ -134,11 +158,13 @@ public class CustomMiScenarioGroupRepositoryImpl implements CustomMiScenarioGrou
                 miScenarioGroup.title,
                 miScenarioGroup.createDt,
                 miScenarioGroup.dimensionSelected,
-                miScenarioGroup.eventTypeL2.eventTypeL2Id,
+                miScenarioGroup.dimensionDefinitions,
+                miScenarioGroupEvent.eventTypeL2.eventTypeL2Id,
                 miScenario.displayOrder
             ))
             .from(miScenario)
             .innerJoin(miScenario.scenarioGroup, miScenarioGroup).on(miScenarioGroup.isDeleted.isFalse())
+            .leftJoin(miScenarioGroupEvent).on(primaryGroupEventJoin())
             .where(where)
             .orderBy(
                 dateOrder,
@@ -191,7 +217,8 @@ public class CustomMiScenarioGroupRepositoryImpl implements CustomMiScenarioGrou
                 miScenarioGroup.summary,
                 miScenarioGroup.scenarioCount,
                 miScenarioGroup.dimensionSelected,
-                miScenarioGroup.eventTypeL2.eventTypeL2Id,
+                miScenarioGroup.dimensionDefinitions,
+                miEventTypeL2.eventTypeL2Id,
                 miEvent.miEventId,
                 // note: 이벤트명은 event_title 대신 one_line_summary 표기 (이벤트 도메인과 동일 기준, 요청 2026-06-08)
                 miEvent.oneLineSummary,
@@ -200,8 +227,10 @@ public class CustomMiScenarioGroupRepositoryImpl implements CustomMiScenarioGrou
                 miEvent.modifyDt
             ))
             .from(miScenarioGroup)
-            .innerJoin(miScenarioGroup.miEvent, miEvent).on(miEvent.isDeleted.isFalse())
-            .innerJoin(miScenarioGroup.eventTypeL2, miEventTypeL2).on(miEventTypeL2.isDeleted.isFalse())
+            // base event는 기준 매핑 행(display_order 첫 이벤트) 기준 — 멀티 이벤트 그룹의 전체 목록 응답은 후속 계약 확정 후 확장
+            .innerJoin(miScenarioGroupEvent).on(primaryGroupEventJoin())
+            .innerJoin(miScenarioGroupEvent.miEvent, miEvent).on(miEvent.isDeleted.isFalse())
+            .innerJoin(miScenarioGroupEvent.eventTypeL2, miEventTypeL2).on(miEventTypeL2.isDeleted.isFalse())
             .innerJoin(miEventTypeL2.eventTypeL1, miEventTypeL1).on(miEventTypeL1.isDeleted.isFalse())
             .where(
                 miScenarioGroup.scenarioGroupId.eq(scenarioGroupId),
@@ -211,17 +240,57 @@ public class CustomMiScenarioGroupRepositoryImpl implements CustomMiScenarioGrou
         return Optional.ofNullable(row);
     }
 
+    /**
+     * 그룹의 기준 eventTypeL2Id 조회 — 활성 매핑의 display_order 첫 이벤트에서 동결된 L2.
+     * 멀티 이벤트 그룹의 L2 집합 판정 규칙(ModelInputMode)이 확정되기 전까지의 잠정 단일 값이다.
+     */
     @Override
     public Optional<Long> findEventTypeL2IdByScenarioGroupId(Long scenarioGroupId) {
         Long eventTypeL2Id = queryFactory
-            .select(miScenarioGroup.eventTypeL2.eventTypeL2Id)
-            .from(miScenarioGroup)
+            .select(miScenarioGroupEvent.eventTypeL2.eventTypeL2Id)
+            .from(miScenarioGroupEvent)
             .where(
-                miScenarioGroup.scenarioGroupId.eq(scenarioGroupId),
-                miScenarioGroup.isDeleted.isFalse()
+                miScenarioGroupEvent.scenarioGroup.scenarioGroupId.eq(scenarioGroupId),
+                miScenarioGroupEvent.isDeleted.isFalse(),
+                miScenarioGroupEvent.scenarioGroup.isDeleted.isFalse()
             )
-            .fetchOne();
+            .orderBy(
+                miScenarioGroupEvent.displayOrder.asc(),
+                miScenarioGroupEvent.scenarioGroupEventId.asc()
+            )
+            .fetchFirst();
         return Optional.ofNullable(eventTypeL2Id);
+    }
+
+    /**
+     * 그룹을 구성하는 이벤트 목록 (Base Event 리스트, display_order 순).
+     * 멀티 이벤트 그룹의 설계 화면 상단 이벤트 리스트와 그룹 상세 baseEvents 공용.
+     */
+    @Override
+    public List<ScenarioGroupBaseEventRow> findBaseEventsByScenarioGroupId(Long scenarioGroupId) {
+        return queryFactory
+            .select(new QScenarioGroupBaseEventRow(
+                miEvent.miEventId,
+                // note: 이벤트명은 event_title 대신 one_line_summary 표기 (이벤트 도메인과 동일 기준)
+                miEvent.oneLineSummary,
+                miEventTypeL1.level1Code,
+                miEventTypeL1.level1Label,
+                miEvent.isScenarioSuggested,
+                miEvent.modifyDt
+            ))
+            .from(miScenarioGroupEvent)
+            .innerJoin(miScenarioGroupEvent.miEvent, miEvent)
+            .innerJoin(miEvent.eventTypeL2, miEventTypeL2)
+            .innerJoin(miEventTypeL2.eventTypeL1, miEventTypeL1)
+            .where(
+                miScenarioGroupEvent.scenarioGroup.scenarioGroupId.eq(scenarioGroupId),
+                miScenarioGroupEvent.isDeleted.isFalse()
+            )
+            .orderBy(
+                miScenarioGroupEvent.displayOrder.asc(),
+                miScenarioGroupEvent.scenarioGroupEventId.asc()
+            )
+            .fetch();
     }
 
     @Override
@@ -276,11 +345,13 @@ public class CustomMiScenarioGroupRepositoryImpl implements CustomMiScenarioGrou
                 miScenario.probabilityScore,
                 miScenario.dimensionValues,
                 miScenarioGroup.dimensionSelected,
-                miScenarioGroup.eventTypeL2.eventTypeL2Id,
+                miScenarioGroup.dimensionDefinitions,
+                miScenarioGroupEvent.eventTypeL2.eventTypeL2Id,
                 miScenario.displayOrder
             ))
             .from(miScenario)
             .innerJoin(miScenario.scenarioGroup, miScenarioGroup).on(miScenarioGroup.isDeleted.isFalse())
+            .leftJoin(miScenarioGroupEvent).on(primaryGroupEventJoin())
             .where(
                 miScenario.scenarioId.eq(scenarioId),
                 miScenarioGroup.scenarioGroupId.eq(scenarioGroupId),

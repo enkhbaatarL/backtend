@@ -40,6 +40,34 @@ public final class ScenarioProbabilityAllocator {
     }
 
     /**
+     * 원본 probability_score를 표시용 정수 퍼센트로 변환한다.
+     * v1(template 기반)은 0~100 스케일이라 정수부 그대로, v4(definitions 기반)는 0~1 스케일이라 100을 곱해 반올림한다.
+     * 재분배(redistribute)는 비례 계산이라 스케일과 무관하며, 이 변환은 원본 확률을 직접 노출하는 응답에만 쓴다.
+     */
+    public static Integer toDisplayPercent(BigDecimal probabilityScore, boolean ratioScale) {
+        if (probabilityScore == null) {
+            return null;
+        }
+        if (ratioScale) {
+            return probabilityScore.multiply(HUNDRED).setScale(0, RoundingMode.HALF_UP).intValue();
+        }
+        return probabilityScore.intValue();
+    }
+
+    /**
+     * 표시용 정수 퍼센트를 엔진 저장 스케일로 되돌린다 (toDisplayPercent의 역변환, 확정 요청 프록시용).
+     * v4(definitions 기반)는 100으로 나눠 0~1 비율로, v1은 정수 그대로 보낸다.
+     * v4 확정이 0~1 그대로 저장하는 것은 2026-08-14 그룹 184 실통으로 확정된 사실이다.
+     */
+    public static BigDecimal toEngineScale(Integer displayPercent, boolean ratioScale) {
+        if (displayPercent == null) {
+            return null;
+        }
+        BigDecimal value = BigDecimal.valueOf(displayPercent);
+        return ratioScale ? value.movePointLeft(2) : value;
+    }
+
+    /**
      * scenarioId → 재분배 확률(정수). 활성(비폐기) 시나리오 합 100, 폐기 시나리오는 0.
      * 활성이 없으면 전부 0, 활성 가중치 합이 0이면 균등 분배한다.
      */

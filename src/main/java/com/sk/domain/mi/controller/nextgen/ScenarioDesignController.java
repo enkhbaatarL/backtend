@@ -44,6 +44,8 @@ public class ScenarioDesignController {
     private final ScenarioDesignSseRegistry sseRegistry;
     private final ScenarioDesignService scenarioDesignService;
 
+    // 시나리오설계v4 이후 Deprecated - 생성 진행 수신은 v4 POST /stream으로 대체 (검토/Signpost 콜백 알림 용도는 Agent 편집 operation화 전까지 유지)
+    @Deprecated
     @ApiOrder(0)
     @Operation(
         summary = "시나리오 설계 세션 SSE 구독 API",
@@ -124,6 +126,8 @@ public class ScenarioDesignController {
     }
 
 
+    // 시나리오설계v4 이후 Deprecated - v4 POST /stream(생성 SSE)으로 완전 대체
+    @Deprecated
     @ApiOrder(1)
     @Operation(
         summary = "시나리오 설계 시작 API (step1 진입)",
@@ -155,6 +159,8 @@ public class ScenarioDesignController {
         return BaseResponseFactory.create(scenarioDesignService.startDesign(request));
     }
 
+    // 시나리오설계v4 이후 Deprecated - presentation API가 세션 상태(designSession)와 검토 편집본 오버레이까지 흡수해 완전 대체. 구 화면 전환 완료 시 제거
+    @Deprecated
     @ApiOrder(2)
     @Operation(
         summary = "시나리오 설계 세션 상태 조회 API",
@@ -189,6 +195,8 @@ public class ScenarioDesignController {
         return BaseResponseFactory.create(scenarioDesignService.getDesign(scenarioGroupId));
     }
 
+    // 시나리오설계v4 이후 Deprecated - 분기값 드롭다운은 presentation의 dimensionValueOptions로 대체 (legacy 그룹도 Agent가 definitions를 복원해 커버), 분기항목 추가는 spec out. 구 화면 전환 완료 시 제거
+    @Deprecated
     @ApiOrder(3)
     @Operation(
         summary = "시나리오 분기항목/분기기준 템플릿 조회 API",

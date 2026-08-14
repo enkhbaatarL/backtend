@@ -19,6 +19,7 @@ public record ScenarioIndividualBaseRow(
     String groupTitle,
     LocalDateTime groupCreatedAt,
     String dimensionSelected,
+    String dimensionDefinitions,
     Long eventTypeL2Id,
     Integer displayOrder
 ) {

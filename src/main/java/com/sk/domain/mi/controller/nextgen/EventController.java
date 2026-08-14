@@ -9,6 +9,7 @@ import com.sk.common.model.PaginationRes;
 import com.sk.domain.mi.dto.request.nextgen.EventListReq;
 import com.sk.domain.mi.dto.response.nextgen.EventDetailRes;
 import com.sk.domain.mi.dto.response.nextgen.EventInstitutionOutlookRes;
+import com.sk.domain.mi.dto.response.nextgen.EventLinkedScenarioGroupRes;
 import com.sk.domain.mi.dto.response.nextgen.EventListRes;
 import com.sk.domain.mi.dto.response.nextgen.EventRelatedRecordRes;
 import com.sk.domain.mi.dto.response.nextgen.EventTypeL1Res;
@@ -307,6 +308,37 @@ public class EventController {
         @Parameter(description = "조회할 이벤트 ID 목록", example = "1") @RequestParam(required = false) List<Long> eventIds
     ) {
         return BaseResponseFactory.create(eventService.getEventDesignAvailability(eventIds));
+    }
+
+    @Operation(
+        summary = "이벤트 연결 시나리오 그룹 목록 API (그룹 N 펼침 패널)",
+        description = """
+            이벤트에 연결된 시나리오 그룹 목록을 반환합니다 (이벤트 목록의 그룹 N 버튼 펼침 패널용). <br>
+            멀티 이벤트 전환으로 한 이벤트가 여러 그룹에 속할 수 있으며, 그룹 최신순으로 정렬됩니다. <br>
+
+            <br><br>
+            ### 응답 필드 (그룹별)
+            - `scenarioGroupId` / `title`: 그룹 식별자와 그룹명
+            - `status` + `statusLabel`: 그룹 상태 (creating/created/realized)
+            - `stage` + `stageLabel`, `designStep` + `designStepLabel`: 진행 단계 (상태 배지 1단계/2단계 표기용, 설계중일 때만)
+            - `events`: 그룹을 구성하는 이벤트명 목록 (표시 순서)
+
+            <br><br>
+            ### 참고
+            - 설계중(creating)인데 최신 생성 작업이 실패로 끝난 그룹은 목록에서 제외됩니다 (잠정 규칙).
+            - 이벤트 목록 응답의 `scenarioGroupCount`와 함께 사용합니다 — 0이면 설계 아이콘, 1 이상이면 그룹 N 버튼.
+            """
+    )
+    @ApiResponse(responseCode = "200", description = "조회 성공 (연결된 그룹이 없으면 빈 목록)")
+    @GetMapping("/{eventId}/scenario-groups")
+    @RequiredPermissionRules(rules = {
+        @PermissionRule(role = Role.USER, conditions = {PermissionCondition.SKGAS_COMPANY_USER_ONLY}),
+        @PermissionRule(role = Role.ADMIN, conditions = {PermissionCondition.THIRD_PARTY_ADMIN_ONLY})
+    })
+    public BaseResponse<List<EventLinkedScenarioGroupRes>> getEventScenarioGroups(
+        @Parameter(description = "이벤트 ID", example = "1523") @PathVariable Long eventId
+    ) {
+        return BaseResponseFactory.create(eventService.getEventScenarioGroups(eventId));
     }
 
 }

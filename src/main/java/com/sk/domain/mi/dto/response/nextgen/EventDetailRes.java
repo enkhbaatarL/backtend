@@ -84,22 +84,29 @@ public record EventDetailRes(
     @Schema(description = "기관 전망 View 종합", nullable = true)
     String institutionViewSynthesis,
 
-    @Schema(description = "연관 시나리오", nullable = true)
-    EventRelatedScenariosRes relatedEventScenario
+    @Schema(description = "연관 시나리오 (기준 그룹 1건 — 하위호환용, 그룹 N건 표기는 relatedEventScenarios 사용)", nullable = true)
+    EventRelatedScenariosRes relatedEventScenario,
+
+    @Schema(description = "연관 시나리오 그룹별 표 목록 (그룹 오래된 순)")
+    List<EventRelatedScenariosRes> relatedEventScenarios
 
 ) {
 
-    public static EventDetailRes from(EventDetailRow row, EventRelatedScenariosRes relatedEventScenario, String occupantUserName) {
+    public static EventDetailRes from(EventDetailRow row, List<EventRelatedScenariosRes> relatedEventScenarios, String occupantUserName) {
         ContentStatus status = Boolean.TRUE.equals(row.isNew()) ? ContentStatus.NEW : ContentStatus.UPDATED;
         EventSignalType signalType = Boolean.TRUE.equals(row.isSignal()) ? EventSignalType.SIGNAL : EventSignalType.NOISE;
         EventImpactAnalysisRes impactAnalysis = EventImpactAnalysisRes.from(row);
 
-        ScenarioGroupBaseRow group = row.relatedScenarioGroup();
+        // 상태/점유 헤더 파생: 기준 그룹은 가장 오래된 활성 그룹(기존 규칙 유지), 점유는 설계중 그룹이 하나라도 있으면 true
+        ScenarioGroupBaseRow group = row.relatedScenarioGroups().isEmpty() ? null : row.relatedScenarioGroups().get(0);
+        ScenarioGroupBaseRow creatingGroup = row.relatedScenarioGroups().stream()
+            .filter(g -> g.status() == ScenarioGroupStatus.CREATING)
+            .findFirst()
+            .orElse(null);
         ScenarioDesignDisplayStatus designStatus = ScenarioDesignDisplayStatus.of(group == null ? null : group.status(), row.templateAvailable());
-        // 점유 = 활성 시나리오 그룹이 creating(설계중)인 상태. 점유자는 그룹 요청자(request_usr_id)
-        boolean occupied = group != null && group.status() == ScenarioGroupStatus.CREATING;
+        boolean occupied = creatingGroup != null;
         ScenarioDesignDisplayStatus.CreatingStep designStep =
-            occupied ? ScenarioDesignDisplayStatus.CreatingStep.of(group.stage()) : null;
+            occupied ? ScenarioDesignDisplayStatus.CreatingStep.of(creatingGroup.stage()) : null;
 
         return new EventDetailRes(
             row.miEventId(),
@@ -118,13 +125,14 @@ public record EventDetailRes(
             designStep,
             designStep == null ? null : designStep.getLabel(),
             occupied,
-            occupied ? group.requestUserId() : null,
+            occupied ? creatingGroup.requestUserId() : null,
             occupied ? occupantUserName : null,
             EventAiInsightsRes.from(row),
             impactAnalysis,
             buildDriverTreeScoreboard(row.driverTags()),
             row.institutionViewSynthesis(),
-            relatedEventScenario
+            relatedEventScenarios.isEmpty() ? null : relatedEventScenarios.get(0),
+            relatedEventScenarios
         );
     }
 

@@ -53,6 +53,7 @@ import com.sk.domain.shared.repository.master.tmd.ScenarioCaseRepository;
 import com.sk.domain.shared.repository.master.tmd.ScenarioCaseRunHistoryRepository;
 import com.sk.domain.shared.repository.master.tmm.AgentModelParamProposalRepository;
 import com.sk.domain.shared.repository.master.tmm.MiModelParamRepository;
+import com.sk.domain.shared.repository.master.tmm.MiScenarioGroupRepository;
 import com.sk.domain.shared.repository.master.tmm.MiScenarioRepository;
 import com.sk.domain.shared.service.permissions.AuthorizationService;
 import java.net.SocketTimeoutException;
@@ -106,6 +107,7 @@ public class ModelParamProposalServiceImpl implements ModelParamProposalService 
     private static final Pattern COLUMN_ROLE_BOUNDARY = Pattern.compile(",(?=\\s*[A-Za-z]{1,3}:)");
 
     private final MiScenarioRepository miScenarioRepository;
+    private final MiScenarioGroupRepository miScenarioGroupRepository;
     private final ScenarioCaseRepository scenarioCaseRepository;
     private final ScenarioCaseRunHistoryRepository scenarioCaseRunHistoryRepository;
     private final ModelExecutionPreparationRepository modelExecutionPreparationRepository;
@@ -700,8 +702,14 @@ public class ModelParamProposalServiceImpl implements ModelParamProposalService 
             ));
     }
 
+    /**
+     * 수급모델 입력 방식 판정.
+     * 그룹의 직접 L2 컬럼 제거(멀티 이벤트, migration 0023)로 매핑의 기준 이벤트 L2 를 사용한다.
+     * 다중 이벤트 그룹의 L2 집합 판정 규칙이 확정되기 전까지의 잠정 규칙이며, L2 미확인 시 제안 대상으로 판정된다.
+     */
     private ModelInputMode resolveInputMode(MiScenario scenario) {
-        Long eventTypeL2Id = scenario.getScenarioGroup().getEventTypeL2().getEventTypeL2Id();
+        Long scenarioGroupId = scenario.getScenarioGroup().getScenarioGroupId();
+        Long eventTypeL2Id = miScenarioGroupRepository.findEventTypeL2IdByScenarioGroupId(scenarioGroupId).orElse(null);
         return ModelInputMode.from(eventTypeL2Id);
     }
 

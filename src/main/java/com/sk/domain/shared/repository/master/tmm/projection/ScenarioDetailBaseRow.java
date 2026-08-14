@@ -15,6 +15,7 @@ public record ScenarioDetailBaseRow(
     BigDecimal probabilityScore,
     String dimensionValues,
     String dimensionSelected,
+    String dimensionDefinitions,
     Long eventTypeL2Id,
     Integer displayOrder
 ) {

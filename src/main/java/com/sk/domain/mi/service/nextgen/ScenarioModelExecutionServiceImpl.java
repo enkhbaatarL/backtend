@@ -33,6 +33,7 @@ import com.sk.domain.shared.repository.master.tcm.UploadedFileRepository;
 import com.sk.domain.shared.repository.master.tmd.ScenarioCaseRepository;
 import com.sk.domain.shared.repository.master.tmd.ScenarioCaseRunHistoryRepository;
 import com.sk.domain.shared.repository.master.tmm.AgentModelParamProposalRepository;
+import com.sk.domain.shared.repository.master.tmm.MiScenarioGroupRepository;
 import com.sk.domain.shared.repository.master.tmm.MiScenarioRepository;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
@@ -62,6 +63,7 @@ public class ScenarioModelExecutionServiceImpl implements ScenarioModelExecution
     private static final String FILE_RELATION_SCENARIO_CASE = "SCNRCASE";
 
     private final MiScenarioRepository miScenarioRepository;
+    private final MiScenarioGroupRepository miScenarioGroupRepository;
     private final ScenarioCaseRepository scenarioCaseRepository;
     private final ScenarioCaseRunHistoryRepository scenarioCaseRunHistoryRepository;
     private final UploadedFileRepository uploadedFileRepository;
@@ -278,9 +280,19 @@ public class ScenarioModelExecutionServiceImpl implements ScenarioModelExecution
         }
     }
 
+    /**
+     * 수급모델 입력 방식 판정.
+     * 그룹의 직접 L2 컬럼 제거(멀티 이벤트, migration 0023)로 매핑의 기준 이벤트 L2 를 사용한다.
+     * 다중 이벤트 그룹의 L2 집합 판정 규칙이 확정되기 전까지의 잠정 규칙이다.
+     */
+    private ModelInputMode resolveInputMode(MiScenario scenario) {
+        Long scenarioGroupId = scenario.getScenarioGroup().getScenarioGroupId();
+        Long eventTypeL2Id = miScenarioGroupRepository.findEventTypeL2IdByScenarioGroupId(scenarioGroupId).orElse(null);
+        return ModelInputMode.from(eventTypeL2Id);
+    }
+
     private void rejectIfMultipartModeMismatch(MiScenario scenario) {
-        Long eventTypeL2Id = scenario.getScenarioGroup().getEventTypeL2().getEventTypeL2Id();
-        ModelInputMode inputMode = ModelInputMode.from(eventTypeL2Id);
+        ModelInputMode inputMode = resolveInputMode(scenario);
         if (inputMode != ModelInputMode.FILE_UPLOAD) {
             throw AppHttpStatusException.of(
                 HttpStatus.CONFLICT,
@@ -292,8 +304,7 @@ public class ScenarioModelExecutionServiceImpl implements ScenarioModelExecution
     }
 
     private void rejectIfJsonModeMismatch(MiScenario scenario) {
-        Long eventTypeL2Id = scenario.getScenarioGroup().getEventTypeL2().getEventTypeL2Id();
-        ModelInputMode inputMode = ModelInputMode.from(eventTypeL2Id);
+        ModelInputMode inputMode = resolveInputMode(scenario);
         if (!inputMode.isParameterProposal()) {
             throw AppHttpStatusException.of(
                 HttpStatus.CONFLICT,

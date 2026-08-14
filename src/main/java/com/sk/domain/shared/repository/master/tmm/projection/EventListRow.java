@@ -22,6 +22,7 @@ public record EventListRow(
     ScenarioGroupStage scenarioGroupStage,
     Long requestUserId,
     boolean templateAvailable,
+    Long scenarioGroupCount,
     List<EventIndexImpactRow> indexImpacts
 ) {
 }

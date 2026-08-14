@@ -1,5 +1,6 @@
 package com.sk.domain.mi.dto.response.nextgen;
 
+import com.sk.domain.mi.service.nextgen.support.ScenarioProbabilityAllocator;
 import com.sk.domain.shared.enums.nextgen.ScenarioDisplayStatus;
 import com.sk.domain.shared.repository.master.tmm.projection.ScenarioIndividualBaseRow;
 import io.swagger.v3.oas.annotations.media.Schema;
@@ -51,7 +52,7 @@ public record ScenarioIndividualItemRes(
 
     /** 개별 모드 base row + 조립된 dimensions → 응답 행. */
     public static ScenarioIndividualItemRes of(ScenarioIndividualBaseRow row, List<ScenarioDimensionRes> dimensions,
-                                               Integer adjustedProbability) {
+                                               Integer adjustedProbability, boolean ratioProbability) {
         ScenarioDisplayStatus status = ScenarioDisplayStatus.from(row.status());
         return new ScenarioIndividualItemRes(
             row.scenarioId(),
@@ -62,7 +63,7 @@ public record ScenarioIndividualItemRes(
             row.updatedAt(),
             new ScenarioGroupRefRes(row.scenarioGroupId(), row.groupTitle(), row.groupCreatedAt()),
             dimensions,
-            row.probabilityScore() == null ? null : row.probabilityScore().intValue(),
+            ScenarioProbabilityAllocator.toDisplayPercent(row.probabilityScore(), ratioProbability),
             adjustedProbability,
             status,
             status.getLabel()

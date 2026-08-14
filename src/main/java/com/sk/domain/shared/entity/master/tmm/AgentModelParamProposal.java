@@ -36,8 +36,8 @@ public class AgentModelParamProposal extends BaseEntity {
     @Comment("시나리오 그룹 ID")
     private Long scenarioGroupId;
 
-    @Column(name = "mi_event_id", nullable = false, columnDefinition = "int unsigned")
-    @Comment("MI 이벤트 ID")
+    @Column(name = "mi_event_id", columnDefinition = "int unsigned")
+    @Comment("대표 MI 이벤트 ID (다중 이벤트 그룹은 null - migration 0022)")
     private Long eventId;
 
     @Enumerated(EnumType.STRING)

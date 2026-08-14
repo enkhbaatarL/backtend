@@ -1,5 +1,6 @@
 package com.sk.domain.mi.dto.response.nextgen;
 
+import com.sk.domain.mi.service.nextgen.support.ScenarioProbabilityAllocator;
 import com.sk.domain.shared.repository.master.tmm.projection.ScenarioDetailBaseRow;
 import io.swagger.v3.oas.annotations.media.Schema;
 import java.time.LocalDateTime;
@@ -54,6 +55,7 @@ public record ScenarioDetailViewRes(
     public static ScenarioDetailViewRes of(ScenarioDetailBaseRow base,
                                            List<ScenarioDimensionRes> dimensions,
                                            Integer adjustedProbability,
+                                           boolean ratioProbability,
                                            List<ScenarioSignpostDefinitionViewRes> signpostDefinitions,
                                            List<ScenarioSignpostMonitoringRes> signpostMonitorings) {
         return new ScenarioDetailViewRes(
@@ -65,7 +67,7 @@ public record ScenarioDetailViewRes(
             base.createdAt(),
             base.updatedAt(),
             base.narrative(),
-            base.probabilityScore() == null ? null : base.probabilityScore().intValue(),
+            ScenarioProbabilityAllocator.toDisplayPercent(base.probabilityScore(), ratioProbability),
             adjustedProbability,
             dimensions,
             signpostDefinitions,

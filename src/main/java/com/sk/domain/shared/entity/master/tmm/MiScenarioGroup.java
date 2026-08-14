@@ -8,12 +8,9 @@ import com.sk.domain.shared.enums.nextgen.ScenarioGroupStatus;
 import jakarta.persistence.Column;
 import jakarta.persistence.Convert;
 import jakarta.persistence.Entity;
-import jakarta.persistence.FetchType;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
-import jakarta.persistence.JoinColumn;
-import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
 import lombok.AccessLevel;
 import lombok.Builder;
@@ -22,6 +19,13 @@ import lombok.NoArgsConstructor;
 import org.hibernate.annotations.ColumnDefault;
 import org.hibernate.annotations.Comment;
 
+/**
+ * 시나리오 그룹.
+ *
+ * 멀티 이벤트 전환(migration 0023)으로 직접 이벤트 컬럼(mi_event_id, event_type_l2_id)이 제거되었다.
+ * 이벤트 연결의 원본은 매핑 테이블이며, 기준 이벤트가 필요한 조회는 매핑의 display_order 첫 행을 사용한다.
+ * MiScenarioGroupEvent 참조.
+ */
 @Getter
 @Entity
 @Comment("시나리오 그룹")
@@ -34,16 +38,6 @@ public class MiScenarioGroup extends BaseEntity {
     @Column(name = "scenario_group_id", nullable = false, columnDefinition = "int unsigned")
     @Comment("시나리오 그룹 ID")
     private Long scenarioGroupId;
-
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "mi_event_id", nullable = false)
-    @Comment("MI 이벤트 ID (1:1 기준 키)")
-    private MiEvent miEvent;
-
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "event_type_l2_id", nullable = false)
-    @Comment("이벤트 유형 L2 ID (분류 기준)")
-    private MiEventTypeL2 eventTypeL2;
 
     @Column(name = "title", length = 255, nullable = false)
     @Comment("시나리오 그룹명")
@@ -58,8 +52,12 @@ public class MiScenarioGroup extends BaseEntity {
     private String description;
 
     @Column(name = "dimension_selected", columnDefinition = "json", nullable = false)
-    @Comment("표시 컬럼 선택 (dim_key 배열)")
+    @Comment("표시 컬럼 선택 (v1은 dim_key 배열, v4는 dimensionId 배열)")
     private String dimensionSelected;
+
+    @Column(name = "dimension_definitions", columnDefinition = "json", nullable = false)
+    @Comment("v4 분기항목 정의 (dimension definitions, v1-v3은 빈 배열)")
+    private String dimensionDefinitions;
 
     @Column(name = "scenario_count", nullable = false)
     @ColumnDefault("0")
@@ -91,12 +89,10 @@ public class MiScenarioGroup extends BaseEntity {
     }
 
     @Builder
-    public MiScenarioGroup(Long scenarioGroupId, MiEvent miEvent, MiEventTypeL2 eventTypeL2, String title,
+    public MiScenarioGroup(Long scenarioGroupId, String title,
                            String summary, String description, String dimensionSelected, Integer scenarioCount,
                            ScenarioGroupStatus status, ScenarioGroupStage stage, Long requestUserId) {
         this.scenarioGroupId = scenarioGroupId;
-        this.miEvent = miEvent;
-        this.eventTypeL2 = eventTypeL2;
         this.title = title;
         this.summary = summary;
         this.description = description;

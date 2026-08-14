@@ -63,8 +63,11 @@ public record EventListItemRes(
     @Schema(description = "설계중 세부 진행 단계 라벨 (분기항목 설계/Signpost 설계). 설계중이 아니면 null", example = "분기항목 설계", nullable = true)
     String designStepLabel,
 
-    @Schema(description = "활성 시나리오 그룹 ID", example = "2", nullable = true)
+    @Schema(description = "활성 시나리오 그룹 ID (기준 그룹 1건 — 하위호환용, 그룹 N건 표기는 scenarioGroupCount + 연결 그룹 조회 API 사용)", example = "2", nullable = true)
     Long scenarioGroupId,
+
+    @Schema(description = "연결된 활성 시나리오 그룹 수 (생성중 포함). 0이면 설계 아이콘, 1 이상이면 그룹 N 버튼 표기", example = "2")
+    long scenarioGroupCount,
 
     @Schema(description = "설계 점유 여부", example = "false")
     boolean occupied,
@@ -109,6 +112,7 @@ public record EventListItemRes(
             designStep,
             designStep == null ? null : designStep.getLabel(),
             row.scenarioGroupId(),
+            row.scenarioGroupCount() == null ? 0L : row.scenarioGroupCount(),
             occupied,
             occupied ? row.requestUserId() : null,
             occupied ? occupantUserName : null,
