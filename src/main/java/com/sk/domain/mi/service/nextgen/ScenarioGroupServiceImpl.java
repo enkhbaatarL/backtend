@@ -22,9 +22,12 @@ import com.sk.domain.mi.dto.response.nextgen.ScenarioRowRes;
 import com.sk.domain.mi.dto.response.nextgen.ScenarioSignpostDefinitionViewRes;
 import com.sk.domain.mi.dto.response.nextgen.ScenarioSignpostMonitoringRes;
 import com.sk.domain.mi.dto.response.nextgen.ScenarioStatusRes;
+import com.sk.domain.mi.dto.response.nextgen.design.ScenarioDesignPresentationRes.DesignEvidence;
+import com.sk.domain.mi.dto.response.nextgen.design.ScenarioDesignPresentationRes.EventBundle;
 import com.sk.domain.mi.dto.response.nextgen.priceinterp.PriceInterpretationSectionRes;
 import com.sk.domain.mi.service.nextgen.priceinterp.PriceInterpretationStore;
 import com.sk.domain.mi.service.nextgen.support.IndexGraph;
+import com.sk.domain.mi.service.nextgen.support.ScenarioDesignPresentationMapper;
 import com.sk.domain.mi.service.nextgen.support.ScenarioDimensionMapper;
 import com.sk.domain.mi.service.nextgen.support.ScenarioDimensionMapper.GroupDimensionTemplate;
 import com.sk.domain.mi.service.nextgen.support.ScenarioProbabilityAllocator;
@@ -34,6 +37,8 @@ import com.sk.domain.shared.entity.master.tmm.MiScenarioGroup;
 import com.sk.domain.shared.entity.master.tmm.MiSignpost;
 import com.sk.domain.shared.enums.fundamentalmodel.FundamentalModelCaseStatus;
 import com.sk.domain.shared.enums.fundamentalmodel.FundamentalModelRunStatus;
+import com.sk.domain.shared.enums.nextgen.DesignOperationStatus;
+import com.sk.domain.shared.enums.nextgen.DesignOperationType;
 import com.sk.domain.shared.enums.nextgen.GraphPeriodUnit;
 import com.sk.domain.shared.enums.nextgen.IndexName;
 import com.sk.domain.shared.enums.nextgen.ModelInputMode;
@@ -43,6 +48,7 @@ import com.sk.domain.shared.repository.master.tmd.ScenarioCaseRepository;
 import com.sk.domain.shared.repository.master.tmd.ScenarioCaseRunHistoryRepository;
 import com.sk.domain.shared.repository.master.tmd.projection.MiBasePriceRow;
 import com.sk.domain.shared.repository.master.tmd.projection.ScenarioPriceRow;
+import com.sk.domain.shared.repository.master.tmm.MiScenarioGroupOperationRepository;
 import com.sk.domain.shared.repository.master.tmm.MiScenarioGroupRepository;
 import com.sk.domain.shared.repository.master.tmm.projection.ScenarioBaseRow;
 import com.sk.domain.shared.repository.master.tmm.projection.ScenarioDetailBaseRow;
@@ -71,6 +77,7 @@ public class ScenarioGroupServiceImpl implements ScenarioGroupService {
     private static final String SCENARIO_CANCELLED = "SCENARIO_CANCELLED";
 
     private final MiScenarioGroupRepository scenarioGroupRepository;
+    private final MiScenarioGroupOperationRepository operationRepository;
     private final ScenarioCaseRepository scenarioCaseRepository;
     private final ScenarioCaseRunHistoryRepository scenarioCaseRunHistoryRepository;
     private final AuthorizationService authorizationService;
@@ -304,11 +311,20 @@ public class ScenarioGroupServiceImpl implements ScenarioGroupService {
      * [그룹 상세]
      * - status는 DB 상태를 화면 판정 상태로 매핑 (creating/created -> pending)
      * - adjustedProbability는 목록과 동일한 조회 시점 계산값(비영속)
+     * - eventBundles는 구성 이벤트 전체(표시 순서), evidence는 최신 성공 create operation의 영속 스냅샷에서 추출 (설계 외 화면은 DB 원천)
      */
     @Override
     public ScenarioGroupDetailRes getScenarioGroupDetail(Long scenarioGroupId) {
         ScenarioGroupDetailBaseRow base = scenarioGroupRepository.findScenarioGroupDetail(scenarioGroupId)
             .orElseThrow(() -> AppErrorException.of(ResultCode.Error.RSC_NOT_FOUND, "Scenario group not found: %d".formatted(scenarioGroupId)));
+
+        List<EventBundle> eventBundles = ScenarioDesignPresentationMapper.toEventBundles(
+            scenarioGroupRepository.findBaseEventsByScenarioGroupId(scenarioGroupId));
+
+        DesignEvidence evidence = operationRepository
+            .findLatestPresentationSnapshot(scenarioGroupId, DesignOperationType.CREATE.getCode(), DesignOperationStatus.SUCCEEDED.getCode())
+            .map(ScenarioDesignPresentationMapper::toEvidence)
+            .orElse(null);
 
         GroupDimensionTemplate template = ScenarioDimensionMapper.resolve(
             base.dimensionDefinitions(),
@@ -333,7 +349,7 @@ public class ScenarioGroupServiceImpl implements ScenarioGroupService {
         // 시나리오별 가격전망 해석 section (이미 로드한 시나리오 재사용 — 재조회 없이 조립)
         PriceInterpretationSectionRes priceInterpretation = priceInterpretationStore.buildSection(scenarioGroupId, groupScenarios);
 
-        return ScenarioGroupDetailRes.of(base, dimensionColumns, scenarios, priceInterpretation);
+        return ScenarioGroupDetailRes.of(base, eventBundles, evidence, dimensionColumns, scenarios, priceInterpretation);
     }
 
     /**

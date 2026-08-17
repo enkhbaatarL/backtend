@@ -71,8 +71,8 @@ public class ScenarioGroupController {
             - `updatedAt`: 수정일시
             - `summary`: 시나리오 그룹 요약
             - `scenarioCount`: 시나리오 수
-            - `dimensionColumns`: 그룹별 동적 표 헤더 (key, label)
-            - `scenarios`: 그룹 내 시나리오 표 본문 (scenarioId, scenarioName, baseCase, dimensions, probability, adjustedProbability, status, statusLabel[대기/실현/폐기])
+            - `dimensionColumns`: 그룹별 동적 표 헤더 (key, label + description/rationale)
+            - `scenarios`: 그룹 내 시나리오 표 본문 (scenarioId, scenarioName, baseCase, scenarioRole/scenarioRoleLabel[역할 배지 - ceiling 상단/floor 하단/mixed 혼합, 없으면 null], dimensions, probability, adjustedProbability, status, statusLabel[대기/실현/폐기])
             """
     )
     @Parameter(name = "sort", description = "정렬 기준 (`latest` / `oldest`, 대소문자 무관). 기본값 `latest`")
@@ -108,6 +108,7 @@ public class ScenarioGroupController {
             <br><br>
             ### content 항목 필드
             - `scenarioId`, `scenarioName`, `baseCase`
+            - `scenarioRole` / `scenarioRoleLabel`: 역할 배지 (`ceiling` 상단 / `floor` 하단 / `mixed` 혼합, 없으면 null)
             - `createdAt`: 시나리오 생성일시 (최신순 정렬·기간 필터 기준)
             - `updatedAt`: 시나리오 수정일시
             - `group`: 부모 그룹 (scenarioGroupId, groupName, createdAt)
@@ -209,11 +210,12 @@ public class ScenarioGroupController {
             <br><br>
             ### 상위(top-level) 필드
             - `scenarioGroupId`, `groupName`, `createdAt`, `updatedAt`
-            - `baseEvent`: 기반 이벤트 (eventId, eventName, eventTypeLv1, eventTypeLv1Label, updatedAt)
+            - `eventBundles`: 그룹을 구성하는 이벤트 목록 (Base Event 표, 표시 순서) — eventId, eventName, eventTypeLv1/Label, isScenarioSuggested, latestRecordFirstCreated(KST)
+            - `evidence`: 생성 근거 마크다운 ('근거 보기' — eventAnalysisMarkdown[Event 관계 분석] / roleSelectionMarkdown[대표 시나리오 선정]). v1 그룹 등 스냅샷이 없으면 null
             - `summary`: 시나리오 그룹 설명 — 요약 탭
             - `scenarioCount`: 시나리오 수
-            - `dimensionColumns`: 가정 표 동적 헤더 (key, label)
-            - `scenarios`: 가정 및 실행 가능성 표 행 (dimensions, probability, adjustedProbability, status, statusLabel[대기/실현/폐기])
+            - `dimensionColumns`: 가정 표 동적 헤더 (key, label + description/rationale[분기항목 설명/근거 - 헤더 ⓘ, v4 전용])
+            - `scenarios`: 가정 및 실행 가능성 표 행 (scenarioRole/scenarioRoleLabel[역할 배지 - ceiling 상단/floor 하단/mixed 혼합, 없으면 null], dimensions, probability, adjustedProbability, status, statusLabel[대기/실현/폐기])
             - `scenarios[].adjustedProbability`: 재분배 확률 — 폐기 제외 비례 재분배(활성 합 100, 폐기=0). 조회 시점 계산값(비영속)
             """
     )
@@ -238,12 +240,13 @@ public class ScenarioGroupController {
             <br><br>
             ### 상위(top-level) 필드
             - `scenarioId`, `scenarioGroupId`, `scenarioName`, `baseCase`
+            - `scenarioRole` / `scenarioRoleLabel`: 역할 배지 (`ceiling` 상단 / `floor` 하단 / `mixed` 혼합, 없으면 null)
             - `displayOrder`: 표시 순서 (목록과 동일한 시나리오 정렬 순서)
             - `createdAt` / `updatedAt`: 시나리오 생성/수정일시
             - `narrative`: 시나리오 내러티브
             - `probability`: 시나리오 발생 확률 (0~100, 원본)
             - `adjustedProbability`: 재분배 확률 — 그룹 내 폐기 제외 비례 재분배(활성 합 100, 폐기=0). 조회 시점 계산값(비영속)
-            - `dimensions`: 주요 가정 (key, label, value, valueLabel)
+            - `dimensions`: 주요 가정 (key, label, value[선택된 분기값 표시 라벨] + rationale[값 선정 근거 ⓘ, v4 전용])
             - `signpostDefinitions`: Signpost 정의 (signpostId, label, direction[sup], directionLabel[가능성강화], probabilityImpact(점수), strength[verystrong/strong/medium/weak/veryweak], strengthLabel[매우높음/높음/보통/낮음/매우낮음], rationale, displayOrder)
             - `signpostMonitorings`: Signpost 모니터링 이력 (updatedAt, eventSummary, probability, probabilityDelta, rationale)
             """

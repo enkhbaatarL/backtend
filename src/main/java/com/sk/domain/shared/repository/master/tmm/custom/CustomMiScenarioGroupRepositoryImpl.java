@@ -160,7 +160,8 @@ public class CustomMiScenarioGroupRepositoryImpl implements CustomMiScenarioGrou
                 miScenarioGroup.dimensionSelected,
                 miScenarioGroup.dimensionDefinitions,
                 miScenarioGroupEvent.eventTypeL2.eventTypeL2Id,
-                miScenario.displayOrder
+                miScenario.displayOrder,
+                miScenario.scenarioRole
             ))
             .from(miScenario)
             .innerJoin(miScenario.scenarioGroup, miScenarioGroup).on(miScenarioGroup.isDeleted.isFalse())
@@ -218,20 +219,12 @@ public class CustomMiScenarioGroupRepositoryImpl implements CustomMiScenarioGrou
                 miScenarioGroup.scenarioCount,
                 miScenarioGroup.dimensionSelected,
                 miScenarioGroup.dimensionDefinitions,
-                miEventTypeL2.eventTypeL2Id,
-                miEvent.miEventId,
-                // note: 이벤트명은 event_title 대신 one_line_summary 표기 (이벤트 도메인과 동일 기준, 요청 2026-06-08)
-                miEvent.oneLineSummary,
-                miEventTypeL1.level1Code,
-                miEventTypeL1.level1Label,
-                miEvent.modifyDt
+                miScenarioGroupEvent.eventTypeL2.eventTypeL2Id
             ))
             .from(miScenarioGroup)
-            // base event는 기준 매핑 행(display_order 첫 이벤트) 기준 — 멀티 이벤트 그룹의 전체 목록 응답은 후속 계약 확정 후 확장
+            // eventTypeL2Id는 기준 매핑 행(display_order 첫 이벤트)의 동결값 (v1 template 폴백용).
+            // 구성 이벤트 목록(eventBundles)은 findBaseEventsByScenarioGroupId로 별도 조회한다
             .innerJoin(miScenarioGroupEvent).on(primaryGroupEventJoin())
-            .innerJoin(miScenarioGroupEvent.miEvent, miEvent).on(miEvent.isDeleted.isFalse())
-            .innerJoin(miScenarioGroupEvent.eventTypeL2, miEventTypeL2).on(miEventTypeL2.isDeleted.isFalse())
-            .innerJoin(miEventTypeL2.eventTypeL1, miEventTypeL1).on(miEventTypeL1.isDeleted.isFalse())
             .where(
                 miScenarioGroup.scenarioGroupId.eq(scenarioGroupId),
                 miScenarioGroup.isDeleted.isFalse()
@@ -348,7 +341,8 @@ public class CustomMiScenarioGroupRepositoryImpl implements CustomMiScenarioGrou
                 miScenarioGroup.dimensionSelected,
                 miScenarioGroup.dimensionDefinitions,
                 miScenarioGroupEvent.eventTypeL2.eventTypeL2Id,
-                miScenario.displayOrder
+                miScenario.displayOrder,
+                miScenario.scenarioRole
             ))
             .from(miScenario)
             .innerJoin(miScenario.scenarioGroup, miScenarioGroup).on(miScenarioGroup.isDeleted.isFalse())

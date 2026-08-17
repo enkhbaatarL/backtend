@@ -53,9 +53,7 @@ public final class ScenarioDimensionMapper {
      * 그룹의 dimension 정의 결정.
      * dimension_definitions가 비어있지 않으면 v4 definitions 기반, 아니면 event_type_l2 template 기반으로 폴백한다.
      */
-    public static GroupDimensionTemplate resolve(String dimensionDefinitionsJson,
-                                                 Map<Long, GroupDimensionTemplate> templatesByL2,
-                                                 Long eventTypeL2Id) {
+    public static GroupDimensionTemplate resolve(String dimensionDefinitionsJson, Map<Long, GroupDimensionTemplate> templatesByL2, Long eventTypeL2Id) {
         GroupDimensionTemplate definitions = GroupDimensionTemplate.parseDefinitions(dimensionDefinitionsJson);
         if (!definitions.isEmpty()) {
             return definitions;

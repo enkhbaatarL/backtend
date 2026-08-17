@@ -12,13 +12,7 @@ public record ScenarioGroupDetailBaseRow(
     Integer scenarioCount,
     String dimensionSelected,
     String dimensionDefinitions,
-    Long eventTypeL2Id,
-    // base event
-    Long eventId,
-    String eventName,
-    String eventTypeLv1Code,
-    String eventTypeLv1Label,
-    LocalDateTime eventUpdatedAt
+    Long eventTypeL2Id
 ) {
 
     @QueryProjection

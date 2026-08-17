@@ -159,7 +159,8 @@ public final class ScenarioDesignPresentationMapper {
         );
     }
 
-    private static List<EventBundle> toEventBundles(List<ScenarioGroupBaseEventRow> rows) {
+    /** 그룹 구성 이벤트 번들 조립 (설계 화면과 그룹 상세가 같은 계약을 공유한다). */
+    public static List<EventBundle> toEventBundles(List<ScenarioGroupBaseEventRow> rows) {
         if (rows == null) {
             return List.of();
         }
@@ -172,6 +173,20 @@ public final class ScenarioDesignPresentationMapper {
                 row.isScenarioSuggested(),
                 DateUtil.utcToKst(row.latestRecordFirstCreated())))
             .toList();
+    }
+
+    /**
+     * 영속 스냅샷(tmm_mi_scenario_group_operation_m.presentation_snapshot)에서 근거 마크다운을 추출한다.
+     * 스냅샷은 Agent presentation 응답과 동일 문서라 같은 파싱을 공유한다 (그룹 상세 '근거 보기' — 설계 외 화면은 DB 원천).
+     * 스냅샷이 없거나(v1 그룹) 근거 섹션이 비어 있으면 null.
+     */
+    public static DesignEvidence toEvidence(String presentationSnapshotJson) {
+        if (presentationSnapshotJson == null || presentationSnapshotJson.isBlank()) {
+            return null;
+        }
+        AgentPresentation source = JsonUtil.fromJson(presentationSnapshotJson, AgentPresentation.class);
+        DesignEvidence evidence = toEvidence(source == null ? null : source.sections());
+        return evidence.eventAnalysisMarkdown() == null && evidence.roleSelectionMarkdown() == null ? null : evidence;
     }
 
     private static DesignEvidence toEvidence(AgentSections sections) {

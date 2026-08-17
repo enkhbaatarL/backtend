@@ -1,5 +1,7 @@
 package com.sk.domain.mi.dto.response.nextgen;
 
+import com.sk.domain.mi.dto.response.nextgen.design.ScenarioDesignPresentationRes.DesignEvidence;
+import com.sk.domain.mi.dto.response.nextgen.design.ScenarioDesignPresentationRes.EventBundle;
 import com.sk.domain.mi.dto.response.nextgen.priceinterp.PriceInterpretationSectionRes;
 import com.sk.domain.shared.repository.master.tmm.projection.ScenarioGroupDetailBaseRow;
 import io.swagger.v3.oas.annotations.media.Schema;
@@ -7,7 +9,7 @@ import java.time.LocalDateTime;
 import java.util.List;
 
 /**
- * 시나리오 그룹 상세. 요약(Base Event + 그룹 설명) + 가정·실행가능성(시나리오 표).
+ * 시나리오 그룹 상세. 요약(Base Event 목록 + 근거 + 그룹 설명) + 가정·실행가능성(시나리오 표).
  * 가격 전망 탭은 별도 graph API, 개별 시나리오 상세는 scenario detail API 사용.
  */
 public record ScenarioGroupDetailRes(
@@ -24,8 +26,11 @@ public record ScenarioGroupDetailRes(
     @Schema(description = "수정일시")
     LocalDateTime updatedAt,
 
-    @Schema(description = "기반 이벤트 (Base Event)")
-    ScenarioBaseEventRes baseEvent,
+    @Schema(description = "그룹을 구성하는 이벤트 묶음 (Base Event 표, 표시 순서. 설계 화면과 동일 계약)")
+    List<EventBundle> eventBundles,
+
+    @Schema(description = "생성 근거 마크다운 ('근거 보기' - Event 관계 분석/대표 시나리오 선정. v1 그룹 등 스냅샷이 없으면 null)", nullable = true)
+    DesignEvidence evidence,
 
     @Schema(description = "시나리오 그룹 설명")
     String summary,
@@ -45,6 +50,8 @@ public record ScenarioGroupDetailRes(
 ) {
 
     public static ScenarioGroupDetailRes of(ScenarioGroupDetailBaseRow base,
+                                            List<EventBundle> eventBundles,
+                                            DesignEvidence evidence,
                                             List<ScenarioDimensionColumnRes> dimensionColumns,
                                             List<ScenarioGroupDetailRowRes> scenarios,
                                             PriceInterpretationSectionRes priceInterpretation) {
@@ -53,7 +60,8 @@ public record ScenarioGroupDetailRes(
             base.groupName(),
             base.createdAt(),
             base.updatedAt(),
-            ScenarioBaseEventRes.from(base),
+            eventBundles,
+            evidence,
             base.summary(),
             base.scenarioCount() == null ? scenarios.size() : base.scenarioCount(),
             dimensionColumns,
