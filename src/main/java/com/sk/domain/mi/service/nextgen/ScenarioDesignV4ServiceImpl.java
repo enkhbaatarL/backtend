@@ -12,6 +12,7 @@ import com.sk.domain.mi.dto.response.nextgen.design.ScenarioDesignPresentationRe
 import com.sk.domain.mi.dto.response.nextgen.design.ScenarioDesignStatusRes;
 import com.sk.domain.mi.dto.response.nextgen.design.ScenarioValidationCache;
 import com.sk.domain.mi.service.nextgen.design.ScenarioDesignValidationStore;
+import com.sk.domain.mi.service.nextgen.support.FailedCreatingGroupResolver;
 import com.sk.domain.mi.service.nextgen.support.ScenarioDesignPresentationMapper;
 import com.sk.domain.mi.service.nextgen.support.ScenarioDesignTableMapper;
 import com.sk.domain.shared.client.ScenarioDesignAgentV4Api;
@@ -81,6 +82,7 @@ public class ScenarioDesignV4ServiceImpl implements ScenarioDesignV4Service {
     private final MiScenarioGroupOperationRepository operationRepository;
     private final MiScenarioGroupEventRepository groupEventRepository;
     private final ScenarioDesignValidationStore validationStore;
+    private final FailedCreatingGroupResolver failedCreatingGroupResolver;
     private final AuthorizationService authorizationService;
     private final UserRepository userRepository;
 
@@ -142,16 +144,10 @@ public class ScenarioDesignV4ServiceImpl implements ScenarioDesignV4Service {
     }
 
     /**
-     * 실패 방치(좀비) 그룹 판정
-     * 설계중인데 최신 operation이 실패 종료. operation 없는 그룹(v1)은 해당 없음 (이벤트 목록 좀비 필터와 동일 규칙).
+     * 실패 방치(좀비) 그룹 판정 (FailedCreatingGroupResolver 단일 지점 위임).
      */
     private boolean isFailedCreating(Long scenarioGroupId) {
-        return operationRepository
-            .findByScenarioGroup_ScenarioGroupIdInAndIsDeletedFalseOrderByCreateDtDesc(List.of(scenarioGroupId))
-            .stream()
-            .findFirst()
-            .map(operation -> DesignOperationStatus.isFailedTerminal(operation.getStatus()))
-            .orElse(false);
+        return failedCreatingGroupResolver.isFailedCreating(scenarioGroupId);
     }
 
     private String resolveUserName(Long userId) {

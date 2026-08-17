@@ -46,6 +46,14 @@ public enum DesignOperationStatus {
     }
 
     /**
+     * 실패 종료 상태 코드 목록 - failed/interrupted.
+     * DB 문자열 컬럼 조회 조건용 (좀비 그룹 판정 쿼리).
+     */
+    public static List<String> failedTerminalCodes() {
+        return List.of(FAILED.code, INTERRUPTED.code);
+    }
+
+    /**
      * 실패 종료 여부 - failed/interrupted
      * (좀비 판정, lastError 합성 대상).
      */

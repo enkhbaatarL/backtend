@@ -40,11 +40,8 @@ public record EventLinkedScenarioGroupRes(
 
 ) {
 
-    public static EventLinkedScenarioGroupRes of(Long scenarioGroupId, String title,
-                                                 ScenarioGroupStatus status, ScenarioGroupStage stage,
-                                                 List<String> events) {
-        ScenarioDesignDisplayStatus.CreatingStep designStep =
-            status == ScenarioGroupStatus.CREATING ? ScenarioDesignDisplayStatus.CreatingStep.of(stage) : null;
+    public static EventLinkedScenarioGroupRes of(Long scenarioGroupId, String title, ScenarioGroupStatus status, ScenarioGroupStage stage, List<String> events) {
+        ScenarioDesignDisplayStatus.CreatingStep designStep = status == ScenarioGroupStatus.CREATING ? ScenarioDesignDisplayStatus.CreatingStep.of(stage) : null;
         return new EventLinkedScenarioGroupRes(
             scenarioGroupId,
             title,

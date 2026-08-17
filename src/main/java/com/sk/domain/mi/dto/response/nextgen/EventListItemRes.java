@@ -3,8 +3,6 @@ package com.sk.domain.mi.dto.response.nextgen;
 import com.sk.common.utils.DateUtil;
 import com.sk.domain.shared.enums.nextgen.ContentStatus;
 import com.sk.domain.shared.enums.nextgen.EventSignalType;
-import com.sk.domain.shared.enums.nextgen.ScenarioDesignDisplayStatus;
-import com.sk.domain.shared.enums.nextgen.ScenarioGroupStatus;
 import com.sk.domain.shared.repository.master.tmm.projection.EventListRow;
 import io.swagger.v3.oas.annotations.media.Schema;
 import java.time.LocalDateTime;
@@ -51,47 +49,17 @@ public record EventListItemRes(
     @Schema(description = "시나리오화 추천 근거", example = "글로벌 공급 차질 가능성으로 시나리오화 검토 필요")
     String scenarioSuggestReason,
 
-    @Schema(description = "시나리오 디자인 상태 (designable|unavailable|creating|created)", example = "designable")
-    ScenarioDesignDisplayStatus scenarioDesignStatus,
-
-    @Schema(description = "시나리오 디자인 상태 라벨 (설계가능|설계불가|설계중|설계완료)", example = "설계가능")
-    String scenarioDesignStatusLabel,
-
-    @Schema(description = "설계중(creating) 세부 진행 단계 (step1/step2). 설계중이 아니면 null", example = "step1", nullable = true)
-    ScenarioDesignDisplayStatus.CreatingStep designStep,
-
-    @Schema(description = "설계중 세부 진행 단계 라벨 (분기항목 설계/Signpost 설계). 설계중이 아니면 null", example = "분기항목 설계", nullable = true)
-    String designStepLabel,
-
-    @Schema(description = "활성 시나리오 그룹 ID (기준 그룹 1건 — 하위호환용, 그룹 N건 표기는 scenarioGroupCount + 연결 그룹 조회 API 사용)", example = "2", nullable = true)
-    Long scenarioGroupId,
-
-    @Schema(description = "연결된 활성 시나리오 그룹 수 (생성중 포함). 0이면 설계 아이콘, 1 이상이면 그룹 N 버튼 표기", example = "2")
+    @Schema(description = "연결된 활성 시나리오 그룹 수 (생성중 포함, 실패 방치 그룹 제외). 0이면 설계 아이콘, 1 이상이면 그룹 N 버튼 표기", example = "2")
     long scenarioGroupCount,
-
-    @Schema(description = "설계 점유 여부", example = "false")
-    boolean occupied,
-
-    @Schema(description = "점유 사용자 ID - 점유 중이 아니면 null)", example = "10001", nullable = true)
-    Long occupantUserId,
-
-    @Schema(description = "점유 사용자명 - 점유 중이 아니면 null", example = "홍길동", nullable = true)
-    String occupantUserName,
 
     @Schema(description = "인덱스별 영향도 (JKM|TTF|HH)")
     List<EventImpactIndexRes> indexImpacts
 
 ) {
 
-    public static EventListItemRes from(EventListRow row, String occupantUserName) {
+    public static EventListItemRes from(EventListRow row) {
         ContentStatus status = Boolean.TRUE.equals(row.isNew()) ? ContentStatus.NEW : ContentStatus.UPDATED;
         EventSignalType signalType = Boolean.TRUE.equals(row.isSignal()) ? EventSignalType.SIGNAL : EventSignalType.NOISE;
-        ScenarioDesignDisplayStatus designStatus = ScenarioDesignDisplayStatus.of(row.scenarioGroupStatus(), row.templateAvailable());
-
-        // 점유 = 활성 시나리오 그룹이 creating(설계중)인 상태. 점유자는 시나리오 그룹 요청자(request_usr_id)
-        boolean occupied = row.scenarioGroupStatus() == ScenarioGroupStatus.CREATING;
-        ScenarioDesignDisplayStatus.CreatingStep designStep =
-            occupied ? ScenarioDesignDisplayStatus.CreatingStep.of(row.scenarioGroupStage()) : null;
 
         return new EventListItemRes(
             row.miEventId(),
@@ -107,15 +75,7 @@ public record EventListItemRes(
             signalType.getLabel(),
             Boolean.TRUE.equals(row.isScenarioSuggested()),
             row.scenarioSuggestReason(),
-            designStatus,
-            designStatus.getLabel(),
-            designStep,
-            designStep == null ? null : designStep.getLabel(),
-            row.scenarioGroupId(),
             row.scenarioGroupCount() == null ? 0L : row.scenarioGroupCount(),
-            occupied,
-            occupied ? row.requestUserId() : null,
-            occupied ? occupantUserName : null,
             row.indexImpacts().stream().map(EventImpactIndexRes::fromRow).toList()
         );
     }

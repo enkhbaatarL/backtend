@@ -20,20 +20,18 @@ import com.sk.domain.mi.dto.response.nextgen.EventRelatedScenariosRes;
 import com.sk.domain.mi.dto.response.nextgen.EventTypeL1Res;
 import com.sk.domain.mi.dto.response.nextgen.ScenarioDimensionColumnRes;
 import com.sk.domain.mi.dto.response.nextgen.design.EventDesignAvailabilityRes;
+import com.sk.domain.mi.service.nextgen.support.FailedCreatingGroupResolver;
 import com.sk.domain.mi.service.nextgen.support.ScenarioDimensionMapper;
 import com.sk.domain.mi.service.nextgen.support.ScenarioDimensionMapper.GroupDimensionTemplate;
 import com.sk.domain.mi.service.nextgen.support.ScenarioProbabilityAllocator;
 import com.sk.domain.mi.dto.response.PermissionRes;
 import com.sk.domain.shared.entity.master.tmd.User;
 import com.sk.domain.shared.service.permissions.AuthorizationService;
-import com.sk.domain.shared.enums.nextgen.DesignOperationStatus;
 import com.sk.domain.shared.enums.nextgen.ScenarioDesignDisplayStatus;
 import com.sk.domain.shared.enums.nextgen.ScenarioGroupStatus;
-import com.sk.domain.shared.entity.master.tmm.MiScenarioGroupOperation;
 import com.sk.domain.shared.repository.master.tmd.UserRepository;
 import com.sk.domain.shared.repository.master.tmm.MiEventRepository;
 import com.sk.domain.shared.repository.master.tmm.MiEventTypeL1Repository;
-import com.sk.domain.shared.repository.master.tmm.MiScenarioGroupOperationRepository;
 import com.sk.domain.shared.repository.master.tmm.MiScenarioGroupRepository;
 import com.sk.domain.shared.repository.master.tmm.projection.EventDesignAvailabilityRow;
 import com.sk.domain.shared.repository.master.tmm.projection.EventDetailRow;
@@ -66,7 +64,7 @@ public class EventServiceImpl implements EventService {
     private final MiEventRepository miEventRepository;
     private final MiEventTypeL1Repository miEventTypeL1Repository;
     private final MiScenarioGroupRepository miScenarioGroupRepository;
-    private final MiScenarioGroupOperationRepository scenarioGroupOperationRepository;
+    private final FailedCreatingGroupResolver failedCreatingGroupResolver;
     private final UserRepository userRepository;
     private final AuthorizationService authorizationService;
 
@@ -85,23 +83,16 @@ public class EventServiceImpl implements EventService {
      * [이벤트 목록]
      * - 최신순 정렬, 기간필터 latest_record_first_created 기준 (수정일시 아님 — 최신 연관 레코드의 최초 생성일시)
      * - suggestedOnly=true면 시나리오화 추천 이벤트만 조회
-     * - 멀티 이벤트 전환으로 이벤트:활성 그룹은 N건 — scenarioDesignStatus는 기준 그룹(가장 오래된 활성 그룹)
-     *   status에서 파생하고, 그룹 개수는 scenarioGroupCount로 별도 제공 (N건 상세는 연결 그룹 패널 API)
+     * - 멀티 이벤트 전환으로 이벤트:활성 그룹은 N건 — 시나리오 표기는 scenarioGroupCount만 제공하고
+     *   (0이면 설계 아이콘, 1 이상이면 그룹 N 버튼), N건 상세는 연결 그룹 패널 API가 담당
      */
     @Override
     public EventListRes getEvents(EventListReq request) {
         Page<EventListRow> page = miEventRepository.getEventsByConditions(request);
 
-        // 점유(설계중) 이벤트의 요청자 userId만 모아 사용자명 일괄 조회
-        Map<Long, String> occupantNames = resolveOccupantNames(
-            page.getContent().stream()
-                .filter(row -> row.scenarioGroupStatus() == ScenarioGroupStatus.CREATING)
-                .map(EventListRow::requestUserId)
-                .toList());
-
         return new EventListRes(
             EventAppliedFilterRes.from(request),
-            PaginationRes.toRes(page.map(row -> EventListItemRes.from(row, occupantNames.get(row.requestUserId()))))
+            PaginationRes.toRes(page.map(EventListItemRes::from))
         );
     }
 
@@ -115,12 +106,29 @@ public class EventServiceImpl implements EventService {
         EventDetailRow row = miEventRepository.findEventDetail(eventId)
             .orElseThrow(() -> AppErrorException.of(ResultCode.Error.RSC_NOT_FOUND, "Event not found: %d".formatted(eventId)));
 
-        ScenarioGroupBaseRow creatingGroup = row.relatedScenarioGroups().stream()
+        // 실패 방치(좀비) 그룹은 상태/점유 헤더 파생에서 제외 — 이벤트 목록/연결 그룹 패널과 동일 잠정 규칙
+        List<ScenarioGroupBaseRow> activeGroups = excludeFailedCreatingGroups(row.relatedScenarioGroups());
+
+        ScenarioGroupBaseRow creatingGroup = activeGroups.stream()
             .filter(g -> g.status() == ScenarioGroupStatus.CREATING)
             .findFirst()
             .orElse(null);
 
-        return EventDetailRes.from(row, buildRelatedScenarios(row), resolveOccupantName(creatingGroup));
+        return EventDetailRes.from(row, activeGroups, buildRelatedScenarios(row), resolveOccupantName(creatingGroup));
+    }
+
+    /** 실패 방치(좀비) 그룹을 제외한 그룹 목록. */
+    private List<ScenarioGroupBaseRow> excludeFailedCreatingGroups(List<ScenarioGroupBaseRow> groups) {
+        Set<Long> zombieGroupIds = failedCreatingGroupResolver.resolve(groups.stream()
+            .filter(g -> g.status() == ScenarioGroupStatus.CREATING)
+            .map(ScenarioGroupBaseRow::scenarioGroupId)
+            .toList());
+        if (zombieGroupIds.isEmpty()) {
+            return groups;
+        }
+        return groups.stream()
+            .filter(g -> !zombieGroupIds.contains(g.scenarioGroupId()))
+            .toList();
     }
 
     /** 설계중(점유) 그룹의 요청자 사용자명을 조회한다. (설계중 그룹이 없으면 null) */
@@ -266,10 +274,10 @@ public class EventServiceImpl implements EventService {
      */
     @Override
     public List<EventLinkedScenarioGroupRes> getEventScenarioGroups(Long eventId) {
+
         List<EventLinkedScenarioGroupRow> rows = miEventRepository.findLinkedScenarioGroups(eventId);
-        if (rows.isEmpty()) {
-            return List.of();
-        }
+
+        if (rows.isEmpty()) return List.of();
 
         // 평탄화 행(그룹 x 구성 이벤트)을 그룹 단위로 묶는다 (조회 순서 = 그룹 최신순 유지)
         Map<Long, List<EventLinkedScenarioGroupRow>> rowsByGroup = rows.stream()
@@ -290,28 +298,13 @@ public class EventServiceImpl implements EventService {
         return result;
     }
 
-    /** 설계중(creating) 그룹 중 최신 operation이 실패로 끝난 그룹 ID 집합 (실패 방치 그룹 잠정 판정). */
+    /** 설계중(creating) 그룹 중 실패 방치(좀비) 그룹 ID 집합. (판정은 FailedCreatingGroupResolver 단일 지점) */
     private Set<Long> resolveFailedCreatingGroupIds(Map<Long, List<EventLinkedScenarioGroupRow>> rowsByGroup) {
-        List<Long> creatingGroupIds = rowsByGroup.values().stream()
+        return failedCreatingGroupResolver.resolve(rowsByGroup.values().stream()
             .map(groupRows -> groupRows.get(0))
             .filter(row -> row.status() == ScenarioGroupStatus.CREATING)
             .map(EventLinkedScenarioGroupRow::scenarioGroupId)
-            .toList();
-        if (creatingGroupIds.isEmpty()) {
-            return Set.of();
-        }
-
-        // 최근 생성 순 조회라 그룹별 첫 등장 operation이 최신이다
-        Map<Long, MiScenarioGroupOperation> latestByGroup = new LinkedHashMap<>();
-        for (MiScenarioGroupOperation operation : scenarioGroupOperationRepository
-            .findByScenarioGroup_ScenarioGroupIdInAndIsDeletedFalseOrderByCreateDtDesc(creatingGroupIds)) {
-            latestByGroup.putIfAbsent(operation.getScenarioGroup().getScenarioGroupId(), operation);
-        }
-
-        return latestByGroup.values().stream()
-            .filter(operation -> DesignOperationStatus.isFailedTerminal(operation.getStatus()))
-            .map(operation -> operation.getScenarioGroup().getScenarioGroupId())
-            .collect(Collectors.toSet());
+            .toList());
     }
 
     private EventDesignAvailabilityRes toAvailability(Long eventId, EventDesignAvailabilityRow row, Map<Long, String> occupantNames) {

@@ -32,8 +32,12 @@ import com.sk.common.utils.JsonUtil;
 import com.sk.domain.mi.dto.request.nextgen.EventListReq;
 import com.sk.domain.shared.entity.master.tmm.QMiEvent;
 import com.sk.domain.shared.entity.master.tmm.QMiScenarioGroupEvent;
+import com.sk.domain.shared.entity.master.tmm.QMiScenarioGroupOperation;
 import com.sk.domain.shared.enums.nextgen.ContentStatus;
+import com.sk.domain.shared.enums.nextgen.DesignOperationStatus;
+import com.sk.domain.shared.enums.nextgen.DesignOperationType;
 import com.sk.domain.shared.enums.nextgen.IndexName;
+import com.sk.domain.shared.enums.nextgen.ScenarioGroupStatus;
 import com.sk.domain.shared.enums.nextgen.TargetType;
 import com.sk.domain.shared.repository.master.tmm.projection.DriverTagScoreboardRow;
 import com.sk.domain.shared.repository.master.tmm.projection.EventDesignAvailabilityRow;
@@ -89,10 +93,9 @@ public class CustomMiEventRepositoryImpl implements CustomMiEventRepository {
         BooleanBuilder where = buildEventWhere(request);
         OrderSpecifier<?> order = buildEventOrder(request);
 
-        // 멀티 이벤트 전환으로 이벤트:활성 그룹은 N건이 정식이다. 목록 행 중복/페이지네이션 깨짐 방지를 위해
-        // 매핑 테이블 경유로 먼저 생성된 활성 그룹 1건만 조인되도록 제한하고, 그룹 개수는 count 서브쿼리로 별도 제공
-        // (개수는 생성중 그룹을 포함한다 — 실패 방치 그룹 제외 규칙은 연결 그룹 패널 API가 담당)
-        QMiScenarioGroupEvent groupEventSub = new QMiScenarioGroupEvent("groupEventSub");
+        // 멀티 이벤트 전환으로 이벤트:활성 그룹은 N건이 정식이다. 목록의 시나리오 표기는 그룹 개수(count 서브쿼리)만 사용하고,
+        // 그룹 N건 상세는 연결 그룹 패널 API가 담당한다.
+        // (개수는 실패 방치 그룹을 제외한다 — 연결 그룹 패널 API와 동일 잠정 규칙, notFailedCreating 참조)
         QMiScenarioGroupEvent groupEventCount = new QMiScenarioGroupEvent("groupEventCount");
 
         List<EventListBaseRow> baseRows = queryFactory
@@ -109,30 +112,17 @@ public class CustomMiEventRepositoryImpl implements CustomMiEventRepository {
                 miEvent.createDt,
                 miEvent.modifyDt,
                 miEvent.latestRecordFirstCreated,
-                miScenarioGroup.scenarioGroupId,
-                miScenarioGroup.status,
-                miScenarioGroup.stage,
-                miScenarioGroup.requestUserId,
-                templateAvailable(miEventTypeL2.eventTypeL2Id),
                 JPAExpressions.select(groupEventCount.count())
                     .from(groupEventCount)
                     .where(
                         groupEventCount.miEvent.eq(miEvent),
                         groupEventCount.isDeleted.isFalse(),
-                        groupEventCount.scenarioGroup.isDeleted.isFalse())
+                        groupEventCount.scenarioGroup.isDeleted.isFalse(),
+                        notFailedCreating(groupEventCount))
             ))
             .from(miEvent)
             .innerJoin(miEvent.eventTypeL2, miEventTypeL2).on(miEventTypeL2.isDeleted.isFalse())
             .innerJoin(miEventTypeL2.eventTypeL1, miEventTypeL1).on(miEventTypeL1.isDeleted.isFalse())
-            .leftJoin(miScenarioGroup).on(
-                miScenarioGroup.isDeleted.isFalse(),
-                miScenarioGroup.scenarioGroupId.eq(
-                    JPAExpressions.select(groupEventSub.scenarioGroup.scenarioGroupId.min())
-                        .from(groupEventSub)
-                        .where(
-                            groupEventSub.miEvent.eq(miEvent),
-                            groupEventSub.isDeleted.isFalse(),
-                            groupEventSub.scenarioGroup.isDeleted.isFalse())))
             .where(where)
             .orderBy(order)
             .offset(pageable.getOffset())
@@ -166,11 +156,6 @@ public class CustomMiEventRepositoryImpl implements CustomMiEventRepository {
                 base.createDt(),
                 base.modifyDt(),
                 base.latestRecordFirstCreated(),
-                base.scenarioGroupId(),
-                base.scenarioGroupStatus(),
-                base.scenarioGroupStage(),
-                base.requestUserId(),
-                base.templateAvailable(),
                 base.scenarioGroupCount(),
                 impactsByEventId.getOrDefault(base.miEventId(), List.of())
             ))
@@ -182,6 +167,7 @@ public class CustomMiEventRepositoryImpl implements CustomMiEventRepository {
     /**
      * 이벤트별 설계 점유/가능 상태 조회.
      * 이벤트당 활성 그룹이 N건이면 N행이 반환되며, 단일 행 선택은 호출부(EventServiceImpl)의 merge 규칙이 담당한다.
+     * 실패 방치 그룹은 조인 후보에서 제외한다 (이벤트 목록과 동일 잠정 규칙, notFailedCreating 참조).
      */
     @Override
     public List<EventDesignAvailabilityRow> findDesignAvailability(List<Long> eventIds) {
@@ -203,7 +189,9 @@ public class CustomMiEventRepositoryImpl implements CustomMiEventRepository {
                         .from(groupEventSub)
                         .where(
                             groupEventSub.miEvent.eq(miEvent),
-                            groupEventSub.isDeleted.isFalse())))
+                            groupEventSub.isDeleted.isFalse(),
+                            groupEventSub.scenarioGroup.isDeleted.isFalse(),
+                            notFailedCreating(groupEventSub))))
             .where(miEvent.isDeleted.isFalse(), miEvent.miEventId.in(eventIds))
             .fetch();
     }
@@ -243,6 +231,33 @@ public class CustomMiEventRepositoryImpl implements CustomMiEventRepository {
                 member.scenarioGroupEventId.asc()
             )
             .fetch();
+    }
+
+    /**
+     * 실패 방치(좀비) 그룹 제외 조건 — 설계중(creating)인데 최신 create operation이 failed/interrupted로 끝난 그룹.
+     * 좀비 판정의 쿼리 측 단일 지점 — 자바 측 단일 지점(FailedCreatingGroupResolver)과 같은 규칙이며, 규칙 변경 시 두 곳을 함께 고친다.
+     * operation_id는 ULID라 사전순 최대값이 최신이다. operation이 없는 그룹(v1)은 제외되지 않는다.
+     * Agent의 실패 그룹 처리 규약 확정 시 교체 예정 (잠정 규칙).
+     */
+    private BooleanExpression notFailedCreating(QMiScenarioGroupEvent link) {
+        QMiScenarioGroupOperation failedOp = new QMiScenarioGroupOperation("failedOp");
+        QMiScenarioGroupOperation latestOp = new QMiScenarioGroupOperation("latestOp");
+        return link.scenarioGroup.status.ne(ScenarioGroupStatus.CREATING)
+            .or(JPAExpressions.selectOne()
+                .from(failedOp)
+                .where(
+                    failedOp.scenarioGroup.eq(link.scenarioGroup),
+                    failedOp.isDeleted.isFalse(),
+                    failedOp.operationType.eq(DesignOperationType.CREATE.getCode()),
+                    failedOp.status.in(DesignOperationStatus.failedTerminalCodes()),
+                    failedOp.operationId.eq(
+                        JPAExpressions.select(latestOp.operationId.max())
+                            .from(latestOp)
+                            .where(
+                                latestOp.scenarioGroup.eq(link.scenarioGroup),
+                                latestOp.isDeleted.isFalse(),
+                                latestOp.operationType.eq(DesignOperationType.CREATE.getCode()))))
+                .notExists());
     }
 
     /**
@@ -436,7 +451,8 @@ public class CustomMiEventRepositoryImpl implements CustomMiEventRepository {
                 miScenario.probabilityScore,
                 miScenario.status,
                 miScenario.dimensionValues,
-                miScenario.displayOrder
+                miScenario.displayOrder,
+                miScenario.scenarioRole
             ))
             .from(miScenario)
             .where(

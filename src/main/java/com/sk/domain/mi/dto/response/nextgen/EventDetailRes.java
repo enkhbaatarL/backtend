@@ -84,29 +84,27 @@ public record EventDetailRes(
     @Schema(description = "기관 전망 View 종합", nullable = true)
     String institutionViewSynthesis,
 
-    @Schema(description = "연관 시나리오 (기준 그룹 1건 — 하위호환용, 그룹 N건 표기는 relatedEventScenarios 사용)", nullable = true)
-    EventRelatedScenariosRes relatedEventScenario,
-
-    @Schema(description = "연관 시나리오 그룹별 표 목록 (그룹 오래된 순)")
+    @Schema(description = "연관 시나리오 그룹별 표 목록 (그룹 오래된 순, 없으면 빈 목록)")
     List<EventRelatedScenariosRes> relatedEventScenarios
 
 ) {
 
-    public static EventDetailRes from(EventDetailRow row, List<EventRelatedScenariosRes> relatedEventScenarios, String occupantUserName) {
+    public static EventDetailRes from(EventDetailRow row, List<ScenarioGroupBaseRow> activeGroups, List<EventRelatedScenariosRes> relatedEventScenarios, String occupantUserName) {
+
         ContentStatus status = Boolean.TRUE.equals(row.isNew()) ? ContentStatus.NEW : ContentStatus.UPDATED;
         EventSignalType signalType = Boolean.TRUE.equals(row.isSignal()) ? EventSignalType.SIGNAL : EventSignalType.NOISE;
         EventImpactAnalysisRes impactAnalysis = EventImpactAnalysisRes.from(row);
 
-        // 상태/점유 헤더 파생: 기준 그룹은 가장 오래된 활성 그룹(기존 규칙 유지), 점유는 설계중 그룹이 하나라도 있으면 true
-        ScenarioGroupBaseRow group = row.relatedScenarioGroups().isEmpty() ? null : row.relatedScenarioGroups().get(0);
-        ScenarioGroupBaseRow creatingGroup = row.relatedScenarioGroups().stream()
+        // 상태/점유 헤더 파생: 기준 그룹은 가장 오래된 활성 그룹, 점유는 설계중 그룹이 하나라도 있으면 true
+        // activeGroups는 실패 방치(좀비) 그룹이 제외된 목록 (호출부 EventServiceImpl에서 필터)
+        ScenarioGroupBaseRow group = activeGroups.isEmpty() ? null : activeGroups.get(0);
+        ScenarioGroupBaseRow creatingGroup = activeGroups.stream()
             .filter(g -> g.status() == ScenarioGroupStatus.CREATING)
             .findFirst()
             .orElse(null);
         ScenarioDesignDisplayStatus designStatus = ScenarioDesignDisplayStatus.of(group == null ? null : group.status(), row.templateAvailable());
         boolean occupied = creatingGroup != null;
-        ScenarioDesignDisplayStatus.CreatingStep designStep =
-            occupied ? ScenarioDesignDisplayStatus.CreatingStep.of(creatingGroup.stage()) : null;
+        ScenarioDesignDisplayStatus.CreatingStep designStep = occupied ? ScenarioDesignDisplayStatus.CreatingStep.of(creatingGroup.stage()) : null;
 
         return new EventDetailRes(
             row.miEventId(),
@@ -131,7 +129,6 @@ public record EventDetailRes(
             impactAnalysis,
             buildDriverTreeScoreboard(row.driverTags()),
             row.institutionViewSynthesis(),
-            relatedEventScenarios.isEmpty() ? null : relatedEventScenarios.get(0),
             relatedEventScenarios
         );
     }

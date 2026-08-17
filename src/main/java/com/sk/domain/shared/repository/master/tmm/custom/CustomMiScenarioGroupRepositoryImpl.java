@@ -316,7 +316,8 @@ public class CustomMiScenarioGroupRepositoryImpl implements CustomMiScenarioGrou
                 miScenario.probabilityScore,
                 miScenario.status,
                 miScenario.dimensionValues,
-                miScenario.displayOrder
+                miScenario.displayOrder,
+                miScenario.scenarioRole
             ))
             .from(miScenario)
             .where(
