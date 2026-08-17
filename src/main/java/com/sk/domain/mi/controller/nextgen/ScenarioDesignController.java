@@ -54,7 +54,15 @@ public class ScenarioDesignController {
             - `miEventIds`: 선택한 이벤트 ID 목록 (1~5개)
 
             <br><br>
-            ### 응답 designStatus
+            ### 응답 필드
+            - `designStatus` / `designStatusLabel`: `designable`(설계가능) / `creating`(설계중) / `created`(설계완료)
+            - `scenarioGroupId`: 일치 그룹 ID (`designable`이면 null)
+            - `designStep` / `designStepLabel`: 설계중 세부 단계 — `step1`(분기항목 설계) / `step2`(Signpost 설계). 설계중이 아니면 null
+            - `occupied` / `occupantUserId` / `occupantUserName`: 점유 여부와 점유 사용자 (설계중일 때만)
+            - `mine`: 점유자가 로그인 사용자인지 (설계중일 때만, 그 외 null)
+
+            <br><br>
+            ### designStatus별 CTA 분기
             - `designable`: 일치 그룹 없음 — "시나리오 설계" 버튼 노출
             - `creating` + `mine=true`: 로그인 사용자 진행 중 — 단계 배지 표시, 클릭 시 해당 단계 화면으로 이동
             - `creating` + `mine=false`: 다른 사용자가 진행 중 — 잠금 + 단계 배지 표시, 클릭 시 안내 모달
@@ -88,7 +96,7 @@ public class ScenarioDesignController {
 
             <br><br>
             ### 재연결 자동 처리
-            연결이 끊기면 **동일한 `miEventIds` 조합으로 API를 다시 호출합니다.
+            연결이 끊기면 **동일한 `miEventIds` 조합으로 API를 다시 호출합니다.**
             동일 조합의 진행중 작업이 있으면 B.E가 새 생성 대신 그 작업의 스트림으로 자동으로 재연결합니다. <br>
             이때 **커서 쌍(`operationId`+`lastSequence`)을 함께 보내면, 재연결 대상 작업과 `operationId`가 일치할 때 그 다음 sequence부터 replay** 됩니다.
             (불일치하거나 생략하면 0부터 전체 replay — 중복은 커서로 무시)
@@ -179,7 +187,7 @@ public class ScenarioDesignController {
         return scenarioDesignV4Service.startDesignStream(request);
     }
 
-    @ApiOrder(1)
+    @ApiOrder(2)
     @Operation(
         summary = "설계 화면 데이터 조회 API",
         description = """
@@ -188,7 +196,7 @@ public class ScenarioDesignController {
             <br><br>
             ### 호출 시점
             - 생성 중: `section_ready` 수신 시 `snapshotRevision`이 증가했을 때, SSE 종료 event 수신 후 최종 1회
-            - 편집 중: 검토/Signpost 콜백 신호(정련 구독 SSE `GET /{scenarioGroupId}/refinement/stream`) 수신 후 재조회 —
+            - 편집 중: 검토/Signpost 콜백 신호([시나리오 검토/Signpost 생성 API (SSE)]) 수신 후 재조회 —
               **검토 통과 편집본이 `table`에 오버레이**되어 내려옵니다
 
             <br><br>
@@ -212,7 +220,7 @@ public class ScenarioDesignController {
             - **분기값** (헤더별 선택 가능한 값 전체): `dimensionValueOptions{key}` — 드롭다운 데이터 (`valueId`/`label`/`rationale`)
             - **분기기준** (시나리오 행별 현재 값): `table.scenarios[].dimensions[]` — `value`(표시 label)와
               선택 상태 매칭용 `valueId`, 셀 (i) 아이콘용 `rationale`
-            - **배지**: `scenarios[].scenarioRole`(floor/ceiling/mixed) + `pressureBand`(5단계) — 라벨 필드 동봉, v1 legacy는 null
+            - **배지**: `table.scenarios[].scenarioRole`(floor/ceiling/mixed) + `pressureBand`(5단계) — 라벨 필드 동봉, v1 legacy는 null
             - **근거 마크다운**: `evidence.eventAnalysisMarkdown`(Event 분석), `evidence.roleSelectionMarkdown`(대표 시나리오 선정 근거) — sanitize 후 렌더
             - **진행/실패 상태**: `creationState` — `operationStatus`(+라벨) / `currentPhase`(+라벨). Agent가 새 어휘를 추가하면 null.
               terminal 여부는 SSE로 알 수 있으므로 이 API는 폴링 용도가 아니라 표시 용도입니다.
@@ -245,7 +253,7 @@ public class ScenarioDesignController {
         return BaseResponseFactory.create(scenarioDesignV4Service.getPresentation(scenarioGroupId, operationId));
     }
 
-    @ApiOrder(2)
+    @ApiOrder(3)
     @Operation(
         summary = "시나리오 검토/Signpost 생성 API (SSE)",
         description = """
@@ -254,7 +262,7 @@ public class ScenarioDesignController {
 
             <br><br>
             ### 연결 시점
-            [이벤트 기반 시나리오 그룹 생성 API]가 `completed`로 종료되면 **곧바로 이 API를 연결**합니다, <br>
+            [멀티 이벤트 기반 시나리오 그룹 생성 API]가 `completed`로 종료되면 **곧바로 이 API를 연결**합니다. <br>
             이후 사용자의 검토/Signpost 생성 요청 결과가 이 연결로만 전달됩니다. <br>
             편집 중인 그룹(확정 전)의 설계 화면에 재진입할 때도 먼저 연결합니다.
 
@@ -297,11 +305,12 @@ public class ScenarioDesignController {
             ```
             event: validation
             data: {"scenarioGroupId":12345,"type":"validation","result":"failure","reason":"<에러 메시지>"}
+            ```
 
             <br><br>
             ### 페이로드 필드
             - `scenarioGroupId`(number): 설계 세션 식별자
-            - `type`(string): `generation` / `validation` / `signposts`
+            - `type`(string): `validation` / `signposts`
             - `stage`(string): `scenario_created` / `scenario_validated` / `signpost_created` (실패 시 없음)
             - `result`(string): `success` / `failure`
             - `reason`(string): 실패 사유 (`result=failure`일 때만)
@@ -338,7 +347,7 @@ public class ScenarioDesignController {
             <br><br>
             ### 응답 필드 (접수 시점)
             - `scenarioGroupId`
-            - `status` + `statusLabel`(creating), `stage` + `stageLabel`(ready) — 생성 완료 후 SSE -> 재조회로 `scenario_created` 전이
+            - `status` + `statusLabel`(creating), `stage` + `stageLabel`(ready) — 생성 완료 후 SSE → 재조회로 `scenario_created` 전이
             """
     )
     @ApiResponse(responseCode = "200", description = "설계 시작 성공")
@@ -391,7 +400,7 @@ public class ScenarioDesignController {
 
     // 시나리오설계v4 이후 Deprecated
     @Deprecated
-    @ApiOrder(3)
+    @ApiOrder(99)
     @Operation(
         summary = "시나리오 분기항목/분기기준 템플릿 조회 API",
         description = """
@@ -428,7 +437,7 @@ public class ScenarioDesignController {
             - `table.dimensionColumns[]`: 편집 후 분기항목(헤더) 목록 (key, label)
             - `table.scenarios[]`: 편집 후 최종 시나리오 집합
               - 미채번 행(`scenarioId` null) = 신규 추가, 요청에서 빠진 행 = 삭제
-              - 행: `scenarioName` / `dimensions[]`(key, value) / `displayOrder` (신규 분기항목 셀은 value null -> Agent 자동생성)
+              - 행: `scenarioName` / `dimensions[]`(key, value) / `displayOrder` (신규 분기항목 셀은 value null → Agent 자동생성)
             """
     )
     @ApiResponse(responseCode = "200", description = "검토 요청 접수")
@@ -451,7 +460,7 @@ public class ScenarioDesignController {
             step1을 종료하고 step2(One-view 검토)로 진입합니다. <br>
             **편집본 전체 table을 Agent에 전달하며, 이 시점에 시나리오 그룹/시나리오 변경 데이터가 DB에 영속화됩니다** (UPDATE / 신규 INSERT·scenarioId 채번 / 빠진 행 soft delete). <br>
             이어서 Agent가 시나리오별 Signpost / Narrative / 초기확률 / 그룹명·설명을 산출하며, stage가 `signpost_created`로 업데이트 됩니다. <br>
-            산출 결과는 Signpost 콜백 후 SSE 푸시 -> 세션 조회로 받아갑니다. <br>
+            산출 결과는 Signpost 콜백 후 SSE 푸시 → [설계 화면 데이터 조회 API] 재조회로 받아갑니다. <br>
 
             <br><br>
             ### 요청 본문

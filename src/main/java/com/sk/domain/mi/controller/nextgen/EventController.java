@@ -53,7 +53,7 @@ public class EventController {
 
             <br><br>
             ### 응답 필드
-            - `eventTypeL1Id`: 이벤트 유형 L1 PK  (필터 파라미터에 사용)
+            - `eventTypeL1Id`: 이벤트 유형 L1 PK (필터 파라미터에 사용)
             - `code`: 이벤트 유형 L1 코드
             - `label`: 이벤트 유형 L1 한글명
             """

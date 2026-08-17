@@ -100,10 +100,11 @@ public class ScenarioGroupController {
 
             <br><br>
             ### 사용 가능한 파라미터
-             - sort: 정렬 기준 (latest / oldest) / 기본값 latest / 시나리오 생성일시 기준 정렬
+             - sort: 정렬 기준 / 기본값 latest(최신순) / 시나리오 생성일시 기준 정렬 / example - sort=latest, sort=oldest
              - startDate / endDate: 조회 기간 (시나리오 생성일시 기준)
-             - keyword: 시나리오명 검색 키워드
-             - page / size: 페이징
+             - keyword: 시나리오명 검색 키워드 / example - keyword=호르무즈
+             - page: 기본값 1 / 1-based
+             - size: 기본값 20
 
             <br><br>
             ### content 항목 필드
@@ -150,7 +151,7 @@ public class ScenarioGroupController {
               - `seriesId` / `seriesName` / `values`(dates와 동일 순서, 빠진 구간 null)
             - `scenarioSeries`: 시나리오별 시리즈
               - `scenarioId` / `scenarioName` / `baseCase`
-              - `status` / `statusLabel`: 판정 상태 (pending/realized/discarded — 폐기여부)
+              - `status` / `statusLabel`: 판정 상태 (pending/realized/discarded — 대기/실현/폐기)
               - `executed`: 수급모델 실행 완료 여부 (N회차 실행 중 한번이라도 성공되면 true로 응답됩니다.)
               - `modelRunning`: 수급모델 실행중 여부
               - `baseCaseValues` / `userAdjustedValues`: 베이스케이스/사용자조정 가격 (최신 완료 결과, 재실행 중에도 직전 결과 유지).
@@ -178,7 +179,7 @@ public class ScenarioGroupController {
         summary = "Scenario Group 수급모델 진행상태 폴링 API",
         description = """
             그래프 화면에서 시나리오별 수급모델 진행상태를 경량 조회합니다. <br>
-            수급모델 실행 후 해당 API를 폴링하다가 `modelRunning` 필드가 `true` -> `false` 전환 시, 그래프 조회 API(`/{scenarioGroupId}/graph`)를 재조회해 완료된 그래프를 재조회합니다. <br>
+            수급모델 실행 후 해당 API를 폴링하다가 `modelRunning` 필드가 `true` → `false` 전환 시, [Scenario Group 그래프 데이터 조회 API]를 재조회해 완료된 그래프를 반영합니다. <br>
 
             <br><br>
             ### 응답 필드
@@ -205,7 +206,7 @@ public class ScenarioGroupController {
         summary = "Scenario Group 상세 조회 API",
         description = """
             시나리오 그룹 상세 페이지 데이터입니다. <br>
-            가격 전망 탭은 그래프 API(`/{scenarioGroupId}/graph`), 개별 시나리오 상세는 scenario 상세 API (`/{scenarioGroupId}/scenarios/{scenarioId}`)를 사용하세요. <br>
+            가격 전망 탭은 [Scenario Group 그래프 데이터 조회 API], 개별 시나리오 상세는 [Scenario 상세 조회 API]를 사용하세요. <br>
 
             <br><br>
             ### 상위(top-level) 필드
@@ -247,7 +248,7 @@ public class ScenarioGroupController {
             - `probability`: 시나리오 발생 확률 (0~100, 원본)
             - `adjustedProbability`: 재분배 확률 — 그룹 내 폐기 제외 비례 재분배(활성 합 100, 폐기=0). 조회 시점 계산값(비영속)
             - `dimensions`: 주요 가정 (key, label, value[선택된 분기값 표시 라벨] + rationale[값 선정 근거 ⓘ, v4 전용])
-            - `signpostDefinitions`: Signpost 정의 (signpostId, label, direction[sup], directionLabel[가능성강화], probabilityImpact(점수), strength[verystrong/strong/medium/weak/veryweak], strengthLabel[매우높음/높음/보통/낮음/매우낮음], rationale, displayOrder)
+            - `signpostDefinitions`: Signpost 정의 (signpostId, label, direction[`sup` 단일값 — 가능성강화], directionLabel, probabilityImpact(점수), strength[verystrong/strong/medium/weak/veryweak], strengthLabel[매우높음/높음/보통/낮음/매우낮음], rationale, displayOrder)
             - `signpostMonitorings`: Signpost 모니터링 이력 (updatedAt, eventSummary, probability, probabilityDelta, rationale)
             """
     )
@@ -269,7 +270,7 @@ public class ScenarioGroupController {
         summary = "Scenario 상태 변경 API",
         description = """
             시나리오의 상태를 변경합니다. <br>
-            대기(`pending`) -> 실현(`realized`) / 폐기(`discarded`). <br>
+            대기(`pending`) → 실현(`realized`) / 폐기(`discarded`). <br>
 
             <br>
             **`realized`(실현)로 변경 시, 같은 그룹의 나머지 시나리오는 모두 `discarded`(폐기)로 자동 변경됩니다.** (그룹 내 실현 시나리오는 항상 1개) <br>
