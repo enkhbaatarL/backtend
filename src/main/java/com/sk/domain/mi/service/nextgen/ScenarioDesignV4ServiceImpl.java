@@ -12,6 +12,7 @@ import com.sk.domain.mi.dto.response.nextgen.design.ScenarioDesignPresentationRe
 import com.sk.domain.mi.dto.response.nextgen.design.ScenarioDesignStatusRes;
 import com.sk.domain.mi.dto.response.nextgen.design.ScenarioValidationCache;
 import com.sk.domain.mi.service.nextgen.design.ScenarioDesignValidationStore;
+import com.sk.domain.mi.service.nextgen.sse.ScenarioDesignStreamExecutor;
 import com.sk.domain.mi.service.nextgen.support.FailedCreatingGroupResolver;
 import com.sk.domain.mi.service.nextgen.support.ScenarioDesignPresentationMapper;
 import com.sk.domain.mi.service.nextgen.support.ScenarioDesignTableMapper;
@@ -31,18 +32,14 @@ import com.sk.domain.shared.repository.master.tmm.MiScenarioGroupOperationReposi
 import com.sk.domain.shared.repository.master.tmm.MiScenarioGroupRepository;
 import com.sk.domain.shared.repository.master.tmm.projection.ScenarioGroupBaseEventRow;
 import com.sk.domain.shared.service.permissions.AuthorizationService;
-import jakarta.annotation.PreDestroy;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
-import java.util.concurrent.atomic.AtomicLong;
 import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -85,19 +82,7 @@ public class ScenarioDesignV4ServiceImpl implements ScenarioDesignV4Service {
     private final FailedCreatingGroupResolver failedCreatingGroupResolver;
     private final AuthorizationService authorizationService;
     private final UserRepository userRepository;
-
-    private final AtomicLong threadSequence = new AtomicLong();
-
-    private final ExecutorService streamExecutor = Executors.newCachedThreadPool(runnable -> {
-        Thread thread = new Thread(runnable, "design-v4-sse-%d".formatted(threadSequence.incrementAndGet()));
-        thread.setDaemon(true);
-        return thread;
-    });
-
-    @PreDestroy
-    void shutdown() {
-        streamExecutor.shutdownNow();
-    }
+    private final ScenarioDesignStreamExecutor streamExecutor;
 
     /**
      * [이벤트 조합 설계 상태 조회]
@@ -186,9 +171,7 @@ public class ScenarioDesignV4ServiceImpl implements ScenarioDesignV4Service {
         ScenarioGroupCreateV4AgentReq agentRequest = ScenarioGroupCreateV4AgentReq.of(request.miEventIds(), userId);
 
         try {
-            openStreamOn(emitter,
-                (target, connectGate) -> agentClient.pipeCreateStream(agentRequest, target, connectGate),
-                "startDesignStream");
+            openStreamOn(emitter, (target, connectGate) -> agentClient.pipeCreateStream(agentRequest, target, connectGate), "startDesignStream");
         } catch (AgentDesignApiException e) {
             ReconnectTarget reconnect = resolveReconnectTarget(e);
 
@@ -196,9 +179,7 @@ public class ScenarioDesignV4ServiceImpl implements ScenarioDesignV4Service {
 
             String lastEventId = resolveLastEventId(request, reconnect.operationId());
             log.info("[Design V4] 동일 조합 작업 진행 중 - 자동 재연결: scenarioGroupId={}, operationId={}, lastSequence={}", reconnect.scenarioGroupId(), reconnect.operationId(), lastEventId);
-            openStreamOn(emitter,
-                (target, connectGate) -> agentClient.pipeOperationStream(reconnect.scenarioGroupId(), reconnect.operationId(), lastEventId, target, connectGate),
-                "reconnectOperationStream");
+            openStreamOn(emitter, (target, connectGate) -> agentClient.pipeOperationStream(reconnect.scenarioGroupId(), reconnect.operationId(), lastEventId, target, connectGate), "reconnectOperationStream");
         }
         return emitter;
     }
@@ -251,15 +232,20 @@ public class ScenarioDesignV4ServiceImpl implements ScenarioDesignV4Service {
             && (group.getStage() == ScenarioGroupStage.SCENARIO_CREATED || group.getStage() == ScenarioGroupStage.SCENARIO_VALIDATED);
     }
 
-    /** 정련 상태 합성 — 단계/점유/그룹 메타는 그룹 엔티티, 검토 결과는 Redis 캐시(step1 게이트 통과분)가 원천이다. */
+    /**
+     * 정련 상태 합성
+     * 단계/점유/그룹 메타는 그룹 엔티티, 검토 결과는 Redis 캐시(step1 게이트 통과분)가 원천이다.
+     */
     private ScenarioDesignPresentationRes.ScenarioGroupRefinementState toRefinementState(MiScenarioGroup group, ScenarioValidationCache cache) {
-        if (group == null) {
-            return null;
-        }
+
+        if (group == null) return null;
+
         ScenarioDesignPresentationRes.DesignSessionValidation validation = cache == null
             ? null
             : new ScenarioDesignPresentationRes.DesignSessionValidation(cache.isValid(), cache.reason());
+
         Long userId = authorizationService.getUserNo().longValue();
+
         return ScenarioDesignPresentationRes.ScenarioGroupRefinementState.of(
             group.getStage(),
             group.getStatus() == ScenarioGroupStatus.CREATING,
@@ -270,12 +256,10 @@ public class ScenarioDesignV4ServiceImpl implements ScenarioDesignV4Service {
     }
 
     /**
-     * 행별 Signpost 목록 합성 (Signpost 산출 이후 단계에서만). 사용 중인 것만 표시 순으로 내린다.
-     * Agent presentation에는 Signpost가 없어 DB에서 합성한다 — 확정 요청 재투영의 원천 데이터다.
+     * 행별 Signpost 목록 합성
      */
     private Map<Long, List<ScenarioSignpostDefinitionViewRes>> loadSignpostsByScenario(MiScenarioGroup group) {
-        if (group == null
-            || (group.getStage() != ScenarioGroupStage.SIGNPOST_CREATED && group.getStage() != ScenarioGroupStage.COMPLETED)) {
+        if (group == null || (group.getStage() != ScenarioGroupStage.SIGNPOST_CREATED && group.getStage() != ScenarioGroupStage.COMPLETED)) {
             return Map.of();
         }
         return scenarioGroupRepository.findSignpostEntitiesByGroupId(group.getScenarioGroupId()).stream()
@@ -290,7 +274,9 @@ public class ScenarioDesignV4ServiceImpl implements ScenarioDesignV4Service {
                     Collectors.toList())));
     }
 
-    /** Agent 응답의 operation이 실패 종료 상태면 operation 테이블에서 실패 사유 원문을 읽어온다. */
+    /**
+     * Agent 응답의 operation이 실패 종료 상태면 operation 테이블에서 실패 사유 원문을 읽어온다.
+     * */
     private JsonNode resolveLastError(JsonNode agentBody) {
         JsonNode operation = agentBody.path("operation");
         String operationId = operation.path("operationId").asText(null);
@@ -301,9 +287,9 @@ public class ScenarioDesignV4ServiceImpl implements ScenarioDesignV4Service {
         String lastError = operationRepository.findById(operationId)
             .map(MiScenarioGroupOperation::getLastError)
             .orElse(null);
-        if (lastError == null || lastError.isBlank()) {
-            return null;
-        }
+
+        if (lastError == null || lastError.isBlank()) return null;
+
         try {
             return JsonUtil.fromJson(lastError, JsonNode.class);
         } catch (Exception e) {
