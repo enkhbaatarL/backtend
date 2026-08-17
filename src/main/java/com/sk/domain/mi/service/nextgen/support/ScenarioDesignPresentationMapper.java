@@ -2,6 +2,7 @@ package com.sk.domain.mi.service.nextgen.support;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.databind.JsonNode;
+import com.sk.common.utils.DateUtil;
 import com.sk.common.utils.JsonUtil;
 import com.sk.domain.mi.dto.response.nextgen.ScenarioDimensionColumnRes;
 import com.sk.domain.mi.dto.response.nextgen.ScenarioDimensionRes;
@@ -9,10 +10,11 @@ import com.sk.domain.mi.dto.response.nextgen.ScenarioSignpostDefinitionViewRes;
 import com.sk.domain.mi.dto.response.nextgen.design.DesignScenarioRow;
 import com.sk.domain.mi.dto.response.nextgen.design.DesignTable;
 import com.sk.domain.mi.dto.response.nextgen.design.ScenarioDesignPresentationRes;
-import com.sk.domain.mi.dto.response.nextgen.design.ScenarioDesignPresentationRes.DesignBaseEvent;
+import com.sk.domain.mi.dto.response.nextgen.design.ScenarioDesignPresentationRes.ScenarioGroupCreationState;
 import com.sk.domain.mi.dto.response.nextgen.design.ScenarioDesignPresentationRes.DesignDimensionValueOption;
 import com.sk.domain.mi.dto.response.nextgen.design.ScenarioDesignPresentationRes.DesignEvidence;
-import com.sk.domain.mi.dto.response.nextgen.design.ScenarioDesignPresentationRes.DesignOperationSummary;
+import com.sk.domain.mi.dto.response.nextgen.design.ScenarioDesignPresentationRes.EventBundle;
+import com.sk.domain.shared.enums.nextgen.DesignOperationPhase;
 import com.sk.domain.shared.enums.nextgen.DesignOperationStatus;
 import com.sk.domain.shared.enums.nextgen.GlobalPressureBand;
 import com.sk.domain.shared.enums.nextgen.ScenarioRole;
@@ -40,7 +42,7 @@ public final class ScenarioDesignPresentationMapper {
 
     /**
      * Agent 응답 원문과 B.E 합성 재료를 합쳐 응답을 만든다.
-     * lastError는 operation 테이블, designSession은 그룹 엔티티 + Redis 검토 캐시,
+     * lastError는 operation 테이블, refinementState는 그룹 엔티티 + Redis 검토 캐시,
      * overlayTable은 검토 통과 편집본(캐시 표의 DesignTable 변환)으로 호출측이 조회해 넘긴다.
      * overlayTable이 있으면 Agent 표 대신 그것을 내리되, 셀의 valueId와 근거는
      * dimensionValueOptions에서 label 역조인으로 복원한다 (검토 왕복은 label만 오가므로 캐시에는 없다).
@@ -48,8 +50,7 @@ public final class ScenarioDesignPresentationMapper {
     public static ScenarioDesignPresentationRes toRes(JsonNode agentBody,
                                                       List<ScenarioGroupBaseEventRow> baseEventRows,
                                                       JsonNode lastError,
-                                                      ScenarioDesignPresentationRes.DesignSessionState designSession,
-                                                      ScenarioDesignPresentationRes.DesignGroupMeta groupMeta,
+                                                      ScenarioDesignPresentationRes.ScenarioGroupRefinementState refinementState,
                                                       DesignTable overlayTable,
                                                       Map<Long, List<ScenarioSignpostDefinitionViewRes>> signpostsByScenario) {
         AgentPresentation source = JsonUtil.fromJson(agentBody.toString(), AgentPresentation.class);
@@ -59,32 +60,47 @@ public final class ScenarioDesignPresentationMapper {
         Map<String, List<DesignDimensionValueOption>> valueOptions = toDimensionValueOptions(sections);
         DesignTable table = overlayTable == null
             ? toTable(sections, legacy, signpostsByScenario)
-            : enrichOverlayTable(overlayTable, valueOptions, signpostsByScenario);
+            : enrichOverlayTable(overlayTable, sections, valueOptions, signpostsByScenario);
 
         return ScenarioDesignPresentationRes.of(
             source.scenarioGroupId(),
-            source.engineVersion(),
-            legacy,
-            source.warnings() == null ? List.of() : source.warnings(),
-            toOperationSummary(source.operation(), lastError),
-            designSession,
-            groupMeta,
-            toBaseEvents(baseEventRows),
+            toEventBundles(baseEventRows),
             toEvidence(sections),
+            toCreationState(source.operation(), lastError),
+            refinementState,
             table,
             valueOptions
         );
     }
 
     /**
-     * 검토 편집본 표의 셀에 valueId/근거/압력 기여를 복원한다.
-     * 편집본 셀에는 표시 label만 있으므로, 같은 분기항목의 옵션 중 label이 일치하는 것을 조인한다.
-     * 자유입력 등 옵션에 없는 값은 복원 없이 label만 유지된다 (근거 자연 소거 — 기존 정책과 동일).
+     * 검토 편집본 표의 헤더와 셀에 근거를 복원한다.
+     * 편집본에는 표시값(헤더 key/label, 셀 label)만 있으므로 definitions에서 조인한다 —
+     * 헤더는 dimensionId로 description/rationale을, 셀은 같은 분기항목의 옵션 중 label이 일치하는 것에서
+     * valueId/근거/압력 기여를 복원한다. 자유입력 등 옵션에 없는 값은 복원 없이 label만 유지된다
+     * (근거 자연 소거 — 기존 정책과 동일).
      */
-    private static DesignTable enrichOverlayTable(DesignTable overlay, Map<String, List<DesignDimensionValueOption>> valueOptions,
+    private static DesignTable enrichOverlayTable(DesignTable overlay, AgentSections sections,
+                                                  Map<String, List<DesignDimensionValueOption>> valueOptions,
                                                   Map<Long, List<ScenarioSignpostDefinitionViewRes>> signpostsByScenario) {
+        Map<String, AgentDimensionItem> itemsById = new LinkedHashMap<>();
+        for (AgentDimensionItem item : definitionItems(sections)) {
+            itemsById.putIfAbsent(item.dimensionId(), item);
+        }
+        List<ScenarioDimensionColumnRes> columns = overlay.dimensionColumns() == null
+            ? null
+            : overlay.dimensionColumns().stream()
+                .map(column -> {
+                    AgentDimensionItem item = itemsById.get(column.key());
+                    if (item == null || column.description() != null || column.rationale() != null) {
+                        return column;
+                    }
+                    return new ScenarioDimensionColumnRes(column.key(), column.label(), item.description(), item.rationale());
+                })
+                .toList();
+
         if (overlay.scenarios() == null || overlay.scenarios().isEmpty()) {
-            return overlay;
+            return DesignTable.of(columns, overlay.scenarios());
         }
         List<DesignScenarioRow> rows = overlay.scenarios().stream()
             .map(row -> new DesignScenarioRow(
@@ -94,7 +110,7 @@ public final class ScenarioDesignPresentationMapper {
                 row.probability(), row.narrative(),
                 resolveSignposts(row.scenarioId(), signpostsByScenario, row.signposts())))
             .toList();
-        return DesignTable.of(overlay.dimensionColumns(), rows);
+        return DesignTable.of(columns, rows);
     }
 
     /** 행별 Signpost 결정 — 합성 맵에 있으면 그것(DB 산출), 없으면 기존 값 유지. */
@@ -126,50 +142,51 @@ public final class ScenarioDesignPresentationMapper {
                 }
                 return new ScenarioDimensionRes(
                     dimension.key(), dimension.label(), dimension.value(), dimension.valueLabel(),
-                    matched.valueId(), matched.rationale(), matched.pressureContribution());
+                    matched.valueId(), matched.rationale());
             })
             .toList();
     }
 
-    private static DesignOperationSummary toOperationSummary(AgentOperation operation, JsonNode lastError) {
+    private static ScenarioGroupCreationState toCreationState(AgentOperation operation, JsonNode lastError) {
         if (operation == null) {
             return null;
         }
-        return new DesignOperationSummary(
-            operation.operationId(),
-            operation.status(),
-            DesignOperationStatus.labelOf(operation.status()),
-            operation.currentPhase(),
-            operation.latestSequence(),
+        return ScenarioGroupCreationState.of(
+            DesignOperationStatus.fromNullable(operation.status()),
+            DesignOperationPhase.fromNullable(operation.currentPhase()),
             operation.snapshotRevision(),
             lastError
         );
     }
 
-    private static List<DesignBaseEvent> toBaseEvents(List<ScenarioGroupBaseEventRow> rows) {
+    private static List<EventBundle> toEventBundles(List<ScenarioGroupBaseEventRow> rows) {
         if (rows == null) {
             return List.of();
         }
         return rows.stream()
-            .map(row -> new DesignBaseEvent(
+            .map(row -> new EventBundle(
                 row.eventId(),
                 row.eventName(),
                 row.eventTypeLv1Code(),
                 row.eventTypeLv1Label(),
                 row.isScenarioSuggested(),
-                row.eventUpdatedAt()))
+                DateUtil.utcToKst(row.latestRecordFirstCreated())))
             .toList();
     }
 
     private static DesignEvidence toEvidence(AgentSections sections) {
-        AgentMarkdownSection eventAnalysis = sections == null ? null : sections.eventAnalysis();
-        AgentMarkdownSection roleSelection = sections == null ? null : sections.roleSelectionRationale();
         return new DesignEvidence(
-            eventAnalysis == null ? null : eventAnalysis.status(),
-            eventAnalysis == null ? null : eventAnalysis.markdown(),
-            roleSelection == null ? null : roleSelection.status(),
-            roleSelection == null ? null : roleSelection.markdown()
+            normalizeMarkdown(sections == null ? null : sections.eventAnalysis()),
+            normalizeMarkdown(sections == null ? null : sections.roleSelectionRationale())
         );
+    }
+
+    /** 준비 전 섹션 정규화 — Agent는 unavailable 섹션에 빈 문자열을 주므로 blank를 null로 통일한다 (계약: 준비 전이면 null). */
+    private static String normalizeMarkdown(AgentMarkdownSection section) {
+        if (section == null || section.markdown() == null || section.markdown().isBlank()) {
+            return null;
+        }
+        return section.markdown();
     }
 
     /**
@@ -230,8 +247,7 @@ public final class ScenarioDesignPresentationMapper {
                     value,
                     value,
                     evidence == null ? null : evidence.valueId(),
-                    evidence == null ? null : evidence.rationale(),
-                    evidence == null ? null : evidence.pressureContribution());
+                    evidence == null ? null : evidence.rationale());
             })
             .toList();
 
@@ -257,8 +273,7 @@ public final class ScenarioDesignPresentationMapper {
                 .map(value -> new DesignDimensionValueOption(
                     value.valueId(),
                     value.label(),
-                    value.rationale(),
-                    value.pressureContribution()))
+                    value.rationale()))
                 .toList();
             options.putIfAbsent(item.dimensionId(), values);
         }
@@ -275,13 +290,12 @@ public final class ScenarioDesignPresentationMapper {
     }
 
     @JsonIgnoreProperties(ignoreUnknown = true)
-    private record AgentPresentation(Long scenarioGroupId, String engineVersion, Boolean legacy,
-                                     List<String> warnings, AgentOperation operation, AgentSections sections) {
+    private record AgentPresentation(Long scenarioGroupId, Boolean legacy,
+                                     AgentOperation operation, AgentSections sections) {
     }
 
     @JsonIgnoreProperties(ignoreUnknown = true)
-    private record AgentOperation(String operationId, String status, String currentPhase,
-                                  Integer latestSequence, Integer snapshotRevision) {
+    private record AgentOperation(String status, String currentPhase, Integer snapshotRevision) {
     }
 
     @JsonIgnoreProperties(ignoreUnknown = true)
@@ -308,7 +322,7 @@ public final class ScenarioDesignPresentationMapper {
     }
 
     @JsonIgnoreProperties(ignoreUnknown = true)
-    private record AgentDimensionValue(String valueId, String label, String rationale, String pressureContribution) {
+    private record AgentDimensionValue(String valueId, String label, String rationale) {
     }
 
     @JsonIgnoreProperties(ignoreUnknown = true)
@@ -327,7 +341,7 @@ public final class ScenarioDesignPresentationMapper {
     }
 
     @JsonIgnoreProperties(ignoreUnknown = true)
-    private record AgentCellEvidence(String valueId, String valueLabel, String rationale, String pressureContribution) {
+    private record AgentCellEvidence(String valueId, String valueLabel, String rationale) {
     }
 
 }

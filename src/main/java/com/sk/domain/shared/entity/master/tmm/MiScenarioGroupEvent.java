@@ -15,18 +15,7 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import org.hibernate.annotations.Comment;
 
-/**
- * 시나리오 그룹 - 이벤트 매핑 (N:M).
- *
- * 멀티 이벤트 전환(migration 0022/0023)으로 그룹의 직접 이벤트 컬럼이 제거되고 이 테이블이 관계의 원본이 되었다.
- * 적재 주체는 Agent이며 B.E는 조회 전용이다. UNIQUE (scenario_group_id, mi_event_id).
- *
- * eventTypeL2는 그룹 생성 시점에 동결된 값이다. 이벤트의 L2가 사후 변경되어도 이 값은 갱신되지 않으므로,
- * 판정 로직(dimension template 조회, ModelInputMode)은 이 동결값을 신뢰한다.
- *
- * scenarioDimensionTemplateId와 templateChecksum은 v1-v3 template revision 고정용 슬롯으로,
- * 0023 backfill 데이터와 v4 그룹에서는 null이다. B.E는 현재 읽지 않는다.
- */
+
 @Getter
 @Entity
 @Comment("시나리오 그룹 이벤트 매핑")

@@ -121,7 +121,7 @@ public final class ScenarioDesignTableMapper {
                 Map<String, String> cells = row.cells() == null ? Map.of() : row.cells();
                 List<ScenarioDimensionRes> dimensions = headers.stream()
                     // value 자체가 표시값이라 valueLabel=value
-                    .map(h -> new ScenarioDimensionRes(h.key(), h.label(), cells.get(h.key()), cells.get(h.key()), null, null, null))
+                    .map(h -> new ScenarioDimensionRes(h.key(), h.label(), cells.get(h.key()), cells.get(h.key()), null, null))
                     .toList();
                 return DesignScenarioRow.of(row.scenarioId(), row.displayOrder(), row.title(), "Y".equalsIgnoreCase(row.baselineYn()),
                     null, null, null, dimensions, null, null, null);

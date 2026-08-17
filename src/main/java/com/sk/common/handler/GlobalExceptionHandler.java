@@ -447,14 +447,13 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
     @ExceptionHandler(AgentDesignApiException.class)
     private ResponseEntity<Object> handleAgentDesignApiError(AgentDesignApiException ex) {
         String detailMessage = StringUtils.defaultIfBlank(ex.getAgentMessage(), "N/A");
-        log.warn("[Design Agent V4] agent 오류 응답 통과: status={}, code={}, message={}", ex.getHttpStatus().value(), ex.getErrorCode().getCode(), detailMessage);
+        log.warn("[Design Agent V4] agent 오류 응답 통과: status={}, code={}, message={}, agentData={}",
+            ex.getHttpStatus().value(), ex.getErrorCode().getCode(), detailMessage, ex.getAgentData());
         MDCUtil.setValue(MDCUtil.RESPONSE_ERROR_MSG, "%s(%s) - %s".formatted(ex.getErrorCode().getMessage(), ex.getErrorCode().getCode(), detailMessage));
 
-        BaseResponse<Object> body = ex.getAgentData() == null
-            ? new BaseResponse<>(ex.getErrorCode().getCode(), detailMessage)
-            : new BaseResponse<>(ex.getErrorCode().getCode(), detailMessage, ex.getAgentData());
-
-        return ResponseEntity.status(ex.getHttpStatus()).body(body);
+        // agentData는 응답에 싣지 않는다 — FE는 오류 수신 후 이벤트 조합 설계 상태 조회 API 재조회로 CTA를 갱신한다 (분기 재료 불요)
+        return ResponseEntity.status(ex.getHttpStatus())
+            .body(new BaseResponse<>(ex.getErrorCode().getCode(), detailMessage));
     }
 
     @ExceptionHandler(SystemErrorException.class)

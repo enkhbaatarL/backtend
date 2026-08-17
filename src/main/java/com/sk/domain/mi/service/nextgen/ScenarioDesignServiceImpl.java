@@ -296,15 +296,14 @@ public class ScenarioDesignServiceImpl implements ScenarioDesignService {
     }
 
     /**
-     * [전체 초기화] 사용자 편집/검토 결과(Redis 검토 캐시)를 버리고 DB 생성 초기값으로 되돌린다.
-     * <p>Agent 호출 없이 캐시만 삭제하고 세션 상태를 재조회한다 — 캐시가 없어지므로 {@link #getDesign}는
-     * step1을 DB 시나리오(마지막 적용 상태)로 구성하고 validation은 null이 된다.
+     * [전체 초기화] 사용자 편집/검토 결과(Redis 검토/실패 캐시)를 버린다.
+     * Agent 호출 없이 캐시만 삭제한다. 이후 조회는 검토 결과가 없는 마지막 영속 상태로 돌아간다.
+     * FE는 초기화 후 설계 화면 데이터 조회 API를 재조회한다 (행위 -> 재조회 패턴으로 통일).
      */
     @Override
-    public ScenarioDesignStateRes reset(Long scenarioGroupId) {
+    public void reset(Long scenarioGroupId) {
         validationStore.delete(scenarioGroupId);
         failureStore.delete(scenarioGroupId);
-        return getDesign(scenarioGroupId);
     }
 
 }

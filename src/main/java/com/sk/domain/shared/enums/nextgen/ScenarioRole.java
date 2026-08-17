@@ -1,5 +1,7 @@
 package com.sk.domain.shared.enums.nextgen;
 
+import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonValue;
 import java.util.Arrays;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
@@ -16,10 +18,12 @@ public enum ScenarioRole {
     CEILING("ceiling", "상단"),
     MIXED("mixed", "혼합");
 
+    @JsonValue
     private final String code;
     private final String label;
 
     /** Agent 응답 문자열 파싱. 미지 값은 null (Agent 어휘 확장 내성). */
+    @JsonCreator
     public static ScenarioRole fromNullable(String value) {
         if (value == null || value.isBlank()) {
             return null;

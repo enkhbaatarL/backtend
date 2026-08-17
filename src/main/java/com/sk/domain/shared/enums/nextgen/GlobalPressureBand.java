@@ -1,5 +1,7 @@
 package com.sk.domain.shared.enums.nextgen;
 
+import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonValue;
 import java.util.Arrays;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
@@ -17,10 +19,12 @@ public enum GlobalPressureBand {
     BEARISH("bearish", "하락"),
     STRONG_BEARISH("strong_bearish", "강한 하락");
 
+    @JsonValue
     private final String code;
     private final String label;
 
     /** Agent 응답 문자열 파싱. 미지 값은 null (Agent 어휘 확장 내성). */
+    @JsonCreator
     public static GlobalPressureBand fromNullable(String value) {
         if (value == null || value.isBlank()) {
             return null;

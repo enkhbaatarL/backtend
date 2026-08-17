@@ -8,16 +8,16 @@ import io.swagger.v3.oas.annotations.media.Schema;
  */
 public record ScenarioDimensionColumnRes(
 
-    @Schema(description = "차원 키 (v1은 dim_key, v4는 dimensionId)", example = "trigger_timing")
+    @Schema(description = "차원 키", example = "trigger_timing")
     String key,
 
     @Schema(description = "차원 라벨 (표 헤더)", example = "촉발 시점")
     String label,
 
-    @Schema(description = "분기항목 설명 (질문형, v4 전용. v1은 null)", example = "유럽향 화물 유인이 유지됩니까?", nullable = true)
+    @Schema(description = "분기항목 설명", example = "유럽향 화물 유인이 유지됩니까?")
     String description,
 
-    @Schema(description = "분기항목 선정 근거 (v4 전용. v1은 null)", example = "지역 스프레드 지속 여부가 JKM 압력을 가름함", nullable = true)
+    @Schema(description = "분기항목 선정 근거", example = "지역 스프레드 지속 여부가 JKM 압력을 가름함")
     String rationale
 
 ) {}

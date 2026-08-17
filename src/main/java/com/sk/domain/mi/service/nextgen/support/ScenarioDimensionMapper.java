@@ -27,7 +27,7 @@ import lombok.extern.slf4j.Slf4j;
  *
  * v4 (definitions 기반, 멀티 이벤트): 그룹 자신의 dimension_definitions가 정의의 원본이다.
  * dimensionId(d1...)는 그룹 로컬 채번이며 dimension_values에는 value_id가 저장되어 정의의 values와 조인해
- * 표시 라벨, 값 사유(assumption_rationale), 압력 기여(pressure_contribution)를 해석한다.
+ * 표시 라벨과 값 사유(assumption_rationale)를 해석한다.
  * dimension_definitions : [{"dimension_id":"d1","label":"...","values":[{"value_id":"d1_v1","label":"...",...}],...}]
  * dimension_values      : {"d1":"d1_v1"}
  *
@@ -171,7 +171,7 @@ public final class ScenarioDimensionMapper {
                         for (DefinitionValue v : d.values()) {
                             if (v != null && v.valueId() != null) {
                                 valuesById.put(v.valueId(),
-                                    new ValueMeta(v.label(), v.assumptionRationale(), v.pressureContribution()));
+                                    new ValueMeta(v.label(), v.assumptionRationale()));
                             }
                         }
                     }
@@ -229,8 +229,7 @@ public final class ScenarioDimensionMapper {
                     displayValue,
                     displayValue,
                     valueMeta == null ? null : rawValue,
-                    valueMeta == null ? null : valueMeta.rationale(),
-                    valueMeta == null ? null : valueMeta.pressureContribution()
+                    valueMeta == null ? null : valueMeta.rationale()
                 ));
             }
             return dimensions;
@@ -254,7 +253,7 @@ public final class ScenarioDimensionMapper {
         private record ColumnMeta(String label, String description, String rationale, Map<String, ValueMeta> valuesById) {
         }
 
-        private record ValueMeta(String label, String rationale, String pressureContribution) {
+        private record ValueMeta(String label, String rationale) {
         }
     }
 
@@ -284,8 +283,7 @@ public final class ScenarioDimensionMapper {
     private record DefinitionValue(
         @JsonProperty("value_id") String valueId,
         @JsonProperty("label") String label,
-        @JsonProperty("assumption_rationale") String assumptionRationale,
-        @JsonProperty("pressure_contribution") String pressureContribution
+        @JsonProperty("assumption_rationale") String assumptionRationale
     ) {
     }
 

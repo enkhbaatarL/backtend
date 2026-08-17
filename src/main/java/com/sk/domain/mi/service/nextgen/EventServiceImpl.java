@@ -26,6 +26,7 @@ import com.sk.domain.mi.service.nextgen.support.ScenarioProbabilityAllocator;
 import com.sk.domain.mi.dto.response.PermissionRes;
 import com.sk.domain.shared.entity.master.tmd.User;
 import com.sk.domain.shared.service.permissions.AuthorizationService;
+import com.sk.domain.shared.enums.nextgen.DesignOperationStatus;
 import com.sk.domain.shared.enums.nextgen.ScenarioDesignDisplayStatus;
 import com.sk.domain.shared.enums.nextgen.ScenarioGroupStatus;
 import com.sk.domain.shared.entity.master.tmm.MiScenarioGroupOperation;
@@ -61,8 +62,6 @@ import lombok.extern.slf4j.Slf4j;
 @Transactional(readOnly = true)
 public class EventServiceImpl implements EventService {
 
-    /** 실패 방치(좀비) 그룹 판정용 — Agent operation status 어휘 기준 실패 2종. */
-    private static final Set<String> FAILED_OPERATION_STATUSES = Set.of("failed", "interrupted");
 
     private final MiEventRepository miEventRepository;
     private final MiEventTypeL1Repository miEventTypeL1Repository;
@@ -310,7 +309,7 @@ public class EventServiceImpl implements EventService {
         }
 
         return latestByGroup.values().stream()
-            .filter(operation -> FAILED_OPERATION_STATUSES.contains(operation.getStatus()))
+            .filter(operation -> DesignOperationStatus.isFailedTerminal(operation.getStatus()))
             .map(operation -> operation.getScenarioGroup().getScenarioGroupId())
             .collect(Collectors.toSet());
     }

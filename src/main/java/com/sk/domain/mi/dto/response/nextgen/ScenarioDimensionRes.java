@@ -5,7 +5,7 @@ import io.swagger.v3.oas.annotations.media.Schema;
 /**
  * 시나리오 차원값 (표/개별 모드의 한 칼럼 셀, 시나리오 상세의 주요 가정 카드). 그룹별 동적.
  * value는 항상 표시 label이다 — 검토/Signpost 요청의 셀 값으로 그대로 재전송하면 Agent 계약(cells=표시 label)이 충족된다.
- * valueId/rationale/pressureContribution은 v4(definitions 기반) 그룹에서만 채워지며 v1은 null이다.
+ * valueId/rationale은 v4(definitions 기반) 그룹에서만 채워지며 v1은 null이다.
  */
 public record ScenarioDimensionRes(
 
@@ -25,9 +25,6 @@ public record ScenarioDimensionRes(
     String valueId,
 
     @Schema(description = "값 선정 근거 (셀 (i) 아이콘, v4 전용. v1은 null)", nullable = true)
-    String rationale,
-
-    @Schema(description = "JKM 압력 기여 (bearish/balanced/bullish, v4 전용. v1은 null)", example = "bullish", nullable = true)
-    String pressureContribution
+    String rationale
 
 ) {}

@@ -264,7 +264,7 @@ public class CustomMiScenarioGroupRepositoryImpl implements CustomMiScenarioGrou
 
     /**
      * 그룹을 구성하는 이벤트 목록 (Base Event 리스트, display_order 순).
-     * 멀티 이벤트 그룹의 설계 화면 상단 이벤트 리스트와 그룹 상세 baseEvents 공용.
+     * 멀티 이벤트 그룹의 설계 화면 상단 이벤트 리스트와 그룹 상세 eventBundles 공용.
      */
     @Override
     public List<ScenarioGroupBaseEventRow> findBaseEventsByScenarioGroupId(Long scenarioGroupId) {
@@ -276,7 +276,7 @@ public class CustomMiScenarioGroupRepositoryImpl implements CustomMiScenarioGrou
                 miEventTypeL1.level1Code,
                 miEventTypeL1.level1Label,
                 miEvent.isScenarioSuggested,
-                miEvent.modifyDt
+                miEvent.latestRecordFirstCreated
             ))
             .from(miScenarioGroupEvent)
             .innerJoin(miScenarioGroupEvent.miEvent, miEvent)

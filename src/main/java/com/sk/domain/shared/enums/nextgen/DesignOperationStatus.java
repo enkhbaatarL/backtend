@@ -1,13 +1,14 @@
 package com.sk.domain.shared.enums.nextgen;
 
-import java.util.Arrays;
+import com.fasterxml.jackson.annotation.JsonValue;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 
+import java.util.Arrays;
+import java.util.List;
+
 /**
- * 시나리오 설계 비동기 작업 상태 (tmm_mi_scenario_group_operation_m.status, Agent 소유 어휘).
- * 원본 상태의 적재·전이 주체는 Agent라서 응답에는 코드 문자열을 그대로 통과시키고,
- * 이 enum은 표시 라벨 파생 전용으로만 쓴다. 미지 값은 라벨 없이 코드만 내려간다.
+ * 시나리오 설계 비동기 작업 상태
  */
 @Getter
 @RequiredArgsConstructor
@@ -19,10 +20,13 @@ public enum DesignOperationStatus {
     FAILED("failed", "실패"),
     INTERRUPTED("interrupted", "중단");
 
+    @JsonValue
     private final String code;
     private final String label;
 
-    /** Agent 응답 문자열 파싱. 미지 값은 null (Agent 어휘 확장 내성). */
+    /**
+     * Agent 응답 문자열 파싱. 미지 값은 null (Agent 어휘 확장 내성).
+     */
     public static DesignOperationStatus fromNullable(String value) {
         if (value == null || value.isBlank()) {
             return null;
@@ -33,10 +37,29 @@ public enum DesignOperationStatus {
             .orElse(null);
     }
 
-    /** 표시 라벨 파생. 미지 어휘면 null — FE는 라벨 없으면 코드를 그대로 표시한다. */
-    public static String labelOf(String value) {
+    /**
+     * 진행중(재연결 대상) 상태 코드 목록 - queued/running.
+     * DB 문자열 컬럼 조회 조건용.
+     */
+    public static List<String> activeCodes() {
+        return List.of(QUEUED.code, RUNNING.code);
+    }
+
+    /**
+     * 실패 종료 여부 - failed/interrupted
+     * (좀비 판정, lastError 합성 대상).
+     */
+    public boolean isFailedTerminal() {
+        return this == FAILED || this == INTERRUPTED;
+    }
+
+    /**
+     * 실패 종료 여부 판정
+     * 문자열 상태를 파싱해 판정한다.
+     */
+    public static boolean isFailedTerminal(String value) {
         DesignOperationStatus status = fromNullable(value);
-        return status == null ? null : status.label;
+        return status != null && status.isFailedTerminal();
     }
 
 }

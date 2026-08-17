@@ -28,7 +28,7 @@ public interface ScenarioDesignService {
     /** 최종 확정 (스냅샷 저장 + 검토 캐시 정리). */
     ScenarioDesignStageRes confirmDesign(Long scenarioGroupId, ScenarioConfirmationReq request);
 
-    /** 전체 초기화 (검토 캐시 삭제 후 DB 초기값 반환). */
-    ScenarioDesignStateRes reset(Long scenarioGroupId);
+    /** 전체 초기화 (검토/실패 캐시 삭제). 이후 상태는 FE가 설계 화면 데이터 조회 API로 재조회한다. */
+    void reset(Long scenarioGroupId);
 
 }

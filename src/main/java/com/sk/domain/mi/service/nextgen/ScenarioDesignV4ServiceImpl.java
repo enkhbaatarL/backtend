@@ -9,16 +9,22 @@ import com.sk.domain.mi.dto.request.nextgen.design.ScenarioDesignStartV4Req;
 import com.sk.domain.mi.dto.response.nextgen.ScenarioSignpostDefinitionViewRes;
 import com.sk.domain.mi.dto.response.nextgen.design.DesignTable;
 import com.sk.domain.mi.dto.response.nextgen.design.ScenarioDesignPresentationRes;
+import com.sk.domain.mi.dto.response.nextgen.design.ScenarioDesignStatusRes;
 import com.sk.domain.mi.dto.response.nextgen.design.ScenarioValidationCache;
 import com.sk.domain.mi.service.nextgen.design.ScenarioDesignValidationStore;
 import com.sk.domain.mi.service.nextgen.support.ScenarioDesignPresentationMapper;
 import com.sk.domain.mi.service.nextgen.support.ScenarioDesignTableMapper;
 import com.sk.domain.shared.client.ScenarioDesignAgentV4Api;
 import com.sk.domain.shared.client.dto.request.ScenarioGroupCreateV4AgentReq;
+import com.sk.domain.shared.entity.master.tmd.User;
 import com.sk.domain.shared.entity.master.tmm.MiScenarioGroup;
+import com.sk.domain.shared.entity.master.tmm.MiScenarioGroupEvent;
 import com.sk.domain.shared.entity.master.tmm.MiScenarioGroupOperation;
+import com.sk.domain.shared.enums.nextgen.DesignOperationStatus;
+import com.sk.domain.shared.enums.nextgen.DesignOperationType;
 import com.sk.domain.shared.enums.nextgen.ScenarioGroupStage;
 import com.sk.domain.shared.enums.nextgen.ScenarioGroupStatus;
+import com.sk.domain.shared.repository.master.tmd.UserRepository;
 import com.sk.domain.shared.repository.master.tmm.MiScenarioGroupEventRepository;
 import com.sk.domain.shared.repository.master.tmm.MiScenarioGroupOperationRepository;
 import com.sk.domain.shared.repository.master.tmm.MiScenarioGroupRepository;
@@ -57,7 +63,8 @@ import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
  * 재연결 정책(이중 구조): 정상 경로는 DB 선조회 — 내 진행중 작업 중 동일 이벤트 조합이 있으면
  * 생성 요청 없이 바로 해당 operation 스트림에 재연결한다. 선조회와 생성 사이의 레이스는
  * Agent 409 백스톱이 흡수한다(응답의 식별자로 같은 emitter에 재연결 — 계약 5.2의 정석 플로우).
- * 어느 경로든 이력 전체(sequence 0부터)를 replay한 뒤 live 이벤트를 이어받으므로,
+ * 재연결 replay 시작점은 FE 커서다 — 요청의 lastSequence를 Agent Last-Event-ID로 전달해
+ * 그 다음 sequence부터 replay하고, 커서가 없으면(브라우저 재시작 등) 0부터 전체 replay한다.
  * FE는 연결 끊김/새로고침 후에도 같은 생성 API 재호출만으로 복구된다.
  */
 @Slf4j
@@ -69,20 +76,16 @@ public class ScenarioDesignV4ServiceImpl implements ScenarioDesignV4Service {
     private static final long EMITTER_TIMEOUT_MILLIS = 30L * 60 * 1000;
     private static final long CONNECT_TIMEOUT_SECONDS = 10L;
 
-    /** 실패 사유(lastError) 합성 대상 상태 — Agent operation status 어휘 기준 종료 2종. */
-    private static final Set<String> FAILED_OPERATION_STATUSES = Set.of("failed", "interrupted");
-
-    /** 설계 시작 선조회 대상 상태 — Agent operation status 어휘 기준 진행중 2종. */
-    private static final List<String> ACTIVE_OPERATION_STATUSES = List.of("queued", "running");
-
     private final ScenarioDesignAgentV4Api agentClient;
     private final MiScenarioGroupRepository scenarioGroupRepository;
     private final MiScenarioGroupOperationRepository operationRepository;
     private final MiScenarioGroupEventRepository groupEventRepository;
     private final ScenarioDesignValidationStore validationStore;
     private final AuthorizationService authorizationService;
+    private final UserRepository userRepository;
 
     private final AtomicLong threadSequence = new AtomicLong();
+
     private final ExecutorService streamExecutor = Executors.newCachedThreadPool(runnable -> {
         Thread thread = new Thread(runnable, "design-v4-sse-%d".formatted(threadSequence.incrementAndGet()));
         thread.setDaemon(true);
@@ -95,18 +98,78 @@ public class ScenarioDesignV4ServiceImpl implements ScenarioDesignV4Service {
     }
 
     /**
-     * [설계 시작 - v4] 이벤트 1~5개 검증 후 Agent 생성 스트림을 개설해 FE로 직결 중계한다.
+     * [이벤트 조합 설계 상태 조회]
+     * 선택한 이벤트 조합과 정확히 일치하는 그룹의 상태를 판정한다 (이벤트 목록 플로팅바 CTA 분기).
+     */
+    @Override
+    public ScenarioDesignStatusRes getDesignStatus(List<Long> miEventIds) {
+
+        validateEventIds(miEventIds);
+
+        Set<Long> requested = Set.copyOf(miEventIds);
+
+        // 요청 이벤트 ID 하나로 후보를 좁히고, 비교로 확정
+        List<MiScenarioGroup> matched = groupEventRepository
+            .findActiveWithGroupByMiEventId(miEventIds.get(0))
+            .stream()
+            .map(MiScenarioGroupEvent::getScenarioGroup)
+            .filter(group -> requested.equals(Set.copyOf(groupEventRepository.findActiveEventIdsByScenarioGroupId(group.getScenarioGroupId()))))
+            .toList();
+
+        MiScenarioGroup creating = matched.stream()
+            .filter(group -> group.getStatus() == ScenarioGroupStatus.CREATING)
+            .filter(group -> !isFailedCreating(group.getScenarioGroupId()))
+            .findFirst()
+            .orElse(null);
+
+        // [생성중] 응답
+        if (creating != null) {
+            Long userId = authorizationService.getUserNo().longValue();
+            return ScenarioDesignStatusRes.creating(
+                creating.getScenarioGroupId(),
+                creating.getStage(),
+                creating.getRequestUserId(),
+                resolveUserName(creating.getRequestUserId()),
+                userId.equals(creating.getRequestUserId()));
+        }
+
+        // [생성완료 || 생성가능] 응답
+        return matched.stream()
+            .filter(group -> group.getStatus() == ScenarioGroupStatus.CREATED || group.getStatus() == ScenarioGroupStatus.REALIZED)
+            .findFirst()
+            .map(group -> ScenarioDesignStatusRes.created(group.getScenarioGroupId()))
+            .orElseGet(ScenarioDesignStatusRes::designable);
+    }
+
+    /**
+     * 실패 방치(좀비) 그룹 판정
+     * 설계중인데 최신 operation이 실패 종료. operation 없는 그룹(v1)은 해당 없음 (이벤트 목록 좀비 필터와 동일 규칙).
+     */
+    private boolean isFailedCreating(Long scenarioGroupId) {
+        return operationRepository
+            .findByScenarioGroup_ScenarioGroupIdInAndIsDeletedFalseOrderByCreateDtDesc(List.of(scenarioGroupId))
+            .stream()
+            .findFirst()
+            .map(operation -> DesignOperationStatus.isFailedTerminal(operation.getStatus()))
+            .orElse(false);
+    }
+
+    private String resolveUserName(Long userId) {
+        if (userId == null) return null;
+        return userRepository.findByUserNoInAndIsDeletedFalse(List.of(userId.intValue())).stream()
+            .findFirst()
+            .map(User::getUserNm)
+            .orElse(null);
+    }
+
+    /**
+     * [설계 시작 SSE 연결]
+     * 이벤트 1~5개 검증 후 Agent 생성 스트림을 개설해 FE로 직결 중계
      * 개수/중복/양수는 B.E 선검증으로 Agent의 FastAPI 422 응답이 FE로 새는 것을 막는다.
-     * 이벤트 점유 선검사와 Redis 락은 두지 않는다 — 중복 생성 방지는 Agent의 event_set_hash 정책이 담당한다.
-     *
-     * 재연결은 이중 구조다. 정상 경로는 DB 선조회 — 내 진행중 작업 중 동일 이벤트 조합이 있으면
-     * 생성 요청 없이 바로 그 operation 스트림에 재연결한다(0부터 replay — 이벤트 수가 적어 부담 없고,
-     * FE는 sequence 중복만 무시하면 된다). 선조회와 생성 사이의 레이스는 백스톱이 흡수한다 —
-     * Agent가 409를 주면 응답의 식별자로 같은 방식으로 재연결한다(계약 5.2의 정석 플로우).
-     * 그 외 정책 판정(400 확정 전 그룹 존재, 403 타 사용자 소유 등)은 복제하지 않고 Agent 응답을 그대로 내린다.
      */
     @Override
     public SseEmitter startDesignStream(ScenarioDesignStartV4Req request) {
+
         validateEventIds(request.miEventIds());
         Long userId = authorizationService.getUserNo().longValue();
 
@@ -115,10 +178,11 @@ public class ScenarioDesignV4ServiceImpl implements ScenarioDesignV4Service {
         ReconnectTarget active = findMyActiveOperation(userId, request.miEventIds());
 
         if (active != null) {
-            log.info("[Design V4] 내 진행중 동일 조합 작업 선조회 적중 - 재연결: scenarioGroupId={}, operationId={}", active.scenarioGroupId(), active.operationId());
+            String lastEventId = resolveLastEventId(request, active.operationId());
+            log.info("[Design v4] - 설계 재연결 시도: scenarioGroupId={}, operationId={}, lastSequence={}", active.scenarioGroupId(), active.operationId(), lastEventId);
+
             openStreamOn(emitter,
-                (target, connectGate) -> agentClient.pipeOperationStream(
-                    active.scenarioGroupId(), active.operationId(), null, target, connectGate),
+                (target, connectGate) -> agentClient.pipeOperationStream(active.scenarioGroupId(), active.operationId(), lastEventId, target, connectGate),
                 "resumeOperationStream");
             return emitter;
         }
@@ -131,16 +195,28 @@ public class ScenarioDesignV4ServiceImpl implements ScenarioDesignV4Service {
                 "startDesignStream");
         } catch (AgentDesignApiException e) {
             ReconnectTarget reconnect = resolveReconnectTarget(e);
-            if (reconnect == null) {
-                throw e;
-            }
-            log.info("[Design V4] 동일 조합 작업 진행 중 - 자동 재연결: scenarioGroupId={}, operationId={}", reconnect.scenarioGroupId(), reconnect.operationId());
+
+            if (reconnect == null) throw e;
+
+            String lastEventId = resolveLastEventId(request, reconnect.operationId());
+            log.info("[Design V4] 동일 조합 작업 진행 중 - 자동 재연결: scenarioGroupId={}, operationId={}, lastSequence={}", reconnect.scenarioGroupId(), reconnect.operationId(), lastEventId);
             openStreamOn(emitter,
-                (target, connectGate) -> agentClient.pipeOperationStream(
-                    reconnect.scenarioGroupId(), reconnect.operationId(), null, target, connectGate),
+                (target, connectGate) -> agentClient.pipeOperationStream(reconnect.scenarioGroupId(), reconnect.operationId(), lastEventId, target, connectGate),
                 "reconnectOperationStream");
         }
         return emitter;
+    }
+
+    /**
+     * FE 커서 적용 판정
+     * 재연결 대상 operation과 쌍의 operationId가 일치할 때만 Last-Event-ID로 적용하고,
+     * 불일치·미제공이면 0부터 전체 replay한다 (다른 operation에 커서를 적용하면 초반 이벤트가 유실된다).
+     */
+    private String resolveLastEventId(ScenarioDesignStartV4Req request, String targetOperationId) {
+        if (request.lastSequence() == null || request.operationId() == null || !request.operationId().equals(targetOperationId)) {
+            return null;
+        }
+        return String.valueOf(request.lastSequence());
     }
 
     /**
@@ -149,6 +225,7 @@ public class ScenarioDesignV4ServiceImpl implements ScenarioDesignV4Service {
      * operation 실패 사유(lastError, 종료 상태일 때만), 설계 세션 상태(designSession — 그룹 엔티티 + Redis 검토 캐시).
      * 검토를 통과한 편집본(DB 미반영)이 캐시에 있으면 table을 편집본으로 오버레이하므로,
      * 검토 후 재조회도 이 API 하나로 충분하다 (세션 상태 조회 API의 역할 흡수 — 2026-08-14 단일화 결정).
+     * 오버레이는 step1 편집 단계에서만 적용한다 — Signpost 산출 이후는 Agent 영속 상태가 정본이다.
      */
     @Override
     public ScenarioDesignPresentationRes getPresentation(Long scenarioGroupId, String operationId) {
@@ -156,44 +233,44 @@ public class ScenarioDesignV4ServiceImpl implements ScenarioDesignV4Service {
         List<ScenarioGroupBaseEventRow> baseEvents = scenarioGroupRepository.findBaseEventsByScenarioGroupId(scenarioGroupId);
 
         MiScenarioGroup group = scenarioGroupRepository.findByScenarioGroupIdAndIsDeletedFalse(scenarioGroupId).orElse(null);
-        ScenarioValidationCache cache = validationStore.find(scenarioGroupId).orElse(null);
+        // 검토 캐시는 step1 편집 단계에서만 유효하다 — Signpost 산출부터는 편집본이 이미 영속화됐고
+        // Agent가 narrative/확률을 산출하므로, 남은 캐시로 table을 덮거나 낡은 검토 결과를 내리면 안 된다 (v1 getDesign의 stage 게이트와 동일)
+        ScenarioValidationCache cache = isStep1EditStage(group)
+            ? validationStore.find(scenarioGroupId).orElse(null)
+            : null;
         DesignTable overlayTable = cache == null ? null : ScenarioDesignTableMapper.toDesignTable(cache.table());
 
         return ScenarioDesignPresentationMapper.toRes(
             agentBody,
             baseEvents,
             resolveLastError(agentBody),
-            toDesignSession(group, cache, overlayTable != null),
-            toGroupMeta(group),
+            toRefinementState(group, cache),
             overlayTable,
             loadSignpostsByScenario(group));
     }
 
-    /** 설계 세션 상태 합성 — 단계/점유는 그룹 엔티티, 검토 결과는 Redis 캐시가 원천이다. */
-    private ScenarioDesignPresentationRes.DesignSessionState toDesignSession(MiScenarioGroup group,
-                                                                             ScenarioValidationCache cache,
-                                                                             boolean editOverlayApplied) {
+    /** step1 편집 단계(검토 캐시 오버레이 대상) 여부 — 생성 완료 후 Signpost 산출 전까지. */
+    private boolean isStep1EditStage(MiScenarioGroup group) {
+        return group != null
+            && (group.getStage() == ScenarioGroupStage.SCENARIO_CREATED || group.getStage() == ScenarioGroupStage.SCENARIO_VALIDATED);
+    }
+
+    /** 정련 상태 합성 — 단계/점유/그룹 메타는 그룹 엔티티, 검토 결과는 Redis 캐시(step1 게이트 통과분)가 원천이다. */
+    private ScenarioDesignPresentationRes.ScenarioGroupRefinementState toRefinementState(MiScenarioGroup group, ScenarioValidationCache cache) {
         if (group == null) {
             return null;
         }
         ScenarioDesignPresentationRes.DesignSessionValidation validation = cache == null
             ? null
             : new ScenarioDesignPresentationRes.DesignSessionValidation(cache.isValid(), cache.reason());
-        return ScenarioDesignPresentationRes.DesignSessionState.of(
-            group.getStatus(),
+        Long userId = authorizationService.getUserNo().longValue();
+        return ScenarioDesignPresentationRes.ScenarioGroupRefinementState.of(
             group.getStage(),
             group.getStatus() == ScenarioGroupStatus.CREATING,
+            userId.equals(group.getRequestUserId()),
             group.getRequestUserId(),
             validation,
-            editOverlayApplied);
-    }
-
-    /** 그룹 메타 합성 — Signpost 산출 시 Agent가 채우는 그룹명/요약/설명 (확정 화면 편집 초기값). */
-    private ScenarioDesignPresentationRes.DesignGroupMeta toGroupMeta(MiScenarioGroup group) {
-        if (group == null) {
-            return null;
-        }
-        return new ScenarioDesignPresentationRes.DesignGroupMeta(group.getTitle(), group.getSummary(), group.getDescription());
+            new ScenarioDesignPresentationRes.ScenarioGroupMeta(group.getTitle(), group.getSummary(), group.getDescription()));
     }
 
     /**
@@ -222,7 +299,7 @@ public class ScenarioDesignV4ServiceImpl implements ScenarioDesignV4Service {
         JsonNode operation = agentBody.path("operation");
         String operationId = operation.path("operationId").asText(null);
         String status = operation.path("status").asText(null);
-        if (operationId == null || status == null || !FAILED_OPERATION_STATUSES.contains(status)) {
+        if (operationId == null || !DesignOperationStatus.isFailedTerminal(status)) {
             return null;
         }
         String lastError = operationRepository.findById(operationId)
@@ -240,19 +317,15 @@ public class ScenarioDesignV4ServiceImpl implements ScenarioDesignV4Service {
     }
 
     /**
-     * 내(요청 사용자) 진행중 작업 중 요청 이벤트 조합과 정확히 일치하는 그룹의 작업을 찾는다 (선조회 정상 경로).
-     * 확신 가능한 사실만 DB로 판정한다 — 소유자(그룹 request_usr_id), 진행중 상태, 이벤트 집합 일치.
-     * 그 외 정책 판정(확정 전 그룹, 실패 그룹 재생성, 타 사용자 소유)은 복제하지 않고 Agent에 맡긴다.
-     * 사용자의 진행중 작업은 많아야 수 건이라 그룹별 이벤트 집합 비교는 Java에서 수행한다.
+     * 요청 사용자 진행중 작업 중 요청 이벤트 조합과 정확히 일치하는 그룹의 작업을 찾는다 (선조회 정상 경로).
      */
     private ReconnectTarget findMyActiveOperation(Long userId, List<Long> miEventIds) {
         Set<Long> requested = Set.copyOf(miEventIds);
         return operationRepository
-            .findByScenarioGroup_RequestUserIdAndStatusInAndIsDeletedFalseAndScenarioGroup_IsDeletedFalseOrderByCreateDtDesc(
-                userId, ACTIVE_OPERATION_STATUSES)
+            .findActiveWithGroupByRequestUserId(userId, DesignOperationStatus.activeCodes())
             .stream()
-            .filter(operation -> requested.equals(Set.copyOf(
-                groupEventRepository.findActiveEventIdsByScenarioGroupId(operation.getScenarioGroup().getScenarioGroupId()))))
+            .filter(operation -> DesignOperationType.CREATE == DesignOperationType.fromNullable(operation.getOperationType()))
+            .filter(operation -> requested.equals(Set.copyOf(groupEventRepository.findActiveEventIdsByScenarioGroupId(operation.getScenarioGroup().getScenarioGroupId()))))
             .findFirst()
             .map(operation -> new ReconnectTarget(operation.getScenarioGroup().getScenarioGroupId(), operation.getOperationId()))
             .orElse(null);
@@ -279,11 +352,14 @@ public class ScenarioDesignV4ServiceImpl implements ScenarioDesignV4Service {
     }
 
     private void validateEventIds(List<Long> miEventIds) {
+        if (miEventIds == null || miEventIds.isEmpty() || miEventIds.size() > 5) {
+            throw AppErrorException.of(ResultCode.Error.BIZ_RULE_VIOLATION, "`miEventIds`는 1~5개여야 합니다.");
+        }
         if (miEventIds.stream().anyMatch(id -> id == null || id <= 0)) {
-            throw AppErrorException.of(ResultCode.Error.BIZ_RULE_VIOLATION, "miEventIds에는 양의 정수만 허용됩니다.");
+            throw AppErrorException.of(ResultCode.Error.BIZ_RULE_VIOLATION, "`miEventIds`에는 양의 정수만 허용됩니다.");
         }
         if (miEventIds.stream().distinct().count() != miEventIds.size()) {
-            throw AppErrorException.of(ResultCode.Error.BIZ_RULE_VIOLATION, "miEventIds에 중복된 이벤트가 있습니다.");
+            throw AppErrorException.of(ResultCode.Error.BIZ_RULE_VIOLATION, "`miEventIds`에 중복된 이벤트가 있습니다.");
         }
     }
 
@@ -292,9 +368,7 @@ public class ScenarioDesignV4ServiceImpl implements ScenarioDesignV4Service {
     }
 
     /**
-     * 주어진 emitter에 스트림 개설. 전용 스레드에서 Agent 스트림을 소비시키고,
-     * 응답 status 확정(connectGate)까지만 컨트롤러 스레드를 붙잡는다.
-     * 연결 오류는 emitter에 손대지 않고 예외로 던지므로, 호출측이 같은 emitter로 재시도할 수 있다.
+     * 주어진 emitter에 스트림 개설.
      */
     private void openStreamOn(SseEmitter emitter, StreamOpener opener, String action) {
         CompletableFuture<Void> connectGate = new CompletableFuture<>();
@@ -316,28 +390,40 @@ public class ScenarioDesignV4ServiceImpl implements ScenarioDesignV4Service {
             }
         });
 
-        awaitConnected(connectGate, action);
+        awaitConnected(emitter, connectGate, action);
     }
 
-    private void awaitConnected(CompletableFuture<Void> connectGate, String action) {
+    /**
+     * 연결 확정 대기.
+     * Agent JSON 오류(ExecutionException)는 중계 스레드가 이미 종료된 상태라 emitter를 재시도용으로 보존하고,
+     * 타임아웃/인터럽트는 중계 스레드가 아직 살아 있어 뒤늦게 열릴 수 있으므로 emitter를 완료시켜
+     * 고아 emitter에 쓰는 것을 차단한다.
+     */
+    private void awaitConnected(SseEmitter emitter, CompletableFuture<Void> connectGate, String action) {
         try {
             connectGate.get(CONNECT_TIMEOUT_SECONDS, TimeUnit.SECONDS);
         } catch (ExecutionException e) {
             Throwable cause = e.getCause();
-            if (cause instanceof AgentDesignApiException agentDesignApiException) {
-                throw agentDesignApiException;
-            }
-            if (cause instanceof AppErrorException appErrorException) {
-                throw appErrorException;
-            }
+            if (cause instanceof AgentDesignApiException agentDesignApiException) throw agentDesignApiException;
+            if (cause instanceof AppErrorException appErrorException) throw appErrorException;
             log.error("[Design V4] {} agent 연결 실패: {}", action, cause == null ? e.getMessage() : cause.getMessage(), e);
             throw AppErrorException.of(ResultCode.Error.API_CALL_FAILED, "Agent stream connect failed (%s)".formatted(action));
         } catch (TimeoutException e) {
+            safeComplete(emitter);
             log.error("[Design V4] {} agent 연결 타임아웃", action);
             throw AppErrorException.of(ResultCode.Error.API_TIMEOUT, "Agent stream connect timeout (%s)".formatted(action));
         } catch (InterruptedException e) {
+            safeComplete(emitter);
             Thread.currentThread().interrupt();
             throw AppErrorException.of(ResultCode.Error.API_CALL_FAILED, "Agent stream connect interrupted (%s)".formatted(action));
+        }
+    }
+
+    private void safeComplete(SseEmitter emitter) {
+        try {
+            emitter.complete();
+        } catch (Exception ignored) {
+            // 이미 완료된 emitter
         }
     }
 

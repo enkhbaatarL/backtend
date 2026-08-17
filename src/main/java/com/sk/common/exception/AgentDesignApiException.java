@@ -8,10 +8,9 @@ import org.springframework.http.HttpStatus;
 /**
  * 외부 Agent API 오류 응답 예외 (시나리오 설계 v4).
  *
- * Agent 계약상 FE는 오류 응답의 data.error_name으로 분기하고 data의 기존 리소스 ID
- * (scenarioGroupId, operationId)로 재연결/화면 이동을 수행한다. 이를 위해 Agent 오류 body의
- * data 객체를 원문 그대로 보존해 BaseResponse.data로 통과시킨다.
- * GlobalExceptionHandler가 HTTP status를 그대로 유지한 채 BaseResponse로 래핑한다.
+ * Agent 오류 body의 data 객체(error_name, scenarioGroupId, operationId)는 B.E 내부 처리용으로만 보존한다 —
+ * 409 자동 재연결이 data의 식별자를 소비한다. FE 응답에는 싣지 않으며(GlobalExceptionHandler가
+ * HTTP status 유지 + code/message만 래핑), FE는 오류 수신 후 이벤트 조합 설계 상태 조회 API 재조회로 CTA를 갱신한다.
  */
 @Getter
 public class AgentDesignApiException extends RuntimeException {

@@ -22,17 +22,7 @@ import org.springframework.web.client.RestClient;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
 /**
- * 멀티 이벤트 시나리오 설계 Agent v4 클라이언트 (B.E -> Agent).
- *
- * v4 생성 API는 단일 JSON 응답이 아니라 SSE 스트림을 반환하므로 선언적 HttpExchange 대신
- * RestClient exchange로 응답 스트림을 직접 소비해 FE SseEmitter로 그대로 중계한다.
- *
- * 오류 정책: 요청 검증/중복 정책 실패 시 Agent는 SSE가 아닌 JSON 오류(400/403/409/422)를 반환한다.
- * 이를 AgentDesignApiException으로 변환하고 Agent data 원문(error_name, scenarioGroupId, operationId)을
- * 보존해 BaseResponse.data로 통과시킨다 — FE가 계약대로 분기/재연결하는 데 필요하다.
- *
- * read timeout은 keep-alive(약 15초 간격)를 전제로 120초 — Agent가 죽어 스트림이 침묵하면
- * 여기서 끊겨 좀비 연결이 방지된다.
+ * 멀티 이벤트 시나리오 설계 Agent v4 클라이언트 (B.E -> Agent)
  */
 @Slf4j
 @Component
@@ -77,8 +67,7 @@ public class ScenarioDesignAgentV4Api {
     /**
      * operation 스트림 재연결 중계. Last-Event-ID를 전달하면 Agent가 그 다음 sequence부터 replay한다.
      */
-    public void pipeOperationStream(Long scenarioGroupId, String operationId, String lastEventId,
-                                    SseEmitter emitter, CompletableFuture<Void> connectGate) {
+    public void pipeOperationStream(Long scenarioGroupId, String operationId, String lastEventId, SseEmitter emitter, CompletableFuture<Void> connectGate) {
         restClient.get()
             .uri("/scenario-groups/{scenarioGroupId}/operations/{operationId}/stream", scenarioGroupId, operationId)
             .accept(MediaType.TEXT_EVENT_STREAM, MediaType.APPLICATION_JSON)
@@ -132,6 +121,7 @@ public class ScenarioDesignAgentV4Api {
             while ((line = reader.readLine()) != null) {
                 if (line.isEmpty()) {
                     if (!sendFrame(emitter, id, event, data, comment)) {
+                        safeComplete(emitter);
                         return;
                     }
                     id = null;
@@ -157,7 +147,7 @@ public class ScenarioDesignAgentV4Api {
             }
             // 잔여 프레임 (마지막 프레임 뒤 빈 줄 없이 종료된 경우)
             sendFrame(emitter, id, event, data, comment);
-            emitter.complete();
+            safeComplete(emitter);
         } catch (IOException e) {
             log.warn("[Design V4] SSE 중계 중단 (upstream): {}", e.getMessage());
             safeCompleteWithError(emitter, e);
@@ -194,6 +184,14 @@ public class ScenarioDesignAgentV4Api {
     private void safeCompleteWithError(SseEmitter emitter, Exception e) {
         try {
             emitter.completeWithError(e);
+        } catch (Exception ignored) {
+            // 이미 완료/타임아웃된 emitter
+        }
+    }
+
+    private void safeComplete(SseEmitter emitter) {
+        try {
+            emitter.complete();
         } catch (Exception ignored) {
             // 이미 완료/타임아웃된 emitter
         }
