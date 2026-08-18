@@ -92,11 +92,17 @@ public class MiBulletinBoardController {
             description = """
                     현재 게시기간에 포함되고, 전체 게시이거나 조회 고객사에 공개된 공지사항 1건을 조회합니다.
 
+                    조회에 성공하면 로그인 사용자의 읽음 기록을 생성합니다.
+                    이미 읽음 기록이 있으면 추가로 생성하지 않습니다.
                     조회 범위 밖이거나 삭제된 공지사항은 `RSC-001`로 처리하며, 읽음 기록을 남기지 않습니다.
                     """)
     @ApiResponses({
-            @ApiResponse(responseCode = "200", description = "조회 가능한 공지사항 상세 반환"),
-            @ApiResponse(responseCode = "400", description = "조회 범위 밖이거나 존재하지 않는 공지사항 (`RSC-001`)")
+            @ApiResponse(
+                    responseCode = "200",
+                    description = "조회 가능한 공지사항 상세 반환 및 로그인 사용자 읽음 처리"),
+            @ApiResponse(
+                    responseCode = "400",
+                    description = "조회 범위 밖이거나 존재하지 않는 공지사항 (`RSC-001`)")
     })
     @GetMapping("/notices/{noticeNo}")
     @RequiredPermission(roles = {Role.ADMIN, Role.USER, Role.OPERATOR})
