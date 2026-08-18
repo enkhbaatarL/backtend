@@ -1,14 +1,5 @@
 package com.sk.domain.mi.service;
 
-import java.util.Arrays;
-import java.util.List;
-import java.util.stream.Collectors;
-
-import org.springframework.data.domain.PageRequest;
-import org.springframework.data.domain.Pageable;
-import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
-
 import com.sk.common.enums.ResultCode;
 import com.sk.common.exception.AppErrorException;
 import com.sk.common.model.PaginationRes;
@@ -20,7 +11,6 @@ import com.sk.domain.admin.dto.response.bbs.PopupRes;
 import com.sk.domain.mi.dto.response.bbs.MiFaqRes;
 import com.sk.domain.mi.dto.response.bbs.MiNoticeDetailRes;
 import com.sk.domain.mi.dto.response.bbs.MiNoticeRes;
-import com.sk.domain.shared.entity.compositeKey.tcm.BulletinBoardCustomerCompanyMappingId;
 import com.sk.domain.shared.entity.compositeKey.tcm.BulletinBoardUserMappingId;
 import com.sk.domain.shared.entity.master.tcm.BulletinBoard;
 import com.sk.domain.shared.entity.master.tcm.BulletinBoardNotificationUser;
@@ -31,16 +21,21 @@ import com.sk.domain.shared.enums.FileRelationshipObjectSeparateCode;
 import com.sk.domain.shared.enums.NoticeCategory;
 import com.sk.domain.shared.enums.NoticeStatus;
 import com.sk.domain.shared.enums.Role;
-import com.sk.domain.shared.repository.master.tcm.BulletinBoardCustomerCompanyMappingRepository;
 import com.sk.domain.shared.repository.master.tcm.BulletinBoardNotificationUserRepository;
 import com.sk.domain.shared.repository.master.tcm.BulletinBoardRepository;
 import com.sk.domain.shared.repository.master.tcm.UploadedFileRepository;
 import com.sk.domain.shared.repository.master.tmd.CustomerCompanyRepository;
 import com.sk.domain.shared.repository.master.tmd.UserRepository;
 import com.sk.domain.shared.service.FileService;
-
+import java.util.Arrays;
+import java.util.List;
+import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 @Slf4j
 @Service
@@ -49,7 +44,6 @@ import lombok.extern.slf4j.Slf4j;
 public class MiBulletinBoardService {
     private final BulletinBoardRepository bulletinBoardRepository;
     private final UploadedFileRepository uploadedFileRepository;
-    private final BulletinBoardCustomerCompanyMappingRepository bulletinBoardCustomerCompanyMappingRepository;
     private final CustomerCompanyRepository customerCompanyRepository;
     private final BulletinBoardNotificationUserRepository bulletinBoardNotificationUserRepository;
     private final UserRepository userRepository;
@@ -106,7 +100,7 @@ public class MiBulletinBoardService {
     public MiNoticeDetailRes getNotice(int companyNo, int userNo, int noticeNo) {
 
         BulletinBoard bulletinBoard = bulletinBoardRepository
-                .findByBulletinNoAndBulletinTypeCdAndIsDeletedFalse(noticeNo, "NOTICE")
+                .findAccessibleNoticeForService(noticeNo, companyNo)
                 .orElseThrow(
                         () -> AppErrorException.of(ResultCode.Error.RSC_NOT_FOUND, String.format("notice no: %d", noticeNo)));
 
@@ -114,14 +108,6 @@ public class MiBulletinBoardService {
         String categoryName = NoticeCategory.getNameByCode(categoryCode);
         if (categoryName == null) {
             throw AppErrorException.of(ResultCode.Error.RSC_NOT_FOUND, String.format("notice no: %d", noticeNo));
-        }
-
-        if (bulletinBoard.getIsWholePost() == false) {
-            BulletinBoardCustomerCompanyMappingId bulletinBoardCustomerCompanyMappingId = new BulletinBoardCustomerCompanyMappingId(noticeNo,
-                    companyNo);
-
-            bulletinBoardCustomerCompanyMappingRepository.findById(bulletinBoardCustomerCompanyMappingId)
-                    .orElseThrow(() -> AppErrorException.of(ResultCode.Error.RSC_NOT_FOUND, String.format("notice no: %d", noticeNo)));
         }
 
         List<UploadedFile> uploadFiles = uploadedFileRepository
