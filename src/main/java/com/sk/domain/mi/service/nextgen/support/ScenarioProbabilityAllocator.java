@@ -40,8 +40,20 @@ public final class ScenarioProbabilityAllocator {
     }
 
     /**
+     * 그룹 생성 API 버전(tmm_mi_scenario_group_m.api_version)으로 확률 스케일을 판정한다.
+     * v4만 0~1 비율 스케일이고 v1과 v3은 0~100 정수다 (2026-08-18 실DB 전수 실측: v1 그룹 합 100.00,
+     * v3 확률 38~86, v4 전수 0.10~0.34 합 1.00. v2 그룹은 미존재).
+     * dimension_definitions 파싱 성공 여부로 추론하던 기존 방식은 정의 JSON이 깨지면
+     * 확률이 조용히 0으로 붕괴되는 경로가 있어 명시 컬럼 판정으로 교체했다.
+     */
+    public static boolean ratioScale(String apiVersion) {
+        return "v4".equals(apiVersion);
+    }
+
+    /**
      * 원본 probability_score를 표시용 정수 퍼센트로 변환한다.
-     * v1(template 기반)은 0~100 스케일이라 정수부 그대로, v4(definitions 기반)는 0~1 스케일이라 100을 곱해 반올림한다.
+     * v1/v3은 0~100 스케일이라 정수부 그대로, v4는 0~1 스케일이라 100을 곱해 반올림한다.
+     * ratioScale 판정은 그룹 api_version 기준(ratioScale(String)) — definitions 파싱 추론은 폐기.
      * 재분배(redistribute)는 비례 계산이라 스케일과 무관하며, 이 변환은 원본 확률을 직접 노출하는 응답에만 쓴다.
      */
     public static Integer toDisplayPercent(BigDecimal probabilityScore, boolean ratioScale) {

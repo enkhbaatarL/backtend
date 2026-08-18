@@ -144,7 +144,7 @@ public class ScenarioDesignServiceImpl implements ScenarioDesignService {
                     Boolean.TRUE.equals(s.getIsBaseline()),
                     null, null, null,
                     template.dimensions(selectedKeys, s.getDimensionValues()),
-                    ScenarioProbabilityAllocator.toDisplayPercent(s.getProbabilityScore(), template.isDefinitionBased()),
+                    ScenarioProbabilityAllocator.toDisplayPercent(s.getProbabilityScore(), ScenarioProbabilityAllocator.ratioScale(group.getApiVersion())),
                     s.getNarrative(),
                     signpostsByScenario.getOrDefault(s.getScenarioId(), List.of())))
                 .toList();
@@ -246,8 +246,8 @@ public class ScenarioDesignServiceImpl implements ScenarioDesignService {
         ScenarioConfirmationReq.GroupEdit edit = request.scenarioGroup();
         ScenarioConfirmationAgentReq.GroupEdit groupEdit = edit == null ? null : new ScenarioConfirmationAgentReq.GroupEdit(edit.title(), edit.summary(), edit.description());
 
-        // 확률 스케일은 그룹 엔진 기준 — v4(definitions 기반)는 0~1 비율로 되돌려 보낸다 (2026-08-14 실통 확정)
-        boolean ratioScale = ScenarioDimensionMapper.isDefinitionBased(group.getDimensionDefinitions());
+        // 확률 스케일은 그룹 api_version 기준 — v4는 0~1 비율로 되돌려 보낸다 (2026-08-14 확정 실통 + 2026-08-18 전수 실측)
+        boolean ratioScale = ScenarioProbabilityAllocator.ratioScale(group.getApiVersion());
         ScenarioDesignTable table = ScenarioDesignTableMapper.toAgentConfirmTable(request.table(), ratioScale);
 
         ScenarioDesignAgentRes res = callAgent(() -> scenarioDesignAgentApi.confirm(scenarioGroupId, ScenarioConfirmationAgentReq.of(groupEdit, table)), "confirmDesign");

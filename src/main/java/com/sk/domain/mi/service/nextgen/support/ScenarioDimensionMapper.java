@@ -64,14 +64,6 @@ public final class ScenarioDimensionMapper {
         return templatesByL2.getOrDefault(eventTypeL2Id, GroupDimensionTemplate.EMPTY);
     }
 
-    /**
-     * 그룹이 v4 definitions 기반인지. 확률 스케일 판정에 사용한다 —
-     * v4는 0~1 비율, v1 template 기반은 0~100 정수 (2026-08-14 확정 실통으로 확정).
-     */
-    public static boolean isDefinitionBased(String dimensionDefinitionsJson) {
-        return !GroupDimensionTemplate.parseDefinitions(dimensionDefinitionsJson).isEmpty();
-    }
-
     /** 표시할 dim_key 배열(JSON: {@code ["key1","key2"]}) 파싱. */
     public static List<String> parseSelectedKeys(String dimensionSelectedJson) {
         if (dimensionSelectedJson == null || dimensionSelectedJson.isBlank()) {

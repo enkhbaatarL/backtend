@@ -166,7 +166,7 @@ public class EventServiceImpl implements EventService {
                         s,
                         template.dimensions(selectedKeys, s.dimensionValues()),
                         adjusted.get(s.scenarioId()),
-                        template.isDefinitionBased()
+                        ScenarioProbabilityAllocator.ratioScale(group.apiVersion())
                     ))
                     .toList();
                 return EventRelatedScenariosRes.of(group, dimensionColumns, scenarios);

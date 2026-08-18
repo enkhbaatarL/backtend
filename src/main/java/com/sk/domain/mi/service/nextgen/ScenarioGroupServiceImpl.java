@@ -118,7 +118,7 @@ public class ScenarioGroupServiceImpl implements ScenarioGroupService {
             Map<Long, Integer> adjusted = ScenarioProbabilityAllocator.redistributeRows(groupScenarios);
             List<ScenarioRowRes> scenarios = groupScenarios.stream()
                 .map(s -> ScenarioRowRes.of(s, template.dimensions(selectedKeys, s.dimensionValues()),
-                    adjusted.get(s.scenarioId()), template.isDefinitionBased()))
+                    adjusted.get(s.scenarioId()), ScenarioProbabilityAllocator.ratioScale(base.apiVersion())))
                 .toList();
 
             itemsByGroupId.put(base.scenarioGroupId(), ScenarioGroupListItemRes.of(base, dimensionColumns, scenarios));
@@ -166,7 +166,7 @@ public class ScenarioGroupServiceImpl implements ScenarioGroupService {
             List<ScenarioDimensionRes> dimensions = template.dimensions(selectedKeys, base.dimensionValues());
 
             itemsByScenarioId.put(base.scenarioId(),
-                ScenarioIndividualItemRes.of(base, dimensions, adjusted.get(base.scenarioId()), template.isDefinitionBased()));
+                ScenarioIndividualItemRes.of(base, dimensions, adjusted.get(base.scenarioId()), ScenarioProbabilityAllocator.ratioScale(base.apiVersion())));
         }
 
         return new ScenarioIndividualListRes(
@@ -342,7 +342,7 @@ public class ScenarioGroupServiceImpl implements ScenarioGroupService {
                 template.dimensions(selectedKeys, s.dimensionValues()),
                 ScenarioDisplayStatus.from(s.status()),
                 adjusted.get(s.scenarioId()),
-                template.isDefinitionBased()
+                ScenarioProbabilityAllocator.ratioScale(base.apiVersion())
             ))
             .toList();
 
@@ -371,17 +371,19 @@ public class ScenarioGroupServiceImpl implements ScenarioGroupService {
 
         List<ScenarioDimensionRes> dimensions = template.dimensions(selectedKeys, base.dimensionValues());
 
+        boolean ratioScale = ScenarioProbabilityAllocator.ratioScale(base.apiVersion());
+
         List<ScenarioSignpostDefinitionViewRes> signpostDefinitions = scenarioGroupRepository.findSignpostsByScenarioId(scenarioId).stream()
                 .map(ScenarioSignpostDefinitionViewRes::of)
                 .toList();
 
         List<ScenarioSignpostMonitoringRes> signpostMonitorings = scenarioGroupRepository.findSignpostEventsByScenarioId(scenarioId).stream()
-                .map(ScenarioSignpostMonitoringRes::of)
+                .map(row -> ScenarioSignpostMonitoringRes.of(row, ratioScale))
                 .toList();
 
         Map<Long, Integer> adjusted = ScenarioProbabilityAllocator.redistributeRows(scenarioGroupRepository.findScenariosByGroupId(scenarioGroupId));
 
-        return ScenarioDetailViewRes.of(base, dimensions, adjusted.get(scenarioId), template.isDefinitionBased(), signpostDefinitions, signpostMonitorings);
+        return ScenarioDetailViewRes.of(base, dimensions, adjusted.get(scenarioId), ratioScale, signpostDefinitions, signpostMonitorings);
     }
 
     /**

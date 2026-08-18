@@ -96,7 +96,8 @@ public class CustomMiScenarioGroupRepositoryImpl implements CustomMiScenarioGrou
                 miScenarioGroup.dimensionDefinitions,
                 miScenarioGroup.status,
                 miScenarioGroup.stage,
-                miScenarioGroup.requestUserId
+                miScenarioGroup.requestUserId,
+                miScenarioGroup.apiVersion
             ))
             .from(miScenarioGroup)
             .leftJoin(miScenarioGroupEvent).on(primaryGroupEventJoin())
@@ -161,7 +162,8 @@ public class CustomMiScenarioGroupRepositoryImpl implements CustomMiScenarioGrou
                 miScenarioGroup.dimensionDefinitions,
                 miScenarioGroupEvent.eventTypeL2.eventTypeL2Id,
                 miScenario.displayOrder,
-                miScenario.scenarioRole
+                miScenario.scenarioRole,
+                miScenarioGroup.apiVersion
             ))
             .from(miScenario)
             .innerJoin(miScenario.scenarioGroup, miScenarioGroup).on(miScenarioGroup.isDeleted.isFalse())
@@ -219,7 +221,8 @@ public class CustomMiScenarioGroupRepositoryImpl implements CustomMiScenarioGrou
                 miScenarioGroup.scenarioCount,
                 miScenarioGroup.dimensionSelected,
                 miScenarioGroup.dimensionDefinitions,
-                miScenarioGroupEvent.eventTypeL2.eventTypeL2Id
+                miScenarioGroupEvent.eventTypeL2.eventTypeL2Id,
+                miScenarioGroup.apiVersion
             ))
             .from(miScenarioGroup)
             // eventTypeL2Id는 기준 매핑 행(display_order 첫 이벤트)의 동결값 (v1 template 폴백용).
@@ -342,7 +345,8 @@ public class CustomMiScenarioGroupRepositoryImpl implements CustomMiScenarioGrou
                 miScenarioGroup.dimensionDefinitions,
                 miScenarioGroupEvent.eventTypeL2.eventTypeL2Id,
                 miScenario.displayOrder,
-                miScenario.scenarioRole
+                miScenario.scenarioRole,
+                miScenarioGroup.apiVersion
             ))
             .from(miScenario)
             .innerJoin(miScenario.scenarioGroup, miScenarioGroup).on(miScenarioGroup.isDeleted.isFalse())

@@ -59,6 +59,11 @@ public class MiScenarioGroup extends BaseEntity {
     @Comment("v4 분기항목 정의 (dimension definitions, v1-v3은 빈 배열)")
     private String dimensionDefinitions;
 
+    @Column(name = "api_version", nullable = false, length = 20)
+    @ColumnDefault("'v1'")
+    @Comment("생성 API 버전 (v1~v4) - 확률 스케일 판정 기준 (v4만 0~1 비율, 2026-08-18 실측)")
+    private String apiVersion;
+
     @Column(name = "scenario_count", nullable = false)
     @ColumnDefault("0")
     @Comment("시나리오 수")
