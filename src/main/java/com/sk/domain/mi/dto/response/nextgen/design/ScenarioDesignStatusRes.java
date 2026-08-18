@@ -41,7 +41,7 @@ public record ScenarioDesignStatusRes(
     /**
      * 설계중
      * */
-    public static ScenarioDesignStatusRes creating(Long scenarioGroupId, ScenarioGroupStage stage, Long occupantUserId, String occupantUserName, boolean mine) {
+    public static ScenarioDesignStatusRes creating(Long scenarioGroupId, ScenarioGroupStage stage, Long occupantUserId, String occupantUserName, Boolean mine) {
         ScenarioDesignDisplayStatus.CreatingStep step = ScenarioDesignDisplayStatus.CreatingStep.of(stage);
         return new ScenarioDesignStatusRes(
             ScenarioDesignDisplayStatus.CREATING,

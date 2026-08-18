@@ -165,8 +165,7 @@ public class EventServiceImpl implements EventService {
                     .map(s -> EventRelatedScenarioRes.of(
                         s,
                         template.dimensions(selectedKeys, s.dimensionValues()),
-                        adjusted.get(s.scenarioId()),
-                        ScenarioProbabilityAllocator.ratioScale(group.apiVersion())
+                        adjusted.get(s.scenarioId())
                     ))
                     .toList();
                 return EventRelatedScenariosRes.of(group, dimensionColumns, scenarios);
@@ -263,8 +262,8 @@ public class EventServiceImpl implements EventService {
                 continue;
             }
             List<String> events = groupRows.stream().map(EventLinkedScenarioGroupRow::memberEventName).toList();
-            // mine: 설계중 그룹의 진행자가 로그인 사용자인지 (다른 사용자면 패널 카드에 잠금 배지)
-            Boolean mine = userId.equals(first.requestUserId());
+            // mine: 설계중 그룹의 진행자가 로그인 사용자인지 (다른 사용자면 패널 카드에 잠금 배지, 진행자 미상이면 null)
+            Boolean mine = first.requestUserId() == null ? null : userId.equals(first.requestUserId());
             result.add(EventLinkedScenarioGroupRes.of(
                 first.scenarioGroupId(), first.groupTitle(), first.status(), first.stage(), mine, events));
         }

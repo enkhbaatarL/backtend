@@ -12,8 +12,7 @@ public record ScenarioGroupDetailBaseRow(
     Integer scenarioCount,
     String dimensionSelected,
     String dimensionDefinitions,
-    Long eventTypeL2Id,
-    String apiVersion
+    Long eventTypeL2Id
 ) {
 
     @QueryProjection

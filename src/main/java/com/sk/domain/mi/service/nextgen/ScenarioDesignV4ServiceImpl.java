@@ -109,7 +109,7 @@ public class ScenarioDesignV4ServiceImpl implements ScenarioDesignV4Service {
             .findFirst()
             .orElse(null);
 
-        // [생성중] 응답
+        // [생성중] 응답 (진행자 미상 그룹은 mine=null — 타인 점유 잠금으로 오표기하지 않는다)
         if (creating != null) {
             Long userId = authorizationService.getUserNo().longValue();
             return ScenarioDesignStatusRes.creating(
@@ -117,7 +117,7 @@ public class ScenarioDesignV4ServiceImpl implements ScenarioDesignV4Service {
                 creating.getStage(),
                 creating.getRequestUserId(),
                 resolveUserName(creating.getRequestUserId()),
-                userId.equals(creating.getRequestUserId()));
+                creating.getRequestUserId() == null ? null : userId.equals(creating.getRequestUserId()));
         }
 
         // [생성완료 || 생성가능] 응답

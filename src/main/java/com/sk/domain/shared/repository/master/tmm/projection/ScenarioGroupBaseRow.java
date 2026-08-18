@@ -17,8 +17,7 @@ public record ScenarioGroupBaseRow(
     String dimensionDefinitions,
     ScenarioGroupStatus status,
     ScenarioGroupStage stage,
-    Long requestUserId,
-    String apiVersion
+    Long requestUserId
 ) {
 
     @QueryProjection

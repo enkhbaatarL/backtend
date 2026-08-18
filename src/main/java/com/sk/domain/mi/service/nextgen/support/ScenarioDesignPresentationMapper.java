@@ -24,17 +24,19 @@ import java.util.Comparator;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import lombok.extern.slf4j.Slf4j;
 
 /**
  * Agent presentation 응답 → B.E 설계 화면 계약({@link ScenarioDesignPresentationRes}) 변환기.
  *
  * Agent의 sections 트리를 화면 단위로 펴고, 시나리오 표는 기존 설계 표 계약(DesignTable)으로 변환한다.
  * 셀 값은 cells의 표시 label을 정본으로 쓰고(왕복 재전송 안전), cellEvidence에서 valueId와 셀 근거를 보강한다.
- * 확률은 legacy 여부로 스케일을 분기한다 — v4는 0~1 비율이라 100을 곱하고, v1 legacy는 0~100 정수 그대로.
+ * 확률은 전 세대 0~100 정수 단일 스케일이다 (Agent팀이 v1 정책으로 통일 확정 — 2026-08-18).
  *
  * Agent 계약에 없는 필드(신규 이벤트 종류, 부가 메타)는 무시하도록 파싱 레코드에 ignoreUnknown을 걸어
  * Agent 측 확장에 내성을 가진다.
  */
+@Slf4j
 public final class ScenarioDesignPresentationMapper {
 
     private ScenarioDesignPresentationMapper() {
@@ -54,12 +56,11 @@ public final class ScenarioDesignPresentationMapper {
                                                       DesignTable overlayTable,
                                                       Map<Long, List<ScenarioSignpostDefinitionViewRes>> signpostsByScenario) {
         AgentPresentation source = JsonUtil.fromJson(agentBody.toString(), AgentPresentation.class);
-        boolean legacy = Boolean.TRUE.equals(source.legacy());
         AgentSections sections = source.sections();
 
         Map<String, List<DesignDimensionValueOption>> valueOptions = toDimensionValueOptions(sections);
         DesignTable table = overlayTable == null
-            ? toTable(sections, legacy, signpostsByScenario)
+            ? toTable(sections, signpostsByScenario)
             : enrichOverlayTable(overlayTable, sections, valueOptions, signpostsByScenario);
 
         return ScenarioDesignPresentationRes.of(
@@ -184,9 +185,15 @@ public final class ScenarioDesignPresentationMapper {
         if (presentationSnapshotJson == null || presentationSnapshotJson.isBlank()) {
             return null;
         }
-        AgentPresentation source = JsonUtil.fromJson(presentationSnapshotJson, AgentPresentation.class);
-        DesignEvidence evidence = toEvidence(source == null ? null : source.sections());
-        return evidence.eventAnalysisMarkdown() == null && evidence.roleSelectionMarkdown() == null ? null : evidence;
+        // 근거는 부가 정보 — 스냅샷이 손상/비호환이어도 그룹 상세 조회 자체는 살아야 하므로 실패는 null로 강등한다
+        try {
+            AgentPresentation source = JsonUtil.fromJson(presentationSnapshotJson, AgentPresentation.class);
+            DesignEvidence evidence = toEvidence(source == null ? null : source.sections());
+            return evidence.eventAnalysisMarkdown() == null && evidence.roleSelectionMarkdown() == null ? null : evidence;
+        } catch (Exception e) {
+            log.warn("[Design Presentation] presentation_snapshot 파싱 실패 - evidence 생략: {}", e.getMessage());
+            return null;
+        }
     }
 
     private static DesignEvidence toEvidence(AgentSections sections) {
@@ -208,7 +215,7 @@ public final class ScenarioDesignPresentationMapper {
      * scenarioTable + dimensionDefinitions → 설계 표. 헤더가 아직 없으면(생성 초기 스냅샷) null을 반환해
      * FE가 표 영역을 로딩 상태로 두게 한다. 헤더의 설명/근거는 definitions에서 dimensionId로 조인한다.
      */
-    private static DesignTable toTable(AgentSections sections, boolean legacy,
+    private static DesignTable toTable(AgentSections sections,
                                        Map<Long, List<ScenarioSignpostDefinitionViewRes>> signpostsByScenario) {
         AgentScenarioTable scenarioTable = sections == null || sections.scenarioDesign() == null
             ? null
@@ -238,13 +245,13 @@ public final class ScenarioDesignPresentationMapper {
             .toList();
 
         List<DesignScenarioRow> rows = (scenarioTable.rows() == null ? List.<AgentRow>of() : scenarioTable.rows()).stream()
-            .map(row -> toDesignRow(row, headers, legacy, signpostsByScenario))
+            .map(row -> toDesignRow(row, headers, signpostsByScenario))
             .toList();
 
         return DesignTable.of(columns, rows);
     }
 
-    private static DesignScenarioRow toDesignRow(AgentRow row, List<AgentHeader> headers, boolean legacy,
+    private static DesignScenarioRow toDesignRow(AgentRow row, List<AgentHeader> headers,
                                                  Map<Long, List<ScenarioSignpostDefinitionViewRes>> signpostsByScenario) {
         Map<String, String> cells = row.cells() == null ? Map.of() : row.cells();
         Map<String, AgentCellEvidence> cellEvidence = row.cellEvidence() == null ? Map.of() : row.cellEvidence();
@@ -275,7 +282,7 @@ public final class ScenarioDesignPresentationMapper {
             GlobalPressureBand.fromNullable(row.pressureBand()),
             row.pressureRationale(),
             dimensions,
-            ScenarioProbabilityAllocator.toDisplayPercent(row.probabilityScore(), !legacy),
+            ScenarioProbabilityAllocator.toDisplayPercent(row.probabilityScore()),
             row.narrative(),
             resolveSignposts(row.scenarioId(), signpostsByScenario, null)
         );
@@ -305,8 +312,7 @@ public final class ScenarioDesignPresentationMapper {
     }
 
     @JsonIgnoreProperties(ignoreUnknown = true)
-    private record AgentPresentation(Long scenarioGroupId, Boolean legacy,
-                                     AgentOperation operation, AgentSections sections) {
+    private record AgentPresentation(Long scenarioGroupId, AgentOperation operation, AgentSections sections) {
     }
 
     @JsonIgnoreProperties(ignoreUnknown = true)

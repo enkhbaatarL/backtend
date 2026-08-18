@@ -49,8 +49,7 @@ public record ScenarioGroupDetailRowRes(
         ScenarioBaseRow row,
         List<ScenarioDimensionRes> dimensions,
         ScenarioDisplayStatus status,
-        Integer adjustedProbability,
-        boolean ratioProbability
+        Integer adjustedProbability
     ) {
         ScenarioRole scenarioRole = ScenarioRole.fromNullable(row.scenarioRole());
         return new ScenarioGroupDetailRowRes(
@@ -61,7 +60,7 @@ public record ScenarioGroupDetailRowRes(
             scenarioRole == null ? null : scenarioRole.getLabel(),
             row.displayOrder(),
             dimensions,
-            ScenarioProbabilityAllocator.toDisplayPercent(row.probabilityScore(), ratioProbability),
+            ScenarioProbabilityAllocator.toDisplayPercent(row.probabilityScore()),
             adjustedProbability,
             status,
             status == null ? null : status.getLabel()

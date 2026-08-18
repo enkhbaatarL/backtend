@@ -18,8 +18,7 @@ public record ScenarioDetailBaseRow(
     String dimensionDefinitions,
     Long eventTypeL2Id,
     Integer displayOrder,
-    String scenarioRole,
-    String apiVersion
+    String scenarioRole
 ) {
 
     @QueryProjection

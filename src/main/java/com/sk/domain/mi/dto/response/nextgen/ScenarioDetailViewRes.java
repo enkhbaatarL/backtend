@@ -62,7 +62,6 @@ public record ScenarioDetailViewRes(
     public static ScenarioDetailViewRes of(ScenarioDetailBaseRow base,
                                            List<ScenarioDimensionRes> dimensions,
                                            Integer adjustedProbability,
-                                           boolean ratioProbability,
                                            List<ScenarioSignpostDefinitionViewRes> signpostDefinitions,
                                            List<ScenarioSignpostMonitoringRes> signpostMonitorings) {
         ScenarioRole scenarioRole = ScenarioRole.fromNullable(base.scenarioRole());
@@ -77,7 +76,7 @@ public record ScenarioDetailViewRes(
             base.createdAt(),
             base.updatedAt(),
             base.narrative(),
-            ScenarioProbabilityAllocator.toDisplayPercent(base.probabilityScore(), ratioProbability),
+            ScenarioProbabilityAllocator.toDisplayPercent(base.probabilityScore()),
             adjustedProbability,
             dimensions,
             signpostDefinitions,

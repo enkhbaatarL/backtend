@@ -96,8 +96,7 @@ public class CustomMiScenarioGroupRepositoryImpl implements CustomMiScenarioGrou
                 miScenarioGroup.dimensionDefinitions,
                 miScenarioGroup.status,
                 miScenarioGroup.stage,
-                miScenarioGroup.requestUserId,
-                miScenarioGroup.apiVersion
+                miScenarioGroup.requestUserId
             ))
             .from(miScenarioGroup)
             .leftJoin(miScenarioGroupEvent).on(primaryGroupEventJoin())
@@ -162,8 +161,7 @@ public class CustomMiScenarioGroupRepositoryImpl implements CustomMiScenarioGrou
                 miScenarioGroup.dimensionDefinitions,
                 miScenarioGroupEvent.eventTypeL2.eventTypeL2Id,
                 miScenario.displayOrder,
-                miScenario.scenarioRole,
-                miScenarioGroup.apiVersion
+                miScenario.scenarioRole
             ))
             .from(miScenario)
             .innerJoin(miScenario.scenarioGroup, miScenarioGroup).on(miScenarioGroup.isDeleted.isFalse())
@@ -221,13 +219,13 @@ public class CustomMiScenarioGroupRepositoryImpl implements CustomMiScenarioGrou
                 miScenarioGroup.scenarioCount,
                 miScenarioGroup.dimensionSelected,
                 miScenarioGroup.dimensionDefinitions,
-                miScenarioGroupEvent.eventTypeL2.eventTypeL2Id,
-                miScenarioGroup.apiVersion
+                miScenarioGroupEvent.eventTypeL2.eventTypeL2Id
             ))
             .from(miScenarioGroup)
             // eventTypeL2Id는 기준 매핑 행(display_order 첫 이벤트)의 동결값 (v1 template 폴백용).
-            // 구성 이벤트 목록(eventBundles)은 findBaseEventsByScenarioGroupId로 별도 조회한다
-            .innerJoin(miScenarioGroupEvent).on(primaryGroupEventJoin())
+            // 구성 이벤트 목록(eventBundles)은 findBaseEventsByScenarioGroupId로 별도 조회한다.
+            // left join — 활성 매핑이 소실된 그룹도 목록과 동일하게 상세 진입은 가능해야 한다 (eventTypeL2Id만 null)
+            .leftJoin(miScenarioGroupEvent).on(primaryGroupEventJoin())
             .where(
                 miScenarioGroup.scenarioGroupId.eq(scenarioGroupId),
                 miScenarioGroup.isDeleted.isFalse()
@@ -318,7 +316,10 @@ public class CustomMiScenarioGroupRepositoryImpl implements CustomMiScenarioGrou
             .from(miScenario)
             .where(
                 groupCondition,
-                miScenario.isDeleted.isFalse()
+                miScenario.isDeleted.isFalse(),
+                // 생성중 시나리오는 노출과 재분배 분모에서 모두 제외한다 (개별 목록 buildScenarioWhere와 동일 규칙 —
+                // 이 결과가 redistributeRows 입력이라 필터만으로 분모 정합이 함께 보장된다)
+                miScenario.status.ne(ScenarioStatus.CREATING)
             )
             .orderBy(
                 miScenario.scenarioGroup.scenarioGroupId.asc(),
@@ -345,8 +346,7 @@ public class CustomMiScenarioGroupRepositoryImpl implements CustomMiScenarioGrou
                 miScenarioGroup.dimensionDefinitions,
                 miScenarioGroupEvent.eventTypeL2.eventTypeL2Id,
                 miScenario.displayOrder,
-                miScenario.scenarioRole,
-                miScenarioGroup.apiVersion
+                miScenario.scenarioRole
             ))
             .from(miScenario)
             .innerJoin(miScenario.scenarioGroup, miScenarioGroup).on(miScenarioGroup.isDeleted.isFalse())

@@ -59,7 +59,7 @@ public record ScenarioIndividualItemRes(
 
     /** 개별 모드 base row + 조립된 dimensions → 응답 행. */
     public static ScenarioIndividualItemRes of(ScenarioIndividualBaseRow row, List<ScenarioDimensionRes> dimensions,
-                                               Integer adjustedProbability, boolean ratioProbability) {
+                                               Integer adjustedProbability) {
         ScenarioDisplayStatus status = ScenarioDisplayStatus.from(row.status());
         ScenarioRole scenarioRole = ScenarioRole.fromNullable(row.scenarioRole());
         return new ScenarioIndividualItemRes(
@@ -73,7 +73,7 @@ public record ScenarioIndividualItemRes(
             row.updatedAt(),
             new ScenarioGroupRefRes(row.scenarioGroupId(), row.groupTitle(), row.groupCreatedAt()),
             dimensions,
-            ScenarioProbabilityAllocator.toDisplayPercent(row.probabilityScore(), ratioProbability),
+            ScenarioProbabilityAllocator.toDisplayPercent(row.probabilityScore()),
             adjustedProbability,
             status,
             status.getLabel()

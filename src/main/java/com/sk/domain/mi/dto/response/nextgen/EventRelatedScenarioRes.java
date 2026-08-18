@@ -47,7 +47,7 @@ public record EventRelatedScenarioRes(
 
 ) {
 
-    public static EventRelatedScenarioRes of(ScenarioBaseRow row, List<ScenarioDimensionRes> dimensions, Integer adjustedProbability, boolean ratioProbability) {
+    public static EventRelatedScenarioRes of(ScenarioBaseRow row, List<ScenarioDimensionRes> dimensions, Integer adjustedProbability) {
         ScenarioDisplayStatus status = ScenarioDisplayStatus.from(row.status());
         ScenarioRole scenarioRole = ScenarioRole.fromNullable(row.scenarioRole());
         return new EventRelatedScenarioRes(
@@ -58,7 +58,7 @@ public record EventRelatedScenarioRes(
             scenarioRole == null ? null : scenarioRole.getLabel(),
             row.displayOrder(),
             dimensions,
-            ScenarioProbabilityAllocator.toDisplayPercent(row.probabilityScore(), ratioProbability),
+            ScenarioProbabilityAllocator.toDisplayPercent(row.probabilityScore()),
             adjustedProbability,
             status,
             status.getLabel()
