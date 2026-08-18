@@ -1,21 +1,16 @@
 package com.sk.domain.shared.repository.master.tcm;
 
-import java.util.List;
+import com.sk.domain.admin.dto.response.bbs.FaqRes;
+import com.sk.domain.admin.dto.response.bbs.NoticeRes;
+import com.sk.domain.mi.dto.response.bbs.MiFaqRes;
+import com.sk.domain.mi.dto.response.bbs.MiNoticeRes;
+import com.sk.domain.shared.entity.master.tcm.BulletinBoard;
 import java.util.Optional;
-
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
-import org.springframework.data.jpa.domain.Specification;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
-
-import com.sk.domain.shared.entity.master.tcm.BulletinBoard;
-
-import com.sk.domain.admin.dto.response.bbs.NoticeRes;
-import com.sk.domain.admin.dto.response.bbs.FaqRes;
-import com.sk.domain.mi.dto.response.bbs.MiNoticeRes;
-import com.sk.domain.mi.dto.response.bbs.MiFaqRes;
 
 public interface BulletinBoardRepository extends JpaRepository<BulletinBoard, Integer> {
 
@@ -167,6 +162,22 @@ public interface BulletinBoardRepository extends JpaRepository<BulletinBoard, In
             @Param("category") String category,
             @Param("keyword") String keyword,
             Pageable pageable);
+
+    @Query("""
+            SELECT DISTINCT b
+            FROM BulletinBoard b
+            LEFT JOIN BulletinBoardCustomerCompanyMapping m ON m.bulletinBoard = b
+            LEFT JOIN m.customerCompany c
+            WHERE b.bulletinNo = :noticeNo
+              AND b.isDeleted = false
+              AND b.bulletinTypeCd = 'NOTICE'
+              AND b.bulletinValidBeginDt <= FUNCTION('DATE_FORMAT', CURRENT_DATE, '%Y%m%d')
+              AND b.bulletinValidEndDt >= FUNCTION('DATE_FORMAT', CURRENT_DATE, '%Y%m%d')
+              AND (b.isWholePost = 'Y' OR (b.isWholePost = 'N' AND c.customerCompanyNo = :customerCompanyNo))
+            """)
+    Optional<BulletinBoard> findAccessibleNoticeForService(
+            @Param("noticeNo") int noticeNo,
+            @Param("customerCompanyNo") int customerCompanyNo);
 
     @Query(value = """
             SELECT b

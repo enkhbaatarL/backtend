@@ -1,11 +1,5 @@
 package com.sk.domain.mi.controller;
 
-import org.springframework.context.annotation.Profile;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.RestController;
 import com.sk.common.annotation.ApiOrder;
 import com.sk.common.annotation.RequiredPermission;
 import com.sk.common.model.BaseResponse;
@@ -21,16 +15,21 @@ import com.sk.domain.mi.dto.response.bbs.MiNoticeRes;
 import com.sk.domain.mi.service.MiBulletinBoardService;
 import com.sk.domain.shared.enums.Role;
 import com.sk.domain.shared.service.permissions.AuthorizationService;
-
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.Parameters;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
-
 import jakarta.validation.constraints.Min;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.context.annotation.Profile;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RestController;
 
 @Profile("!dedicated")
 @Tag(name = "07. 게시판 API", description = "게시판 API 입니다.")
@@ -85,10 +84,20 @@ public class MiBulletinBoardController {
 
     @ApiOrder(3)
     @Parameters({
-            @Parameter(name = "noticeNo", description = "공지사항번호 (기본값: 1)")
+            @Parameter(name = "customerCompanyNo", description = "조회할 고객사 번호. 일반 사용자는 로그인한 고객사 기준으로 조회합니다."),
+            @Parameter(name = "noticeNo", description = "공지사항 번호")
     })
-    @Operation(summary = "공지사항 상세 조회", description = "공지사항 1개를 조회합니다.")
-    @ApiResponse(responseCode = "200", description = "HTTP Status Code is 200")
+    @Operation(
+            summary = "공지사항 상세 조회",
+            description = """
+                    현재 게시기간에 포함되고, 전체 게시이거나 조회 고객사에 공개된 공지사항 1건을 조회합니다.
+
+                    조회 범위 밖이거나 삭제된 공지사항은 `RSC-001`로 처리하며, 읽음 기록을 남기지 않습니다.
+                    """)
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "조회 가능한 공지사항 상세 반환"),
+            @ApiResponse(responseCode = "400", description = "조회 범위 밖이거나 존재하지 않는 공지사항 (`RSC-001`)")
+    })
     @GetMapping("/notices/{noticeNo}")
     @RequiredPermission(roles = {Role.ADMIN, Role.USER, Role.OPERATOR})
     public BaseResponse<MiNoticeDetailRes> getNotice(
