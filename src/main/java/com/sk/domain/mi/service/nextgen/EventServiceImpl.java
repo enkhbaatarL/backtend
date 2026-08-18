@@ -99,44 +99,14 @@ public class EventServiceImpl implements EventService {
     /**
      * [이벤트 상세]
      * - relatedEventScenarios(연관 시나리오)는 연결된 그룹별 표를 그룹 오래된 순으로 스택 (없으면 빈 목록)
-     * - scenarioDesignStatus 파생 규칙은 목록과 동일 (기준 그룹 status 기반), 점유는 설계중 그룹 존재 여부
+     * - 설계 상태/점유 헤더는 제공하지 않는다 — 조합 단위 판정인 이벤트 조합 설계 상태 조회 API가 담당 (목록과 동일 정책)
      */
     @Override
     public EventDetailRes getEventDetail(Long eventId) {
         EventDetailRow row = miEventRepository.findEventDetail(eventId)
             .orElseThrow(() -> AppErrorException.of(ResultCode.Error.RSC_NOT_FOUND, "Event not found: %d".formatted(eventId)));
 
-        // 실패 방치(좀비) 그룹은 상태/점유 헤더 파생에서 제외 — 이벤트 목록/연결 그룹 패널과 동일 잠정 규칙
-        List<ScenarioGroupBaseRow> activeGroups = excludeFailedCreatingGroups(row.relatedScenarioGroups());
-
-        ScenarioGroupBaseRow creatingGroup = activeGroups.stream()
-            .filter(g -> g.status() == ScenarioGroupStatus.CREATING)
-            .findFirst()
-            .orElse(null);
-
-        return EventDetailRes.from(row, activeGroups, buildRelatedScenarios(row), resolveOccupantName(creatingGroup));
-    }
-
-    /** 실패 방치(좀비) 그룹을 제외한 그룹 목록. */
-    private List<ScenarioGroupBaseRow> excludeFailedCreatingGroups(List<ScenarioGroupBaseRow> groups) {
-        Set<Long> zombieGroupIds = failedCreatingGroupResolver.resolve(groups.stream()
-            .filter(g -> g.status() == ScenarioGroupStatus.CREATING)
-            .map(ScenarioGroupBaseRow::scenarioGroupId)
-            .toList());
-        if (zombieGroupIds.isEmpty()) {
-            return groups;
-        }
-        return groups.stream()
-            .filter(g -> !zombieGroupIds.contains(g.scenarioGroupId()))
-            .toList();
-    }
-
-    /** 설계중(점유) 그룹의 요청자 사용자명을 조회한다. (설계중 그룹이 없으면 null) */
-    private String resolveOccupantName(ScenarioGroupBaseRow creatingGroup) {
-        if (creatingGroup == null || creatingGroup.requestUserId() == null) {
-            return null;
-        }
-        return resolveOccupantNames(List.of(creatingGroup.requestUserId())).get(creatingGroup.requestUserId());
+        return EventDetailRes.from(row, buildRelatedScenarios(row));
     }
 
     /**
@@ -284,6 +254,7 @@ public class EventServiceImpl implements EventService {
             .collect(Collectors.groupingBy(EventLinkedScenarioGroupRow::scenarioGroupId, LinkedHashMap::new, Collectors.toList()));
 
         Set<Long> zombieGroupIds = resolveFailedCreatingGroupIds(rowsByGroup);
+        Long userId = authorizationService.getUserNo().longValue();
 
         List<EventLinkedScenarioGroupRes> result = new ArrayList<>(rowsByGroup.size());
         for (List<EventLinkedScenarioGroupRow> groupRows : rowsByGroup.values()) {
@@ -292,8 +263,10 @@ public class EventServiceImpl implements EventService {
                 continue;
             }
             List<String> events = groupRows.stream().map(EventLinkedScenarioGroupRow::memberEventName).toList();
+            // mine: 설계중 그룹의 진행자가 로그인 사용자인지 (다른 사용자면 패널 카드에 잠금 배지)
+            Boolean mine = userId.equals(first.requestUserId());
             result.add(EventLinkedScenarioGroupRes.of(
-                first.scenarioGroupId(), first.groupTitle(), first.status(), first.stage(), events));
+                first.scenarioGroupId(), first.groupTitle(), first.status(), first.stage(), mine, events));
         }
         return result;
     }

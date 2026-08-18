@@ -35,13 +35,17 @@ public record EventLinkedScenarioGroupRes(
     @Schema(description = "설계중 세부 진행 단계 라벨. 설계중이 아니면 null", example = "분기항목 설계", nullable = true)
     String designStepLabel,
 
+    @Schema(description = "설계중 그룹의 진행자가 로그인 사용자인지 - false면 잠금 배지 표시. 설계중이 아니면 null", example = "true", nullable = true)
+    Boolean mine,
+
     @Schema(description = "그룹을 구성하는 이벤트명 목록 (표시 순서)")
     List<String> events
 
 ) {
 
-    public static EventLinkedScenarioGroupRes of(Long scenarioGroupId, String title, ScenarioGroupStatus status, ScenarioGroupStage stage, List<String> events) {
-        ScenarioDesignDisplayStatus.CreatingStep designStep = status == ScenarioGroupStatus.CREATING ? ScenarioDesignDisplayStatus.CreatingStep.of(stage) : null;
+    public static EventLinkedScenarioGroupRes of(Long scenarioGroupId, String title, ScenarioGroupStatus status, ScenarioGroupStage stage, Boolean mine, List<String> events) {
+        boolean creating = status == ScenarioGroupStatus.CREATING;
+        ScenarioDesignDisplayStatus.CreatingStep designStep = creating ? ScenarioDesignDisplayStatus.CreatingStep.of(stage) : null;
         return new EventLinkedScenarioGroupRes(
             scenarioGroupId,
             title,
@@ -51,6 +55,7 @@ public record EventLinkedScenarioGroupRes(
             stage == null ? null : stage.getLabel(),
             designStep,
             designStep == null ? null : designStep.getLabel(),
+            creating ? mine : null,
             events
         );
     }

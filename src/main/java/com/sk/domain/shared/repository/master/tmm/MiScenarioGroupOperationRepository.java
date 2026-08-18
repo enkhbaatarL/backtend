@@ -29,9 +29,12 @@ public interface MiScenarioGroupOperationRepository extends JpaRepository<MiScen
     );
 
     /**
-     * 시나리오 그룹들의 operation 이력 조회 (최근 생성 순 — 그룹별 첫 행이 최신 operation).
+     * 시나리오 그룹들의 operation 이력 조회 (operation_id ULID 내림차순 — 그룹별 첫 행이 최신 operation).
+     * 실패 방치 그룹 판정(FailedCreatingGroupResolver)에 사용한다. 최신 판정 기준을
+     * 쿼리 버전(CustomMiEventRepositoryImpl.notFailedCreating의 operationId.max())과 동일하게 ULID로 맞춘다
+     * — create_dt는 동시각 충돌이 가능해 기준으로 쓰지 않는다.
      */
-    List<MiScenarioGroupOperation> findByScenarioGroup_ScenarioGroupIdInAndIsDeletedFalseOrderByCreateDtDesc(Collection<Long> scenarioGroupIds);
+    List<MiScenarioGroupOperation> findByScenarioGroup_ScenarioGroupIdInAndIsDeletedFalseOrderByOperationIdDesc(Collection<Long> scenarioGroupIds);
 
     /**
      * 그룹의 최신 operation의 presentation_snapshot 조회 (그룹 상세 '근거 보기' — 확정 후 근거는 DB 스냅샷이 원천).

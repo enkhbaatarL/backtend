@@ -13,6 +13,7 @@ public record EventLinkedScenarioGroupRow(
     String groupTitle,
     ScenarioGroupStatus status,
     ScenarioGroupStage stage,
+    Long requestUserId,
     Integer memberDisplayOrder,
     String memberEventName
 ) {

@@ -45,9 +45,9 @@ public class FailedCreatingGroupResolver {
 
         if (creatingGroupIds.isEmpty()) return Set.of();
 
-        // 최근 생성 순 조회라 그룹별 첫 등장 create operation이 최신이다
+        // operation_id ULID 내림차순 조회라 그룹별 첫 등장 create operation이 최신이다 (쿼리 버전 notFailedCreating과 동일 기준)
         Map<Long, MiScenarioGroupOperation> latestByGroup = new LinkedHashMap<>();
-        List<MiScenarioGroupOperation> opers = operationRepository.findByScenarioGroup_ScenarioGroupIdInAndIsDeletedFalseOrderByCreateDtDesc(creatingGroupIds);
+        List<MiScenarioGroupOperation> opers = operationRepository.findByScenarioGroup_ScenarioGroupIdInAndIsDeletedFalseOrderByOperationIdDesc(creatingGroupIds);
         for (MiScenarioGroupOperation operation : opers) {
             if (DesignOperationType.CREATE != DesignOperationType.fromNullable(operation.getOperationType())) {
                 continue;

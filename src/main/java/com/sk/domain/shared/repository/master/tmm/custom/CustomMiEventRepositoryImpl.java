@@ -213,6 +213,7 @@ public class CustomMiEventRepositoryImpl implements CustomMiEventRepository {
                 miScenarioGroup.title,
                 miScenarioGroup.status,
                 miScenarioGroup.stage,
+                miScenarioGroup.requestUserId,
                 member.displayOrder,
                 // note: 이벤트명은 event_title 대신 one_line_summary 표기 (이벤트 도메인과 동일 기준)
                 memberEvent.oneLineSummary

@@ -269,7 +269,7 @@ public class ScenarioDesignV4ServiceImpl implements ScenarioDesignV4Service {
                 sp -> sp.getScenario().getScenarioId(),
                 Collectors.mapping(sp -> ScenarioSignpostDefinitionViewRes.of(
                     sp.getSignpostId(), sp.getLabel(), sp.getProbabilityDirection(),
-                    sp.getProbabilityImpactScore() == null ? null : sp.getProbabilityImpactScore().intValue(),
+                    sp.getProbabilityImpactScore(),
                     sp.getStrength(), sp.getSignpostReason(), sp.getDisplayOrder()),
                     Collectors.toList())));
     }

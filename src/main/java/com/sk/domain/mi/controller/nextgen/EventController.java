@@ -143,6 +143,7 @@ public class EventController {
             - `scenarioGroupId` / `title`: 그룹 식별자와 그룹명
             - `status` + `statusLabel`: 그룹 상태 (creating/created/realized)
             - `stage` + `stageLabel`, `designStep` + `designStepLabel`: 진행 단계 (상태 배지 1단계/2단계 표기용, 설계중일 때만)
+            - `mine`: 설계중 그룹의 진행자가 로그인 사용자인지 — **false면 상태 배지에 잠금 아이콘을 함께 표시** (설계중이 아니면 null)
             - `events`: 그룹을 구성하는 이벤트명 목록 (표시 순서)
 
             <br><br>
@@ -176,10 +177,6 @@ public class EventController {
             - `signalType` / `signalTypeLabel`: 신호(`signal`) / 소음(`noise`)
             - `isScenarioSuggested`: 시나리오화 추천 여부
             - `scenarioSuggestReason`: 시나리오화 추천 근거 (추천 아님일 때 null)
-            - `scenarioDesignStatus` / `scenarioDesignStatusLabel`: `designable`(설계가능) / `unavailable`(설계불가, 매칭 dimension template 없음) / `creating`(설계중) / `created`(설계완료)
-            - `designStep` / `designStepLabel`: 설계중(`creating`) 세부 진행 단계 — `step1`(분기항목 설계) / `step2`(Signpost 설계). 설계중이 아니면 null
-            - `occupied`: 설계 점유 여부 (설계중이면 true)
-            - `occupantUserId` / `occupantUserName`: 점유 사용자 ID/명 (점유 중이 아니면 null)
             - `eventTypeLv1` / `eventTypeLv1Label` / `eventTypeLv2` / `eventTypeLv2Label`
             - `createdAt`, `updatedAt`, `latestRecordFirstCreated`(최신 연관 레코드 최초 생성일시)
             - `institutionViewSynthesis`: 기관 전망 View 종합 — 기관전망 섹션 상단의 전체 요약
