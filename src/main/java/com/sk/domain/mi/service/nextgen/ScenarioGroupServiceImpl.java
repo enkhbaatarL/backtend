@@ -38,9 +38,8 @@ import com.sk.domain.shared.enums.nextgen.ScenarioGroupStatus;
 import com.sk.domain.shared.entity.master.tmm.MiSignpost;
 import com.sk.domain.shared.enums.fundamentalmodel.FundamentalModelCaseStatus;
 import com.sk.domain.shared.enums.fundamentalmodel.FundamentalModelRunStatus;
-import com.sk.domain.shared.enums.nextgen.DesignOperationStatus;
-import com.sk.domain.shared.enums.nextgen.DesignOperationType;
 import com.sk.domain.shared.enums.nextgen.GraphPeriodUnit;
+import com.sk.domain.shared.enums.nextgen.ScenarioApiVersion;
 import com.sk.domain.shared.enums.nextgen.IndexName;
 import com.sk.domain.shared.enums.nextgen.ModelInputMode;
 import com.sk.domain.shared.enums.nextgen.ScenarioDisplayStatus;
@@ -49,7 +48,7 @@ import com.sk.domain.shared.repository.master.tmd.ScenarioCaseRepository;
 import com.sk.domain.shared.repository.master.tmd.ScenarioCaseRunHistoryRepository;
 import com.sk.domain.shared.repository.master.tmd.projection.MiBasePriceRow;
 import com.sk.domain.shared.repository.master.tmd.projection.ScenarioPriceRow;
-import com.sk.domain.shared.repository.master.tmm.MiScenarioGroupOperationRepository;
+import com.sk.domain.shared.client.ScenarioDesignAgentApi;
 import com.sk.domain.shared.repository.master.tmm.MiScenarioGroupRepository;
 import com.sk.domain.shared.repository.master.tmm.projection.ScenarioBaseRow;
 import com.sk.domain.shared.repository.master.tmm.projection.ScenarioDetailBaseRow;
@@ -78,7 +77,7 @@ public class ScenarioGroupServiceImpl implements ScenarioGroupService {
     private static final String SCENARIO_CANCELLED = "SCENARIO_CANCELLED";
 
     private final MiScenarioGroupRepository scenarioGroupRepository;
-    private final MiScenarioGroupOperationRepository operationRepository;
+    private final ScenarioDesignAgentApi scenarioDesignAgentApi;
     private final ScenarioCaseRepository scenarioCaseRepository;
     private final ScenarioCaseRunHistoryRepository scenarioCaseRunHistoryRepository;
     private final AuthorizationService authorizationService;
@@ -321,10 +320,15 @@ public class ScenarioGroupServiceImpl implements ScenarioGroupService {
         List<EventBundle> eventBundles = ScenarioDesignPresentationMapper.toEventBundles(
             scenarioGroupRepository.findBaseEventsByScenarioGroupId(scenarioGroupId));
 
-        DesignEvidence evidence = operationRepository
-            .findLatestPresentationSnapshot(scenarioGroupId, DesignOperationType.CREATE.getCode(), DesignOperationStatus.SUCCEEDED.getCode())
-            .map(ScenarioDesignPresentationMapper::toEvidence)
-            .orElse(null);
+        // 근거 보기
+        DesignEvidence evidence = null;
+        if (base.apiVersion() == ScenarioApiVersion.V4) {
+            try {
+                evidence = ScenarioDesignPresentationMapper.toEvidence(scenarioDesignAgentApi.getPresentation(scenarioGroupId, null));
+            } catch (Exception e) {
+                log.warn("[ScenarioGroup] 근거 조회용 Agent presentation 호출 실패 - evidence 생략: scenarioGroupId={}, cause={}", scenarioGroupId, e.getMessage());
+            }
+        }
 
         // eventTypeL2Id는 left join 산출이라 매핑 소실 그룹에서 null일 수 있다 — v1 template 폴백만 생략 (v4 definitions 경로는 무관)
         GroupDimensionTemplate template = ScenarioDimensionMapper.resolve(

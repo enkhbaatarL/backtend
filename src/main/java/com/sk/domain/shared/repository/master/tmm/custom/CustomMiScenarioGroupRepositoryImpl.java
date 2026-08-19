@@ -56,10 +56,12 @@ public class CustomMiScenarioGroupRepositoryImpl implements CustomMiScenarioGrou
     private final JPAQueryFactory queryFactory;
 
     /**
-     * 그룹의 기준 이벤트 매핑 행 조인 조건 (활성 매핑 중 최소 ID = display_order 첫 이벤트).
+     * 그룹의 기준 이벤트 매핑 행 조인 조건 (활성 매핑 중 최소 ID 1행).
      *
-     * 멀티 이벤트 그룹은 매핑이 N행이므로, 단일 값 파생(eventTypeL2Id, base event)은 기준 행 1건으로
-     * 고정해 목록 행 중복과 페이지네이션 붕괴를 막는다. v1 그룹은 backfill로 항상 1행이라 동작이 동일하다.
+     * 이 조인이 뽑는 eventTypeL2Id의 소비처는 전부 v1 template 폴백이다 — v1 그룹은 매핑이 항상
+     * 1행(backfill 보장)이라 기준 선택이 무의미하고, v4 그룹은 definitions 우선이라 이 값을 쓰지 않는다.
+     * 즉 최소 ID 규칙은 행 중복 방지용일 뿐 display_order 첫 이벤트와의 일치를 보장하지 않는다
+     * (모델 파이프라인의 단일 L2 판정은 findEventTypeL2IdByScenarioGroupId의 display_order 기준을 쓴다).
      */
     private BooleanExpression primaryGroupEventJoin() {
         QMiScenarioGroupEvent groupEventSub = new QMiScenarioGroupEvent("groupEventSub");
@@ -219,7 +221,9 @@ public class CustomMiScenarioGroupRepositoryImpl implements CustomMiScenarioGrou
                 miScenarioGroup.scenarioCount,
                 miScenarioGroup.dimensionSelected,
                 miScenarioGroup.dimensionDefinitions,
-                miScenarioGroupEvent.eventTypeL2.eventTypeL2Id
+                miScenarioGroupEvent.eventTypeL2.eventTypeL2Id,
+                // 근거 보기(Agent presentation 호출) 게이트용 — v4 그룹만 호출한다
+                miScenarioGroup.apiVersion
             ))
             .from(miScenarioGroup)
             // eventTypeL2Id는 기준 매핑 행(display_order 첫 이벤트)의 동결값 (v1 template 폴백용).

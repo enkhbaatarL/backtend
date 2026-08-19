@@ -24,7 +24,6 @@ import java.util.Comparator;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-import lombok.extern.slf4j.Slf4j;
 
 /**
  * Agent presentation 응답 → B.E 설계 화면 계약({@link ScenarioDesignPresentationRes}) 변환기.
@@ -36,7 +35,6 @@ import lombok.extern.slf4j.Slf4j;
  * Agent 계약에 없는 필드(신규 이벤트 종류, 부가 메타)는 무시하도록 파싱 레코드에 ignoreUnknown을 걸어
  * Agent 측 확장에 내성을 가진다.
  */
-@Slf4j
 public final class ScenarioDesignPresentationMapper {
 
     private ScenarioDesignPresentationMapper() {
@@ -177,23 +175,19 @@ public final class ScenarioDesignPresentationMapper {
     }
 
     /**
-     * 영속 스냅샷(tmm_mi_scenario_group_operation_m.presentation_snapshot)에서 근거 마크다운을 추출한다.
-     * 스냅샷은 Agent presentation 응답과 동일 문서라 같은 파싱을 공유한다 (그룹 상세 '근거 보기' — 설계 외 화면은 DB 원천).
-     * 스냅샷이 없거나(v1 그룹) 근거 섹션이 비어 있으면 null.
+     * Agent presentation 응답에서 근거 마크다운 2종(Event 분석, 역할 선정 근거)만 추출한다 (그룹 상세 '근거 보기' 전용).
+     * 근거 마크다운은 Agent 렌더러가 조회 시점에 생성하는 문서라 DB에 존재하지 않는다
+     * (operation presentation_snapshot에는 렌더링 전 원재료만 저장됨을 전수 실측으로 확인, 2026-08-19).
+     * 설계 화면과의 문서 동일성을 렌더러 버전 변경과 무관하게 보장하기 위해 조회 화면 DB 직조회 원칙의 예외로 Agent 원본을 사용한다.
+     * 근거 섹션이 비어 있으면 null.
      */
-    public static DesignEvidence toEvidence(String presentationSnapshotJson) {
-        if (presentationSnapshotJson == null || presentationSnapshotJson.isBlank()) {
+    public static DesignEvidence toEvidence(JsonNode agentBody) {
+        if (agentBody == null || agentBody.isNull()) {
             return null;
         }
-        // 근거는 부가 정보 — 스냅샷이 손상/비호환이어도 그룹 상세 조회 자체는 살아야 하므로 실패는 null로 강등한다
-        try {
-            AgentPresentation source = JsonUtil.fromJson(presentationSnapshotJson, AgentPresentation.class);
-            DesignEvidence evidence = toEvidence(source == null ? null : source.sections());
-            return evidence.eventAnalysisMarkdown() == null && evidence.roleSelectionMarkdown() == null ? null : evidence;
-        } catch (Exception e) {
-            log.warn("[Design Presentation] presentation_snapshot 파싱 실패 - evidence 생략: {}", e.getMessage());
-            return null;
-        }
+        AgentPresentation source = JsonUtil.fromJson(agentBody.toString(), AgentPresentation.class);
+        DesignEvidence evidence = toEvidence(source == null ? null : source.sections());
+        return evidence.eventAnalysisMarkdown() == null && evidence.roleSelectionMarkdown() == null ? null : evidence;
     }
 
     private static DesignEvidence toEvidence(AgentSections sections) {

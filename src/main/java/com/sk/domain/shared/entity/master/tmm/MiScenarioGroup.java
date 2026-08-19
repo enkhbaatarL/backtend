@@ -1,8 +1,10 @@
 package com.sk.domain.shared.entity.master.tmm;
 
+import com.sk.domain.shared.converter.ScenarioApiVersionConverter;
 import com.sk.domain.shared.converter.ScenarioGroupStageConverter;
 import com.sk.domain.shared.converter.ScenarioGroupStatusConverter;
 import com.sk.domain.shared.entity.base.BaseEntity;
+import com.sk.domain.shared.enums.nextgen.ScenarioApiVersion;
 import com.sk.domain.shared.enums.nextgen.ScenarioGroupStage;
 import com.sk.domain.shared.enums.nextgen.ScenarioGroupStatus;
 import jakarta.persistence.Column;
@@ -59,10 +61,11 @@ public class MiScenarioGroup extends BaseEntity {
     @Comment("v4 분기항목 정의 (dimension definitions, v1-v3은 빈 배열)")
     private String dimensionDefinitions;
 
+    @Convert(converter = ScenarioApiVersionConverter.class)
     @Column(name = "api_version", nullable = false, length = 20)
     @ColumnDefault("'v1'")
     @Comment("생성 API 버전 (v1~v4)")
-    private String apiVersion;
+    private ScenarioApiVersion apiVersion;
 
     @Column(name = "scenario_count", nullable = false)
     @ColumnDefault("0")

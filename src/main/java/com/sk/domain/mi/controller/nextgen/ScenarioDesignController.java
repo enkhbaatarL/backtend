@@ -441,6 +441,7 @@ public class ScenarioDesignController {
             """
     )
     @ApiResponse(responseCode = "200", description = "검토 요청 접수")
+    @ApiResponse(responseCode = "403", description = "다른 사용자가 진행 중인 설계 세션 (진행자만 편집 가능)")
     @PostMapping("/{scenarioGroupId}/design/validation")
     @RequiredPermissionRules(rules = {
         @PermissionRule(role = Role.USER, conditions = {PermissionCondition.SKGAS_COMPANY_USER_ONLY}),
@@ -470,6 +471,7 @@ public class ScenarioDesignController {
             """
     )
     @ApiResponse(responseCode = "200", description = "단계2 진입 요청 접수")
+    @ApiResponse(responseCode = "403", description = "다른 사용자가 진행 중인 설계 세션 (진행자만 편집 가능)")
     @PostMapping("/{scenarioGroupId}/design/signposts")
     @RequiredPermissionRules(rules = {
         @PermissionRule(role = Role.USER, conditions = {PermissionCondition.SKGAS_COMPANY_USER_ONLY}),
@@ -499,6 +501,7 @@ public class ScenarioDesignController {
             """
     )
     @ApiResponse(responseCode = "200", description = "확정 성공")
+    @ApiResponse(responseCode = "403", description = "다른 사용자가 진행 중인 설계 세션 (진행자만 편집 가능)")
     @PostMapping("/{scenarioGroupId}/design/confirmation")
     @RequiredPermissionRules(rules = {
         @PermissionRule(role = Role.USER, conditions = {PermissionCondition.SKGAS_COMPANY_USER_ONLY}),
@@ -520,6 +523,7 @@ public class ScenarioDesignController {
             """
     )
     @ApiResponse(responseCode = "200", description = "초기화 성공")
+    @ApiResponse(responseCode = "403", description = "다른 사용자가 진행 중인 설계 세션 (진행자만 편집 가능)")
     @PostMapping("/{scenarioGroupId}/design/reset")
     @RequiredPermissionRules(rules = {
         @PermissionRule(role = Role.USER, conditions = {PermissionCondition.SKGAS_COMPANY_USER_ONLY}),

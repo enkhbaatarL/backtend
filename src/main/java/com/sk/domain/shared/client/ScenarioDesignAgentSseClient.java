@@ -22,18 +22,20 @@ import org.springframework.web.client.RestClient;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
 /**
- * 멀티 이벤트 시나리오 설계 Agent v4 클라이언트 (B.E -> Agent)
+ * 시나리오 설계 Agent SSE 스트림 중계 클라이언트 (B.E -> Agent).
+ * 생성/operation 스트림의 개설과 프레임 중계만 담당한다 — REST 호출은 전부 ScenarioDesignAgentApi 를 사용한다.
+ * 스트림은 exchange 기반 블로킹 소비라 선언형 인터페이스로 옮길 수 없어 별도 클래스로 유지한다.
  */
 @Slf4j
 @Component
-public class ScenarioDesignAgentV4Api {
+public class ScenarioDesignAgentSseClient {
 
     private static final Duration CONNECT_TIMEOUT = Duration.ofSeconds(3);
     private static final Duration STREAM_READ_TIMEOUT = Duration.ofSeconds(120);
 
     private final RestClient restClient;
 
-    public ScenarioDesignAgentV4Api(@Value("${api.scenario-design-agent.url:http://40.82.137.178:8001}") String url) {
+    public ScenarioDesignAgentSseClient(@Value("${api.scenario-design-agent.url:http://40.82.137.178:8001}") String url) {
         SimpleClientHttpRequestFactory requestFactory = new SimpleClientHttpRequestFactory();
         requestFactory.setConnectTimeout(CONNECT_TIMEOUT);
         requestFactory.setReadTimeout(STREAM_READ_TIMEOUT);
@@ -84,25 +86,6 @@ public class ScenarioDesignAgentV4Api {
                 connectGate.complete(null);
                 pipeSse(clientResponse.getBody(), emitter);
                 return null;
-            });
-    }
-
-    /** 설계 화면 데이터 조회 프록시. operationId는 생성 진행 중 중간 스냅샷 조회용 (null 허용). */
-    public JsonNode getPresentation(Long scenarioGroupId, String operationId) {
-        return restClient.get()
-            .uri(uriBuilder -> {
-                uriBuilder.path("/scenario-groups/{scenarioGroupId}/presentation");
-                if (operationId != null && !operationId.isBlank()) {
-                    uriBuilder.queryParam("operationId", operationId);
-                }
-                return uriBuilder.build(scenarioGroupId);
-            })
-            .accept(MediaType.APPLICATION_JSON)
-            .exchange((clientRequest, clientResponse) -> {
-                if (clientResponse.getStatusCode().isError()) {
-                    throw translateError(clientResponse.getStatusCode().value(), readBody(clientResponse.getBody()));
-                }
-                return clientResponse.bodyTo(JsonNode.class);
             });
     }
 
@@ -211,7 +194,7 @@ public class ScenarioDesignAgentV4Api {
      * (operationId 재연결 / scenarioGroupId 상세 이동)을 할 수 있게 한다.
      * GlobalExceptionHandler가 BaseResponse로 래핑한다.
      */
-    private AgentDesignApiException translateError(int statusValue, String bodyText) {
+    public static AgentDesignApiException translateError(int statusValue, String bodyText) {
         String message = bodyText;
         JsonNode dataNode = null;
         try {

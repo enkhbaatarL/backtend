@@ -2,6 +2,7 @@ package com.sk.domain.mi.service.nextgen;
 
 import com.sk.common.enums.ResultCode;
 import com.sk.common.exception.AppErrorException;
+import com.sk.common.exception.AppHttpStatusException;
 import com.sk.common.utils.JsonUtil;
 import com.sk.domain.mi.dto.request.nextgen.design.ScenarioConfirmationReq;
 import com.sk.domain.mi.dto.request.nextgen.design.ScenarioDesignStartReq;
@@ -33,6 +34,7 @@ import com.sk.domain.shared.repository.master.tmm.projection.ScenarioGroupDetail
 import com.sk.domain.shared.service.permissions.AuthorizationService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.client.ResourceAccessException;
@@ -209,6 +211,8 @@ public class ScenarioDesignServiceImpl implements ScenarioDesignService {
     @Override
     public ScenarioDesignStageRes validateDesign(Long scenarioGroupId, ScenarioValidationReq request) {
 
+        requireEditableByCurrentUser(scenarioGroupId);
+
         Long userId = authorizationService.getUserNo().longValue();
         ScenarioDesignTable table = ScenarioDesignTableMapper.toAgentTable(request.table());
 
@@ -223,6 +227,8 @@ public class ScenarioDesignServiceImpl implements ScenarioDesignService {
      */
     @Override
     public ScenarioDesignStageRes createSignposts(Long scenarioGroupId, ScenarioSignpostsReq request) {
+
+        requireEditableByCurrentUser(scenarioGroupId);
 
         Long userId = authorizationService.getUserNo().longValue();
         ScenarioDesignTable table = ScenarioDesignTableMapper.toAgentTable(request.table());
@@ -240,15 +246,15 @@ public class ScenarioDesignServiceImpl implements ScenarioDesignService {
     @Override
     public ScenarioDesignStageRes confirmDesign(Long scenarioGroupId, ScenarioConfirmationReq request) {
 
-        MiScenarioGroup group = scenarioGroupRepository.findByScenarioGroupIdAndIsDeletedFalse(scenarioGroupId)
-            .orElseThrow(() -> AppErrorException.of(ResultCode.Error.RSC_NOT_FOUND, "Scenario group not found: %s".formatted(scenarioGroupId)));
+        requireEditableByCurrentUser(scenarioGroupId);
 
+        Long userId = authorizationService.getUserNo().longValue();
         ScenarioConfirmationReq.GroupEdit edit = request.scenarioGroup();
         ScenarioConfirmationAgentReq.GroupEdit groupEdit = edit == null ? null : new ScenarioConfirmationAgentReq.GroupEdit(edit.title(), edit.summary(), edit.description());
 
         ScenarioDesignTable table = ScenarioDesignTableMapper.toAgentConfirmTable(request.table());
 
-        ScenarioDesignAgentRes res = callAgent(() -> scenarioDesignAgentApi.confirm(scenarioGroupId, ScenarioConfirmationAgentReq.of(groupEdit, table)), "confirmDesign");
+        ScenarioDesignAgentRes res = callAgent(() -> scenarioDesignAgentApi.confirm(scenarioGroupId, ScenarioConfirmationAgentReq.of(userId, groupEdit, table)), "confirmDesign");
 
         ScenarioDesignStageRes stageRes = toStageRes(res);
 
@@ -300,8 +306,23 @@ public class ScenarioDesignServiceImpl implements ScenarioDesignService {
      */
     @Override
     public void reset(Long scenarioGroupId) {
+        requireEditableByCurrentUser(scenarioGroupId);
         validationStore.delete(scenarioGroupId);
         failureStore.delete(scenarioGroupId);
+    }
+
+    /**
+     * 편집 소유권 검증 — 설계 세션의 진행자(그룹 request_usr_id)만 편집 API(검토/Signpost/확정/초기화)를 호출할 수 있다.
+     * 잠금은 FE 표시만으로는 우회 가능하므로 서버에서 강제한다. 진행자 미상(request_usr_id null) 그룹은 검증을 생략한다.
+     */
+    private void requireEditableByCurrentUser(Long scenarioGroupId) {
+        MiScenarioGroup group = scenarioGroupRepository.findByScenarioGroupIdAndIsDeletedFalse(scenarioGroupId)
+            .orElseThrow(() -> AppErrorException.of(ResultCode.Error.RSC_NOT_FOUND, "Scenario group not found: %s".formatted(scenarioGroupId)));
+
+        Long userId = authorizationService.getUserNo().longValue();
+        if (group.getRequestUserId() != null && !userId.equals(group.getRequestUserId())) {
+            throw AppHttpStatusException.of(HttpStatus.FORBIDDEN, ResultCode.Error.BIZ_RULE_VIOLATION, "다른 사용자가 진행 중인 설계 세션입니다: %d".formatted(scenarioGroupId));
+        }
     }
 
 }

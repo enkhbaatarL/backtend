@@ -16,7 +16,8 @@ import com.sk.domain.mi.service.nextgen.sse.ScenarioDesignStreamExecutor;
 import com.sk.domain.mi.service.nextgen.support.FailedCreatingGroupResolver;
 import com.sk.domain.mi.service.nextgen.support.ScenarioDesignPresentationMapper;
 import com.sk.domain.mi.service.nextgen.support.ScenarioDesignTableMapper;
-import com.sk.domain.shared.client.ScenarioDesignAgentV4Api;
+import com.sk.domain.shared.client.ScenarioDesignAgentApi;
+import com.sk.domain.shared.client.ScenarioDesignAgentSseClient;
 import com.sk.domain.shared.client.dto.request.ScenarioGroupCreateV4AgentReq;
 import com.sk.domain.shared.entity.master.tmd.User;
 import com.sk.domain.shared.entity.master.tmm.MiScenarioGroup;
@@ -45,6 +46,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
+import org.springframework.web.client.RestClientResponseException;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
 /**
@@ -74,7 +76,8 @@ public class ScenarioDesignV4ServiceImpl implements ScenarioDesignV4Service {
     private static final long EMITTER_TIMEOUT_MILLIS = 30L * 60 * 1000;
     private static final long CONNECT_TIMEOUT_SECONDS = 10L;
 
-    private final ScenarioDesignAgentV4Api agentClient;
+    private final ScenarioDesignAgentSseClient sseClient;
+    private final ScenarioDesignAgentApi scenarioDesignAgentApi;
     private final MiScenarioGroupRepository scenarioGroupRepository;
     private final MiScenarioGroupOperationRepository operationRepository;
     private final MiScenarioGroupEventRepository groupEventRepository;
@@ -163,7 +166,7 @@ public class ScenarioDesignV4ServiceImpl implements ScenarioDesignV4Service {
             log.info("[Design v4] - 설계 재연결 시도: scenarioGroupId={}, operationId={}, lastSequence={}", active.scenarioGroupId(), active.operationId(), lastEventId);
 
             openStreamOn(emitter,
-                (target, connectGate) -> agentClient.pipeOperationStream(active.scenarioGroupId(), active.operationId(), lastEventId, target, connectGate),
+                (target, connectGate) -> sseClient.pipeOperationStream(active.scenarioGroupId(), active.operationId(), lastEventId, target, connectGate),
                 "resumeOperationStream");
             return emitter;
         }
@@ -171,7 +174,7 @@ public class ScenarioDesignV4ServiceImpl implements ScenarioDesignV4Service {
         ScenarioGroupCreateV4AgentReq agentRequest = ScenarioGroupCreateV4AgentReq.of(request.miEventIds(), userId);
 
         try {
-            openStreamOn(emitter, (target, connectGate) -> agentClient.pipeCreateStream(agentRequest, target, connectGate), "startDesignStream");
+            openStreamOn(emitter, (target, connectGate) -> sseClient.pipeCreateStream(agentRequest, target, connectGate), "startDesignStream");
         } catch (AgentDesignApiException e) {
             ReconnectTarget reconnect = resolveReconnectTarget(e);
 
@@ -179,7 +182,7 @@ public class ScenarioDesignV4ServiceImpl implements ScenarioDesignV4Service {
 
             String lastEventId = resolveLastEventId(request, reconnect.operationId());
             log.info("[Design V4] 동일 조합 작업 진행 중 - 자동 재연결: scenarioGroupId={}, operationId={}, lastSequence={}", reconnect.scenarioGroupId(), reconnect.operationId(), lastEventId);
-            openStreamOn(emitter, (target, connectGate) -> agentClient.pipeOperationStream(reconnect.scenarioGroupId(), reconnect.operationId(), lastEventId, target, connectGate), "reconnectOperationStream");
+            openStreamOn(emitter, (target, connectGate) -> sseClient.pipeOperationStream(reconnect.scenarioGroupId(), reconnect.operationId(), lastEventId, target, connectGate), "reconnectOperationStream");
         }
         return emitter;
     }
@@ -206,7 +209,15 @@ public class ScenarioDesignV4ServiceImpl implements ScenarioDesignV4Service {
      */
     @Override
     public ScenarioDesignPresentationRes getPresentation(Long scenarioGroupId, String operationId) {
-        JsonNode agentBody = agentClient.getPresentation(scenarioGroupId, operationId);
+        JsonNode agentBody;
+
+        try {
+            agentBody = scenarioDesignAgentApi.getPresentation(scenarioGroupId, operationId);
+        } catch (RestClientResponseException e) {
+            // 선언형 클라이언트 오류를 기존 계약(AgentDesignApiException -> 전용 핸들러)으로 번역해 FE 오류 응답 모양을 유지한다
+            throw ScenarioDesignAgentSseClient.translateError(e.getStatusCode().value(), e.getResponseBodyAsString());
+        }
+
         List<ScenarioGroupBaseEventRow> baseEvents = scenarioGroupRepository.findBaseEventsByScenarioGroupId(scenarioGroupId);
 
         MiScenarioGroup group = scenarioGroupRepository.findByScenarioGroupIdAndIsDeletedFalse(scenarioGroupId).orElse(null);
