@@ -3,8 +3,6 @@ package com.sk.domain.admin.controller;
 import com.sk.common.annotation.AccessIpCheck;
 import com.sk.common.annotation.ApiOrder;
 import com.sk.common.annotation.RequiredPermission;
-import com.sk.common.enums.ResultCode;
-import com.sk.common.exception.AppErrorException;
 import com.sk.common.model.BaseResponse;
 import com.sk.common.model.BaseResponseFactory;
 import com.sk.common.model.PaginationRes;
@@ -20,6 +18,8 @@ import com.sk.domain.admin.dto.response.bbs.NoticeFilterRes;
 import com.sk.domain.admin.dto.response.bbs.NoticeRes;
 import com.sk.domain.admin.dto.response.file.FileUploadRes;
 import com.sk.domain.admin.service.AdminBulletinBoardService;
+import com.sk.domain.admin.validator.NoticeImageUploadValidator;
+import com.sk.domain.admin.validator.ValidatedNoticeImageUpload;
 import com.sk.domain.shared.entity.master.tcm.BulletinBoard;
 import com.sk.domain.shared.enums.Role;
 import com.sk.domain.shared.service.FileService;
@@ -27,11 +27,14 @@ import com.sk.domain.shared.service.permissions.AuthorizationService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.Parameters;
+import io.swagger.v3.oas.annotations.media.Content;
+import io.swagger.v3.oas.annotations.media.ExampleObject;
+import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.Min;
-import java.util.Arrays;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -62,10 +65,10 @@ public class AdminBulletinBoardController {
      * 공지사항
      *
      *******************************************************************/
-    private static final List<String> ALLOWED_EXTENSIONS = Arrays.asList("jpg", "png");
     private final AuthorizationService authorizationService;
     private final AdminBulletinBoardService adminBulletinBoardService;
     private final FileService fileService;
+    private final NoticeImageUploadValidator noticeImageUploadValidator;
 
     @ApiOrder(1)
     @Operation(summary = "공지사항 필터 조회", description = "공지사항 필터를 조회합니다.")
@@ -161,31 +164,102 @@ public class AdminBulletinBoardController {
     }
 
     @ApiOrder(7)
-    @Operation(summary = "공지사항 첨부 파일 업로드", description = "공지사항 첨부 파일을 업로드합니다. 20MB 이하의 jpg, png만 허용")
-    @ApiResponse(responseCode = "200", description = "HTTP Status Code is 200")
-    @PostMapping(value = "/notice/upload-file", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    @Operation(
+            summary = "공지사항 첨부 이미지 업로드",
+            description = """
+                    공지사항에 사용할 이미지를 업로드합니다. 20 MiB 이하의 .png 또는 .jpg 파일이며 확장자, Content-Type, 파일 signature가 일치해야 합니다.
+                    검증 실패 시 HTTP 400과 원인을 구분하는 오류 코드를 반환합니다.
+                    """)
+    @ApiResponses({
+            @ApiResponse(
+                    responseCode = "200",
+                    description = "이미지 업로드 성공",
+                    useReturnTypeSchema = true),
+            @ApiResponse(
+                    responseCode = "400",
+                    description = "파일 누락, 파일명·확장자 오류, 빈 파일·크기 초과, Content-Type·signature 불일치 또는 파일 읽기 실패",
+                    content = @Content(
+                            mediaType = MediaType.APPLICATION_JSON_VALUE,
+                            schema = @Schema(implementation = BaseResponse.class),
+                            examples = {
+                                    @ExampleObject(
+                                            name = "REQ_INVALID_PARAMETER",
+                                            summary = "file part가 누락되거나 null인 경우",
+                                            value = """
+                                                    {
+                                                      "status": false,
+                                                      "code": "REQ-003",
+                                                      "message": "One or more parameters are invalid.",
+                                                      "data": null
+                                                    }
+                                                    """),
+                                    @ExampleObject(
+                                            name = "REQ_INVALID",
+                                            summary = "파일명 또는 확장자가 없는 경우",
+                                            value = """
+                                                    {
+                                                      "status": false,
+                                                      "code": "REQ-001",
+                                                      "message": "The request is invalid.",
+                                                      "data": null
+                                                    }
+                                                    """),
+                                    @ExampleObject(
+                                            name = "FILE_INVALID",
+                                            summary = "파일 signature를 읽을 수 없는 경우",
+                                            value = """
+                                                    {
+                                                      "status": false,
+                                                      "code": "FILE-001",
+                                                      "message": "The file is invalid.",
+                                                      "data": null
+                                                    }
+                                                    """),
+                                    @ExampleObject(
+                                            name = "FILE_FORMAT_ERROR",
+                                            summary = "확장자, Content-Type 또는 signature가 허용 형식과 다른 경우",
+                                            value = """
+                                                    {
+                                                      "status": false,
+                                                      "code": "FILE-002",
+                                                      "message": "This file format is not allowed.",
+                                                      "data": null
+                                                    }
+                                                    """),
+                                    @ExampleObject(
+                                            name = "FILE_SIZE_ERROR",
+                                            summary = "빈 파일이거나 허용 크기를 초과한 경우",
+                                            value = """
+                                                    {
+                                                      "status": false,
+                                                      "code": "FILE-003",
+                                                      "message": "File size exceeds the maximum limit",
+                                                      "data": null
+                                                    }
+                                                    """)
+                            }))
+    })
+    @PostMapping(
+            value = "/notice/upload-file",
+            consumes = MediaType.MULTIPART_FORM_DATA_VALUE,
+            produces = MediaType.APPLICATION_JSON_VALUE)
     @RequiredPermission(roles = {Role.ADMIN})
     public BaseResponse<FileUploadRes> uploadFile(
+            @Parameter(description = "20 MiB 이하의 PNG(.png) 또는 JPEG(.jpg) 이미지")
             @RequestPart(value = "file", required = false) MultipartFile file) {
+
+        ValidatedNoticeImageUpload validatedImage = noticeImageUploadValidator.validate(file);
 
         Role role = authorizationService.getCurrentRole();
         String companyCd = authorizationService.getCompanyCdWithPriority();
 
-        if (file == null) {
-            throw AppErrorException.of(ResultCode.Error.REQ_INVALID_PARAMETER);
-        }
-
-        String fileName = file.getOriginalFilename();
-        if (fileName == null || fileName.lastIndexOf('.') == -1) {
-            throw AppErrorException.of(ResultCode.Error.REQ_INVALID);
-        }
-
-        String extension = fileName.substring(fileName.lastIndexOf('.') + 1).toLowerCase();
-        if (!ALLOWED_EXTENSIONS.contains(extension)) {
-            throw AppErrorException.of(ResultCode.Error.FILE_FORMAT_ERROR);
-        }
-
-        return BaseResponseFactory.create(fileService.uploadFile(companyCd, role, file, true));
+        return BaseResponseFactory.create(fileService.uploadFile(
+                companyCd,
+                role,
+                file,
+                true,
+                validatedImage.extension(),
+                validatedImage.contentType()));
     }
 
     // @ApiOrder(9)
