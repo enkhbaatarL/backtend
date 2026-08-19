@@ -5,6 +5,7 @@ import com.sk.common.exception.AppErrorException;
 import com.sk.domain.shared.dto.response.common.CommonCodeDetailRes;
 import com.sk.domain.shared.dto.response.common.UiComponentSettingRes;
 import com.sk.domain.shared.dto.response.common.UserAccessPageRes;
+import com.sk.domain.shared.dto.response.common.UserDetailRes;
 import com.sk.domain.shared.entity.master.tam.AdminPermission;
 import com.sk.domain.shared.entity.master.tcm.CommonCodeDetail;
 import com.sk.domain.shared.entity.master.tcm.UiComponentSetting;
@@ -12,6 +13,7 @@ import com.sk.domain.shared.entity.master.tmd.User;
 import com.sk.domain.shared.enums.UserAccessPageType;
 import com.sk.domain.shared.enums.UserRoleCd;
 import com.sk.domain.shared.repository.master.tam.AdminPermissionRepository;
+import com.sk.domain.shared.dto.request.common.IndividualInfoAgreementReq;
 import com.sk.domain.shared.dto.request.common.UserFeedbackReq;
 import com.sk.domain.shared.entity.master.tcm.UserFeedback;
 import com.sk.domain.shared.repository.master.tcm.CommonCodeDetailRepository;
@@ -20,6 +22,7 @@ import com.sk.domain.shared.repository.master.tcm.UiComponentSettingRepository;
 import com.sk.domain.shared.repository.master.tcm.UserFeedbackRepository;
 import com.sk.domain.shared.repository.master.tmd.CustomerCompanyRepository;
 import com.sk.domain.shared.repository.master.tmd.UserRepository;
+import com.sk.domain.shared.service.permissions.AuthorizationService;
 import jakarta.servlet.http.HttpServletRequest;
 import java.util.List;
 import com.sk.common.config.MipConfig;
@@ -33,6 +36,7 @@ import org.springframework.transaction.annotation.Transactional;
 @Transactional(readOnly = true)
 public class CommonService {
 
+    private final AuthorizationService authorizationService;
     private final AdminPermissionRepository adminPermissionRepository;
     private final UserRepository userRepository;
     private final UiComponentSettingRepository uiComponentSettingRepository;
@@ -218,6 +222,23 @@ public class CommonService {
     public Long createUserFeedback(User user, UserFeedbackReq request) {
         UserFeedback saved = userFeedbackRepository.save(UserFeedback.of(request, user));
         return saved.getUserFeedbackNo();
+    }
+
+    /**
+     * 인증된 사용자 본인의 개인정보동의여부를 변경합니다.
+     * 동의와 철회 모두 허용하며, 변경 시 개인정보동의일시가 현재 시각으로 함께 갱신됩니다.
+     *
+     * @param request 개인정보동의여부 변경 요청
+     * @return 변경 반영된 사용자 정보
+     */
+    @Transactional
+    public UserDetailRes updateIndividualInfoAgreement(IndividualInfoAgreementReq request) {
+        Integer userNo = authorizationService.getUserNo();
+        User user = userRepository.findByUserNoAndIsDeletedFalse(userNo)
+            .orElseThrow(() -> AppErrorException.of(ResultCode.Error.RSC_NOT_FOUND, "사용자 정보를 찾을 수 없습니다."));
+
+        user.updateIndividualInfoAgreement(request.isIndividualInfoAgreement());
+        return UserDetailRes.of(user);
     }
 
 }
