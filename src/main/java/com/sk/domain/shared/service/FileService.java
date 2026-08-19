@@ -19,6 +19,7 @@ import com.sk.domain.shared.repository.master.tcm.UploadedFileRepository;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.text.Normalizer;
@@ -110,6 +111,37 @@ public class FileService {
     public FileUploadRes uploadFile(String companyCd, Role role, MultipartFile file, boolean isPublic) {
         String separateCode = FileRelationshipObjectSeparateCode.TEMP.getCode();
         return upload(companyCd, role, file, isPublic, null, separateCode);
+    }
+
+    /**
+     * 서버에서 검증하여 결정한 확장자와 MIME으로 파일을 업로드 한다.
+     *
+     * @param companyCd 회사코드
+     * @param role 역할
+     * @param file 단일 파일 업로드
+     * @param isPublic 공용 여부
+     * @param canonicalExtension 서버가 결정한 확장자
+     * @param canonicalContentType 서버가 결정한 MIME
+     * @return FileUploadRes
+     */
+    @Transactional
+    public FileUploadRes uploadFile(
+            String companyCd,
+            Role role,
+            MultipartFile file,
+            boolean isPublic,
+            String canonicalExtension,
+            String canonicalContentType) {
+        String separateCode = FileRelationshipObjectSeparateCode.TEMP.getCode();
+        return upload(
+                companyCd,
+                role,
+                file,
+                isPublic,
+                null,
+                UploadDestination.temporary(separateCode),
+                null,
+                CanonicalFileType.of(canonicalExtension, canonicalContentType));
     }
 
     /**
@@ -272,6 +304,18 @@ public class FileService {
     }
 
     private FileUploadRes upload(String companyCd, Role role, MultipartFile file, boolean isPublic, String fileHash, UploadDestination destination, String bucketNameOverride) {
+        return upload(companyCd, role, file, isPublic, fileHash, destination, bucketNameOverride, null);
+    }
+
+    private FileUploadRes upload(
+            String companyCd,
+            Role role,
+            MultipartFile file,
+            boolean isPublic,
+            String fileHash,
+            UploadDestination destination,
+            String bucketNameOverride,
+            CanonicalFileType canonicalFileType) {
         if (file == null) {
             throw AppErrorException.of(ResultCode.Error.FILE_INVALID);
         }
@@ -290,13 +334,20 @@ public class FileService {
         String uploadedFileName = null;
         try {
             String originalFileNm = Normalizer.normalize(rawFileName, Normalizer.Form.NFC);
-            String fileExtNm = originalFileNm.substring(originalFileNm.lastIndexOf('.') + 1).toLowerCase();
+            String fileExtNm = canonicalFileType == null
+                    ? originalFileNm.substring(originalFileNm.lastIndexOf('.') + 1).toLowerCase()
+                    : canonicalFileType.extension();
             long fileSize = file.getSize();
-            String mimeTypeNm = file.getContentType();
+            String mimeTypeNm = canonicalFileType == null
+                    ? file.getContentType()
+                    : canonicalFileType.contentType();
 
             String customerCompanyCd = companyCd.toLowerCase();
             String bucketName = bucketNameOverride != null ? bucketNameOverride : (RoleUtil.isAdmin(role) || RoleUtil.isSubAdmin(role) ? commBucketName : prefix + customerCompanyCd);
-            String storageFileNm = UUID.randomUUID().toString().concat(getFileExtension(rawFileName));
+            String storageFileNm = UUID.randomUUID().toString().concat(
+                    canonicalFileType == null
+                            ? getFileExtension(rawFileName)
+                            : "." + canonicalFileType.extension());
             String storagePathNm = PathUtil.IncludeTrailingPathDelimiter(endPoint) + PathUtil.IncludeTrailingPathDelimiter(bucketName)
                     + PathUtil.IncludeTrailingPathDelimiter(destination.storageDirectory())
                     + storageFileNm;
@@ -314,8 +365,18 @@ public class FileService {
                         isPublic,
                         mimeTypeNm,
                         fileSize);
-            } else {
+            } else if (canonicalFileType == null) {
                 fileUrl = objectStorageService.uploadFile(file, bucketName, fileName, isPublic);
+            } else {
+                try (InputStream inputStream = file.getInputStream()) {
+                    fileUrl = objectStorageService.uploadFile(
+                            inputStream,
+                            bucketName,
+                            fileName,
+                            isPublic,
+                            mimeTypeNm,
+                            fileSize);
+                }
             }
             uploadedBucketName = bucketName;
             uploadedFileName = fileName;
@@ -942,6 +1003,17 @@ public class FileService {
             throw AppErrorException.of(ResultCode.Error.SYS_INTERNAL_ERROR, "URL에 파일 경로 정보가 포함되어 있지 않습니다.");
         }
         return segments[segments.length - 1]; // 마지막 요소가 파일 이름
+    }
+
+    private record CanonicalFileType(String extension, String contentType) {
+
+        private static CanonicalFileType of(String extension, String contentType) {
+            if (extension == null || extension.isBlank() || contentType == null || contentType.isBlank()) {
+                throw AppErrorException.of(ResultCode.Error.REQ_INVALID_PARAMETER);
+            }
+
+            return new CanonicalFileType(extension, contentType);
+        }
     }
 
     private record UploadDestination(
