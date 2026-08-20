@@ -1755,9 +1755,7 @@ public class FundamentalModelCaseServiceImpl implements FundamentalModelCaseServ
         List<FundamentalModelDownloadFileRes> files = new ArrayList<>();
         for (UploadedFile uploadedFile : uploadedFiles) {
             files.add(new FundamentalModelDownloadFileRes(
-                uploadedFile.getFileNo(),
-                uploadedFile.getOriginalFileNm(),
-                uploadedFile.getFileSize()
+                uploadedFile.getOriginalFileNm()
             ));
         }
         return files;

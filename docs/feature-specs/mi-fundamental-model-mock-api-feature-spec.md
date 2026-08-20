@@ -3,7 +3,7 @@
 - domain: gas
 - status: implemented — 1st implementation shipped against real DB (2026-06-05 ~ 2026-06-19); endpoint/request/response contract below remains canonical
 - owner: platform BE
-- updated at: 2026-07-03 (real DB rollout status reflected; see §12 Exit Criteria)
+- updated at: 2026-08-20 (case 상세 파일 응답에서 다운로드 전용 metadata 비노출 반영)
 - canonical design input: [scenario-case-execution-workflow-design-draft.md](../design-docs/gas/scenario-case-execution-workflow-design-draft.md)
 - reference only:
   - Notion `MI Fundamental Model 실행` (`350263ff004c8035b20ef02683447f4b`)
@@ -51,7 +51,7 @@ MI Fundamental Model의 1차 mock API는 MI Fundamental Model 화면에서 사�
   - 상태: `PENDING`, `RUNNING`, `COMPLETED`, `FAILED`
 - Scenario Case 상세 조회
   - case metadata
-  - input/output download file metadata
+  - input/output 파일명 metadata
   - latestRun projection
 - Scenario Case metadata 수정
   - `title`, `description`만 허용
@@ -191,17 +191,19 @@ MI Fundamental Model의 1차 mock API는 MI Fundamental Model 화면에서 사�
 - response DTO: `FundamentalModelCaseDetailRes`
 - 포함 범위:
   - case metadata (`caseId`, `title`, `description`, `status`, `assigneeName`, `createdAt`, `updatedAt`)
-  - download file metadata (`files.input`, `files.output`)
+  - 파일명 metadata (`files.input`, `files.output`)
   - 최신 실행 projection (`latestRun`)
 - 제외 범위:
   - full run history
   - result payload
   - result 조회 contract
-  - intermediate file download metadata
+  - intermediate file metadata
 
 `files.input`은 `tcm_filel.file_rel_obj_spt_cd = 'SCNRCASE'` 및 `file_rel_obj_dstg_no = case_id` 기준 파일 목록이다.
 `files.output`은 최신 실행의 `run_seq`를 기준으로 `tcm_filel.file_rel_obj_spt_cd = 'SCNRCASEH'` 및 `file_rel_obj_dstg_no = run_seq`에 연결된 파일 목록이다.
-각 파일 항목은 `/api/v1/file-management/download/file` 요청 body로 전달할 수 있도록 `fileNo`, `fileNm`, `fileSize` 필드명을 사용한다.
+각 파일 항목은 현재 화면 표시용 `fileNm`만 반환한다. 다운로드 기능이 후속 구현되기 전까지
+`fileNo`, `fileSize`는 상세 조회와 수정 응답에 노출하지 않는다. 이 제한은 `FundamentalModelCaseDetailRes.files`에만
+적용되며, 업로드 응답 `FundamentalModelCaseFileRes`는 기존 계약을 그대로 유지한다.
 
 `GET /cases/{caseId}/status`는 FE polling을 위한 경량 상태 조회로 유지한다. 상태 조회는 파일 metadata와 설명 등 화면 상세 metadata를 반환하지 않는다. 반대로 상세 조회는 화면 상세 rendering에 필요한 projection이며, polling interval에서 반복 호출하는 API로 설계하지 않는다.
 
@@ -318,10 +320,11 @@ createCase(
 
 규칙:
 
-- 존재하는 case이면 case metadata, input/output download file metadata, latest run projection을 반환한다.
+- 존재하는 case이면 case metadata, input/output 파일명 metadata, latest run projection을 반환한다.
 - `latestRunId`가 없거나 아직 실행되지 않은 `PENDING` case이면 `latestRun = null`이다.
 - full run history는 반환하지 않는다.
-- result payload, result reference, download URL은 반환하지 않는다. 파일 다운로드는 공통 File API에 `files.*[]` 항목의 `fileNo`, `fileNm`, `fileSize`를 전달해 수행한다.
+- result payload, result reference, download URL은 반환하지 않는다. 다운로드 기능이 후속 구현되기 전까지
+  `files.*[]`에는 `fileNm`만 반환하고 `fileNo`, `fileSize`는 노출하지 않는다.
 - case가 없으면 `404 RSC_NOT_FOUND`로 응답한다.
 
 Acceptance criteria:
@@ -606,16 +609,12 @@ Reset API 포함 판단:
   "files": {
     "input": [
       {
-        "fileNo": 1011,
-        "fileNm": "input_1.xlsx",
-        "fileSize": 12345
+        "fileNm": "input_1.xlsx"
       }
     ],
     "output": [
       {
-        "fileNo": 2011,
-        "fileNm": "output.xlsx",
-        "fileSize": 54321
+        "fileNm": "output.xlsx"
       }
     ]
   },
@@ -641,12 +640,14 @@ Reset API 포함 판단:
 | `status` | `FundamentalModelCaseStatus` | case 최신 상태 |
 | `assigneeName` | `String` | case를 업로드한 사용자 이름. mock에서는 고정값 사용 |
 | `assigneeUserNo` | `Integer` | case를 업로드한 사용자 번호. DB-backed 구현에서는 `tmd_mdl_scnrcasem.usr_no` |
-| `files` | `FundamentalModelCaseFilesRes` | 다운로드 가능한 input/output 파일 metadata |
+| `files` | `FundamentalModelCaseFilesRes` | input/output 파일명 metadata |
 | `latestRun` | `FundamentalModelRunStatusRes` | 최신 실행 정보. `PENDING`이면 `null` |
 | `createdAt` | `LocalDateTime` | case 생성 시각 |
 | `updatedAt` | `LocalDateTime` | case 최종 변경 시각 |
 
-상세 응답은 최신 실행 1건만 포함한다. 전체 실행 이력은 별도 runs API가 정의되기 전까지 이 응답에 포함하지 않는다. result payload는 포함하지 않는다. 파일 다운로드는 공통 File API(`/api/v1/file-management/download/file`)를 사용하며, 상세 응답의 `fileNo`, `fileNm`, `fileSize`를 그대로 전달한다. `intermediate` 파일은 현재 다운로드 대상이 아니므로 응답에 포함하지 않는다.
+상세 응답은 최신 실행 1건만 포함한다. 전체 실행 이력은 별도 runs API가 정의되기 전까지 이 응답에 포함하지 않는다.
+result payload는 포함하지 않는다. 다운로드 기능이 후속 구현되기 전까지 상세 응답에는 파일명 `fileNm`만 제공하고
+`fileNo`, `fileSize`는 노출하지 않는다. `intermediate` 파일은 현재 응답 대상이 아니므로 포함하지 않는다.
 
 #### `FundamentalModelCaseFilesRes`
 
@@ -659,9 +660,7 @@ Reset API 포함 판단:
 
 | 필드 | 타입 | 설명 |
 |---|---|---|
-| `fileNo` | `Long` | 공통 File API 다운로드 요청의 `fileNo` |
-| `fileNm` | `String` | 공통 File API 다운로드 요청의 `fileNm` |
-| `fileSize` | `Long` | 공통 File API 다운로드 요청의 `fileSize` |
+| `fileNm` | `String` | 화면에 표시할 파일명. 현재 다운로드 요청용 `fileNo`, `fileSize`는 노출하지 않음 |
 
 ### 4.4 `FundamentalModelCaseCreateRes`
 
@@ -1285,7 +1284,8 @@ Swagger 문서에는 다음을 명시한다.
 - 목록 조회 API의 canonical contract는 `non-blank keyword requires searchType`이다. `keyword`가 null 또는 blank이면 `searchType`이 있어도 검색 조건 없음으로 처리한다.
 - 업로드 API는 `multipart/form-data` 전용이다.
 - `files` part는 정확히 3개가 필수다.
-- 상세 조회는 case metadata, input/output download file metadata, latestRun만 반환한다. full run history/result payload/intermediate download metadata는 포함하지 않는다.
+- 상세 조회는 case metadata, input/output 파일명 metadata, latestRun만 반환한다. 파일 항목에는 `fileNm`만 제공하며,
+  full run history/result payload/`fileNo`/`fileSize`/intermediate file metadata는 포함하지 않는다.
 - 수정 API는 `title`, `description`만 받으며 응답은 최신 `FundamentalModelCaseDetailRes`다.
 - 삭제 API는 physical delete가 아니라 soft delete이며, 삭제된 case는 이후 active-resource API에서 `404 RSC_NOT_FOUND`로 취급한다.
 - 실행 요청은 `RUNNING` 상태에서 중복 접수를 차단한다.
@@ -1614,9 +1614,9 @@ phase 1 mock 시연 동선:
 
 1. `caseId`로 active case를 찾는다.
 2. case가 없거나 `delYn = Y`이면 `RSC_NOT_FOUND`.
-3. case metadata와 `SCNRCASE + case_id` 기준 input download file metadata를 반환한다.
+3. case metadata와 `SCNRCASE + case_id` 기준 input 파일명 metadata를 반환한다.
 4. `latestRunId`가 null이면 `latestRun = null`, `files.output = []`로 반환한다.
-5. `latestRunId`가 있으면 run store에서 최신 run 1건만 찾아 `latestRun`으로 반환하고, 해당 run의 `run_seq` 기준 `SCNRCASEH` output download file metadata를 반환한다.
+5. `latestRunId`가 있으면 run store에서 최신 run 1건만 찾아 `latestRun`으로 반환하고, 해당 run의 `run_seq` 기준 `SCNRCASEH` output 파일명 metadata를 반환한다.
 6. full run history, result payload, intermediate file/download metadata는 반환하지 않는다.
 
 ### Update
