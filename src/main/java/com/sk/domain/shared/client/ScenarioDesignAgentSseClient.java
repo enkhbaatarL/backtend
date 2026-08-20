@@ -1,8 +1,5 @@
 package com.sk.domain.shared.client;
 
-import com.fasterxml.jackson.databind.JsonNode;
-import com.sk.common.enums.ResultCode;
-import com.sk.common.utils.JsonUtil;
 import com.sk.common.exception.AgentDesignApiException;
 import com.sk.domain.shared.client.dto.request.ScenarioGroupCreateV4AgentReq;
 import java.io.BufferedReader;
@@ -14,7 +11,6 @@ import java.time.Duration;
 import java.util.concurrent.CompletableFuture;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.client.SimpleClientHttpRequestFactory;
 import org.springframework.stereotype.Component;
@@ -57,7 +53,7 @@ public class ScenarioDesignAgentSseClient {
             .body(request)
             .exchange((clientRequest, clientResponse) -> {
                 if (clientResponse.getStatusCode().isError()) {
-                    connectGate.completeExceptionally(translateError(clientResponse.getStatusCode().value(), readBody(clientResponse.getBody())));
+                    connectGate.completeExceptionally(AgentDesignApiException.fromAgentBody(clientResponse.getStatusCode().value(), readBody(clientResponse.getBody())));
                     return null;
                 }
                 connectGate.complete(null);
@@ -80,7 +76,7 @@ public class ScenarioDesignAgentSseClient {
             })
             .exchange((clientRequest, clientResponse) -> {
                 if (clientResponse.getStatusCode().isError()) {
-                    connectGate.completeExceptionally(translateError(clientResponse.getStatusCode().value(), readBody(clientResponse.getBody())));
+                    connectGate.completeExceptionally(AgentDesignApiException.fromAgentBody(clientResponse.getStatusCode().value(), readBody(clientResponse.getBody())));
                     return null;
                 }
                 connectGate.complete(null);
@@ -186,44 +182,6 @@ public class ScenarioDesignAgentSseClient {
         } catch (IOException e) {
             return "";
         }
-    }
-
-    /**
-     * Agent JSON 오류를 전용 예외로 변환한다. HTTP status는 그대로 통과시키고,
-     * data 객체는 원문 그대로 보존해 FE가 계약대로 error_name 분기와 기존 리소스 ID 재사용
-     * (operationId 재연결 / scenarioGroupId 상세 이동)을 할 수 있게 한다.
-     * GlobalExceptionHandler가 BaseResponse로 래핑한다.
-     */
-    public static AgentDesignApiException translateError(int statusValue, String bodyText) {
-        String message = bodyText;
-        JsonNode dataNode = null;
-        try {
-            JsonNode bodyNode = JsonUtil.fromJson(bodyText, JsonNode.class);
-            if (bodyNode != null) {
-                message = bodyNode.path("message").asText(bodyText);
-                dataNode = bodyNode.hasNonNull("data") ? bodyNode.get("data") : null;
-                // FastAPI 요청 검증 오류는 공통 body가 아니라 {"detail": [...]} 형식
-                if (dataNode == null && bodyNode.has("detail")) {
-                    message = bodyNode.get("detail").toString();
-                }
-            }
-        } catch (Exception e) {
-            log.debug("[Design V4] agent 오류 본문 파싱 실패: {}", e.getMessage());
-        }
-
-        HttpStatus status = HttpStatus.resolve(statusValue);
-        if (status == null) {
-            status = HttpStatus.BAD_GATEWAY;
-        }
-        ResultCode.Error code = switch (statusValue) {
-            case 409, 403 -> ResultCode.Error.BIZ_DESIGN_OCCUPIED;
-            case 400, 422 -> ResultCode.Error.BIZ_RULE_VIOLATION;
-            default -> ResultCode.Error.API_RESPONSE_ERROR;
-        };
-
-        log.warn("[Design V4] agent 오류: status={}, errorName={}, data={}",
-            statusValue, dataNode == null ? null : dataNode.path("error_name").asText(null), dataNode);
-        return AgentDesignApiException.of(status, code, message, dataNode);
     }
 
 }

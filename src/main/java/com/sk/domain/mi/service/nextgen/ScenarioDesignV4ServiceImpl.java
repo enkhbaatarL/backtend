@@ -3,10 +3,12 @@ package com.sk.domain.mi.service.nextgen;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.sk.common.enums.ResultCode;
 import com.sk.common.exception.AgentDesignApiException;
+import com.sk.common.exception.ApiErrorException;
 import com.sk.common.exception.AppErrorException;
 import com.sk.common.utils.JsonUtil;
 import com.sk.domain.mi.dto.request.nextgen.design.ScenarioDesignStartV4Req;
 import com.sk.domain.mi.dto.response.nextgen.ScenarioSignpostDefinitionViewRes;
+import com.sk.domain.mi.dto.response.nextgen.design.AdditionalDimensionsRes;
 import com.sk.domain.mi.dto.response.nextgen.design.DesignTable;
 import com.sk.domain.mi.dto.response.nextgen.design.ScenarioDesignPresentationRes;
 import com.sk.domain.mi.dto.response.nextgen.design.ScenarioDesignStatusRes;
@@ -14,11 +16,13 @@ import com.sk.domain.mi.dto.response.nextgen.design.ScenarioValidationCache;
 import com.sk.domain.mi.service.nextgen.design.ScenarioDesignValidationStore;
 import com.sk.domain.mi.service.nextgen.sse.ScenarioDesignStreamExecutor;
 import com.sk.domain.mi.service.nextgen.support.FailedCreatingGroupResolver;
-import com.sk.domain.mi.service.nextgen.support.ScenarioDesignPresentationMapper;
+import com.sk.domain.mi.service.nextgen.support.ScenarioDesignAgentMapper;
 import com.sk.domain.mi.service.nextgen.support.ScenarioDesignTableMapper;
 import com.sk.domain.shared.client.ScenarioDesignAgentApi;
 import com.sk.domain.shared.client.ScenarioDesignAgentSseClient;
 import com.sk.domain.shared.client.dto.request.ScenarioGroupCreateV4AgentReq;
+import com.sk.domain.shared.client.dto.response.AdditionalDimensionsAgentRes;
+import com.sk.domain.shared.client.dto.response.ScenarioPresentationAgentRes;
 import com.sk.domain.shared.entity.master.tmd.User;
 import com.sk.domain.shared.entity.master.tmm.MiScenarioGroup;
 import com.sk.domain.shared.entity.master.tmm.MiScenarioGroupEvent;
@@ -39,14 +43,17 @@ import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
+import java.net.SocketTimeoutException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
+import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
-import org.springframework.web.client.RestClientResponseException;
+import org.springframework.web.client.ResourceAccessException;
+import org.springframework.web.client.RestClientException;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
 /**
@@ -209,14 +216,8 @@ public class ScenarioDesignV4ServiceImpl implements ScenarioDesignV4Service {
      */
     @Override
     public ScenarioDesignPresentationRes getPresentation(Long scenarioGroupId, String operationId) {
-        JsonNode agentBody;
-
-        try {
-            agentBody = scenarioDesignAgentApi.getPresentation(scenarioGroupId, operationId);
-        } catch (RestClientResponseException e) {
-            // 선언형 클라이언트 오류를 기존 계약(AgentDesignApiException -> 전용 핸들러)으로 번역해 FE 오류 응답 모양을 유지한다
-            throw ScenarioDesignAgentSseClient.translateError(e.getStatusCode().value(), e.getResponseBodyAsString());
-        }
+        ScenarioPresentationAgentRes source =
+            callAgent(() -> scenarioDesignAgentApi.getPresentation(scenarioGroupId, operationId), "getPresentation");
 
         List<ScenarioGroupBaseEventRow> baseEvents = scenarioGroupRepository.findBaseEventsByScenarioGroupId(scenarioGroupId);
 
@@ -228,13 +229,52 @@ public class ScenarioDesignV4ServiceImpl implements ScenarioDesignV4Service {
             : null;
         DesignTable overlayTable = cache == null ? null : ScenarioDesignTableMapper.toDesignTable(cache.table());
 
-        return ScenarioDesignPresentationMapper.toRes(
-            agentBody,
+        return ScenarioDesignAgentMapper.toRes(
+            source,
             baseEvents,
-            resolveLastError(agentBody),
+            resolveLastError(source),
             toRefinementState(group, cache),
             overlayTable,
             loadSignpostsByScenario(group));
+    }
+
+    /**
+     * [추가 분기항목 후보 조회]
+     * Agent 프록시 (step1 편집의 + 버튼).
+     * 후보는 시나리오 그룹 생성 중 Agent가 background로 비동기 생성하므로 이 API는 조회 전용이며,
+     * FE는 generationStatus가 queued/running인 동안 재조회(polling)하고 unavailable 계열이면 후보 영역을 비활성화한다..
+     */
+    @Override
+    public AdditionalDimensionsRes getAdditionalDimensions(Long scenarioGroupId) {
+        scenarioGroupRepository.findByScenarioGroupIdAndIsDeletedFalse(scenarioGroupId)
+            .orElseThrow(() -> AppErrorException.of(ResultCode.Error.RSC_NOT_FOUND, "Scenario group not found: %d".formatted(scenarioGroupId)));
+
+        AdditionalDimensionsAgentRes agentRes =
+            callAgent(() -> scenarioDesignAgentApi.getAdditionalDimensions(scenarioGroupId), "getAdditionalDimensions");
+
+        return ScenarioDesignAgentMapper.toAdditionalDimensions(agentRes);
+    }
+
+    /**
+     * Agent 호출을 감싸 통신 예외를 통제된 외부 API 에러로 변환한다 (설계 Impl callAgent 패턴 복사).
+     * HTTP 오류 응답은 500 + 표준 메시지(API-004)로 내리고 Agent 원문은 응답 data와 로그에 남기며,
+     * 타임아웃은 API_TIMEOUT, 연결 실패는 API_SERVICE_UNAVAILABLE, 그 외 호출 실패는 API_CALL_FAILED로 구분한다.
+     */
+    private <T> T callAgent(Supplier<T> call, String action) {
+        try {
+            return call.get();
+        } catch (ApiErrorException e) {
+            // 공통 RestClient 빌더의 오류 상태 핸들러가 HTTP 오류를 ApiErrorException(status + body 원문)으로 던진다
+            log.error("[Design Agent] {} 응답 오류: status={}, body={}", action, e.getStatusCode(), e.getMessage(), e);
+            throw AgentDesignApiException.internalFromAgentBody(e.getMessage());
+        } catch (ResourceAccessException e) {
+            ResultCode.Error code = e.getCause() instanceof SocketTimeoutException ? ResultCode.Error.API_TIMEOUT : ResultCode.Error.API_SERVICE_UNAVAILABLE;
+            log.error("[Design Agent] {} 통신 오류: {}", action, e.getMessage(), e);
+            throw ApiErrorException.of(code, e);
+        } catch (RestClientException e) {
+            log.error("[Design Agent] {} 호출 실패: {}", action, e.getMessage(), e);
+            throw ApiErrorException.of(ResultCode.Error.API_CALL_FAILED, e);
+        }
     }
 
     /** step1 편집 단계(검토 캐시 오버레이 대상) 여부 — 생성 완료 후 Signpost 산출 전까지. */
@@ -288,11 +328,10 @@ public class ScenarioDesignV4ServiceImpl implements ScenarioDesignV4Service {
     /**
      * Agent 응답의 operation이 실패 종료 상태면 operation 테이블에서 실패 사유 원문을 읽어온다.
      * */
-    private JsonNode resolveLastError(JsonNode agentBody) {
-        JsonNode operation = agentBody.path("operation");
-        String operationId = operation.path("operationId").asText(null);
-        String status = operation.path("status").asText(null);
-        if (operationId == null || !DesignOperationStatus.isFailedTerminal(status)) {
+    private JsonNode resolveLastError(ScenarioPresentationAgentRes source) {
+        ScenarioPresentationAgentRes.Operation operation = source.operation();
+        String operationId = operation == null ? null : operation.operationId();
+        if (operationId == null || !DesignOperationStatus.isFailedTerminal(operation.status())) {
             return null;
         }
         String lastError = operationRepository.findById(operationId)

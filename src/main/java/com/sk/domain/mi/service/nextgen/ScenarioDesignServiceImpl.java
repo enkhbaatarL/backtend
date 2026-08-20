@@ -1,6 +1,8 @@
 package com.sk.domain.mi.service.nextgen;
 
 import com.sk.common.enums.ResultCode;
+import com.sk.common.exception.AgentDesignApiException;
+import com.sk.common.exception.ApiErrorException;
 import com.sk.common.exception.AppErrorException;
 import com.sk.common.exception.AppHttpStatusException;
 import com.sk.common.utils.JsonUtil;
@@ -39,7 +41,6 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.client.ResourceAccessException;
 import org.springframework.web.client.RestClientException;
-import org.springframework.web.client.RestClientResponseException;
 
 import java.net.SocketTimeoutException;
 import java.util.Comparator;
@@ -286,16 +287,18 @@ public class ScenarioDesignServiceImpl implements ScenarioDesignService {
     private <T> T callAgent(Supplier<T> call, String action) {
         try {
             return call.get();
+        } catch (ApiErrorException e) {
+            // 공통 RestClient 빌더의 오류 상태 핸들러가 HTTP 오류를 ApiErrorException(status + body 원문)으로 던진다.
+            // Agent 오류는 B.E-Agent 구간 문제라 FE에는 500 + 표준 메시지(API-004)로 내리고, 원문은 응답 data와 로그에 남긴다.
+            log.error("[Design Agent] {} 응답 오류: status={}, body={}", action, e.getStatusCode(), e.getMessage(), e);
+            throw AgentDesignApiException.internalFromAgentBody(e.getMessage());
         } catch (ResourceAccessException e) {
             ResultCode.Error code = e.getCause() instanceof SocketTimeoutException ? ResultCode.Error.API_TIMEOUT : ResultCode.Error.API_SERVICE_UNAVAILABLE;
             log.error("[Design Agent] {} 통신 오류: {}", action, e.getMessage(), e);
-            throw AppErrorException.of(code, "Agent communication error (%s)".formatted(action));
-        } catch (RestClientResponseException e) {
-            log.error("[Design Agent] {} 응답 오류: status={}, body={}", action, e.getStatusCode(), e.getResponseBodyAsString(), e);
-            throw AppErrorException.of(ResultCode.Error.API_RESPONSE_ERROR, "Agent response error (%s)".formatted(action));
+            throw ApiErrorException.of(code, e);
         } catch (RestClientException e) {
             log.error("[Design Agent] {} 호출 실패: {}", action, e.getMessage(), e);
-            throw AppErrorException.of(ResultCode.Error.API_CALL_FAILED, "Agent call failed (%s)".formatted(action));
+            throw ApiErrorException.of(ResultCode.Error.API_CALL_FAILED, e);
         }
     }
 

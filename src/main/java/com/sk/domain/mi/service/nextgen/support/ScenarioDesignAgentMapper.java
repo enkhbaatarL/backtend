@@ -1,12 +1,11 @@
 package com.sk.domain.mi.service.nextgen.support;
 
-import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.sk.common.utils.DateUtil;
-import com.sk.common.utils.JsonUtil;
 import com.sk.domain.mi.dto.response.nextgen.ScenarioDimensionColumnRes;
 import com.sk.domain.mi.dto.response.nextgen.ScenarioDimensionRes;
 import com.sk.domain.mi.dto.response.nextgen.ScenarioSignpostDefinitionViewRes;
+import com.sk.domain.mi.dto.response.nextgen.design.AdditionalDimensionsRes;
 import com.sk.domain.mi.dto.response.nextgen.design.DesignScenarioRow;
 import com.sk.domain.mi.dto.response.nextgen.design.DesignTable;
 import com.sk.domain.mi.dto.response.nextgen.design.ScenarioDesignPresentationRes;
@@ -14,47 +13,54 @@ import com.sk.domain.mi.dto.response.nextgen.design.ScenarioDesignPresentationRe
 import com.sk.domain.mi.dto.response.nextgen.design.ScenarioDesignPresentationRes.DesignDimensionValueOption;
 import com.sk.domain.mi.dto.response.nextgen.design.ScenarioDesignPresentationRes.DesignEvidence;
 import com.sk.domain.mi.dto.response.nextgen.design.ScenarioDesignPresentationRes.EventBundle;
+import com.sk.domain.shared.client.dto.response.AdditionalDimensionsAgentRes;
+import com.sk.domain.shared.client.dto.response.AgentDimensionDefinitions;
+import com.sk.domain.shared.client.dto.response.ScenarioPresentationAgentRes;
+import com.sk.domain.shared.client.dto.response.ScenarioPresentationAgentRes.CellEvidence;
+import com.sk.domain.shared.client.dto.response.ScenarioPresentationAgentRes.Header;
+import com.sk.domain.shared.client.dto.response.ScenarioPresentationAgentRes.MarkdownSection;
+import com.sk.domain.shared.client.dto.response.ScenarioPresentationAgentRes.Row;
+import com.sk.domain.shared.client.dto.response.ScenarioPresentationAgentRes.ScenarioTable;
+import com.sk.domain.shared.client.dto.response.ScenarioPresentationAgentRes.Sections;
+import com.sk.domain.shared.enums.nextgen.AdditionalDimensionGenerationStatus;
 import com.sk.domain.shared.enums.nextgen.DesignOperationPhase;
 import com.sk.domain.shared.enums.nextgen.DesignOperationStatus;
 import com.sk.domain.shared.enums.nextgen.GlobalPressureBand;
 import com.sk.domain.shared.enums.nextgen.ScenarioRole;
 import com.sk.domain.shared.repository.master.tmm.projection.ScenarioGroupBaseEventRow;
-import java.math.BigDecimal;
 import java.util.Comparator;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
 /**
- * Agent presentation 응답 → B.E 설계 화면 계약({@link ScenarioDesignPresentationRes}) 변환기.
+ * 시나리오 설계 Agent 응답 DTO → B.E 계약 변환기.
+ * presentation(설계 화면·그룹 상세 근거 보기)과 추가 분기항목 후보 조회의 화면 계약 변환을 담당한다.
+ * Agent 응답 계약 자체는 클라이언트 수신 DTO(client.dto.response의 ~AgentRes)가 정의한다.
  *
  * Agent의 sections 트리를 화면 단위로 펴고, 시나리오 표는 기존 설계 표 계약(DesignTable)으로 변환한다.
  * 셀 값은 cells의 표시 label을 정본으로 쓰고(왕복 재전송 안전), cellEvidence에서 valueId와 셀 근거를 보강한다.
  * 확률은 전 세대 0~100 정수 단일 스케일이다 (Agent팀이 v1 정책으로 통일 확정 — 2026-08-18).
- *
- * Agent 계약에 없는 필드(신규 이벤트 종류, 부가 메타)는 무시하도록 파싱 레코드에 ignoreUnknown을 걸어
- * Agent 측 확장에 내성을 가진다.
  */
-public final class ScenarioDesignPresentationMapper {
+public final class ScenarioDesignAgentMapper {
 
-    private ScenarioDesignPresentationMapper() {
+    private ScenarioDesignAgentMapper() {
     }
 
     /**
-     * Agent 응답 원문과 B.E 합성 재료를 합쳐 응답을 만든다.
+     * Agent 응답과 B.E 합성 재료를 합쳐 응답을 만든다.
      * lastError는 operation 테이블, refinementState는 그룹 엔티티 + Redis 검토 캐시,
      * overlayTable은 검토 통과 편집본(캐시 표의 DesignTable 변환)으로 호출측이 조회해 넘긴다.
      * overlayTable이 있으면 Agent 표 대신 그것을 내리되, 셀의 valueId와 근거는
      * dimensionValueOptions에서 label 역조인으로 복원한다 (검토 왕복은 label만 오가므로 캐시에는 없다).
      */
-    public static ScenarioDesignPresentationRes toRes(JsonNode agentBody,
+    public static ScenarioDesignPresentationRes toRes(ScenarioPresentationAgentRes source,
                                                       List<ScenarioGroupBaseEventRow> baseEventRows,
                                                       JsonNode lastError,
                                                       ScenarioDesignPresentationRes.ScenarioGroupRefinementState refinementState,
                                                       DesignTable overlayTable,
                                                       Map<Long, List<ScenarioSignpostDefinitionViewRes>> signpostsByScenario) {
-        AgentPresentation source = JsonUtil.fromJson(agentBody.toString(), AgentPresentation.class);
-        AgentSections sections = source.sections();
+        Sections sections = source.sections();
 
         Map<String, List<DesignDimensionValueOption>> valueOptions = toDimensionValueOptions(sections);
         DesignTable table = overlayTable == null
@@ -79,18 +85,18 @@ public final class ScenarioDesignPresentationMapper {
      * valueId/근거/압력 기여를 복원한다. 자유입력 등 옵션에 없는 값은 복원 없이 label만 유지된다
      * (근거 자연 소거 — 기존 정책과 동일).
      */
-    private static DesignTable enrichOverlayTable(DesignTable overlay, AgentSections sections,
+    private static DesignTable enrichOverlayTable(DesignTable overlay, Sections sections,
                                                   Map<String, List<DesignDimensionValueOption>> valueOptions,
                                                   Map<Long, List<ScenarioSignpostDefinitionViewRes>> signpostsByScenario) {
-        Map<String, AgentDimensionItem> itemsById = new LinkedHashMap<>();
-        for (AgentDimensionItem item : definitionItems(sections)) {
+        Map<String, AgentDimensionDefinitions.Item> itemsById = new LinkedHashMap<>();
+        for (AgentDimensionDefinitions.Item item : definitionItems(sections)) {
             itemsById.putIfAbsent(item.dimensionId(), item);
         }
         List<ScenarioDimensionColumnRes> columns = overlay.dimensionColumns() == null
             ? null
             : overlay.dimensionColumns().stream()
                 .map(column -> {
-                    AgentDimensionItem item = itemsById.get(column.key());
+                    AgentDimensionDefinitions.Item item = itemsById.get(column.key());
                     if (item == null || column.description() != null || column.rationale() != null) {
                         return column;
                     }
@@ -146,7 +152,7 @@ public final class ScenarioDesignPresentationMapper {
             .toList();
     }
 
-    private static ScenarioGroupCreationState toCreationState(AgentOperation operation, JsonNode lastError) {
+    private static ScenarioGroupCreationState toCreationState(ScenarioPresentationAgentRes.Operation operation, JsonNode lastError) {
         if (operation == null) {
             return null;
         }
@@ -181,16 +187,15 @@ public final class ScenarioDesignPresentationMapper {
      * 설계 화면과의 문서 동일성을 렌더러 버전 변경과 무관하게 보장하기 위해 조회 화면 DB 직조회 원칙의 예외로 Agent 원본을 사용한다.
      * 근거 섹션이 비어 있으면 null.
      */
-    public static DesignEvidence toEvidence(JsonNode agentBody) {
-        if (agentBody == null || agentBody.isNull()) {
+    public static DesignEvidence toEvidence(ScenarioPresentationAgentRes source) {
+        if (source == null) {
             return null;
         }
-        AgentPresentation source = JsonUtil.fromJson(agentBody.toString(), AgentPresentation.class);
-        DesignEvidence evidence = toEvidence(source == null ? null : source.sections());
+        DesignEvidence evidence = toEvidence(source.sections());
         return evidence.eventAnalysisMarkdown() == null && evidence.roleSelectionMarkdown() == null ? null : evidence;
     }
 
-    private static DesignEvidence toEvidence(AgentSections sections) {
+    private static DesignEvidence toEvidence(Sections sections) {
         return new DesignEvidence(
             normalizeMarkdown(sections == null ? null : sections.eventAnalysis()),
             normalizeMarkdown(sections == null ? null : sections.roleSelectionRationale())
@@ -198,7 +203,7 @@ public final class ScenarioDesignPresentationMapper {
     }
 
     /** 준비 전 섹션 정규화 — Agent는 unavailable 섹션에 빈 문자열을 주므로 blank를 null로 통일한다 (계약: 준비 전이면 null). */
-    private static String normalizeMarkdown(AgentMarkdownSection section) {
+    private static String normalizeMarkdown(MarkdownSection section) {
         if (section == null || section.markdown() == null || section.markdown().isBlank()) {
             return null;
         }
@@ -209,27 +214,27 @@ public final class ScenarioDesignPresentationMapper {
      * scenarioTable + dimensionDefinitions → 설계 표. 헤더가 아직 없으면(생성 초기 스냅샷) null을 반환해
      * FE가 표 영역을 로딩 상태로 두게 한다. 헤더의 설명/근거는 definitions에서 dimensionId로 조인한다.
      */
-    private static DesignTable toTable(AgentSections sections,
+    private static DesignTable toTable(Sections sections,
                                        Map<Long, List<ScenarioSignpostDefinitionViewRes>> signpostsByScenario) {
-        AgentScenarioTable scenarioTable = sections == null || sections.scenarioDesign() == null
+        ScenarioTable scenarioTable = sections == null || sections.scenarioDesign() == null
             ? null
             : sections.scenarioDesign().scenarioTable();
         if (scenarioTable == null || scenarioTable.headers() == null || scenarioTable.headers().isEmpty()) {
             return null;
         }
 
-        Map<String, AgentDimensionItem> itemsById = new LinkedHashMap<>();
-        for (AgentDimensionItem item : definitionItems(sections)) {
+        Map<String, AgentDimensionDefinitions.Item> itemsById = new LinkedHashMap<>();
+        for (AgentDimensionDefinitions.Item item : definitionItems(sections)) {
             itemsById.putIfAbsent(item.dimensionId(), item);
         }
 
-        List<AgentHeader> headers = scenarioTable.headers().stream()
+        List<Header> headers = scenarioTable.headers().stream()
             .sorted(Comparator.comparing(h -> h.displayOrder() == null ? Integer.MAX_VALUE : h.displayOrder()))
             .toList();
 
         List<ScenarioDimensionColumnRes> columns = headers.stream()
             .map(header -> {
-                AgentDimensionItem item = itemsById.get(header.key());
+                AgentDimensionDefinitions.Item item = itemsById.get(header.key());
                 return new ScenarioDimensionColumnRes(
                     header.key(),
                     header.label(),
@@ -238,21 +243,21 @@ public final class ScenarioDesignPresentationMapper {
             })
             .toList();
 
-        List<DesignScenarioRow> rows = (scenarioTable.rows() == null ? List.<AgentRow>of() : scenarioTable.rows()).stream()
+        List<DesignScenarioRow> rows = (scenarioTable.rows() == null ? List.<Row>of() : scenarioTable.rows()).stream()
             .map(row -> toDesignRow(row, headers, signpostsByScenario))
             .toList();
 
         return DesignTable.of(columns, rows);
     }
 
-    private static DesignScenarioRow toDesignRow(AgentRow row, List<AgentHeader> headers,
+    private static DesignScenarioRow toDesignRow(Row row, List<Header> headers,
                                                  Map<Long, List<ScenarioSignpostDefinitionViewRes>> signpostsByScenario) {
         Map<String, String> cells = row.cells() == null ? Map.of() : row.cells();
-        Map<String, AgentCellEvidence> cellEvidence = row.cellEvidence() == null ? Map.of() : row.cellEvidence();
+        Map<String, CellEvidence> cellEvidence = row.cellEvidence() == null ? Map.of() : row.cellEvidence();
 
         List<ScenarioDimensionRes> dimensions = headers.stream()
             .map(header -> {
-                AgentCellEvidence evidence = cellEvidence.get(header.key());
+                CellEvidence evidence = cellEvidence.get(header.key());
                 String value = cells.get(header.key());
                 if (value == null && evidence != null) {
                     value = evidence.valueLabel();
@@ -282,10 +287,10 @@ public final class ScenarioDesignPresentationMapper {
         );
     }
 
-    private static Map<String, List<DesignDimensionValueOption>> toDimensionValueOptions(AgentSections sections) {
+    private static Map<String, List<DesignDimensionValueOption>> toDimensionValueOptions(Sections sections) {
         Map<String, List<DesignDimensionValueOption>> options = new LinkedHashMap<>();
-        for (AgentDimensionItem item : definitionItems(sections)) {
-            List<DesignDimensionValueOption> values = (item.values() == null ? List.<AgentDimensionValue>of() : item.values()).stream()
+        for (AgentDimensionDefinitions.Item item : definitionItems(sections)) {
+            List<DesignDimensionValueOption> values = (item.values() == null ? List.<AgentDimensionDefinitions.Value>of() : item.values()).stream()
                 .map(value -> new DesignDimensionValueOption(
                     value.valueId(),
                     value.label(),
@@ -296,67 +301,52 @@ public final class ScenarioDesignPresentationMapper {
         return options;
     }
 
-    private static List<AgentDimensionItem> definitionItems(AgentSections sections) {
+    /**
+     * 추가 분기항목 후보 조회 응답 변환 (Agent Additional Dimensions GET API).
+     * 후보 item은 presentation의 dimensionDefinitions.items와 동형이라 같은 수신 DTO를 재사용하고,
+     * 미지 generationStatus는 null로 강등한다 (Agent 어휘 확장 내성).
+     */
+    public static AdditionalDimensionsRes toAdditionalDimensions(AdditionalDimensionsAgentRes agentRes) {
+        AdditionalDimensionsAgentRes.Data data = agentRes == null ? null : agentRes.data();
+        if (data == null) {
+            return AdditionalDimensionsRes.of(null, null, List.of(), 0, null, null);
+        }
+
+        List<AgentDimensionDefinitions.Item> items =
+            data.dimensionDefinitions() == null || data.dimensionDefinitions().items() == null
+                ? List.of()
+                : data.dimensionDefinitions().items();
+
+        List<AdditionalDimensionsRes.AdditionalDimensionCandidate> candidates = items.stream()
+            .map(item -> new AdditionalDimensionsRes.AdditionalDimensionCandidate(
+                item.dimensionId(),
+                item.label(),
+                item.description(),
+                item.rationale(),
+                item.modelSupportStatus(),
+                (item.values() == null ? List.<AgentDimensionDefinitions.Value>of() : item.values()).stream()
+                    .map(value -> new AdditionalDimensionsRes.CandidateValue(
+                        value.valueId(), value.label(), value.rationale(), value.pressureContribution()))
+                    .toList()))
+            .toList();
+
+        return AdditionalDimensionsRes.of(
+            data.scenarioGroupId(),
+            AdditionalDimensionGenerationStatus.fromNullable(data.generationStatus()),
+            candidates,
+            data.availableCount(),
+            data.updatedAt(),
+            data.errorCode()
+        );
+    }
+
+    private static List<AgentDimensionDefinitions.Item> definitionItems(Sections sections) {
         if (sections == null || sections.scenarioDesign() == null
             || sections.scenarioDesign().dimensionDefinitions() == null
             || sections.scenarioDesign().dimensionDefinitions().items() == null) {
             return List.of();
         }
         return sections.scenarioDesign().dimensionDefinitions().items();
-    }
-
-    @JsonIgnoreProperties(ignoreUnknown = true)
-    private record AgentPresentation(Long scenarioGroupId, AgentOperation operation, AgentSections sections) {
-    }
-
-    @JsonIgnoreProperties(ignoreUnknown = true)
-    private record AgentOperation(String status, String currentPhase, Integer snapshotRevision) {
-    }
-
-    @JsonIgnoreProperties(ignoreUnknown = true)
-    private record AgentSections(AgentMarkdownSection eventAnalysis, AgentScenarioDesign scenarioDesign,
-                                 AgentMarkdownSection roleSelectionRationale) {
-    }
-
-    @JsonIgnoreProperties(ignoreUnknown = true)
-    private record AgentMarkdownSection(String status, String markdown) {
-    }
-
-    @JsonIgnoreProperties(ignoreUnknown = true)
-    private record AgentScenarioDesign(String status, AgentDimensionDefinitions dimensionDefinitions,
-                                       AgentScenarioTable scenarioTable) {
-    }
-
-    @JsonIgnoreProperties(ignoreUnknown = true)
-    private record AgentDimensionDefinitions(String status, List<AgentDimensionItem> items) {
-    }
-
-    @JsonIgnoreProperties(ignoreUnknown = true)
-    private record AgentDimensionItem(String dimensionId, String label, String description, String rationale,
-                                      List<AgentDimensionValue> values) {
-    }
-
-    @JsonIgnoreProperties(ignoreUnknown = true)
-    private record AgentDimensionValue(String valueId, String label, String rationale) {
-    }
-
-    @JsonIgnoreProperties(ignoreUnknown = true)
-    private record AgentScenarioTable(String status, List<AgentHeader> headers, List<AgentRow> rows) {
-    }
-
-    @JsonIgnoreProperties(ignoreUnknown = true)
-    private record AgentHeader(String key, String label, Integer displayOrder) {
-    }
-
-    @JsonIgnoreProperties(ignoreUnknown = true)
-    private record AgentRow(Long scenarioId, Integer displayOrder, String title, String narrative,
-                            String scenarioRole, String baselineYn, String pressureBand,
-                            BigDecimal probabilityScore, String pressureRationale,
-                            Map<String, String> cells, Map<String, AgentCellEvidence> cellEvidence) {
-    }
-
-    @JsonIgnoreProperties(ignoreUnknown = true)
-    private record AgentCellEvidence(String valueId, String valueLabel, String rationale) {
     }
 
 }

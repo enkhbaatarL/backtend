@@ -12,8 +12,9 @@ import static org.springframework.http.HttpStatus.UNSUPPORTED_MEDIA_TYPE;
 
 import com.amazonaws.services.s3.model.AmazonS3Exception;
 import com.sk.common.enums.ResultCode;
-import com.sk.common.exception.AppErrorException;
 import com.sk.common.exception.AgentDesignApiException;
+import com.sk.common.exception.ApiErrorException;
+import com.sk.common.exception.AppErrorException;
 import com.sk.common.exception.AppHttpStatusException;
 import com.sk.common.exception.CustomAuthenticationException;
 import com.sk.common.exception.CustomAuthorizationException;
@@ -444,16 +445,26 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
      * 기존 리소스 ID 재사용(operationId 재연결, scenarioGroupId 상세 이동)을 하는 데 필요하다.
      * 중복 정책 충돌(409 등)은 예상 가능한 업무 응답이라 error가 아닌 warn으로 남긴다.
      */
+    /**
+     * 외부 API 호출 오류 처리. 외부 시스템과의 구간 문제이므로 HTTP 500으로 내리고,
+     * 코드는 예외에 지정된 분류(API_TIMEOUT 등)를 쓰되 미지정(RestClient 빌더가 던진 HTTP 오류 원문)이면
+     * API_RESPONSE_ERROR로 응답한다. 외부 응답 원문은 응답에 싣지 않고 로그로만 남긴다.
+     */
+    @ExceptionHandler(ApiErrorException.class)
+    private ResponseEntity<Object> handleApiError(ApiErrorException ex) {
+        ResultCode.Error code = ex.getErrorCode() != null ? ex.getErrorCode() : ResultCode.Error.API_RESPONSE_ERROR;
+        return createAndLogResponse("External API Error", ex, INTERNAL_SERVER_ERROR, code, null);
+    }
+
     @ExceptionHandler(AgentDesignApiException.class)
     private ResponseEntity<Object> handleAgentDesignApiError(AgentDesignApiException ex) {
-        String detailMessage = StringUtils.defaultIfBlank(ex.getAgentMessage(), "N/A");
-        log.warn("[Design Agent V4] agent 오류 응답 통과: status={}, code={}, message={}, agentData={}",
-            ex.getHttpStatus().value(), ex.getErrorCode().getCode(), detailMessage, ex.getAgentData());
-        MDCUtil.setValue(MDCUtil.RESPONSE_ERROR_MSG, "%s(%s) - %s".formatted(ex.getErrorCode().getMessage(), ex.getErrorCode().getCode(), detailMessage));
+        String agentMessage = StringUtils.defaultIfBlank(ex.getAgentMessage(), "N/A");
+        log.warn("[Design Agent] agent 오류 응답: status={}, code={}, agentMessage={}, agentData={}", ex.getHttpStatus().value(), ex.getErrorCode().getCode(), agentMessage, ex.getAgentData());
+        MDCUtil.setValue(MDCUtil.RESPONSE_ERROR_MSG, "%s(%s) - %s".formatted(ex.getErrorCode().getMessage(), ex.getErrorCode().getCode(), agentMessage));
 
-        // agentData는 응답에 싣지 않는다 — FE는 오류 수신 후 이벤트 조합 설계 상태 조회 API 재조회로 CTA를 갱신한다 (분기 재료 불요)
+        // Agent 오류 원문은 로그로만 남기고 응답은 표준 코드/메시지만 내린다 (내부 구간 정보를 클라이언트에 노출하지 않음)
         return ResponseEntity.status(ex.getHttpStatus())
-            .body(new BaseResponse<>(ex.getErrorCode().getCode(), detailMessage));
+            .body(new BaseResponse<>(ex.getErrorCode().getCode(), ex.getErrorCode().getMessage()));
     }
 
     @ExceptionHandler(SystemErrorException.class)

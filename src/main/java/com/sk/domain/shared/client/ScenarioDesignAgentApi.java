@@ -1,11 +1,12 @@
 package com.sk.domain.shared.client;
 
-import com.fasterxml.jackson.databind.JsonNode;
 import com.sk.domain.shared.client.dto.request.ScenarioConfirmationAgentReq;
 import com.sk.domain.shared.client.dto.request.ScenarioGroupCreateV4AgentReq;
 import com.sk.domain.shared.client.dto.request.ScenarioSignpostsAgentReq;
 import com.sk.domain.shared.client.dto.request.ScenarioValidationAgentReq;
+import com.sk.domain.shared.client.dto.response.AdditionalDimensionsAgentRes;
 import com.sk.domain.shared.client.dto.response.ScenarioDesignAgentRes;
+import com.sk.domain.shared.client.dto.response.ScenarioPresentationAgentRes;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestParam;
@@ -15,12 +16,6 @@ import org.springframework.web.service.annotation.PostExchange;
 
 /**
  * 시나리오 설계 Agent 통신 클라이언트 (B.E -> Agent).
- *
- * 경로는 배포된 Agent OpenAPI(2026-08-13 실측) 기준이다: 검토/Signpost/확정은 무접두 경로 그대로이며
- * v1/v4 그룹 공용이다. 무접두 POST /scenario-groups 는 v4 SSE 생성이 차지했고 구 v1 create 는 제거되어,
- * 콜백 방식 설계 시작은 콜백 호환용 POST /v4/scenario-groups (miEventIds 배열, JSON 접수 응답)를 사용한다.
- * REST 호출은 전부 이 인터페이스가 담당하고, SSE 스트림 중계만 ScenarioDesignAgentSseClient 가 담당한다.
- * 오류는 RestClientResponseException으로 전파된다 — 호출부가 용도에 맞게 처리한다.
  */
 @HttpExchange
 public interface ScenarioDesignAgentApi {
@@ -43,6 +38,10 @@ public interface ScenarioDesignAgentApi {
 
     /** 설계 화면 데이터 조회 (설계 화면 프록시 + 그룹 상세 근거 보기). operationId는 생성 진행 중 중간 스냅샷 조회용 (null 허용) */
     @GetExchange("/scenario-groups/{scenarioGroupId}/presentation")
-    JsonNode getPresentation(@PathVariable Long scenarioGroupId, @RequestParam(value = "operationId", required = false) String operationId);
+    ScenarioPresentationAgentRes getPresentation(@PathVariable Long scenarioGroupId, @RequestParam(value = "operationId", required = false) String operationId);
+
+    /** 추가 분기항목 후보 조회 (v4 전용). 후보는 생성 중 background로 만들어지며 이 호출은 조회 전용이다 */
+    @GetExchange("/scenario-groups/{scenarioGroupId}/additional-dimensions")
+    AdditionalDimensionsAgentRes getAdditionalDimensions(@PathVariable Long scenarioGroupId);
 
 }

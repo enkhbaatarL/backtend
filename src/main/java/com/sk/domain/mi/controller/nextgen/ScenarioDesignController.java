@@ -7,6 +7,7 @@ import com.sk.common.enums.ResultCode;
 import com.sk.common.model.BaseResponse;
 import com.sk.common.model.BaseResponseFactory;
 import com.sk.domain.mi.dto.request.nextgen.design.*;
+import com.sk.domain.mi.dto.response.nextgen.design.AdditionalDimensionsRes;
 import com.sk.domain.mi.dto.response.nextgen.design.ScenarioDesignPresentationRes;
 import com.sk.domain.mi.dto.response.nextgen.design.ScenarioDesignStageRes;
 import com.sk.domain.mi.dto.response.nextgen.design.ScenarioDesignStateRes;
@@ -42,7 +43,7 @@ public class ScenarioDesignController {
     private final ScenarioDesignService scenarioDesignService;
     private final ScenarioDesignV4Service scenarioDesignV4Service;
 
-    @ApiOrder(0)
+    @ApiOrder(1)
     @Operation(
         summary = "이벤트 조합 설계 상태 조회 API",
         description = """
@@ -81,7 +82,7 @@ public class ScenarioDesignController {
         return BaseResponseFactory.create(scenarioDesignV4Service.getDesignStatus(miEventIds));
     }
 
-    @ApiOrder(1)
+    @ApiOrder(2)
     @Operation(
         summary = "멀티 이벤트 기반 시나리오 그룹 생성 API (SSE)",
         description = """
@@ -187,7 +188,7 @@ public class ScenarioDesignController {
         return scenarioDesignV4Service.startDesignStream(request);
     }
 
-    @ApiOrder(2)
+    @ApiOrder(3)
     @Operation(
         summary = "설계 화면 데이터 조회 API",
         description = """
@@ -237,7 +238,7 @@ public class ScenarioDesignController {
             - 생성 진행 중에는 준비된 섹션만 채워집니다 — 표가 아직 없으면 `table: null`, 마크다운은 준비 전이면 null입니다.
             - legacy(v1) 그룹도 렌더됩니다 (creationState는 null, 근거 필드는 비어있음).
             - `operationId`를 주면 해당 작업 기준의 중간 스냅샷을 조회합니다 (생략 시 최신).
-            - Agent 오류(404 등)는 HTTP status 그대로 BaseResponse로 래핑되어 전달됩니다.
+            - Agent 오류는 B.E-Agent 구간 문제로 취급해 500 + API-004(외부 API 오류 표준 메시지)로 내려갑니다 (원문은 서버 로그).
             """
     )
     @ApiResponse(responseCode = "200", description = "조회 성공")
@@ -253,7 +254,40 @@ public class ScenarioDesignController {
         return BaseResponseFactory.create(scenarioDesignV4Service.getPresentation(scenarioGroupId, operationId));
     }
 
-    @ApiOrder(3)
+    @ApiOrder(4)
+    @Operation(
+        summary = "추가 분기항목 후보 조회 API",
+        description = """
+            step1 편집에서 + 버튼으로 추가할 수 있는 분기항목 후보 목록을 `폴링` 조회합니다. <br>
+            후보는 그룹 생성 중 Agent가 background에서 비동기로 생성하므로 이 API는 **조회 전용**입니다.
+            호출해도 후보가 새로 생성되거나 선택 상태가 바뀌지 않습니다. <br>
+
+            <br><br>
+            ### 폴링 규칙 (`generationStatus` 기준)
+            - `queued`/`running`: 생성 중 — 일정 간격 후 재조회
+            - `ready`: `candidates[]` 사용. **빈 배열이어도 정상**(추가 가능한 후보 없음)
+            - `not_requested`/`failed`/`interrupted`/`discarded`: 폴링 종료, 후보 영역 비활성
+
+            <br><br>
+            ### 채택 흐름
+            후보를 채택하면 `candidates[].key`를 표 헤더 key로, `values[].label`을 셀 값으로 사용해 기존 검토/Signpost 왕복에 그대로 포함합니다.
+            """
+    )
+    @ApiResponse(responseCode = "200", description = "조회 성공 (후보 생성 진행/실패 상태도 200으로 반환)")
+    @ApiResponse(responseCode = "400", description = "시나리오 그룹 없음 (B.E 선검증)")
+    @ApiResponse(responseCode = "500", description = "Agent 오류 — v4 그룹 아님/분기항목 변경 불가 단계 포함. API-004(외부 API 오류 표준 메시지)로 내려가며 원문은 서버 로그에 남습니다")
+    @GetMapping("/{scenarioGroupId}/design/additional-dimensions")
+    @RequiredPermissionRules(rules = {
+        @PermissionRule(role = Role.USER, conditions = {PermissionCondition.SKGAS_COMPANY_USER_ONLY}),
+        @PermissionRule(role = Role.ADMIN, conditions = {PermissionCondition.THIRD_PARTY_ADMIN_ONLY})
+    })
+    public BaseResponse<AdditionalDimensionsRes> getAdditionalDimensions(
+        @Parameter(description = "시나리오 그룹 ID", example = "194") @PathVariable Long scenarioGroupId
+    ) {
+        return BaseResponseFactory.create(scenarioDesignV4Service.getAdditionalDimensions(scenarioGroupId));
+    }
+
+    @ApiOrder(5)
     @Operation(
         summary = "시나리오 검토/Signpost 생성 API (SSE)",
         description = """
@@ -424,7 +458,7 @@ public class ScenarioDesignController {
         return BaseResponseFactory.create(scenarioDesignService.getDimensionTemplates(scenarioGroupId));
     }
 
-    @ApiOrder(4)
+    @ApiOrder(6)
     @Operation(
         summary = "시나리오 변경사항 검토 요청 API",
         description = """
@@ -454,7 +488,7 @@ public class ScenarioDesignController {
         return BaseResponseFactory.create(scenarioDesignService.validateDesign(scenarioGroupId, request));
     }
 
-    @ApiOrder(5)
+    @ApiOrder(7)
     @Operation(
         summary = "Signpost 생성 API (step2 진입)",
         description = """
@@ -484,7 +518,7 @@ public class ScenarioDesignController {
         return BaseResponseFactory.create(scenarioDesignService.createSignposts(scenarioGroupId, request));
     }
 
-    @ApiOrder(6)
+    @ApiOrder(8)
     @Operation(
         summary = "시나리오 설계 최종 확정 API",
         description = """
@@ -514,7 +548,7 @@ public class ScenarioDesignController {
         return BaseResponseFactory.create(scenarioDesignService.confirmDesign(scenarioGroupId, request));
     }
 
-    @ApiOrder(7)
+    @ApiOrder(9)
     @Operation(
         summary = "시나리오 설계 전체 초기화 API",
         description = """

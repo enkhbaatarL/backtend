@@ -27,7 +27,7 @@ import com.sk.domain.mi.dto.response.nextgen.design.ScenarioDesignPresentationRe
 import com.sk.domain.mi.dto.response.nextgen.priceinterp.PriceInterpretationSectionRes;
 import com.sk.domain.mi.service.nextgen.priceinterp.PriceInterpretationStore;
 import com.sk.domain.mi.service.nextgen.support.IndexGraph;
-import com.sk.domain.mi.service.nextgen.support.ScenarioDesignPresentationMapper;
+import com.sk.domain.mi.service.nextgen.support.ScenarioDesignAgentMapper;
 import com.sk.domain.mi.service.nextgen.support.ScenarioDimensionMapper;
 import com.sk.domain.mi.service.nextgen.support.ScenarioDimensionMapper.GroupDimensionTemplate;
 import com.sk.domain.mi.service.nextgen.support.ScenarioProbabilityAllocator;
@@ -317,14 +317,14 @@ public class ScenarioGroupServiceImpl implements ScenarioGroupService {
         ScenarioGroupDetailBaseRow base = scenarioGroupRepository.findScenarioGroupDetail(scenarioGroupId)
             .orElseThrow(() -> AppErrorException.of(ResultCode.Error.RSC_NOT_FOUND, "Scenario group not found: %d".formatted(scenarioGroupId)));
 
-        List<EventBundle> eventBundles = ScenarioDesignPresentationMapper.toEventBundles(
+        List<EventBundle> eventBundles = ScenarioDesignAgentMapper.toEventBundles(
             scenarioGroupRepository.findBaseEventsByScenarioGroupId(scenarioGroupId));
 
         // 근거 보기
         DesignEvidence evidence = null;
         if (base.apiVersion() == ScenarioApiVersion.V4) {
             try {
-                evidence = ScenarioDesignPresentationMapper.toEvidence(scenarioDesignAgentApi.getPresentation(scenarioGroupId, null));
+                evidence = ScenarioDesignAgentMapper.toEvidence(scenarioDesignAgentApi.getPresentation(scenarioGroupId, null));
             } catch (Exception e) {
                 log.warn("[ScenarioGroup] 근거 조회용 Agent presentation 호출 실패 - evidence 생략: scenarioGroupId={}, cause={}", scenarioGroupId, e.getMessage());
             }
