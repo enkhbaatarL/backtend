@@ -35,6 +35,8 @@ import com.sk.domain.shared.repository.master.tmm.MiEventTypeL1Repository;
 import com.sk.domain.shared.repository.master.tmm.MiScenarioGroupRepository;
 import com.sk.domain.shared.repository.master.tmm.projection.EventDesignAvailabilityRow;
 import com.sk.domain.shared.repository.master.tmm.projection.EventDetailRow;
+import com.sk.domain.shared.repository.master.tmm.projection.EventRecordMappingRow;
+import com.sk.domain.shared.repository.master.tmm.projection.EventRecordRow;
 import com.sk.domain.shared.repository.master.tmm.projection.EventLinkedScenarioGroupRow;
 import com.sk.domain.shared.repository.master.tmm.projection.EventListRow;
 import com.sk.domain.shared.repository.master.tmm.projection.ScenarioBaseRow;
@@ -43,6 +45,7 @@ import com.sk.domain.shared.repository.master.tmm.projection.ScenarioGroupBaseRo
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -188,6 +191,8 @@ public class EventServiceImpl implements EventService {
      * [연관 레코드 목록]
      * - 뉴스(NEWS)와 데이터 파일 요약(비NEWS) 두 소스를 UNION으로 합쳐 first_created 내림차순
      * - isPermitted: 현재 사용자(고객사)의 상품 조회 권한 여부 — goodsViewableMap을 1회 조회해 row별 goodsNo로 판정
+     * - mappingReason/mappingConfidence: 이벤트-레코드 매핑 근거 — 현재 페이지 레코드만 1회 일괄 조회해 합성한다.
+     *   확정 매핑에는 근거가 없어 후보 매핑에서 역추적하므로, 후보 경로를 거치지 않은 매핑은 근거가 null이다.
      */
     @Override
     public PaginationRes<EventRelatedRecordRes> getEventRecords(Long eventId, int page, int size) {
@@ -195,12 +200,38 @@ public class EventServiceImpl implements EventService {
 
         Map<Integer, Boolean> goodsViewableMap = permissions.getGoodsViewableMap(authorizationService.getCompanyNoWithPriority());
 
-        return PaginationRes.toRes(
-            miEventRepository.findEventRecords(eventId, PageRequest.of(page - 1, size))
-                .map(row -> EventRelatedRecordRes.from(
-                    row,
-                    row.getGoodsNo() != null && goodsViewableMap.getOrDefault(row.getGoodsNo(), Boolean.FALSE)))
-        );
+        Page<EventRecordRow> records = miEventRepository.findEventRecords(eventId, PageRequest.of(page - 1, size));
+        Map<Integer, EventRecordMappingRow> mappingByRecordId = loadRecordMappings(eventId, records.getContent());
+
+        Page<EventRelatedRecordRes> relatedRecords = records.map(row -> EventRelatedRecordRes.from(
+            row,
+            row.getGoodsNo() != null && goodsViewableMap.getOrDefault(row.getGoodsNo(), Boolean.FALSE),
+            mappingByRecordId.get(row.getMiRecordId())));
+
+        return PaginationRes.toRes(relatedRecords);
+    }
+
+    /**
+     * 현재 페이지 레코드의 매핑 근거를 일괄 조회한다.
+     * 같은 (이벤트, 레코드) 쌍이 여러 후보에서 나올 수 있어 쿼리가 최신순으로 내려주며, 먼저 온 1건만 취한다.
+     */
+    private Map<Integer, EventRecordMappingRow> loadRecordMappings(Long eventId, List<EventRecordRow> records) {
+        List<Integer> recordIds = records.stream()
+            .map(EventRecordRow::getMiRecordId)
+            .filter(Objects::nonNull)
+            .distinct()
+            .toList();
+
+        if (recordIds.isEmpty()) {
+            return Map.of();
+        }
+
+        Map<Integer, EventRecordMappingRow> mappings = new HashMap<>();
+        List<EventRecordMappingRow> eventRecordMappings = miEventRepository.findEventRecordMappings(eventId, recordIds);
+        for (EventRecordMappingRow mapping : eventRecordMappings) {
+            mappings.putIfAbsent(mapping.getMiRecordId(), mapping);
+        }
+        return mappings;
     }
 
     /**

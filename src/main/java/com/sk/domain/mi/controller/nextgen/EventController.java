@@ -289,6 +289,8 @@ public class EventController {
             - `goodsDataNo`: 상품 데이터 번호 (gds_data_no). NEWS인 경우 null
             - `sourceObjId`: 원본 소스 ID (source_obj_id)
             - `isPermitted`: 현재 사용자(고객사)의 상품 조회 권한 여부 (goodsNo 기준)
+            - `mappingReason`: 이 Record가 Event에 연결된 근거 (Event 후보 단계 산출물)
+            - `mappingConfidence`: 매핑 신뢰도 (0.00~1.00)
             """
     )
     @ApiResponse(responseCode = "200", description = "조회 성공")

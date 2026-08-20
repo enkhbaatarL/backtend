@@ -1,5 +1,6 @@
 package com.sk.domain.shared.repository.master.tmm;
 
+import java.util.List;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -8,15 +9,16 @@ import org.springframework.data.repository.query.Param;
 
 import com.sk.domain.shared.entity.master.tmm.MiEvent;
 import com.sk.domain.shared.repository.master.tmm.custom.CustomMiEventRepository;
+import com.sk.domain.shared.repository.master.tmm.projection.EventRecordMappingRow;
 import com.sk.domain.shared.repository.master.tmm.projection.EventRecordRow;
 
 public interface MiEventRepository extends JpaRepository<MiEvent, Long>, CustomMiEventRepository {
 
     @Query(
         value = """
-            SELECT t.first_created AS firstCreated, t.record_type AS recordType, t.title AS title, t.smry AS summary, t.gds_no AS goodsNo, t.gds_data_no AS goodsDataNo, t.file_name AS fileName, t.source_obj_id AS sourceObjId
+            SELECT t.mi_record_id AS miRecordId, t.first_created AS firstCreated, t.record_type AS recordType, t.title AS title, t.smry AS summary, t.gds_no AS goodsNo, t.gds_data_no AS goodsDataNo, t.file_name AS fileName, t.source_obj_id AS sourceObjId
             FROM (
-                SELECT r.first_created, r.record_type, d.title, s.smry, g.gds_no, NULL AS gds_data_no, NULL AS file_name, r.source_obj_id AS source_obj_id
+                SELECT sm.mi_record_id, r.first_created, r.record_type, d.title, s.smry, g.gds_no, NULL AS gds_data_no, NULL AS file_name, r.source_obj_id AS source_obj_id
                 FROM tmm_mi_mievent_record_map AS sm
                 JOIN tmd_mi_record AS r ON r.mi_record_id = sm.mi_record_id
                     AND r.record_type = 'NEWS'
@@ -32,7 +34,7 @@ public interface MiEventRepository extends JpaRepository<MiEvent, Long>, CustomM
 
                 UNION
 
-                SELECT r.first_created, r.record_type, m.gds_data_nm, s.file_smry_shrt, m.gds_no, m.gds_data_no, f.org_file_nm, r.source_obj_id AS source_obj_id
+                SELECT sm.mi_record_id, r.first_created, r.record_type, m.gds_data_nm, s.file_smry_shrt, m.gds_no, m.gds_data_no, f.org_file_nm, r.source_obj_id AS source_obj_id
                 FROM tmm_mi_mievent_record_map AS sm
                 JOIN tmd_mi_record AS r ON r.mi_record_id = sm.mi_record_id
                     AND r.record_type <> 'NEWS'
@@ -50,7 +52,7 @@ public interface MiEventRepository extends JpaRepository<MiEvent, Long>, CustomM
         countQuery = """
             SELECT COUNT(*)
             FROM (
-                SELECT r.first_created, r.record_type, d.title, s.smry, g.gds_no, NULL AS gds_data_no, NULL AS file_name, r.source_obj_id AS source_obj_id
+                SELECT sm.mi_record_id, r.first_created, r.record_type, d.title, s.smry, g.gds_no, NULL AS gds_data_no, NULL AS file_name, r.source_obj_id AS source_obj_id
                 FROM tmm_mi_mievent_record_map AS sm
                 JOIN tmd_mi_record AS r ON r.mi_record_id = sm.mi_record_id
                     AND r.record_type = 'NEWS'
@@ -66,7 +68,7 @@ public interface MiEventRepository extends JpaRepository<MiEvent, Long>, CustomM
 
                 UNION
 
-                SELECT r.first_created, r.record_type, m.gds_data_nm, s.file_smry_shrt, m.gds_no, m.gds_data_no, f.org_file_nm, r.source_obj_id AS source_obj_id
+                SELECT sm.mi_record_id, r.first_created, r.record_type, m.gds_data_nm, s.file_smry_shrt, m.gds_no, m.gds_data_no, f.org_file_nm, r.source_obj_id AS source_obj_id
                 FROM tmm_mi_mievent_record_map AS sm
                 JOIN tmd_mi_record AS r ON r.mi_record_id = sm.mi_record_id
                     AND r.record_type <> 'NEWS'
@@ -83,5 +85,25 @@ public interface MiEventRepository extends JpaRepository<MiEvent, Long>, CustomM
         nativeQuery = true
     )
     Page<EventRecordRow> findEventRecords(@Param("eventId") Long eventId, Pageable pageable);
+
+    /**
+     * 이벤트-레코드 매핑 근거 조회 (Event Records 목록의 현재 페이지 레코드만 일괄 조회).
+     */
+    @Query(
+        value = """
+            SELECT ecm.mi_record_id AS miRecordId,
+                   ecm.mapping_confidence AS mappingConfidence,
+                   ecm.mapping_reason AS mappingReason
+            FROM tmm_mi_mievent_candidate_record_map AS ecm
+            JOIN tmm_mi_mievent_candidate_m AS ec ON ec.mi_event_candidate_id = ecm.mi_event_candidate_id
+                AND ec.del_yn = 'N'
+            WHERE ecm.del_yn = 'N'
+                AND ec.mi_event_id = :eventId
+                AND ecm.mi_record_id IN (:recordIds)
+            ORDER BY ecm.crt_dtm DESC
+            """,
+        nativeQuery = true
+    )
+    List<EventRecordMappingRow> findEventRecordMappings(@Param("eventId") Long eventId, @Param("recordIds") List<Integer> recordIds);
 
 }

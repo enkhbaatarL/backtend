@@ -3,6 +3,7 @@ package com.sk.domain.shared.repository.master.tmm.projection;
 import java.time.LocalDateTime;
 
 public interface EventRecordRow {
+    Integer getMiRecordId();
     LocalDateTime getFirstCreated();
     String getRecordType();
     String getTitle();

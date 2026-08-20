@@ -110,6 +110,9 @@ public class ScenarioDesignController {
             <br><br>
             ### 전송 형식
             `text/event-stream`. <br>
+            **요청의 Accept 헤더는 `text/event-stream, application/json`으로 보냅니다** — 접수 실패 시 오류는
+            SSE가 아니라 JSON(BaseResponse)으로 응답되는데, Accept에 JSON이 없으면 콘텐츠 협상에 걸려 오류 본문이 비어
+            409 재연결 식별자(scenarioGroupId/operationId)를 받을 수 없습니다. <br>
             각 프레임은 `id:`(= sequence), `event:`(이벤트 종류), `data:`(JSON)로 구성됩니다. <br>
             진행 이벤트가 없는 동안 keep-alive 주석 프레임(`: keep-alive`)이 약 15초 간격으로 전달됩니다.
             (id/event/data가 없는 주석 프레임이므로 연결 생존 신호로만 취급(무시)합니다.)
@@ -308,6 +311,8 @@ public class ScenarioDesignController {
             <br><br>
             ### 전송 형식
             GET 방식이므로 브라우저 `EventSource`로 구독하며, 자동 재연결이 지원됩니다. <br>
+            `EventSource` 대신 fetch 등으로 직접 연결하는 경우 **Accept 헤더는 `text/event-stream, application/json`으로 보냅니다**
+            (접수 실패 오류가 JSON으로 응답되므로 — 생성 스트림과 동일 규칙). <br>
             `text/event-stream`. 각 프레임은 이벤트 이름(`event:`)과 JSON 페이로드(`data:`)로 구성됩니다. <br>
             연결 유지를 위해 약 15초마다 keep-alive 주석 프레임(`: keep-alive`)이 전달됩니다 — 생성 스트림과 동일 형식. (연결 생존 신호로만 취급(무시)합니다.)
 
