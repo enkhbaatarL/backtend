@@ -30,7 +30,7 @@ MI Fundamental Model Volumes 탭은 세 가지 하위 뷰를 가진다.
 | 선택 입력 | `granularity`(MONTHLY/YEARLY), `types`, `regions` | `unit`(MTPA/BCM), `types`(TO_COUNTRY/FROM_COUNTRY), `regions` |
 | granularity 개념 | 있음 (월별 ↔ 연별 집계) | 없음 (단일 연도 매트릭스) |
 | 응답 shape | `{ columns, rows }` — 시계열 구조 | `{ fromCountries, toCountries, flows }` — 매트릭스 구조 |
-| `types` 의미 | 데이터 타입 (Demand, LNG Imports 등) | 필터 방향 (TO_COUNTRY, FROM_COUNTRY) |
+| `types` 의미 | 데이터 타입 (Gas Demand, LNG Imports 등) | 필터 방향 (TO_COUNTRY, FROM_COUNTRY) |
 
 응답 shape과 입력 파라미터가 근본적으로 달라, 단일 엔드포인트로 유지하면:
 - 응답 DTO 타입 안정성이 깨진다 (`segment`에 따라 shape이 달라지는 union type)

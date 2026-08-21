@@ -827,7 +827,7 @@ FE는 `latestRun.startedAt`과 `latestRun.finishedAt`으로 소요시간을 계�
   "rows": [
     {
       "type": "DEMAND",
-      "typeLabel": "Demand",
+      "typeLabel": "Gas Demand",
       "region": "ASIA",
       "country": null,
       "rowKind": "REGION_SUBTOTAL",
@@ -836,7 +836,7 @@ FE는 `latestRun.startedAt`과 `latestRun.finishedAt`으로 소요시간을 계�
     },
     {
       "type": "DEMAND",
-      "typeLabel": "Demand",
+      "typeLabel": "Gas Demand",
       "region": "ASIA",
       "country": "China",
       "rowKind": "COUNTRY",
@@ -845,7 +845,7 @@ FE는 `latestRun.startedAt`과 `latestRun.finishedAt`으로 소요시간을 계�
     },
     {
       "type": "DEMAND",
-      "typeLabel": "Demand",
+      "typeLabel": "Gas Demand",
       "region": "ASIA",
       "country": "Japan",
       "rowKind": "COUNTRY",
@@ -854,7 +854,7 @@ FE는 `latestRun.startedAt`과 `latestRun.finishedAt`으로 소요시간을 계�
     },
     {
       "type": "DEMAND",
-      "typeLabel": "Demand",
+      "typeLabel": "Gas Demand",
       "region": null,
       "country": null,
       "rowKind": "TYPE_TOTAL",
@@ -889,7 +889,7 @@ FE는 `latestRun.startedAt`과 `latestRun.finishedAt`으로 소요시간을 계�
 | 필드 | 타입 | 설명 |
 |---|---|---|
 | `type` | `FundamentalModelDataType` | 데이터 타입. `COUNTRY`, `REGION_SUBTOTAL`, `TYPE_TOTAL` 모두 해당 Type 값을 가진다 |
-| `typeLabel` | `String` | Type section 화면 표시명. 예: `Demand`, `Production`, `LNG Imports` |
+| `typeLabel` | `String` | Type section 화면 표시명. 예: `Gas Demand`, `Gas Production`, `LNG Imports` |
 | `region` | `FundamentalModelRegion` | 지역. `rowKind=TYPE_TOTAL`이면 `null` |
 | `country` | `String` | 국가명. `rowKind=REGION_SUBTOTAL` 또는 `TYPE_TOTAL`이면 `null` |
 | `rowKind` | `VolumesRowKind` | `COUNTRY` \| `REGION_SUBTOTAL` \| `TYPE_TOTAL` |
@@ -933,8 +933,8 @@ FE는 `latestRun.startedAt`과 `latestRun.finishedAt`으로 소요시간을 계�
     {
       "segment": "GLOBAL",
       "types": [
-        { "value": "DEMAND",           "label": "Demand" },
-        { "value": "PRODUCTION",       "label": "Production" },
+        { "value": "DEMAND",           "label": "Gas Demand" },
+        { "value": "PRODUCTION",       "label": "Gas Production" },
         { "value": "LNG_IMPORTS",      "label": "LNG Imports" },
         { "value": "LNG_EXPORTS",      "label": "LNG Exports" },
         { "value": "PIPELINE_IMPORTS", "label": "Pipeline Imports" },
