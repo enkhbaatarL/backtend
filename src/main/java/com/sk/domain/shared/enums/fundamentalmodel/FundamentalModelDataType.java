@@ -10,8 +10,8 @@ import lombok.RequiredArgsConstructor;
 @RequiredArgsConstructor
 public enum FundamentalModelDataType {
 
-    DEMAND("DEMAND", "Demand"),
-    PRODUCTION("PRODUCTION", "Production"),
+    DEMAND("DEMAND", "Gas Demand"),
+    PRODUCTION("PRODUCTION", "Gas Production"),
     LNG_IMPORTS("LNG_IMPORTS", "LNG Imports"),
     LNG_EXPORTS("LNG_EXPORTS", "LNG Exports"),
     PIPELINE_IMPORTS("PIPELINE_IMPORTS", "Pipeline Imports"),
