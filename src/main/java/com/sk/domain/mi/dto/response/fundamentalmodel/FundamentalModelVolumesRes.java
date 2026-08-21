@@ -70,7 +70,7 @@ public record FundamentalModelVolumesRes(
         @Schema(description = "데이터 타입", implementation = FundamentalModelDataType.class, example = "DEMAND")
         FundamentalModelDataType type,
 
-        @Schema(description = "데이터 타입 화면 표시명", example = "Demand")
+        @Schema(description = "데이터 타입 화면 표시명", example = "Gas Demand")
         String typeLabel,
 
         @Schema(description = "지역", implementation = FundamentalModelRegion.class, example = "ASIA")
