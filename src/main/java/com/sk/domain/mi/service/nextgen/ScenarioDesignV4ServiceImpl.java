@@ -119,7 +119,9 @@ public class ScenarioDesignV4ServiceImpl implements ScenarioDesignV4Service {
             .findFirst()
             .orElse(null);
 
-        // [생성중] 응답 (진행자 미상 그룹은 mine=null — 타인 점유 잠금으로 오표기하지 않는다)
+        // [생성중] 응답
+        // mine은 설계중일 때만 값을 갖는다 (designable/created는 점유 개념이 없어 null).
+        // 진행자 미상(request_usr_id null)은 Agent 적재 결함이므로 소유권 판정을 fail-closed로 두어 타인 점유로 본다.
         if (creating != null) {
             Long userId = authorizationService.getUserNo().longValue();
             return ScenarioDesignStatusRes.creating(
@@ -127,7 +129,7 @@ public class ScenarioDesignV4ServiceImpl implements ScenarioDesignV4Service {
                 creating.getStage(),
                 creating.getRequestUserId(),
                 resolveUserName(creating.getRequestUserId()),
-                creating.getRequestUserId() == null ? null : userId.equals(creating.getRequestUserId()));
+                userId.equals(creating.getRequestUserId()));
         }
 
         // [생성완료 || 생성가능] 응답

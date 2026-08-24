@@ -367,8 +367,7 @@ public class CustomMiEventRepositoryImpl implements CustomMiEventRepository {
                 miEvent.scenarioSuggestReason,
                 miEvent.detailAnalysis,
                 miEvent.keyBulletsJson,
-                miEvent.institutionViewSynthesis,
-                templateAvailable(miEventTypeL2.eventTypeL2Id)
+                miEvent.institutionViewSynthesis
             ))
             .from(miEvent)
             .innerJoin(miEvent.eventTypeL2, miEventTypeL2).on(miEventTypeL2.isDeleted.isFalse())
@@ -412,7 +411,9 @@ public class CustomMiEventRepositoryImpl implements CustomMiEventRepository {
                 miScenarioGroup.dimensionDefinitions,
                 miScenarioGroup.status,
                 miScenarioGroup.stage,
-                miScenarioGroup.requestUserId
+                miScenarioGroup.requestUserId,
+                // 분기항목 정의 원천 판별용 (v4는 dimension_definitions, v1은 event_type_l2 template)
+                miScenarioGroup.apiVersion
             ))
             .from(groupEvent)
             .innerJoin(groupEvent.scenarioGroup, miScenarioGroup).on(miScenarioGroup.isDeleted.isFalse())

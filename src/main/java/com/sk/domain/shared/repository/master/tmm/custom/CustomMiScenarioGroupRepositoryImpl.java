@@ -98,7 +98,9 @@ public class CustomMiScenarioGroupRepositoryImpl implements CustomMiScenarioGrou
                 miScenarioGroup.dimensionDefinitions,
                 miScenarioGroup.status,
                 miScenarioGroup.stage,
-                miScenarioGroup.requestUserId
+                miScenarioGroup.requestUserId,
+                // 분기항목 정의 원천 판별용 (v4는 dimension_definitions, v1은 event_type_l2 template)
+                miScenarioGroup.apiVersion
             ))
             .from(miScenarioGroup)
             .leftJoin(miScenarioGroupEvent).on(primaryGroupEventJoin())
@@ -163,7 +165,9 @@ public class CustomMiScenarioGroupRepositoryImpl implements CustomMiScenarioGrou
                 miScenarioGroup.dimensionDefinitions,
                 miScenarioGroupEvent.eventTypeL2.eventTypeL2Id,
                 miScenario.displayOrder,
-                miScenario.scenarioRole
+                miScenario.scenarioRole,
+                // 분기항목 정의 원천 판별용 (v4는 dimension_definitions, v1은 event_type_l2 template)
+                miScenarioGroup.apiVersion
             ))
             .from(miScenario)
             .innerJoin(miScenario.scenarioGroup, miScenarioGroup).on(miScenarioGroup.isDeleted.isFalse())
@@ -350,7 +354,9 @@ public class CustomMiScenarioGroupRepositoryImpl implements CustomMiScenarioGrou
                 miScenarioGroup.dimensionDefinitions,
                 miScenarioGroupEvent.eventTypeL2.eventTypeL2Id,
                 miScenario.displayOrder,
-                miScenario.scenarioRole
+                miScenario.scenarioRole,
+                // 분기항목 정의 원천 판별용 (v4는 dimension_definitions, v1은 event_type_l2 template)
+                miScenarioGroup.apiVersion
             ))
             .from(miScenario)
             .innerJoin(miScenario.scenarioGroup, miScenarioGroup).on(miScenarioGroup.isDeleted.isFalse())

@@ -7,6 +7,7 @@ import com.sk.common.utils.JsonUtil;
 import com.sk.domain.mi.dto.response.nextgen.ScenarioDimensionColumnRes;
 import com.sk.domain.mi.dto.response.nextgen.ScenarioDimensionRes;
 import com.sk.domain.mi.dto.response.nextgen.design.ScenarioDimensionTemplateRes;
+import com.sk.domain.shared.enums.nextgen.ScenarioApiVersion;
 import com.sk.domain.shared.repository.master.tmm.projection.ScenarioDimensionTemplateRow;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -31,7 +32,7 @@ import lombok.extern.slf4j.Slf4j;
  * dimension_definitions : [{"dimension_id":"d1","label":"...","values":[{"value_id":"d1_v1","label":"...",...}],...}]
  * dimension_values      : {"d1":"d1_v1"}
  *
- * 판별은 definitions가 비어있는지로 한다 (v1-v3 그룹은 DB default 빈 배열). resolve 참조.
+ * 판별은 api_version이 v4인지 또는 definitions가 채워졌는지로 한다. resolve 참조.
  * dimensionId는 그룹 로컬이므로 파싱 결과를 그룹 간에 공유(캐시/병합)하면 안 된다.
  */
 @Slf4j
@@ -51,11 +52,15 @@ public final class ScenarioDimensionMapper {
 
     /**
      * 그룹의 dimension 정의 결정.
-     * dimension_definitions가 비어있지 않으면 v4 definitions 기반, 아니면 event_type_l2 template 기반으로 폴백한다.
+     * v4 그룹이거나 dimension_definitions가 채워져 있으면 definitions 기반, 아니면 event_type_l2 template로 폴백한다.
+     * v4를 api_version으로도 판별하는 이유는 definitions가 아직 비어 있는 v4 그룹(생성 진행 중)이나
+     * definitions 파싱에 실패한 v4 그룹이 v1 template로 폴백하는 것을 막기 위해서다.
+     * v4의 dimension_values는 그룹 로컬 value_id 체계라 v1 template로는 해석 자체가 불가능하므로,
+     * 그 경우 잘못된 헤더를 만드는 대신 빈 정의를 내린다.
      */
-    public static GroupDimensionTemplate resolve(String dimensionDefinitionsJson, Map<Long, GroupDimensionTemplate> templatesByL2, Long eventTypeL2Id) {
+    public static GroupDimensionTemplate resolve(ScenarioApiVersion apiVersion, String dimensionDefinitionsJson, Map<Long, GroupDimensionTemplate> templatesByL2, Long eventTypeL2Id) {
         GroupDimensionTemplate definitions = GroupDimensionTemplate.parseDefinitions(dimensionDefinitionsJson);
-        if (!definitions.isEmpty()) {
+        if (apiVersion == ScenarioApiVersion.V4 || !definitions.isEmpty()) {
             return definitions;
         }
         if (eventTypeL2Id == null) {

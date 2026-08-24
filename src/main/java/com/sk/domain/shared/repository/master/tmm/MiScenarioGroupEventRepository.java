@@ -15,6 +15,11 @@ public interface MiScenarioGroupEventRepository extends JpaRepository<MiScenario
     boolean existsByMiEvent_MiEventIdAndIsDeletedFalseAndScenarioGroup_IsDeletedFalse(Long miEventId);
 
     /**
+     * 그룹의 활성 이벤트 매핑 엔티티 목록. 그룹 삭제 시 매핑을 함께 soft delete 하기 위한 조회용.
+     */
+    List<MiScenarioGroupEvent> findByScenarioGroup_ScenarioGroupIdAndIsDeletedFalse(Long scenarioGroupId);
+
+    /**
      * 그룹을 구성하는 활성 이벤트 ID 목록. 설계 시작 선조회의 이벤트 조합 비교용.
      */
     @Query("""

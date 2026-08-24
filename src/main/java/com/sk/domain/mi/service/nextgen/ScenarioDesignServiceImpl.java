@@ -114,6 +114,7 @@ public class ScenarioDesignServiceImpl implements ScenarioDesignService {
         // 분기항목 헤더: v4는 그룹의 dimension_definitions, v1은 기준 이벤트 L2 template + dimension_selected
         Long eventTypeL2Id = scenarioGroupRepository.findEventTypeL2IdByScenarioGroupId(scenarioGroupId).orElse(null);
         GroupDimensionTemplate template = ScenarioDimensionMapper.resolve(
+            group.getApiVersion(),
             group.getDimensionDefinitions(),
             eventTypeL2Id == null
                 ? Map.of()
@@ -316,14 +317,16 @@ public class ScenarioDesignServiceImpl implements ScenarioDesignService {
 
     /**
      * 편집 소유권 검증 — 설계 세션의 진행자(그룹 request_usr_id)만 편집 API(검토/Signpost/확정/초기화)를 호출할 수 있다.
-     * 잠금은 FE 표시만으로는 우회 가능하므로 서버에서 강제한다. 진행자 미상(request_usr_id null) 그룹은 검증을 생략한다.
+     * 잠금은 FE 표시만으로는 우회 가능하므로 서버에서 강제한다.
+     * 진행자 미상(request_usr_id null)은 Agent 적재 결함이라 편집을 이어가면 오염이 커지므로 fail-closed로 전원 차단한다
+     * (화면의 mine 판정과 동일 기준). 이 경우 그룹은 편집 불가가 되며 그룹 삭제 후 재설계로 회복한다.
      */
     private void requireEditableByCurrentUser(Long scenarioGroupId) {
         MiScenarioGroup group = scenarioGroupRepository.findByScenarioGroupIdAndIsDeletedFalse(scenarioGroupId)
             .orElseThrow(() -> AppErrorException.of(ResultCode.Error.RSC_NOT_FOUND, "Scenario group not found: %s".formatted(scenarioGroupId)));
 
         Long userId = authorizationService.getUserNo().longValue();
-        if (group.getRequestUserId() != null && !userId.equals(group.getRequestUserId())) {
+        if (!userId.equals(group.getRequestUserId())) {
             throw AppHttpStatusException.of(HttpStatus.FORBIDDEN, ResultCode.Error.BIZ_RULE_VIOLATION, "다른 사용자가 진행 중인 설계 세션입니다: %d".formatted(scenarioGroupId));
         }
     }

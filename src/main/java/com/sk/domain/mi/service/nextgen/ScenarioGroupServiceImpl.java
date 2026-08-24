@@ -34,6 +34,7 @@ import com.sk.domain.mi.service.nextgen.support.ScenarioProbabilityAllocator;
 import com.sk.domain.mi.service.nextgen.support.ScenarioRunStates;
 import com.sk.domain.shared.entity.master.tmm.MiScenario;
 import com.sk.domain.shared.entity.master.tmm.MiScenarioGroup;
+import com.sk.domain.shared.entity.master.tmm.MiScenarioGroupEvent;
 import com.sk.domain.shared.enums.nextgen.ScenarioGroupStatus;
 import com.sk.domain.shared.entity.master.tmm.MiSignpost;
 import com.sk.domain.shared.enums.fundamentalmodel.FundamentalModelCaseStatus;
@@ -49,6 +50,7 @@ import com.sk.domain.shared.repository.master.tmd.ScenarioCaseRunHistoryReposito
 import com.sk.domain.shared.repository.master.tmd.projection.MiBasePriceRow;
 import com.sk.domain.shared.repository.master.tmd.projection.ScenarioPriceRow;
 import com.sk.domain.shared.client.ScenarioDesignAgentApi;
+import com.sk.domain.shared.repository.master.tmm.MiScenarioGroupEventRepository;
 import com.sk.domain.shared.repository.master.tmm.MiScenarioGroupRepository;
 import com.sk.domain.shared.repository.master.tmm.projection.ScenarioBaseRow;
 import com.sk.domain.shared.repository.master.tmm.projection.ScenarioDetailBaseRow;
@@ -77,6 +79,7 @@ public class ScenarioGroupServiceImpl implements ScenarioGroupService {
     private static final String SCENARIO_CANCELLED = "SCENARIO_CANCELLED";
 
     private final MiScenarioGroupRepository scenarioGroupRepository;
+    private final MiScenarioGroupEventRepository scenarioGroupEventRepository;
     private final ScenarioDesignAgentApi scenarioDesignAgentApi;
     private final ScenarioCaseRepository scenarioCaseRepository;
     private final ScenarioCaseRunHistoryRepository scenarioCaseRunHistoryRepository;
@@ -110,7 +113,7 @@ public class ScenarioGroupServiceImpl implements ScenarioGroupService {
 
         Map<Long, ScenarioGroupListItemRes> itemsByGroupId = new LinkedHashMap<>();
         for (ScenarioGroupBaseRow base : bases) {
-            GroupDimensionTemplate template = ScenarioDimensionMapper.resolve(base.dimensionDefinitions(), templates, base.eventTypeL2Id());
+            GroupDimensionTemplate template = ScenarioDimensionMapper.resolve(base.apiVersion(), base.dimensionDefinitions(), templates, base.eventTypeL2Id());
             List<String> selectedKeys = ScenarioDimensionMapper.parseSelectedKeys(base.dimensionSelected());
 
             List<ScenarioDimensionColumnRes> dimensionColumns = template.columns(selectedKeys);
@@ -160,7 +163,7 @@ public class ScenarioGroupServiceImpl implements ScenarioGroupService {
 
         Map<Long, ScenarioIndividualItemRes> itemsByScenarioId = new LinkedHashMap<>();
         for (ScenarioIndividualBaseRow base : bases) {
-            GroupDimensionTemplate template = ScenarioDimensionMapper.resolve(base.dimensionDefinitions(), templates, base.eventTypeL2Id());
+            GroupDimensionTemplate template = ScenarioDimensionMapper.resolve(base.apiVersion(), base.dimensionDefinitions(), templates, base.eventTypeL2Id());
             List<String> selectedKeys = ScenarioDimensionMapper.parseSelectedKeys(base.dimensionSelected());
             List<ScenarioDimensionRes> dimensions = template.dimensions(selectedKeys, base.dimensionValues());
 
@@ -332,6 +335,7 @@ public class ScenarioGroupServiceImpl implements ScenarioGroupService {
 
         // eventTypeL2Id는 left join 산출이라 매핑 소실 그룹에서 null일 수 있다 — v1 template 폴백만 생략 (v4 definitions 경로는 무관)
         GroupDimensionTemplate template = ScenarioDimensionMapper.resolve(
+            base.apiVersion(),
             base.dimensionDefinitions(),
             base.eventTypeL2Id() == null
                 ? Map.of()
@@ -370,6 +374,7 @@ public class ScenarioGroupServiceImpl implements ScenarioGroupService {
 
         // eventTypeL2Id는 left join 산출이라 매핑 소실 그룹에서 null일 수 있다 — v1 template 폴백만 생략 (v4 definitions 경로는 무관)
         GroupDimensionTemplate template = ScenarioDimensionMapper.resolve(
+            base.apiVersion(),
             base.dimensionDefinitions(),
             base.eventTypeL2Id() == null
                 ? Map.of()
@@ -445,9 +450,12 @@ public class ScenarioGroupServiceImpl implements ScenarioGroupService {
 
     /**
      * [그룹 삭제]
-     * - 그룹 + 하위 시나리오 + 하위 signpost를 함께 del_yn 처리, 이후 모든 조회에서 제외
+     * - 그룹 + 하위 시나리오 + 하위 signpost + 이벤트 매핑을 함께 del_yn 처리, 이후 모든 조회에서 제외
      * - signpost는 시나리오/그룹을 지우기 전에 먼저 조회해 soft-delete (삭제 후엔 join에서 빠지므로)
-     * - 이벤트:활성 그룹 = 1:1이므로 삭제 시 해당 이벤트의 scenarioDesignStatus는 designable(재설계 가능)로 복귀
+     * - 이벤트 매핑을 함께 지우는 이유는 매핑만 살아남으면 그룹 삭제 여부를 확인하지 않는 조회가 유령 연결을 보기 때문이다.
+     *   현재 조회 경로는 모두 그룹 del_yn을 함께 보므로 새는 곳은 없지만, 매핑 자체를 정리해 그 전제에 의존하지 않게 한다.
+     * - 멀티 이벤트 전환으로 이벤트:활성 그룹은 N:M이라, 삭제해도 같은 이벤트에 남은 다른 활성 그룹이 있으면 설계 상태는 유지된다.
+     *   해당 이벤트 조합의 활성 그룹이 모두 사라져야 다시 설계 가능해진다.
      */
     @Override
     @Transactional
@@ -459,8 +467,10 @@ public class ScenarioGroupServiceImpl implements ScenarioGroupService {
         priceInterpretationStore.softDeleteByGroup(scenarioGroupId);
         List<MiScenario> scenarios = scenarioGroupRepository.findScenarioEntitiesByGroupIdForUpdate(scenarioGroupId);
         List<MiSignpost> signposts = scenarioGroupRepository.findSignpostEntitiesByGroupId(scenarioGroupId);
+        List<MiScenarioGroupEvent> groupEvents = scenarioGroupEventRepository.findByScenarioGroup_ScenarioGroupIdAndIsDeletedFalse(scenarioGroupId);
         signposts.forEach(MiSignpost::softDelete);
         scenarios.forEach(MiScenario::softDelete);
+        groupEvents.forEach(MiScenarioGroupEvent::softDelete);
         group.softDelete();
         scenarioGroupRepository.flush();
 

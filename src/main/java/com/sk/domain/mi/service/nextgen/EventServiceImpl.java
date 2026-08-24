@@ -159,7 +159,7 @@ public class EventServiceImpl implements EventService {
 
         return groups.stream()
             .map(group -> {
-                GroupDimensionTemplate template = ScenarioDimensionMapper.resolve(group.dimensionDefinitions(), templates, group.eventTypeL2Id());
+                GroupDimensionTemplate template = ScenarioDimensionMapper.resolve(group.apiVersion(), group.dimensionDefinitions(), templates, group.eventTypeL2Id());
                 List<String> selectedKeys = ScenarioDimensionMapper.parseSelectedKeys(group.dimensionSelected());
                 List<ScenarioDimensionColumnRes> dimensionColumns = template.columns(selectedKeys);
                 List<ScenarioBaseRow> groupScenarios = scenariosByGroup.getOrDefault(group.scenarioGroupId(), List.of());
@@ -293,10 +293,12 @@ public class EventServiceImpl implements EventService {
                 continue;
             }
             List<String> events = groupRows.stream().map(EventLinkedScenarioGroupRow::memberEventName).toList();
-            // mine: 설계중 그룹의 진행자가 로그인 사용자인지 (다른 사용자면 패널 카드에 잠금 배지, 진행자 미상이면 null)
-            Boolean mine = first.requestUserId() == null ? null : userId.equals(first.requestUserId());
-            result.add(EventLinkedScenarioGroupRes.of(
-                first.scenarioGroupId(), first.groupTitle(), first.status(), first.stage(), mine, events));
+
+            // mine: 설계중 그룹의 진행자가 로그인 사용자인지 (다른 사용자면 패널 카드에 잠금 배지)
+            // 진행자 미상(request_usr_id null)은 Agent 적재 결함이므로 fail-closed로 타인 점유 취급한다.
+            // 설계중이 아닌 그룹(created/realized)은 점유 개념이 없어 of()에서 null로 덮는다.
+            Boolean mine = userId.equals(first.requestUserId());
+            result.add(EventLinkedScenarioGroupRes.of(first.scenarioGroupId(), first.groupTitle(), first.status(), first.stage(), mine, events));
         }
         return result;
     }
