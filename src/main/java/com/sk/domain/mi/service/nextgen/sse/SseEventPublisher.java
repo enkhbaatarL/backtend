@@ -51,8 +51,9 @@ public class SseEventPublisher {
     public void publish(ScenarioDesignSseEvent event) {
         try {
             String body = JsonUtil.toJson(event);
-            stringRedisTemplate.convertAndSend(designChannel(event.scenarioGroupId()), body);
-            log.debug("[Design SSE] published: groupId={}, type={}, stage={}", event.scenarioGroupId(), event.type(), event.stage());
+            Long receivedBy = stringRedisTemplate.convertAndSend(designChannel(event.scenarioGroupId()), body);
+            log.debug("[Design SSE] published: groupId={}, type={}, stage={}, receivedBy={}", event.scenarioGroupId(), event.type(), event.stage(), receivedBy);
+            alertIfNoSubscriber("[Design SSE]", receivedBy);
         } catch (Exception e) {
             log.warn("[Design SSE] publish failed (serialize): groupId={}, {}", event.scenarioGroupId(), e.getMessage());
         }
@@ -64,8 +65,9 @@ public class SseEventPublisher {
     public void publish(PriceInterpretationSseEvent event) {
         try {
             String body = JsonUtil.toJson(event);
-            stringRedisTemplate.convertAndSend(priceInterpChannel(event.scenarioGroupId()), body);
-            log.debug("[PriceInterp SSE] published: groupId={}, type={}, result={}", event.scenarioGroupId(), event.type(), event.result());
+            Long receivedBy = stringRedisTemplate.convertAndSend(priceInterpChannel(event.scenarioGroupId()), body);
+            log.debug("[PriceInterp SSE] published: groupId={}, type={}, result={}, receivedBy={}", event.scenarioGroupId(), event.type(), event.result(), receivedBy);
+            alertIfNoSubscriber("[PriceInterp SSE]", receivedBy);
         } catch (Exception e) {
             log.warn("[PriceInterp SSE] publish failed (serialize): groupId={}, {}", event.scenarioGroupId(), e.getMessage());
         }
@@ -77,12 +79,24 @@ public class SseEventPublisher {
     public void publish(ModelParamProposalSseEvent event) {
         try {
             String body = JsonUtil.toJson(event);
-            stringRedisTemplate.convertAndSend(modelParamProposalChannel(event.scenarioId()), body);
-            log.debug("[ModelParamProposal SSE] published: scenarioId={}, modelParamProposalId={}, status={}",
-                event.scenarioId(), event.modelParamProposalId(), event.status());
+            Long receivedBy = stringRedisTemplate.convertAndSend(modelParamProposalChannel(event.scenarioId()), body);
+            log.debug("[ModelParamProposal SSE] published: scenarioId={}, modelParamProposalId={}, status={}, receivedBy={}", event.scenarioId(), event.modelParamProposalId(), event.status(), receivedBy);
+            alertIfNoSubscriber("[ModelParamProposal SSE]", receivedBy);
         } catch (Exception e) {
             log.warn("[ModelParamProposal SSE] publish failed (serialize): scenarioId={}, {}", event.scenarioId(), e.getMessage());
         }
+    }
+
+    /**
+     * 수신자 없음 경보.
+     * convertAndSend는 메시지를 받은 구독 클라이언트 수를 돌려준다. 0이면 이 노드를 포함해 어느 노드도
+     * 해당 채널을 구독하고 있지 않다는 뜻이고, 발행이 성공해도 이벤트는 그대로 유실된다.
+     */
+    private void alertIfNoSubscriber(String tag, Long receivedBy) {
+        if (receivedBy != null && receivedBy > 0) {
+            return;
+        }
+        log.error("{} no subscriber - event is lost. The Redis subscription connection of this node may be dead. receivedBy={}", tag, receivedBy);
     }
 
 }

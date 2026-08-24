@@ -28,10 +28,15 @@ public class SsePubSubConfig {
         return container;
     }
 
+    /**
+     * SSE 전용 스케줄러.
+     * registry 하트비트 3개(설계/가격전망해석/파라미터제안)가 올라간다.
+     * 하트비트는 블로킹 소켓 쓰기라 한 태스크가 지연되면 다른 태스크가 굶을 수 있으므로 태스크 수만큼 확보한다.
+     */
     @Bean
     public ThreadPoolTaskScheduler sseHeartbeatScheduler() {
         ThreadPoolTaskScheduler scheduler = new ThreadPoolTaskScheduler();
-        scheduler.setPoolSize(2);
+        scheduler.setPoolSize(3);
         scheduler.setThreadNamePrefix("sse-hb-");
         scheduler.setRemoveOnCancelPolicy(true);
         return scheduler;
