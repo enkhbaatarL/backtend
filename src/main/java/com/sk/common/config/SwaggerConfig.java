@@ -1,19 +1,23 @@
 package com.sk.common.config;
 
 import com.sk.common.annotation.ApiOrder;
+import com.sk.common.interceptor.McpUserContextInterceptor;
 import io.swagger.v3.oas.models.Components;
 import io.swagger.v3.oas.models.OpenAPI;
 import io.swagger.v3.oas.models.Operation;
 import io.swagger.v3.oas.models.PathItem;
 import io.swagger.v3.oas.models.Paths;
 import io.swagger.v3.oas.models.info.Info;
+import io.swagger.v3.oas.models.media.IntegerSchema;
 import io.swagger.v3.oas.models.security.SecurityRequirement;
 import io.swagger.v3.oas.models.security.SecurityScheme;
 import io.swagger.v3.oas.models.security.SecurityScheme.Type;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
+import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
 import lombok.RequiredArgsConstructor;
 import org.springdoc.core.customizers.OpenApiCustomizer;
@@ -361,16 +365,71 @@ public class SwaggerConfig {
     }
 
     @Bean
+    public GroupedOpenApi mcpApi(
+        @Qualifier("sortPathsOpenApiCustomizer") OpenApiCustomizer sortPathsOpenApiCustomizer,
+        @Qualifier("apiOrderOperationCustomizer") OperationCustomizer apiOrderOperationCustomizer
+    ) {
+        return GroupedOpenApi.builder()
+            .group("MCP API")
+            .displayName("MCP API")
+            .pathsToMatch("/api/v1/mcp/**")
+            .addOpenApiCustomizer(this::customizeMcpOpenApi)
+            .addOpenApiCustomizer(sortPathsOpenApiCustomizer)
+            .addOperationCustomizer(apiOrderOperationCustomizer)
+            .build();
+    }
+
+    @Bean
     public GroupedOpenApi etcApi(@Qualifier("sortPathsOpenApiCustomizer") OpenApiCustomizer sortPathsOpenApiCustomizer,
                                  @Qualifier("apiOrderOperationCustomizer") OperationCustomizer apiOrderOperationCustomizer) {
         return GroupedOpenApi.builder()
             .group("ETC API")
             .displayName("기타 API")
             .pathsToMatch("/api/**", "/saml2/**", "/oauth2/**")
-            .pathsToExclude("/api/v1/mi/**", "/api/v1/admin/**", "/api/v1/test/**")
+            .pathsToExclude("/api/v1/mi/**", "/api/v1/admin/**", "/api/v1/test/**", "/api/v1/mcp/**")
             .addOpenApiCustomizer(sortPathsOpenApiCustomizer)
             .addOperationCustomizer(apiOrderOperationCustomizer)
             .build();
+    }
+
+    private void customizeMcpOpenApi(OpenAPI openApi) {
+        openApi.setSecurity(List.of());
+        if (openApi.getComponents() != null && openApi.getComponents().getSecuritySchemes() != null) {
+            openApi.getComponents().getSecuritySchemes().remove("BearerAuth");
+        }
+        if (openApi.getPaths() == null) {
+            return;
+        }
+
+        openApi.getPaths().values().stream()
+            .flatMap(pathItem -> pathItem.readOperations().stream())
+            .forEach(operation -> {
+                operation.setSecurity(List.of());
+                List<io.swagger.v3.oas.models.parameters.Parameter> parameters =
+                    operation.getParameters() == null
+                        ? new ArrayList<>()
+                        : new ArrayList<>(operation.getParameters());
+                boolean userIdAlreadyPresent = parameters.stream()
+                    .anyMatch(parameter -> "header".equals(parameter.getIn())
+                        && McpUserContextInterceptor.X_USER_ID.equalsIgnoreCase(parameter.getName()));
+                if (!userIdAlreadyPresent) {
+                    parameters.add(0, new io.swagger.v3.oas.models.parameters.Parameter()
+                        .name(McpUserContextInterceptor.X_USER_ID)
+                        .in("header")
+                        .required(true)
+                        .description("위임할 MI Platform 사용자 PK")
+                        .schema(new IntegerSchema().format("int32").example(1024)));
+                }
+                operation.setParameters(parameters);
+                operation.getResponses().addApiResponse(
+                    "400",
+                    new io.swagger.v3.oas.models.responses.ApiResponse()
+                        .description("X-User-Id 형식 또는 요청 파라미터가 유효하지 않음 (REQ-003)"));
+                operation.getResponses().addApiResponse(
+                    "401",
+                    new io.swagger.v3.oas.models.responses.ApiResponse()
+                        .description("X-User-Id 누락·공백 또는 유효 사용자 없음 (AUTH-001)"));
+            });
     }
 
     @Bean

@@ -60,6 +60,10 @@ springdoc:
 security:
   enabled: true
 
+mcp:
+  read-only-api:
+    development-auth-bypass-enabled: ${MCP_READ_ONLY_API_DEVELOPMENT_AUTH_BYPASS_ENABLED:true}
+
 mi:
   autocomplete:
     initial-load:

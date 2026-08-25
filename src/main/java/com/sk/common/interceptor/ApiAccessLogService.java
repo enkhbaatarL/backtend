@@ -48,6 +48,10 @@ public class ApiAccessLogService {
             }
         }
 
+        String effectiveSubject = StringUtils.defaultIfBlank(
+            subject,
+            MDCUtil.getValue(MDCUtil.REQUEST_USER_ID));
+
         ApiAccessLog accessLog = ApiAccessLog.of(
             url,
             MDCUtil.getValue(MDCUtil.REQUEST_METHOD),
@@ -55,7 +59,7 @@ public class ApiAccessLogService {
             MDCUtil.getValue(MDCUtil.RESPONSE_ERROR_MSG),
             MDCUtil.getValue(MDCUtil.ACCESS_IP_ADDRESS),
             ObjectUtils.isNotEmpty(role) ? Role.valueOf(role) : Role.SYSTEM,
-            StringUtils.isNotEmpty(subject) ? subject : "SYSTEM"
+            StringUtils.isNotEmpty(effectiveSubject) ? effectiveSubject : "SYSTEM"
         );
 
         apiAccessLogRepository.save(accessLog);
