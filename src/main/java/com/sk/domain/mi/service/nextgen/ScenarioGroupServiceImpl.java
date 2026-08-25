@@ -42,7 +42,6 @@ import com.sk.domain.shared.enums.fundamentalmodel.FundamentalModelRunStatus;
 import com.sk.domain.shared.enums.nextgen.GraphPeriodUnit;
 import com.sk.domain.shared.enums.nextgen.ScenarioApiVersion;
 import com.sk.domain.shared.enums.nextgen.IndexName;
-import com.sk.domain.shared.enums.nextgen.ModelInputMode;
 import com.sk.domain.shared.enums.nextgen.ScenarioDisplayStatus;
 import com.sk.domain.shared.enums.nextgen.ScenarioStatus;
 import com.sk.domain.shared.repository.master.tmd.ScenarioCaseRepository;
@@ -188,16 +187,13 @@ public class ScenarioGroupServiceImpl implements ScenarioGroupService {
     @Override
     public ScenarioGroupGraphRes getScenarioGroupGraph(Long scenarioGroupId, IndexName indexName, GraphPeriodUnit periodUnit) {
 
-        // 시나리오 그룹 유효성 검증 겸 파라미터 제안 대상여부 도출
-        boolean parameterProposalTarget = resolveParameterProposalTarget(scenarioGroupId);
-
         List<ScenarioBaseRow> scenarios = scenarioGroupRepository.findScenariosByGroupId(scenarioGroupId);
         List<Long> scenarioIds = scenarioIdsOf(scenarios);
 
         // 시나리오 실행상태 조회
         ScenarioRunStates runStates = resolveRunStates(scenarioIds);
 
-        return buildGraph(scenarioGroupId, parameterProposalTarget, indexName, periodUnit, scenarios, runStates).graph();
+        return buildGraph(scenarioGroupId, indexName, periodUnit, scenarios, runStates).graph();
     }
 
     /**
@@ -229,9 +225,6 @@ public class ScenarioGroupServiceImpl implements ScenarioGroupService {
      */
     public Map<IndexName, IndexGraph> buildGraphs(Long scenarioGroupId, GraphPeriodUnit periodUnit) {
 
-        // 시나리오 그룹 유효성 검증 겸 파라미터 제안 대상여부 도출
-        boolean parameterProposalTarget = resolveParameterProposalTarget(scenarioGroupId);
-
         List<ScenarioBaseRow> scenarios = scenarioGroupRepository.findScenariosByGroupId(scenarioGroupId);
 
         List<Long> scenarioIds = scenarioIdsOf(scenarios);
@@ -243,13 +236,13 @@ public class ScenarioGroupServiceImpl implements ScenarioGroupService {
 
         // JKM, TTF, HH 인덱스 전체
         for (IndexName indexName : IndexName.values()) {
-            graphs.put(indexName, buildGraph(scenarioGroupId, parameterProposalTarget, indexName, periodUnit, scenarios, runStates));
+            graphs.put(indexName, buildGraph(scenarioGroupId, indexName, periodUnit, scenarios, runStates));
         }
 
         return graphs;
     }
 
-    private IndexGraph buildGraph(Long scenarioGroupId, boolean parameterProposalTarget, IndexName indexName, GraphPeriodUnit periodUnit, List<ScenarioBaseRow> scenarios, ScenarioRunStates runStates) {
+    private IndexGraph buildGraph(Long scenarioGroupId, IndexName indexName, GraphPeriodUnit periodUnit, List<ScenarioBaseRow> scenarios, ScenarioRunStates runStates) {
 
         List<Long> scenarioIds = scenarioIdsOf(scenarios);
 
@@ -259,7 +252,7 @@ public class ScenarioGroupServiceImpl implements ScenarioGroupService {
         // MI Base 기준선 : 실행유형코드(MI_BASE) 최신 케이스의 가격 결과
         List<MiBasePriceRow> miBasePrices = scenarioCaseRepository.findLatestMiBasePrices(indexName, periodUnit.getDbUnit());
 
-        ScenarioGroupGraphRes graph = ScenarioGroupGraphRes.of(scenarioGroupId, parameterProposalTarget, indexName, periodUnit, scenarios, miBasePrices, scenariosPrices, runStates.running(), runStates.completed());
+        ScenarioGroupGraphRes graph = ScenarioGroupGraphRes.of(scenarioGroupId, indexName, periodUnit, scenarios, miBasePrices, scenariosPrices, runStates.running(), runStates.completed());
 
         // 차트 표시 구간으로 클리핑 (CME/MI/시나리오 동일 창 — 화면 및 엑셀 공통 정책)
         ChartWindow window = ChartWindow.of(periodUnit, getMiBaseEndResult(miBasePrices, periodUnit));
@@ -296,17 +289,6 @@ public class ScenarioGroupServiceImpl implements ScenarioGroupService {
         if (!scenarioGroupRepository.existsByScenarioGroupIdAndIsDeletedFalse(scenarioGroupId)) {
             throw AppErrorException.of(ResultCode.Error.RSC_NOT_FOUND, "Scenario group not found: %d".formatted(scenarioGroupId));
         }
-    }
-
-    /**
-     * 그룹 존재 검증 겸 파라미터 제안 대상여부 도출
-     *  - 그룹의 eventTypeL2Id로 판정 (미대상 집합은 {@link ModelInputMode} 단일 소스)
-     *  - 없는 그룹이면 404 (requireActiveGroup과 동일 기준)
-     */
-    private boolean resolveParameterProposalTarget(Long scenarioGroupId) {
-        Long eventTypeL2Id = scenarioGroupRepository.findEventTypeL2IdByScenarioGroupId(scenarioGroupId)
-            .orElseThrow(() -> AppErrorException.of(ResultCode.Error.RSC_NOT_FOUND, "Scenario group not found: %d".formatted(scenarioGroupId)));
-        return ModelInputMode.from(eventTypeL2Id).isParameterProposal();
     }
 
     /**

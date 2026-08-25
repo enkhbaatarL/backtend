@@ -29,9 +29,6 @@ public record ScenarioGroupGraphRes(
     @Schema(description = "시나리오 그룹 ID", example = "1")
     Long scenarioGroupId,
 
-    @Schema(description = "파라미터 제안 대상여부 (true=대상/PARAMETER_PROPOSAL, false=미대상/FILE_UPLOAD)", example = "true")
-    Boolean parameterProposalTarget,
-
     @Schema(description = "인덱스명", example = "JKM")
     String indexName,
 
@@ -69,7 +66,7 @@ public record ScenarioGroupGraphRes(
      * */
     private static final int PRICE_SCALE = 2;
 
-    public static ScenarioGroupGraphRes of(Long scenarioGroupId, boolean parameterProposalTarget, IndexName indexName, GraphPeriodUnit periodUnit,
+    public static ScenarioGroupGraphRes of(Long scenarioGroupId, IndexName indexName, GraphPeriodUnit periodUnit,
                                            List<ScenarioBaseRow> scenarios, List<MiBasePriceRow> miBasePrices, List<ScenarioPriceRow> scenariosPrices,
                                            Set<Long> runningScenarioIds, Set<Long> completedScenarioIds) {
 
@@ -90,7 +87,6 @@ public record ScenarioGroupGraphRes(
 
         return ScenarioGroupGraphRes.builder()
             .scenarioGroupId(scenarioGroupId)
-            .parameterProposalTarget(parameterProposalTarget)
             .indexName(indexName.getCode())
             .periodUnit(periodUnit)
             .periodUnitLabel(periodUnit.getLabel())

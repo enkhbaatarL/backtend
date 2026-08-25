@@ -6,7 +6,6 @@ import com.sk.common.annotation.RequiredPermissionRules;
 import com.sk.common.model.BaseResponse;
 import com.sk.common.model.BaseResponseFactory;
 import com.sk.domain.mi.dto.response.nextgen.CurrentModelParamProposalRes;
-import com.sk.domain.mi.dto.response.nextgen.ModelExecutionOptionsRes;
 import com.sk.domain.mi.dto.response.nextgen.ModelParamProposalAcceptRes;
 import com.sk.domain.mi.dto.response.nextgen.ModelParamProposalRes;
 import com.sk.domain.mi.service.nextgen.ModelParamProposalService;
@@ -21,11 +20,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.annotation.Profile;
 import org.springframework.http.MediaType;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
 @Profile("!dedicated")
@@ -40,23 +35,6 @@ public class ModelParamProposalController {
     private final ModelParamProposalSseRegistry sseRegistry;
 
     @ApiOrder(1)
-    @Operation(
-        summary = "수급모델 실행 입력 방식 조회 API",
-        description = "Scenario 기반 Event에 따라 수급모델 실행 입력 방식을 조회합니다."
-    )
-    @ApiResponse(responseCode = "200", description = "조회 성공")
-    @GetMapping("/model-execution-options")
-    @RequiredPermissionRules(rules = {
-        @PermissionRule(role = Role.USER, conditions = {PermissionCondition.SKGAS_COMPANY_USER_ONLY}),
-        @PermissionRule(role = Role.ADMIN, conditions = {PermissionCondition.THIRD_PARTY_ADMIN_ONLY})
-    })
-    public BaseResponse<ModelExecutionOptionsRes> getModelExecutionOptions(
-        @Parameter(description = "시나리오 ID", example = "309") @PathVariable Long scenarioId
-    ) {
-        return BaseResponseFactory.create(modelParamProposalService.getModelExecutionOptions(scenarioId));
-    }
-
-    @ApiOrder(2)
     @Operation(
         summary = "수급모델 파라미터 제안 생성 접수 API",
         description = "Agent에 파라미터 제안 생성을 요청하고 Backend execution-preparation orchestration row를 연결합니다."
@@ -73,7 +51,7 @@ public class ModelParamProposalController {
         return BaseResponseFactory.create(modelParamProposalService.createProposal(scenarioId));
     }
 
-    @ApiOrder(3)
+    @ApiOrder(2)
     @Operation(
         summary = "수급모델 파라미터 현재 상태 조회 API",
         description = "팝업 진입 시 Scenario 기준 최신 execution-preparation과 Agent proposal, Case/Run 상태를 조합해 현재 표시 상태를 조회합니다."
@@ -90,7 +68,7 @@ public class ModelParamProposalController {
         return BaseResponseFactory.create(modelParamProposalService.getCurrentProposal(scenarioId));
     }
 
-    @ApiOrder(4)
+    @ApiOrder(3)
     @Operation(
         summary = "수급모델 파라미터 제안 상태/결과 조회 API",
         description = "Backend execution-preparation row와 Agent proposal table을 조합해 상태와 제안 결과를 조회합니다."
@@ -108,7 +86,7 @@ public class ModelParamProposalController {
         return BaseResponseFactory.create(modelParamProposalService.getProposal(scenarioId, modelParamProposalId));
     }
 
-    @ApiOrder(5)
+    @ApiOrder(4)
     @Operation(
         summary = "수급모델 파라미터 제안 SSE 구독 API",
         description = "Agent proposal 완료/실패 신호를 scenario 단위 SSE로 구독합니다. 이벤트명은 `model-parameter-proposal`입니다."

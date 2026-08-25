@@ -26,7 +26,6 @@ import com.sk.domain.shared.entity.master.tmm.MiScenario;
 import com.sk.domain.shared.enums.fundamentalmodel.FundamentalModelExecType;
 import com.sk.domain.shared.enums.fundamentalmodel.FundamentalModelRunStatus;
 import com.sk.domain.shared.enums.nextgen.ModelExecutionStatus;
-import com.sk.domain.shared.enums.nextgen.ModelInputMode;
 import com.sk.domain.shared.enums.nextgen.ModelParamParameterSource;
 import com.sk.domain.shared.enums.nextgen.ScenarioStatus;
 import com.sk.domain.shared.repository.master.tcm.UploadedFileRepository;
@@ -89,7 +88,6 @@ public class ScenarioModelExecutionServiceImpl implements ScenarioModelExecution
             ModelExecutionAcceptRes response = transactionOperations.execute(status -> {
                 MiScenario scenario = findScenarioForUpdate(scenarioId);
                 rejectDiscardedScenario(scenario);
-                rejectIfMultipartModeMismatch(scenario);
                 validateFiles(files);
                 modelParamExecutionCoordinator.rejectIfActiveExecutionExists(scenarioId);
                 return scenarioExecutionRegistrar.registerStaged(scenario, stagedFiles, null);
@@ -123,7 +121,6 @@ public class ScenarioModelExecutionServiceImpl implements ScenarioModelExecution
             ModelExecutionAcceptRes response = transactionOperations.execute(status -> {
                 MiScenario scenario = findScenarioForUpdate(scenarioId);
                 rejectDiscardedScenario(scenario);
-                rejectIfJsonModeMismatch(scenario);
                 modelParamExecutionCoordinator.rejectIfActiveExecutionExists(scenarioId);
                 validateFiles(files);
                 return scenarioExecutionRegistrar.registerStaged(scenario, filesToAttach, context.execPrepId());
@@ -146,7 +143,6 @@ public class ScenarioModelExecutionServiceImpl implements ScenarioModelExecution
         transactionOperations.executeWithoutResult(status -> {
             MiScenario scenario = findScenarioForUpdate(scenarioId);
             rejectDiscardedScenario(scenario);
-            rejectIfMultipartModeMismatch(scenario);
             validateFiles(files);
             modelParamExecutionCoordinator.rejectIfActiveExecutionExists(scenarioId);
         });
@@ -159,7 +155,6 @@ public class ScenarioModelExecutionServiceImpl implements ScenarioModelExecution
         ExecutionConfirmationContext context = transactionOperations.execute(status -> {
             MiScenario scenario = findScenarioForUpdate(scenarioId);
             rejectDiscardedScenario(scenario);
-            rejectIfJsonModeMismatch(scenario);
             return modelParamExecutionCoordinator.begin(scenario, request);
         });
         if (context == null) {
@@ -276,41 +271,6 @@ public class ScenarioModelExecutionServiceImpl implements ScenarioModelExecution
             throw AppErrorException.of(
                 ResultCode.Error.BIZ_RULE_VIOLATION,
                 "Discarded scenario cannot start a model execution. scenarioId: %d".formatted(scenario.getScenarioId())
-            );
-        }
-    }
-
-    /**
-     * 수급모델 입력 방식 판정.
-     * 그룹의 직접 L2 컬럼 제거(멀티 이벤트, migration 0023)로 매핑의 기준 이벤트 L2 를 사용한다.
-     * 다중 이벤트 그룹의 L2 집합 판정 규칙이 확정되기 전까지의 잠정 규칙이다.
-     */
-    private ModelInputMode resolveInputMode(MiScenario scenario) {
-        Long scenarioGroupId = scenario.getScenarioGroup().getScenarioGroupId();
-        Long eventTypeL2Id = miScenarioGroupRepository.findEventTypeL2IdByScenarioGroupId(scenarioGroupId).orElse(null);
-        return ModelInputMode.from(eventTypeL2Id);
-    }
-
-    private void rejectIfMultipartModeMismatch(MiScenario scenario) {
-        ModelInputMode inputMode = resolveInputMode(scenario);
-        if (inputMode != ModelInputMode.FILE_UPLOAD) {
-            throw AppHttpStatusException.of(
-                HttpStatus.CONFLICT,
-                ResultCode.Error.BIZ_RULE_VIOLATION,
-                "This scenario uses PARAMETER_PROPOSAL mode. multipart model execution is not allowed. scenarioId: %d"
-                    .formatted(scenario.getScenarioId())
-            );
-        }
-    }
-
-    private void rejectIfJsonModeMismatch(MiScenario scenario) {
-        ModelInputMode inputMode = resolveInputMode(scenario);
-        if (!inputMode.isParameterProposal()) {
-            throw AppHttpStatusException.of(
-                HttpStatus.CONFLICT,
-                ResultCode.Error.BIZ_RULE_VIOLATION,
-                "This scenario uses FILE_UPLOAD mode. JSON model execution is not allowed. scenarioId: %d"
-                    .formatted(scenario.getScenarioId())
             );
         }
     }

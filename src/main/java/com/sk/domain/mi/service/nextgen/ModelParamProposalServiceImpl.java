@@ -6,18 +6,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.sk.common.enums.ResultCode;
 import com.sk.common.exception.AppErrorException;
 import com.sk.common.exception.AppHttpStatusException;
-import com.sk.domain.mi.dto.response.nextgen.CurrentModelParamFileRes;
-import com.sk.domain.mi.dto.response.nextgen.CurrentModelParamProposalRes;
-import com.sk.domain.mi.dto.response.nextgen.ModelExecutionInputFilesRes;
-import com.sk.domain.mi.dto.response.nextgen.ModelExecutionOptionsRes;
-import com.sk.domain.mi.dto.response.nextgen.ModelFileNode;
-import com.sk.domain.mi.dto.response.nextgen.ModelParamAlign;
-import com.sk.domain.mi.dto.response.nextgen.ModelParamColumn;
-import com.sk.domain.mi.dto.response.nextgen.ModelParamColumnKind;
-import com.sk.domain.mi.dto.response.nextgen.ModelParamProposalAcceptRes;
-import com.sk.domain.mi.dto.response.nextgen.ModelParamProposalRes;
-import com.sk.domain.mi.dto.response.nextgen.ModelParamShape;
-import com.sk.domain.mi.dto.response.nextgen.ModelSheetNode;
+import com.sk.domain.mi.dto.response.nextgen.*;
 import com.sk.domain.mi.service.nextgen.paramproposal.ModelParamSlotAxisResolver;
 import com.sk.domain.mi.service.nextgen.paramproposal.ModelParamSlotAxisResolver.InvalidSlotAxisMetadataException;
 import com.sk.domain.mi.service.nextgen.paramproposal.ModelParameterResponseProjector;
@@ -40,14 +29,7 @@ import com.sk.domain.shared.entity.master.tmm.MiModelParam;
 import com.sk.domain.shared.entity.master.tmm.MiScenario;
 import com.sk.domain.shared.enums.fundamentalmodel.FundamentalModelCaseStatus;
 import com.sk.domain.shared.enums.fundamentalmodel.FundamentalModelExecType;
-import com.sk.domain.shared.enums.nextgen.AgentModelParamProposalStatus;
-import com.sk.domain.shared.enums.nextgen.BasecaseReadMode;
-import com.sk.domain.shared.enums.nextgen.CurrentModelParamProposalState;
-import com.sk.domain.shared.enums.nextgen.ModelExecutionPreparationStatus;
-import com.sk.domain.shared.enums.nextgen.ModelExecutionStatus;
-import com.sk.domain.shared.enums.nextgen.ModelInputMode;
-import com.sk.domain.shared.enums.nextgen.ModelParamParameterSource;
-import com.sk.domain.shared.enums.nextgen.ScenarioStatus;
+import com.sk.domain.shared.enums.nextgen.*;
 import com.sk.domain.shared.repository.master.tmd.ModelExecutionPreparationRepository;
 import com.sk.domain.shared.repository.master.tmd.ScenarioCaseRepository;
 import com.sk.domain.shared.repository.master.tmd.ScenarioCaseRunHistoryRepository;
@@ -56,21 +38,6 @@ import com.sk.domain.shared.repository.master.tmm.MiModelParamRepository;
 import com.sk.domain.shared.repository.master.tmm.MiScenarioGroupRepository;
 import com.sk.domain.shared.repository.master.tmm.MiScenarioRepository;
 import com.sk.domain.shared.service.permissions.AuthorizationService;
-import java.net.SocketTimeoutException;
-import java.time.LocalDateTime;
-import java.util.ArrayList;
-import java.util.Iterator;
-import java.util.LinkedHashMap;
-import java.util.LinkedHashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
-import java.util.Optional;
-import java.util.Set;
-import java.util.function.Function;
-import java.util.function.Supplier;
-import java.util.regex.Pattern;
-import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.dao.DataIntegrityViolationException;
@@ -82,6 +49,14 @@ import org.springframework.transaction.support.TransactionOperations;
 import org.springframework.web.client.ResourceAccessException;
 import org.springframework.web.client.RestClientException;
 import org.springframework.web.client.RestClientResponseException;
+
+import java.net.SocketTimeoutException;
+import java.time.LocalDateTime;
+import java.util.*;
+import java.util.function.Function;
+import java.util.function.Supplier;
+import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 
 @Slf4j
 @Service
@@ -123,13 +98,6 @@ public class ModelParamProposalServiceImpl implements ModelParamProposalService 
     private final ModelExecutionInputFilesProjector modelExecutionInputFilesProjector;
 
     @Override
-    public ModelExecutionOptionsRes getModelExecutionOptions(Long scenarioId) {
-        MiScenario scenario = findScenario(scenarioId);
-        ModelInputMode inputMode = resolveInputMode(scenario);
-        return ModelExecutionOptionsRes.of(scenarioId, inputMode);
-    }
-
-    @Override
     @Transactional(propagation = Propagation.NOT_SUPPORTED)
     public ModelParamProposalAcceptRes createProposal(Long scenarioId) {
         ModelExecutionPreparation preparation = createRequestingPreparation(scenarioId);
@@ -160,7 +128,6 @@ public class ModelParamProposalServiceImpl implements ModelParamProposalService 
     @Override
     public CurrentModelParamProposalRes getCurrentProposal(Long scenarioId) {
         MiScenario scenario = findScenario(scenarioId);
-        rejectIfNotParameterProposalMode(scenario);
 
         return modelExecutionPreparationRepository.findFirstByScenarioIdAndIsDeletedFalseOrderByExecPrepIdDesc(scenarioId)
             .map(this::toCurrentProposalResponse)
@@ -578,7 +545,6 @@ public class ModelParamProposalServiceImpl implements ModelParamProposalService 
         return transactionOperations.execute(status -> {
             MiScenario scenario = findScenarioForUpdate(scenarioId);
             rejectDiscardedScenario(scenario);
-            rejectIfNotParameterProposalMode(scenario);
             rejectIfActiveExecutionExists(scenarioId);
             rejectIfActivePreparationExists(scenarioId);
 
@@ -702,33 +668,11 @@ public class ModelParamProposalServiceImpl implements ModelParamProposalService 
             ));
     }
 
-    /**
-     * 수급모델 입력 방식 판정.
-     * 그룹의 직접 L2 컬럼 제거(멀티 이벤트, migration 0023)로 매핑의 기준 이벤트 L2 를 사용한다.
-     * 다중 이벤트 그룹의 L2 집합 판정 규칙이 확정되기 전까지의 잠정 규칙이며, L2 미확인 시 제안 대상으로 판정된다.
-     */
-    private ModelInputMode resolveInputMode(MiScenario scenario) {
-        Long scenarioGroupId = scenario.getScenarioGroup().getScenarioGroupId();
-        Long eventTypeL2Id = miScenarioGroupRepository.findEventTypeL2IdByScenarioGroupId(scenarioGroupId).orElse(null);
-        return ModelInputMode.from(eventTypeL2Id);
-    }
-
     private void rejectDiscardedScenario(MiScenario scenario) {
         if (scenario.getStatus() == ScenarioStatus.DISCARDED) {
             throw AppErrorException.of(
                 ResultCode.Error.BIZ_RULE_VIOLATION,
                 "Discarded scenario cannot request model parameter proposal. scenarioId: %d".formatted(scenario.getScenarioId())
-            );
-        }
-    }
-
-    private void rejectIfNotParameterProposalMode(MiScenario scenario) {
-        if (!resolveInputMode(scenario).isParameterProposal()) {
-            throw AppHttpStatusException.of(
-                HttpStatus.CONFLICT,
-                ResultCode.Error.BIZ_RULE_VIOLATION,
-                "This scenario uses FILE_UPLOAD mode. model parameter proposal is not allowed. scenarioId: %d"
-                    .formatted(scenario.getScenarioId())
             );
         }
     }
