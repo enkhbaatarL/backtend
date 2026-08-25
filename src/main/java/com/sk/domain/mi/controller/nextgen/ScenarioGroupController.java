@@ -144,7 +144,6 @@ public class ScenarioGroupController {
 
             <br><br>
             ### 응답 필드
-            - `parameterProposalTarget`: 파라미터 제안 대상 여부 (`true`: PARAMETER_PROPOSAL / `false`: FILE_UPLOAD)
             - `periodUnit` / `periodUnitLabel`: 기간 단위 (monthly:월별 / yearly:연도별)
             - `dates`: x축 기간 목록 (월별 `yyyy-MM` / 연도별 `yyyy`)
             - `baseSeries`: 기준선 — `MI Base`(exec_type_cd=MI_BASE 최신 케이스 가격) 제공

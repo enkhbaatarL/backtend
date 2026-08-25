@@ -187,6 +187,8 @@ public class ScenarioGroupServiceImpl implements ScenarioGroupService {
     @Override
     public ScenarioGroupGraphRes getScenarioGroupGraph(Long scenarioGroupId, IndexName indexName, GraphPeriodUnit periodUnit) {
 
+        requireActiveGroup(scenarioGroupId);
+
         List<ScenarioBaseRow> scenarios = scenarioGroupRepository.findScenariosByGroupId(scenarioGroupId);
         List<Long> scenarioIds = scenarioIdsOf(scenarios);
 
@@ -224,6 +226,8 @@ public class ScenarioGroupServiceImpl implements ScenarioGroupService {
      * - 엑셀 변환/외부 기준선(CME) 병합은 호출 측 책임 (CME는 전용 DB라 dedicated 서비스에서만 접근)
      */
     public Map<IndexName, IndexGraph> buildGraphs(Long scenarioGroupId, GraphPeriodUnit periodUnit) {
+
+        requireActiveGroup(scenarioGroupId);
 
         List<ScenarioBaseRow> scenarios = scenarioGroupRepository.findScenariosByGroupId(scenarioGroupId);
 

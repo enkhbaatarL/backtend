@@ -60,8 +60,7 @@ public class CustomMiScenarioGroupRepositoryImpl implements CustomMiScenarioGrou
      *
      * 이 조인이 뽑는 eventTypeL2Id의 소비처는 전부 v1 template 폴백이다 — v1 그룹은 매핑이 항상
      * 1행(backfill 보장)이라 기준 선택이 무의미하고, v4 그룹은 definitions 우선이라 이 값을 쓰지 않는다.
-     * 즉 최소 ID 규칙은 행 중복 방지용일 뿐 display_order 첫 이벤트와의 일치를 보장하지 않는다
-     * (모델 파이프라인의 단일 L2 판정은 findEventTypeL2IdByScenarioGroupId의 display_order 기준을 쓴다).
+     * 즉 최소 ID 규칙은 행 중복 방지용일 뿐 display_order 첫 이벤트와의 일치를 보장하지 않는다.
      */
     private BooleanExpression primaryGroupEventJoin() {
         QMiScenarioGroupEvent groupEventSub = new QMiScenarioGroupEvent("groupEventSub");
@@ -244,7 +243,8 @@ public class CustomMiScenarioGroupRepositoryImpl implements CustomMiScenarioGrou
 
     /**
      * 그룹의 기준 eventTypeL2Id 조회 — 활성 매핑의 display_order 첫 이벤트에서 동결된 L2.
-     * 멀티 이벤트 그룹의 L2 집합 판정 규칙(ModelInputMode)이 확정되기 전까지의 잠정 단일 값이다.
+     * 수급모델 입력 방식이 이벤트 유형과 무관하게 전 유형 파라미터 제안으로 통일되면서 현재 호출부가 없다.
+     * v1 template 폴백처럼 그룹 단위 기준 L2가 다시 필요해질 때를 위해 남겨둔다.
      */
     @Override
     public Optional<Long> findEventTypeL2IdByScenarioGroupId(Long scenarioGroupId) {
