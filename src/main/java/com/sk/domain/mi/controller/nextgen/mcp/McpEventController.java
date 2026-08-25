@@ -9,7 +9,6 @@ import com.sk.common.model.PaginationRes;
 import com.sk.domain.mi.dto.request.nextgen.EventListReq;
 import com.sk.domain.mi.dto.response.nextgen.EventDetailRes;
 import com.sk.domain.mi.dto.response.nextgen.EventInstitutionOutlookRes;
-import com.sk.domain.mi.dto.response.nextgen.EventLinkedScenarioGroupRes;
 import com.sk.domain.mi.dto.response.nextgen.EventListRes;
 import com.sk.domain.mi.dto.response.nextgen.EventRelatedRecordRes;
 import com.sk.domain.mi.dto.response.nextgen.EventTypeL1Res;
@@ -66,22 +65,6 @@ public class McpEventController {
     }
 
     @ApiOrder(3)
-    @Operation(
-        summary = "이벤트 연결 시나리오 그룹 목록 조회",
-        description = "이벤트에 연결된 시나리오 그룹을 조회합니다. `mine`은 `X-User-Id`가 지정한 effective user 기준입니다.")
-    @ApiResponse(responseCode = "200", description = "조회 성공. 연결된 그룹이 없으면 빈 목록")
-    @GetMapping("/{eventId}/scenario-groups")
-    @RequiredPermissionRules(rules = {
-        @PermissionRule(role = Role.USER, conditions = {PermissionCondition.SKGAS_COMPANY_USER_ONLY}),
-        @PermissionRule(role = Role.ADMIN, conditions = {PermissionCondition.THIRD_PARTY_ADMIN_ONLY})
-    })
-    public BaseResponse<List<EventLinkedScenarioGroupRes>> getEventScenarioGroups(
-        @Parameter(description = "이벤트 ID", example = "1523") @PathVariable Long eventId
-    ) {
-        return BaseResponseFactory.create(eventService.getEventScenarioGroups(eventId));
-    }
-
-    @ApiOrder(4)
     @Operation(summary = "이벤트 상세 조회", description = "이벤트 상세와 영향 분석, AI 인사이트, 연결 시나리오 정보를 조회합니다.")
     @ApiResponse(responseCode = "200", description = "조회 성공")
     @GetMapping("/{eventId}")
@@ -95,7 +78,7 @@ public class McpEventController {
         return BaseResponseFactory.create(eventService.getEventDetail(eventId));
     }
 
-    @ApiOrder(5)
+    @ApiOrder(4)
     @Operation(summary = "이벤트 기관 전망 조회", description = "이벤트와 관련된 기관별 시장 전망을 전망 일자 내림차순으로 조회합니다.")
     @ApiResponse(responseCode = "200", description = "조회 성공")
     @GetMapping("/{eventId}/outlooks")
@@ -111,7 +94,7 @@ public class McpEventController {
         return BaseResponseFactory.create(eventService.getEventOutlooks(eventId, page, size));
     }
 
-    @ApiOrder(6)
+    @ApiOrder(5)
     @Operation(
         summary = "이벤트 연관 레코드 조회",
         description = "이벤트 연관 뉴스·리포트를 조회합니다. `isPermitted`는 effective user와 서버가 결정한 SKGAS 상품 권한 기준입니다.")

@@ -19,11 +19,11 @@
   - 원본 API의 업무 의미와 필드 정의: `docs/design-docs/gas/nextgen-mi-integrated-functional-spec.md` 및 각 원본 API의 OpenAPI 문서
 - source documents:
   - `docs/design-docs/gas/nextgen-mi-mcp-api-channel-design.md`
-  - 코드 조사 (2026-08-24 / 2026-08-25, branch `feature/gas2`)
+  - 코드 조사 (2026-08-24 / 2026-08-25, branches `feature/gas2`, `dev`, `feature/mcp-api`)
 - depends on:
   - `docs/conventions/openapi-documentation-conventions.md`
   - `docs/conventions/source-of-truth-governance.md`
-  - branch `feature/gas2`
+  - branch `dev`
 - supersedes: 없음
 - last synced: 2026-08-25
 - open questions:
@@ -75,6 +75,7 @@
 - 멀티테넌시(고객사) 필터 신설
 - **Deprecated된 조회 API 3종** 노출 — 원본에 `@Deprecated`가 붙어 있다 (목록은 8.2절)
 - **화면 조작 · 폴링 · 실행/설계 상태 보조 API** 노출 — 수급모델 실행 6종(도메인 전체)과 설계·상태 화면 4종. MCP 소비 대상이 아니다 (2026-08-24 사용자 지정, 목록은 8.2절)
+- `dev`에 응답 DTO와 서비스 메서드가 없는 `GET /events/{eventId}/scenario-groups` 노출 — 의존 코드가 `dev`에 반영된 뒤 별도 적용한다
 
 ---
 
@@ -115,7 +116,7 @@ MCP :  /api/v1/mcp/mi/next-gen/{...}
 
 > **이 헤더는 인증 수단이 아니다.** 개발 단계에서는 위조 가능한 값이고,
 > 운영 단계에서는 인증된 MCP client만 이 위임 값을 보낼 수 있어야 한다.
-> 다만 일부 endpoint(4.1.4 `/records`, 4.1.6 `/{eventId}/scenario-groups`)는 **응답 내용이 이 헤더 값에 따라 달라진다.**
+> 다만 4.1.4 `/records`는 **응답 내용이 이 헤더 값에 따라 달라진다.**
 > 상세한 보안 경계는 9절.
 
 `X-Company-No`는 MCP 요청 계약이 아니다. 요청에 포함돼도 서버는 이 값을 조건 없이 무시하며,
@@ -248,20 +249,6 @@ MCP :  /api/v1/mcp/mi/next-gen/{...}
 **응답**: `data` = `List<EventTypeL1Res>`
 
 이벤트 목록 필터의 `eventTypeL1Id`에 넣을 ID값을 제공한다. 4.1.1과 함께 사용한다.
-
-#### 4.1.6 이벤트 연결 시나리오 그룹 목록 — **응답이 `X-User-Id`에 따라 달라짐**
-
-- `GET /api/v1/mcp/mi/next-gen/events/{eventId}/scenario-groups`
-- 원본: `GET /api/v1/mi/next-gen/events/{eventId}/scenario-groups` (`EventService.getEventScenarioGroups`)
-- 사용자 컨텍스트: **필수** (B군)
-
-**요청**: `eventId` (path, long, 필수)
-
-**응답**: `data` = `List<EventLinkedScenarioGroupRes>`. 그룹 최신순. 연결된 그룹이 없으면 빈 목록.
-
-> **`X-User-Id` 의존**: 각 그룹의 `mine`(설계중 그룹의 진행자가 그 사용자인지)이
-> **헤더가 지목한 사용자 기준으로 계산된다.** 설계중이 아닌 그룹은 `null`이다.
-> 나머지 필드는 헤더와 무관하다.
 
 ### 4.2 시나리오 그룹 (확정 — 2026-08-24)
 
@@ -439,7 +426,7 @@ MCP :  /api/v1/mcp/mi/next-gen/{...}
 
 | 대상 | 서버 | 해당 endpoint |
 |---|---|---|
-| 일반 서버 | `dev` / `prod` 프로파일 | 4.1 이벤트 (6건), 4.2 시나리오 그룹 (6건) |
+| 일반 서버 | `dev` / `prod` 프로파일 | 4.1 이벤트 (5건), 4.2 시나리오 그룹 (6건) |
 | SK Gas 전용 서버 | `dedicated` 프로파일 | 4.3 CME 벤치마크 (1건) |
 
 - SK Gas 전용 서버는 **subdomain이 다르다.** 이것은 **배포 설정에서 정해지며 애플리케이션 코드에는 없다** — 저장소를 뒤져도 전용 서버 base URL 설정은 나오지 않는다.
@@ -465,15 +452,15 @@ MCP :  /api/v1/mcp/mi/next-gen/{...}
 
 **결과 — MCP endpoint의 서버별 상태**
 
-| backend | 4.1 이벤트 (6건) · 4.2 시나리오 그룹 (6건) | 4.3 CME (1건) |
+| backend | 4.1 이벤트 (5건) · 4.2 시나리오 그룹 (6건) | 4.3 CME (1건) |
 |---|:--:|---|
 | 일반 | **노출 · 정상** | 노출 · **데이터 신뢰 불가** (4.3.4절 — 일반 DB로 폴백) |
 | 전용 · skgas | 미노출 (`!dedicated`가 false) | **노출 · 정상** |
 | 전용 · ske | 미노출 | 배포하면 노출되나 **무의미** (4.5.1절) |
 | 전용 · skhy | 미노출 | 배포하면 노출되나 **무의미** (4.5.1절) |
 
-> **소비자에게 주는 의미**: 13건을 모두 쓰려면 **서버 두 곳**을 호출해야 한다.
-> 이벤트·시나리오 12건은 **일반 backend**, CME 1건은 **skgas 전용 backend**.
+> **소비자에게 주는 의미**: 12건을 모두 쓰려면 **서버 두 곳**을 호출해야 한다.
+> 이벤트·시나리오 11건은 **일반 backend**, CME 1건은 **skgas 전용 backend**.
 > CME가 정상 동작하는 서버는 **skgas 전용 backend 하나뿐**이다.
 
 #### 4.5.1 전용 backend가 3개다 — MCP 배포 대상 결정 필요
@@ -488,7 +475,7 @@ CME는 SK Gas 데이터이고 라우팅 키는 `midb-skgas`로 고정이다(변�
 
 | 배포 대상 | 결과 |
 |---|---|
-| 일반 backend + **skgas** 전용 backend | 13건 모두 의미 있게 동작. 추가 조치 없음 |
+| 일반 backend + **skgas** 전용 backend | 현재 범위 12건 모두 의미 있게 동작. 추가 조치 없음 |
 | ske / skhy 전용 backend에도 배포 | 그곳의 CME endpoint는 무의미. 노출을 막으려면 `SKGAS_COMPANY_USER_ONLY` 애노테이션 부착(코드 1줄)을 검토한다 |
 
 배포 범위로 통제되면 코드 변경은 없다.
@@ -585,7 +572,7 @@ MCP 호출은 기존 API 접근 로그에 **`SYSTEM`이 아니라 `X-User-Id`가
 
 ### 8.2 확장 후보 인벤토리 (Next Gen MI 조회 API 전수)
 
-`◯` = 현재 대상, `-` = 미대상.
+`◯` = 현재 대상, `△` = 의존 코드 반영 전 보류, `-` = 미대상.
 
 **A군 — 사용자 컨텍스트 미사용**
 
@@ -610,7 +597,11 @@ MCP 호출은 기존 API 접근 로그에 **`SYSTEM`이 아니라 `X-User-Id`가
 | 대상 | 원본 엔드포인트 | 헤더에 따라 달라지는 것 |
 |:--:|---|---|
 | ◯ | `GET /events/{eventId}/records` | 항목별 `isPermitted` (상품 조회 권한) |
-| ◯ | `GET /events/{eventId}/scenario-groups` | 그룹별 `mine` (설계 점유자가 본인인지) |
+| △ | `GET /events/{eventId}/scenario-groups` | 그룹별 `mine` (설계 점유자가 본인인지) |
+
+`GET /events/{eventId}/scenario-groups`는 `dev`에 `EventLinkedScenarioGroupRes`와
+`EventService.getEventScenarioGroups`가 없어 현재 MCP 경로에 노출하지 않는다. 두 의존 코드가 `dev`에 반영된 뒤
+원본 응답 계약과 `mine` 계산을 함께 검증해 추가한다.
 
 **대상 제외**
 
@@ -689,7 +680,7 @@ MCP client는 모든 삭제되지 않은 유효 사용자의 신뢰된 위임자
 - [ ] `/records`의 `isPermitted`가 SKGAS USER의 개인+회사 상품 권한으로 계산된다 (권한 있는 사용자 / 없는 사용자 각각 확인).
 - [ ] 타사 접근 가능 ADMIN의 `/records.isPermitted`가 ADMIN 소속 회사와 무관하게 SKGAS 회사 단위 상품 권한으로 계산된다.
 - [ ] `X-Company-No`에 다른 실제 고객사 번호 또는 비숫자 값을 보내도 값이 무시되고, 헤더 미전송 요청과 동일한 SKGAS 상품 권한 결과가 나온다.
-- [ ] `/{eventId}/scenario-groups`의 `mine`이 헤더 사용자 기준으로 계산된다 (점유자 본인 / 타인 각각 확인).
+- [ ] 보류한 `/{eventId}/scenario-groups`가 생성 OpenAPI에 노출되지 않는다.
 - [ ] API 접근 로그에 `SYSTEM`이 아닌 effective user로 기록된다.
 - [ ] MCP 인증/Infra 로그에서 MCP client identity를 추적하고 request/trace id로 API 로그와 연결할 수 있다.
 - [ ] Swagger UI에 `MCP API` 그룹이 단독 노출되고, `MI` / `SK Gas` / `ETC` 그룹에 중복 노출되지 않는다.
@@ -702,7 +693,7 @@ MCP client는 모든 삭제되지 않은 유효 사용자의 신뢰된 위임자
 - [ ] 서로 다른 고객사 사용자의 연속 요청 간 `SecurityContext`와 tenant context가 누출되지 않는다.
 - [ ] CME 벤치마크의 OpenAPI `description`에 "SK Gas 전용 서버 전용 · 일반 서버 응답 신뢰 불가" 경고가 노출된다.
 - [ ] 일반 서버에서 CME를 호출했을 때의 실제 반환(500 또는 빈 목록)을 확인해 4.3.4절 표를 사실로 확정한다.
-- [ ] 4.5절 서버별 노출표대로 실제 노출된다 (일반 backend에 12건, skgas 전용 backend에 CME 1건).
+- [ ] 4.5절 서버별 노출표대로 실제 노출된다 (일반 backend에 11건, skgas 전용 backend에 CME 1건).
 - [ ] 전용 컨트롤러도 동일한 `X-User-Id` 계약과 오류 계약을 따른다 (채널 인프라 재사용 확인).
 
 ---
