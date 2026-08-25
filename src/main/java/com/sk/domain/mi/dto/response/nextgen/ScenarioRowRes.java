@@ -50,13 +50,13 @@ public record ScenarioRowRes(
     /** dimension 셀은 template 병합이 필요해 외부에서 조립한 값을 받는다. */
     public static ScenarioRowRes of(ScenarioBaseRow row, List<ScenarioDimensionRes> dimensions, Integer adjustedProbability) {
         ScenarioDisplayStatus status = ScenarioDisplayStatus.from(row.status());
-        ScenarioRole scenarioRole = ScenarioRole.fromNullable(row.scenarioRole());
         return new ScenarioRowRes(
             row.scenarioId(),
             row.title(),
             Boolean.TRUE.equals(row.isBaseline()),
-            scenarioRole,
-            scenarioRole == null ? null : scenarioRole.getLabel(),
+            // 유리M 요청사항 - 역할 배지 미노출. DB에 값이 있어도 null로 내린다 (되돌릴 때는 ScenarioRole.fromNullable(row.scenarioRole()) 복원)
+            null,
+            null,
             row.displayOrder(),
             dimensions,
             ScenarioProbabilityAllocator.toDisplayPercent(row.probabilityScore()),

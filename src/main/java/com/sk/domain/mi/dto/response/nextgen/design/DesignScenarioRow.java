@@ -69,8 +69,9 @@ public record DesignScenarioRow(
             displayOrder,
             scenarioName,
             baseCase,
-            scenarioRole,
-            scenarioRole == null ? null : scenarioRole.getLabel(),
+            // 유리M 요청사항 - 역할 배지 미노출. 인자로 받은 값이 있어도 null로 내린다 (되돌릴 때는 scenarioRole, scenarioRole == null ? null : scenarioRole.getLabel() 복원)
+            null,
+            null,
             pressureBand,
             pressureBand == null ? null : pressureBand.getLabel(),
             pressureRationale,
