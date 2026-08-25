@@ -16,9 +16,6 @@ public record ModelParamProposalRes(
     @Schema(description = "시나리오 그룹 ID", example = "61")
     Long scenarioGroupId,
 
-    @Schema(description = "MI Event ID", example = "1378")
-    Long eventId,
-
     @Schema(description = "FE 표시 상태. Agent status 또는 Backend overlay status", example = "PROPOSED")
     String status,
 

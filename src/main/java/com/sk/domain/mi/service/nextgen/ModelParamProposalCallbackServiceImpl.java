@@ -163,13 +163,6 @@ public class ModelParamProposalCallbackServiceImpl implements ModelParamProposal
                 "callback scenarioGroupId does not match Agent proposal."
             );
         }
-        if (data.eventId() != null && !Objects.equals(data.eventId(), proposal.getEventId())) {
-            throw AppHttpStatusException.of(
-                HttpStatus.CONFLICT,
-                ResultCode.Error.BIZ_RULE_VIOLATION,
-                "callback eventId does not match Agent proposal."
-            );
-        }
     }
 
     private void attachAgentProposalIdIfNecessary(ModelExecutionPreparation preparation, Long modelParamProposalId) {
