@@ -92,12 +92,16 @@ MCP 채널은 `/api/v1/mcp/mi/next-gen/**` 아래에 둔다.
 MCP 요청의 사용자 식별자로 `User`를 조회하고, 서버가 신뢰할 수 있는 사용자·고객사·역할
 정보로 `SecurityContext`를 만든다.
 
+사용자 헤더의 값과 다중 행 선택 규칙은 canonical Feature Spec의 `X-User-Id` 계약을 따른다.
+로그인 ID가 여러 활성 `User` 행과 일치할 때 반환 목록의 첫 행을 선택하는 현재 규칙은 정렬을 보장하지 않으므로,
+MCP client는 선택된 effective user의 역할·고객사를 응답과 접근 로그에서 확인해야 한다.
+
 - 요청값은 사용자를 찾는 키로만 사용한다.
 - 고객사, 역할, datasource는 요청 헤더가 직접 선택하지 않는다.
 - 고객사와 역할은 조회된 `User` 엔티티에서 파생한다.
 - effective user의 소속 고객사는 `isUsed=true`, `isDeleted=false`이고 현재 `yyyyMMdd`가
   `useBeginDt`와 `useEndDt` 사이(양 끝 포함)여야 한다. 이 조건을 만족하지 않으면 사용자 컨텍스트를 만들지 않는다.
-- 고객사 유효성은 `UserRepository.findByUserNoAndIsDeletedFalse`가 `@EntityGraph`로 함께 로드한
+- 고객사 유효성은 `UserRepository.findByUserLoginIdAndIsDeletedFalse`가 `@EntityGraph`로 함께 로드한
   `CustomerCompany`에서 검사하며, 같은 고객사를 다시 조회하지 않는다.
 - `SecurityContext`에는 기존 인가 로직이 사용하는 사용자 번호, 소속 고객사, 역할,
   타사 접근 가능 여부를 포함한다.
@@ -361,7 +365,7 @@ B군 endpoint는 effective user에 따라 결과가 달라질 수 있음을 Feat
 
 - 인증 없는 운영 요청
 - 잘못된 MCP client credential
-- 사용자 헤더 누락·형식 오류
+- 사용자 헤더 누락·공백
 - 존재하지 않는 사용자
 - 삭제된 사용자
 - 요청값으로 effective user의 고객사 범위를 넓히려는 시도
@@ -496,6 +500,7 @@ Q2는 운영 배포 차단 항목이다. 개발용 임시 인증 예외 구현�
 | 2026-08-24 | SKGAS `companyNo`는 서버 소유 회사 코드 `SKGAS`로 DB에서 해석 | 환경별 숫자 고정과 요청값에 의한 고객사 전환 방지 |
 | 2026-08-24 | 외부 고객사 선택값은 폐기하고 서버가 해석한 값을 request-scoped 우선 고객사 컨텍스트에 설정 | 기존 `AuthorizationService`와 서비스 로직을 변경 없이 재사용 |
 | 2026-08-24 | Servlet Filter가 저장한 외부 `X-Company-No`는 MCP 인터셉터가 조건 없이 제거하고 ADMIN이면 서버 SKGAS 값으로 무조건 덮어씀 | null 조건부 설정 시 외부 고객사 값이 우선되는 권한 우회 방지 |
+| 2026-08-25 | `X-User-Id` 값을 숫자 `userNo`에서 문자열 `userLoginId`로 변경하고 다중 조회 시 첫 행 선택 | 사용자 지정. 세부 헤더·오류 계약은 Feature Spec 소유 |
 
 ---
 
@@ -568,6 +573,7 @@ MCP matcher를 추가할 때는 최소 GET 경로, 체인 순서, 기존 matcher
 
 - API 계약: `docs/feature-specs/mcp-readonly-api-feature-spec.md`
 - 실행 계획 / 검증 기록: `docs/work-notes/2026/2026-08-21-mcp-readonly-api-set.md`
+- `X-User-Id` 로그인 ID 변경 실행 기록: `docs/work-notes/2026/2026-08-25-x-user-id-login-id-first-match-implementation.md`
 - 기존 도메인 기능 정의: `docs/design-docs/gas/nextgen-mi-integrated-functional-spec.md`
 - 프로젝트 보안 기준: `SECURITY.md`
 - OpenAPI 서술 규칙: `docs/conventions/openapi-documentation-conventions.md`

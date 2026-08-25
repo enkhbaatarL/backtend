@@ -1,7 +1,6 @@
 package com.sk.common.interceptor;
 
 import com.sk.common.enums.ResultCode;
-import com.sk.common.exception.AppErrorException;
 import com.sk.common.exception.AppHttpStatusException;
 import com.sk.common.utils.DateUtil;
 import com.sk.common.utils.MDCUtil;
@@ -77,15 +76,12 @@ public class McpUserContextInterceptor implements HandlerInterceptor {
             throw authenticationRequired();
         }
 
-        int userNo;
-        try {
-            userNo = Integer.parseInt(userIdHeader);
-        } catch (NumberFormatException exception) {
-            throw AppErrorException.of(ResultCode.Error.REQ_INVALID_PARAMETER);
+        List<User> users = userRepository.findByUserLoginIdAndIsDeletedFalse(userIdHeader);
+        if (users.isEmpty()) {
+            throw authenticationRequired();
         }
 
-        User user = userRepository.findByUserNoAndIsDeletedFalse(userNo)
-            .orElseThrow(this::authenticationRequired);
+        User user = users.get(0);
         validateRequiredUserContext(user);
         return user;
     }
