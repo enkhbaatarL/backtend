@@ -20,7 +20,7 @@ public class DefaultConfig {
     private final CustomAuthenticationEntryPoint customAuthenticationEntryPoint;
 
     @Bean
-    @Order(5)
+    @Order(7)
     public SecurityFilterChain defaultSecurityFilterChain(HttpSecurity http) throws Exception {
 
         http

@@ -104,6 +104,15 @@ public class MDCUtil {
     }
 
     /**
+     * Remove a single MDC value without clearing unrelated request tracing values.
+     *
+     * @param key the key
+     */
+    public static void remove(String key) {
+        MDC_ADAPTER.remove(key);
+    }
+
+    /**
      * MUC Apter Clear.
      */
     public static void clear() {

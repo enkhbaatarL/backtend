@@ -23,6 +23,7 @@ public enum Claim {
     public enum AuthMethodValue {
 
         SAML2("saml2", "SAML2 인증 방식"),
+        MCP("mcp", "MCP 위임 인증 방식"),
         OAUTH2_CLIENT_CREDENTIALS("client_credentials", "OAuth2 client_credentials 인증 방식");
 
         private final String code;
