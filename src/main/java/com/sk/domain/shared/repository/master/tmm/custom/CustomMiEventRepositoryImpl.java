@@ -165,38 +165,6 @@ public class CustomMiEventRepositoryImpl implements CustomMiEventRepository {
     }
 
     /**
-     * 이벤트별 설계 점유/가능 상태 조회.
-     * 이벤트당 활성 그룹이 N건이면 N행이 반환되며, 단일 행 선택은 호출부(EventServiceImpl)의 merge 규칙이 담당한다.
-     * 실패 방치 그룹은 조인 후보에서 제외한다 (이벤트 목록과 동일 잠정 규칙, notFailedCreating 참조).
-     */
-    @Override
-    public List<EventDesignAvailabilityRow> findDesignAvailability(List<Long> eventIds) {
-        QMiScenarioGroupEvent groupEventSub = new QMiScenarioGroupEvent("groupEventSub");
-        return queryFactory
-            .select(new QEventDesignAvailabilityRow(
-                miEvent.miEventId,
-                miScenarioGroup.scenarioGroupId,
-                miScenarioGroup.status,
-                miScenarioGroup.stage,
-                miScenarioGroup.requestUserId,
-                templateAvailable(miEvent.eventTypeL2.eventTypeL2Id)
-            ))
-            .from(miEvent)
-            .leftJoin(miScenarioGroup).on(
-                miScenarioGroup.isDeleted.isFalse(),
-                miScenarioGroup.scenarioGroupId.in(
-                    JPAExpressions.select(groupEventSub.scenarioGroup.scenarioGroupId)
-                        .from(groupEventSub)
-                        .where(
-                            groupEventSub.miEvent.eq(miEvent),
-                            groupEventSub.isDeleted.isFalse(),
-                            groupEventSub.scenarioGroup.isDeleted.isFalse(),
-                            notFailedCreating(groupEventSub))))
-            .where(miEvent.isDeleted.isFalse(), miEvent.miEventId.in(eventIds))
-            .fetch();
-    }
-
-    /**
      * 이벤트에 연결된 시나리오 그룹과 각 그룹의 구성 이벤트를 평탄화 행으로 조회.
      * 이벤트 목록의 연결 그룹 펼침 패널용 — 그룹명, 진행 단계, 구성 이벤트명을 한 번에 가져온다.
      * 그룹 최신순(scenarioGroupId 내림차순), 그룹 내 구성 이벤트는 display_order 순.

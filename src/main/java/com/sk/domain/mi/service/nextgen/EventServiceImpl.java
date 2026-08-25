@@ -235,38 +235,6 @@ public class EventServiceImpl implements EventService {
     }
 
     /**
-     * [이벤트 설계 점유/가능 상태] (이벤트 목록 폴링)
-     *  - 요청한 이벤트별로 활성 그룹 status에서 설계 상태를 파생한다 — 그룹 없음=designable, creating=설계중(점유), created/realized=설계완료.
-     *  - 멀티 이벤트 전환으로 이벤트당 그룹 N건이 정식이며, 표시 상태는 기준 그룹(가장 오래된 활성 그룹) 1건에서 파생한다
-     */
-    @Override
-    public List<EventDesignAvailabilityRes> getEventDesignAvailability(List<Long> eventIds) {
-
-        if (eventIds == null || eventIds.isEmpty()) return List.of();
-
-        Map<Long, EventDesignAvailabilityRow> rowByEventId = miEventRepository.findDesignAvailability(eventIds).stream()
-            .collect(Collectors.toMap(
-                EventDesignAvailabilityRow::miEventId,
-                Function.identity(),
-                (a, b) -> {
-                    // 이벤트당 그룹 N건 중 기준 그룹(가장 오래된) 선택 — 목록 쿼리의 기준 그룹 규칙과 동일
-                    return a.scenarioGroupId() <= b.scenarioGroupId() ? a : b;
-                }));
-
-        // 점유(설계중) 이벤트의 요청자 userId만 모아 사용자명 일괄 조회
-        Map<Long, String> occupantNames = resolveOccupantNames(
-            rowByEventId.values().stream()
-                .filter(row -> row.scenarioGroupStatus() == ScenarioGroupStatus.CREATING)
-                .map(EventDesignAvailabilityRow::requestUserId)
-                .toList());
-
-        return eventIds.stream()
-            .distinct()
-            .map(eventId -> toAvailability(eventId, rowByEventId.get(eventId), occupantNames))
-            .toList();
-    }
-
-    /**
      * [이벤트 연결 시나리오 그룹 목록] (이벤트 목록의 그룹 N 펼침 패널)
      * - 그룹 최신순, 그룹별 구성 이벤트명(표시 순서)과 진행 단계를 함께 반환
      * - 실패 방치 그룹 잠정 필터: 설계중(creating)인데 최신 operation이 failed/interrupted면 제외.
@@ -310,19 +278,6 @@ public class EventServiceImpl implements EventService {
             .filter(row -> row.status() == ScenarioGroupStatus.CREATING)
             .map(EventLinkedScenarioGroupRow::scenarioGroupId)
             .toList());
-    }
-
-    private EventDesignAvailabilityRes toAvailability(Long eventId, EventDesignAvailabilityRow row, Map<Long, String> occupantNames) {
-        if (row == null) return EventDesignAvailabilityRes.designable(eventId);
-        ScenarioDesignDisplayStatus status = ScenarioDesignDisplayStatus.of(row.scenarioGroupStatus(), row.templateAvailable());
-        boolean occupied = row.scenarioGroupStatus() == ScenarioGroupStatus.CREATING;
-        return EventDesignAvailabilityRes.of(
-            eventId, status,
-            occupied ? ScenarioDesignDisplayStatus.CreatingStep.of(row.scenarioGroupStage()) : null,
-            occupied,
-            occupied ? row.requestUserId() : null,
-            occupied ? occupantNames.get(row.requestUserId()) : null,
-            row.scenarioGroupId());
     }
 
 }

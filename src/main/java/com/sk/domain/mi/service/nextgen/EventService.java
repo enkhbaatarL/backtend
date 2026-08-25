@@ -25,8 +25,6 @@ public interface EventService {
 
     PaginationRes<EventInstitutionOutlookRes> getEventOutlooks(Long eventId, int page, int size);
 
-    List<EventDesignAvailabilityRes> getEventDesignAvailability(List<Long> eventIds);
-
     List<EventLinkedScenarioGroupRes> getEventScenarioGroups(Long eventId);
 
 }

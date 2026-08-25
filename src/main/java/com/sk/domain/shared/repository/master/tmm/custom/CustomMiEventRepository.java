@@ -21,8 +21,6 @@ public interface CustomMiEventRepository {
 
     Page<EventOutlookRow> findEventOutlooks(Long eventId, int page, int size);
 
-    List<EventDesignAvailabilityRow> findDesignAvailability(List<Long> eventIds);
-
     List<EventLinkedScenarioGroupRow> findLinkedScenarioGroups(Long eventId);
 
 }

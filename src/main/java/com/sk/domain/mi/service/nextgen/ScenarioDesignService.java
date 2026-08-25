@@ -10,15 +10,6 @@ import com.sk.domain.mi.dto.response.nextgen.design.ScenarioDimensionTemplateRes
 
 public interface ScenarioDesignService {
 
-    /** 설계 시작 (점유 + Agent 시나리오 생성 요청). */
-    ScenarioDesignStageRes startDesign(ScenarioDesignStartReq request);
-
-    /** 설계 세션 상태 조회 (검토 캐시 오버레이 / DB 초기값). */
-    ScenarioDesignStateRes getDesign(Long scenarioGroupId);
-
-    /** 분기항목/분기기준 템플릿 조회. */
-    ScenarioDimensionTemplateRes getDimensionTemplates(Long scenarioGroupId);
-
     /** 변경사항 검토 요청 (DB 미반영). */
     ScenarioDesignStageRes validateDesign(Long scenarioGroupId, ScenarioValidationReq request);
 

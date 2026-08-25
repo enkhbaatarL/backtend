@@ -307,42 +307,4 @@ public class EventController {
         return BaseResponseFactory.create(eventService.getEventRecords(eventId, page, size));
     }
 
-    // 시나리오설계v4 이후 Deprecated — 설계 가능 여부는 이벤트 조합 단위로 정의되며 [이벤트 조합 설계 상태 조회 API]가 대체한다
-    @Deprecated
-    @ApiOrder(99)
-    @Operation(
-        summary = "이벤트 시나리오 설계 가능 상태 조회 API (폴링)",
-        description = """
-            **[Deprecated]** 시나리오 설계 v4(멀티 이벤트) 전환으로 설계 가능 여부는 이벤트 조합 단위로 정의됩니다. <br>
-            [이벤트 조합 설계 상태 조회 API]를 사용하세요. F.E 전환 확인 후 제거 예정입니다.
-
-            <br><br>
-            이벤트 목록 화면에서 이벤트별 시나리오 설계 점유/가능 상태를 폴링 조회합니다. <br>
-
-            <br><br>
-            ### 사용 가능한 파라미터
-             - eventIds: 상태를 조회할 이벤트 ID 목록 (복수 가능) / example - eventIds=1&eventIds=2
-
-            <br><br>
-            ### content 항목 필드
-            - `eventId`: 이벤트 ID
-            - `scenarioDesignStatus` / `scenarioDesignStatusLabel`: `designable`(설계가능) / `unavailable`(설계불가, 매칭 dimension template 없음) / `creating`(설계중) / `created`(설계완료)
-            - `designStep` / `designStepLabel`: 설계중(`creating`) 세부 진행 단계 — `step1`(분기항목 설계) / `step2`(Signpost 설계). 설계중이 아니면 null
-            - `occupied`: 점유 여부 / `occupantUserId`: 점유 사용자 ID (없으면 null) / `occupantUserName`: 점유 사용자명 (없으면 null)
-            - `scenarioGroupId`: 활성 시나리오 그룹 ID (없으면 null)
-            """
-    )
-    @Parameter(name = "eventIds", description = "조회할 이벤트 ID 목록 (복수 가능)")
-    @ApiResponse(responseCode = "200", description = "조회 성공")
-    @GetMapping("/design-availability")
-    @RequiredPermissionRules(rules = {
-        @PermissionRule(role = Role.USER, conditions = {PermissionCondition.SKGAS_COMPANY_USER_ONLY}),
-        @PermissionRule(role = Role.ADMIN, conditions = {PermissionCondition.THIRD_PARTY_ADMIN_ONLY})
-    })
-    public BaseResponse<List<EventDesignAvailabilityRes>> getEventDesignAvailability(
-        @Parameter(description = "조회할 이벤트 ID 목록", example = "1") @RequestParam(required = false) List<Long> eventIds
-    ) {
-        return BaseResponseFactory.create(eventService.getEventDesignAvailability(eventIds));
-    }
-
 }
