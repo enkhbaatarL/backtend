@@ -13,7 +13,9 @@
 - not canonical for:
   - 채널의 존재 이유, 경로 체계, trust model, 인증 단계와 운영 배포 게이트:
     `docs/design-docs/gas/nextgen-mi-mcp-api-channel-design.md`
-  - 실행 계획, 변경 파일, 검증 결과: `docs/work-notes/2026/2026-08-21-mcp-readonly-api-set.md`
+  - 실행 계획, 변경 파일, 검증 결과:
+    - `docs/work-notes/2026/2026-08-21-mcp-readonly-api-set.md`
+    - `docs/work-notes/2026/2026-08-25-x-user-id-login-id-first-match-implementation.md`
   - 원본 API의 업무 의미와 필드 정의: `docs/design-docs/gas/nextgen-mi-integrated-functional-spec.md` 및 각 원본 API의 OpenAPI 문서
 - source documents:
   - `docs/design-docs/gas/nextgen-mi-mcp-api-channel-design.md`
@@ -99,12 +101,15 @@ MCP :  /api/v1/mcp/mi/next-gen/{...}
 | 항목 | 내용 |
 |---|---|
 | 헤더명 | `X-User-Id` |
-| 값 | MI Platform 사용자 PK (`tmd` 사용자 테이블의 `usr_no`, 정수) |
+| 값 | MI Platform 사용자 로그인 ID (`tmd_usrm.usr_logn_id`, 문자열) |
 | 필수 여부 | **필수** — 모든 MCP endpoint에 적용 |
-| 예시 | `X-User-Id: 1024` |
+| 예시 | `X-User-Id: mcp-user@sk.com` |
 
-**서버가 검증하는 것**: 그 값이 정수로 파싱되고, 삭제되지 않은 사용자로 DB에 실재하며,
-소속 고객사가 사용·미삭제 상태이고 현재일이 고객사 사용 기간 안에 있는가.
+**서버가 검증하는 것**: 값이 공백이 아니고, 해당 로그인 ID로 조회한 삭제되지 않은 사용자가 한 명 이상이며,
+선택된 사용자의 소속 고객사가 사용·미삭제 상태이고 현재일이 고객사 사용 기간 안에 있는가.
+
+**다중 행 선택 규칙**: `UserRepository.findByUserLoginIdAndIsDeletedFalse`가 여러 `User` 행을 반환하면
+반환 목록의 첫 번째 행을 effective user로 사용한다. 별도 역할·고객사 우선순위나 정렬은 적용하지 않는다.
 
 **서버가 검증하지 않는 것**: MCP client와 effective user가 같은 주체인지. MCP client는 사용자를 대신하는 시스템 주체다.
 
@@ -499,8 +504,7 @@ CME는 SK Gas 데이터이고 라우팅 키는 `midb-skgas`로 고정이다(변�
 | 상황 | HTTP | `code` | 비고 |
 |---|---|---|---|
 | `X-User-Id` 헤더 없음 또는 공백 | `401` | `AUTH-001` | |
-| `X-User-Id`가 정수로 파싱되지 않음 | `400` | `REQ-003` | 예: `abc`, `1.5` |
-| 해당 `usr_no` 사용자가 없거나 삭제됨 | `401` | `AUTH-001` | 존재 여부를 응답으로 구분해주지 않기 위해 헤더 부재와 같은 코드를 쓴다 |
+| 해당 `usr_logn_id`로 삭제되지 않은 사용자를 조회할 수 없음 | `401` | `AUTH-001` | 존재 여부를 응답으로 구분해주지 않기 위해 헤더 부재와 같은 코드를 쓴다 |
 | effective user의 소속 고객사가 미사용·삭제 상태이거나 현재일이 사용 기간 밖임 | `401` | `AUTH-001` | 사용자·고객사의 세부 상태를 응답으로 구분하지 않는다 |
 
 오류 응답도 `BaseResponse` 포맷이다.
@@ -528,7 +532,7 @@ CME는 SK Gas 데이터이고 라우팅 키는 `midb-skgas`로 고정이다(변�
 `AUTH-001`은 `AppHttpStatusException`으로 **401**을 명시해 던진다.
 
 - 저장소 기본값인 `AppErrorException`을 쓰면 HTTP `400`이 되는데, 인증 컨텍스트 부재를 `400`으로 내리면 MCP 서버 쪽에서 파라미터 오류와 구분하기 어렵다.
-- `REQ-003`(숫자 파싱 실패)은 실제로 파라미터 형식 오류이므로 `AppErrorException` 기본값 `400`을 그대로 쓴다.
+- 문자열 로그인 ID 조회 결과가 없거나 삭제된 사용자만 존재하는 경우도 사용자 존재 여부를 노출하지 않고 `401 / AUTH-001`로 통일한다.
 
 ---
 
@@ -678,8 +682,9 @@ MCP client는 모든 삭제되지 않은 유효 사용자의 신뢰된 위임자
 - [ ] 운영 보안 설정에서 인증된 MCP client만 `X-User-Id` 위임을 수행할 수 있다.
 - [ ] MCP 응답 본문(`data`)이 원본 API 응답과 **동일하다** (동일 파라미터·동일 사용자 기준 diff 결과 무차이).
 - [ ] `X-User-Id` 없음 → `401` / `AUTH-001`.
-- [ ] `X-User-Id`가 비숫자 → `400` / `REQ-003`.
-- [ ] `X-User-Id`가 미존재·삭제된 사용자 → `401` / `AUTH-001`.
+- [ ] 영문·이메일 형식의 `X-User-Id` 로그인 ID가 숫자 파싱 없이 처리된다.
+- [ ] `X-User-Id` 로그인 ID 조회 결과가 없으면 → `401` / `AUTH-001`.
+- [ ] 같은 로그인 ID로 여러 사용자가 조회되면 반환 목록의 첫 번째 사용자가 effective user가 된다.
 - [ ] effective user의 소속 고객사가 미사용·삭제·사용 시작 전·사용 종료 후 → `401` / `AUTH-001`.
 - [ ] `/records`의 `isPermitted`가 SKGAS USER의 개인+회사 상품 권한으로 계산된다 (권한 있는 사용자 / 없는 사용자 각각 확인).
 - [ ] 타사 접근 가능 ADMIN의 `/records.isPermitted`가 ADMIN 소속 회사와 무관하게 SKGAS 회사 단위 상품 권한으로 계산된다.
@@ -706,6 +711,7 @@ MCP client는 모든 삭제되지 않은 유효 사용자의 신뢰된 위임자
 
 - 설계 근거 / 결정 로그: `docs/design-docs/gas/nextgen-mi-mcp-api-channel-design.md`
 - 실행 계획 / 검증 기록: `docs/work-notes/2026/2026-08-21-mcp-readonly-api-set.md`
+- `X-User-Id` 로그인 ID 변경 실행 기록: `docs/work-notes/2026/2026-08-25-x-user-id-login-id-first-match-implementation.md`
 - 원본 도메인 기능 정의: `docs/design-docs/gas/nextgen-mi-integrated-functional-spec.md`
 - OpenAPI 서술 규칙: `docs/conventions/openapi-documentation-conventions.md`
 - 소유권 규칙: `docs/conventions/source-of-truth-governance.md`

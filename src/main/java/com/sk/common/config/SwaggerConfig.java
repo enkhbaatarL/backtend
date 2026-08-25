@@ -1,14 +1,21 @@
 package com.sk.common.config;
 
 import com.sk.common.annotation.ApiOrder;
+import com.sk.common.enums.ResultCode;
 import com.sk.common.interceptor.McpUserContextInterceptor;
+import com.sk.common.model.BaseResponse;
+import io.swagger.v3.core.converter.ModelConverters;
 import io.swagger.v3.oas.models.Components;
 import io.swagger.v3.oas.models.OpenAPI;
 import io.swagger.v3.oas.models.Operation;
 import io.swagger.v3.oas.models.PathItem;
 import io.swagger.v3.oas.models.Paths;
+import io.swagger.v3.oas.models.examples.Example;
 import io.swagger.v3.oas.models.info.Info;
-import io.swagger.v3.oas.models.media.IntegerSchema;
+import io.swagger.v3.oas.models.media.Content;
+import io.swagger.v3.oas.models.media.MediaType;
+import io.swagger.v3.oas.models.media.Schema;
+import io.swagger.v3.oas.models.media.StringSchema;
 import io.swagger.v3.oas.models.security.SecurityRequirement;
 import io.swagger.v3.oas.models.security.SecurityScheme;
 import io.swagger.v3.oas.models.security.SecurityScheme.Type;
@@ -33,6 +40,10 @@ import org.springframework.core.annotation.AnnotationUtils;
 @Configuration
 @RequiredArgsConstructor
 public class SwaggerConfig {
+
+    private static final String APPLICATION_JSON = "application/json";
+    private static final String BASE_RESPONSE_SCHEMA = "BaseResponse";
+    private static final String BASE_RESPONSE_SCHEMA_REF = "#/components/schemas/" + BASE_RESPONSE_SCHEMA;
 
     // note: 안정화 후 투머치 문서 모두 삭제예정
     private static final String SW_VERSION_BASE = "v1.2.63";
@@ -371,6 +382,7 @@ public class SwaggerConfig {
         if (openApi.getComponents() != null && openApi.getComponents().getSecuritySchemes() != null) {
             openApi.getComponents().getSecuritySchemes().remove("BearerAuth");
         }
+        registerBaseResponseSchema(openApi);
         if (openApi.getPaths() == null) {
             return;
         }
@@ -391,19 +403,57 @@ public class SwaggerConfig {
                         .name(McpUserContextInterceptor.X_USER_ID)
                         .in("header")
                         .required(true)
-                        .description("위임할 MI Platform 사용자 PK")
-                        .schema(new IntegerSchema().format("int32").example(1024)));
+                        .description("위임할 MI Platform 사용자 로그인 ID. 같은 로그인 ID가 여러 사용자와 일치하면 첫 번째 조회 결과를 사용합니다.")
+                        .schema(new StringSchema().example("mcp-user@sk.com")));
                 }
                 operation.setParameters(parameters);
                 operation.getResponses().addApiResponse(
                     "400",
                     new io.swagger.v3.oas.models.responses.ApiResponse()
-                        .description("X-User-Id 형식 또는 요청 파라미터가 유효하지 않음 (REQ-003)"));
+                        .description("요청 파라미터가 유효하지 않습니다. BaseResponse의 code는 REQ-003입니다.")
+                        .content(mcpErrorContent(
+                            ResultCode.Error.REQ_INVALID_PARAMETER,
+                            "요청 파라미터 오류")));
                 operation.getResponses().addApiResponse(
                     "401",
                     new io.swagger.v3.oas.models.responses.ApiResponse()
-                        .description("X-User-Id 누락·공백 또는 유효 사용자 없음 (AUTH-001)"));
+                        .description(
+                            "X-User-Id가 누락·공백이거나 해당 로그인 ID의 유효 사용자가 없습니다. "
+                                + "BaseResponse의 code는 AUTH-001입니다.")
+                        .content(mcpErrorContent(
+                            ResultCode.Error.AUTH_REQUIRED,
+                            "인증 컨텍스트 생성 실패")));
             });
+    }
+
+    private void registerBaseResponseSchema(OpenAPI openApi) {
+        if (openApi.getComponents() == null) {
+            openApi.setComponents(new Components());
+        }
+        ModelConverters.getInstance()
+            .read(BaseResponse.class)
+            .forEach(openApi.getComponents()::addSchemas);
+    }
+
+    private Content mcpErrorContent(ResultCode.Error error, String summary) {
+        Schema<?> schema = new Schema<>().$ref(BASE_RESPONSE_SCHEMA_REF);
+        Example example = new Example()
+            .summary(summary)
+            .value(errorExample(error));
+        return new Content().addMediaType(
+            APPLICATION_JSON,
+            new MediaType()
+                .schema(schema)
+                .addExamples(error.name(), example));
+    }
+
+    private Map<String, Object> errorExample(ResultCode.Error error) {
+        Map<String, Object> example = new LinkedHashMap<>();
+        example.put("status", false);
+        example.put("code", error.getCode());
+        example.put("message", error.getMessage());
+        example.put("data", null);
+        return example;
     }
 
     @Bean
