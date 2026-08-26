@@ -441,15 +441,16 @@ public class ScenarioDesignV4ServiceImpl implements ScenarioDesignV4Service {
             if (cause instanceof AgentDesignApiException agentDesignApiException) throw agentDesignApiException;
             if (cause instanceof AppErrorException appErrorException) throw appErrorException;
             log.error("[Design V4] {} agent 연결 실패: {}", action, cause == null ? e.getMessage() : cause.getMessage(), e);
-            throw AppErrorException.of(ResultCode.Error.API_CALL_FAILED, "Agent stream connect failed (%s)".formatted(action));
+            throw ApiErrorException.of(ResultCode.Error.API_CALL_FAILED, e);
         } catch (TimeoutException e) {
             safeComplete(emitter);
             log.error("[Design V4] {} agent 연결 타임아웃", action);
-            throw AppErrorException.of(ResultCode.Error.API_TIMEOUT, "Agent stream connect timeout (%s)".formatted(action));
+            throw ApiErrorException.of(ResultCode.Error.API_TIMEOUT, e);
         } catch (InterruptedException e) {
             safeComplete(emitter);
             Thread.currentThread().interrupt();
-            throw AppErrorException.of(ResultCode.Error.API_CALL_FAILED, "Agent stream connect interrupted (%s)".formatted(action));
+            log.error("[Design V4] {} agent 연결 대기 인터럽트", action);
+            throw ApiErrorException.of(ResultCode.Error.API_CALL_FAILED, e);
         }
     }
 
