@@ -38,7 +38,9 @@ public interface MiScenarioPriceInterpRepository extends JpaRepository<MiScenari
                                                                      @Param("scenarioId") Long scenarioId);
 
     /**
-     * 수급모델 실행 전 단일 시나리오의 활성 가격전망 해석을 write lock으로 조회한다.
+     * 수급모델 실행 전 시나리오의 활성 가격전망 해석을 write lock으로 조회한다.
+     * 활성 row는 불변식상 시나리오당 1건이지만, 락 TTL 만료 등으로 중복이 생겨도 조회가 깨지지 않도록
+     * List로 받는다 — 호출부(softDeleteForModelExecution)가 전부 soft delete 하므로 중복도 그 시점에 함께 정리된다.
      */
     @Lock(LockModeType.PESSIMISTIC_WRITE)
     @Query("""
@@ -46,7 +48,7 @@ public interface MiScenarioPriceInterpRepository extends JpaRepository<MiScenari
         where p.scenario.scenarioId = :scenarioId
           and p.isDeleted = false
         """)
-    Optional<MiScenarioPriceInterp> findActiveByScenarioIdForUpdate(@Param("scenarioId") Long scenarioId);
+    List<MiScenarioPriceInterp> findActiveByScenarioIdForUpdate(@Param("scenarioId") Long scenarioId);
 
     /**
      * 여러 시나리오의 가격전망 해석 (생성 착수·접수 실패 복구용 일괄 조회).
