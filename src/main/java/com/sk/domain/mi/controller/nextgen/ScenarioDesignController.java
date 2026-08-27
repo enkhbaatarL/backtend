@@ -178,8 +178,9 @@ public class ScenarioDesignController {
             """
     )
     @ApiResponse(responseCode = "200", description = "SSE 연결 성공 (text/event-stream)")
-    @ApiResponse(responseCode = "400", description = "요청 검증 실패(개수/중복/양수), 또는 동일 조합 그룹이 확정 전 존재")
+    @ApiResponse(responseCode = "400", description = "요청 검증 실패(개수/중복/양수, B.E 선검증)")
     @ApiResponse(responseCode = "403", description = "동일 조합 작업/그룹이 타 사용자 소유. 오류 수신 시 [이벤트 조합 설계 상태 조회 API]를 재조회해 CTA를 갱신합니다 (JSON 오류는 code/message만 내려감)")
+    @ApiResponse(responseCode = "500", description = "Agent 오류 — 409/403 외 Agent의 모든 오류 응답은 B.E-Agent 구간 문제로 취급해 API-004(외부 API 오류 표준 메시지)로 내려갑니다 (원문은 서버 로그)")
     @PostMapping(value = "/creation/stream", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
     @RequiredPermissionRules(rules = {
         @PermissionRule(role = Role.USER, conditions = {PermissionCondition.SKGAS_COMPANY_USER_ONLY}),
