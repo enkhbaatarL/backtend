@@ -3,6 +3,7 @@ package com.sk.domain.mi.dto.response.nextgen.design;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.sk.domain.shared.enums.nextgen.DesignOperationPhase;
 import com.sk.domain.shared.enums.nextgen.DesignOperationStatus;
+import com.sk.domain.shared.enums.nextgen.DesignOperationType;
 import com.sk.domain.shared.enums.nextgen.ScenarioGroupStage;
 import io.swagger.v3.oas.annotations.media.Schema;
 import java.time.LocalDateTime;
@@ -146,6 +147,15 @@ public record ScenarioDesignPresentationRes(
         @Schema(description = "검토 결과 (isValid/reason). 값이 있으면 table은 해당 검토 편집본이며, 검토 미수행·만료·초기화면 null(table은 마지막 영속 상태)", nullable = true)
         DesignSessionValidation validation,
 
+        @Schema(description = "Agent refine 작업 실행 중 여부. true면 요청 버튼 대신 스피너를 표시하고 SSE 완료 신호 수신 후 재조회한다", example = "true")
+        boolean taskRunning,
+
+        @Schema(description = "실행 중인 refine 작업 종류 (validation:검토 / signpost:Signpost 생성).", example = "signpost", nullable = true)
+        DesignOperationType runningTaskType,
+
+        @Schema(description = "실행 중인 refine 작업 라벨 (검토/Signpost 생성)", example = "Signpost 생성", nullable = true)
+        String runningTaskTypeLabel,
+
         @Schema(description = "시나리오 그룹 메타 (그룹명/요약/설명 - 생성 시 Agent가 채우고 확정 화면의 편집 초기값으로 사용)", nullable = true)
         ScenarioGroupMeta scenarioGroupMeta
 
@@ -154,6 +164,7 @@ public record ScenarioDesignPresentationRes(
         public static ScenarioGroupRefinementState of(ScenarioGroupStage stage,
                                                       boolean occupied, boolean mine, Long occupantUserId,
                                                       DesignSessionValidation validation,
+                                                      DesignOperationType runningTaskType,
                                                       ScenarioGroupMeta scenarioGroupMeta) {
             return new ScenarioGroupRefinementState(
                 stage,
@@ -162,6 +173,9 @@ public record ScenarioDesignPresentationRes(
                 mine,
                 occupantUserId,
                 validation,
+                runningTaskType != null,
+                runningTaskType,
+                runningTaskType == null ? null : runningTaskType.getLabel(),
                 scenarioGroupMeta
             );
         }

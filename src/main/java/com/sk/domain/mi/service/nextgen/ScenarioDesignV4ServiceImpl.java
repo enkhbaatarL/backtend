@@ -37,6 +37,8 @@ import com.sk.domain.shared.repository.master.tmm.MiScenarioGroupOperationReposi
 import com.sk.domain.shared.repository.master.tmm.MiScenarioGroupRepository;
 import com.sk.domain.shared.repository.master.tmm.projection.ScenarioGroupBaseEventRow;
 import com.sk.domain.shared.service.permissions.AuthorizationService;
+import java.time.Duration;
+import java.time.LocalDateTime;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
@@ -82,6 +84,13 @@ public class ScenarioDesignV4ServiceImpl implements ScenarioDesignV4Service {
     /** 생성 평균 150초 + 검토/재시도 여유. FE 이탈 시 emitter 타임아웃으로 정리된다. */
     private static final long EMITTER_TIMEOUT_MILLIS = 30L * 60 * 1000;
     private static final long CONNECT_TIMEOUT_SECONDS = 10L;
+
+    /** 진행중 플래그 합성 대상 타입  */
+    private static final List<String> REFINEMENT_OPERATION_TYPES =
+        List.of(DesignOperationType.VALIDATION.getCode(), DesignOperationType.SIGNPOST.getCode());
+
+    /** 정련 작업 진행중 판정 상한 */
+    private static final Duration REFINEMENT_TASK_TIMEOUT = Duration.ofMinutes(15);
 
     private final ScenarioDesignAgentSseClient sseClient;
     private final ScenarioDesignAgentApi scenarioDesignAgentApi;
@@ -235,9 +244,24 @@ public class ScenarioDesignV4ServiceImpl implements ScenarioDesignV4Service {
             source,
             baseEvents,
             resolveLastError(source),
-            toRefinementState(group, cache),
+            toRefinementState(group, cache, resolveRunningRefinementTask(scenarioGroupId)),
             overlayTable,
             loadSignpostsByScenario(group));
+    }
+
+    /**
+     * 진행 중인 정련 작업(검토/Signpost) 판정 — Agent가 접수 시 적재하는 operation 테이블을 읽어 합성한다.
+     * 재진입 시 stage만으로는 "요청 전"과 "실행 중"을 구분할 수 없어(전이는 콜백 시점), FE 스피너 표시의 원천으로 쓴다.
+     * 상한(REFINEMENT_TASK_TIMEOUT)을 넘긴 running은 콜백 유실 방치로 보고 진행중으로 치지 않는다.
+     */
+    private DesignOperationType resolveRunningRefinementTask(Long scenarioGroupId) {
+        return operationRepository
+            .findFirstByScenarioGroup_ScenarioGroupIdAndOperationTypeInAndStatusInAndIsDeletedFalseOrderByOperationIdDesc(
+                scenarioGroupId, REFINEMENT_OPERATION_TYPES, DesignOperationStatus.activeCodes())
+            .filter(operation -> operation.getCreateDt() != null
+                && operation.getCreateDt().isAfter(LocalDateTime.now().minus(REFINEMENT_TASK_TIMEOUT)))
+            .map(operation -> DesignOperationType.fromNullable(operation.getOperationType()))
+            .orElse(null);
     }
 
     /**
@@ -289,7 +313,7 @@ public class ScenarioDesignV4ServiceImpl implements ScenarioDesignV4Service {
      * 정련 상태 합성
      * 단계/점유/그룹 메타는 그룹 엔티티, 검토 결과는 Redis 캐시(step1 게이트 통과분)가 원천이다.
      */
-    private ScenarioDesignPresentationRes.ScenarioGroupRefinementState toRefinementState(MiScenarioGroup group, ScenarioValidationCache cache) {
+    private ScenarioDesignPresentationRes.ScenarioGroupRefinementState toRefinementState(MiScenarioGroup group, ScenarioValidationCache cache, DesignOperationType runningTask) {
 
         if (group == null) return null;
 
@@ -305,6 +329,7 @@ public class ScenarioDesignV4ServiceImpl implements ScenarioDesignV4Service {
             userId.equals(group.getRequestUserId()),
             group.getRequestUserId(),
             validation,
+            runningTask,
             new ScenarioDesignPresentationRes.ScenarioGroupMeta(group.getTitle(), group.getSummary(), group.getDescription()));
     }
 

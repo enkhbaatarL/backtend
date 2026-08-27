@@ -147,9 +147,10 @@ public class ScenarioDesignServiceImpl implements ScenarioDesignService {
         try {
             return call.get();
         } catch (ApiErrorException e) {
-            // 공통 RestClient 빌더의 오류 상태 핸들러가 HTTP 오류를 ApiErrorException(status + body 원문)으로 던진다.
-            // Agent 오류는 B.E-Agent 구간 문제라 FE에는 500 + 표준 메시지(API-004)로 내리고, 원문은 응답 data와 로그에 남긴다.
             log.error("[Design Agent] {} 응답 오류: status={}, body={}", action, e.getStatusCode(), e.getMessage(), e);
+            if (e.getStatusCode() == 409 || e.getStatusCode() == 403) {
+                throw AgentDesignApiException.fromAgentBody(e.getStatusCode(), e.getMessage());
+            }
             throw AgentDesignApiException.internalFromAgentBody(e.getMessage());
         } catch (ResourceAccessException e) {
             ResultCode.Error code = e.getCause() instanceof SocketTimeoutException ? ResultCode.Error.API_TIMEOUT : ResultCode.Error.API_SERVICE_UNAVAILABLE;
