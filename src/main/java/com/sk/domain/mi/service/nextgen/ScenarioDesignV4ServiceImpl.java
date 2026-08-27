@@ -5,6 +5,7 @@ import com.sk.common.enums.ResultCode;
 import com.sk.common.exception.AgentDesignApiException;
 import com.sk.common.exception.ApiErrorException;
 import com.sk.common.exception.AppErrorException;
+import com.sk.common.utils.DateUtil;
 import com.sk.common.utils.JsonUtil;
 import com.sk.domain.mi.dto.request.nextgen.design.ScenarioDesignStartV4Req;
 import com.sk.domain.mi.dto.response.nextgen.ScenarioSignpostDefinitionViewRes;
@@ -253,13 +254,14 @@ public class ScenarioDesignV4ServiceImpl implements ScenarioDesignV4Service {
      * 진행 중인 정련 작업(검토/Signpost) 판정 — Agent가 접수 시 적재하는 operation 테이블을 읽어 합성한다.
      * 재진입 시 stage만으로는 "요청 전"과 "실행 중"을 구분할 수 없어(전이는 콜백 시점), FE 스피너 표시의 원천으로 쓴다.
      * 상한(REFINEMENT_TASK_TIMEOUT)을 넘긴 running은 콜백 유실 방치로 보고 진행중으로 치지 않는다.
+     * operation 테이블 시각은 Agent가 UTC로 적재하므로 KST 변환 후 현재 시각과 비교한다.
      */
     private DesignOperationType resolveRunningRefinementTask(Long scenarioGroupId) {
         return operationRepository
             .findFirstByScenarioGroup_ScenarioGroupIdAndOperationTypeInAndStatusInAndIsDeletedFalseOrderByOperationIdDesc(
                 scenarioGroupId, REFINEMENT_OPERATION_TYPES, DesignOperationStatus.activeCodes())
             .filter(operation -> operation.getCreateDt() != null
-                && operation.getCreateDt().isAfter(LocalDateTime.now().minus(REFINEMENT_TASK_TIMEOUT)))
+                && DateUtil.utcToKst(operation.getCreateDt()).isAfter(LocalDateTime.now().minus(REFINEMENT_TASK_TIMEOUT)))
             .map(operation -> DesignOperationType.fromNullable(operation.getOperationType()))
             .orElse(null);
     }
