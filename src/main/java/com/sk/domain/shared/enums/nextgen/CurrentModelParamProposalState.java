@@ -9,5 +9,6 @@ public enum CurrentModelParamProposalState {
     EXECUTING,
     EXECUTED_CONFIRMED,
     PROPOSAL_FAILED,
+    PROPOSAL_NO_CHANGES,
     EXECUTION_FAILED
 }
