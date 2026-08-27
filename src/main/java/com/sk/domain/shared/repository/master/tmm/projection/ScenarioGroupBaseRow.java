@@ -1,6 +1,7 @@
 package com.sk.domain.shared.repository.master.tmm.projection;
 
 import com.querydsl.core.annotations.QueryProjection;
+import com.sk.domain.shared.enums.nextgen.ScenarioApiVersion;
 import com.sk.domain.shared.enums.nextgen.ScenarioGroupStage;
 import com.sk.domain.shared.enums.nextgen.ScenarioGroupStatus;
 import java.time.LocalDateTime;
@@ -14,9 +15,11 @@ public record ScenarioGroupBaseRow(
     LocalDateTime createDt,
     LocalDateTime modifyDt,
     String dimensionSelected,
+    String dimensionDefinitions,
     ScenarioGroupStatus status,
     ScenarioGroupStage stage,
-    Long requestUserId
+    Long requestUserId,
+    ScenarioApiVersion apiVersion
 ) {
 
     @QueryProjection

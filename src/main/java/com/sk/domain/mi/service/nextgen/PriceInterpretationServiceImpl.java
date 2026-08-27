@@ -1,6 +1,7 @@
 package com.sk.domain.mi.service.nextgen;
 
 import com.sk.common.enums.ResultCode;
+import com.sk.common.exception.ApiErrorException;
 import com.sk.common.exception.AppErrorException;
 import com.sk.common.utils.JsonUtil;
 import com.sk.domain.mi.dto.request.nextgen.priceinterp.PriceInterpretationEditReq;
@@ -21,7 +22,6 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.ResourceAccessException;
 import org.springframework.web.client.RestClientException;
-import org.springframework.web.client.RestClientResponseException;
 
 /**
  * 시나리오별 가격전망 해석 서비스
@@ -30,6 +30,8 @@ import org.springframework.web.client.RestClientResponseException;
 @Service
 @RequiredArgsConstructor
 public class PriceInterpretationServiceImpl implements PriceInterpretationService {
+
+    private static final String ACTION_GENERATE = "generatePriceInterpretation";
 
     private final PriceInterpretationStore store;
     private final PriceInterpretationGenerationLockStore generationLockStore;
@@ -78,7 +80,7 @@ public class PriceInterpretationServiceImpl implements PriceInterpretationServic
     private void dispatchToAgent(Long scenarioGroupId, Long userId, List<Long> targets) {
 
         try {
-            ScenarioDesignAgentRes res = callAgent(() -> priceInterpretationAgentApi.generate(scenarioGroupId, PriceInterpretationAgentReq.of(scenarioGroupId, userId, targets)), "generatePriceInterpretation");
+            ScenarioDesignAgentRes res = callAgent(() -> priceInterpretationAgentApi.generate(scenarioGroupId, PriceInterpretationAgentReq.of(scenarioGroupId, userId, targets)), ACTION_GENERATE);
 
             if (!res.isSuccess()) {
                 throw AppErrorException.of(ResultCode.Error.BIZ_RULE_VIOLATION, "agent response: %s".formatted(JsonUtil.toJson(res.data())));
@@ -102,7 +104,9 @@ public class PriceInterpretationServiceImpl implements PriceInterpretationServic
     }
 
     /**
-     * Agent 호출을 감싸 통신 예외(호스트 다운/타임아웃/HTTP 에러 status)를 통제된 외부 API 에러로 변환
+     * Agent 호출을 감싸 통신 예외(호스트 다운/타임아웃/역직렬화 실패)를 통제된 외부 API 에러(500)로 변환한다.
+     * HTTP 오류 status는 잡지 않는다 — 공통 RestClient 빌더가 이미 ApiErrorException(status + body 원문)으로
+     * 던지고 전역 핸들러가 500으로 응답하므로, 여기서 잡아도 변환할 것이 없다 (원문 로그도 빌더가 남긴다).
      */
     private <T> T callAgent(Supplier<T> call, String action) {
         try {
@@ -110,13 +114,10 @@ public class PriceInterpretationServiceImpl implements PriceInterpretationServic
         } catch (ResourceAccessException e) {
             ResultCode.Error code = e.getCause() instanceof SocketTimeoutException ? ResultCode.Error.API_TIMEOUT : ResultCode.Error.API_SERVICE_UNAVAILABLE;
             log.error("[PriceInterp Agent] {} 통신 오류: {}", action, e.getMessage(), e);
-            throw AppErrorException.of(code, "Agent communication error (%s)".formatted(action));
-        } catch (RestClientResponseException e) {
-            log.error("[PriceInterp Agent] {} 응답 오류: status={}, body={}", action, e.getStatusCode(), e.getResponseBodyAsString(), e);
-            throw AppErrorException.of(ResultCode.Error.API_RESPONSE_ERROR, "Agent response error (%s)".formatted(action));
+            throw ApiErrorException.of(code, e);
         } catch (RestClientException e) {
             log.error("[PriceInterp Agent] {} 호출 실패: {}", action, e.getMessage(), e);
-            throw AppErrorException.of(ResultCode.Error.API_CALL_FAILED, "Agent call failed (%s)".formatted(action));
+            throw ApiErrorException.of(ResultCode.Error.API_CALL_FAILED, e);
         }
     }
 

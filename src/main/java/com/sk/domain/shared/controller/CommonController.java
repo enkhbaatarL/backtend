@@ -1,15 +1,20 @@
 package com.sk.domain.shared.controller;
 
 import com.sk.common.annotation.ApiOrder;
+import com.sk.common.annotation.PermissionRule;
+import com.sk.common.annotation.RequiredPermissionRules;
 import com.sk.common.annotation.UserResolve;
 import com.sk.common.model.BaseResponse;
 import com.sk.common.model.BaseResponseFactory;
 import com.sk.common.utils.DateUtil;
+import com.sk.domain.shared.dto.request.common.IndividualInfoAgreementReq;
 import com.sk.domain.shared.dto.request.common.UserFeedbackReq;
 import com.sk.domain.shared.dto.response.common.CommonCodeDetailRes;
 import com.sk.domain.shared.dto.response.common.UiComponentSettingRes;
 import com.sk.domain.shared.dto.response.common.UserAccessPageRes;
+import com.sk.domain.shared.dto.response.common.UserDetailRes;
 import com.sk.domain.shared.entity.master.tmd.User;
+import com.sk.domain.shared.enums.Role;
 import com.sk.domain.shared.service.CommonService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
@@ -28,6 +33,7 @@ import org.springframework.boot.info.BuildProperties;
 import org.springframework.context.annotation.Profile;
 import org.springframework.core.env.Environment;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -133,6 +139,25 @@ public class CommonController {
     @PostMapping("/user-feedback")
     public BaseResponse<Long> createUserFeedback(@UserResolve User user, @Valid @RequestBody UserFeedbackReq request) {
         return BaseResponseFactory.create(commonService.createUserFeedback(user, request));
+    }
+
+    @ApiOrder(7)
+    @Operation(
+        summary = "개인정보동의여부 변경 API",
+        description = """
+            인증된 사용자 본인의 개인정보동의여부를 변경합니다. <br>
+            동의(true)와 철회(false) 모두 허용되며, 변경 시 개인정보동의일시가 현재 시각으로 함께 갱신됩니다.
+            """
+    )
+    @ApiResponse(responseCode = "200", description = "변경 성공")
+    @RequiredPermissionRules(rules = {
+        @PermissionRule(role = Role.USER),
+        @PermissionRule(role = Role.ADMIN),
+        @PermissionRule(role = Role.OPERATOR)
+    })
+    @PatchMapping("/individual-info-agreement")
+    public BaseResponse<UserDetailRes> updateIndividualInfoAgreement(@Valid @RequestBody IndividualInfoAgreementReq request) {
+        return BaseResponseFactory.create(commonService.updateIndividualInfoAgreement(request));
     }
 
 }

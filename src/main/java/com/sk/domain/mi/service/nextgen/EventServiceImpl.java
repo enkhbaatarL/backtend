@@ -11,6 +11,7 @@ import com.sk.domain.mi.dto.request.nextgen.EventListReq;
 import com.sk.domain.mi.dto.response.nextgen.EventAppliedFilterRes;
 import com.sk.domain.mi.dto.response.nextgen.EventDetailRes;
 import com.sk.domain.mi.dto.response.nextgen.EventInstitutionOutlookRes;
+import com.sk.domain.mi.dto.response.nextgen.EventLinkedScenarioGroupRes;
 import com.sk.domain.mi.dto.response.nextgen.EventListItemRes;
 import com.sk.domain.mi.dto.response.nextgen.EventListRes;
 import com.sk.domain.mi.dto.response.nextgen.EventRelatedRecordRes;
@@ -19,6 +20,7 @@ import com.sk.domain.mi.dto.response.nextgen.EventRelatedScenariosRes;
 import com.sk.domain.mi.dto.response.nextgen.EventTypeL1Res;
 import com.sk.domain.mi.dto.response.nextgen.ScenarioDimensionColumnRes;
 import com.sk.domain.mi.dto.response.nextgen.design.EventDesignAvailabilityRes;
+import com.sk.domain.mi.service.nextgen.support.FailedCreatingGroupResolver;
 import com.sk.domain.mi.service.nextgen.support.ScenarioDimensionMapper;
 import com.sk.domain.mi.service.nextgen.support.ScenarioDimensionMapper.GroupDimensionTemplate;
 import com.sk.domain.mi.service.nextgen.support.ScenarioProbabilityAllocator;
@@ -33,14 +35,22 @@ import com.sk.domain.shared.repository.master.tmm.MiEventTypeL1Repository;
 import com.sk.domain.shared.repository.master.tmm.MiScenarioGroupRepository;
 import com.sk.domain.shared.repository.master.tmm.projection.EventDesignAvailabilityRow;
 import com.sk.domain.shared.repository.master.tmm.projection.EventDetailRow;
+import com.sk.domain.shared.repository.master.tmm.projection.EventRecordMappingRow;
+import com.sk.domain.shared.repository.master.tmm.projection.EventRecordRow;
+import com.sk.domain.shared.repository.master.tmm.projection.EventLinkedScenarioGroupRow;
 import com.sk.domain.shared.repository.master.tmm.projection.EventListRow;
+import com.sk.domain.shared.repository.master.tmm.projection.ScenarioBaseRow;
 import com.sk.domain.shared.repository.master.tmm.projection.ScenarioGroupBaseRow;
 
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Set;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import org.springframework.data.domain.Page;
@@ -53,9 +63,11 @@ import lombok.extern.slf4j.Slf4j;
 @Transactional(readOnly = true)
 public class EventServiceImpl implements EventService {
 
+
     private final MiEventRepository miEventRepository;
     private final MiEventTypeL1Repository miEventTypeL1Repository;
     private final MiScenarioGroupRepository miScenarioGroupRepository;
+    private final FailedCreatingGroupResolver failedCreatingGroupResolver;
     private final UserRepository userRepository;
     private final AuthorizationService authorizationService;
 
@@ -74,45 +86,30 @@ public class EventServiceImpl implements EventService {
      * [이벤트 목록]
      * - 최신순 정렬, 기간필터 latest_record_first_created 기준 (수정일시 아님 — 최신 연관 레코드의 최초 생성일시)
      * - suggestedOnly=true면 시나리오화 추천 이벤트만 조회
-     * - scenarioDesignStatus는 이벤트:활성 그룹 = 1:1 left join에서 파생 — 그룹 없으면 designable(설계 버튼),
-     *   그룹 status creating이면 creating(생성 중), created/realized면 created(+ scenarioGroupId)
+     * - 멀티 이벤트 전환으로 이벤트:활성 그룹은 N건 — 시나리오 표기는 scenarioGroupCount만 제공하고
+     *   (0이면 설계 아이콘, 1 이상이면 그룹 N 버튼), N건 상세는 연결 그룹 패널 API가 담당
      */
     @Override
     public EventListRes getEvents(EventListReq request) {
         Page<EventListRow> page = miEventRepository.getEventsByConditions(request);
 
-        // 점유(설계중) 이벤트의 요청자 userId만 모아 사용자명 일괄 조회
-        Map<Long, String> occupantNames = resolveOccupantNames(
-            page.getContent().stream()
-                .filter(row -> row.scenarioGroupStatus() == ScenarioGroupStatus.CREATING)
-                .map(EventListRow::requestUserId)
-                .toList());
-
         return new EventListRes(
             EventAppliedFilterRes.from(request),
-            PaginationRes.toRes(page.map(row -> EventListItemRes.from(row, occupantNames.get(row.requestUserId()))))
+            PaginationRes.toRes(page.map(EventListItemRes::from))
         );
     }
 
     /**
      * [이벤트 상세]
-     * - relatedEventScenario(연관 시나리오)는 활성 시나리오 그룹이 없으면 null
-     * - scenarioDesignStatus 파생 규칙은 목록과 동일 (활성 그룹 status 기반)
+     * - relatedEventScenarios(연관 시나리오)는 연결된 그룹별 표를 그룹 오래된 순으로 스택 (없으면 빈 목록)
+     * - 설계 상태/점유 헤더는 제공하지 않는다 — 조합 단위 판정인 이벤트 조합 설계 상태 조회 API가 담당 (목록과 동일 정책)
      */
     @Override
     public EventDetailRes getEventDetail(Long eventId) {
         EventDetailRow row = miEventRepository.findEventDetail(eventId)
             .orElseThrow(() -> AppErrorException.of(ResultCode.Error.RSC_NOT_FOUND, "Event not found: %d".formatted(eventId)));
 
-        return EventDetailRes.from(row, buildRelatedScenarios(row), resolveOccupantName(row.relatedScenarioGroup()));
-    }
-
-    /** 활성 그룹이 설계중(점유)일 때만 그룹 요청자의 사용자명을 조회한다. (그 외 null) */
-    private String resolveOccupantName(ScenarioGroupBaseRow group) {
-        if (group == null || group.status() != ScenarioGroupStatus.CREATING || group.requestUserId() == null) {
-            return null;
-        }
-        return resolveOccupantNames(List.of(group.requestUserId())).get(group.requestUserId());
+        return EventDetailRes.from(row, buildRelatedScenarios(row));
     }
 
     /**
@@ -136,34 +133,47 @@ public class EventServiceImpl implements EventService {
     }
 
     /**
-     * 상세의 연관 시나리오 표 조립
-     * - 표 헤더/차원값은 시나리오 그룹 도메인과 동일하게 event_type_l2 template + dimension_selected 키로 구성
-     * - adjustedProbability도 그룹 도메인과 동일한 재분배 규칙 (조회 시점 계산, 비영속)
+     * 상세의 연관 시나리오 표 조립 (그룹별 표 스택, 그룹 오래된 순)
+     * - 표 헤더/차원값은 시나리오 그룹 도메인과 동일 (v4는 dimension_definitions, v1은 event_type_l2 template)
+     * - adjustedProbability도 그룹 도메인과 동일한 재분배 규칙 (그룹 단위 계산, 비영속)
+     * - [260621] 설계(생성) 진행 중인 그룹은 미완성이라 미노출 — 실패 방치 그룹도 creating이라 함께 걸러진다
      */
-    private EventRelatedScenariosRes buildRelatedScenarios(EventDetailRow row) {
-        ScenarioGroupBaseRow group = row.relatedScenarioGroup();
-
-        // [260621] 설계(생성) 진행 중인 그룹의 시나리오는 아직 미완성이므로 연관 시나리오로 노출 X
-        if (group == null || group.status() == ScenarioGroupStatus.CREATING) {
-            return null;
+    private List<EventRelatedScenariosRes> buildRelatedScenarios(EventDetailRow row) {
+        List<ScenarioGroupBaseRow> groups = row.relatedScenarioGroups().stream()
+            .filter(g -> g.status() != ScenarioGroupStatus.CREATING)
+            .toList();
+        if (groups.isEmpty()) {
+            return List.of();
         }
 
-        GroupDimensionTemplate template = ScenarioDimensionMapper.parseTemplates(miScenarioGroupRepository.findTemplatesByEventTypeL2Ids(List.of(group.eventTypeL2Id())))
-            .getOrDefault(group.eventTypeL2Id(), GroupDimensionTemplate.EMPTY);
-
-        List<String> selectedKeys = ScenarioDimensionMapper.parseSelectedKeys(group.dimensionSelected());
-
-        List<ScenarioDimensionColumnRes> dimensionColumns = template.columns(selectedKeys);
-        Map<Long, Integer> adjusted = ScenarioProbabilityAllocator.redistributeRows(row.relatedScenarios());
-        List<EventRelatedScenarioRes> scenarios = row.relatedScenarios().stream()
-            .map(s -> EventRelatedScenarioRes.of(
-                s,
-                template.dimensions(selectedKeys, s.dimensionValues()),
-                adjusted.get(s.scenarioId())
-            ))
+        List<Long> eventTypeL2Ids = groups.stream()
+            .map(ScenarioGroupBaseRow::eventTypeL2Id)
+            .filter(Objects::nonNull)
+            .distinct()
             .toList();
+        Map<Long, GroupDimensionTemplate> templates = ScenarioDimensionMapper.parseTemplates(
+            miScenarioGroupRepository.findTemplatesByEventTypeL2Ids(eventTypeL2Ids));
 
-        return EventRelatedScenariosRes.of(group, dimensionColumns, scenarios);
+        Map<Long, List<ScenarioBaseRow>> scenariosByGroup = row.relatedScenarios().stream()
+            .collect(Collectors.groupingBy(ScenarioBaseRow::scenarioGroupId, LinkedHashMap::new, Collectors.toList()));
+
+        return groups.stream()
+            .map(group -> {
+                GroupDimensionTemplate template = ScenarioDimensionMapper.resolve(group.apiVersion(), group.dimensionDefinitions(), templates, group.eventTypeL2Id());
+                List<String> selectedKeys = ScenarioDimensionMapper.parseSelectedKeys(group.dimensionSelected());
+                List<ScenarioDimensionColumnRes> dimensionColumns = template.columns(selectedKeys);
+                List<ScenarioBaseRow> groupScenarios = scenariosByGroup.getOrDefault(group.scenarioGroupId(), List.of());
+                Map<Long, Integer> adjusted = ScenarioProbabilityAllocator.redistributeRows(groupScenarios);
+                List<EventRelatedScenarioRes> scenarios = groupScenarios.stream()
+                    .map(s -> EventRelatedScenarioRes.of(
+                        s,
+                        template.dimensions(selectedKeys, s.dimensionValues()),
+                        adjusted.get(s.scenarioId())
+                    ))
+                    .toList();
+                return EventRelatedScenariosRes.of(group, dimensionColumns, scenarios);
+            })
+            .toList();
     }
 
     /**
@@ -181,6 +191,8 @@ public class EventServiceImpl implements EventService {
      * [연관 레코드 목록]
      * - 뉴스(NEWS)와 데이터 파일 요약(비NEWS) 두 소스를 UNION으로 합쳐 first_created 내림차순
      * - isPermitted: 현재 사용자(고객사)의 상품 조회 권한 여부 — goodsViewableMap을 1회 조회해 row별 goodsNo로 판정
+     * - mappingReason/mappingConfidence: 이벤트-레코드 매핑 근거 — 현재 페이지 레코드만 1회 일괄 조회해 합성한다.
+     *   확정 매핑에는 근거가 없어 후보 매핑에서 역추적하므로, 후보 경로를 거치지 않은 매핑은 근거가 null이다.
      */
     @Override
     public PaginationRes<EventRelatedRecordRes> getEventRecords(Long eventId, int page, int size) {
@@ -188,57 +200,84 @@ public class EventServiceImpl implements EventService {
 
         Map<Integer, Boolean> goodsViewableMap = permissions.getGoodsViewableMap(authorizationService.getCompanyNoWithPriority());
 
-        return PaginationRes.toRes(
-            miEventRepository.findEventRecords(eventId, PageRequest.of(page - 1, size))
-                .map(row -> EventRelatedRecordRes.from(
-                    row,
-                    row.getGoodsNo() != null && goodsViewableMap.getOrDefault(row.getGoodsNo(), Boolean.FALSE)))
-        );
+        Page<EventRecordRow> records = miEventRepository.findEventRecords(eventId, PageRequest.of(page - 1, size));
+        Map<Integer, EventRecordMappingRow> mappingByRecordId = loadRecordMappings(eventId, records.getContent());
+
+        Page<EventRelatedRecordRes> relatedRecords = records.map(row -> EventRelatedRecordRes.from(
+            row,
+            row.getGoodsNo() != null && goodsViewableMap.getOrDefault(row.getGoodsNo(), Boolean.FALSE),
+            mappingByRecordId.get(row.getMiRecordId())));
+
+        return PaginationRes.toRes(relatedRecords);
     }
 
     /**
-     * [이벤트 설계 점유/가능 상태] (이벤트 목록 폴링)
-     *  - 요청한 이벤트별로 활성 그룹 status에서 설계 상태를 파생한다 — 그룹 없음=designable, creating=설계중(점유), created/realized=설계완료.
-     *  - 점유 판정은 그룹 row 자체를 lock으로 처리
+     * 현재 페이지 레코드의 매핑 근거를 일괄 조회한다.
+     * 같은 (이벤트, 레코드) 쌍이 여러 후보에서 나올 수 있어 쿼리가 최신순으로 내려주며, 먼저 온 1건만 취한다.
      */
-    @Override
-    public List<EventDesignAvailabilityRes> getEventDesignAvailability(List<Long> eventIds) {
-
-        if (eventIds == null || eventIds.isEmpty()) return List.of();
-
-        Map<Long, EventDesignAvailabilityRow> rowByEventId = miEventRepository.findDesignAvailability(eventIds).stream()
-            .collect(Collectors.toMap(
-                EventDesignAvailabilityRow::miEventId,
-                Function.identity(),
-                (a, b) -> {
-                    // [260620] 이벤트당 활성 시나리오 그룹은 1개여야 하나, 중복 존재 시 먼저 생성된(가장 오래된) 그룹을 선택
-                    return a.scenarioGroupId() <= b.scenarioGroupId() ? a : b;
-                }));
-
-        // 점유(설계중) 이벤트의 요청자 userId만 모아 사용자명 일괄 조회
-        Map<Long, String> occupantNames = resolveOccupantNames(
-            rowByEventId.values().stream()
-                .filter(row -> row.scenarioGroupStatus() == ScenarioGroupStatus.CREATING)
-                .map(EventDesignAvailabilityRow::requestUserId)
-                .toList());
-
-        return eventIds.stream()
+    private Map<Integer, EventRecordMappingRow> loadRecordMappings(Long eventId, List<EventRecordRow> records) {
+        List<Integer> recordIds = records.stream()
+            .map(EventRecordRow::getMiRecordId)
+            .filter(Objects::nonNull)
             .distinct()
-            .map(eventId -> toAvailability(eventId, rowByEventId.get(eventId), occupantNames))
             .toList();
+
+        if (recordIds.isEmpty()) {
+            return Map.of();
+        }
+
+        Map<Integer, EventRecordMappingRow> mappings = new HashMap<>();
+        List<EventRecordMappingRow> eventRecordMappings = miEventRepository.findEventRecordMappings(eventId, recordIds);
+        for (EventRecordMappingRow mapping : eventRecordMappings) {
+            mappings.putIfAbsent(mapping.getMiRecordId(), mapping);
+        }
+        return mappings;
     }
 
-    private EventDesignAvailabilityRes toAvailability(Long eventId, EventDesignAvailabilityRow row, Map<Long, String> occupantNames) {
-        if (row == null) return EventDesignAvailabilityRes.designable(eventId);
-        ScenarioDesignDisplayStatus status = ScenarioDesignDisplayStatus.of(row.scenarioGroupStatus(), row.templateAvailable());
-        boolean occupied = row.scenarioGroupStatus() == ScenarioGroupStatus.CREATING;
-        return EventDesignAvailabilityRes.of(
-            eventId, status,
-            occupied ? ScenarioDesignDisplayStatus.CreatingStep.of(row.scenarioGroupStage()) : null,
-            occupied,
-            occupied ? row.requestUserId() : null,
-            occupied ? occupantNames.get(row.requestUserId()) : null,
-            row.scenarioGroupId());
+    /**
+     * [이벤트 연결 시나리오 그룹 목록] (이벤트 목록의 그룹 N 펼침 패널)
+     * - 그룹 최신순, 그룹별 구성 이벤트명(표시 순서)과 진행 단계를 함께 반환
+     * - 실패 방치 그룹 잠정 필터: 설계중(creating)인데 최신 operation이 failed/interrupted면 제외.
+     *   operation이 없는 그룹(v1 등)과 설계 완료 그룹은 필터하지 않는다. Agent의 실패 그룹 처리 규약 확정 시 교체 예정
+     */
+    @Override
+    public List<EventLinkedScenarioGroupRes> getEventScenarioGroups(Long eventId) {
+
+        List<EventLinkedScenarioGroupRow> rows = miEventRepository.findLinkedScenarioGroups(eventId);
+
+        if (rows.isEmpty()) return List.of();
+
+        // 평탄화 행(그룹 x 구성 이벤트)을 그룹 단위로 묶는다 (조회 순서 = 그룹 최신순 유지)
+        Map<Long, List<EventLinkedScenarioGroupRow>> rowsByGroup = rows.stream()
+            .collect(Collectors.groupingBy(EventLinkedScenarioGroupRow::scenarioGroupId, LinkedHashMap::new, Collectors.toList()));
+
+        Set<Long> zombieGroupIds = resolveFailedCreatingGroupIds(rowsByGroup);
+        Long userId = authorizationService.getUserNo().longValue();
+
+        List<EventLinkedScenarioGroupRes> result = new ArrayList<>(rowsByGroup.size());
+        for (List<EventLinkedScenarioGroupRow> groupRows : rowsByGroup.values()) {
+            EventLinkedScenarioGroupRow first = groupRows.get(0);
+            if (zombieGroupIds.contains(first.scenarioGroupId())) {
+                continue;
+            }
+            List<String> events = groupRows.stream().map(EventLinkedScenarioGroupRow::memberEventName).toList();
+
+            // mine: 설계중 그룹의 진행자가 로그인 사용자인지 (다른 사용자면 패널 카드에 잠금 배지)
+            // 진행자 미상(request_usr_id null)은 Agent 적재 결함이므로 fail-closed로 타인 점유 취급한다.
+            // 설계중이 아닌 그룹(created/realized)은 점유 개념이 없어 of()에서 null로 덮는다.
+            Boolean mine = userId.equals(first.requestUserId());
+            result.add(EventLinkedScenarioGroupRes.of(first.scenarioGroupId(), first.groupTitle(), first.status(), first.stage(), mine, events));
+        }
+        return result;
+    }
+
+    /** 설계중(creating) 그룹 중 실패 방치(좀비) 그룹 ID 집합. (판정은 FailedCreatingGroupResolver 단일 지점) */
+    private Set<Long> resolveFailedCreatingGroupIds(Map<Long, List<EventLinkedScenarioGroupRow>> rowsByGroup) {
+        return failedCreatingGroupResolver.resolve(rowsByGroup.values().stream()
+            .map(groupRows -> groupRows.get(0))
+            .filter(row -> row.status() == ScenarioGroupStatus.CREATING)
+            .map(EventLinkedScenarioGroupRow::scenarioGroupId)
+            .toList());
     }
 
 }

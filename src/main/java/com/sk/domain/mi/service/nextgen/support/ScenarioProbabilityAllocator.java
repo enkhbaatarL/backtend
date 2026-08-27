@@ -40,6 +40,19 @@ public final class ScenarioProbabilityAllocator {
     }
 
     /**
+     * 원본 probability_score를 표시용 정수 퍼센트로 변환한다 (HALF_UP 반올림).
+     * 확률 스케일은 전 세대 0~100 단일 정수다 — v4가 한때 0~1 비율로 적재했으나
+     * Agent팀이 v1 정책(0~100)으로 API 계약과 DB 적재를 통일하기로 확정했다 (2026-08-18 회신).
+     * 재분배(redistribute)는 비례 계산이라 스케일과 무관하며, 이 변환은 원본 확률을 직접 노출하는 응답에만 쓴다.
+     */
+    public static Integer toDisplayPercent(BigDecimal probabilityScore) {
+        if (probabilityScore == null) {
+            return null;
+        }
+        return probabilityScore.setScale(0, RoundingMode.HALF_UP).intValue();
+    }
+
+    /**
      * scenarioId → 재분배 확률(정수). 활성(비폐기) 시나리오 합 100, 폐기 시나리오는 0.
      * 활성이 없으면 전부 0, 활성 가중치 합이 0이면 균등 분배한다.
      */

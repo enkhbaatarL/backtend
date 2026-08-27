@@ -22,7 +22,7 @@
     `docs/design-docs/gas/nextgen-mi-integrated-functional-spec.md`
 - source documents:
   - `SECURITY.md`
-  - 코드 조사 (2026-08-21 / 2026-08-24 / 2026-08-25, branches `feature/gas2`, `dev`, `feature/mcp-api`)
+  - 코드 조사 (2026-08-21 / 2026-08-24 / 2026-08-25, branch `feature/gas2`)
   - 사용자와의 설계 논의 (2026-08-21 / 2026-08-24 / 2026-08-25)
 - depends on:
   - `AGENTS.md`
@@ -154,17 +154,14 @@ SKGAS `companyNo`로 request-scoped 우선 고객사 컨텍스트를 무조건 �
 
 ### D3. 시장 콘텐츠 조회만 MCP 대상으로 선정한다
 
-현재 `dev` 호환 구현 범위는 총 12건이다.
+현재 확정 범위는 총 13건이다.
 
 | 구분 | 건수 | 실행 backend |
 |---|---:|---|
-| 이벤트 | 5 | general |
+| 이벤트 | 6 | general |
 | 시나리오 그룹 | 6 | general |
 | CME 벤치마크 | 1 | SK Gas dedicated |
-| 합계 | 12 | — |
-
-`GET /events/{eventId}/scenario-groups`는 원본 설계 대상이지만 `dev`에 응답 DTO와 서비스 메서드가 없어
-이번 범위에서 보류한다. 두 의존 코드가 `dev`에 반영된 뒤 Feature Spec 계약과 함께 추가한다.
+| 합계 | 13 | — |
 
 다음 범주는 제외한다.
 
@@ -391,14 +388,14 @@ B군 endpoint는 effective user에 따라 결과가 달라질 수 있음을 Feat
 
 실제 주소는 이 문서가 소유하지 않는다. 이 절은 backend별 기능 책임만 정의한다.
 
-| backend | 일반 11건 | CME 1건 | 지원 여부 |
+| backend | 일반 12건 | CME 1건 | 지원 여부 |
 |---|---:|---:|---|
-| general | 제공 | 경로가 등록될 수 있음 | 일반 11건만 지원 |
+| general | 제공 | 경로가 등록될 수 있음 | 일반 12건만 지원 |
 | SK Gas dedicated | 일반 컨트롤러 비활성 | 제공 | CME 지원 |
 | SK E dedicated | 일반 컨트롤러 비활성 | 등록 가능 | CME 미지원 |
 | SK hynix dedicated | 일반 컨트롤러 비활성 | 등록 가능 | CME 미지원 |
 
-MCP 서버는 일반 11건과 CME 1건에 서로 다른 backend base URL을 사용할 수 있다.
+MCP 서버는 일반 12건과 CME 1건에 서로 다른 backend base URL을 사용할 수 있다.
 구체적인 URL, ingress, service name, 환경별 profile 조합은 Infra/배포 설정이 소유한다.
 
 일반 backend에서 CME를 호출하면 dynamic datasource의 default target으로 폴백할 수 있다.
@@ -462,7 +459,7 @@ Q2는 운영 배포 차단 항목이다. 개발용 임시 인증 예외 구현�
 구현을 시작할 수 있는 이유는 다음과 같다.
 
 - 대상 범위와 선정 기준이 확정됐다.
-- `dev`가 지원하는 총 12건의 endpoint 계약은 Feature Spec에 확정됐다.
+- 총 13건의 endpoint 계약은 Feature Spec에 확정됐다.
 - 사용자 컨텍스트 생성 방식과 서비스 재사용 원칙이 확정됐다.
 - 원본 `@RequiredPermissionRules` 보존과 `records.isPermitted`의 역할별 상품 권한 계산 기준이 확정됐다.
 - 요청 고객사 선택값을 폐기하고 서버가 해석한 SKGAS 우선 고객사 컨텍스트로 기존 서비스를 재사용하는 방식이 확정됐다.
@@ -489,7 +486,6 @@ Q2는 운영 배포 차단 항목이다. 개발용 임시 인증 예외 구현�
 | 2026-08-24 | 구현 기준 branch를 `feature/gas2`로 확정 | 최신 서비스 동작 기준 유지 |
 | 2026-08-24 | endpoint/header/error 계약을 Feature Spec으로 분리 | 계약 Source of Truth 단일화 |
 | 2026-08-24 | 대상 13건 확정: 이벤트 6, 시나리오 그룹 6, CME 1 | 코드 전수 조사와 사용자 결정 |
-| 2026-08-25 | `dev` 호환 범위를 12건으로 조정하고 이벤트 연결 시나리오 그룹 조회를 보류 | `dev`에 응답 DTO와 서비스 메서드가 없음 |
 | 2026-08-24 | Deprecated 3건, 화면 보조 4건, 수급모델 실행 조회 6건 제외 | 시장 콘텐츠 중심 선정 원칙 |
 | 2026-08-24 | 일반 MCP 컨트롤러는 `!dedicated`, dedicated MCP 컨트롤러는 profile 미부착 | 기존 배포 구조와 dedicated controller 패턴 |
 | 2026-08-24 | CME datasource를 서버 고정 `midb-skgas`로 유지 | SK Gas 단일 고객사 전용 서비스라는 업무 불변조건 |

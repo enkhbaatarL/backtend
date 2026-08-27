@@ -22,27 +22,34 @@ import com.sk.domain.mi.dto.response.nextgen.ScenarioRowRes;
 import com.sk.domain.mi.dto.response.nextgen.ScenarioSignpostDefinitionViewRes;
 import com.sk.domain.mi.dto.response.nextgen.ScenarioSignpostMonitoringRes;
 import com.sk.domain.mi.dto.response.nextgen.ScenarioStatusRes;
+import com.sk.domain.mi.dto.response.nextgen.design.ScenarioDesignPresentationRes.DesignEvidence;
+import com.sk.domain.mi.dto.response.nextgen.design.ScenarioDesignPresentationRes.EventBundle;
 import com.sk.domain.mi.dto.response.nextgen.priceinterp.PriceInterpretationSectionRes;
 import com.sk.domain.mi.service.nextgen.priceinterp.PriceInterpretationStore;
 import com.sk.domain.mi.service.nextgen.support.IndexGraph;
+import com.sk.domain.mi.service.nextgen.support.ScenarioDesignAgentMapper;
 import com.sk.domain.mi.service.nextgen.support.ScenarioDimensionMapper;
 import com.sk.domain.mi.service.nextgen.support.ScenarioDimensionMapper.GroupDimensionTemplate;
 import com.sk.domain.mi.service.nextgen.support.ScenarioProbabilityAllocator;
 import com.sk.domain.mi.service.nextgen.support.ScenarioRunStates;
 import com.sk.domain.shared.entity.master.tmm.MiScenario;
 import com.sk.domain.shared.entity.master.tmm.MiScenarioGroup;
+import com.sk.domain.shared.entity.master.tmm.MiScenarioGroupEvent;
+import com.sk.domain.shared.enums.nextgen.ScenarioGroupStatus;
 import com.sk.domain.shared.entity.master.tmm.MiSignpost;
 import com.sk.domain.shared.enums.fundamentalmodel.FundamentalModelCaseStatus;
 import com.sk.domain.shared.enums.fundamentalmodel.FundamentalModelRunStatus;
 import com.sk.domain.shared.enums.nextgen.GraphPeriodUnit;
+import com.sk.domain.shared.enums.nextgen.ScenarioApiVersion;
 import com.sk.domain.shared.enums.nextgen.IndexName;
-import com.sk.domain.shared.enums.nextgen.ModelInputMode;
 import com.sk.domain.shared.enums.nextgen.ScenarioDisplayStatus;
 import com.sk.domain.shared.enums.nextgen.ScenarioStatus;
 import com.sk.domain.shared.repository.master.tmd.ScenarioCaseRepository;
 import com.sk.domain.shared.repository.master.tmd.ScenarioCaseRunHistoryRepository;
 import com.sk.domain.shared.repository.master.tmd.projection.MiBasePriceRow;
 import com.sk.domain.shared.repository.master.tmd.projection.ScenarioPriceRow;
+import com.sk.domain.shared.client.ScenarioDesignAgentApi;
+import com.sk.domain.shared.repository.master.tmm.MiScenarioGroupEventRepository;
 import com.sk.domain.shared.repository.master.tmm.MiScenarioGroupRepository;
 import com.sk.domain.shared.repository.master.tmm.projection.ScenarioBaseRow;
 import com.sk.domain.shared.repository.master.tmm.projection.ScenarioDetailBaseRow;
@@ -71,6 +78,8 @@ public class ScenarioGroupServiceImpl implements ScenarioGroupService {
     private static final String SCENARIO_CANCELLED = "SCENARIO_CANCELLED";
 
     private final MiScenarioGroupRepository scenarioGroupRepository;
+    private final MiScenarioGroupEventRepository scenarioGroupEventRepository;
+    private final ScenarioDesignAgentApi scenarioDesignAgentApi;
     private final ScenarioCaseRepository scenarioCaseRepository;
     private final ScenarioCaseRunHistoryRepository scenarioCaseRunHistoryRepository;
     private final AuthorizationService authorizationService;
@@ -103,15 +112,14 @@ public class ScenarioGroupServiceImpl implements ScenarioGroupService {
 
         Map<Long, ScenarioGroupListItemRes> itemsByGroupId = new LinkedHashMap<>();
         for (ScenarioGroupBaseRow base : bases) {
-            GroupDimensionTemplate template = templates.getOrDefault(base.eventTypeL2Id(), GroupDimensionTemplate.EMPTY);
+            GroupDimensionTemplate template = ScenarioDimensionMapper.resolve(base.apiVersion(), base.dimensionDefinitions(), templates, base.eventTypeL2Id());
             List<String> selectedKeys = ScenarioDimensionMapper.parseSelectedKeys(base.dimensionSelected());
 
             List<ScenarioDimensionColumnRes> dimensionColumns = template.columns(selectedKeys);
             List<ScenarioBaseRow> groupScenarios = scenariosByGroup.getOrDefault(base.scenarioGroupId(), List.of());
             Map<Long, Integer> adjusted = ScenarioProbabilityAllocator.redistributeRows(groupScenarios);
             List<ScenarioRowRes> scenarios = groupScenarios.stream()
-                .map(s -> ScenarioRowRes.of(s, template.dimensions(selectedKeys, s.dimensionValues()),
-                    adjusted.get(s.scenarioId())))
+                .map(s -> ScenarioRowRes.of(s, template.dimensions(selectedKeys, s.dimensionValues()), adjusted.get(s.scenarioId())))
                 .toList();
 
             itemsByGroupId.put(base.scenarioGroupId(), ScenarioGroupListItemRes.of(base, dimensionColumns, scenarios));
@@ -154,7 +162,7 @@ public class ScenarioGroupServiceImpl implements ScenarioGroupService {
 
         Map<Long, ScenarioIndividualItemRes> itemsByScenarioId = new LinkedHashMap<>();
         for (ScenarioIndividualBaseRow base : bases) {
-            GroupDimensionTemplate template = templates.getOrDefault(base.eventTypeL2Id(), GroupDimensionTemplate.EMPTY);
+            GroupDimensionTemplate template = ScenarioDimensionMapper.resolve(base.apiVersion(), base.dimensionDefinitions(), templates, base.eventTypeL2Id());
             List<String> selectedKeys = ScenarioDimensionMapper.parseSelectedKeys(base.dimensionSelected());
             List<ScenarioDimensionRes> dimensions = template.dimensions(selectedKeys, base.dimensionValues());
 
@@ -179,8 +187,7 @@ public class ScenarioGroupServiceImpl implements ScenarioGroupService {
     @Override
     public ScenarioGroupGraphRes getScenarioGroupGraph(Long scenarioGroupId, IndexName indexName, GraphPeriodUnit periodUnit) {
 
-        // 시나리오 그룹 유효성 검증 겸 파라미터 제안 대상여부 도출
-        boolean parameterProposalTarget = resolveParameterProposalTarget(scenarioGroupId);
+        requireActiveGroup(scenarioGroupId);
 
         List<ScenarioBaseRow> scenarios = scenarioGroupRepository.findScenariosByGroupId(scenarioGroupId);
         List<Long> scenarioIds = scenarioIdsOf(scenarios);
@@ -188,7 +195,7 @@ public class ScenarioGroupServiceImpl implements ScenarioGroupService {
         // 시나리오 실행상태 조회
         ScenarioRunStates runStates = resolveRunStates(scenarioIds);
 
-        return buildGraph(scenarioGroupId, parameterProposalTarget, indexName, periodUnit, scenarios, runStates).graph();
+        return buildGraph(scenarioGroupId, indexName, periodUnit, scenarios, runStates).graph();
     }
 
     /**
@@ -220,8 +227,7 @@ public class ScenarioGroupServiceImpl implements ScenarioGroupService {
      */
     public Map<IndexName, IndexGraph> buildGraphs(Long scenarioGroupId, GraphPeriodUnit periodUnit) {
 
-        // 시나리오 그룹 유효성 검증 겸 파라미터 제안 대상여부 도출
-        boolean parameterProposalTarget = resolveParameterProposalTarget(scenarioGroupId);
+        requireActiveGroup(scenarioGroupId);
 
         List<ScenarioBaseRow> scenarios = scenarioGroupRepository.findScenariosByGroupId(scenarioGroupId);
 
@@ -234,13 +240,13 @@ public class ScenarioGroupServiceImpl implements ScenarioGroupService {
 
         // JKM, TTF, HH 인덱스 전체
         for (IndexName indexName : IndexName.values()) {
-            graphs.put(indexName, buildGraph(scenarioGroupId, parameterProposalTarget, indexName, periodUnit, scenarios, runStates));
+            graphs.put(indexName, buildGraph(scenarioGroupId, indexName, periodUnit, scenarios, runStates));
         }
 
         return graphs;
     }
 
-    private IndexGraph buildGraph(Long scenarioGroupId, boolean parameterProposalTarget, IndexName indexName, GraphPeriodUnit periodUnit, List<ScenarioBaseRow> scenarios, ScenarioRunStates runStates) {
+    private IndexGraph buildGraph(Long scenarioGroupId, IndexName indexName, GraphPeriodUnit periodUnit, List<ScenarioBaseRow> scenarios, ScenarioRunStates runStates) {
 
         List<Long> scenarioIds = scenarioIdsOf(scenarios);
 
@@ -250,7 +256,7 @@ public class ScenarioGroupServiceImpl implements ScenarioGroupService {
         // MI Base 기준선 : 실행유형코드(MI_BASE) 최신 케이스의 가격 결과
         List<MiBasePriceRow> miBasePrices = scenarioCaseRepository.findLatestMiBasePrices(indexName, periodUnit.getDbUnit());
 
-        ScenarioGroupGraphRes graph = ScenarioGroupGraphRes.of(scenarioGroupId, parameterProposalTarget, indexName, periodUnit, scenarios, miBasePrices, scenariosPrices, runStates.running(), runStates.completed());
+        ScenarioGroupGraphRes graph = ScenarioGroupGraphRes.of(scenarioGroupId, indexName, periodUnit, scenarios, miBasePrices, scenariosPrices, runStates.running(), runStates.completed());
 
         // 차트 표시 구간으로 클리핑 (CME/MI/시나리오 동일 창 — 화면 및 엑셀 공통 정책)
         ChartWindow window = ChartWindow.of(periodUnit, getMiBaseEndResult(miBasePrices, periodUnit));
@@ -290,29 +296,37 @@ public class ScenarioGroupServiceImpl implements ScenarioGroupService {
     }
 
     /**
-     * 그룹 존재 검증 겸 파라미터 제안 대상여부 도출
-     *  - 그룹의 eventTypeL2Id로 판정 (미대상 집합은 {@link ModelInputMode} 단일 소스)
-     *  - 없는 그룹이면 404 (requireActiveGroup과 동일 기준)
-     */
-    private boolean resolveParameterProposalTarget(Long scenarioGroupId) {
-        Long eventTypeL2Id = scenarioGroupRepository.findEventTypeL2IdByScenarioGroupId(scenarioGroupId)
-            .orElseThrow(() -> AppErrorException.of(ResultCode.Error.RSC_NOT_FOUND, "Scenario group not found: %d".formatted(scenarioGroupId)));
-        return ModelInputMode.from(eventTypeL2Id).isParameterProposal();
-    }
-
-    /**
      * [그룹 상세]
      * - status는 DB 상태를 화면 판정 상태로 매핑 (creating/created -> pending)
      * - adjustedProbability는 목록과 동일한 조회 시점 계산값(비영속)
+     * - eventBundles는 구성 이벤트 전체(표시 순서), evidence는 최신 성공 create operation의 영속 스냅샷에서 추출 (설계 외 화면은 DB 원천)
      */
     @Override
     public ScenarioGroupDetailRes getScenarioGroupDetail(Long scenarioGroupId) {
         ScenarioGroupDetailBaseRow base = scenarioGroupRepository.findScenarioGroupDetail(scenarioGroupId)
             .orElseThrow(() -> AppErrorException.of(ResultCode.Error.RSC_NOT_FOUND, "Scenario group not found: %d".formatted(scenarioGroupId)));
 
-        GroupDimensionTemplate template = ScenarioDimensionMapper.parseTemplates(
-                scenarioGroupRepository.findTemplatesByEventTypeL2Ids(List.of(base.eventTypeL2Id()))
-            ).getOrDefault(base.eventTypeL2Id(), GroupDimensionTemplate.EMPTY);
+        List<EventBundle> eventBundles = ScenarioDesignAgentMapper.toEventBundles(
+            scenarioGroupRepository.findBaseEventsByScenarioGroupId(scenarioGroupId));
+
+        // 근거 보기
+        DesignEvidence evidence = null;
+        if (base.apiVersion() == ScenarioApiVersion.V4) {
+            try {
+                evidence = ScenarioDesignAgentMapper.toEvidence(scenarioDesignAgentApi.getPresentation(scenarioGroupId, null));
+            } catch (Exception e) {
+                log.warn("[ScenarioGroup] 근거 조회용 Agent presentation 호출 실패 - evidence 생략: scenarioGroupId={}, cause={}", scenarioGroupId, e.getMessage());
+            }
+        }
+
+        // eventTypeL2Id는 left join 산출이라 매핑 소실 그룹에서 null일 수 있다 — v1 template 폴백만 생략 (v4 definitions 경로는 무관)
+        GroupDimensionTemplate template = ScenarioDimensionMapper.resolve(
+            base.apiVersion(),
+            base.dimensionDefinitions(),
+            base.eventTypeL2Id() == null
+                ? Map.of()
+                : ScenarioDimensionMapper.parseTemplates(scenarioGroupRepository.findTemplatesByEventTypeL2Ids(List.of(base.eventTypeL2Id()))),
+            base.eventTypeL2Id());
 
         List<String> selectedKeys = ScenarioDimensionMapper.parseSelectedKeys(base.dimensionSelected());
 
@@ -331,7 +345,7 @@ public class ScenarioGroupServiceImpl implements ScenarioGroupService {
         // 시나리오별 가격전망 해석 section (이미 로드한 시나리오 재사용 — 재조회 없이 조립)
         PriceInterpretationSectionRes priceInterpretation = priceInterpretationStore.buildSection(scenarioGroupId, groupScenarios);
 
-        return ScenarioGroupDetailRes.of(base, dimensionColumns, scenarios, priceInterpretation);
+        return ScenarioGroupDetailRes.of(base, eventBundles, evidence, dimensionColumns, scenarios, priceInterpretation);
     }
 
     /**
@@ -344,8 +358,14 @@ public class ScenarioGroupServiceImpl implements ScenarioGroupService {
         ScenarioDetailBaseRow base = scenarioGroupRepository.findScenarioDetail(scenarioGroupId, scenarioId)
             .orElseThrow(() -> AppErrorException.of(ResultCode.Error.RSC_NOT_FOUND, "Scenario not found: scenarioGroupId=%d, scenarioId=%d".formatted(scenarioGroupId, scenarioId)));
 
-        GroupDimensionTemplate template = ScenarioDimensionMapper.parseTemplates(scenarioGroupRepository.findTemplatesByEventTypeL2Ids(List.of(base.eventTypeL2Id())))
-            .getOrDefault(base.eventTypeL2Id(), GroupDimensionTemplate.EMPTY);
+        // eventTypeL2Id는 left join 산출이라 매핑 소실 그룹에서 null일 수 있다 — v1 template 폴백만 생략 (v4 definitions 경로는 무관)
+        GroupDimensionTemplate template = ScenarioDimensionMapper.resolve(
+            base.apiVersion(),
+            base.dimensionDefinitions(),
+            base.eventTypeL2Id() == null
+                ? Map.of()
+                : ScenarioDimensionMapper.parseTemplates(scenarioGroupRepository.findTemplatesByEventTypeL2Ids(List.of(base.eventTypeL2Id()))),
+            base.eventTypeL2Id());
 
         List<String> selectedKeys = ScenarioDimensionMapper.parseSelectedKeys(base.dimensionSelected());
 
@@ -373,6 +393,15 @@ public class ScenarioGroupServiceImpl implements ScenarioGroupService {
     @Override
     @Transactional
     public ScenarioStatusRes updateScenarioStatus(Long scenarioGroupId, Long scenarioId, ScenarioDisplayStatus status) {
+
+        // 설계 진행 중(creating) 그룹 가드 — deriveStatus가 creating을 created로 덮어써 진행 중인 설계 세션을
+        // 되돌릴 수 없게 오염시키므로, 실현 판정은 설계가 끝난 그룹에서만 허용한다
+        MiScenarioGroup group = scenarioGroupRepository.findByScenarioGroupIdAndIsDeletedFalse(scenarioGroupId)
+            .orElseThrow(() -> AppErrorException.of(ResultCode.Error.RSC_NOT_FOUND, "Scenario group not found: %d".formatted(scenarioGroupId)));
+
+        if (group.getStatus() == ScenarioGroupStatus.CREATING) {
+            throw AppErrorException.of(ResultCode.Error.BIZ_RULE_VIOLATION, "설계 진행 중인 그룹은 시나리오 상태를 변경할 수 없습니다: %d".formatted(scenarioGroupId));
+        }
 
         // 실현 캐스케이드(나머지 전체 폐기)가 동시 요청과 어긋나지 않도록 그룹 시나리오 전체를 잠그고 시작
         List<MiScenario> scenarios = scenarioGroupRepository.findScenarioEntitiesByGroupIdForUpdate(scenarioGroupId);
@@ -407,9 +436,12 @@ public class ScenarioGroupServiceImpl implements ScenarioGroupService {
 
     /**
      * [그룹 삭제]
-     * - 그룹 + 하위 시나리오 + 하위 signpost를 함께 del_yn 처리, 이후 모든 조회에서 제외
+     * - 그룹 + 하위 시나리오 + 하위 signpost + 이벤트 매핑을 함께 del_yn 처리, 이후 모든 조회에서 제외
      * - signpost는 시나리오/그룹을 지우기 전에 먼저 조회해 soft-delete (삭제 후엔 join에서 빠지므로)
-     * - 이벤트:활성 그룹 = 1:1이므로 삭제 시 해당 이벤트의 scenarioDesignStatus는 designable(재설계 가능)로 복귀
+     * - 이벤트 매핑을 함께 지우는 이유는 매핑만 살아남으면 그룹 삭제 여부를 확인하지 않는 조회가 유령 연결을 보기 때문이다.
+     *   현재 조회 경로는 모두 그룹 del_yn을 함께 보므로 새는 곳은 없지만, 매핑 자체를 정리해 그 전제에 의존하지 않게 한다.
+     * - 멀티 이벤트 전환으로 이벤트:활성 그룹은 N:M이라, 삭제해도 같은 이벤트에 남은 다른 활성 그룹이 있으면 설계 상태는 유지된다.
+     *   해당 이벤트 조합의 활성 그룹이 모두 사라져야 다시 설계 가능해진다.
      */
     @Override
     @Transactional
@@ -421,8 +453,10 @@ public class ScenarioGroupServiceImpl implements ScenarioGroupService {
         priceInterpretationStore.softDeleteByGroup(scenarioGroupId);
         List<MiScenario> scenarios = scenarioGroupRepository.findScenarioEntitiesByGroupIdForUpdate(scenarioGroupId);
         List<MiSignpost> signposts = scenarioGroupRepository.findSignpostEntitiesByGroupId(scenarioGroupId);
+        List<MiScenarioGroupEvent> groupEvents = scenarioGroupEventRepository.findByScenarioGroup_ScenarioGroupIdAndIsDeletedFalse(scenarioGroupId);
         signposts.forEach(MiSignpost::softDelete);
         scenarios.forEach(MiScenario::softDelete);
+        groupEvents.forEach(MiScenarioGroupEvent::softDelete);
         group.softDelete();
         scenarioGroupRepository.flush();
 

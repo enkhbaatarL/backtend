@@ -147,6 +147,15 @@ public class User extends BaseEntity {
         this.isUserNotificationSetting = isUserNotificationSetting;
     }
 
+    /**
+     * 개인정보동의여부를 변경합니다.
+     * 동의와 철회 모두 변경 시점을 증빙할 수 있도록 개인정보동의일시를 현재 시각으로 함께 갱신합니다.
+     */
+    public void updateIndividualInfoAgreement(Boolean isIndividualInfoAgreement) {
+        this.isIndividualInfoAgreement = isIndividualInfoAgreement;
+        this.individualInfoAgreementDtm = LocalDateTime.now();
+    }
+
     public void userDelete() {
         this.softDelete(); // 삭제 시 삭제 여부 확인
         this.userNm = ""; // 삭제 시 사용자명 삭제

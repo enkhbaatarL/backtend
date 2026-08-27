@@ -27,9 +27,6 @@ public record CurrentModelParamProposalRes(
     @Schema(description = "시나리오 그룹 ID", example = "61")
     Long scenarioGroupId,
 
-    @Schema(description = "MI Event ID", example = "1378")
-    Long eventId,
-
     @Schema(description = "연결 Scenario Case ID", example = "88001")
     Long caseId,
 

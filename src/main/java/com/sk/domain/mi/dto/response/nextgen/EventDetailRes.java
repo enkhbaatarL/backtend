@@ -3,11 +3,8 @@ package com.sk.domain.mi.dto.response.nextgen;
 import com.sk.common.utils.DateUtil;
 import com.sk.domain.shared.enums.nextgen.ContentStatus;
 import com.sk.domain.shared.enums.nextgen.EventSignalType;
-import com.sk.domain.shared.enums.nextgen.ScenarioDesignDisplayStatus;
-import com.sk.domain.shared.enums.nextgen.ScenarioGroupStatus;
 import com.sk.domain.shared.repository.master.tmm.projection.DriverTagScoreboardRow;
 import com.sk.domain.shared.repository.master.tmm.projection.EventDetailRow;
-import com.sk.domain.shared.repository.master.tmm.projection.ScenarioGroupBaseRow;
 import io.swagger.v3.oas.annotations.media.Schema;
 
 import java.time.LocalDateTime;
@@ -51,27 +48,6 @@ public record EventDetailRes(
     @Schema(description = "시나리오화 추천 근거", example = "글로벌 LNG 공급 차질 가능성이 시나리오화 가치 있음")
     String scenarioSuggestReason,
 
-    @Schema(description = "시나리오 디자인 상태 (designable|unavailable|creating|created)", example = "designable")
-    ScenarioDesignDisplayStatus scenarioDesignStatus,
-
-    @Schema(description = "시나리오 디자인 상태 라벨 (설계가능|설계불가|설계중|설계완료)", example = "설계가능")
-    String scenarioDesignStatusLabel,
-
-    @Schema(description = "설계중(creating) 세부 진행 단계 (step1/step2). 설계중이 아니면 null", example = "step1", nullable = true)
-    ScenarioDesignDisplayStatus.CreatingStep designStep,
-
-    @Schema(description = "설계중 세부 진행 단계 라벨 (분기항목 설계/Signpost 설계). 설계중이 아니면 null", example = "분기항목 설계", nullable = true)
-    String designStepLabel,
-
-    @Schema(description = "설계 점유 여부 (설계중이면 true)", example = "false")
-    boolean occupied,
-
-    @Schema(description = "점유 사용자 ID (점유 중이 아니면 null)", example = "10001", nullable = true)
-    Long occupantUserId,
-
-    @Schema(description = "점유 사용자명 (점유 중이 아니면 null)", example = "홍길동", nullable = true)
-    String occupantUserName,
-
     @Schema(description = "AI Insights")
     EventAiInsightsRes aiInsights,
 
@@ -84,22 +60,16 @@ public record EventDetailRes(
     @Schema(description = "기관 전망 View 종합", nullable = true)
     String institutionViewSynthesis,
 
-    @Schema(description = "연관 시나리오", nullable = true)
-    EventRelatedScenariosRes relatedEventScenario
+    @Schema(description = "연관 시나리오 그룹별 표 목록 (그룹 오래된 순, 없으면 빈 목록)")
+    List<EventRelatedScenariosRes> relatedEventScenarios
 
 ) {
 
-    public static EventDetailRes from(EventDetailRow row, EventRelatedScenariosRes relatedEventScenario, String occupantUserName) {
+    public static EventDetailRes from(EventDetailRow row, List<EventRelatedScenariosRes> relatedEventScenarios) {
+
         ContentStatus status = Boolean.TRUE.equals(row.isNew()) ? ContentStatus.NEW : ContentStatus.UPDATED;
         EventSignalType signalType = Boolean.TRUE.equals(row.isSignal()) ? EventSignalType.SIGNAL : EventSignalType.NOISE;
         EventImpactAnalysisRes impactAnalysis = EventImpactAnalysisRes.from(row);
-
-        ScenarioGroupBaseRow group = row.relatedScenarioGroup();
-        ScenarioDesignDisplayStatus designStatus = ScenarioDesignDisplayStatus.of(group == null ? null : group.status(), row.templateAvailable());
-        // 점유 = 활성 시나리오 그룹이 creating(설계중)인 상태. 점유자는 그룹 요청자(request_usr_id)
-        boolean occupied = group != null && group.status() == ScenarioGroupStatus.CREATING;
-        ScenarioDesignDisplayStatus.CreatingStep designStep =
-            occupied ? ScenarioDesignDisplayStatus.CreatingStep.of(group.stage()) : null;
 
         return new EventDetailRes(
             row.miEventId(),
@@ -113,18 +83,11 @@ public record EventDetailRes(
             signalType.getLabel(),
             Boolean.TRUE.equals(row.isScenarioSuggested()),
             row.scenarioSuggestReason(),
-            designStatus,
-            designStatus.getLabel(),
-            designStep,
-            designStep == null ? null : designStep.getLabel(),
-            occupied,
-            occupied ? group.requestUserId() : null,
-            occupied ? occupantUserName : null,
             EventAiInsightsRes.from(row),
             impactAnalysis,
             buildDriverTreeScoreboard(row.driverTags()),
             row.institutionViewSynthesis(),
-            relatedEventScenario
+            relatedEventScenarios
         );
     }
 

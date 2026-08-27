@@ -26,13 +26,13 @@ import com.sk.domain.shared.entity.master.tmm.MiScenario;
 import com.sk.domain.shared.enums.fundamentalmodel.FundamentalModelExecType;
 import com.sk.domain.shared.enums.fundamentalmodel.FundamentalModelRunStatus;
 import com.sk.domain.shared.enums.nextgen.ModelExecutionStatus;
-import com.sk.domain.shared.enums.nextgen.ModelInputMode;
 import com.sk.domain.shared.enums.nextgen.ModelParamParameterSource;
 import com.sk.domain.shared.enums.nextgen.ScenarioStatus;
 import com.sk.domain.shared.repository.master.tcm.UploadedFileRepository;
 import com.sk.domain.shared.repository.master.tmd.ScenarioCaseRepository;
 import com.sk.domain.shared.repository.master.tmd.ScenarioCaseRunHistoryRepository;
 import com.sk.domain.shared.repository.master.tmm.AgentModelParamProposalRepository;
+import com.sk.domain.shared.repository.master.tmm.MiScenarioGroupRepository;
 import com.sk.domain.shared.repository.master.tmm.MiScenarioRepository;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
@@ -62,6 +62,7 @@ public class ScenarioModelExecutionServiceImpl implements ScenarioModelExecution
     private static final String FILE_RELATION_SCENARIO_CASE = "SCNRCASE";
 
     private final MiScenarioRepository miScenarioRepository;
+    private final MiScenarioGroupRepository miScenarioGroupRepository;
     private final ScenarioCaseRepository scenarioCaseRepository;
     private final ScenarioCaseRunHistoryRepository scenarioCaseRunHistoryRepository;
     private final UploadedFileRepository uploadedFileRepository;
@@ -87,7 +88,6 @@ public class ScenarioModelExecutionServiceImpl implements ScenarioModelExecution
             ModelExecutionAcceptRes response = transactionOperations.execute(status -> {
                 MiScenario scenario = findScenarioForUpdate(scenarioId);
                 rejectDiscardedScenario(scenario);
-                rejectIfMultipartModeMismatch(scenario);
                 validateFiles(files);
                 modelParamExecutionCoordinator.rejectIfActiveExecutionExists(scenarioId);
                 return scenarioExecutionRegistrar.registerStaged(scenario, stagedFiles, null);
@@ -121,7 +121,6 @@ public class ScenarioModelExecutionServiceImpl implements ScenarioModelExecution
             ModelExecutionAcceptRes response = transactionOperations.execute(status -> {
                 MiScenario scenario = findScenarioForUpdate(scenarioId);
                 rejectDiscardedScenario(scenario);
-                rejectIfJsonModeMismatch(scenario);
                 modelParamExecutionCoordinator.rejectIfActiveExecutionExists(scenarioId);
                 validateFiles(files);
                 return scenarioExecutionRegistrar.registerStaged(scenario, filesToAttach, context.execPrepId());
@@ -144,7 +143,6 @@ public class ScenarioModelExecutionServiceImpl implements ScenarioModelExecution
         transactionOperations.executeWithoutResult(status -> {
             MiScenario scenario = findScenarioForUpdate(scenarioId);
             rejectDiscardedScenario(scenario);
-            rejectIfMultipartModeMismatch(scenario);
             validateFiles(files);
             modelParamExecutionCoordinator.rejectIfActiveExecutionExists(scenarioId);
         });
@@ -157,7 +155,6 @@ public class ScenarioModelExecutionServiceImpl implements ScenarioModelExecution
         ExecutionConfirmationContext context = transactionOperations.execute(status -> {
             MiScenario scenario = findScenarioForUpdate(scenarioId);
             rejectDiscardedScenario(scenario);
-            rejectIfJsonModeMismatch(scenario);
             return modelParamExecutionCoordinator.begin(scenario, request);
         });
         if (context == null) {
@@ -274,32 +271,6 @@ public class ScenarioModelExecutionServiceImpl implements ScenarioModelExecution
             throw AppErrorException.of(
                 ResultCode.Error.BIZ_RULE_VIOLATION,
                 "Discarded scenario cannot start a model execution. scenarioId: %d".formatted(scenario.getScenarioId())
-            );
-        }
-    }
-
-    private void rejectIfMultipartModeMismatch(MiScenario scenario) {
-        Long eventTypeL2Id = scenario.getScenarioGroup().getEventTypeL2().getEventTypeL2Id();
-        ModelInputMode inputMode = ModelInputMode.from(eventTypeL2Id);
-        if (inputMode != ModelInputMode.FILE_UPLOAD) {
-            throw AppHttpStatusException.of(
-                HttpStatus.CONFLICT,
-                ResultCode.Error.BIZ_RULE_VIOLATION,
-                "This scenario uses PARAMETER_PROPOSAL mode. multipart model execution is not allowed. scenarioId: %d"
-                    .formatted(scenario.getScenarioId())
-            );
-        }
-    }
-
-    private void rejectIfJsonModeMismatch(MiScenario scenario) {
-        Long eventTypeL2Id = scenario.getScenarioGroup().getEventTypeL2().getEventTypeL2Id();
-        ModelInputMode inputMode = ModelInputMode.from(eventTypeL2Id);
-        if (!inputMode.isParameterProposal()) {
-            throw AppHttpStatusException.of(
-                HttpStatus.CONFLICT,
-                ResultCode.Error.BIZ_RULE_VIOLATION,
-                "This scenario uses FILE_UPLOAD mode. JSON model execution is not allowed. scenarioId: %d"
-                    .formatted(scenario.getScenarioId())
             );
         }
     }

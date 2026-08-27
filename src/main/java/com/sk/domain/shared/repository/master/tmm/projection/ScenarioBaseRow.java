@@ -12,7 +12,8 @@ public record ScenarioBaseRow(
     BigDecimal probabilityScore,
     ScenarioStatus status,
     String dimensionValues,
-    Integer displayOrder
+    Integer displayOrder,
+    String scenarioRole
 ) {
 
     @QueryProjection

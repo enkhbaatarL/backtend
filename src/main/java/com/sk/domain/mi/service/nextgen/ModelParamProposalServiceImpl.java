@@ -6,18 +6,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.sk.common.enums.ResultCode;
 import com.sk.common.exception.AppErrorException;
 import com.sk.common.exception.AppHttpStatusException;
-import com.sk.domain.mi.dto.response.nextgen.CurrentModelParamFileRes;
-import com.sk.domain.mi.dto.response.nextgen.CurrentModelParamProposalRes;
-import com.sk.domain.mi.dto.response.nextgen.ModelExecutionInputFilesRes;
-import com.sk.domain.mi.dto.response.nextgen.ModelExecutionOptionsRes;
-import com.sk.domain.mi.dto.response.nextgen.ModelFileNode;
-import com.sk.domain.mi.dto.response.nextgen.ModelParamAlign;
-import com.sk.domain.mi.dto.response.nextgen.ModelParamColumn;
-import com.sk.domain.mi.dto.response.nextgen.ModelParamColumnKind;
-import com.sk.domain.mi.dto.response.nextgen.ModelParamProposalAcceptRes;
-import com.sk.domain.mi.dto.response.nextgen.ModelParamProposalRes;
-import com.sk.domain.mi.dto.response.nextgen.ModelParamShape;
-import com.sk.domain.mi.dto.response.nextgen.ModelSheetNode;
+import com.sk.domain.mi.dto.response.nextgen.*;
 import com.sk.domain.mi.service.nextgen.paramproposal.ModelParamSlotAxisResolver;
 import com.sk.domain.mi.service.nextgen.paramproposal.ModelParamSlotAxisResolver.InvalidSlotAxisMetadataException;
 import com.sk.domain.mi.service.nextgen.paramproposal.ModelParameterResponseProjector;
@@ -40,36 +29,15 @@ import com.sk.domain.shared.entity.master.tmm.MiModelParam;
 import com.sk.domain.shared.entity.master.tmm.MiScenario;
 import com.sk.domain.shared.enums.fundamentalmodel.FundamentalModelCaseStatus;
 import com.sk.domain.shared.enums.fundamentalmodel.FundamentalModelExecType;
-import com.sk.domain.shared.enums.nextgen.AgentModelParamProposalStatus;
-import com.sk.domain.shared.enums.nextgen.BasecaseReadMode;
-import com.sk.domain.shared.enums.nextgen.CurrentModelParamProposalState;
-import com.sk.domain.shared.enums.nextgen.ModelExecutionPreparationStatus;
-import com.sk.domain.shared.enums.nextgen.ModelExecutionStatus;
-import com.sk.domain.shared.enums.nextgen.ModelInputMode;
-import com.sk.domain.shared.enums.nextgen.ModelParamParameterSource;
-import com.sk.domain.shared.enums.nextgen.ScenarioStatus;
+import com.sk.domain.shared.enums.nextgen.*;
 import com.sk.domain.shared.repository.master.tmd.ModelExecutionPreparationRepository;
 import com.sk.domain.shared.repository.master.tmd.ScenarioCaseRepository;
 import com.sk.domain.shared.repository.master.tmd.ScenarioCaseRunHistoryRepository;
 import com.sk.domain.shared.repository.master.tmm.AgentModelParamProposalRepository;
 import com.sk.domain.shared.repository.master.tmm.MiModelParamRepository;
+import com.sk.domain.shared.repository.master.tmm.MiScenarioGroupRepository;
 import com.sk.domain.shared.repository.master.tmm.MiScenarioRepository;
 import com.sk.domain.shared.service.permissions.AuthorizationService;
-import java.net.SocketTimeoutException;
-import java.time.LocalDateTime;
-import java.util.ArrayList;
-import java.util.Iterator;
-import java.util.LinkedHashMap;
-import java.util.LinkedHashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
-import java.util.Optional;
-import java.util.Set;
-import java.util.function.Function;
-import java.util.function.Supplier;
-import java.util.regex.Pattern;
-import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.dao.DataIntegrityViolationException;
@@ -81,6 +49,14 @@ import org.springframework.transaction.support.TransactionOperations;
 import org.springframework.web.client.ResourceAccessException;
 import org.springframework.web.client.RestClientException;
 import org.springframework.web.client.RestClientResponseException;
+
+import java.net.SocketTimeoutException;
+import java.time.LocalDateTime;
+import java.util.*;
+import java.util.function.Function;
+import java.util.function.Supplier;
+import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 
 @Slf4j
 @Service
@@ -106,6 +82,7 @@ public class ModelParamProposalServiceImpl implements ModelParamProposalService 
     private static final Pattern COLUMN_ROLE_BOUNDARY = Pattern.compile(",(?=\\s*[A-Za-z]{1,3}:)");
 
     private final MiScenarioRepository miScenarioRepository;
+    private final MiScenarioGroupRepository miScenarioGroupRepository;
     private final ScenarioCaseRepository scenarioCaseRepository;
     private final ScenarioCaseRunHistoryRepository scenarioCaseRunHistoryRepository;
     private final ModelExecutionPreparationRepository modelExecutionPreparationRepository;
@@ -119,13 +96,6 @@ public class ModelParamProposalServiceImpl implements ModelParamProposalService 
     private final ModelParamSlotAxisResolver modelParamSlotAxisResolver;
     private final ModelParameterTreeProjector modelParameterTreeProjector;
     private final ModelExecutionInputFilesProjector modelExecutionInputFilesProjector;
-
-    @Override
-    public ModelExecutionOptionsRes getModelExecutionOptions(Long scenarioId) {
-        MiScenario scenario = findScenario(scenarioId);
-        ModelInputMode inputMode = resolveInputMode(scenario);
-        return ModelExecutionOptionsRes.of(scenarioId, inputMode);
-    }
 
     @Override
     @Transactional(propagation = Propagation.NOT_SUPPORTED)
@@ -158,7 +128,6 @@ public class ModelParamProposalServiceImpl implements ModelParamProposalService 
     @Override
     public CurrentModelParamProposalRes getCurrentProposal(Long scenarioId) {
         MiScenario scenario = findScenario(scenarioId);
-        rejectIfNotParameterProposalMode(scenario);
 
         return modelExecutionPreparationRepository.findFirstByScenarioIdAndIsDeletedFalseOrderByExecPrepIdDesc(scenarioId)
             .map(this::toCurrentProposalResponse)
@@ -201,7 +170,6 @@ public class ModelParamProposalServiceImpl implements ModelParamProposalService 
             proposal.getModelParamProposalId(),
             proposal.getScenarioId(),
             proposal.getScenarioGroupId(),
-            proposal.getEventId(),
             resolveDisplayStatus(preparation, proposal),
             parameters,
             buildModelFiles(parameters),
@@ -462,7 +430,6 @@ public class ModelParamProposalServiceImpl implements ModelParamProposalService 
             execPrepId,
             modelParamProposalId,
             proposal == null ? null : proposal.getScenarioGroupId(),
-            proposal == null ? null : proposal.getEventId(),
             caseId,
             runId,
             modelExecutionStatus,
@@ -576,7 +543,6 @@ public class ModelParamProposalServiceImpl implements ModelParamProposalService 
         return transactionOperations.execute(status -> {
             MiScenario scenario = findScenarioForUpdate(scenarioId);
             rejectDiscardedScenario(scenario);
-            rejectIfNotParameterProposalMode(scenario);
             rejectIfActiveExecutionExists(scenarioId);
             rejectIfActivePreparationExists(scenarioId);
 
@@ -700,27 +666,11 @@ public class ModelParamProposalServiceImpl implements ModelParamProposalService 
             ));
     }
 
-    private ModelInputMode resolveInputMode(MiScenario scenario) {
-        Long eventTypeL2Id = scenario.getScenarioGroup().getEventTypeL2().getEventTypeL2Id();
-        return ModelInputMode.from(eventTypeL2Id);
-    }
-
     private void rejectDiscardedScenario(MiScenario scenario) {
         if (scenario.getStatus() == ScenarioStatus.DISCARDED) {
             throw AppErrorException.of(
                 ResultCode.Error.BIZ_RULE_VIOLATION,
                 "Discarded scenario cannot request model parameter proposal. scenarioId: %d".formatted(scenario.getScenarioId())
-            );
-        }
-    }
-
-    private void rejectIfNotParameterProposalMode(MiScenario scenario) {
-        if (!resolveInputMode(scenario).isParameterProposal()) {
-            throw AppHttpStatusException.of(
-                HttpStatus.CONFLICT,
-                ResultCode.Error.BIZ_RULE_VIOLATION,
-                "This scenario uses FILE_UPLOAD mode. model parameter proposal is not allowed. scenarioId: %d"
-                    .formatted(scenario.getScenarioId())
             );
         }
     }

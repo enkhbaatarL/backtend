@@ -59,6 +59,7 @@ public final class ScenarioDesignTableMapper {
 
     /**
      * FE 확정 표 → Agent 표(확정 요청 프록시용). 검토 변환에 더해 narrative·확률(metrics)·baseCase·Signpost까지 채운다.
+     * 확률은 전 세대 0~100 정수 그대로 전송한다 (Agent팀이 v1 정책으로 통일 확정 — 2026-08-18).
      */
     public static ScenarioDesignTable toAgentConfirmTable(DesignConfirmTable table) {
         if (table == null) {
@@ -112,7 +113,7 @@ public final class ScenarioDesignTableMapper {
                 .toList();
 
         List<ScenarioDimensionColumnRes> columns = headers.stream()
-            .map(h -> new ScenarioDimensionColumnRes(h.key(), h.label()))
+            .map(h -> new ScenarioDimensionColumnRes(h.key(), h.label(), null, null))
             .toList();
 
         List<DesignScenarioRow> rows = (agentTable.rows() == null ? List.<ScenarioDesignTable.Row>of() : agentTable.rows()).stream()
@@ -120,9 +121,10 @@ public final class ScenarioDesignTableMapper {
                 Map<String, String> cells = row.cells() == null ? Map.of() : row.cells();
                 List<ScenarioDimensionRes> dimensions = headers.stream()
                     // value 자체가 표시값이라 valueLabel=value
-                    .map(h -> new ScenarioDimensionRes(h.key(), h.label(), cells.get(h.key()), cells.get(h.key())))
+                    .map(h -> new ScenarioDimensionRes(h.key(), h.label(), cells.get(h.key()), cells.get(h.key()), null, null))
                     .toList();
-                return DesignScenarioRow.of(row.scenarioId(), row.displayOrder(), row.title(), "Y".equalsIgnoreCase(row.baselineYn()), dimensions, null, null, null);
+                return DesignScenarioRow.of(row.scenarioId(), row.displayOrder(), row.title(), "Y".equalsIgnoreCase(row.baselineYn()),
+                    null, null, null, dimensions, null, null, null);
             })
             .toList();
 

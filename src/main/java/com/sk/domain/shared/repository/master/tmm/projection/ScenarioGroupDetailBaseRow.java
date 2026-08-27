@@ -1,6 +1,7 @@
 package com.sk.domain.shared.repository.master.tmm.projection;
 
 import com.querydsl.core.annotations.QueryProjection;
+import com.sk.domain.shared.enums.nextgen.ScenarioApiVersion;
 import java.time.LocalDateTime;
 
 public record ScenarioGroupDetailBaseRow(
@@ -11,13 +12,9 @@ public record ScenarioGroupDetailBaseRow(
     String summary,
     Integer scenarioCount,
     String dimensionSelected,
+    String dimensionDefinitions,
     Long eventTypeL2Id,
-    // base event
-    Long eventId,
-    String eventName,
-    String eventTypeLv1Code,
-    String eventTypeLv1Label,
-    LocalDateTime eventUpdatedAt
+    ScenarioApiVersion apiVersion
 ) {
 
     @QueryProjection

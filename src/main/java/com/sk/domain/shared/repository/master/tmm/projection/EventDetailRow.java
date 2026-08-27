@@ -26,18 +26,17 @@ public record EventDetailRow(
     List<String> keyBullets,
     List<String> sources,
     List<DriverTagScoreboardRow> driverTags,
-    ScenarioGroupBaseRow relatedScenarioGroup,
-    List<ScenarioBaseRow> relatedScenarios,
-    boolean templateAvailable
+    List<ScenarioGroupBaseRow> relatedScenarioGroups,
+    List<ScenarioBaseRow> relatedScenarios
 ) {
 
     /**
      * 이벤트 상세 base(단일 조회) + 개별 조회한 부가 데이터들을 하나의 상세 Row로 조립한다.
-     * 이벤트명은 one_line_summary 표기를 사용한다.
+     * 이벤트명은 one_line_summary 표기를 사용한다. 연관 그룹은 멀티 이벤트 전환으로 N건이다.
      */
     public static EventDetailRow of(EventDetailBaseRow base, String impactSummary, List<EventIndexImpactRow> indexImpacts,
                                     List<String> keyBullets, List<String> sources, List<DriverTagScoreboardRow> driverTags,
-                                    ScenarioGroupBaseRow relatedScenarioGroup, List<ScenarioBaseRow> relatedScenarios
+                                    List<ScenarioGroupBaseRow> relatedScenarioGroups, List<ScenarioBaseRow> relatedScenarios
     ) {
         return new EventDetailRow(
             base.miEventId(),
@@ -61,9 +60,8 @@ public record EventDetailRow(
             keyBullets,
             sources,
             driverTags,
-            relatedScenarioGroup,
-            relatedScenarios,
-            base.templateAvailable()
+            relatedScenarioGroups,
+            relatedScenarios
         );
     }
 

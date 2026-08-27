@@ -90,6 +90,21 @@ public class MiScenario extends BaseEntity {
     @Convert(converter = BooleanToYNAttributeConverter.class)
     private Boolean isBaseline;
 
+    // v4 전용 컬럼 3종 (적재 주체 Agent, B.E read-only). 어휘는 Agent 소유라 문자열로 통과시키고
+    // 조립 시 ScenarioRole/GlobalPressureBand.fromNullable로 해석한다 (미지 어휘 확장 내성). v1 그룹은 null
+
+    @Column(name = "scenario_role", length = 50)
+    @Comment("시나리오 상대 역할 (floor/ceiling/mixed)")
+    private String scenarioRole;
+
+    @Column(name = "global_pressure_band", length = 50)
+    @Comment("글로벌 LNG 가격 압력 구간 (strong_bullish~strong_bearish 5단계)")
+    private String globalPressureBand;
+
+    @Column(name = "global_pressure_rationale", columnDefinition = "text")
+    @Comment("글로벌 가격 압력 판단 근거")
+    private String globalPressureRationale;
+
     @Builder
     public MiScenario(Long scenarioId, MiScenarioGroup scenarioGroup, String title, String narrative,
                       String dimensionValues, BigDecimal probabilityScore,

@@ -4,6 +4,7 @@ import com.sk.common.model.PaginationRes;
 import com.sk.domain.mi.dto.request.nextgen.EventListReq;
 import com.sk.domain.mi.dto.response.nextgen.EventDetailRes;
 import com.sk.domain.mi.dto.response.nextgen.EventInstitutionOutlookRes;
+import com.sk.domain.mi.dto.response.nextgen.EventLinkedScenarioGroupRes;
 import com.sk.domain.mi.dto.response.nextgen.EventListRes;
 import com.sk.domain.mi.dto.response.nextgen.EventRelatedRecordRes;
 import com.sk.domain.mi.dto.response.nextgen.EventTypeL1Res;
@@ -24,6 +25,6 @@ public interface EventService {
 
     PaginationRes<EventInstitutionOutlookRes> getEventOutlooks(Long eventId, int page, int size);
 
-    List<EventDesignAvailabilityRes> getEventDesignAvailability(List<Long> eventIds);
+    List<EventLinkedScenarioGroupRes> getEventScenarioGroups(Long eventId);
 
 }

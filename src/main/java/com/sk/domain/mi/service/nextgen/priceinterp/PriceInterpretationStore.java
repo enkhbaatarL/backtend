@@ -233,11 +233,11 @@ public class PriceInterpretationStore {
     /**
      * [수급모델 실행 전 무효화]
      * 최종 실행 등록 transaction에서 대상 시나리오의 활성 가격전망 해석만 soft delete 한다.
+     * 불변식상 활성 row는 1건이지만, 중복이 있어도 전부 삭제해 이 시점에 자연 정리되도록 한다.
      */
     @Transactional(propagation = Propagation.MANDATORY)
     public void softDeleteForModelExecution(Long scenarioId) {
-        priceInterpRepository.findActiveByScenarioIdForUpdate(scenarioId)
-            .ifPresent(MiScenarioPriceInterp::softDelete);
+        priceInterpRepository.findActiveByScenarioIdForUpdate(scenarioId).forEach(MiScenarioPriceInterp::softDelete);
     }
 
     /**
@@ -273,7 +273,9 @@ public class PriceInterpretationStore {
     }
 
     private static Map<Long, MiScenarioPriceInterp> byScenarioId(List<MiScenarioPriceInterp> rows) {
-        return rows.stream().collect(Collectors.toMap(row -> row.getScenario().getScenarioId(), Function.identity()));
+        return rows.stream().collect(Collectors.toMap(row -> row.getScenario().getScenarioId(), Function.identity(),
+            (a, b) -> a.getPriceInterpId() > b.getPriceInterpId() ? a : b)
+        );
     }
 
 }

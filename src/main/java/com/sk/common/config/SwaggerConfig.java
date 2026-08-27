@@ -46,7 +46,7 @@ public class SwaggerConfig {
     private static final String BASE_RESPONSE_SCHEMA_REF = "#/components/schemas/" + BASE_RESPONSE_SCHEMA;
 
     // note: 안정화 후 투머치 문서 모두 삭제예정
-    private static final String SW_VERSION_BASE = "v1.2.63";
+    private static final String SW_VERSION_BASE = "v1.3.0";
     private static final DateTimeFormatter SW_DEPLOY_DATE_FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
 
     @Bean
@@ -119,6 +119,32 @@ public class SwaggerConfig {
 
   ## 수정사항
   <details open>
+    <summary><strong>v1.3.0 (2026-08-18)</strong></summary>
+
+  - [Scenario Design — v4 멀티 이벤트 전환]
+    - 이벤트 조합 설계 상태 조회 API 추가 (`GET .../scenario-groups/design-status`) — 이벤트 목록 플로팅바 CTA 분기
+    - 멀티 이벤트 기반 시나리오 그룹 생성 API 추가 (SSE, `POST .../scenario-groups/creation/stream`, 이벤트 1~5개) — 재연결 커서 쌍(`operationId`+`lastSequence`) 지원
+    - 설계 화면 데이터 조회 API 추가 (`GET .../{scenarioGroupId}/presentation`) — 표/근거/생성·정련 상태/분기값 옵션 단일 조회
+    - 정련 구독 SSE 경로 변경: `GET .../{scenarioGroupId}/design/stream` → `.../{scenarioGroupId}/refinement/stream`
+    - SSE keep-alive 통일: `:hb` 약 20초 → `: keep-alive` 약 15초 (생성/정련 두 채널 동일)
+    - 전체 초기화 API 응답 본문 제거 (초기화 후 설계 화면 데이터 조회 API 재조회)
+    - v1 설계 3종(설계 시작 / 세션 상태 조회 / 분기항목 템플릿) Deprecated
+  - [Event]
+    - 이벤트 연결 시나리오 그룹 목록 API 추가 (`GET .../{eventId}/scenario-groups`, 그룹 N 펼침 패널)
+    - 목록: 시나리오 표기 필드 정리 — `scenarioDesignStatus`/`designStep`/`occupied`/`occupantUserId·Name`/`scenarioGroupId` 제거, `scenarioGroupCount`만 제공 (0이면 설계 아이콘, 1 이상이면 그룹 N 버튼)
+    - 상세: `relatedEventScenario`(단수) 제거 → `relatedEventScenarios`(그룹별 표 스택)로 통일, 행에 `scenarioRole` 역할 배지 추가, 셀에 `valueId`/`rationale`(근거) 추가
+    - 실패 방치 그룹 제외 규칙을 목록/상세/패널/폴링에 일관 적용 (설계중인데 최신 생성 작업이 실패로 끝난 그룹은 미노출, 잠정 규칙)
+    - 이벤트 시나리오 설계 가능 상태 조회 API Deprecated (이벤트 조합 설계 상태 조회 API로 대체)
+  - [Scenario Group]
+    - 그룹 상세: `baseEvent`(단수) 제거 → `eventBundles`(구성 이벤트 목록) + `evidence`(생성 근거 마크다운, '근거 보기') 추가
+    - 시나리오 행 응답 전반(그룹 목록 / 개별 목록 / 그룹 상세 / 시나리오 상세)에 `scenarioRole`/`scenarioRoleLabel` 역할 배지 추가 (`ceiling` 상단 / `floor` 하단 / `mixed` 혼합, v4 대표 시나리오 3종만)
+    - v4(definitions 기반) 그룹 표 렌더 지원 — 헤더/셀 근거 필드(`description`/`rationale`) 추가, 확률 0~1 스케일 자동 변환 (v1 그룹은 기존 그대로)
+  - [공통]
+    - 시나리오 그룹 `status`/`stage` 등 enum 직렬화를 소문자 code로 통일 (예: `CREATING` → `creating`) — 그룹 N 펼침 패널 응답 영향
+
+  </details>
+
+  <details>
     <summary><strong>v1.2.63 (2026-07-06)</strong></summary>
 
   - [Price Interpretation — 신규 도메인]

@@ -71,8 +71,8 @@ public class ScenarioGroupController {
             - `updatedAt`: 수정일시
             - `summary`: 시나리오 그룹 요약
             - `scenarioCount`: 시나리오 수
-            - `dimensionColumns`: 그룹별 동적 표 헤더 (key, label)
-            - `scenarios`: 그룹 내 시나리오 표 본문 (scenarioId, scenarioName, baseCase, dimensions, probability, adjustedProbability, status, statusLabel[대기/실현/폐기])
+            - `dimensionColumns`: 그룹별 동적 표 헤더 (key, label + description/rationale)
+            - `scenarios`: 그룹 내 시나리오 표 본문 (scenarioId, scenarioName, baseCase, scenarioRole/scenarioRoleLabel[역할 배지 - ceiling 상단/floor 하단/mixed 혼합, 없으면 null], dimensions, probability, adjustedProbability, status, statusLabel[대기/실현/폐기])
             """
     )
     @Parameter(name = "sort", description = "정렬 기준 (`latest` / `oldest`, 대소문자 무관). 기본값 `latest`")
@@ -100,14 +100,16 @@ public class ScenarioGroupController {
 
             <br><br>
             ### 사용 가능한 파라미터
-             - sort: 정렬 기준 (latest / oldest) / 기본값 latest / 시나리오 생성일시 기준 정렬
+             - sort: 정렬 기준 / 기본값 latest(최신순) / 시나리오 생성일시 기준 정렬 / example - sort=latest, sort=oldest
              - startDate / endDate: 조회 기간 (시나리오 생성일시 기준)
-             - keyword: 시나리오명 검색 키워드
-             - page / size: 페이징
+             - keyword: 시나리오명 검색 키워드 / example - keyword=호르무즈
+             - page: 기본값 1 / 1-based
+             - size: 기본값 20
 
             <br><br>
             ### content 항목 필드
             - `scenarioId`, `scenarioName`, `baseCase`
+            - `scenarioRole` / `scenarioRoleLabel`: 역할 배지 (`ceiling` 상단 / `floor` 하단 / `mixed` 혼합, 없으면 null)
             - `createdAt`: 시나리오 생성일시 (최신순 정렬·기간 필터 기준)
             - `updatedAt`: 시나리오 수정일시
             - `group`: 부모 그룹 (scenarioGroupId, groupName, createdAt)
@@ -142,14 +144,13 @@ public class ScenarioGroupController {
 
             <br><br>
             ### 응답 필드
-            - `parameterProposalTarget`: 파라미터 제안 대상 여부 (`true`: PARAMETER_PROPOSAL / `false`: FILE_UPLOAD)
             - `periodUnit` / `periodUnitLabel`: 기간 단위 (monthly:월별 / yearly:연도별)
             - `dates`: x축 기간 목록 (월별 `yyyy-MM` / 연도별 `yyyy`)
             - `baseSeries`: 기준선 — `MI Base`(exec_type_cd=MI_BASE 최신 케이스 가격) 제공
               - `seriesId` / `seriesName` / `values`(dates와 동일 순서, 빠진 구간 null)
             - `scenarioSeries`: 시나리오별 시리즈
               - `scenarioId` / `scenarioName` / `baseCase`
-              - `status` / `statusLabel`: 판정 상태 (pending/realized/discarded — 폐기여부)
+              - `status` / `statusLabel`: 판정 상태 (pending/realized/discarded — 대기/실현/폐기)
               - `executed`: 수급모델 실행 완료 여부 (N회차 실행 중 한번이라도 성공되면 true로 응답됩니다.)
               - `modelRunning`: 수급모델 실행중 여부
               - `baseCaseValues` / `userAdjustedValues`: 베이스케이스/사용자조정 가격 (최신 완료 결과, 재실행 중에도 직전 결과 유지).
@@ -177,7 +178,7 @@ public class ScenarioGroupController {
         summary = "Scenario Group 수급모델 진행상태 폴링 API",
         description = """
             그래프 화면에서 시나리오별 수급모델 진행상태를 경량 조회합니다. <br>
-            수급모델 실행 후 해당 API를 폴링하다가 `modelRunning` 필드가 `true` -> `false` 전환 시, 그래프 조회 API(`/{scenarioGroupId}/graph`)를 재조회해 완료된 그래프를 재조회합니다. <br>
+            수급모델 실행 후 해당 API를 폴링하다가 `modelRunning` 필드가 `true` → `false` 전환 시, [Scenario Group 그래프 데이터 조회 API]를 재조회해 완료된 그래프를 반영합니다. <br>
 
             <br><br>
             ### 응답 필드
@@ -204,16 +205,17 @@ public class ScenarioGroupController {
         summary = "Scenario Group 상세 조회 API",
         description = """
             시나리오 그룹 상세 페이지 데이터입니다. <br>
-            가격 전망 탭은 그래프 API(`/{scenarioGroupId}/graph`), 개별 시나리오 상세는 scenario 상세 API (`/{scenarioGroupId}/scenarios/{scenarioId}`)를 사용하세요. <br>
+            가격 전망 탭은 [Scenario Group 그래프 데이터 조회 API], 개별 시나리오 상세는 [Scenario 상세 조회 API]를 사용하세요. <br>
 
             <br><br>
             ### 상위(top-level) 필드
             - `scenarioGroupId`, `groupName`, `createdAt`, `updatedAt`
-            - `baseEvent`: 기반 이벤트 (eventId, eventName, eventTypeLv1, eventTypeLv1Label, updatedAt)
+            - `eventBundles`: 그룹을 구성하는 이벤트 목록 (Base Event 표, 표시 순서) — eventId, eventName, eventTypeLv1/Label, isScenarioSuggested, latestRecordFirstCreated(KST)
+            - `evidence`: 생성 근거 마크다운 ('근거 보기' — eventAnalysisMarkdown[Event 관계 분석] / roleSelectionMarkdown[대표 시나리오 선정]). v1 그룹 등 스냅샷이 없으면 null
             - `summary`: 시나리오 그룹 설명 — 요약 탭
             - `scenarioCount`: 시나리오 수
-            - `dimensionColumns`: 가정 표 동적 헤더 (key, label)
-            - `scenarios`: 가정 및 실행 가능성 표 행 (dimensions, probability, adjustedProbability, status, statusLabel[대기/실현/폐기])
+            - `dimensionColumns`: 가정 표 동적 헤더 (key, label + description/rationale[분기항목 설명/근거 - 헤더 ⓘ, v4 전용])
+            - `scenarios`: 가정 및 실행 가능성 표 행 (scenarioRole/scenarioRoleLabel[역할 배지 - ceiling 상단/floor 하단/mixed 혼합, 없으면 null], dimensions, probability, adjustedProbability, status, statusLabel[대기/실현/폐기])
             - `scenarios[].adjustedProbability`: 재분배 확률 — 폐기 제외 비례 재분배(활성 합 100, 폐기=0). 조회 시점 계산값(비영속)
             """
     )
@@ -238,13 +240,14 @@ public class ScenarioGroupController {
             <br><br>
             ### 상위(top-level) 필드
             - `scenarioId`, `scenarioGroupId`, `scenarioName`, `baseCase`
+            - `scenarioRole` / `scenarioRoleLabel`: 역할 배지 (`ceiling` 상단 / `floor` 하단 / `mixed` 혼합, 없으면 null)
             - `displayOrder`: 표시 순서 (목록과 동일한 시나리오 정렬 순서)
             - `createdAt` / `updatedAt`: 시나리오 생성/수정일시
             - `narrative`: 시나리오 내러티브
             - `probability`: 시나리오 발생 확률 (0~100, 원본)
             - `adjustedProbability`: 재분배 확률 — 그룹 내 폐기 제외 비례 재분배(활성 합 100, 폐기=0). 조회 시점 계산값(비영속)
-            - `dimensions`: 주요 가정 (key, label, value, valueLabel)
-            - `signpostDefinitions`: Signpost 정의 (signpostId, label, direction[sup], directionLabel[가능성강화], probabilityImpact(점수), strength[verystrong/strong/medium/weak/veryweak], strengthLabel[매우높음/높음/보통/낮음/매우낮음], rationale, displayOrder)
+            - `dimensions`: 주요 가정 (key, label, value[선택된 분기값 표시 라벨] + rationale[값 선정 근거 ⓘ, v4 전용])
+            - `signpostDefinitions`: Signpost 정의 (signpostId, label, direction[`sup` 단일값 — 가능성강화], directionLabel, probabilityImpact(점수), strength[verystrong/strong/medium/weak/veryweak], strengthLabel[매우높음/높음/보통/낮음/매우낮음], rationale, displayOrder)
             - `signpostMonitorings`: Signpost 모니터링 이력 (updatedAt, eventSummary, probability, probabilityDelta, rationale)
             """
     )
@@ -266,7 +269,7 @@ public class ScenarioGroupController {
         summary = "Scenario 상태 변경 API",
         description = """
             시나리오의 상태를 변경합니다. <br>
-            대기(`pending`) -> 실현(`realized`) / 폐기(`discarded`). <br>
+            대기(`pending`) → 실현(`realized`) / 폐기(`discarded`). <br>
 
             <br>
             **`realized`(실현)로 변경 시, 같은 그룹의 나머지 시나리오는 모두 `discarded`(폐기)로 자동 변경됩니다.** (그룹 내 실현 시나리오는 항상 1개) <br>

@@ -137,18 +137,19 @@ public abstract class AbstractSseRegistry<E> {
     }
 
     /**
-     * 주기적으로 keep-alive comment(:hb)를 전달한다.
+     * 주기적으로 keep-alive comment(: keep-alive)를 전달한다.
      * idle 연결이 프록시/LB의 idle timeout에 끊기는 것을 막고, write 실패로 죽은 연결을 정리한다.
+     * 프레임 텍스트와 주기(15초)는 Agent 생성 스트림의 keep-alive와 동일하게 맞춰 FE가 한 규칙으로 처리하게 한다.
      * (서브클래스 빈마다 각자 스케줄링됨)
      */
-    @Scheduled(fixedRateString = "${features.scheduling.sse.heartbeat-rate-ms:20000}", scheduler = "sseHeartbeatScheduler")
+    @Scheduled(fixedRateString = "${features.scheduling.sse.heartbeat-rate-ms:15000}", scheduler = "sseHeartbeatScheduler")
     void heartbeat() {
 
         if (emitters.isEmpty()) return;
 
         emitters.forEach((groupId, set) -> {
             for (SseEmitter emitter : set) {
-                if (!trySend(emitter, SseEmitter.event().comment("hb"))) {
+                if (!trySend(emitter, SseEmitter.event().comment("keep-alive"))) {
                     remove(groupId, emitter);
                 }
             }

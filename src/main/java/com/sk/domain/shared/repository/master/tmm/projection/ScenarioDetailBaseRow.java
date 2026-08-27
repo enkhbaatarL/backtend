@@ -1,6 +1,7 @@
 package com.sk.domain.shared.repository.master.tmm.projection;
 
 import com.querydsl.core.annotations.QueryProjection;
+import com.sk.domain.shared.enums.nextgen.ScenarioApiVersion;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
@@ -15,8 +16,11 @@ public record ScenarioDetailBaseRow(
     BigDecimal probabilityScore,
     String dimensionValues,
     String dimensionSelected,
+    String dimensionDefinitions,
     Long eventTypeL2Id,
-    Integer displayOrder
+    Integer displayOrder,
+    String scenarioRole,
+    ScenarioApiVersion apiVersion
 ) {
 
     @QueryProjection

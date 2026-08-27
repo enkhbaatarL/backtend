@@ -12,6 +12,8 @@ import static org.springframework.http.HttpStatus.UNSUPPORTED_MEDIA_TYPE;
 
 import com.amazonaws.services.s3.model.AmazonS3Exception;
 import com.sk.common.enums.ResultCode;
+import com.sk.common.exception.AgentDesignApiException;
+import com.sk.common.exception.ApiErrorException;
 import com.sk.common.exception.AppErrorException;
 import com.sk.common.exception.AppHttpStatusException;
 import com.sk.common.exception.CustomAuthenticationException;
@@ -434,6 +436,35 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
     @ExceptionHandler(AppHttpStatusException.class)
     private ResponseEntity<Object> handleAppHttpStatusError(AppHttpStatusException ex) {
         return createAndLogResponse("Client Error", ex, ex.getHttpStatus(), ex.getErrorCode(), ex.getAdditionalMessage());
+    }
+
+    /**
+     * 시나리오 설계 Agent(v4) 오류 응답 처리.
+     * HTTP status는 Agent 응답을 그대로 통과시키고, Agent 오류 body의 data 원문(error_name,
+     * scenarioGroupId, operationId)을 BaseResponse.data로 보존한다 — FE가 계약대로 error_name 분기와
+     * 기존 리소스 ID 재사용(operationId 재연결, scenarioGroupId 상세 이동)을 하는 데 필요하다.
+     * 중복 정책 충돌(409 등)은 예상 가능한 업무 응답이라 error가 아닌 warn으로 남긴다.
+     */
+    /**
+     * 외부 API 호출 오류 처리. 외부 시스템과의 구간 문제이므로 HTTP 500으로 내리고,
+     * 코드는 예외에 지정된 분류(API_TIMEOUT 등)를 쓰되 미지정(RestClient 빌더가 던진 HTTP 오류 원문)이면
+     * API_RESPONSE_ERROR로 응답한다. 외부 응답 원문은 응답에 싣지 않고 로그로만 남긴다.
+     */
+    @ExceptionHandler(ApiErrorException.class)
+    private ResponseEntity<Object> handleApiError(ApiErrorException ex) {
+        ResultCode.Error code = ex.getErrorCode() != null ? ex.getErrorCode() : ResultCode.Error.API_RESPONSE_ERROR;
+        return createAndLogResponse("External API Error", ex, INTERNAL_SERVER_ERROR, code, null);
+    }
+
+    @ExceptionHandler(AgentDesignApiException.class)
+    private ResponseEntity<Object> handleAgentDesignApiError(AgentDesignApiException ex) {
+        String agentMessage = StringUtils.defaultIfBlank(ex.getAgentMessage(), "N/A");
+        log.warn("[Design Agent] agent 오류 응답: status={}, code={}, agentMessage={}, agentData={}", ex.getHttpStatus().value(), ex.getErrorCode().getCode(), agentMessage, ex.getAgentData());
+        MDCUtil.setValue(MDCUtil.RESPONSE_ERROR_MSG, "%s(%s) - %s".formatted(ex.getErrorCode().getMessage(), ex.getErrorCode().getCode(), agentMessage));
+
+        // Agent 오류 원문은 로그로만 남기고 응답은 표준 코드/메시지만 내린다 (내부 구간 정보를 클라이언트에 노출하지 않음)
+        return ResponseEntity.status(ex.getHttpStatus())
+            .body(new BaseResponse<>(ex.getErrorCode().getCode(), ex.getErrorCode().getMessage()));
     }
 
     @ExceptionHandler(SystemErrorException.class)

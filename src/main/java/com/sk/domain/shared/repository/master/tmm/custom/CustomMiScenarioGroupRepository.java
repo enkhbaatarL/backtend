@@ -6,6 +6,7 @@ import com.sk.domain.shared.entity.master.tmm.MiSignpost;
 import com.sk.domain.shared.repository.master.tmm.projection.ScenarioBaseRow;
 import com.sk.domain.shared.repository.master.tmm.projection.ScenarioDetailBaseRow;
 import com.sk.domain.shared.repository.master.tmm.projection.ScenarioDimensionTemplateRow;
+import com.sk.domain.shared.repository.master.tmm.projection.ScenarioGroupBaseEventRow;
 import com.sk.domain.shared.repository.master.tmm.projection.ScenarioGroupBaseRow;
 import com.sk.domain.shared.repository.master.tmm.projection.ScenarioGroupDetailBaseRow;
 import com.sk.domain.shared.repository.master.tmm.projection.ScenarioIndividualBaseRow;
@@ -24,6 +25,8 @@ public interface CustomMiScenarioGroupRepository {
     Optional<ScenarioGroupDetailBaseRow> findScenarioGroupDetail(Long scenarioGroupId);
 
     Optional<Long> findEventTypeL2IdByScenarioGroupId(Long scenarioGroupId);
+
+    List<ScenarioGroupBaseEventRow> findBaseEventsByScenarioGroupId(Long scenarioGroupId);
 
     List<ScenarioBaseRow> findScenariosByGroupIds(List<Long> scenarioGroupIds);
 

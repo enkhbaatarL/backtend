@@ -9,6 +9,7 @@ import com.sk.common.model.PaginationRes;
 import com.sk.domain.mi.dto.request.nextgen.EventListReq;
 import com.sk.domain.mi.dto.response.nextgen.EventDetailRes;
 import com.sk.domain.mi.dto.response.nextgen.EventInstitutionOutlookRes;
+import com.sk.domain.mi.dto.response.nextgen.EventLinkedScenarioGroupRes;
 import com.sk.domain.mi.dto.response.nextgen.EventListRes;
 import com.sk.domain.mi.dto.response.nextgen.EventRelatedRecordRes;
 import com.sk.domain.mi.dto.response.nextgen.EventTypeL1Res;
@@ -52,7 +53,7 @@ public class EventController {
 
             <br><br>
             ### 응답 필드
-            - `eventTypeL1Id`: 이벤트 유형 L1 PK  (필터 파라미터에 사용)
+            - `eventTypeL1Id`: 이벤트 유형 L1 PK (필터 파라미터에 사용)
             - `code`: 이벤트 유형 L1 코드
             - `label`: 이벤트 유형 L1 한글명
             """
@@ -103,12 +104,7 @@ public class EventController {
             - `signalType` / `signalTypeLabel`: 신호(`signal`) / 소음(`noise`)
             - `isScenarioSuggested`: 시나리오화 추천 여부
             - `scenarioSuggestReason`: 시나리오화 추천 근거
-            - `scenarioDesignStatus` / `scenarioDesignStatusLabel`: `designable`(설계가능) / `unavailable`(설계불가, 매칭 dimension template 없음) / `creating`(설계중) / `created`(설계완료)
-            - `designStep` / `designStepLabel`: 설계중(`creating`) 세부 진행 단계 — `step1`(분기항목 설계) / `step2`(Signpost 설계). 설계중이 아니면 null
-            - `scenarioGroupId`: 활성 시나리오 그룹 ID (없으면 null, `created`일 때 이동 대상)
-            - `occupied`: 설계 점유 여부 (설계중이면 true)
-            - `occupantUserId`: 점유 사용자 ID (점유 중이 아니면 null)
-            - `occupantUserName`: 점유 사용자명 (점유 중이 아니면 null)
+            - `scenarioGroupCount`: 연결된 활성 시나리오 그룹 수 (생성중 포함, 실패 방치 그룹 제외) — 0이면 설계 아이콘, 1 이상이면 그룹 N 버튼
             - `indexImpacts`: 인덱스별 영향도 — 단기/중장기 중 영향 강도가 더 큰 시점 1개만 표기 (강도가 같으면 단기).
               - `indexName` / `marketImpactLevel` / `marketImpactLevelLabel` / `direction` / `directionLabel` / `impactTerm` / `impactTermLabel`
               - `impactTerm`: `short` 단기 / `mid_long` 중장기
@@ -137,6 +133,39 @@ public class EventController {
 
     @ApiOrder(3)
     @Operation(
+        summary = "이벤트 연결 시나리오 그룹 목록 API (그룹 N 펼침 패널)",
+        description = """
+            이벤트에 연결된 시나리오 그룹 목록을 반환합니다 (이벤트 목록의 그룹 N 버튼 펼침 패널용). <br>
+            멀티 이벤트 전환으로 한 이벤트가 여러 그룹에 속할 수 있으며, 그룹 최신순으로 정렬됩니다. <br>
+
+            <br><br>
+            ### 응답 필드 (그룹별)
+            - `scenarioGroupId` / `title`: 그룹 식별자와 그룹명
+            - `status` + `statusLabel`: 그룹 상태 (creating/created/realized)
+            - `stage` + `stageLabel`, `designStep` + `designStepLabel`: 진행 단계 (상태 배지 1단계/2단계 표기용, 설계중일 때만)
+            - `mine`: 설계중 그룹의 진행자가 로그인 사용자인지 — **false면 상태 배지에 잠금 아이콘을 함께 표시** (설계중이 아니면 null)
+            - `events`: 그룹을 구성하는 이벤트명 목록 (표시 순서)
+
+            <br><br>
+            ### 참고
+            - 설계중(creating)인데 최신 생성 작업이 실패로 끝난 그룹은 목록에서 제외됩니다 (잠정 규칙).
+            - 이벤트 목록 응답의 `scenarioGroupCount`와 함께 사용합니다 — 0이면 설계 아이콘, 1 이상이면 그룹 N 버튼.
+            """
+    )
+    @ApiResponse(responseCode = "200", description = "조회 성공 (연결된 그룹이 없으면 빈 목록)")
+    @GetMapping("/{eventId}/scenario-groups")
+    @RequiredPermissionRules(rules = {
+        @PermissionRule(role = Role.USER, conditions = {PermissionCondition.SKGAS_COMPANY_USER_ONLY}),
+        @PermissionRule(role = Role.ADMIN, conditions = {PermissionCondition.THIRD_PARTY_ADMIN_ONLY})
+    })
+    public BaseResponse<List<EventLinkedScenarioGroupRes>> getEventScenarioGroups(
+        @Parameter(description = "이벤트 ID", example = "1523") @PathVariable Long eventId
+    ) {
+        return BaseResponseFactory.create(eventService.getEventScenarioGroups(eventId));
+    }
+
+    @ApiOrder(4)
+    @Operation(
         summary = "Event 상세 조회 API",
         description = """
             Event 상세 페이지의 핵심 데이터를 조회합니다. <br>
@@ -148,10 +177,6 @@ public class EventController {
             - `signalType` / `signalTypeLabel`: 신호(`signal`) / 소음(`noise`)
             - `isScenarioSuggested`: 시나리오화 추천 여부
             - `scenarioSuggestReason`: 시나리오화 추천 근거 (추천 아님일 때 null)
-            - `scenarioDesignStatus` / `scenarioDesignStatusLabel`: `designable`(설계가능) / `unavailable`(설계불가, 매칭 dimension template 없음) / `creating`(설계중) / `created`(설계완료)
-            - `designStep` / `designStepLabel`: 설계중(`creating`) 세부 진행 단계 — `step1`(분기항목 설계) / `step2`(Signpost 설계). 설계중이 아니면 null
-            - `occupied`: 설계 점유 여부 (설계중이면 true)
-            - `occupantUserId` / `occupantUserName`: 점유 사용자 ID/명 (점유 중이 아니면 null)
             - `eventTypeLv1` / `eventTypeLv1Label` / `eventTypeLv2` / `eventTypeLv2Label`
             - `createdAt`, `updatedAt`, `latestRecordFirstCreated`(최신 연관 레코드 최초 생성일시)
             - `institutionViewSynthesis`: 기관 전망 View 종합 — 기관전망 섹션 상단의 전체 요약
@@ -180,15 +205,19 @@ public class EventController {
             - `drivers[]`: `lv1Id/lv1Label`, `lv2Id/lv2Label`, `lv3Id/lv3Label`, `shortTerm`, `midLongTerm`, `reason`
 
             <br><br>
-            ### relatedEventScenario 필드
-            이벤트에서 생성된 시나리오 그룹과 그 시나리오 표입니다. <br>
-            **활성 시나리오 그룹이 없으면 null**이며, 이때 화면은 시나리오 설계 버튼을 노출합니다.
+            ### relatedEventScenarios 필드
+            이벤트에 연결된 시나리오 그룹별 표 목록입니다 (그룹 오래된 순 스택). <br>
+            **연결된 그룹이 없으면 빈 목록**이며, 이때 화면은 시나리오 설계 버튼을 노출합니다. 생성중(설계 미완료) 그룹은 제외됩니다.
             - `scenarioGroupId`, `groupName`
-            - `dimensionColumns`: 동적 표 헤더 (key, label) — 시나리오 그룹 목록/상세와 동일 구조
-            - `scenarios[]`: `scenarioId`, `scenarioName`, `baseCase`, `dimensions`(차원값, dimensionColumns 순서 매칭),
+            - `dimensionColumns`: 동적 표 헤더 — 시나리오 그룹 목록/상세와 동일 구조
+              - `key` / `label`: 분기항목 키/명 · `description` / `rationale`: 분기항목 설명/선정 근거 (헤더 ⓘ, v4 전용. v1은 null)
+            - `scenarios[]`: `scenarioId`, `scenarioName`, `baseCase`,
+              `scenarioRole` / `scenarioRoleLabel`(시나리오명 앞 역할 배지 — `ceiling` 상단 / `floor` 하단 / `mixed` 혼합, 역할 없으면 null),
               `probability`(원본 0~100),
               `adjustedProbability`(재분배 확률 — 폐기 제외 비례 재분배로 활성 합 100, 폐기=0, 폐기 없으면 probability와 동일),
               `status` / `statusLabel`(대기/실현/폐기)
+            - `scenarios[].dimensions`: 시나리오가 선택한 분기값 셀 (dimensionColumns 순서 매칭)
+              - `key` / `label`: 분기항목 키/명 · `value`: 선택된 분기값 표시 라벨 · `rationale`: 값 선정 근거 (셀 ⓘ, v4 전용. v1은 null)
             """
     )
     @ApiResponse(responseCode = "200", description = "조회 성공")
@@ -203,7 +232,7 @@ public class EventController {
         return BaseResponseFactory.create(eventService.getEventDetail(eventId));
     }
 
-    @ApiOrder(4)
+    @ApiOrder(5)
     @Operation(
         summary = "Event 기관 전망 조회 API (with pagination)",
         description = """
@@ -237,7 +266,7 @@ public class EventController {
         return BaseResponseFactory.create(eventService.getEventOutlooks(eventId, page, size));
     }
 
-    @ApiOrder(5)
+    @ApiOrder(6)
     @Operation(
         summary = "Event Records 조회 API (with pagination)",
         description = """
@@ -260,6 +289,8 @@ public class EventController {
             - `goodsDataNo`: 상품 데이터 번호 (gds_data_no). NEWS인 경우 null
             - `sourceObjId`: 원본 소스 ID (source_obj_id)
             - `isPermitted`: 현재 사용자(고객사)의 상품 조회 권한 여부 (goodsNo 기준)
+            - `mappingReason`: 이 Record가 Event에 연결된 근거 (Event 후보 단계 산출물)
+            - `mappingConfidence`: 매핑 신뢰도 (0.00~1.00)
             """
     )
     @ApiResponse(responseCode = "200", description = "조회 성공")
@@ -274,39 +305,6 @@ public class EventController {
         @Parameter(description = "페이지당 항목 수", example = "10") @RequestParam(defaultValue = "10") @Min(1) int size
     ) {
         return BaseResponseFactory.create(eventService.getEventRecords(eventId, page, size));
-    }
-
-    @ApiOrder(6)
-    @Operation(
-        summary = "이벤트 시나리오 설계 가능 상태 조회 API (폴링)",
-        description = """
-            이벤트 목록 화면에서 이벤트별 시나리오 설계 점유/가능 상태를 폴링 조회합니다. <br>
-            사용자가 설계 중인 이벤트는 점유(lock)되어 다른 사용자의 설계가 불가합니다. <br>
-
-            <br><br>
-            ### 사용 가능한 파라미터
-             - eventIds: 상태를 조회할 이벤트 ID 목록 (복수 가능) / example - eventIds=1&eventIds=2
-
-            <br><br>
-            ### content 항목 필드 (예정)
-            - `eventId`: 이벤트 ID
-            - `scenarioDesignStatus` / `scenarioDesignStatusLabel`: `designable`(설계가능) / `unavailable`(설계불가, 매칭 dimension template 없음) / `creating`(설계중) / `created`(설계완료)
-            - `designStep` / `designStepLabel`: 설계중(`creating`) 세부 진행 단계 — `step1`(분기항목 설계) / `step2`(Signpost 설계). 설계중이 아니면 null
-            - `occupied`: 점유 여부 / `occupantUserId`: 점유 사용자 ID (없으면 null) / `occupantUserName`: 점유 사용자명 (없으면 null)
-            - `scenarioGroupId`: 활성 시나리오 그룹 ID (없으면 null)
-            """
-    )
-    @Parameter(name = "eventIds", description = "조회할 이벤트 ID 목록 (복수 가능)")
-    @ApiResponse(responseCode = "200", description = "조회 성공")
-    @GetMapping("/design-availability")
-    @RequiredPermissionRules(rules = {
-        @PermissionRule(role = Role.USER, conditions = {PermissionCondition.SKGAS_COMPANY_USER_ONLY}),
-        @PermissionRule(role = Role.ADMIN, conditions = {PermissionCondition.THIRD_PARTY_ADMIN_ONLY})
-    })
-    public BaseResponse<List<EventDesignAvailabilityRes>> getEventDesignAvailability(
-        @Parameter(description = "조회할 이벤트 ID 목록", example = "1") @RequestParam(required = false) List<Long> eventIds
-    ) {
-        return BaseResponseFactory.create(eventService.getEventDesignAvailability(eventIds));
     }
 
 }

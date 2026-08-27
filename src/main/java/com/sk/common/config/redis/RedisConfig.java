@@ -1,5 +1,7 @@
 package com.sk.common.config.redis;
 
+import io.lettuce.core.ClientOptions;
+import io.lettuce.core.SocketOptions;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.ApplicationRunner;
@@ -31,6 +33,25 @@ import java.util.Map;
 @Configuration
 public class RedisConfig {
 
+    /**
+     * TCP keepalive가 적용된 공통 클라이언트 옵션.
+     *
+     * keepalive를 켜면 유휴 소켓에 OS가 주기적으로 빈 패킷을 흘려 세션 만료 자체를 막고,
+     * 실제로 끊긴 경우에는 소켓 오류가 발생해 Lettuce 워치독의 자동 재접속과 재구독이 정상 동작한다.
+     */
+    private static ClientOptions keepAliveClientOptions() {
+        return ClientOptions.builder()
+            .socketOptions(SocketOptions.builder()
+                .keepAlive(SocketOptions.KeepAliveOptions.builder()
+                    .enable()
+                    .idle(Duration.ofSeconds(30))
+                    .interval(Duration.ofSeconds(10))
+                    .count(3)
+                    .build())
+                .build())
+            .build();
+    }
+
     // Redis 헬스체크용
     @Bean
     public ApplicationRunner redisHealthChecker(RedisConnectionFactory cf) {
@@ -47,7 +68,7 @@ public class RedisConfig {
 
     // Redis Connection Factory 설정 (Standalone 모드)
     @Bean
-    @Profile(value = "local")
+    @Profile({"local", "testdb"})
     public LettuceConnectionFactory lettuceConnectionFactoryLocal(@Value("${spring.data.redis.host}") String host,
                                                                   @Value("${spring.data.redis.port}") int port,
                                                                   @Value("${spring.data.redis.password}") String password,
@@ -59,6 +80,7 @@ public class RedisConfig {
 
         LettuceClientConfiguration clientConfig = LettuceClientConfiguration.builder()
             .commandTimeout(commandTimeout)
+            .clientOptions(keepAliveClientOptions())
             //.useSsl()
             .build();
 
@@ -78,6 +100,7 @@ public class RedisConfig {
 
         LettuceClientConfiguration clientConfig = LettuceClientConfiguration.builder()
             .commandTimeout(commandTimeout)
+            .clientOptions(keepAliveClientOptions())
             // .useSsl()
             .build();
 
@@ -100,7 +123,11 @@ public class RedisConfig {
         sentinelConfig.setSentinelPassword(RedisPassword.of(sentinelPassword));
         sentinelConfig.setPassword(RedisPassword.of(redisPassword));
 
-        return new LettuceConnectionFactory(sentinelConfig);
+        LettuceClientConfiguration clientConfig = LettuceClientConfiguration.builder()
+            .clientOptions(keepAliveClientOptions())
+            .build();
+
+        return new LettuceConnectionFactory(sentinelConfig, clientConfig);
     }
 
     // 객체 저장용 RedisTemplate 설정
