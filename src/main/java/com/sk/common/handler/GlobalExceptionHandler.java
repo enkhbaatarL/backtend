@@ -41,6 +41,7 @@ import org.springframework.context.MessageSourceResolvable;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.HttpStatusCode;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.http.converter.HttpMessageNotWritableException;
@@ -462,8 +463,8 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
         log.warn("[Design Agent] agent 오류 응답: status={}, code={}, agentMessage={}, agentData={}", ex.getHttpStatus().value(), ex.getErrorCode().getCode(), agentMessage, ex.getAgentData());
         MDCUtil.setValue(MDCUtil.RESPONSE_ERROR_MSG, "%s(%s) - %s".formatted(ex.getErrorCode().getMessage(), ex.getErrorCode().getCode(), agentMessage));
 
-        // Agent 오류 원문은 로그로만 남기고 응답은 표준 코드/메시지만 내린다 (내부 구간 정보를 클라이언트에 노출하지 않음)
         return ResponseEntity.status(ex.getHttpStatus())
+            .contentType(MediaType.APPLICATION_JSON)
             .body(new BaseResponse<>(ex.getErrorCode().getCode(), ex.getErrorCode().getMessage()));
     }
 

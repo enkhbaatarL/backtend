@@ -35,18 +35,18 @@ public class AgentDesignApiException extends RuntimeException {
     }
 
 
+    /**
+     * SSE 경로(생성 스트림)용 — 409/403만 Agent가 판정한 업무 상태로 보고 status를 보존한다.
+     * 409는 B.E가 agentData의 식별자로 자동 재연결하는 원료이고, 403은 FE가 CTA 재조회로 대응하는 계약이다.
+     * 그 외 4xx/5xx는 전부 B.E-Agent 구간 문제로 보고 500 + API-004로 내린다
+     * (선검증을 통과한 요청이 Agent에서 거절되면 계약 문제라는 전제 — REST 프록시와 동일 정책).
+     */
     public static AgentDesignApiException fromAgentBody(int statusValue, String bodyText) {
-        HttpStatus status = HttpStatus.resolve(statusValue);
-        if (status == null) {
-            status = HttpStatus.BAD_GATEWAY;
-        }
-        ResultCode.Error code = switch (statusValue) {
-            case 409, 403 -> ResultCode.Error.BIZ_DESIGN_OCCUPIED;
-            case 400, 422 -> ResultCode.Error.BIZ_RULE_VIOLATION;
-            default -> ResultCode.Error.API_RESPONSE_ERROR;
+        return switch (statusValue) {
+            case 409 -> new AgentDesignApiException(HttpStatus.CONFLICT, ResultCode.Error.BIZ_DESIGN_OCCUPIED, parseMessage(bodyText), parseData(bodyText));
+            case 403 -> new AgentDesignApiException(HttpStatus.FORBIDDEN, ResultCode.Error.BIZ_DESIGN_OCCUPIED, parseMessage(bodyText), parseData(bodyText));
+            default -> internalFromAgentBody(bodyText);
         };
-
-        return new AgentDesignApiException(status, code, parseMessage(bodyText), parseData(bodyText));
     }
 
     /**
