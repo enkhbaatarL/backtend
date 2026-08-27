@@ -4,10 +4,6 @@ import java.util.Arrays;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 
-/**
- * 시나리오 설계 비동기 작업 유형 (tmm_mi_scenario_group_operation_m.operation_type, Agent 소유 어휘).
- * 현재 Agent는 create만 적재하며, 나머지 3종은 스키마에 예약되어 있다.
- */
 @Getter
 @RequiredArgsConstructor
 public enum DesignOperationType {

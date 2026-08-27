@@ -3,6 +3,7 @@ package com.sk.domain.shared.repository.master.tmm;
 import com.sk.domain.shared.entity.master.tmm.MiScenarioGroupOperation;
 import java.util.Collection;
 import java.util.List;
+import java.util.Optional;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -34,5 +35,14 @@ public interface MiScenarioGroupOperationRepository extends JpaRepository<MiScen
      * — create_dt는 동시각 충돌이 가능해 기준으로 쓰지 않는다.
      */
     List<MiScenarioGroupOperation> findByScenarioGroup_ScenarioGroupIdInAndIsDeletedFalseOrderByOperationIdDesc(Collection<Long> scenarioGroupIds);
+
+    /**
+     * 그룹의 진행 중(queued/running) operation 중 최신 1건 조회 (타입 한정).
+     */
+    Optional<MiScenarioGroupOperation> findFirstByScenarioGroup_ScenarioGroupIdAndOperationTypeInAndStatusInAndIsDeletedFalseOrderByOperationIdDesc(
+        Long scenarioGroupId,
+        Collection<String> operationTypes,
+        Collection<String> statuses
+    );
 
 }

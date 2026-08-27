@@ -207,6 +207,8 @@ public class ScenarioDesignController {
             <br><br>
             ### 정련 상태 (`refinementState`, B.E 합성)
             - `stage`(+라벨): 설계 단계 — 검토/Signpost/확정 버튼 제어 기준
+            - `taskRunning`: Agent refine 작업 실행 중 여부. **true면 요청 버튼 대신 스피너를 표시**하고 SSE 완료 신호 수신 후 재조회합니다.
+            - `runningTaskType`(+라벨): 실행 중인 작업 종류 — 검토(`validation`)/Signpost(`signpost`). `scenario_validated` 단계에서는 재검토/Signpost가 모두 가능해 이 값으로 스피너 화면을 구분합니다.
             - `occupied`/`occupantUserId`: 점유 정보
             - `validation`: 검토 결과 (`isValid`/`reason`). **값이 있으면 `table`은 그 검토 편집본**(DB 미반영, 셀 valueId/근거는 서버가 복원)이고,
               null이면(검토 미수행·만료·초기화) `table`은 마지막 영속 상태입니다.
