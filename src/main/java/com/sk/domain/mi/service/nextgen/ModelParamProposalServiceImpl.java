@@ -1,9 +1,11 @@
 package com.sk.domain.mi.service.nextgen;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.sk.common.enums.ResultCode;
+import com.sk.common.exception.ApiErrorException;
 import com.sk.common.exception.AppErrorException;
 import com.sk.common.exception.AppHttpStatusException;
 import com.sk.domain.mi.dto.response.nextgen.*;
@@ -50,6 +52,7 @@ import org.springframework.web.client.ResourceAccessException;
 import org.springframework.web.client.RestClientException;
 import org.springframework.web.client.RestClientResponseException;
 
+import java.math.BigDecimal;
 import java.net.SocketTimeoutException;
 import java.time.LocalDateTime;
 import java.util.*;
@@ -63,6 +66,9 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 @Transactional(readOnly = true)
 public class ModelParamProposalServiceImpl implements ModelParamProposalService {
+
+    private static final String NO_CHANGES_FAILURE_REASON = "파라미터로 반영할 변경 항목이 없습니다.";
+    private static final BigDecimal NO_CHANGES_ERROR_CODE = BigDecimal.valueOf(-202);
 
     private static final List<ModelExecutionPreparationStatus> REQUEST_CREATE_TRANSITION_FROM = List.of(
         ModelExecutionPreparationStatus.REQUESTING,
@@ -106,6 +112,11 @@ public class ModelParamProposalServiceImpl implements ModelParamProposalService 
         try {
             agentResponse = callAgent(() -> modelParamProposalAgentApi.createProposal(scenarioId), "create model parameter proposal");
             validateCreateAgentResponse(agentResponse);
+        } catch (ApiErrorException e) {
+            if (isNoChangesCreateError(e)) {
+                markRequestNoChanges(preparation.getExecPrepId());
+            }
+            throw e;
         } catch (AppErrorException e) {
             handleCreateAgentError(preparation.getExecPrepId(), e);
             throw e;
@@ -183,11 +194,14 @@ public class ModelParamProposalServiceImpl implements ModelParamProposalService 
     private CurrentModelParamProposalRes toCurrentProposalResponse(ModelExecutionPreparation preparation) {
         Optional<AgentModelParamProposal> proposal = findAgentProposal(preparation);
 
-        if (preparation.getStatus() == ModelExecutionPreparationStatus.REQUEST_FAILED) {
+        if (preparation.getStatus() == ModelExecutionPreparationStatus.REQUEST_NO_CHANGES
+            || preparation.getStatus() == ModelExecutionPreparationStatus.REQUEST_FAILED) {
             return currentResponse(
                 preparation,
                 proposal.orElse(null),
-                CurrentModelParamProposalState.PROPOSAL_FAILED,
+                preparation.getStatus() == ModelExecutionPreparationStatus.REQUEST_NO_CHANGES
+                    ? CurrentModelParamProposalState.PROPOSAL_NO_CHANGES
+                    : CurrentModelParamProposalState.PROPOSAL_FAILED,
                 ModelParamParameterSource.NONE,
                 null,
                 null,
@@ -594,6 +608,47 @@ public class ModelParamProposalServiceImpl implements ModelParamProposalService 
                     ResultCode.Error.RSC_NOT_FOUND,
                     "model execution preparation not found after status transition. execPrepId: %d".formatted(execPrepId)
                 ));
+        });
+    }
+
+    private boolean isNoChangesCreateError(ApiErrorException e) {
+        if (e.getStatusCode() < 400 || e.getStatusCode() >= 600 || e.getMessage() == null) {
+            return false;
+        }
+        try {
+            JsonNode body = objectMapper.reader()
+                .with(DeserializationFeature.FAIL_ON_TRAILING_TOKENS)
+                .with(DeserializationFeature.USE_BIG_DECIMAL_FOR_FLOATS)
+                .readTree(e.getMessage());
+            if (body == null || !"error".equals(body.path("status").asText())) {
+                return false;
+            }
+            JsonNode errorCode = body.path("data").path("error_code");
+            return errorCode.isNumber() && errorCode.decimalValue().compareTo(NO_CHANGES_ERROR_CODE) == 0;
+        } catch (JsonProcessingException ignored) {
+            return false;
+        }
+    }
+
+    private void markRequestNoChanges(Long execPrepId) {
+        transactionOperations.executeWithoutResult(status -> {
+            int updated = modelExecutionPreparationRepository.transitionStatus(
+                execPrepId,
+                REQUEST_CREATE_TRANSITION_FROM,
+                ModelExecutionPreparationStatus.REQUEST_NO_CHANGES,
+                NO_CHANGES_FAILURE_REASON,
+                authorizationService.getSubject(),
+                LocalDateTime.now()
+            );
+            if (updated == 0) {
+                ModelExecutionPreparation current = modelExecutionPreparationRepository.findById(execPrepId)
+                    .orElseThrow(() -> AppErrorException.of(
+                        ResultCode.Error.RSC_NOT_FOUND,
+                        "model execution preparation not found after Agent rejection. execPrepId: %d".formatted(execPrepId)
+                    ));
+                log.info("No changes rejection did not transition preparation. execPrepId={}, status={}",
+                    execPrepId, current.getStatus());
+            }
         });
     }
 

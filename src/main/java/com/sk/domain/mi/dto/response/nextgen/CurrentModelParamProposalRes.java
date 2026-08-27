@@ -12,31 +12,31 @@ public record CurrentModelParamProposalRes(
     @Schema(description = "시나리오 ID", example = "309")
     Long scenarioId,
 
-    @Schema(description = "Scenario 기준 팝업 표시 상태", implementation = CurrentModelParamProposalState.class, example = "PROPOSAL_READY")
+    @Schema(description = "Scenario 기준 팝업 표시 상태. PROPOSAL_FAILED와 PROPOSAL_NO_CHANGES는 모두 제안 생성 실패이며, 후자는 변경 항목 없음 사유를 구별합니다.", implementation = CurrentModelParamProposalState.class, example = "PROPOSAL_READY")
     CurrentModelParamProposalState currentState,
 
     @Schema(description = "반환 파라미터 출처", implementation = ModelParamParameterSource.class, example = "PROPOSAL_PARAMETERS")
     ModelParamParameterSource parameterSource,
 
-    @Schema(description = "Backend execution-preparation ID", example = "51001")
+    @Schema(description = "Backend 요청 이력 ID. 요청 전에는 null", example = "51001", nullable = true)
     Long execPrepId,
 
-    @Schema(description = "Agent model parameter proposal ID", example = "10001")
+    @Schema(description = "Agent model parameter proposal ID. ID 발급 전 생성 실패이면 null일 수 있습니다.", example = "10001", nullable = true)
     Long modelParamProposalId,
 
-    @Schema(description = "시나리오 그룹 ID", example = "61")
+    @Schema(description = "시나리오 그룹 ID. Agent proposal이 없으면 null", example = "61", nullable = true)
     Long scenarioGroupId,
 
-    @Schema(description = "연결 Scenario Case ID", example = "88001")
+    @Schema(description = "연결 Scenario Case ID. 실행 연결 전에는 null", example = "88001", nullable = true)
     Long caseId,
 
-    @Schema(description = "연결 Case의 latest run ID", example = "20260709_153000_abcd")
+    @Schema(description = "연결 Case의 latest run ID. 실행 연결 전에는 null", example = "20260709_153000_abcd", nullable = true)
     String runId,
 
-    @Schema(description = "기존 수급모델 실행 상태", implementation = ModelExecutionStatus.class, example = "COMPLETED")
+    @Schema(description = "기존 수급모델 실행 상태. 실행 연결 전에는 null", implementation = ModelExecutionStatus.class, example = "COMPLETED", nullable = true)
     ModelExecutionStatus modelExecutionStatus,
 
-    @Schema(description = "성공한 실행의 DEMAND/SUPPLY/TRADE input 파일 projection. EXECUTED_CONFIRMED 외 상태에서는 null")
+    @Schema(description = "성공한 실행의 DEMAND/SUPPLY/TRADE input 파일 projection. EXECUTED_CONFIRMED 외 상태에서는 null", nullable = true)
     ModelExecutionInputFilesRes executionInputFiles,
 
     @Schema(
@@ -45,16 +45,16 @@ public record CurrentModelParamProposalRes(
     )
     List<CurrentModelParamFileRes> modelFiles,
 
-    @Schema(description = "실패 사유")
+    @Schema(description = "실패 사유. PROPOSAL_NO_CHANGES는 '파라미터로 반영할 변경 항목이 없습니다.'를 반환하며, 실패 사유가 없으면 null", nullable = true)
     String failureReason,
 
-    @Schema(description = "Backend proposal 요청 접수 시각")
+    @Schema(description = "Backend proposal 요청 접수 시각. 요청 전에는 null", nullable = true)
     LocalDateTime requestedAt,
 
-    @Schema(description = "Agent proposal 완료 시각")
+    @Schema(description = "Agent proposal 완료 시각. Agent proposal 또는 완료 시각이 없으면 null", nullable = true)
     LocalDateTime completedAt,
 
-    @Schema(description = "Agent confirmation 완료 시각")
+    @Schema(description = "Agent confirmation 완료 시각. 확정 전에는 null", nullable = true)
     LocalDateTime confirmedAt
 ) {
 }

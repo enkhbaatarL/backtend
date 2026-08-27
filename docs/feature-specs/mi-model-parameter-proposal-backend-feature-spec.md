@@ -6,7 +6,7 @@
 - status: Review
 - owner: BE (platform)
 - created at: 2026-07-03
-- updated at: 2026-07-16
+- updated at: 2026-08-27
 - canonical for: frontend-facing API contract, Backend callback endpoint/minimum compatibility contract, proposed Agent integration questions
 - canonical design reference: `docs/design-docs/gas/mi-model-parameter-proposal-design.md`
 - price interpretation rerun reference: `docs/design-docs/gas/price-forecast-interpretation-domain-design.md`
@@ -20,13 +20,15 @@
   - contract snapshot: 2026-07-03
   - re-reviewed at 2026-07-06
   - response-only `groupedRationales` implementation request: 2026-07-13
+  - 2026-08-27 사용자 결정: Agent proposal 생성의 `error_code=-202`를 “변경 항목 없음” 전용으로 취급
 - depends on:
   - `docs/design-docs/gas/mi-model-parameter-proposal-design.md`
   - `docs/conventions/source-of-truth-governance.md`
 - supersedes: 없음
-- last synced: 2026-07-16
+- last synced: 2026-08-27
 - open questions: 13절 및 duplicate-slot Agent payload의 A6/Excel 실행 좌표 호환성 참조
-- integration model: callback = 완료 신호. Backend가 Agent proposal 테이블을 read-only 직접 조회해 결과 서빙(CAS/hash/snapshot 없음). 공유 DB read 및 read 권한은 확정(조회 가능). callback path `scenarioId`는 proposal identity가 아니라 현재 in-flight execution-preparation을 찾는 scope key다.
+- 2026-08-27 변경 항목 없음 확장: Backend `REQUEST_NO_CHANGES` → A4a `PROPOSAL_NO_CHANGES` 설계를 채택했다. 사용자에게 `-202` 거절 요청은 callback을 발행하지 않음을 확인받아 §13의 해당 착수 조건을 해소했다. Backend 코드에 반영했으며 아직 운영 미배포다. FE/Backend 읽기 호환 배포와 운영 DDL 확인은 별도로 남아 있다.
+- integration model: callback = 완료 신호. Backend가 Agent proposal 테이블을 read-only 직접 조회해 결과 서빙(proposal payload hash/snapshot 없음, Backend 상태 조건부 갱신 유지). 공유 DB read 및 read 권한은 확정(조회 가능). callback path `scenarioId`는 proposal identity가 아니라 현재 in-flight execution-preparation을 찾는 scope key다.
 - callback 인증: 확정. 기존 시나리오 설계 콜백과 동일한 Resource Server JWT 체인(`CustomJwtDecoder` HS256 self-issued + `@RequiredPermissionRules(Role.SYSTEM ...)`) 재사용. Agent는 Backend 토큰 발급 API와 발급 인풋 2종을 전달받아 JWT를 자체 발급·갱신한다.
 - implementation readiness: frontend mock ready; real Agent integration은 proposal read 계약 확정(DB DDL 수령)으로 착수 가능. A4a/A4/A8/A9 response-only `groupedRationales` projection 계약은 구현 가능하며 schema 변경은 없다. SLOT-only grouping은 기존 `tmm_mi_model_param_m` read-only master 일괄 조회를 사용한다. Agent proposal table은 기존 Backend DB/schema에 추가되는 직접 read 대상이며 별도 view/synonym 경로는 필요 없다. 잔여는 runtime table visibility/권한/type 검증과 dimension_map ERD 정정으로 read 엔티티 착수를 막지 않음(인증·공유 read·콜백 계약·write-then-callback 순서·wrapper 셰이프·재시도 정책·proposal DDL 확정)
 
@@ -220,8 +222,9 @@ callback path는 `{scenarioId}`를 경로에 둔다. `scenarioId`는 proposal id
 - Agent 응답 처리로 이미 저장된 terminal 상태를 `PROCESSING`으로 되돌리지 않는다. 응답 직전 현재 persisted status를 다시 읽어 FE에 반환한다.
 - Agent 요청 timeout 시 late callback 가능성이 있으므로 execution-preparation을 즉시 삭제하지 않고 callback/Agent 테이블 재조회로 수렴시킨다.
 - Agent 요청 결과가 “Agent 접수 실패”인지 “Agent는 접수했지만 응답만 유실”인지 불명확하면 `REQUEST_FAILED`로 닫지 않는다. 해당 row를 `REQUESTING` in-flight 상태로 유지해 `ux02(actv_scnr_id)`가 새 preparation 생성을 막게 하고, callback/read-reconcile/timeout 복구가 최종 outcome을 결정한다.
-- Agent proposal 생성이 명시적으로 실패해 최신 execution-preparation이 `REQUEST_FAILED`이거나 Agent status가 `FAILED`로 수렴한 경우, FE는 다시 `POST /model-param-proposals`를 호출할 수 있다. Backend는 실패 row를 재사용하지 않고 새 `tmd_mi_model_execpreph` row를 `REQUESTING`으로 생성한 뒤 새 Agent proposal 요청을 보낸다. 실패 row는 audit/history로 보존하며 in-flight guard 대상이 아니다.
-- Backend→FE HTTP status: `200 OK`
+- Agent proposal 생성이 명시적으로 실패해 최신 execution-preparation이 `REQUEST_FAILED`/`REQUEST_NO_CHANGES`이거나 Agent status가 `FAILED`로 수렴한 경우, FE는 다시 `POST /model-param-proposals`를 호출할 수 있다. Backend는 실패 row를 재사용하지 않고 새 `tmd_mi_model_execpreph` row를 `REQUESTING`으로 생성한 뒤 새 Agent proposal 요청을 보낸다. 실패 row는 audit/history로 보존하며 in-flight guard 대상이 아니다. 신규 상태와 callback 배포 조건은 §5.2.1/§13을 따른다.
+- 변경 항목 없음: Agent 생성 HTTP 오류의 `status=error`, `data.error_code=-202`는 §5.2.1에 따라 `REQUEST_NO_CHANGES`와 실패 사유를 저장한다. 성공 접수 응답이나 빈 제안으로 변환하지 않는다.
+- Backend→FE 성공 접수 HTTP status: `200 OK`. 오류 응답은 §8을 따른다.
 
 Response data:
 
@@ -236,7 +239,7 @@ Response data:
 ```
 
 - 일반 응답 status는 `PROCESSING`이다.
-- callback은 Agent가 proposal 테이블에 결과를 commit한 뒤 발행하는 완료 신호이고 Backend는 신호 수신 후 테이블을 재조회하므로, HTTP 응답과 callback 도착 순서 race는 결과 정합성에 영향을 주지 않는다(재조회로 수렴). 기존 시나리오 설계 콜백과 동일한 write-then-callback 전제이며 `callbackCorrelationId` 확장은 불필요하다.
+- 같은 요청의 HTTP 응답/callback 순서 역전은 Agent write-then-callback과 Backend 조건부 갱신으로 처리한다. 서로 다른 요청 사이의 지연 callback은 별개이며 §13의 상관관계 확인 대상이다. 이번 slice에서 `callbackCorrelationId` 필드를 추가하지 않는다는 것이 재요청 경계의 안전성이 검증됐다는 뜻은 아니다.
 
 ### 5.2 Proposal 상태/결과 조회
 
@@ -338,28 +341,29 @@ A4의 `parameters[]` 각 원소에는 5.2.2의 response-only `groupedRationales[
 
 조회 우선순위:
 
-1. Scenario의 최신 non-deleted `tmd_mi_model_execpreph` row를 찾는다. 정렬 기준은 `exec_prep_id DESC` 또는 동등한 생성시각 최신순이다.
+1. Scenario의 최신 non-deleted `tmd_mi_model_execpreph` row를 찾는다. 정렬 기준은 `exec_prep_id DESC`다.
 2. 최신 execution-preparation row가 없으면 `NOT_REQUESTED`, `parameterSource=NONE`, `modelFiles=[]`를 반환한다.
-3. 최신 row가 `REQUESTING`이거나 Agent row가 아직 없거나 Agent status가 `PROCESSING`이면 `GENERATING`을 반환한다.
-4. 최신 row가 `PROPOSAL_PENDING`이고 Agent status가 `PROPOSED`이면 `PROPOSAL_READY`로 정규화하고 Agent `proposal_parameters`로 `modelFiles` tree를 만든다.
-5. 최신 row가 `CONFIRMING` 또는 `PREPARING_EXECUTION`이거나 Agent status가 `CONFIRMED`인데 아직 `case_id`가 없으면 `CONFIRMED_PENDING_EXECUTION`으로 정규화하고 Agent `confirmation_parameters`로 tree를 만든다.
-6. 최신 row에 `case_id`가 있고 연결된 Scenario Case/Run이 `RUNNING`이면 `EXECUTING`과 Agent `confirmation_parameters` tree를 반환한다.
-7. 최신 row에 `case_id`가 있고 연결된 Scenario Case/Run이 `COMPLETED`이면 `EXECUTED_CONFIRMED`, Agent `confirmation_parameters` tree, 해당 `case_id`의 `executionInputFiles`를 반환한다. 이것이 FE가 "수급모델 실행까지 성공한 상태"에서 보여줄 확정버전 파라미터와 다운로드 가능한 실행 input이다.
-8. 최신 row 또는 Agent row가 실패 상태면 `PROPOSAL_FAILED` 또는 `EXECUTION_FAILED`를 반환하고 `failureReason`을 채운다. `EXECUTION_FAILED`에서 실제 confirmation payload가 있으면 `CONFIRMATION_PARAMETERS` tree를 반환한다. confirmation payload가 없으면 `parameterSource=NONE`, `modelFiles=[]`로 정규화한다. 연결 Run이 `FAILED`이면 dispatch 이후 모델 실행 실패로 보고 `EXECUTION_FAILED`와 `modelExecutionStatus=FAILED`를 반환한다. 연결 Run 실패의 `failureReason`은 raw `errorMessage`보다 stable `failureReasonCode`를 우선하며, 내부 exception/root-cause 문자열은 API로 반환하지 않는다.
+3. 최신 row가 `REQUEST_NO_CHANGES`이면 `PROPOSAL_NO_CHANGES`를 반환한다. `REQUEST_FAILED` 또는 Agent `FAILED`이면 일반 `PROPOSAL_FAILED`를 반환한다. 두 실패 모두 `parameterSource=NONE`, `modelFiles=[]`, 저장된 안전한 `failureReason`을 사용한다. **이 판정은 Agent row 없음/`PROCESSING`에 따른 생성중 판정보다 우선한다.**
+4. 최신 row에 `case_id`가 있으면 연결 Case/Run을 판정한다. latest Run `RUNNING` → `EXECUTING`, `COMPLETED` → `EXECUTED_CONFIRMED`, `FAILED` → `EXECUTION_FAILED`다. 실행중/성공은 confirmation tree를 반환하고 실패는 실제 confirmation payload가 없으면 `NONE`/`modelFiles=[]`로 정규화한다. `executionInputFiles`는 `EXECUTED_CONFIRMED`에서만 같은 Case의 파일로 채운다. 연결 Run 실패의 `failureReason`은 raw `errorMessage`보다 stable `failureReasonCode`를 우선하며 내부 exception/root-cause 문자열은 노출하지 않는다. Case/Run 정합성 오류는 §8을 따른다.
+5. `case_id` 없이 Backend `EXECUTION_FAILED`이면 같은 `currentState`와 실패 사유를 반환한다. 실제 confirmation payload가 있으면 `CONFIRMATION_PARAMETERS`, 없으면 `NONE`/`modelFiles=[]`로 정규화한다. Backend `EXECUTING`인데 `case_id`가 없으면 데이터 불일치 오류다.
+6. 아직 `case_id`가 없고 Backend가 `CONFIRMING`/`PREPARING_EXECUTION`이거나 Agent가 `CONFIRMED`이면 `CONFIRMED_PENDING_EXECUTION`으로 정규화하고 Agent `confirmation_parameters`로 tree를 만든다.
+7. 위 종료/확정/실행 판정에 해당하지 않으며 최신 row가 `REQUESTING`이거나 Agent row가 없거나 Agent status가 `PROCESSING`이면 `GENERATING`을 반환한다.
+8. 최신 row가 `PROPOSAL_PENDING`이고 Agent status가 `PROPOSED`이면 `PROPOSAL_READY`로 정규화하고 Agent `proposal_parameters`로 tree를 만든다. 그 외 지원하지 않는 조합은 데이터 불일치 오류다.
 
 상태 매핑:
 
 | 기준 | 조건 | `currentState` | `parameterSource` | 비고 |
 |---|---|---|---|---|
 | execution-preparation | 최신 non-deleted row 없음 | `NOT_REQUESTED` | `NONE` | `modelFiles=[]` |
-| Backend status / Agent row | `REQUESTING` 또는 Agent row 없음 또는 Agent `PROCESSING` | `GENERATING` | `NONE` | `modelFiles=[]` |
+| Backend status | `REQUEST_NO_CHANGES` | `PROPOSAL_NO_CHANGES` | `NONE` | 변경 항목 없음으로 인한 제안 생성 실패. Agent row 없어도 이 상태 우선, `modelFiles=[]` |
+| Backend status | `REQUEST_FAILED` | `PROPOSAL_FAILED` | `NONE` | 일반 제안 생성 실패, `modelFiles=[]` |
+| Agent status | Agent `FAILED` (위 전용 상태 제외) | `PROPOSAL_FAILED` | `NONE` | Agent proposal 실패, `modelFiles=[]` |
+| Backend status / Agent row | 위 조회 우선순위의 실패/확정/실행에 해당하지 않고 `REQUESTING` 또는 Agent row 없음 또는 Agent `PROCESSING` | `GENERATING` | `NONE` | `modelFiles=[]` |
 | Agent status | Agent `PROPOSED` | `PROPOSAL_READY` | `PROPOSAL_PARAMETERS` | Agent `proposal_parameters` tree |
 | Backend status / Agent status | Backend `CONFIRMING`/`PREPARING_EXECUTION` 또는 Agent `CONFIRMED`, `case_id` 없음 | `CONFIRMED_PENDING_EXECUTION` | `CONFIRMATION_PARAMETERS` | Agent `confirmation_parameters` tree |
 | Case/Run status | latest run `RUNNING` | `EXECUTING` | `CONFIRMATION_PARAMETERS` | confirmation tree, `modelExecutionStatus=RUNNING` |
 | Case/Run status | latest run `COMPLETED` | `EXECUTED_CONFIRMED` | `CONFIRMATION_PARAMETERS` | confirmation tree, `modelExecutionStatus=COMPLETED` |
 | Case/Run status | latest run `FAILED` | `EXECUTION_FAILED` | confirmation payload 존재 시 `CONFIRMATION_PARAMETERS`, 없으면 `NONE` | `modelExecutionStatus=FAILED` |
-| Backend status | `REQUEST_FAILED` | `PROPOSAL_FAILED` | `NONE` | Agent proposal 생성/수렴 실패, `modelFiles=[]` |
-| Agent status | Agent `FAILED` | `PROPOSAL_FAILED` | `NONE` | Agent proposal 실패, `modelFiles=[]` |
 | Backend status | `EXECUTION_FAILED` + `case_id` 없음 | `EXECUTION_FAILED` | confirmation payload 존재 시 `CONFIRMATION_PARAMETERS`, 없으면 `NONE` | confirmation/Excel/file/Case·Run commit 이전 단계 실패. `modelExecutionStatus=null` |
 
 `modelExecutionStatus`는 기존 A11 model execution status vocabulary(`RUNNING|COMPLETED|FAILED`)를 재사용한다. `case_id`가 연결됐지만 Case/Run 정합이 깨진 경우에는 8절의 데이터 불일치 오류로 처리한다. `EXECUTING` 전이는 Case INSERT와 `execprep.case_id` 저장을 한 트랜잭션에서 commit한 뒤 dispatch하므로(Domain Design 규칙 29), "Case는 존재하는데 `case_id=null`"인 상태는 영속화되지 않는다. 따라서 A4a는 이 window를 판정 대상으로 두지 않는다.
@@ -633,7 +637,8 @@ Response data examples:
 - `CONFIRMED_PENDING_EXECUTION`: 사용자 확정 후 실행 Case 생성 전 또는 Excel 생성 중. `confirmation_parameters` tree
 - `EXECUTING`: 수급모델 실행 접수 후 Case/Run이 `RUNNING`. `confirmation_parameters` tree
 - `EXECUTED_CONFIRMED`: 최신 연결 Case/Run이 `COMPLETED`. 연결 proposal의 현재 `confirmation_parameters` tree
-- `PROPOSAL_FAILED`: proposal 생성 실패. `modelFiles=[]`
+- `PROPOSAL_NO_CHANGES`: 반영할 변경 항목이 없어 **파라미터 제안 생성에 실패**한 상태. `PROPOSAL_FAILED`와 함께 실패로 분류하며 사유를 구별한다. 아래 별도 절 참조. `modelFiles=[]`
+- `PROPOSAL_FAILED`: 위 신규 구분 대상 외 proposal 생성 실패. `modelFiles=[]`
 - `EXECUTION_FAILED`: confirmation 이후 Excel/파일/Case·Run commit 이전 실패 또는 commit 이후 dispatch/모델 실행 실패. confirmation payload가 있으면 tree, 없으면 `parameterSource=NONE`, `modelFiles=[]`. 연결 Case/Run이 있고 `modelExecutionStatus=FAILED`이면 dispatch 또는 모델 실행 실패이고, `case_id`가 없고 `modelExecutionStatus=null`이면 Backend confirmation/Excel/file/Case·Run commit 이전 단계 실패다.
 
 `parameterSource`:
@@ -641,6 +646,69 @@ Response data examples:
 - `NONE`: 반환할 파라미터 없음, `modelFiles=[]`
 - `PROPOSAL_PARAMETERS`: Agent `proposal_parameters`를 tree로 반환
 - `CONFIRMATION_PARAMETERS`: Agent `confirmation_parameters`를 tree로 반환
+
+#### 변경 항목 없음 결과 및 FE 전달안 — 2026-08-27, Backend 반영/미배포
+
+**이번 결정과 적용 범위**
+
+- 사용자 지시에 따라 Agent proposal 생성 응답의 `status=error`, `data.error_code=-202`를 “반영할 변경 항목 없음” 전용으로 취급한다. Agent 배포 이력을 확인한 사실이 아니라 이번 작업의 합의된 해석이다.
+- `data.error_name=INVALID_REQUEST`나 `message` 문구만으로 분류하지 않는다. 다른 오류 코드 또는 코드 누락 응답을 같은 문구라는 이유로 이 결과에 포함하지 않는다. proposal confirmation 등 다른 Agent operation에 이 규칙을 확대하지 않는다.
+- lifecycle/재요청 규칙은 domain design §3.2를 따른다. 기존 Backend 상태 컬럼에 전용 종료 상태 `REQUEST_NO_CHANGES`를 저장하고 이 API에서 `currentState=PROPOSAL_NO_CHANGES`로 매핑한다. 별도 오류 코드 컬럼은 추가하지 않는다. 물리 저장/배포는 canonical execprep DDL draft를 따르며 Backend 구현에 이 값의 저장/반환을 반영했으며 운영 배포는 별도다.
+- FE의 제안 생성 실패 분류에는 `PROPOSAL_FAILED`와 `PROPOSAL_NO_CHANGES`를 모두 포함한다. 신규 값은 “변경 항목 없음”이라는 실패 사유를 구별하며 성공/정상 완료 상태로 분류하지 않는다.
+- 새 request field나 public `errorCode` field를 추가하지 않는다. Backend→FE 생성 POST의 HTTP/오류 응답 형식 변경은 이번 전달안에 포함하지 않는다. FE가 Agent의 `-202` 응답을 직접 받거나 해석한다고 가정하지 않는다.
+- 이 GET 자체의 조회가 성공하면 기존 `BaseResponse<T>`/HTTP 200을 사용한다. 모델 제안이 만들어졌다는 뜻의 성공이 아니라 현재 상태 조회가 성공했다는 뜻이다.
+
+**생성 오류 처리와 영속화**
+
+이 변경은 상태 enum 추가뿐 아니라, 최초 신고된 **Agent `-202` 예외 처리 누락 → `REQUESTING`/`GENERATING` 잔류 결함의 수정**을 포함한다. 아래 예외 처리·실패 commit·GET 우선 매핑을 함께 구현해야 완료다. 새 enum이나 FE 표시 분기만 추가하는 것으로는 이 결함이 해결되지 않는다.
+
+1. 실제 공통 RestClient의 HTTP 오류는 `ApiErrorException`으로 전달된다. 생성 operation에서 이 타입의 원문 body를 안전하게 구조 분석해 `status=error`와 숫자형 `data.error_code=-202`를 확인한다. `AppErrorException`/`RestClientResponseException`만 처리하는 변경으로는 첨부 경로가 해결되지 않는다. 파싱 실패/코드 누락/다른 코드를 메시지 추측으로 신규 상태에 포함하지 않는다.
+2. Agent 호출 전에 생성한 **같은 `execPrepId`**를 대상으로 별도 짧은 transaction에서 상태와 사용자용 사유를 함께 저장한다. 허용 선행 상태는 `REQUESTING`/`PROPOSAL_PENDING`이며 원자적인 조건부 갱신을 사용한다. 갱신 0건이면 재조회하며 다른 terminal/확정/실행 상태나 더 최신 요청을 덮어쓰지 않는다.
+3. 성공적으로 전환한 row는 `REQUEST_NO_CHANGES`, 기존 `errorMessage`에는 `파라미터로 반영할 변경 항목이 없습니다.`를 저장한다. 이 문구를 `failureReason`으로 반환하며 분류는 문구가 아닌 상태값으로 한다. 외부 JSON/stack trace/내부 예외 문구를 그대로 저장·공개하지 않는다. Agent ID나 Case/Run을 임의 생성하지 않는다.
+4. 실패 상태 commit 후 기존 생성 POST 오류 응답을 유지한다. 해당 `ApiErrorException` 경로는 현재 handler 기준 HTTP 500 / `API_RESPONSE_ERROR` / 표준 `BaseResponse`이며 `data`에 Agent `-202`를 추가하지 않는다. 공통 예외 handler나 다른 Agent operation의 HTTP 정책은 변경하지 않는다. DB 저장에 실패했다면 종료 저장 성공으로 간주하지 않으며 FE는 GET으로 확인한다.
+5. 다른 확정된 생성 실패는 기존 `REQUEST_FAILED`/`PROPOSAL_FAILED` 계약, timeout·응답 유실 등 결과 미확정은 기존 대기/복구 원칙을 따른다. 단순히 모든 외부 예외를 신규 상태나 실패로 바꾸지 않는다. 생성 HTTP 오류 외의 Agent 테이블 `errorCode`/callback까지 이번 코드 판별을 자동 확장하지 않는다.
+
+`REQUEST_NO_CHANGES`는 진행중 가드와 callback 후보에서 제외한다. 사용자 확인에 따라 `-202` 거절 요청에는 callback이 없으며, 이 확인으로 해당 신규 경로의 착수 조건을 해소했다(§13). 다른 요청의 과거 callback까지 안전하다는 보장은 아니므로 기존 callback 계약은 변경하지 않는다. 새 SSE status 또는 callback 오류코드 필드는 추가하지 않는다. 동기 거절은 SSE가 없어도 생성 POST 이후 A4a GET으로 확인할 수 있어야 한다.
+
+**응답 — 기존 `BaseResponse.data`의 주요 필드 발췌**
+
+```json
+{
+  "currentState": "PROPOSAL_NO_CHANGES",
+  "parameterSource": "NONE",
+  "modelParamProposalId": null,
+  "modelFiles": [],
+  "executionInputFiles": null,
+  "failureReason": "파라미터로 반영할 변경 항목이 없습니다."
+}
+```
+
+- proposal ID 발급 전 거절될 수 있어 `modelParamProposalId=null`을 허용한다. 표시/분기는 ID나 메시지 일치 여부가 아니라 `currentState`로 한다.
+- `execPrepId`/`requestedAt`은 실패한 Backend 요청 이력 값을 유지한다. 새 요청의 `caseId`/`runId`/`modelExecutionStatus`와 `executionInputFiles`는 `null`이다. Agent row가 없으면 `scenarioGroupId`/`eventId`/`completedAt`/`confirmedAt`도 기존 nullable 계약을 유지하며, 생성 완료 시각이나 과거 제안 정보를 임의 채우지 않는다.
+- `failureReason`은 Backend가 정규화한 사용자용 안내 문구이며 기존 field 이름을 유지한다. 외부 오류 JSON/stack trace를 그대로 노출하지 않는다.
+- 과거 실패에 구분 근거가 없으면 일반 `PROPOSAL_FAILED`를 유지한다. 기존 데이터의 일괄 재분류를 약속하지 않는다.
+
+**FE 전달문**
+
+> 파라미터 제안 생성 결과에 **“변경 항목 없음으로 인한 생성 실패”** 상태를 Backend 코드에 반영했습니다. 아직 운영 배포 전이며 FE 대응 버전과 배포 순서를 함께 확인해야 합니다.
+>
+> 대상은 `GET /api/v1/mi/next-gen/scenarios/{scenarioId}/model-param-proposals`이며, 신규 `currentState`는 `PROPOSAL_NO_CHANGES`입니다. **`PROPOSAL_FAILED`와 `PROPOSAL_NO_CHANGES` 모두 제안 생성 실패로 처리하되 실패 사유를 구별해 주세요.**
+>
+> 화면에는 **“파라미터 제안 생성 실패”**와 사유 **“반영할 변경 항목이 없습니다”**를 표시해 주세요. 제안 생성 로딩과 해당 요청의 반복 조회를 종료하고, 사유 상세는 `failureReason`을 사용합니다. `modelFiles=[]`, `parameterSource=NONE`이므로 이전 제안 표를 남겨두지 않고 해당 요청의 확정/실행 버튼을 비활성화해 주세요. 제안 ID 발급 전 실패일 수 있어 `modelParamProposalId=null`을 허용합니다.
+>
+> 생성 POST가 오류로 끝나도 이 GET을 조회해 화면 상태를 결정해 주세요. SSE는 갱신 신호이며 수신 후에도 GET 결과를 사용합니다. GET 결과가 `GENERATING`이면 기존 대기 정책을 적용하고, GET 자체가 실패하면 조회 오류로 처리해 주세요. HTTP 오류나 안내 문구만으로 `PROPOSAL_NO_CHANGES`를 추정하지 않습니다.
+>
+> 조건 변경 후 사용자가 새 제안을 요청하는 것은 허용하되 자동으로 생성 POST를 반복하지 않습니다. 일반 실패 처리는 기존대로 유지하고, Backend가 새 상태를 실제 반환하기 전에 FE 타입/화면 분기를 먼저 배포해 주세요.
+
+**수용 조건**
+
+- Agent proposal ID/row가 없고 **callback과 SSE가 전혀 오지 않는 조건**에서도 `-202` 생성 거절을 처리해 `REQUEST_NO_CHANGES`와 사유를 commit한다. 최초 GET 및 새로고침/재진입에서 같은 최신 요청이 `PROPOSAL_NO_CHANGES`로 표시되며 `GENERATING`에 남지 않아야 한다. FE는 일반 실패/변경 항목 없음 실패 모두 실패 UI를 적용하고 사유만 구별한다.
+- 다른 명시적 생성 실패는 `PROPOSAL_FAILED`, timeout 등 결과 미확정은 기존 대기 정책을 유지한다.
+- 실제 공통 RestClient를 거치는 HTTP 오류(예: 테스트 입력 400/422)의 `-202`에 대해 상태+사유 commit과 기존 POST HTTP 500/`API_RESPONSE_ERROR` 보존을 확인한다. 다른 코드/코드 누락/깨진 JSON/같은 메시지만 있는 응답은 신규 상태로 오분류하지 않는다.
+- Agent row/ID가 없는 `REQUEST_NO_CHANGES`가 `GENERATING`으로 fallback하지 않으며, 새 조회 transaction에서도 같은 상태/사유가 보존된다. 이전 실행이 있어도 최신 실패를 우선한다.
+- 재요청 시 새 `execPrepId`를 만들고 기존 실패 row를 보존한다. `REQUEST_NO_CHANGES`가 in-flight/callback 후보에 들어가지 않고 기존 RUNNING 중복 가드는 유지된다. 종료/확정/실행 후의 조건부 갱신 0건과 DB 저장 실패도 검증한다.
+- 새 상태에서 제안 생성 대기와 이전 제안 표가 남지 않으며, 제안이 없는 요청으로 확정/실행을 진행하지 않는다.
+- §13의 사용자 확인(`-202` 거절은 callback 없음)을 계약 근거로 두고 callback 없이 실패 저장/재요청이 동작하는지 검증한다. 이는 Agent 소스/운영 이력의 직접 검증이나 다른 요청의 지연 callback 안전성 검증이 아니다. 해당 Agent 동작이 바뀌면 요청 간 식별 계약을 먼저 재검토한다. 현행 SSE와 known-proposal GET의 상태 집합은 자동 확장하지 않는다.
 
 ### 5.2.2 A4a/A4/A8/A9 공통 response-only grouped rationale projection
 
@@ -781,7 +849,7 @@ data: {"scenarioId":309,"modelParamProposalId":10001,"status":"FAILED"}
 
 2026-07-03 Notion wrapper 계약을 변경하지 않고 그대로 수신하며, Backend boundary에서 내부 DTO로 normalize하는 채택 계약이다. Agent에 flat 페이로드 변경을 요청하는 대안은 채택하지 않는다.
 
-**callback은 완료 신호(signal)다.** canonical proposal 결과·상태는 callback payload가 아니라 **Backend가 Agent proposal 테이블을 재조회**해 얻는다(Domain Design 3.5). 따라서 Backend는 callback의 `data.proposalParameters` 내용을 저장·신뢰하지 않으며, payload hash / CAS / terminal overwrite 보호를 두지 않는다. Agent가 proposal 테이블 commit 이후 신호를 발행(write-then-callback)한다는 전제다.
+**callback은 완료 신호(signal)다.** proposal ID가 있는 결과·상태는 **Backend가 Agent proposal 테이블을 재조회**해 얻는다(Domain Design 3.5). `data.proposalParameters` 내용을 저장·신뢰하거나 payload hash/version CAS를 추가하지 않는다. 단, Backend terminal 상태 보호를 위한 조건부 상태 갱신은 필수다. Agent write-then-callback과 별개인 요청 간 지연 신호는 §13의 확인 대상이다.
 
 Request:
 
@@ -817,14 +885,14 @@ Processing (signal):
 2. wrapper를 역직렬화하고 식별자·`status`(성공/실패 힌트)만 내부 신호 DTO로 normalize한다.
 3. `data.modelParamProposalId`가 있으면 path `scenarioId`의 in-flight execution-preparation 후보 중 같은 Agent proposal ID를 가진 row를 조회하고 교차검증한다.
 4. `modelParamProposalId`가 없으면 path `scenarioId`의 현재 in-flight execution-preparation이 정확히 1건일 때만 조회한다. 없으면 late/no-op, 여러 건이면 invariant violation으로 처리한다.
-5. **Agent proposal 테이블을 재조회**해 Agent proposal ID와 canonical 상태·결과를 얻는다.
+5. callback 또는 preparation에서 proposal ID를 확인하면 **Agent proposal 테이블을 재조회**해 canonical 상태·결과를 얻는다. 양쪽 모두 ID가 없고 실패 신호이면 기존 `REQUEST_FAILED`로 조건부 전환한다. ID 없는 성공 신호는 거절한다. 메시지만으로 `REQUEST_NO_CHANGES`를 추정하지 않는다.
 6. preparation의 `modelParamProposalId`가 비어 있으면 재조회 ID를 조건부 저장한다. 이미 같은 ID면 no-op, 다른 ID면 409로 거절하고 덮어쓰지 않는다.
-7. Backend orchestration 행 상태를 재조회 결과로 갱신한다 — monotonic. `PROCESSING` 이후 단계면 no-op.
+7. Backend orchestration 행은 `REQUESTING`/`PROPOSAL_PENDING`에서만 조건부 갱신한다. `REQUEST_NO_CHANGES`를 포함한 terminal/확정/실행 단계는 되돌리지 않는다. 이는 같은 row의 보호이며 이미 만들어진 새 요청 row의 상관관계까지 보장하지는 않는다.
 8. orchestration write commit 이후 SSE를 발행한다.
 
 Backend 내부 idempotency:
 
-- 중복/지연/순서역전 callback은 재조회로 수렴하는 **멱등 신호**다. 별도 payload hash / CAS는 없다.
+- 같은 요청의 중복/지연/순서역전 callback은 재조회와 조건부 갱신으로 수렴한다. 별도 payload hash/version은 없다. 요청 종료 후 새 요청에 과거 신호가 붙지 않는지는 §13의 별도 검증 대상이다.
 - 이미 `PROCESSING` 이후 단계(`CONFIRMING`/`CONFIRMED`/`EXECUTING`)인 proposal에 도착한 신호는 상태를 되돌리지 않고 no-op이다(monotonic guard). in-flight row가 없는 late callback도 terminal/history row에 붙이지 않고 no-op으로 수렴한다.
 - Backend는 callback payload를 저장하지 않으므로 "충돌 payload" 판정 자체가 없다. 결과 정합성은 Agent 테이블이 단일 진실원이다.
 
@@ -835,7 +903,7 @@ Backend response 최소안:
 
 #### 5.4.2 Proposed Contract — Agent 협의 필요
 
-> callback을 완료 신호로 격하하고 결과를 Agent 테이블 재조회로 얻으므로, callback race/멱등 목적의 `callbackCorrelationId`·`callbackEventId`·payload hash 확장은 **moot**(불필요)이다. 아래 표는 협의 이력으로 남긴다.
+> 아래 표는 과거 협의 이력이며 현재 request/response에 이 필드를 추가하지 않는다. 같은 요청의 순서 역전은 재조회/조건부 갱신으로 처리하지만, 2026-08-27 거절 후 재요청의 상관관계는 §13에서 별도 확인한다. 아래 대안만으로 해당 경계가 해결됐다고 간주하지 않는다.
 
 | 제안 | 목적 | 최소 계약 대안 |
 |---|---|---|
@@ -856,13 +924,15 @@ flat callback DTO는 Notion wrapper와 직접 충돌하므로 Agent 동의 전�
 
 - 인증: 기존 콜백과 동일한 self-issued JWT + `@RequiredPermissionRules(Role.SYSTEM ...)` 재사용. Agent가 Backend 토큰 발급 API + 인풋 2종으로 자체 발급·갱신한다.
 - 공유 DB read: Agent proposal 테이블 read 가능(권한 확정). callback = 신호, 결과는 재조회.
-- 순서: write-then-callback 전제(Agent가 proposal 테이블 commit 후 신호 발행). **2026-07-07 Agent 답변으로 명시 확정.** 재조회로 수렴하므로 `callbackCorrelationId`/`callbackEventId`/payload hash는 moot(불필요).
+- 순서: write-then-callback 전제(Agent가 proposal 테이블 commit 후 신호 발행). **2026-07-07 Agent 답변으로 명시 확정.** 이 합의는 신규 거절 요청의 callback 유무나 요청 간 상관관계 보장까지 포함하지 않는다. 필드 확장은 현재 채택하지 않았으며 신규 검증 gate는 §13을 따른다.
 - wrapper 셰이프: callback `{status, message, data}` wrapper 필드 셰이프가 Agent 규약 1.2.2와 일치함을 **최종 확인(2026-07-07)**. 식별자 4종(`modelParamProposalId`, `scenarioId`, `scenarioGroupId`, `eventId`)+`data.status`(`PROPOSED|FAILED`)는 `data` 내부이며, 성공 시 채우고 실패(`error`) 시 `data`(null/빈 object) 생략은 규약대로 허용(correlation은 path `scenarioId`).
-- retry/ack: callback이 멱등 신호이므로 중복·지연은 Backend monotonic guard로 no-op 수렴. Agent가 ack disposition을 해석할 필요 없음(단순 `200`).
+- retry/ack: 같은 요청의 중복·지연은 Backend monotonic guard로 처리하고 정상/no-op에는 `200`을 반환한다. Agent가 ack disposition을 해석할 필요는 없다. 요청 간 지연 신호의 안전성을 이 ack 정책으로 보장하지 않는다.
 
 **Open (남은 확인 — 콜백 계약을 막지는 않음)**
 
 1. `schemaVersion`, `completedAt`, `errorCode`가 Agent 운영/감사에 필요한가(선택적 확장; 최소안 미포함).
+
+2026-08-27 신규 실패 slice의 요청 간 callback 확인은 위 선택 항목과 별도로 §13의 P0 gate다. 기존 callback shape는 유지하지만 신규 slice 구현 준비 완료를 뜻하지 않는다.
 
 ### 5.5 사용자 확정 및 Model Execution 접수
 
@@ -1332,6 +1402,7 @@ FE가 반드시 처리해야 하는 최소 상태는 `PROCESSING`, `PROPOSED`, `
 - `CONFIRMED_PENDING_EXECUTION`
 - `EXECUTING`
 - `EXECUTED_CONFIRMED`
+- `PROPOSAL_NO_CHANGES` (§5.2.1 참조)
 - `PROPOSAL_FAILED`
 - `EXECUTION_FAILED`
 
@@ -1355,6 +1426,8 @@ FE가 반드시 처리해야 하는 최소 상태는 `PROCESSING`, `PROPOSED`, `
 | Scenario model execution `RUNNING` | 409 | `RSC_ALREADY_EXISTS` | proposal/실행 차단 |
 | Agent proposal 요청 timeout | 504 | `API_TIMEOUT` | local request 생성 시 보상 필요 |
 | Agent proposal 요청 실패 | 502/503 | `API_RESPONSE_ERROR`/`API_SERVICE_UNAVAILABLE` | 실패 응답 |
+| Agent 생성 HTTP 오류가 `status=error`, `data.error_code=-202` | 500 | `API_RESPONSE_ERROR` | 기존 `ApiErrorException` 오류 응답 유지. 상태 commit 성공 시 `REQUEST_NO_CHANGES`; FE는 A4a로 확인. 아래 일반 Agent 오류 표보다 이 행이 우선 |
+| current-state GET에서 변경 항목 없음 실패 조회 | 200 | `SUC-000` | §5.2.1에 따라 `PROPOSAL_NO_CHANGES`와 실패 사유 반환. HTTP 200은 조회 성공이며 제안 생성 성공이 아님 |
 | callback Bearer token 없음/유효하지 않음 | 401 | 공통 authentication error | 저장하지 않음 |
 | callback token은 유효하나 호출 권한 없음 | 403 | 공통 permission error | 저장하지 않음 |
 | path `scenarioId`에 해당하는 proposal 없음 | 404 | `RSC_NOT_FOUND` | 반영하지 않음; Agent retry 처리는 협의 필요 |
@@ -1382,6 +1455,7 @@ FE가 반드시 처리해야 하는 최소 상태는 `PROCESSING`, `PROPOSED`, `
 
 ## 9. Swagger Annotation Recommendation
 
+- 변경 항목 없음 slice 구현 시 current-state operation 설명에 **변경 항목 없음으로 인한 제안 생성 실패**와 POST 오류 후 조회 시점을 추가한다. DTO enum/예시에 `PROPOSAL_NO_CHANGES`, `parameterSource=NONE`, 빈 목록/null 허용을 반영하고 generated OpenAPI로 확인한다. §5.2.1 예시는 GET 200 response의 operation-specific example로 사용하며, 구현 전 Swagger가 이미 새 값을 제공한다고 안내하지 않는다. 생성 POST는 §8의 HTTP 500/`API_RESPONSE_ERROR`를 문서화하고 `-202`를 새 public error code로 추가하지 않는다.
 - proposal request summary: `MI 수급모델 파라미터 제안 생성 접수 API`
 - proposal current-state query summary: `MI 수급모델 파라미터 현재 상태 조회 API`
 - proposal query summary: `MI 수급모델 파라미터 제안 상태/결과 조회 API`
@@ -1397,6 +1471,7 @@ FE가 반드시 처리해야 하는 최소 상태는 `PROCESSING`, `PROPOSED`, `
 
 ## 10. Data/Model Impact
 
+- 2026-08-27 변경 항목 없음 slice: Backend enum에 `REQUEST_NO_CHANGES`, 공개 current-state enum에 `PROPOSAL_NO_CHANGES`를 추가하는 설계다. 기존 상태 컬럼/오류 메시지를 사용하므로 별도 사유 코드 컬럼은 추가하지 않는다. 기존 JPA latest preparation 조회와 조건부 상태 갱신을 유지하며 신규 join/MyBatis/QueryDSL 도입은 필요 없다. 물리 스키마 변경 필요 여부와 호환 배포 조건은 canonical execprep DDL draft의 “2026-08-27 전용 실패 상태 확장” 절이 소유한다. Backend 코드에 반영했으며 운영 DB 값은 변경하지 않았다.
 - mock slice:
   - schema change 없음
   - JSON seed + in-memory/Redis state 가능
@@ -1427,7 +1502,7 @@ FE가 반드시 처리해야 하는 최소 상태는 `PROCESSING`, `PROPOSED`, `
 
 - proposal state/snapshot: JPA
 - current-state 조회: 최신 execution-preparation + Agent proposal read + Case/Run 상태 조합. JPA repository projection으로 시작하고 조인이 복잡해지면 QueryDSL로 승격
-- callback 처리: Agent 테이블 재조회 → Backend orchestration 행 monotonic update + transaction (CAS 없음)
+- callback 처리: Agent 테이블 재조회 → Backend orchestration 행 조건부 monotonic update + transaction. proposal payload hash/version CAS를 추가하지 않는 것과 상태 전이 guard는 별개다.
 - callback SSE publish: transaction after-commit event
 - A8/A9 latest anchor: JPA repository projection 또는 공통 resolver/helper 한 곳에서 `LatestModelParamProposalExecutionContext`를 구성한다. 두 endpoint가 Case/execprep 선택 predicate와 404를 각각 구현하지 않는다.
 - A4a input files: current-state 조회에서 이미 선택한 execution-preparation의 `caseId`를 사용하고 latest Case resolver를 별도로 호출하지 않는다.
@@ -1439,6 +1514,7 @@ FE가 반드시 처리해야 하는 최소 상태는 `PROCESSING`, `PROPOSED`, `
 
 ## 12. Implementation Touch Points
 
+- 변경 항목 없음 slice(Backend 반영, 미배포): `ModelParamProposalServiceImpl`의 생성 예외 분류/실패 저장/현재 조회 분기, `ModelExecutionPreparationStatus`, `CurrentModelParamProposalState`, Controller/DTO OpenAPI, 관련 회귀 테스트. 기존 `ModelExecutionPreparationRepository.transitionStatus`를 우선 재사용한다. callback 후보·실행 가드의 새 상태 제외를 검증하되 공통 HTTP handler/Agent 확인 API를 변경하지 않는다.
 - controller
   - proposal frontend controller
   - proposal current-state GET mapping 추가
@@ -1479,9 +1555,18 @@ FE가 반드시 처리해야 하는 최소 상태는 `PROCESSING`, `PROPOSED`, `
 
 ## 13. Open Questions
 
-> Resolved: (a) callback 인증 방식 — 기존 콜백과 동일 self-issued JWT 재사용, Agent가 Backend 토큰 발급 API + 인풋 2종으로 자체 발급. (b) 공유 DB read — Agent proposal 테이블 read 가능(권한 확정). (c) write-then-callback 순서 — Agent가 proposal 테이블 commit 이후 콜백을 발행함을 Agent 답변으로 확정(2026-07-07). correlation/event ID·payload-hash 불필요 확정. (d) callback `{status, message, data}` wrapper 필드 셰이프 최종 확인 — Agent 규약 1.2.2와 일치, 실패 시 `data`(null/빈 object) 생략 허용, 식별자 4종+`data.status`는 `data` 내부(2026-07-07). (e) confirmation 재시도 정책 — 재시도 단위는 실행 POST 전체, Backend가 confirmation 호출 직전 proposal 상태 재조회로 이중 confirm을 막으므로 Agent confirmation 멱등성은 계약 전제로 요구하지 않음(2026-07-07, 상세 5.5). 위 다섯 항목은 P0에서 제외한다.
+> Resolved: (a) callback 인증 방식 — 기존 콜백과 동일 self-issued JWT 재사용, Agent가 Backend 토큰 발급 API + 인풋 2종으로 자체 발급. (b) 공유 DB read — Agent proposal 테이블 read 가능(권한 확정). (c) write-then-callback 순서 — Agent가 proposal 테이블 commit 이후 콜백을 발행함을 Agent 답변으로 확정(2026-07-07). 이 합의는 신규 거절의 callback 유무/요청 간 상관관계까지 보장하지 않는다. (d) callback `{status, message, data}` wrapper 필드 셰이프 최종 확인 — Agent 규약 1.2.2와 일치, 실패 시 `data`(null/빈 object) 생략 허용, 식별자 4종+`data.status`는 `data` 내부(2026-07-07). (e) confirmation 재시도 정책 — 재시도 단위는 실행 POST 전체, Backend가 confirmation 호출 직전 proposal 상태 재조회로 이중 confirm을 막으므로 Agent confirmation 멱등성은 계약 전제로 요구하지 않음(2026-07-07, 상세 5.5). 위 다섯 항목은 P0에서 제외하며 신규 실패 slice의 gate는 아래와 구분한다.
 
 ### P0
+
+**2026-08-27 변경 항목 없음 추가 항목:** 저장 방식은 `REQUEST_NO_CHANGES`로 정했다. 남은 조건은 다음과 같으며 Agent `-202`의 의미 자체를 다시 확인하라는 뜻은 아니다.
+
+- **Resolved — 2026-08-27 사용자 확인:** “`-202`로 거절한 요청은 callback을 안주고 있음.” 해당 거절 요청은 callback을 발행하지 않는 계약으로 적용하여 이 신규 경로의 구현 착수 조건을 해소한다. 사용자 확인이 근거이며 실제 Agent 소스·운영 이력을 직접 검증한 사실은 아니다.
+- **잔여 경계:** 현재 Backend callback은 `scenarioId`의 활성 row를 선택하므로 다른 과거 요청의 지연 callback까지 안전하다고 단정하지 않는다. 새 row의 Agent ID가 null이면 과거 ID가 포함된 callback도 잘못 연결될 수 있다. 이번에는 callback payload/요청 식별자/API/DB를 확장하지 않는다. 향후 `-202` 거절에도 callback을 발행하도록 바뀌면 요청별 correlation 계약을 먼저 보완해야 한다.
+- FE 대응 버전과 Backend 읽기 호환 배포/쓰기 활성화/rollback 일정을 정한다. 운영 DDL pre-check와 정확한 절차는 canonical execprep DDL draft를 따른다. schema ALTER가 없어도 구버전 Java enum은 새 문자열을 읽지 못할 수 있다.
+- 기존 오류 표의 일반 Agent HTTP 502/503/504와 실제 공통 handler의 500 차이는 별도 전반 정합성 검토가 남아 있다. 이번 `-202` 생성 경로는 §5.2.1/§8의 기존 HTTP 500 유지 계약으로 범위를 고정하며, 나머지 Agent 오류 HTTP를 함께 변경하지 않는다.
+
+코드 없는 callback을 신규 사유로 분류하는 확장은 현재 범위에 포함하지 않는다. 다른 확정 실패의 기존 계약은 유지한다.
 
 1. proposal table read 계약은 확정(2026-07-07 DB DDL 수령, 컬럼 매핑 5.2 반영). Agent proposal table은 기존 Backend DB/schema에 추가되는 직접 read 대상이며 별도 view/synonym 경로는 사용하지 않는다. **잔여**: (a) runtime table visibility/SELECT 권한/key type 정합 확인, (b) dimension_map ERD blocker #2(nullable UNIQUE)/#3(조건부 CHECK) 정정 — Backend 런타임 미의존, `erd-change-review`로 분리 처리.
 2. Agent callback/confirmation payload에 master의 `model_table`을 `tableName`으로 반영하는 배포 시점(required shape는 확정).
@@ -1499,14 +1584,19 @@ FE가 반드시 처리해야 하는 최소 상태는 `PROCESSING`, `PROPOSED`, `
 
 ### Resolved Decisions
 
+**2026-08-27 추가 결정:** Agent proposal 생성의 `-202` 의미와 FE 실패 처리는 §5.2.1을 따른다. 내부 상태 `REQUEST_NO_CHANGES` → 공개 `PROPOSAL_NO_CHANGES` 설계를 채택한다. 기존 상태/메시지 컬럼을 사용하며 별도 error-code 컬럼이나 public field는 추가하지 않는다. 설계 결정이며 구현/배포 완료를 뜻하지 않는다.
+
 1. Option A 재확정과 A8 조회 의미: Agent confirmation API는 이미 `CONFIRMED`인 proposal의 재확정을 허용한다. 같은 Agent proposal로 값 변경 재실행을 지원하고 Agent `confirmation_parameters` 현재값을 갱신한다. A8은 최신 A6-linked Case가 가리키는 proposal의 조회 시점 현재 `confirmation_parameters`를 반환하며, 해당 Case의 실행 시점 immutable snapshot을 보장하지 않는다. 실행별 exact 복원은 현행 요구사항이 아니므로 `tmd_mi_model_execpreph`에 confirmed JSON snapshot을 추가하지 않는다.
 2. SSE scope: endpoint는 scenario scope 신규 채널로 둔다. `GET /api/v1/mi/next-gen/scenarios/{scenarioId}/model-param-proposals/stream`을 사용하며 기존 scenario-group SSE channel에 event type을 추가하지 않는다.
 3. Model execution staging: 기존 `tcm_filel TEMP/0` marker, 최종 `SCNRCASE/{uuid}` object key, 최종 lock conflict 409 후 staged file 삭제, crash orphan TTL 24시간, JSON/multipart 공통 적용, 업로드 3개 직렬 처리를 사용한다. API field와 DDL은 변경하지 않는다.
 3. Agent proposal read path: Agent proposal table은 기존 Backend DB/schema에 추가된 테이블을 직접 read한다. 별도 view/synonym 또는 우회 경로는 만들지 않는다.
-4. Proposal generation retry: proposal 생성이 `REQUEST_FAILED` 또는 Agent `FAILED`로 terminal 수렴한 뒤에는 새 proposal 생성 요청을 허용한다. 실패 row는 재사용하지 않고 audit/history로 보존하며, 새 요청은 새 execution-preparation row와 새 Agent proposal request를 만든다.
+4. Proposal generation retry: proposal 생성이 `REQUEST_FAILED`/`REQUEST_NO_CHANGES` 또는 Agent `FAILED`로 terminal 수렴한 뒤에는 새 proposal 생성 요청을 허용한다. 실패 row는 재사용하지 않고 audit/history로 보존하며, 새 요청은 새 execution-preparation row와 새 Agent proposal request를 만든다. 신규 거절 경로의 callback 안전성은 위 P0 조건을 따른다.
 
 ## 14. Change Log / Sync Note
 
+- 2026-08-27: **전용 Backend 실패 상태 설계 통합.** `REQUEST_NO_CHANGES` 저장 → A4a `PROPOSAL_NO_CHANGES` 조회로 정리하고 사유 코드 컬럼 대안을 이번 범위에서 제외했다. 생성 오류의 실제 `ApiErrorException` 경로, 안전한 사유 저장, 실패 우선 조회, FE 실패 분기, canonical DDL 배포 절차를 연결했다. 저장 방식 미정은 해소했지만 요청 간 callback과 호환 배포 확인은 남아 있으며 미구현/미배포다.
+- 2026-08-27: **FE 실패 의미 보강.** 사용자 피드백에 따라 `PROPOSAL_NO_CHANGES`를 제안 생성 실패의 세부 유형으로 명시하고, 정상 안내로 오해할 수 있는 표현을 제거했다. 예정 상태명/응답 shape/구현 범위는 변경하지 않았다.
+- 2026-08-27: **변경 항목 없음 예정 계약/FE 전달문 추가(초기 단계).** 사용자 지시로 `-202`를 전용 결과로 취급하고 A4a `PROPOSAL_NO_CHANGES`와 빈 데이터/실패 사유/POST 오류 후 재조회 규칙을 문서화했다. 당시 저장 방식은 미결정이었으며 이후 같은 날 전용 상태 설계로 대체했다.
 - 2026-07-16: **Proposal 요청자 access scope 정정.** Proposal은 Scenario 문맥에서 공유하며 요청 사용자별 소유권을 두지 않는다. `tmd_mi_model_execpreph.req_usr_no`는 audit/provenance 정보로만 사용하고 현재 사용자와 비교하지 않는다. 동일 Scenario 문맥의 다른 사용자가 기존 proposal을 조회·확정·실행·재실행할 수 있으며 API/schema shape 변경은 없다.
 - 2026-07-14: **A8/A9 응답 tree 계약 및 projector 공통화.** flat `parameters`를 제거하고 endpoint별 `parameterSource`와 A4a 동일 `modelFiles > modelSheets > modelTables > parameters > {parameter, rendering}` tree를 반환한다. A4a/A8/A9는 raw Agent JSON 파싱, parameter-name batch master 조회, 좌표 검증, grouped rationale/rendering, tree 조립을 공통 projector로 수행한다. latest Case/current-value 의미와 endpoint별 409/API_RESPONSE_ERROR 경계는 유지하며 schema/DDL은 변경하지 않는다.
 - 2026-07-14: **수급모델 재실행 시 가격전망해석 자동 soft delete 계약 확정.** A2 options 응답과 A6/A7 request는 변경하지 않는다. 두 실행 경로가 합류하는 공통 final transaction에서 대상 시나리오의 active 해석 row가 있으면 soft delete하고, Case/Run 생성을 원자 commit한다. 수급모델 재실행은 가격전망해석 Agent 생성을 자동 호출하지 않는다.
@@ -1561,6 +1651,7 @@ FE가 반드시 처리해야 하는 최소 상태는 `PROCESSING`, `PROPOSED`, `
 
 ## 15. Exit Criteria / Handoff
 
+- 2026-08-27 변경 항목 없음 slice: `ready`(Backend 코드 반영, 운영 배포 전). Agent 코드 의미·내부 저장 상태·GET 매핑·FE 실패 처리와 거절 요청의 callback 없음이 정리됐다. create 오류 분류·영속화·GET 매핑·회귀 테스트를 반영했다. 배포에는 FE/Backend 읽기 호환성과 운영 DDL 검증이 별도로 필요하다. OpenAPI 문서화 계획은 §9이며 generated 결과는 실제 Swagger 설정을 사용하는 focused test로 검증한다. 실행 결과는 stable work note를 따른다.
 - 가격전망해석 자동 soft-delete mutation: `ready`. API shape 변경 없이 공통 final transaction에서 active row 삭제와 Case/Run 생성을 함께 처리할 수 있고, 반복 soft delete와 active row 1건을 함께 만족할 canonical functional unique의 DB 적용이 완료됐다.
 - A4a/A4/A8/A9 `groupedRationales` read contract: `ready`. A4a/A8/A9는 공통 tree projector를, A4는 공통 grouped-rationale primitive를 사용한다. schema/ERD/repository query 계약 변경이 없어 이번 slice의 `new-domain-model-design`/`erd-change-review`는 생략한다. A6 duplicate-slot 실행 의미는 projection 구현과 분리된 open question이다.
 - frontend mock 구현: ready
@@ -1576,9 +1667,17 @@ FE가 반드시 처리해야 하는 최소 상태는 `PROCESSING`, `PROPOSED`, `
   - Agent JSON root array CHECK와 payload 최대 크기
   - active/unique rule (`actv_scnr_id` unique 유지, `agnt_prpsl_id` unique 금지)
 - `spring-api-implementation`은 16절의 real integration slice 중 Agent create/callback/read와 최신 실행 기준 조회부터 구현할 수 있다.
-- current-state 조회 API는 별도 schema 없이 `spring-api-implementation`에서 `ModelParamProposalController`/`ModelParamProposalService`에 추가 구현할 수 있다.
+- 기존 current-state 조회 API는 별도 schema 없이 `spring-api-implementation`에서 `ModelParamProposalController`/`ModelParamProposalService`에 추가 구현할 수 있다. 2026-08-27 변경 항목 없음 확장의 callback/배포 의존성은 위 별도 slice 판정을 따른다.
 
 ## 16. API Slice Boundary
+
+### 변경 항목 없음 — 2026-08-27 Backend 반영 slice
+
+- 포함: scenario 기준 current-state GET과 이를 위한 proposal 생성 오류 분류·`REQUEST_NO_CHANGES`/안전한 사유 저장. request DTO 변경 없음, response는 기존 `CurrentModelParamProposalRes`와 `CurrentModelParamProposalState`의 `PROPOSAL_NO_CHANGES` 확장. enum 읽기 호환 배포와 관련 가드 검증 포함.
+- 제외: confirmation/모델 실행 API, known-proposal GET 및 SSE 상태 집합 변경, 코드 없는 callback의 신규 사유 전달 계약. 사용자 지시에 따라 **이미 생성중으로 멈춘 기존 요청의 개별/일괄 복구는 모두 제외**한다. 복구 SQL/UPDATE/backfill/정리 배치도 만들거나 실행하지 않는다. 이번 수정은 구현·배포 후 처리하는 새 생성 요청의 오류 처리에 적용한다.
+- 조회 선택: 기존 JPA latest preparation 조회와 조건부 갱신을 유지한다. 기존 상태/오류 메시지 컬럼 사용은 canonical execprep DDL에 반영했으며 새 table/column/query 도입은 없다.
+- 구현 후 검증: `./gradlew test -PforceTest --tests '*ModelParamProposal*'`, 실제 공통 RestClient 오류 경로와 generated OpenAPI 검증. 이름이 맞는 기존 테스트가 없으면 해당 회귀 테스트를 먼저 추가해야 한다.
+- 후속: §13 사용자 확인에 따라 구현/독립 검증 → canonical DDL 절차에 따른 FE/Backend 호환 배포. `-202` 의미나 저장 방식 선택을 다시 미결정으로 되돌리지 않는다.
 
 ### Slice 1 — 2026-07-06~07-07 frontend mock
 

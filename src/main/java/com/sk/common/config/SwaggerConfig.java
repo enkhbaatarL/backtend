@@ -28,6 +28,7 @@ import java.util.List;
 import java.util.Map;
 import lombok.RequiredArgsConstructor;
 import org.springdoc.core.customizers.OpenApiCustomizer;
+import org.springdoc.core.customizers.GlobalOpenApiCustomizer;
 import org.springdoc.core.customizers.OperationCustomizer;
 import org.springdoc.core.models.GroupedOpenApi;
 import org.springframework.beans.factory.annotation.Qualifier;
@@ -61,6 +62,30 @@ public class SwaggerConfig {
             .info(new Info().title("Backend API Docs")
                 .description("MI Platform API Docs")
                 .version("1.0"));
+    }
+
+    @Bean
+    public GlobalOpenApiCustomizer modelParamProposalNullableSchemaCustomizer() {
+        return openApi -> {
+            if (openApi.getOpenapi() == null || !openApi.getOpenapi().startsWith("3.1")
+                || openApi.getComponents() == null || openApi.getComponents().getSchemas() == null) {
+                return;
+            }
+            Schema<?> response = openApi.getComponents().getSchemas().get("CurrentModelParamProposalRes");
+            if (response == null || response.getProperties() == null) {
+                return;
+            }
+            // OpenAPI 3.1은 nullable을 직렬화하지 않으므로 enum/$ref도 null을 허용하는 합집합으로 표현한다.
+            response.getProperties().replaceAll((name, property) -> {
+                if (!Boolean.TRUE.equals(property.getNullable())) {
+                    return property;
+                }
+                property.setNullable(null);
+                Schema<?> nullSchema = new Schema<>();
+                nullSchema.addType("null");
+                return new Schema<>().description(property.getDescription()).anyOf(List.of(property, nullSchema));
+            });
+        };
     }
 
     @Bean

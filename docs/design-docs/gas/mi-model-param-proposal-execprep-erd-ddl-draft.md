@@ -2,7 +2,7 @@
 
 ## Document Control
 
-- status: Draft
+- status: Review
 - canonical for: Schema rollout
 - owner: BE / DBA
 - source documents:
@@ -16,8 +16,9 @@
   - `docs/conventions/db-term-dictionary-sheet2.csv`
 - supersedes:
   - 없음
-- last synced: 2026-07-16
+- last synced: 2026-08-27
 - open questions:
+  - 2026-08-27 전용 실패 상태: 운영 `VARCHAR(30)`/상태 제약/generated column 일치 여부와 Backend 읽기 호환 배포/rollback 일정을 확인해야 한다. callback 조건은 canonical design §11/spec §13을 따른다. 신규 enum은 Backend에 반영했으며 운영 미배포다.
   - (resolved) table/subject 물리명은 DBA 승인으로 `tmd_mi_model_execpreph` / subject `md`로 확정 (이전 draft명 `tmd_execpreph`에서 변경). 인덱스명도 `tmd_mi_model_execpreph_{ix|ux}nn`로 정합.
   - (resolved → Option A/A8 current value) 값 조정 재실행은 같은 `model_param_proposal_id`에 확정 API를 재호출해 현재 `confirmation_parameters`를 갱신한다(mutable). 변경 없음 재실행은 재확정 없이 기존 confirmed 값을 재사용한다. Agent 확정 API가 이미 `CONFIRMED`인 proposal의 재확정을 허용하도록 Agent가 수정 확정했다(2026-07-09 회신) → Option A 전제 충족. A8은 latest A6-linked Case가 연결한 proposal의 현재값을 반환하며 실행 시점 exact 복원은 현행 범위가 아니므로 execution-preparation에 confirmed JSON snapshot을 추가하지 않는다.
 
@@ -45,7 +46,7 @@
 - proposal 계산 데이터/payload/hash/snapshot은 저장하지 않는다. Agent `tmm_mi_model_param_proposal_m`을 read-only로 조회한다.
 - request-time snapshot(`scenario_group_id`, `mi_event_id`, `event_type_l2_id`)도 Backend에 복제하지 않는다. Agent proposal 테이블이 이를 저장하며(write-then-callback 보장으로 완료 callback 시점엔 Agent row가 이미 존재), Backend는 재조회로 cross-validate한다(business rules 8/19/20). `agnt_prpsl_id` 확정 전 window는 아직 proposal 자체가 생성 중이라 검증 대상이 없다.
 - `Scenario 1:N execution-preparation`이며, 진행 중(in-flight) preparation은 시나리오당 최대 1건이다.
-- 실행 전 제안 폐기/취소 전이는 두지 않는다. in-flight preparation은 confirm→실행으로 진행하거나 timeout/reconcile로 `REQUEST_FAILED`가 될 때까지 유지된다. 따라서 생성 완료·미실행 상태에서는 in-flight 가드(ux02)가 새 파라미터 생성을 막고, 사용자는 기존 제안을 검토·수정해 실행하거나 timeout을 기다린다.
+- 실행 전 제안 폐기/취소 전이는 두지 않는다. in-flight preparation은 confirm→실행으로 진행하거나 canonical design §3.2의 실패 종료 조건을 충족할 때까지 유지된다. 따라서 생성 완료·미실행 상태에서는 in-flight 가드(ux02)가 새 파라미터 생성을 막고, 사용자는 기존 제안을 검토·수정해 실행하거나 기존 복구 정책을 따른다.
 - active(in-flight) 유일성은 `ScenarioCase.actv_scnr_id`와 동일한 STORED generated column + UNIQUE로 강제한다. 식에 `del_yn = 'N'`을 포함해 soft delete row의 유령 충돌을 막는다.
 - `EXECUTING`은 in-flight 집합에서 제외한다. 이는 `tmd_mi_model_execpreph`가 실행 이력을 소유한다는 뜻이 아니라, 실제 실행 중복/상태/terminal 이력은 기존 `tmd_mdl_scnrcasem.actv_scnr_id`(RUNNING) UNIQUE와 `tmd_mdl_scnrcaseh`가 통제한다는 뜻이다.
 - `agnt_prpsl_id`는 Agent PK와 동일한 `INT UNSIGNED`, nullable, row 단위 write-once. 같은 Agent proposal을 반복 실행할 수 있으므로 **unique가 아니다**.
@@ -53,7 +54,7 @@
 - callback path `scenarioId`는 proposal identity가 아니라 현재 proposal-request in-flight row를 찾는 scope key다. `agnt_prpsl_id`가 확인돼도 단독 unique lookup을 하지 않고, `REQUESTING`/`PROPOSAL_PENDING` row에만 수렴한다.
 - 물리 FK는 `scnr_id`, `agnt_prpsl_id`, `case_id` 모두 걸지 않는다. 전부 논리 참조 + application validation이다.
 - Backend orchestration 상태 전이/멱등성은 DB CHECK가 아니라 application compare-and-set update로 보장한다.
-- 실패 단계는 상태 코드(`REQUEST_FAILED` vs `EXECUTION_FAILED`)가 이미 구분하므로 별도 `fail_stg_cd` 컬럼을 두지 않는다.
+- 실패 단계/구분은 상태 코드(`REQUEST_FAILED`, `REQUEST_NO_CHANGES`, `EXECUTION_FAILED`)로 표현한다. 이번 변경에 별도 `fail_stg_cd` 또는 오류 코드 컬럼을 추가하지 않으며 사용자용 사유는 기존 `err_msg_cntt`를 사용한다. 업무 의미/전이는 canonical design §3.2를 따른다.
 - `retry_cnt`는 재시도 정책이 P1 open이므로 이 DDL에 포함하지 않고 정책 확정 시 append한다.
 
 ## Naming / Dictionary Review
@@ -166,13 +167,13 @@ actv_scnr_id INT UNSIGNED
 ```
 
 - in-flight 상태: `REQUESTING`, `PROPOSAL_PENDING`, `CONFIRMING`, `PREPARING_EXECUTION`.
-- `EXECUTING`/terminal(`EXECUTION_FAILED`, `REQUEST_FAILED`) 또는 `del_yn='Y'`이면 `NULL` → in-flight 집합에서 제외.
+- `EXECUTING`/terminal(`EXECUTION_FAILED`, `REQUEST_FAILED`, `REQUEST_NO_CHANGES`) 또는 `del_yn='Y'`이면 `NULL` → in-flight 집합에서 제외. 신규 상태를 generated 식의 in-flight 목록에 추가하지 않는다.
 - `del_yn='N'` 조건이 없으면 재실행 흐름에서 soft delete된 진행-상태 row가 유령 충돌을 일으킬 수 있으므로 반드시 포함한다.
 - 기존 `tmd_mdl_scnrcasem.actv_scnr_id`(`if(case_stat_cd='RUNNING', scnr_id, null) stored`) 패턴과 동일 계열.
 
 ## Lifecycle / Status Codes
 
-`exec_prep_stat_cd` 허용값(Backend orchestration, monotonic):
+`exec_prep_stat_cd` 저장 코드 요약(업무 의미/전이의 canonical은 domain design §3.2). `REQUEST_NO_CHANGES`는 2026-08-27 application enum에 추가했으며 운영 미배포다:
 
 | 코드 | 의미 | in-flight |
 |---|---|:---:|
@@ -183,6 +184,7 @@ actv_scnr_id INT UNSIGNED
 | `EXECUTING` | 기존 model execution 접수 완료(case INSERT → `tcm_filel(SCNRCASE+case_id)` 기록 → Run INSERT/Case `lastRunId` → `execprep.case_id` 저장까지 commit, 이후 dispatch). 실행 상태/terminal 이력은 Case/Run이 관리 | X |
 | `EXECUTION_FAILED` | confirmation 이후 실행 접수 실패 | X |
 | `REQUEST_FAILED` | Agent 제안 요청 실패가 확정됐거나 timeout/reconcile로 proposal 부재가 확정됨 | X |
+| `REQUEST_NO_CHANGES` | 변경 항목 없음으로 인한 제안 생성 실패 | X |
 
 Agent 상태(`PROCESSING/PROPOSED/CONFIRMED/FAILED`)는 `tmm_mi_model_param_proposal_m`이 source of truth이며 이 테이블에 복제하지 않는다. 상태 코드 범위와 전이 invariant는 DB CHECK가 아니라 application validation으로 강제한다(선례 `tmd_scnrcrth`와 동일).
 
@@ -232,6 +234,7 @@ Callback correlation:
 - `agnt_prpsl_id`가 아직 저장되지 않은 row라면 `exec_prep_id` + `agnt_prpsl_id IS NULL` 조건으로 write-once 저장한다.
 - proposal ID가 없거나 실패 callback의 `data`가 비어 있으면 path `scenarioId`의 현재 in-flight row(`actv_scnr_id = :scnrId`)가 정확히 1건일 때만 처리한다.
 - 현재 in-flight row가 없으면 late/no-op으로 처리하고, terminal/history row나 새 unrelated row에 붙이지 않는다.
+- 재요청으로 새 in-flight row가 생긴 경우에는 위 후보 조건만으로 과거 callback을 구별할 수 없다. 신규 거절의 callback 유무/상관관계 검증은 domain design §11/spec §13의 gate이며, 이 DDL이 그 보장을 제공하지 않는다.
 - 동일 row에 이미 다른 `agnt_prpsl_id`가 있으면 correlation conflict로 보고 덮어쓰지 않는다.
 
 상태 전이(compare-and-set, monotonic guard 예시):
@@ -247,6 +250,8 @@ WHERE exec_prep_id = :execPrepId
 ```
 
 `REQUEST_FAILED` 전이는 Agent가 callback을 보낼 수 없는 실패가 확정됐거나 timeout/reconcile로 Agent proposal 부재가 확정된 경우에만 수행한다. Agent 호출 결과가 "Agent 접수 실패"인지 "Agent는 접수했지만 응답만 유실"인지 불명확하면 row를 `REQUESTING` in-flight 상태로 유지해 `tmd_mi_model_execpreph_ux02(actv_scnr_id)`가 새 preparation 생성을 막게 한다. 이후 callback, Agent table read-reconcile, timeout 복구가 최종 outcome을 결정한다.
+
+`REQUEST_NO_CHANGES`도 같은 `exec_prep_id`와 선행 상태 조건으로 상태/`err_msg_cntt`/수정 audit을 원자 갱신한다. 오류 분류와 안전한 사유는 feature spec §5.2.1을 따른다. 갱신 0건을 성공으로 간주하거나 최신 row 검색으로 대상을 바꾸지 않으며 기존 terminal/확정/실행 row는 보존한다.
 
 JSON 실행 접수 성공(해당 실행 준비 row에 새 Case 연결):
 
@@ -280,6 +285,8 @@ WHERE exec_prep_id = :execPrepId
 - `err_msg_cntt`는 오류를 child table로 분리하지 않고 header 요약 메시지로 둔다(선례 `tmd_scnrcrth.err_msg_cntt`와 동일).
 
 ## Physical DDL
+
+> 아래 CREATE/legacy correction/테이블 rollback은 최초 도입용 이력이다. **2026-08-27 상태 코드 확장 때문에 이를 재실행하거나 테이블을 삭제하지 않는다.** 이번 변경에는 아래 “2026-08-27 전용 실패 상태 확장” 절만 적용한다.
 
 ```sql
 /* =========================================================
@@ -511,6 +518,8 @@ LIMIT 1;
 
 ## Rollout Plan
 
+아래 절차는 최초 테이블 도입 기준이다. 이미 테이블이 있는 환경의 신규 상태 배포는 다음 별도 절차를 따른다.
+
 1. Pre-check
    - `tmd_mi_model_execpreph` 이름/인덱스 충돌 확인.
    - 이전 draft명 `tmd_execpreph`가 이미 적용된 환경이면 신규 CREATE 대신 2c RENAME 보정을 적용.
@@ -545,6 +554,43 @@ LIMIT 1;
    - application rollback으로 신규 write 중지.
    - 신규 데이터 보존 필요 여부 확인 후 `DROP TABLE` 또는 rename 격리.
 
+## 2026-08-27 전용 실패 상태 확장 — Backend 반영/미배포
+
+### 변경 분류 / 명명 / ERD 영향
+
+- 분류: **no schema change**, 단 운영 DDL이 이 문서와 일치할 때의 판단이다. `exec_prep_stat_cd`는 DB ENUM/CHECK가 없는 `VARCHAR(30)`이며 `REQUEST_NO_CHANGES`는 18자로 수용된다. 상태값 추가는 Java enum/상태 전이/API 매핑 변경이다.
+- 새 table/column/key/index/FK/default/nullability 변경과 사전 용어 등록은 없다. 기존 `EXEC`/`PREP`/`STAT`/`CD`, `ERR`/`MSG`/`CNTT`를 사용한다. 신규 문자열은 DB 오브젝트 이름이 아니므로 새 컬럼 약어를 만들지 않는다.
+- 기존 `err_msg_cntt VARCHAR(1000)`에 정규화한 사유를 저장한다. Agent 오류코드 컬럼, Agent proposal payload, Case/Run 성공/실패 이력은 복제하지 않는다.
+- generated `actv_scnr_id` 식과 active UNIQUE를 유지한다. 신규 종료 상태에서 값은 NULL이며 새 요청 row 생성이 가능하다. PK/관계/정규화와 latest 조회 index에 변화가 없고 새 join/projection/query/index를 추가하지 않는다. `EXPLAIN` 신규 수행 대상도 없다.
+
+### Pre-check
+
+- DBA가 운영 환경의 `SHOW CREATE TABLE tmd_mi_model_execpreph`와 `SHOW INDEX FROM tmd_mi_model_execpreph`를 확인한다. 상태 타입/길이, 상태 CHECK/ENUM 부재, in-flight generated 식, nullable Agent ID/Case ID, unique/index가 canonical과 같아야 한다. 여기서는 실제 DB 명령을 실행하지 않았다.
+- 운영에 별도 상태 CHECK/ENUM/공통코드 검증이 있으면 **ALTER 불필요 판정을 적용하지 않는다**. 차이를 먼저 확인하고 별도 DBA 수정안 승인을 받는다.
+- 이 테이블을 읽는 모든 Backend 인스턴스/배치와 FE 버전을 확인한다. JPA `EnumType.STRING`의 구버전 enum은 새 문자열을 읽지 못할 수 있다.
+- 신규 거절의 callback 조건은 canonical design §11/spec §13의 사용자 확인(`-202` 거절에는 callback 없음)으로 해소됐다. 이는 실제 Agent 검증이나 운영 배포 완료를 뜻하지 않는다. 향후 해당 동작 변경 시 요청별 식별 조건을 먼저 재검토한다.
+
+### Apply / DBA action
+
+- canonical과 일치하면 **CREATE/ALTER/인덱스 재생성 SQL 없음**. DBA는 pre-check 결과만 확인한다. 신규 상태는 검증된 application 오류 처리 경로에서만 기록한다.
+- FE가 새 실패 표시 상태를 지원하도록 먼저 배포한다. Backend는 두 단계로 나눈다: (1) 모든 reader에 `REQUEST_NO_CHANGES` 읽기와 공개 상태 매핑을 배포하되 새 상태 쓰기는 아직 넣지 않는다. (2) 구버전 reader가 없음을 확인한 뒤 생성 오류 처리의 새 상태 쓰기를 배포한다.
+- 현재 코드에 별도 쓰기 토글이 있다고 가정하지 않는다. 한 번에 신규 writer를 rolling 배포해 구버전 reader와 섞는 것은 허용하지 않으며, 두 단계 배포가 불가능하면 무혼합 전환 절차를 별도 확정한다.
+
+### Backfill
+
+- 없음. 과거 `REQUEST_FAILED`를 메시지만 보고 재분류하지 않으며 기존 `REQUESTING` 잔류 row도 자동 변경하지 않는다. 개별 복구는 요청 ID/Agent 접수/callback/실행 증거와 별도 사용자·DBA 승인이 필요하다.
+
+### Rollback
+
+- 새 상태 쓰기를 중지하되 새 문자열을 읽을 수 있는 reader/GET 매핑은 유지한다. `REQUEST_NO_CHANGES` row가 있는 상태로 enum을 모르는 Backend에 바로 rollback하지 않는다. 쓰기 중지만으로 기존 row의 읽기 문제가 없어지지는 않는다.
+- 구버전으로 완전히 복귀해야 한다면 대상 row와 사유를 보존하고 `REQUEST_FAILED`로의 제한적 변환을 별도 승인받아야 한다. 이 변환은 실패 세부 구분을 잃으므로 자동 rollback SQL을 제공하지 않는다. 테이블 삭제/전체 실패 재분류는 이번 절차가 아니다.
+
+### Verify
+
+- application enum/JPA 저장·재조회, 같은 요청의 상태+사유 commit, null Agent ID에서도 current-state 전용 실패 매핑을 검증한다.
+- 신규 상태 row의 `actv_scnr_id IS NULL`, 기존 네 in-flight 값의 unique 유지, 새 요청은 새 PK로 생성되고 실패 이력은 보존됨을 검증한다. 일반 실패/timeout 및 callback 경계도 canonical spec 수용 조건으로 확인한다.
+- 새 문자열이 저장된 데이터에서 모든 reader/배치가 정상 조회되고 FE가 실패로 표시하는지 확인한다. 운영 DB/FE/혼합 배포 검증 결과가 없는 상태를 배포 완료로 기록하지 않는다.
+
 ## Open Risks / Handoff
 
 - table/subject 물리명(`tmd_mi_model_execpreph` / `md`)은 DBA·erd-change-review 승인 완료(이전 draft `tmd_execpreph`에서 변경). 이미 `tmd_execpreph`로 적용된 환경은 2c RENAME 보정을 적용한다.
@@ -560,6 +606,7 @@ LIMIT 1;
 
 ## Implementation Readiness
 
+- 2026-08-27 전용 상태 확장: 물리 설계는 `ready`(운영 DDL 일치 조건). canonical design/spec의 사용자 확인으로 해당 거절의 callback 조건을 해소하여 구현 착수 가능하다. 운영 DB pre-check·호환 배포 검증은 아직 수행하지 않았다.
 - ready for Agent create/callback/read API implementation by slice.
 - ready for JSON execution linkage after DBA index correction: `case_id` 포인터로 최신 실행 preparation/파일 다운로드 조회 경로가 확정됐다.
 - table/subject 물리명(`tmd_mi_model_execpreph` / `md`)은 DBA 승인 완료로 canonical DDL 적용 가능. 이미 legacy `tmd_execpreph` 테이블명, `agnt_prpsl_id` unique 또는 `inflight_scnr_id`가 적용된 환경은 2a/2b/2c 보정 방침을 함께 확인한다.
