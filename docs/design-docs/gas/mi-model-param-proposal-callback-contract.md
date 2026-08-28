@@ -11,7 +11,7 @@
 - source documents: `docs/feature-specs/mi-model-parameter-proposal-backend-feature-spec.md` §5.4/§13
 - depends on: `docs/design-docs/gas/mi-model-parameter-proposal-design.md` §3.2/§3.5/§11
 - supersedes: 이 문서의 과거 “시나리오당 1회, scenarioId가 요청을 유일 식별” 설명
-- open questions: `-202` 거절에는 callback이 없다는 2026-08-27 사용자 확인으로 신규 실패 slice의 착수 조건을 해소했다. 다른 요청의 지연 callback 경계와 향후 동작 변경 시 조건은 canonical spec §13 참조.
+- open questions: 즉시 `-202` 거절에는 callback이 없다. 다른 요청의 지연 callback 경계는 canonical spec §13 참조. 후속 생성 `status=error` 일반 실패 저장 결정은 callback 입력/식별 계약을 변경하지 않는다.
 - confirmed evidence: write-then-callback 순서·wrapper `data` 셰이프는 2026-07-07 Agent 합의다. 2026-08-27 신규 거절 분기에 대한 검증 완료를 뜻하지 않는다.
 - 이 문서는 Feature Spec의 전달용 요약이며 별도 API 계약 원본이 아니다. 이번 수정은 설명/참조 정합화이며 callback path/인증/request/response를 새로 변경하지 않는다.
 
@@ -102,7 +102,7 @@ Notion `{status, message, data}` wrapper를 그대로 사용한다.
 `O`=필수, `△`=성공 시 채움·실패 시 생략 가능, `X`=선택. path는 scope를 지정하며, `data` 또는 기존 preparation에서 proposal ID를 확인해 재조회한다. 둘 다 ID가 없는 성공 신호는 처리할 수 없다.
 
 - **correlation은 path `scenarioId`의 현재 후보와 확인 가능한 proposal ID로 검증한다.** 활성 후보가 없으면 late/no-op이며, 이미 저장된 ID와 다르면 덮어쓰지 않는다. 새 후보의 ID가 null인 구간이나 ID 없는 신호에서 과거 요청을 구별하는 한계는 canonical spec §13을 따른다.
-- 규약 1.2.2대로 **실패(`error`) 콜백의 `data`는 `null`/빈 object일 수 있다**. `message`는 필수다. Agent ID도 없으면 기존 `REQUEST_FAILED` 처리이며, 문구만 보고 신규 `REQUEST_NO_CHANGES`를 추정하지 않는다. 이 입력 허용이 재요청 후 과거 신호의 안전성 보장은 아니다.
+- 규약 1.2.2대로 **실패(`error`) 콜백의 `data`는 `null`/빈 object일 수 있다**. `message`는 필수이며 숫자 오류 코드는 필요하지 않다. Agent ID도 없으면 기존 `REQUEST_FAILED` 처리이며, 문구만 보고 전용 상태를 추정하지 않는다. NO_CHANGES는 과거 읽기 호환만 유지한다. 이 입력 허용이 재요청 후 과거 신호의 안전성 보장은 아니다.
 - `data`가 채워진 경우, Backend는 식별자 일치와 `status`만 확인한다. 제안값 상세(`modelTarget`, `values` 등)는 검증하지 않는다(재조회로 대체).
 - `wrapper.status`와 `data.status`가 모두 존재하면서 어긋나면(예: `success` + `FAILED`) `400`으로 거절한다.
 

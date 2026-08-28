@@ -2,7 +2,6 @@ package com.sk.domain.shared.client;
 
 import com.sk.domain.shared.client.dto.request.AgentModelParamConfirmationReq;
 import com.sk.domain.shared.client.dto.response.AgentModelParamConfirmationRes;
-import com.sk.domain.shared.client.dto.response.AgentModelParamProposalCreateRes;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.service.annotation.HttpExchange;
@@ -12,7 +11,7 @@ import org.springframework.web.service.annotation.PostExchange;
 public interface ModelParamProposalAgentApi {
 
     @PostExchange("/model-parameters/scenarios/{scenarioId}/proposals")
-    AgentModelParamProposalCreateRes createProposal(@PathVariable Long scenarioId);
+    String createProposal(@PathVariable Long scenarioId);
 
     @PostExchange("/model-parameters/proposals/{modelParamProposalId}/confirmation")
     AgentModelParamConfirmationRes confirmProposal(
