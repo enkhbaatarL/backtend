@@ -7,7 +7,6 @@ import org.springframework.web.bind.WebDataBinder;
 import org.springframework.web.bind.annotation.InitBinder;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
-import jakarta.validation.constraints.Pattern;
 import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 
@@ -26,6 +25,8 @@ import com.sk.common.annotation.AccessIpCheck;
 import com.sk.common.annotation.ApiOrder;
 import com.sk.common.annotation.RequiredPermission;
 import com.sk.common.annotation.TrimmedNotEmpty;
+import com.sk.common.enums.ResultCode;
+import com.sk.common.exception.AppErrorException;
 import com.sk.common.model.BaseResponse;
 import com.sk.common.model.BaseResponseFactory;
 import com.sk.common.model.PaginationRes;
@@ -175,8 +176,12 @@ public class AdminUserController {
                     + "숫자 ID의 앞 0과 대소문자를 보존합니다. URL 인코딩하며 +는 %2B로 전달합니다.",
                     required = true, schema = @Schema(type = "string", minLength = 1, maxLength = 50,
                             example = "sample.user@example.com"))
-            @RequestParam("userLoginId") @NotBlank @Size(min = 1, max = 50)
-            @Pattern(regexp = "^[^\\p{Z}\\p{Cc}\\s](?:[^\\p{Cc}]*[^\\p{Z}\\p{Cc}\\s])?$") String userLoginId) {
+            @RequestParam("userLoginId") @NotBlank @Size(min = 1, max = 50) String userLoginId) {
+        if (userLoginId.codePoints().anyMatch(Character::isISOControl)
+                || Character.isSpaceChar(userLoginId.codePointAt(0))
+                || Character.isSpaceChar(userLoginId.codePointBefore(userLoginId.length()))) {
+            throw AppErrorException.of(ResultCode.Error.REQ_INVALID_PARAMETER);
+        }
         return BaseResponseFactory.create(adminUserService.getUserByLoginId(userLoginId));
     }
 
