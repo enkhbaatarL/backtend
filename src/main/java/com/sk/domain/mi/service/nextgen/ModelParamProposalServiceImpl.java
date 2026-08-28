@@ -1,5 +1,6 @@
 package com.sk.domain.mi.service.nextgen;
 
+import com.fasterxml.jackson.core.JsonParser;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.JsonNode;
@@ -52,7 +53,6 @@ import org.springframework.web.client.ResourceAccessException;
 import org.springframework.web.client.RestClientException;
 import org.springframework.web.client.RestClientResponseException;
 
-import java.math.BigDecimal;
 import java.net.SocketTimeoutException;
 import java.time.LocalDateTime;
 import java.util.*;
@@ -67,8 +67,12 @@ import java.util.stream.Collectors;
 @Transactional(readOnly = true)
 public class ModelParamProposalServiceImpl implements ModelParamProposalService {
 
-    private static final String NO_CHANGES_FAILURE_REASON = "파라미터로 반영할 변경 항목이 없습니다.";
-    private static final BigDecimal NO_CHANGES_ERROR_CODE = BigDecimal.valueOf(-202);
+    private static final String CREATE_FAILURE_REASON = "파라미터 제안 생성 요청에 실패했습니다.";
+    private static final Set<String> PUBLIC_CREATE_FAILURE_REASONS = Set.of(
+        "파라미터로 반영할 변경 항목이 없습니다.",
+        "파라미터를 적용할 모델 입력 위치를 찾지 못했습니다.",
+        "적용할 파라미터 값을 생성하지 못했습니다."
+    );
 
     private static final List<ModelExecutionPreparationStatus> REQUEST_CREATE_TRANSITION_FROM = List.of(
         ModelExecutionPreparationStatus.REQUESTING,
@@ -108,19 +112,20 @@ public class ModelParamProposalServiceImpl implements ModelParamProposalService 
     public ModelParamProposalAcceptRes createProposal(Long scenarioId) {
         ModelExecutionPreparation preparation = createRequestingPreparation(scenarioId);
 
-        AgentModelParamProposalCreateRes agentResponse;
+        String responseBody;
         try {
-            agentResponse = callAgent(() -> modelParamProposalAgentApi.createProposal(scenarioId), "create model parameter proposal");
-            validateCreateAgentResponse(agentResponse);
+            responseBody = callAgent(() -> modelParamProposalAgentApi.createProposal(scenarioId), "create model parameter proposal");
         } catch (ApiErrorException e) {
-            if (isNoChangesCreateError(e)) {
-                markRequestNoChanges(preparation.getExecPrepId());
+            if (e.getStatusCode() >= 400 && e.getStatusCode() < 600) {
+                readCreateEnvelope(e.getMessage())
+                    .filter(this::isCreateError)
+                    .ifPresent(body -> markRequestFailed(preparation.getExecPrepId(), createFailureReason(body)));
             }
             throw e;
-        } catch (AppErrorException e) {
-            handleCreateAgentError(preparation.getExecPrepId(), e);
-            throw e;
         }
+        AgentModelParamProposalCreateRes agentResponse = validateCreateAgentResponse(
+            preparation.getExecPrepId(), responseBody
+        );
 
         ModelExecutionPreparation updated = attachAgentProposalIdAndMarkPending(
             preparation.getExecPrepId(),
@@ -611,32 +616,42 @@ public class ModelParamProposalServiceImpl implements ModelParamProposalService 
         });
     }
 
-    private boolean isNoChangesCreateError(ApiErrorException e) {
-        if (e.getStatusCode() < 400 || e.getStatusCode() >= 600 || e.getMessage() == null) {
-            return false;
+    private Optional<JsonNode> readCreateEnvelope(String responseBody) {
+        if (responseBody == null) {
+            return Optional.empty();
         }
         try {
             JsonNode body = objectMapper.reader()
                 .with(DeserializationFeature.FAIL_ON_TRAILING_TOKENS)
-                .with(DeserializationFeature.USE_BIG_DECIMAL_FOR_FLOATS)
-                .readTree(e.getMessage());
-            if (body == null || !"error".equals(body.path("status").asText())) {
-                return false;
-            }
-            JsonNode errorCode = body.path("data").path("error_code");
-            return errorCode.isNumber() && errorCode.decimalValue().compareTo(NO_CHANGES_ERROR_CODE) == 0;
+                .with(JsonParser.Feature.STRICT_DUPLICATE_DETECTION)
+                .readTree(responseBody);
+            return body != null && body.isObject() ? Optional.of(body) : Optional.empty();
         } catch (JsonProcessingException ignored) {
-            return false;
+            return Optional.empty();
         }
     }
 
-    private void markRequestNoChanges(Long execPrepId) {
+    private boolean isCreateError(JsonNode body) {
+        return "error".equals(body.path("status").textValue());
+    }
+
+    private String createFailureReason(JsonNode body) {
+        String message = body.path("message").textValue();
+        if (message == null) {
+            return CREATE_FAILURE_REASON;
+        }
+        // 합의된 사용자용 첫 줄 문구만 공개하고 외부 응답의 상세 내용은 제외한다.
+        String headline = message.lines().findFirst().orElse("").strip();
+        return PUBLIC_CREATE_FAILURE_REASONS.contains(headline) ? headline : CREATE_FAILURE_REASON;
+    }
+
+    private void markRequestFailed(Long execPrepId, String failureReason) {
         transactionOperations.executeWithoutResult(status -> {
             int updated = modelExecutionPreparationRepository.transitionStatus(
                 execPrepId,
                 REQUEST_CREATE_TRANSITION_FROM,
-                ModelExecutionPreparationStatus.REQUEST_NO_CHANGES,
-                NO_CHANGES_FAILURE_REASON,
+                ModelExecutionPreparationStatus.REQUEST_FAILED,
+                failureReason,
                 authorizationService.getSubject(),
                 LocalDateTime.now()
             );
@@ -646,36 +661,36 @@ public class ModelParamProposalServiceImpl implements ModelParamProposalService 
                         ResultCode.Error.RSC_NOT_FOUND,
                         "model execution preparation not found after Agent rejection. execPrepId: %d".formatted(execPrepId)
                     ));
-                log.info("No changes rejection did not transition preparation. execPrepId={}, status={}",
+                log.info("Agent error did not transition preparation. execPrepId={}, status={}",
                     execPrepId, current.getStatus());
             }
         });
     }
 
-    private void handleCreateAgentError(Long execPrepId, AppErrorException e) {
-        ResultCode.Error resultCode = e.getErrorCode();
-        if (resultCode == ResultCode.Error.API_TIMEOUT) {
-            log.info("Keep REQUESTING preparation after Agent timeout. execPrepId={}", execPrepId);
-            return;
+    private AgentModelParamProposalCreateRes validateCreateAgentResponse(Long execPrepId, String responseBody) {
+        JsonNode body = readCreateEnvelope(responseBody).orElseThrow(this::invalidCreateResponse);
+        if (isCreateError(body)) {
+            markRequestFailed(execPrepId, createFailureReason(body));
+            throw ApiErrorException.of(ResultCode.Error.API_RESPONSE_ERROR);
         }
 
-        transactionOperations.executeWithoutResult(status -> modelExecutionPreparationRepository.transitionStatus(
-            execPrepId,
-            REQUEST_CREATE_TRANSITION_FROM,
-            ModelExecutionPreparationStatus.REQUEST_FAILED,
-            truncateErrorMessage(e.getMessage()),
-            authorizationService.getSubject(),
-            LocalDateTime.now()
-        ));
-    }
-
-    private void validateCreateAgentResponse(AgentModelParamProposalCreateRes response) {
-        if (!response.isSuccess()
+        AgentModelParamProposalCreateRes response;
+        try {
+            response = objectMapper.treeToValue(body, AgentModelParamProposalCreateRes.class);
+        } catch (JsonProcessingException e) {
+            throw invalidCreateResponse();
+        }
+        if (!"success".equals(response.status())
             || response.data() == null
             || response.data().modelParamProposalId() == null
             || response.data().status() != AgentModelParamProposalStatus.PROCESSING) {
-            throw AppErrorException.of(ResultCode.Error.API_RESPONSE_ERROR, "Agent proposal create response is invalid.");
+            throw invalidCreateResponse();
         }
+        return response;
+    }
+
+    private AppErrorException invalidCreateResponse() {
+        return AppErrorException.of(ResultCode.Error.API_RESPONSE_ERROR, "Agent proposal create response is invalid.");
     }
 
     private <T> T callAgent(Supplier<T> call, String action) {
@@ -1133,13 +1148,6 @@ public class ModelParamProposalServiceImpl implements ModelParamProposalService 
 
     private String buildProposalStatusEndpoint(Long scenarioId, Long modelParamProposalId) {
         return "/api/v1/mi/next-gen/scenarios/%d/model-param-proposals/%d".formatted(scenarioId, modelParamProposalId);
-    }
-
-    private String truncateErrorMessage(String message) {
-        if (message == null || message.length() <= 1000) {
-            return message;
-        }
-        return message.substring(0, 1000);
     }
 
 }

@@ -42,15 +42,16 @@ public class ModelParamProposalController {
         summary = "수급모델 파라미터 제안 생성 접수 API",
         description = """
             시나리오의 파라미터 제안 생성을 요청합니다. 접수 성공은 생성 완료를 뜻하지 않습니다.
-            변경 항목이 없어 거절되면 실패를 저장한 뒤 기존 HTTP 500 / API_RESPONSE_ERROR를 반환합니다.
+            Agent 응답의 status=error이면 오류 코드와 무관하게 일반 실패를 저장하고 HTTP 500 / API_RESPONSE_ERROR를 반환합니다.
             POST 오류 후에도 같은 경로의 GET으로 현재 상태와 실패 사유를 확인하세요.
-            변경 항목 없음 거절에는 callback/SSE가 없으며, 입력 조건을 바꾼 뒤 새 요청을 보낼 수 있습니다.
+            즉시 -202 거절에는 callback/SSE가 없으며 GET으로 실패를 확인할 수 있습니다.
+            status 누락/알 수 없는 값, 응답 형식 오류, timeout은 실패를 확정하지 않고 기존 요청 상태를 유지합니다.
             """
     )
     @ApiResponse(responseCode = "200", description = "접수 성공")
     @ApiResponse(responseCode = "409", description = "RSC_ALREADY_EXISTS: 이미 진행 중인 제안 요청 또는 모델 실행이 존재함",
         content = @Content(mediaType = MediaType.APPLICATION_JSON_VALUE, schema = @Schema(implementation = BaseResponse.class)))
-    @ApiResponse(responseCode = "500", description = "API_RESPONSE_ERROR: Agent HTTP 오류. 변경 항목 없음 실패도 포함하며 현재 상태는 GET으로 확인",
+    @ApiResponse(responseCode = "500", description = "API_RESPONSE_ERROR: Agent 오류 응답. status=error는 일반 실패로 저장하며 현재 상태는 GET으로 확인",
         content = @Content(mediaType = MediaType.APPLICATION_JSON_VALUE, schema = @Schema(implementation = BaseResponse.class),
             examples = @ExampleObject(name = "API_RESPONSE_ERROR", value = """
                 {"status":false,"code":"API-004","message":"Received an error response from external API.","data":null}
@@ -71,7 +72,7 @@ public class ModelParamProposalController {
         summary = "수급모델 파라미터 현재 상태 조회 API",
         description = """
             팝업 진입 또는 생성 POST 오류 후 시나리오의 최신 요청 상태를 조회합니다.
-            PROPOSAL_FAILED와 PROPOSAL_NO_CHANGES는 모두 제안 생성 실패이며, 후자는 변경 항목 없음 사유를 구별합니다.
+            새 생성 오류는 PROPOSAL_FAILED입니다. PROPOSAL_NO_CHANGES는 과거 저장 상태의 읽기 호환용입니다.
             두 실패에서는 로딩과 반복 조회를 종료하고 failureReason을 표시하세요.
             parameterSource=NONE, modelFiles=[]이므로 이전 제안 표를 비우고 해당 요청의 확정/실행을 막아야 합니다.
             Agent ID 발급 전 실패이면 modelParamProposalId가 null일 수 있으며, executionInputFiles도 null입니다.
@@ -80,14 +81,14 @@ public class ModelParamProposalController {
     )
     @ApiResponse(responseCode = "200", description = "현재 상태 조회 성공. 제안 생성 실패 상태도 포함", useReturnTypeSchema = true,
         content = @Content(mediaType = MediaType.APPLICATION_JSON_VALUE,
-            examples = @ExampleObject(name = "PROPOSAL_NO_CHANGES", summary = "Agent ID 발급 전 변경 항목 없음으로 생성 실패", value = """
+            examples = @ExampleObject(name = "PROPOSAL_FAILED", summary = "Agent ID 발급 전 명시적 오류 응답으로 생성 실패", value = """
                 {
                   "status":true,"code":"SUC-000","message":"Success.",
                   "data":{
-                    "scenarioId":309,"currentState":"PROPOSAL_NO_CHANGES","parameterSource":"NONE",
+                    "scenarioId":309,"currentState":"PROPOSAL_FAILED","parameterSource":"NONE",
                     "execPrepId":51001,"modelParamProposalId":null,"scenarioGroupId":null,
                     "caseId":null,"runId":null,"modelExecutionStatus":null,"executionInputFiles":null,
-                    "modelFiles":[],"failureReason":"파라미터로 반영할 변경 항목이 없습니다.",
+                    "modelFiles":[],"failureReason":"파라미터 제안 생성 요청에 실패했습니다.",
                     "requestedAt":"2026-08-27T13:15:33","completedAt":null,"confirmedAt":null
                   }
                 }

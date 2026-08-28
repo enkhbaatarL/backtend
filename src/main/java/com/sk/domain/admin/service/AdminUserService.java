@@ -157,6 +157,14 @@ public class AdminUserService {
                 departmentNm, userNm, emailAddress));
     }
 
+    /** 로그인 ID 조회 결과의 첫 계정을 선택하고 기존 번호 상세 조회를 재사용합니다. */
+    public UserDetailRes getUserByLoginId(String userLoginId) {
+        User selected = userRepository.findByUserLoginIdAndIsDeletedFalse(userLoginId).stream()
+                .findFirst()
+                .orElseThrow(() -> AppErrorException.of(ResultCode.Error.RSC_NOT_FOUND));
+        return getUser(selected.getUserNo());
+    }
+
     /**
      * 사용자 상세 정보를 조회합니다.
      * 

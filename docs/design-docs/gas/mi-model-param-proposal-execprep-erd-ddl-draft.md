@@ -173,7 +173,7 @@ actv_scnr_id INT UNSIGNED
 
 ## Lifecycle / Status Codes
 
-`exec_prep_stat_cd` 저장 코드 요약(업무 의미/전이의 canonical은 domain design §3.2). `REQUEST_NO_CHANGES`는 2026-08-27 application enum에 추가했으며 운영 미배포다:
+`exec_prep_stat_cd` 저장 코드 요약(업무 의미/전이의 canonical은 domain design §3.2). `REQUEST_NO_CHANGES`는 2026-08-27 추가된 enum의 읽기 호환용이며 후속 정정에 따라 새 쓰기를 중단한다:
 
 | 코드 | 의미 | in-flight |
 |---|---|:---:|
@@ -183,8 +183,8 @@ actv_scnr_id INT UNSIGNED
 | `PREPARING_EXECUTION` | confirmation 성공, Excel 3개 생성(confirmed params 파생, 아직 case 미생성) | O |
 | `EXECUTING` | 기존 model execution 접수 완료(case INSERT → `tcm_filel(SCNRCASE+case_id)` 기록 → Run INSERT/Case `lastRunId` → `execprep.case_id` 저장까지 commit, 이후 dispatch). 실행 상태/terminal 이력은 Case/Run이 관리 | X |
 | `EXECUTION_FAILED` | confirmation 이후 실행 접수 실패 | X |
-| `REQUEST_FAILED` | Agent 제안 요청 실패가 확정됐거나 timeout/reconcile로 proposal 부재가 확정됨 | X |
-| `REQUEST_NO_CHANGES` | 변경 항목 없음으로 인한 제안 생성 실패 | X |
+| `REQUEST_FAILED` | 제안 요청의 일반 실패. 판정 정책은 canonical design §3.2/spec §5.2.1을 따름 | X |
+| `REQUEST_NO_CHANGES` | 과거 전용 생성 실패의 읽기 호환. 새 쓰기 없음 | X |
 
 Agent 상태(`PROCESSING/PROPOSED/CONFIRMED/FAILED`)는 `tmm_mi_model_param_proposal_m`이 source of truth이며 이 테이블에 복제하지 않는다. 상태 코드 범위와 전이 invariant는 DB CHECK가 아니라 application validation으로 강제한다(선례 `tmd_scnrcrth`와 동일).
 
@@ -234,7 +234,7 @@ Callback correlation:
 - `agnt_prpsl_id`가 아직 저장되지 않은 row라면 `exec_prep_id` + `agnt_prpsl_id IS NULL` 조건으로 write-once 저장한다.
 - proposal ID가 없거나 실패 callback의 `data`가 비어 있으면 path `scenarioId`의 현재 in-flight row(`actv_scnr_id = :scnrId`)가 정확히 1건일 때만 처리한다.
 - 현재 in-flight row가 없으면 late/no-op으로 처리하고, terminal/history row나 새 unrelated row에 붙이지 않는다.
-- 재요청으로 새 in-flight row가 생긴 경우에는 위 후보 조건만으로 과거 callback을 구별할 수 없다. 신규 거절의 callback 유무/상관관계 검증은 domain design §11/spec §13의 gate이며, 이 DDL이 그 보장을 제공하지 않는다.
+- 재요청으로 새 in-flight row가 생긴 경우에는 위 후보 조건만으로 과거 callback을 구별할 수 없다. callback 유무/상관관계의 잔여 경계는 domain design §11/spec §13을 따르며, 이 DDL이 그 보장을 제공하지 않는다.
 - 동일 row에 이미 다른 `agnt_prpsl_id`가 있으면 correlation conflict로 보고 덮어쓰지 않는다.
 
 상태 전이(compare-and-set, monotonic guard 예시):
@@ -249,9 +249,9 @@ WHERE exec_prep_id = :execPrepId
   AND exec_prep_stat_cd IN ('REQUESTING', 'PROPOSAL_PENDING');
 ```
 
-`REQUEST_FAILED` 전이는 Agent가 callback을 보낼 수 없는 실패가 확정됐거나 timeout/reconcile로 Agent proposal 부재가 확정된 경우에만 수행한다. Agent 호출 결과가 "Agent 접수 실패"인지 "Agent는 접수했지만 응답만 유실"인지 불명확하면 row를 `REQUESTING` in-flight 상태로 유지해 `tmd_mi_model_execpreph_ux02(actv_scnr_id)`가 새 preparation 생성을 막게 한다. 이후 callback, Agent table read-reconcile, timeout 복구가 최종 outcome을 결정한다.
+`REQUEST_FAILED` 판정 정책은 canonical design §3.2/spec §5.2.1을 따른다. 생성 직접 응답의 명시적 `status=error`는 사용자 승인에 따라 일반 실패로 저장하며, 모든 error에 callback/Agent row가 없다는 보장을 전제로 하지 않는다. 명시적 error가 없고 응답 형식/통신 결과가 불확정이면 `REQUESTING` in-flight 상태를 유지해 `tmd_mi_model_execpreph_ux02(actv_scnr_id)`가 새 preparation 생성을 막는다. 별도 reconcile/timeout 복구 구현은 이번 수정 범위에 포함하지 않는다.
 
-`REQUEST_NO_CHANGES`도 같은 `exec_prep_id`와 선행 상태 조건으로 상태/`err_msg_cntt`/수정 audit을 원자 갱신한다. 오류 분류와 안전한 사유는 feature spec §5.2.1을 따른다. 갱신 0건을 성공으로 간주하거나 최신 row 검색으로 대상을 바꾸지 않으며 기존 terminal/확정/실행 row는 보존한다.
+새 명시적 생성 오류는 같은 `exec_prep_id`와 선행 상태 조건으로 `REQUEST_FAILED`/`err_msg_cntt`/수정 audit을 원자 갱신한다. 과거 `REQUEST_NO_CHANGES`에는 새 쓰기를 하지 않는다. 오류 분류와 안전한 사유는 feature spec §5.2.1을 따른다. 갱신 0건을 성공으로 간주하거나 최신 row 검색으로 대상을 바꾸지 않으며 기존 terminal/확정/실행 row는 보존한다.
 
 JSON 실행 접수 성공(해당 실행 준비 row에 새 Case 연결):
 
@@ -554,7 +554,15 @@ LIMIT 1;
    - application rollback으로 신규 write 중지.
    - 신규 데이터 보존 필요 여부 확인 후 `DROP TABLE` 또는 rename 격리.
 
-## 2026-08-27 전용 실패 상태 확장 — Backend 반영/미배포
+## 2026-08-27 후속 정정 — 일반 실패 저장, 기존 reader 유지
+
+- 새 명시적 생성 오류는 기존 REQUEST_FAILED와 err_msg_cntt를 사용한다. 신규 컬럼/인덱스/상태값/DDL 실행은 필요하지 않다. 오류 및 사유 계약은 feature spec §5.2.1, 전이는 canonical design §3.2를 따른다.
+- REQUEST_NO_CHANGES의 새 쓰기는 중단하되 기존 문자열을 읽는 Java enum과 조회 매핑은 유지한다. 기존 row의 수정/변환/삭제는 이번 범위가 아니다.
+- 모든 writer를 새 규칙으로 전환해야 잘못된 전용 실패 저장이 중단된다. 기존 데이터가 있을 수 있으므로 이전 enum을 제거하거나 이를 모르는 reader로 rollback하지 않는다.
+- 아래 전용 상태 추가/쓰기 활성화 절차는 과거 도입 이력이며 이번 일반 실패 수정에 재적용하지 않는다. 테이블 CREATE/ALTER나 기존 데이터 복구를 실행하지 않는다.
+- schema readiness: ready (기존 컬럼/상태 재사용); 운영 DDL/저장 이력은 직접 확인하지 않았다.
+
+## 2026-08-27 전용 실패 상태 확장 — 과거 도입 이력 (후속 정정으로 새 쓰기 중단)
 
 ### 변경 분류 / 명명 / ERD 영향
 

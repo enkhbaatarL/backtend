@@ -1,6 +1,15 @@
 package com.sk.domain.admin.controller;
 
 import java.util.List;
+import java.beans.PropertyEditorSupport;
+
+import org.springframework.web.bind.WebDataBinder;
+import org.springframework.web.bind.annotation.InitBinder;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.Size;
+import jakarta.validation.constraints.Pattern;
+import io.swagger.v3.oas.annotations.media.Content;
+import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 
 import org.springframework.context.annotation.Profile;
 import org.springframework.web.bind.annotation.DeleteMapping;
@@ -146,6 +155,40 @@ public class AdminUserController {
     public BaseResponse<UserDetailRes> getUser(
             @PathVariable(value = "userNo") Integer userNo) {
         return BaseResponseFactory.create(adminUserService.getUser(userNo));
+    }
+
+    @ApiOrder(12)
+    @Operation(summary = "로그인 ID로 사용자 상세 조회", description = """
+            관리자가 로그인 아이디로 모든 고객사의 사용자 중 한 명을 조회합니다.
+            기존 GET /users/{userNo}와 같은 상세 응답이며 개인정보 동의 일시와 등록·수정 이력을 포함합니다.
+            ADMIN 인증과 호출 관리자의 허용 IP가 필요합니다. 소속 회사가 달라도 조회하며 회사 헤더로 범위를 바꾸지 않습니다.
+            여러 계정이 일치하면 조회 결과의 첫 행 하나를 선택합니다. 역할 우선순위와 반복 호출의 동일 계정 선택은 보장하지 않습니다.
+            조회로 사용자 설정을 변경하지 않으며 페이지 접근 가능 여부는 제공하지 않습니다.
+            GET /users는 emailAddress 검색과 페이지 처리를 제공하는 기존 목록 API입니다.
+            """, security = @SecurityRequirement(name = "BearerAuth"))
+    @ApiResponse(responseCode = "200", description = "기존 번호 상세와 동일한 사용자 상세. 다건 일치도 첫 행 한 건 반환",
+            useReturnTypeSchema = true, content = @Content(mediaType = "application/json"))
+    @GetMapping(value = "/users/by-login-id", produces = "application/json")
+    @RequiredPermission(roles = {Role.ADMIN})
+    public BaseResponse<UserDetailRes> getUserByLoginId(
+            @Parameter(description = "로그인 ID 문자열. 이메일 형식으로 제한하지 않습니다. 앞뒤 공백·제어문자는 불허하며 "
+                    + "숫자 ID의 앞 0과 대소문자를 보존합니다. URL 인코딩하며 +는 %2B로 전달합니다.",
+                    required = true, schema = @Schema(type = "string", minLength = 1, maxLength = 50,
+                            example = "sample.user@example.com"))
+            @RequestParam("userLoginId") @NotBlank @Size(min = 1, max = 50)
+            @Pattern(regexp = "^[^\\p{Z}\\p{Cc}\\s](?:[^\\p{Cc}]*[^\\p{Z}\\p{Cc}\\s])?$") String userLoginId) {
+        return BaseResponseFactory.create(adminUserService.getUserByLoginId(userLoginId));
+    }
+
+    @InitBinder("userLoginId")
+    private void preserveLoginId(WebDataBinder binder) {
+        // The shared String converter trims inputs; validate this parameter's original value.
+        binder.registerCustomEditor(String.class, new PropertyEditorSupport() {
+            @Override
+            public void setAsText(String text) {
+                setValue(text);
+            }
+        });
     }
 
     @ApiOrder(6)

@@ -13,7 +13,7 @@
 - supersedes:
   - 이 문서의 이전 A4a top-level `parameters`/navigation-only `modelFiles`/`parameterShapes` 안내
   - A4a `leaf.parameter` 전체를 그대로 A6 `confirmationParameters[]`로 전송하던 예시
-- last synced: 2026-07-14
+- last synced: 2026-08-27
 - open questions:
   - duplicate-slot Agent payload는 GET에서 모든 `values[]`를 보존하지만 현재 A6 validator가 동일 slot identity를 거절하므로 실행 좌표 계약 확인이 필요함
 
@@ -92,6 +92,8 @@ FE ──④ SSE 받으면 다시 ② GET──▶ 최신 상태로 화면 갱�
 
 **접수 성공 = 생성 완료 아님.** 이후 완료 신호는 SSE(E)로 오고, 최신 상태는 GET(C)으로 확인합니다.
 
+**POST 오류 후에도 GET(C)을 호출하세요.** Agent가 `status=error`를 반환하면 BE는 일반 실패를 저장하고 POST에 HTTP 500 / `API-004`를 반환합니다. GET의 `PROPOSAL_FAILED`에서는 로딩/반복 조회를 끝내고 `failureReason`을 표시하며, 이전 파라미터 표를 비우고 확정/실행을 막습니다. Agent ID 발급 전이면 `modelParamProposalId`는 null입니다. 즉시 -202 거절에는 callback/SSE가 없으므로 SSE만 기다리지 않습니다. status 누락/알 수 없는 값, 잘못된 JSON, timeout은 실패 확정 근거가 아니므로 GET이 `GENERATING`을 반환할 수 있습니다. 상세 계약은 canonical feature spec §5.2.1을 따릅니다.
+
 거부 케이스:
 - 이미 진행 중인 제안/실행 존재 → `409 Conflict`
 - `FILE_UPLOAD` 모드 → `409 Conflict`
@@ -105,7 +107,7 @@ FE ──④ SSE 받으면 다시 ② GET──▶ 최신 상태로 화면 갱�
 응답 (`CurrentModelParamProposalRes`) 주요 필드:
 | 필드 | 설명 |
 |---|---|
-| `currentState` | **화면용 정규화 상태 (8종)** — 이것만 보고 분기 |
+| `currentState` | **화면용 정규화 상태 (현행 8종 + 과거 데이터 호환 1종)** — 이것만 보고 분기 |
 | `parameterSource` | tree parameter의 출처: `NONE` / `PROPOSAL_PARAMETERS`(제안값) / `CONFIRMATION_PARAMETERS`(확정값) |
 | `modelFiles` | `modelFile > modelSheet > modelTable > parameter` 단일 tree. `parameterSource=NONE`이면 `[]` |
 | `failureReason` | 실패 상태에서만 채워짐 |
@@ -196,7 +198,8 @@ const request = {
 
 ## 3. currentState — 상태 정의와 전이
 
-### 3.1 값 (8종)
+### 3.1 값 (현행 8종 + 과거 데이터 호환 1종)
+
 | currentState | 의미 | 종류 |
 |---|---|---|
 | `NOT_REQUESTED` | 아직 제안을 요청한 적 없음 | 초기 |
@@ -206,6 +209,7 @@ const request = {
 | `EXECUTING` | 확정 파라미터로 수급모델 실행 중 | 진행 중 |
 | `EXECUTED_CONFIRMED` | 실행 완료 (최종 성공) | 종료(성공) |
 | `PROPOSAL_FAILED` | 제안 생성 단계 실패 | 종료(실패) |
+| `PROPOSAL_NO_CHANGES` | 과거 전용 실패 상태의 읽기 호환. 새 생성 오류는 `PROPOSAL_FAILED` | 종료(실패) |
 | `EXECUTION_FAILED` | 확정 이후 실행 단계 실패 | 종료(실패) |
 
 ### 3.2 전이 다이어그램
@@ -228,7 +232,7 @@ EXECUTING ────────────────────► EXECUT
 EXECUTED_CONFIRMED  (종료)
 ```
 
-- 실패 종료 상태(`PROPOSAL_FAILED`, `EXECUTION_FAILED`)에서는 **POST 재요청**으로 새 사이클 시작 가능.
+- 실패 종료 상태(`PROPOSAL_FAILED`, 과거 `PROPOSAL_NO_CHANGES`, `EXECUTION_FAILED`)에서는 **POST 재요청**으로 새 사이클 시작 가능.
 - 진행 중 상태(`GENERATING`, `CONFIRMED_PENDING_EXECUTION`, `EXECUTING`)에서 POST하면 `409`(이미 진행 중).
 
 ### 3.3 상태별 필드 신뢰 규칙
@@ -241,6 +245,7 @@ EXECUTED_CONFIRMED  (종료)
 | `EXECUTING` | `CONFIRMATION_PARAMETERS` | 확정값 | `RUNNING` | null | 실행 진행 표시 |
 | `EXECUTED_CONFIRMED` | `CONFIRMATION_PARAMETERS` | 확정값 | `COMPLETED` | null | 완료 표시 |
 | `PROPOSAL_FAILED` | `NONE` | `[]` | null | 채워짐 | 실패 메시지 + 재요청 |
+| `PROPOSAL_NO_CHANGES` (과거) | `NONE` | `[]` | null | 기존 저장 사유 | 실패 메시지 + 재요청 |
 | `EXECUTION_FAILED` | confirmation payload가 있으면 `CONFIRMATION_PARAMETERS`, 없으면 `NONE` | 확정값 tree 또는 `[]` | `FAILED`(상황에 따라) | 채워짐 | 실패 메시지 + 재요청 |
 
 > `parameterSource == NONE`이면 `modelFiles`는 항상 빈 배열(`[]`).
@@ -277,7 +282,9 @@ EXECUTED_CONFIRMED  (종료)
 | `FILE_UPLOAD` 모드에서 제안 API 호출 | `409` | `BIZ_RULE_VIOLATION` |
 | 폐기(DISCARDED) 시나리오 요청 | `400` | `BIZ_RULE_VIOLATION` |
 | 시나리오/제안 리소스 없음 | `404` | `RSC_NOT_FOUND` |
-| Agent 통신 타임아웃/실패 | `5xx` | `API_TIMEOUT` 등. 타임아웃 시 요청은 접수 상태 유지될 수 있음 |
+| 제안 생성의 명시적 Agent `status=error` | `500` | `API-004` (`API_RESPONSE_ERROR`). GET으로 일반 실패/사유 확인 |
+| 제안 생성의 timeout/통신 예외 또는 잘못된 2xx 응답 | `400` | 현행 공통 handler 매핑 유지. `API_TIMEOUT`/통신 오류/`API_RESPONSE_ERROR`; 생성 실패를 확정하지 않음 |
+| 제안 생성의 Agent HTTP 오류이나 명시적 error envelope가 아님 | `500` | `API-004`; 생성 실패를 확정하지 않음 |
 | payload 없음/파싱 실패, parameter/rendering 누락·중복·좌표 불일치 | `409` | `BIZ_RULE_VIOLATION` (불완전 tree를 반환하지 않음) |
 
 > 타임아웃(`API_TIMEOUT`)으로 POST가 실패해도 BE가 요청을 `REQUESTING`으로 유지하는 경우가 있어,
@@ -301,7 +308,7 @@ EXECUTED_CONFIRMED  (종료)
 FE가 알 필요는 없지만 문의 대응/디버깅용.
 
 1. preparation row 없음 → `NOT_REQUESTED`
-2. preparation `REQUEST_FAILED` → `PROPOSAL_FAILED`
+2. preparation `REQUEST_FAILED` → `PROPOSAL_FAILED`; 과거 `REQUEST_NO_CHANGES` → `PROPOSAL_NO_CHANGES` (두 실패 모두 Agent row 없음보다 우선)
 3. Agent proposal `FAILED` → `PROPOSAL_FAILED`
 4. **caseId 연결됨** → 최신 Run 상태로: `RUNNING`→`EXECUTING`, `COMPLETED`→`EXECUTED_CONFIRMED`, `FAILED`→`EXECUTION_FAILED`
 5. preparation `EXECUTION_FAILED`(caseId 없음) → `EXECUTION_FAILED`
@@ -310,7 +317,7 @@ FE가 알 필요는 없지만 문의 대응/디버깅용.
 8. Agent `PROPOSED` → `PROPOSAL_READY`
 
 내부 enum:
-- `ModelExecutionPreparationStatus`: `REQUESTING, PROPOSAL_PENDING, REQUEST_FAILED, CONFIRMING, PREPARING_EXECUTION, EXECUTING, EXECUTION_FAILED`
+- `ModelExecutionPreparationStatus`: `REQUESTING, PROPOSAL_PENDING, REQUEST_FAILED, REQUEST_NO_CHANGES`(과거 읽기 전용), `CONFIRMING, PREPARING_EXECUTION, EXECUTING, EXECUTION_FAILED`
 - `AgentModelParamProposalStatus`: `PROCESSING, PROPOSED, CONFIRMED, FAILED`
 - `ModelExecutionStatus`(Run): `RUNNING, COMPLETED, FAILED`
-- `CurrentModelParamProposalState`(화면용): 위 §3.1의 8종
+- `CurrentModelParamProposalState`(화면용): 위 §3.1의 현행 8종 + 과거 데이터 호환 1종
