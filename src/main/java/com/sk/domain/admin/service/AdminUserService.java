@@ -4,6 +4,7 @@ import java.time.LocalDateTime;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
+import java.util.function.Predicate;
 import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -159,7 +160,22 @@ public class AdminUserService {
 
     /** 로그인 ID 조회 결과의 첫 계정을 선택하고 기존 번호 상세 조회를 재사용합니다. */
     public UserDetailRes getUserByLoginId(String userLoginId) {
+        return findUserByLoginId(userLoginId, user -> true);
+    }
+
+    /** 고객사 클라이언트는 자사 USER와 타사 서비스 접근이 허용된 ADMIN만 조회합니다. */
+    public UserDetailRes getUserByLoginIdForClient(String userLoginId, String clientCompanyCd) {
+        return findUserByLoginId(userLoginId, user ->
+                (user.getUserRoleCd() == UserRoleCd.USER && user.getCustomerCompany() != null
+                        && clientCompanyCd != null
+                        && clientCompanyCd.equals(user.getCustomerCompany().getCustomerCompanyCd()))
+                || (user.getUserRoleCd() == UserRoleCd.ADMIN
+                        && Boolean.TRUE.equals(user.getIsOtherServiceAccessPossible())));
+    }
+
+    private UserDetailRes findUserByLoginId(String userLoginId, Predicate<User> allowedTarget) {
         User selected = userRepository.findByUserLoginIdAndIsDeletedFalse(userLoginId).stream()
+                .filter(allowedTarget)
                 .findFirst()
                 .orElseThrow(() -> AppErrorException.of(ResultCode.Error.RSC_NOT_FOUND));
         return getUser(selected.getUserNo());
