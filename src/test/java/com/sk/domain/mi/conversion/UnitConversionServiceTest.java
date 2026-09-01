@@ -187,7 +187,7 @@ class UnitConversionServiceTest {
             List<BigDecimal> result = unitConversionService.convertTimeSeries(unitConversionNo, inputData, windowSize);
 
             // [then]
-            assertThat(result).isEqualTo(expectedOutput);
+            assertThat(result).usingElementComparator(BigDecimal::compareTo).containsExactlyElementsOf(expectedOutput);
         }
 
         @Test
