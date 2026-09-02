@@ -7,6 +7,7 @@ import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.inOrder;
 
 import com.sk.domain.mi.service.nextgen.priceinterp.PriceInterpretationStore;
+import com.sk.domain.shared.client.ScenarioDesignAgentApi;
 import com.sk.domain.shared.entity.master.tmm.MiScenario;
 import com.sk.domain.shared.entity.master.tmm.MiScenarioGroup;
 import com.sk.domain.shared.enums.fundamentalmodel.FundamentalModelCaseStatus;
@@ -15,6 +16,7 @@ import com.sk.domain.shared.enums.nextgen.ScenarioGroupStatus;
 import com.sk.domain.shared.enums.nextgen.ScenarioStatus;
 import com.sk.domain.shared.repository.master.tmd.ScenarioCaseRepository;
 import com.sk.domain.shared.repository.master.tmd.ScenarioCaseRunHistoryRepository;
+import com.sk.domain.shared.repository.master.tmm.MiScenarioGroupEventRepository;
 import com.sk.domain.shared.repository.master.tmm.MiScenarioGroupRepository;
 import com.sk.domain.shared.service.permissions.AuthorizationService;
 import java.time.LocalDateTime;
@@ -23,6 +25,7 @@ import java.util.Optional;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InOrder;
+import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
@@ -30,10 +33,14 @@ import org.mockito.junit.jupiter.MockitoExtension;
 class ScenarioExecutionCancellationTest {
 
     @Mock private MiScenarioGroupRepository groupRepository;
+    @Mock private MiScenarioGroupEventRepository groupEventRepository;
+    @Mock private ScenarioDesignAgentApi scenarioDesignAgentApi;
     @Mock private ScenarioCaseRepository caseRepository;
     @Mock private ScenarioCaseRunHistoryRepository historyRepository;
     @Mock private AuthorizationService authorizationService;
     @Mock private PriceInterpretationStore priceInterpretationStore;
+
+    @InjectMocks private ScenarioGroupServiceImpl scenarioGroupService;
 
     @Test
     void flushesManagedLifecycleChangesBeforeCancellingRunningRowsAndSoftDeletingAllRows() {
@@ -46,8 +53,7 @@ class ScenarioExecutionCancellationTest {
         given(authorizationService.getSubject()).willReturn("tester");
         given(caseRepository.findCaseIdsByScenarioIds(List.of(11L))).willReturn(List.of(101L));
 
-        new ScenarioGroupServiceImpl(groupRepository, caseRepository, historyRepository, authorizationService, priceInterpretationStore)
-            .deleteScenarioGroup(1L);
+        scenarioGroupService.deleteScenarioGroup(1L);
 
         assertThat(group.getIsDeleted()).isTrue();
         assertThat(target.getIsDeleted()).isTrue();

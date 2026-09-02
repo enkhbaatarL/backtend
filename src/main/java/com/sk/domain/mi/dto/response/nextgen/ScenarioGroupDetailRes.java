@@ -32,7 +32,7 @@ public record ScenarioGroupDetailRes(
     @Schema(description = "생성 근거 마크다운 ('근거 보기' - Event 관계 분석/대표 시나리오 선정. v1 그룹 등 스냅샷이 없으면 null)", nullable = true)
     DesignEvidence evidence,
 
-    @Schema(description = "시나리오 그룹 설명")
+    @Schema(description = "시나리오 그룹 설명 (description 값을 summary 필드로 반환)")
     String summary,
 
     @Schema(description = "시나리오 수", example = "6")

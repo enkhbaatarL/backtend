@@ -80,8 +80,8 @@ class BollingerBandsConversionTest {
             // [then]
             assertThat(results).hasSize(5);
 
-            assertThat(results.get(0)).isNull();
-            assertThat(results.get(1)).isNull();
+            assertThat(results.get(0)).isEqualTo(BollingerBandResult.ofEmpty());
+            assertThat(results.get(1)).isEqualTo(BollingerBandResult.ofEmpty());
 
             BollingerBandResult result2 = results.get(2);
 
@@ -130,8 +130,8 @@ class BollingerBandsConversionTest {
             // [then]
             assertThat(results).hasSize(5);
 
-            assertThat(results.get(0)).isNull();
-            assertThat(results.get(1)).isNull();
+            assertThat(results.get(0)).isEqualTo(BollingerBandResult.ofEmpty());
+            assertThat(results.get(1)).isEqualTo(BollingerBandResult.ofEmpty());
 
             for (int i = windowSize - 1; i < results.size(); i++) {
                 BollingerBandResult result = results.get(i);
@@ -227,7 +227,7 @@ class BollingerBandsConversionTest {
         }
 
         @Test
-        @DisplayName("3-5. 이동평균이나 표준편차가 계산되지 않은 경우, null을 반환해야 한다.")
+        @DisplayName("3-5. 이동평균이나 표준편차가 계산되지 않은 경우, 빈 결과를 반환해야 한다.")
         void shouldReturnNullWhenMAOrSDIsNull() {
             // [given]
             List<BigDecimal> data = Arrays.asList(
@@ -249,9 +249,9 @@ class BollingerBandsConversionTest {
 
             // [then]
             assertThat(results).hasSize(3);
-            assertThat(results.get(0)).isNull();
-            assertThat(results.get(1)).isNull();
-            assertThat(results.get(2)).isNull(); // MA는 있지만 SD가 null이므로 결과도 null
+            assertThat(results.get(0)).isEqualTo(BollingerBandResult.ofEmpty());
+            assertThat(results.get(1)).isEqualTo(BollingerBandResult.ofEmpty());
+            assertThat(results.get(2)).isEqualTo(BollingerBandResult.ofEmpty()); // MA는 있지만 SD가 null이므로 결과도 빈 값
         }
     }
 
