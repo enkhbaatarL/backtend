@@ -6,7 +6,7 @@
 - status: Review
 - owner: BE (platform)
 - created at: 2026-07-03
-- updated at: 2026-08-27
+- updated at: 2026-09-03
 - canonical for: 파라미터 제안의 business concept, access scope, lifecycle, 상태 전이, Excel 생성 및 기존 수급모델 실행 연결 경계
 - not canonical for:
   - endpoint, request/response, HTTP error contract: `docs/feature-specs/mi-model-parameter-proposal-backend-feature-spec.md`
@@ -23,7 +23,7 @@
   - `docs/conventions/db-object-naming-rules.md`
   - `docs/conventions/db-term-dictionary-sheet2.csv`
 - supersedes: 없음
-- last synced: 2026-08-27
+- last synced: 2026-09-03
 - open questions: 11절 참조
 - 2026-08-27 후속 정정: 사용자 승인에 따라 새 생성 `status=error`는 일반 `REQUEST_FAILED`로 저장한다. 과거 NO_CHANGES 읽기 호환은 유지하며 운영 데이터 변환은 없다. API 상세는 feature spec §5.2.1을 따른다.
 - integration model: **callback = 완료 신호. Backend가 Agent proposal 테이블을 read-only 직접 조회해 결과를 서빙**(시나리오 설계와 동일). proposal payload hash/snapshot 저장 없음. Backend 상태의 조건부 갱신은 유지한다.
@@ -199,7 +199,7 @@ Scenario의 기반 Event가 어떤 수급모델 실행 입력 workflow를 사용
 - callback은 proposal 데이터를 나르지 않는 **완료 신호**다. Backend는 신호 수신 후 Agent proposal 테이블을 재조회해 canonical 결과·terminal 상태를 얻는다. (시나리오 설계의 "신호 + 재조회"와 동일)
 - Agent Notion confirmed contract는 proposal request body를 사용하지 않는다. Backend가 callback endpoint/URL을 결정해 Agent 팀에 전달하고, Agent는 전달받은 URL을 배포 운영 설정값으로 등록·관리한다.
 - Backend는 Notion `{status,message,data}` wrapper를 수신해 내부 신호 DTO로 normalize한다(성공/실패는 공용 `AgentCallbackResult`로).
-- callback body의 `modelParamProposalId`, `scenarioId`, `scenarioGroupId`, `eventId`는 신호가 겨냥한 대상을 request snapshot과 교차 검증하는 용도다.
+- callback body의 `modelParamProposalId`, `scenarioId`, `scenarioGroupId`는 신호가 겨냥한 대상을 request snapshot과 교차 검증하는 용도다. `eventId`는 기존 Agent wrapper 호환을 위해 수신하지만 교차검증에는 사용하지 않는다.
 - **proposal ID가 있는 callback의 canonical 상태 판정은 Agent 테이블 재조회로 한다.** ID 없는 실패 callback은 기존 실패 처리로 수렴한다. payload hash/version 저장은 추가하지 않지만, Backend terminal 상태를 되돌리지 않도록 조건부 상태 갱신은 필수다. 서로 다른 생성 요청 사이의 지연 callback까지 재조회만으로 구별할 수 있다고 가정하지 않는다.
 - Backend orchestration 상태는 monotonic이다. callback이 Agent HTTP 응답보다 먼저 도착할 수 있으며, 이때 `REQUESTING` 행을 `scenarioId`로 찾고 Agent proposal 테이블을 재조회해 Agent proposal ID와 canonical 상태를 채운다. 이후 늦게 도착한 Agent 응답은 상태를 `PROCESSING`으로 되돌리지 않는다.
 - Agent 응답 경로와 callback 경로가 서로 다른 Agent proposal ID를 관찰하면 기존 값을 덮어쓰지 않고 correlation conflict로 처리한다. 같은 ID의 중복 갱신은 no-op이다.
@@ -291,7 +291,7 @@ tcm_filel: DEMAND / SUPPLY / TRADE generated files
 6. 한 실행 준비 시도에서 proposal 생성 요청은 1회만 허용한다.
 7. 같은 Scenario에 `PROCESSING` proposal(=in-flight preparation) 또는 `RUNNING` model execution이 있으면 새 파라미터 생성 요청을 진입에서 차단한다(RUNNING pre-check fast-fail). `RUNNING` 판정은 `MiScenario` lock 스코프에서 `tmd_mdl_scnrcasem`을 조회하며, pre-check와 실제 실행 접수 사이 race는 기존 `ScenarioCase.actv_scnr_id` UNIQUE가 backstop으로 막는다. in-flight preparation 중복은 별도로 preparation in-flight UNIQUE가 막는다.
    - proposal 생성이 `REQUEST_FAILED`/`REQUEST_NO_CHANGES` 또는 Agent `FAILED`로 terminal 수렴한 뒤에는 같은 Scenario에서 새 proposal 생성 요청을 허용한다. 실패 row는 audit/history로 보존하고 재사용하지 않으며, 새 요청은 새 `tmd_mi_model_execpreph` row와 새 Agent proposal request를 만든다(Agent ID는 발급될 때 연결). 두 Backend 실패 상태는 in-flight 상태가 아니므로 active preparation UNIQUE 대상이 아니다. 지연 callback 경계는 §11을 따른다.
-8. callback(신호)의 `modelParamProposalId`, `scenarioId`, `scenarioGroupId`, `eventId`를 저장된 request snapshot과 교차 검증한다.
+8. callback(신호)의 `modelParamProposalId`, `scenarioId`, `scenarioGroupId`를 저장된 request snapshot과 교차 검증한다. `eventId`는 기존 Agent wrapper 호환을 위해 수신하지만 교차검증에는 사용하지 않는다.
 9. callback은 신호이므로 중복/지연/순서역전 재전송은 Agent 테이블 재조회로 수렴하는 멱등 처리다. Backend orchestration 상태는 monotonic이며 `PROCESSING` 이후 단계에서 도착한 신호는 no-op이다. payload hash / CAS는 사용하지 않는다.
 10. FE 표에는 `values[].proposedValue`만 값 cell로 표시하며 `basecaseValue`는 표시하지 않는다. 사용자는 `proposedValue`만 수정할 수 있다.
 11. `parameterName`, `modelTarget`, slot-axis 값과 `basecaseValue`는 Agent proposal 조회 결과 기준 immutable이다. parameter/value `rationale`은 required transport field지만 사용자 편집 대상 또는 Excel 실행 입력이 아니며 Agent confirmation 저장 과정에서 보정될 수 있으므로 Backend의 구조·실행 동일성 비교에서는 문자열 일치를 요구하지 않는다.

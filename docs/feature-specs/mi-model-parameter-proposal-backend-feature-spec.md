@@ -6,7 +6,7 @@
 - status: Review
 - owner: BE (platform)
 - created at: 2026-07-03
-- updated at: 2026-08-27
+- updated at: 2026-09-03
 - canonical for: frontend-facing API contract, Backend callback endpoint/minimum compatibility contract, proposed Agent integration questions
 - canonical design reference: `docs/design-docs/gas/mi-model-parameter-proposal-design.md`
 - price interpretation rerun reference: `docs/design-docs/gas/price-forecast-interpretation-domain-design.md`
@@ -26,7 +26,7 @@
   - `docs/design-docs/gas/mi-model-parameter-proposal-design.md`
   - `docs/conventions/source-of-truth-governance.md`
 - supersedes: 없음
-- last synced: 2026-08-27
+- last synced: 2026-09-03
 - open questions: 13절 및 duplicate-slot Agent payload의 A6/Excel 실행 좌표 호환성 참조
 - 2026-08-27 오류 계약 정정: 생성 `status=error`는 `REQUEST_FAILED → PROPOSAL_FAILED`로 처리한다(§5.2.1). `REQUEST_NO_CHANGES/PROPOSAL_NO_CHANGES`는 과거 데이터 읽기 호환만 유지한다. 운영 데이터/배포는 변경하지 않는다.
 - integration model: callback = 완료 신호. Backend가 Agent proposal 테이블을 read-only 직접 조회해 결과 서빙(proposal payload hash/snapshot 없음, Backend 상태 조건부 갱신 유지). 공유 DB read 및 read 권한은 확정(조회 가능). callback path `scenarioId`는 proposal identity가 아니라 현재 in-flight execution-preparation을 찾는 scope key다.
@@ -83,7 +83,7 @@ Frontend가 기존 Scenario의 기반 Event에 따라 두 가지 수급모델 �
 | `modelParamProposalId` | proposal table PK 후보 | Agent identity. Backend local PK와 동일시하지 않음 |
 | `scenarioId` | `scenario_id` | path와 callback/body가 저장된 request snapshot과 일치해야 함 |
 | `scenarioGroupId` | `scenario_group_id` | `scenarioId`에서 도출한 요청 시점 snapshot |
-| `eventId` | `mi_event_id` | API 명칭은 `eventId`, DB mapping은 `mi_event_id`로 고정 |
+| callback `eventId` | `mi_event_id` | 기존 Agent wrapper 호환을 위해 수신하지만 Backend 교차검증과 FE 응답에는 사용하지 않음 |
 | `modelTarget.modelFile` | `model_file` | A4/A6 입력 검증은 `DEMAND|SUPPLY|TRADE`를 case-insensitive하게 해석한다. A4a tree leaf의 `parameter`는 Agent 저장 payload 값을 보존하고 rendering master와 case-sensitive exact match한다. |
 | `modelTarget.modelSheet` | `model_sheet` | 문자열 exact match |
 | `modelTarget.tableName` | `model_table` | phase 1 required contract. 실제 테이블명/표시명을 그대로 사용하며 Agent payload 반영 배포가 선행되어야 함 |
@@ -251,7 +251,6 @@ Response data:
   "modelParamProposalId": 10001,
   "scenarioId": 309,
   "scenarioGroupId": 61,
-  "eventId": 1378,
   "status": "PROPOSED",
   "modelFiles": [
     {
@@ -439,9 +438,9 @@ Assembly and integrity rules:
 
 Top-level fields:
 
-- 유지: `scenarioId`, `currentState`, `parameterSource`, `execPrepId`, `modelParamProposalId`, `scenarioGroupId`, `eventId`, `caseId`, `runId`, `modelExecutionStatus`, `modelFiles`, `failureReason`, `requestedAt`, `completedAt`, `confirmedAt`
+- 유지: `scenarioId`, `currentState`, `parameterSource`, `execPrepId`, `modelParamProposalId`, `scenarioGroupId`, `caseId`, `runId`, `modelExecutionStatus`, `modelFiles`, `failureReason`, `requestedAt`, `completedAt`, `confirmedAt`
 - 추가: `executionInputFiles` — nullable; `EXECUTED_CONFIRMED`에서만 non-null
-- 제거: top-level `parameters`, top-level `parameterShapes`
+- 제거: `eventId`, top-level `parameters`, top-level `parameterShapes`
 - timestamp Java type/serialization과 `failureReason` string 계약은 변경하지 않는다.
 
 Compatibility and A6 mapping:
@@ -465,7 +464,6 @@ Response data examples:
   "execPrepId": 51001,
   "modelParamProposalId": 10001,
   "scenarioGroupId": 61,
-  "eventId": 1378,
   "caseId": null,
   "runId": null,
   "modelExecutionStatus": null,
@@ -488,7 +486,6 @@ Response data examples:
   "execPrepId": 51001,
   "modelParamProposalId": 10001,
   "scenarioGroupId": 61,
-  "eventId": 1378,
   "caseId": null,
   "runId": null,
   "modelExecutionStatus": null,
@@ -560,7 +557,6 @@ Response data examples:
   "execPrepId": 51002,
   "modelParamProposalId": 10001,
   "scenarioGroupId": 61,
-  "eventId": 1378,
   "caseId": 88001,
   "runId": "20260709_153000_abcd",
   "modelExecutionStatus": "COMPLETED",
@@ -1222,7 +1218,7 @@ ModelParamProposalCallbackData          (성공 시 채워짐; 실패 시 null �
   Long modelParamProposalId          optional, 있으면 in-flight 후보 검색 조건
   Long scenarioId                    optional, 있으면 path와 일치 검증
   Long scenarioGroupId               optional, 교차검증
-  Long eventId                       optional, 교차검증
+  Long eventId                       optional, 기존 Agent wrapper 호환용으로 수신하나 Backend 교차검증에는 사용하지 않음
   AgentProposalTerminalStatus status optional, PROPOSED|FAILED (도메인 terminal; 없으면 wrapper status로 판정)
   List<ModelParamPayloadItem> proposalParameters optional, 수신하나 Backend 무시(재조회로 대체)
 
@@ -1284,7 +1280,6 @@ ModelParamProposalRes
   Long modelParamProposalId
   Long scenarioId
   Long scenarioGroupId
-  Long eventId
   ModelParamProposalStatus status
   List<ResponseModelParamPayloadItem> parameters response-only groupedRationales 포함
   String failureReason
@@ -1298,7 +1293,6 @@ CurrentModelParamProposalRes
   Long execPrepId                       nullable
   Long modelParamProposalId             nullable
   Long scenarioGroupId                  nullable
-  Long eventId                          nullable
   Long caseId                           nullable
   String runId                          nullable, 연결 Case의 latest run id
   String modelExecutionStatus           nullable, RUNNING|COMPLETED|FAILED

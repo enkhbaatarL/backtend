@@ -13,7 +13,7 @@
 - supersedes:
   - 이 문서의 이전 A4a top-level `parameters`/navigation-only `modelFiles`/`parameterShapes` 안내
   - A4a `leaf.parameter` 전체를 그대로 A6 `confirmationParameters[]`로 전송하던 예시
-- last synced: 2026-08-27
+- last synced: 2026-09-03
 - open questions:
   - duplicate-slot Agent payload는 GET에서 모든 `values[]`를 보존하지만 현재 A6 validator가 동일 slot identity를 거절하므로 실행 좌표 계약 확인이 필요함
 
@@ -112,7 +112,7 @@ FE ──④ SSE 받으면 다시 ② GET──▶ 최신 상태로 화면 갱�
 | `modelFiles` | `modelFile > modelSheet > modelTable > parameter` 단일 tree. `parameterSource=NONE`이면 `[]` |
 | `failureReason` | 실패 상태에서만 채워짐 |
 | `execPrepId` / `modelParamProposalId` | BE preparation ID / Agent 제안 ID |
-| `scenarioGroupId` / `eventId` | 참조용 |
+| `scenarioGroupId` | 참조용 |
 | `caseId` / `runId` / `modelExecutionStatus` | 실행 단계 진입 후 채워짐 (`RUNNING`/`COMPLETED`/`FAILED`) |
 | `executionInputFiles` | `EXECUTED_CONFIRMED`에서만 다운로드용 파일 metadata 객체, 그 외 상태는 `null` |
 | `requestedAt` / `completedAt` / `confirmedAt` | 요청 / 제안완료 / 확정 시각 |
@@ -184,7 +184,7 @@ const request = {
 | `status` | FE 표시 상태 문자열 (Agent status 또는 BE overlay status) |
 | `parameters` / `modelFiles` | 제안/확정 파라미터와 계층 트리. `parameters[]`에는 화면 표시용 `groupedRationales[]`가 추가됨 |
 | `failureReason` | 실패 사유 |
-| `modelParamProposalId` / `scenarioId` / `scenarioGroupId` / `eventId` | 식별자 |
+| `modelParamProposalId` / `scenarioId` / `scenarioGroupId` | 식별자 |
 | `requestedAt` / `completedAt` | 요청 / 완료(또는 확정) 시각 |
 
 대부분의 팝업 흐름은 **C(현재 상태)만으로 충분**합니다. D는 특정 제안 이력을 콕 집어 볼 때만.
