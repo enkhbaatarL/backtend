@@ -16,16 +16,18 @@ class FundamentalModelDownloadFileResContractTest {
     private final ObjectMapper objectMapper = new ObjectMapper();
 
     @Test
-    void serializesInputAndOutputWithFileNameOnly() {
+    void serializesCaseFilesWithFileNameOnly() {
         FundamentalModelCaseFilesRes response = new FundamentalModelCaseFilesRes(
             List.of(new FundamentalModelDownloadFileRes("input_1.xlsx")),
-            List.of(new FundamentalModelDownloadFileRes("output.xlsx"))
+            List.of(new FundamentalModelDownloadFileRes("output.xlsx")),
+            List.of(new FundamentalModelDownloadFileRes("step1_demand_curve.csv"))
         );
 
         JsonNode json = objectMapper.valueToTree(response);
 
         assertFileNameOnly(json.path("input").path(0), "input_1.xlsx");
         assertFileNameOnly(json.path("output").path(0), "output.xlsx");
+        assertFileNameOnly(json.path("intermediate").path(0), "step1_demand_curve.csv");
     }
 
     @Test
@@ -37,6 +39,20 @@ class FundamentalModelDownloadFileResContractTest {
         assertThat(schemas).containsKey("FundamentalModelDownloadFileRes");
         assertThat(schema.getProperties())
             .containsOnlyKeys("fileNm");
+    }
+
+    @Test
+    void exposesIntermediateInOpenApiSchema() {
+        var schemas = ModelConverters.getInstance()
+            .read(FundamentalModelCaseFilesRes.class);
+        Schema<?> schema = schemas.get("FundamentalModelCaseFilesRes");
+        Schema<?> intermediateSchema = (Schema<?>) schema.getProperties().get("intermediate");
+
+        assertThat(schemas).containsKey("FundamentalModelCaseFilesRes");
+        assertThat(schema.getProperties())
+            .containsKeys("input", "output", "intermediate");
+        assertThat(intermediateSchema.getItems().get$ref())
+            .isEqualTo("#/components/schemas/FundamentalModelDownloadFileRes");
     }
 
     private static void assertFileNameOnly(JsonNode file, String expectedFileName) {

@@ -66,7 +66,7 @@ class McpControllerDelegationTest {
     @Test
     @DisplayName("시나리오 그룹 GET 6건은 원본 Service 메서드와 파라미터를 그대로 사용한다")
     void delegatesAllScenarioGroupOperations() {
-        ScenarioGroupListReq request = new ScenarioGroupListReq(null, null, null, null, null, null);
+        ScenarioGroupListReq request = new ScenarioGroupListReq(null, null, null, null, null, null, null);
 
         scenarioGroupController.getScenarioGroups(request);
         scenarioGroupController.getScenarioGroupScenarios(request);
