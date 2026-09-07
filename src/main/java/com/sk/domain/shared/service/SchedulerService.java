@@ -12,6 +12,7 @@ import com.sk.domain.shared.entity.master.tif.Futures;
 import com.sk.domain.shared.entity.master.tif.FuturesSpread;
 import com.sk.domain.shared.entity.master.tif.GieEu;
 import com.sk.domain.shared.entity.master.tif.InterestRate;
+import com.sk.domain.shared.entity.master.tif.KplerCargo;
 import com.sk.domain.shared.entity.master.tif.UserInfo;
 import com.sk.domain.shared.entity.master.tmd.GoodsCriticalValueSetting;
 import com.sk.domain.shared.entity.master.tmd.User;
@@ -23,6 +24,7 @@ import com.sk.domain.shared.repository.master.tif.FuturesRepository;
 import com.sk.domain.shared.repository.master.tif.FuturesSpreadRepository;
 import com.sk.domain.shared.repository.master.tif.GieEuRepository;
 import com.sk.domain.shared.repository.master.tif.InterestRateRepository;
+import com.sk.domain.shared.repository.master.tif.KplerCargoRepository;
 import com.sk.domain.shared.repository.master.tif.UserInfoRepository;
 import com.sk.domain.shared.repository.master.tmd.GoodsCriticalValueSettingRepository;
 import com.sk.domain.shared.repository.master.tmd.UserHistoryRepository;
@@ -51,6 +53,7 @@ import java.math.RoundingMode;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
+import java.time.YearMonth;
 import java.util.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -78,6 +81,7 @@ public class SchedulerService {
     private final PdfToImagesProcessor pdfToImagesProcessor;
     private final GieEuRepository gieEuRepository;
     private final InterestRateRepository interestRateRepository;
+    private final KplerCargoRepository kplerCargoRepository;
     private final SchedulerConfig schedulerConfig;
 
     private final String ALARM_PREV_DATA_ALIAS = "prev_data";
@@ -416,6 +420,7 @@ public class SchedulerService {
         brentTimeSpreadCalculate();
         calculateStateGov10Y2YSpread();
         processTifGiePast();
+        processKplerUsExportMtd();
         return Boolean.TRUE;
     }
 
@@ -795,6 +800,103 @@ public class SchedulerService {
             interestRateRepository.saveAll(interestRateSpread);
             log.info("[State Gov 10Y, 2Y] check and update. Number={}, Total={}", interestRate10YPage.getNumber(), interestRate10YPage.getTotalElements());
         }while (!interestRate10YPage.isLast());
+    }
+
+
+    /**
+     * TIF_Kpler USA_Export 의 월 누계(USA_Export_mtd) 재계산/보정
+     *
+     * <p>USA_Export_mtd 의 최종 월(S)과 USA_Export 의 최종일이 속한 월(E)을 비교하여 S ~ E 구간을 처리한다.
+     * <ul>
+     *   <li>S == E : S 한 달만 재계산하여 UPDATE (평상시 수집 흐름)</li>
+     *   <li>S &lt; E : S 는 UPDATE, S 다음 달부터 E 까지는 INSERT (미수집 구간 백필)</li>
+     * </ul>
+     * 각 월의 value 는 그 달 USA_Export 의 합계, date 는 그 달 USA_Export 의 최종일로 맞춘다.
+     * S 이후 월에는 mtd 행이 존재할 수 없으므로 결과적으로 "첫 달 UPDATE, 이후 INSERT" 가 된다.
+     *
+     * @return 처리 여부
+     */
+    @Transactional
+    public Boolean processKplerUsExportMtd() {
+        final String EXPORT_CODE = KplerCargo.CODE.USA_Export.name();
+        final String MTD_CODE = KplerCargo.CODE.USA_Export_mtd.name();
+
+        KplerCargo lastExport = kplerCargoRepository.findFirstByCodeOrderByDateDesc(EXPORT_CODE);
+        if (lastExport == null || lastExport.getDate() == null) {
+            log.info("[KPLER-MTD] {} 데이터가 없어 처리하지 않습니다.", EXPORT_CODE);
+            return Boolean.FALSE;
+        }
+        KplerCargo lastMtd = kplerCargoRepository.findFirstByCodeOrderByDateDesc(MTD_CODE);
+        if (lastMtd == null || lastMtd.getDate() == null) {
+            log.info("[KPLER-MTD] {} 데이터가 없어 처리하지 않습니다. 기준이 되는 최종 월을 알 수 없습니다.", MTD_CODE);
+            return Boolean.FALSE;
+        }
+
+        YearMonth exportMonth = YearMonth.from(lastExport.getDate());
+        YearMonth mtdMonth = YearMonth.from(lastMtd.getDate());
+        log.info("[KPLER-MTD] 시작. {} 최종일={}, {} 최종일={} (기준월 {} ~ {})",
+            EXPORT_CODE, lastExport.getDate(), MTD_CODE, lastMtd.getDate(), mtdMonth, exportMonth);
+
+        if (exportMonth.isBefore(mtdMonth)) {
+            log.warn("[KPLER-MTD] {} 최종월({})이 {} 최종월({})보다 이전이라 처리하지 않습니다.",
+                EXPORT_CODE, exportMonth, MTD_CODE, mtdMonth);
+            return Boolean.FALSE;
+        }
+
+        int updated = 0;
+        int inserted = 0;
+        int skipped = 0;
+        for (YearMonth target = mtdMonth; !target.isAfter(exportMonth); target = target.plusMonths(1)) {
+            LocalDateTime start = target.atDay(1).atStartOfDay();
+            LocalDateTime end = target.plusMonths(1).atDay(1).atStartOfDay();
+
+            List<KplerCargo> exports = kplerCargoRepository.findAllByCodeAndDateBetween(EXPORT_CODE, start, end);
+            if (CollectionUtils.isEmpty(exports)) {
+                log.warn("[KPLER-MTD] {} 원천 데이터가 없어 건너뜁니다. month={}", EXPORT_CODE, target);
+                skipped++;
+                continue;
+            }
+
+            BigDecimal total = exports.stream()
+                .map(KplerCargo::getValue)
+                .filter(Objects::nonNull)
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
+            LocalDateTime monthLastDate = exports.stream()
+                .map(KplerCargo::getDate)
+                .max(LocalDateTime::compareTo)
+                .orElse(lastExport.getDate());
+
+            List<KplerCargo> mtdRows = kplerCargoRepository.findAllByCodeAndDateBetween(MTD_CODE, start, end);
+            if (CollectionUtils.isEmpty(mtdRows)) {
+                kplerCargoRepository.save(KplerCargo.builder()
+                    .code(MTD_CODE)
+                    .date(monthLastDate)
+                    .value(total)
+                    .build());
+                inserted++;
+                log.info("[KPLER-MTD] INSERT month={}, date={}, value={}, srcRows={}",
+                    target, monthLastDate, total, exports.size());
+            } else {
+                if (mtdRows.size() > 1) {
+                    log.warn("[KPLER-MTD] {} 행이 {}건 중복되어 최신 1건만 갱신합니다. month={}",
+                        MTD_CODE, mtdRows.size(), target);
+                }
+                KplerCargo mtdRow = mtdRows.stream()
+                    .max(Comparator.comparing(KplerCargo::getDate))
+                    .orElseThrow();
+                BigDecimal beforeValue = mtdRow.getValue();
+                LocalDateTime beforeDate = mtdRow.getDate();
+                mtdRow.setValue(total);
+                mtdRow.setDate(monthLastDate);
+                kplerCargoRepository.save(mtdRow);
+                updated++;
+                log.info("[KPLER-MTD] UPDATE month={}, date={} -> {}, value={} -> {}, srcRows={}",
+                    target, beforeDate, monthLastDate, beforeValue, total, exports.size());
+            }
+        }
+
+        log.info("[KPLER-MTD] 종료. updated={}, inserted={}, skipped={}", updated, inserted, skipped);
+        return Boolean.TRUE;
     }
 
 }
