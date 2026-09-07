@@ -106,6 +106,7 @@ public class FundamentalModelCaseServiceImpl implements FundamentalModelCaseServ
         "files는 파일명에 DEMAND, SUPPLY, TRADE 키워드를 각각 정확히 1개씩 포함해야 합니다.";
     private static final String FILE_RELATION_SCENARIO_CASE = "SCNRCASE";
     private static final String FILE_RELATION_SCENARIO_CASE_HISTORY = "SCNRCASEH";
+    private static final String FILE_RELATION_SCENARIO_CASE_HISTORY_INTERMEDIATE = "SCNRCASEHI";
     private static final String CALLBACK_ACTOR = "SYSTEM";
     private static final String JOB_SUBMIT_FAILURE_REASON = "JOB_SUBMIT_FAILED";
     private static final String CALLBACK_PATH_TEMPLATE = "/api/v1/mi/fundamental-model/runs/%s/callback";
@@ -240,6 +241,7 @@ public class FundamentalModelCaseServiceImpl implements FundamentalModelCaseServ
         );
         ScenarioCaseRunHistory latestRunHistory = findLatestRunHistory(caseRow.lastRunId()).orElse(null);
         List<FundamentalModelDownloadFileRes> outputFiles = findOutputFiles(latestRunHistory);
+        List<FundamentalModelDownloadFileRes> intermediateFiles = findIntermediateFiles(latestRunHistory);
         FundamentalModelRunStatusRes latestRun = latestRunHistory == null ? null : toLatestRunResponse(latestRunHistory);
 
         return new FundamentalModelCaseDetailRes(
@@ -249,7 +251,7 @@ public class FundamentalModelCaseServiceImpl implements FundamentalModelCaseServ
             caseRow.status(),
             caseRow.assigneeName(),
             caseRow.assigneeUserNo(),
-            new FundamentalModelCaseFilesRes(inputFiles, outputFiles),
+            new FundamentalModelCaseFilesRes(inputFiles, outputFiles, intermediateFiles),
             latestRun,
             caseRow.createdAt(),
             caseRow.updatedAt()
@@ -1939,6 +1941,18 @@ public class FundamentalModelCaseServiceImpl implements FundamentalModelCaseServ
         return findDownloadFiles(
             latestRunHistory.getRunSeq(),
             FILE_RELATION_SCENARIO_CASE_HISTORY
+        );
+    }
+
+    private List<FundamentalModelDownloadFileRes> findIntermediateFiles(
+        ScenarioCaseRunHistory latestRunHistory
+    ) {
+        if (latestRunHistory == null || latestRunHistory.getRunSeq() == null) {
+            return List.of();
+        }
+        return findDownloadFiles(
+            latestRunHistory.getRunSeq(),
+            FILE_RELATION_SCENARIO_CASE_HISTORY_INTERMEDIATE
         );
     }
 

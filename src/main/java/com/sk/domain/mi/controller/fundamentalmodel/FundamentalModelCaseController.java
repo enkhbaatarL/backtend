@@ -82,7 +82,8 @@ public class FundamentalModelCaseController {
     @ApiOrder(3)
     @Operation(
         summary = "MI Fundamental Model Scenario Case 상세 조회 API",
-        description = "case metadata, input/output 파일명, latestRun만 조회합니다. 다운로드 기능이 제공되기 전까지 "
+        description = "case metadata, input/output/intermediate 파일명, latestRun만 조회합니다. "
+            + "중간파일은 최신 실행의 run_seq 기준이며, 최신 실행 또는 파일이 없으면 빈 배열입니다. 다운로드 기능이 제공되기 전까지 "
             + "fileNo와 fileSize는 포함하지 않으며, full run history와 result payload도 포함하지 않습니다."
     )
     @ApiResponse(responseCode = "200", description = "조회 성공")
