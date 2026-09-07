@@ -60,6 +60,7 @@ public class ScenarioGroupController {
              - sort: 정렬 기준 / 기본값 latest(최신순) / 그룹 생성일시 기준 정렬 / example - sort=latest, sort=oldest
              - startDate / endDate: 조회 기간 (그룹 생성일시 기준)
              - keyword: 시나리오 그룹명 검색 키워드 / example - keyword=카타르
+             - mineOnly: 내가 만든 그룹만 조회 / 기본값 false / example - mineOnly=true
              - page: 기본값 1 / 1-based
              - size: 기본값 20
 
@@ -79,6 +80,7 @@ public class ScenarioGroupController {
     @Parameter(name = "startDate", description = "조회 시작일 (yyyy-MM-dd, 그룹 생성일시 기준)")
     @Parameter(name = "endDate", description = "조회 종료일 (yyyy-MM-dd, 그룹 생성일시 기준)")
     @Parameter(name = "keyword", description = "시나리오 그룹명 검색 키워드")
+    @Parameter(name = "mineOnly", description = "내가 만든 그룹만 조회 (`true`/`false`). 기본값 `false`")
     @Parameter(name = "page", description = "페이지 번호 (1-based). 기본값 1")
     @Parameter(name = "size", description = "페이지당 항목 수. 기본값 20")
     @ApiResponse(responseCode = "200", description = "조회 성공")
@@ -103,6 +105,7 @@ public class ScenarioGroupController {
              - sort: 정렬 기준 / 기본값 latest(최신순) / 시나리오 생성일시 기준 정렬 / example - sort=latest, sort=oldest
              - startDate / endDate: 조회 기간 (시나리오 생성일시 기준)
              - keyword: 시나리오명 검색 키워드 / example - keyword=호르무즈
+             - mineOnly: 내가 만든 그룹의 시나리오만 조회 (부모 그룹 소유자 기준) / 기본값 false / example - mineOnly=true
              - page: 기본값 1 / 1-based
              - size: 기본값 20
 
@@ -123,6 +126,7 @@ public class ScenarioGroupController {
     @Parameter(name = "startDate", description = "조회 시작일 (yyyy-MM-dd, 시나리오 생성일시 기준)")
     @Parameter(name = "endDate", description = "조회 종료일 (yyyy-MM-dd, 시나리오 생성일시 기준)")
     @Parameter(name = "keyword", description = "시나리오명 검색 키워드")
+    @Parameter(name = "mineOnly", description = "내가 만든 그룹의 시나리오만 조회 (`true`/`false`, 부모 그룹 소유자 기준). 기본값 `false`")
     @Parameter(name = "page", description = "페이지 번호 (1-based). 기본값 1")
     @Parameter(name = "size", description = "페이지당 항목 수. 기본값 20")
     @ApiResponse(responseCode = "200", description = "조회 성공")

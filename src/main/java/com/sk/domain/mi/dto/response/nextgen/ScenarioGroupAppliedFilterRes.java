@@ -17,7 +17,10 @@ public record ScenarioGroupAppliedFilterRes(
     SortOrder sort,
 
     @Schema(description = "검색 키워드", example = "카타르")
-    String keyword
+    String keyword,
+
+    @Schema(description = "내가 만든 그룹만 조회 여부", example = "false")
+    Boolean mineOnly
 
 ) {
 
@@ -26,7 +29,8 @@ public record ScenarioGroupAppliedFilterRes(
             request.startDate(),
             request.endDate(),
             request.sort(),
-            request.keyword()
+            request.keyword(),
+            request.mineOnly()
         );
     }
 
