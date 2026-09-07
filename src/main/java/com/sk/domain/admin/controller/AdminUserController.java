@@ -7,11 +7,12 @@ import org.springframework.web.bind.WebDataBinder;
 import org.springframework.web.bind.annotation.InitBinder;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
-import jakarta.validation.constraints.Pattern;
 import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 
 import org.springframework.context.annotation.Profile;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
@@ -26,6 +27,8 @@ import com.sk.common.annotation.AccessIpCheck;
 import com.sk.common.annotation.ApiOrder;
 import com.sk.common.annotation.RequiredPermission;
 import com.sk.common.annotation.TrimmedNotEmpty;
+import com.sk.common.enums.ResultCode;
+import com.sk.common.exception.AppErrorException;
 import com.sk.common.model.BaseResponse;
 import com.sk.common.model.BaseResponseFactory;
 import com.sk.common.model.PaginationRes;
@@ -37,6 +40,7 @@ import com.sk.domain.admin.dto.response.user.UserInfoRes;
 import com.sk.domain.admin.dto.response.user.UserRes;
 import com.sk.domain.admin.service.AdminUserService;
 import com.sk.domain.shared.enums.Role;
+import com.sk.domain.shared.enums.Claim;
 import com.sk.domain.shared.enums.UserRoleCd;
 
 import io.swagger.v3.oas.annotations.Operation;
@@ -159,25 +163,33 @@ public class AdminUserController {
 
     @ApiOrder(12)
     @Operation(summary = "로그인 ID로 사용자 상세 조회", description = """
-            관리자가 로그인 아이디로 모든 고객사의 사용자 중 한 명을 조회합니다.
+            관리자 또는 고객사 클라이언트가 로그인 아이디로 사용자 한 명을 조회합니다.
             기존 GET /users/{userNo}와 같은 상세 응답이며 개인정보 동의 일시와 등록·수정 이력을 포함합니다.
-            ADMIN 인증과 호출 관리자의 허용 IP가 필요합니다. 소속 회사가 달라도 조회하며 회사 헤더로 범위를 바꾸지 않습니다.
-            여러 계정이 일치하면 조회 결과의 첫 행 하나를 선택합니다. 역할 우선순위와 반복 호출의 동일 계정 선택은 보장하지 않습니다.
-            조회로 사용자 설정을 변경하지 않으며 페이지 접근 가능 여부는 제공하지 않습니다.
-            GET /users는 emailAddress 검색과 페이지 처리를 제공하는 기존 목록 API입니다.
+            개인 ADMIN은 허용 IP에서 기존 전체 고객사 조회 범위를 유지합니다.
+            API_PLUS_OPERATOR는 토큰 companyCd와 같은 회사의 USER 또는 회사와 무관하게
+            isOtherServiceAccessPossible=true인 ADMIN만 조회합니다. OPERATOR는 조회하지 않습니다.
             """, security = @SecurityRequirement(name = "BearerAuth"))
     @ApiResponse(responseCode = "200", description = "기존 번호 상세와 동일한 사용자 상세. 다건 일치도 첫 행 한 건 반환",
             useReturnTypeSchema = true, content = @Content(mediaType = "application/json"))
     @GetMapping(value = "/users/by-login-id", produces = "application/json")
-    @RequiredPermission(roles = {Role.ADMIN})
+    @RequiredPermission(roles = {Role.ADMIN, Role.API_PLUS_OPERATOR})
     public BaseResponse<UserDetailRes> getUserByLoginId(
             @Parameter(description = "로그인 ID 문자열. 이메일 형식으로 제한하지 않습니다. 앞뒤 공백·제어문자는 불허하며 "
                     + "숫자 ID의 앞 0과 대소문자를 보존합니다. URL 인코딩하며 +는 %2B로 전달합니다.",
                     required = true, schema = @Schema(type = "string", minLength = 1, maxLength = 50,
                             example = "sample.user@example.com"))
-            @RequestParam("userLoginId") @NotBlank @Size(min = 1, max = 50)
-            @Pattern(regexp = "^[^\\p{Z}\\p{Cc}\\s](?:[^\\p{Cc}]*[^\\p{Z}\\p{Cc}\\s])?$") String userLoginId) {
-        return BaseResponseFactory.create(adminUserService.getUserByLoginId(userLoginId));
+            @RequestParam("userLoginId") @NotBlank @Size(min = 1, max = 50) String userLoginId,
+            @Parameter(hidden = true) @AuthenticationPrincipal Jwt jwt) {
+        if (userLoginId.codePoints().anyMatch(Character::isISOControl)
+                || Character.isSpaceChar(userLoginId.codePointAt(0))
+                || Character.isSpaceChar(userLoginId.codePointBefore(userLoginId.length()))) {
+            throw AppErrorException.of(ResultCode.Error.REQ_INVALID_PARAMETER);
+        }
+        Role callerRole = Role.valueOf(jwt.getClaimAsString(Claim.ROLE.getCode()));
+        UserDetailRes detail = callerRole == Role.ADMIN
+                ? adminUserService.getUserByLoginId(userLoginId)
+                : adminUserService.getUserByLoginIdForClient(userLoginId, jwt.getClaimAsString(Claim.COMPANY_CD.getCode()));
+        return BaseResponseFactory.create(detail);
     }
 
     @InitBinder("userLoginId")

@@ -12,7 +12,7 @@ public record CurrentModelParamProposalRes(
     @Schema(description = "시나리오 ID", example = "309")
     Long scenarioId,
 
-    @Schema(description = "Scenario 기준 팝업 표시 상태. PROPOSAL_FAILED와 PROPOSAL_NO_CHANGES는 모두 제안 생성 실패이며, 후자는 변경 항목 없음 사유를 구별합니다.", implementation = CurrentModelParamProposalState.class, example = "PROPOSAL_READY")
+    @Schema(description = "Scenario 기준 팝업 표시 상태. 새 명시적 생성 오류는 PROPOSAL_FAILED이며 PROPOSAL_NO_CHANGES는 과거 데이터 읽기 호환용 실패 상태입니다.", implementation = CurrentModelParamProposalState.class, example = "PROPOSAL_READY")
     CurrentModelParamProposalState currentState,
 
     @Schema(description = "반환 파라미터 출처", implementation = ModelParamParameterSource.class, example = "PROPOSAL_PARAMETERS")
@@ -45,7 +45,7 @@ public record CurrentModelParamProposalRes(
     )
     List<CurrentModelParamFileRes> modelFiles,
 
-    @Schema(description = "실패 사유. PROPOSAL_NO_CHANGES는 '파라미터로 반영할 변경 항목이 없습니다.'를 반환하며, 실패 사유가 없으면 null", nullable = true)
+    @Schema(description = "실패 사유. 새 생성 오류에는 정규화한 사용자용 유형 문구를 반환하며, 실패 사유가 없으면 null", nullable = true)
     String failureReason,
 
     @Schema(description = "Backend proposal 요청 접수 시각. 요청 전에는 null", nullable = true)

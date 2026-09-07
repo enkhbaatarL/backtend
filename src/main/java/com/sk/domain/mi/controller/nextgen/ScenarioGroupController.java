@@ -69,7 +69,7 @@ public class ScenarioGroupController {
             - `groupName`: 시나리오 그룹명
             - `createdAt`: 생성일시 (최신순 정렬·기간 필터 기준)
             - `updatedAt`: 수정일시
-            - `summary`: 시나리오 그룹 요약
+            - `summary`: 시나리오 그룹 설명 (`description` 값을 `summary` 필드로 반환)
             - `scenarioCount`: 시나리오 수
             - `dimensionColumns`: 그룹별 동적 표 헤더 (key, label + description/rationale)
             - `scenarios`: 그룹 내 시나리오 표 본문 (scenarioId, scenarioName, baseCase, scenarioRole/scenarioRoleLabel[역할 배지 - ceiling 상단/floor 하단/mixed 혼합, 없으면 null], dimensions, probability, adjustedProbability, status, statusLabel[대기/실현/폐기])
@@ -212,7 +212,7 @@ public class ScenarioGroupController {
             - `scenarioGroupId`, `groupName`, `createdAt`, `updatedAt`
             - `eventBundles`: 그룹을 구성하는 이벤트 목록 (Base Event 표, 표시 순서) — eventId, eventName, eventTypeLv1/Label, isScenarioSuggested, latestRecordFirstCreated(KST)
             - `evidence`: 생성 근거 마크다운 ('근거 보기' — eventAnalysisMarkdown[Event 관계 분석] / roleSelectionMarkdown[대표 시나리오 선정]). v1 그룹 등 스냅샷이 없으면 null
-            - `summary`: 시나리오 그룹 설명 — 요약 탭
+            - `summary`: 시나리오 그룹 설명 (`description` 값을 `summary` 필드로 반환) — 요약 탭
             - `scenarioCount`: 시나리오 수
             - `dimensionColumns`: 가정 표 동적 헤더 (key, label + description/rationale[분기항목 설명/근거 - 헤더 ⓘ, v4 전용])
             - `scenarios`: 가정 및 실행 가능성 표 행 (scenarioRole/scenarioRoleLabel[역할 배지 - ceiling 상단/floor 하단/mixed 혼합, 없으면 null], dimensions, probability, adjustedProbability, status, statusLabel[대기/실현/폐기])

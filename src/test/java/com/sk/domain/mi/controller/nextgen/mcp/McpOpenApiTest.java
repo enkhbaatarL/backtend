@@ -47,8 +47,6 @@ class McpOpenApiTest {
     private static final String MCP_PREFIX = "/api/v1/mcp/mi/next-gen/";
     private static final String CME_PATH =
         "/api/v1/mcp/mi/next-gen/scenario-groups/graph/cme-benchmark";
-    private static final String DEFERRED_PATH =
-        "/api/v1/mcp/mi/next-gen/events/{eventId}/scenario-groups";
     private static final Set<String> EXPECTED_PATHS = Set.of(
         "/api/v1/mcp/mi/next-gen/events",
         "/api/v1/mcp/mi/next-gen/events/event-types/lv1",
@@ -61,6 +59,7 @@ class McpOpenApiTest {
         "/api/v1/mcp/mi/next-gen/scenario-groups/{scenarioGroupId}/graph",
         "/api/v1/mcp/mi/next-gen/scenario-groups/{scenarioGroupId}/price-interpretations",
         "/api/v1/mcp/mi/next-gen/scenario-groups/{scenarioGroupId}/scenarios/{scenarioId}",
+        "/api/v1/mcp/mi/next-gen/events/{eventId}/scenario-groups",
         CME_PATH);
 
     @Autowired
@@ -82,13 +81,12 @@ class McpOpenApiTest {
     private CmeBenchmarkService cmeBenchmarkService;
 
     @Test
-    @DisplayName("MCP API 그룹에 GET 12건과 필수 문자열 X-User-Id만 노출한다")
+    @DisplayName("MCP API 그룹에 GET 13건과 필수 문자열 X-User-Id만 노출한다")
     void exposesTwelveMcpOperationsWithOnlyUserDelegationHeader() throws Exception {
         JsonNode document = apiDocument("MCP API");
         JsonNode paths = document.path("paths");
 
         assertThat(fieldNames(paths)).containsExactlyInAnyOrderElementsOf(EXPECTED_PATHS);
-        assertThat(paths.has(DEFERRED_PATH)).isFalse();
         paths.fields().forEachRemaining(pathEntry -> {
             assertThat(pathEntry.getKey()).startsWith(MCP_PREFIX);
             assertThat(fieldNames(pathEntry.getValue())).containsExactly("get");

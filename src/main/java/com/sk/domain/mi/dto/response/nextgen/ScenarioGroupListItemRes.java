@@ -22,7 +22,7 @@ public record ScenarioGroupListItemRes(
     @Schema(description = "수정일시")
     LocalDateTime updatedAt,
 
-    @Schema(description = "시나리오 그룹 요약")
+    @Schema(description = "시나리오 그룹 설명 (하위 호환을 위해 description 값을 summary 필드로 반환)")
     String summary,
 
     @Schema(description = "시나리오 수", example = "5")
