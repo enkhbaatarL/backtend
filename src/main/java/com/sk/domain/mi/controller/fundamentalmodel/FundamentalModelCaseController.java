@@ -152,8 +152,9 @@ public class FundamentalModelCaseController {
 
     @ApiOrder(8)
     @Operation(
-        summary = "MI Fundamental Model Volumes 필터 옵션 조회 API",
-        description = "Volumes(Global/LNG) 및 Trade 탭의 필터 패널에 표시할 segment별 type/region/granularity 옵션 목록을 반환합니다."
+        summary = "MI Fundamental Model 결과 필터 옵션 조회 API",
+        description = "Volumes 탭의 필터 패널에 표시할 옵션 목록을 반환합니다. "
+            + "caseId가 전달되면 해당 case 최신 완료 run의 Volumes 결과에 실제 존재하는 yearly/monthly 기간 옵션도 함께 반환합니다."
     )
     @ApiResponse(responseCode = "200", description = "조회 성공")
     @GetMapping("/volumes/filter-options")
@@ -161,14 +162,18 @@ public class FundamentalModelCaseController {
         @PermissionRule(role = Role.USER, conditions = {PermissionCondition.SKGAS_COMPANY_USER_ONLY}),
         @PermissionRule(role = Role.ADMIN, conditions = {PermissionCondition.THIRD_PARTY_ADMIN_ONLY})
     })
-    public BaseResponse<FundamentalModelVolumesFilterOptionsRes> getVolumesFilterOptions() {
-        return BaseResponseFactory.create(fundamentalModelCaseService.getVolumesFilterOptions());
+    public BaseResponse<FundamentalModelVolumesFilterOptionsRes> getVolumesFilterOptions(
+        @Parameter(description = "기간 옵션을 조회할 Scenario Case ID. 미전달 시 정적 옵션만 반환합니다.", example = "106")
+        @RequestParam(required = false) Long caseId
+    ) {
+        return BaseResponseFactory.create(fundamentalModelCaseService.getVolumesFilterOptions(caseId));
     }
 
     @ApiOrder(9)
     @Operation(
         summary = "MI Fundamental Model Volumes 데이터 조회 API",
-        description = "COMPLETED 상태의 case에 대해 segment/type/region/granularity 필터가 적용된 Volumes 데이터를 조회합니다."
+        description = "COMPLETED 상태의 case에 대해 segment/type/region/granularity/periods 필터가 적용된 Volumes 데이터를 조회합니다. "
+            + "periods는 선택한 기간만 columns와 row values에 포함하며, YEARLY는 yyyy, MONTHLY는 yyyy-MM 형식입니다."
     )
     @ApiResponse(responseCode = "200", description = "조회 성공")
     @GetMapping("/{caseId}/volumes")
@@ -184,11 +189,13 @@ public class FundamentalModelCaseController {
         @Parameter(description = "지역 필터. 미전달 시 전체입니다.", example = "ASIA,EUROPE")
         @RequestParam(required = false) List<FundamentalModelRegion> regions,
         @Parameter(description = "시간 단위. 미전달 시 MONTHLY입니다.", example = "MONTHLY")
-        @RequestParam(required = false) FundamentalModelGranularity granularity
+        @RequestParam(required = false) FundamentalModelGranularity granularity,
+        @Parameter(description = "선택 기간. YEARLY는 yyyy, MONTHLY는 yyyy-MM 형식입니다. 미전달 시 전체 기간입니다.", example = "2026-01,2026-06")
+        @RequestParam(required = false) List<String> periods
     ) {
         return BaseResponseFactory.create(fundamentalModelCaseService.getVolumes(
             caseId,
-            new FundamentalModelVolumesReq(segment, types, regions, granularity)
+            new FundamentalModelVolumesReq(segment, types, regions, granularity, periods)
         ));
     }
 

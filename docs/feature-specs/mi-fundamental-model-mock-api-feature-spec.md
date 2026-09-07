@@ -72,6 +72,7 @@ MI Fundamental Model의 1차 mock API는 MI Fundamental Model 화면에서 사�
   - segment(`GLOBAL` | `LNG`) 필수. `TRADE`는 이 엔드포인트에서 허용하지 않는다
   - Type / Region 다중 필터 지원 (미전달 시 전체)
   - granularity(`MONTHLY` | `YEARLY`) 지원, 기본 `MONTHLY`
+  - periods 선택 필터로 원하는 연도 또는 월 컬럼만 조회
   - 1차 mock은 json seed 기반 고정 응답
 - Trade Flows 데이터 조회 (Trade)
   - `COMPLETED` case의 실행 결과 중 Trade Flow 매트릭스 반환
@@ -463,16 +464,23 @@ Reset API 포함 판단:
 - Method: `GET`
 - Path: `/api/v1/mi/fundamental-model/cases/volumes/filter-options`
 - Path variables: 없음
-- Query parameters: 없음
+- Query parameters:
+
+| 파라미터 | 타입 | 필수 | 기본값 | 설명 |
+|---|---|---|---|---|
+| `caseId` | `Long` | N | — | 기간 옵션을 조회할 Scenario Case ID. 미전달 시 정적 type/region/granularity 옵션만 반환 |
 
 규칙:
 
-- case 독립 정적 endpoint다. caseId 없이 호출한다.
 - segment별로 허용되는 type 목록, region 목록, granularity 목록을 `{ value, label }` 쌍으로 반환한다.
+- `caseId`가 전달되면 해당 case의 최신 완료 Volumes 결과에서 데이터가 있는 yearly/monthly 기간 옵션을 함께 반환한다.
+- `caseId`가 전달되지 않으면 `periods`는 빈 배열을 반환한다.
 - TRADE segment의 `types`는 `TradeFlowDirection` 값(`TO_COUNTRY`, `FROM_COUNTRY`)이며, `granularities`는 빈 배열이다.
+- TRADE segment는 단일 `year` matrix API를 사용하므로 segment `periods`는 빈 배열이다.
 - GLOBAL/LNG segment의 `types`는 `FundamentalModelDataType` 값이며, `granularities`는 `MONTHLY`, `YEARLY`를 반환한다.
+- GLOBAL/LNG segment의 `periods`는 Volumes 결과 bucket의 `periodKeys` 기준으로 반환한다.
 - 항상 GLOBAL → LNG → TRADE 순서로 반환한다.
-- mock/real 구분 없이 enum 기반 정적 응답이다.
+- `caseId`가 `COMPLETED` 상태가 아니면 결과 조회 API와 동일하게 `409 BIZ_RULE_VIOLATION`으로 응답한다.
 
 ### 3.11 Volumes 데이터 조회 (Global / LNG)
 
@@ -491,6 +499,7 @@ Reset API 포함 판단:
 | `types` | `FundamentalModelDataType[]` | N | segment별 전체 | 쉼표 구분 다중값. 미전달 시 segment별 허용 Type 전체 포함. `GLOBAL`: `DEMAND`, `PRODUCTION`, `LNG_IMPORTS`, `LNG_EXPORTS`, `PIPELINE_IMPORTS`, `PIPELINE_EXPORTS`; `LNG`: `LNG_IMPORTS`, `LNG_EXPORTS` |
 | `regions` | `FundamentalModelRegion[]` | N | 전체 | 쉼표 구분 다중값. 미전달 시 전체 포함. `ASIA`, `EUROPE`, `NORTH_AMERICA`, `MIDDLE_EAST`, `AUSTRALIA`, `RUSSIA`, `AFRICA`, `SOUTH_AMERICA` |
 | `granularity` | `FundamentalModelGranularity` | N | `MONTHLY` | `MONTHLY` \| `YEARLY` |
+| `periods` | `String[]` | N | 전체 | 선택 기간. `granularity=YEARLY`이면 `yyyy`, `granularity=MONTHLY`이면 `yyyy-MM` 형식의 쉼표 구분 다중값 |
 
 규칙:
 
@@ -503,6 +512,9 @@ Reset API 포함 판단:
 - FE는 `rows`를 응답 순서 그대로 렌더링할 수 있다. 서버는 각 Type 안에서 Region별로 `REGION_SUBTOTAL` 행을 먼저 반환하고, 이어서 해당 Region의 `COUNTRY` 행들을 반환한다. Type의 마지막 행은 `TYPE_TOTAL`이다.
 - `granularity=YEARLY`이면 월별 데이터를 연간으로 집계해 반환한다. columns의 `month` 필드는 `null`이 된다.
 - `granularity=MONTHLY`이면 columns의 `month` 필드는 1~12 정수다.
+- `periods`가 전달되면 `columns`와 각 row의 `values`는 선택 기간과 일치하는 항목만 포함한다.
+- 선택 기간이 실제 result data에 없으면 에러가 아니라 `200 OK`로 응답하고 `columns=[]`, `rows=[]`를 반환한다.
+- `periods` 값이 granularity별 형식과 맞지 않으면 `400 REQ_INVALID_PARAMETER`로 응답한다.
 - 조회 조건에 매칭되는 실제 result row가 없으면 에러가 아니라 `200 OK`로 응답하고 `columns=[]`, `rows=[]`를 반환한다.
 - 1차 mock에서는 json seed 파일 기반 고정 데이터를 반환한다. 필터는 mock 데이터 내에서 적용한다.
 
@@ -891,6 +903,14 @@ FE는 `latestRun.startedAt`과 `latestRun.finishedAt`으로 소요시간을 계�
 | `columns` | `List<VolumesColumn>` | 시간 축 메타데이터 목록 |
 | `rows` | `List<VolumesRow>` | 데이터 행 목록 |
 
+**`VolumesAppliedFilters`:**
+
+| 필드 | 타입 | 설명 |
+|---|---|---|
+| `types` | `List<FundamentalModelDataType>` | 실제 적용된 type 목록 |
+| `regions` | `List<FundamentalModelRegion>` | 실제 적용된 region 목록 |
+| `periods` | `List<String>` | 요청으로 선택한 기간. 미전달 시 빈 배열이며 전체 기간이 적용됨 |
+
 **`VolumesColumn`:**
 
 | 필드 | 타입 | 설명 |
@@ -969,7 +989,15 @@ FE는 `latestRun.startedAt`과 `latestRun.finishedAt`으로 소요시간을 계�
       "granularities": [
         { "value": "MONTHLY", "label": "Monthly" },
         { "value": "YEARLY",  "label": "Yearly" }
-      ]
+      ],
+      "periods": {
+        "yearly": [
+          { "value": "2023", "label": "2023" }
+        ],
+        "monthly": [
+          { "value": "2023-01", "label": "Jan" }
+        ]
+      }
     },
     {
       "segment": "LNG",
@@ -990,7 +1018,11 @@ FE는 `latestRun.startedAt`과 `latestRun.finishedAt`으로 소요시간을 계�
         { "value": "FROM_COUNTRY", "label": "From country" }
       ],
       "regions": [ "/* 동일 */" ],
-      "granularities": []
+      "granularities": [],
+      "periods": {
+        "yearly": [],
+        "monthly": []
+      }
     }
   ]
 }
@@ -1008,6 +1040,14 @@ FE는 `latestRun.startedAt`과 `latestRun.finishedAt`으로 소요시간을 계�
 | `types` | `List<FilterOption>` | 해당 segment에서 선택 가능한 type 목록. TRADE는 `TradeFlowDirection` 값 |
 | `regions` | `List<FilterOption>` | 선택 가능한 region 목록. 모든 segment 동일 |
 | `granularities` | `List<FilterOption>` | 선택 가능한 granularity 목록. TRADE는 빈 배열 |
+| `periods` | `FundamentalModelPeriodFilterOptions` | 해당 segment의 Volumes 결과에 실제 존재하는 연/월 기간 옵션. TRADE 또는 `caseId` 미전달 시 빈 배열 |
+
+**`FundamentalModelPeriodFilterOptions`:**
+
+| 필드 | 타입 | 설명 |
+|---|---|---|
+| `yearly` | `List<FilterOption>` | 연도 옵션. `value`는 `yyyy` 형식 |
+| `monthly` | `List<FilterOption>` | 월 옵션. `value`는 `yyyy-MM` 형식이고 `label`은 `Jan`, `Feb` 같은 영문 월 축약 표기 |
 
 **`FilterOption`:**
 
@@ -1712,14 +1752,15 @@ phase 1 mock 시연 동선:
 5. `types`에 segment에서 허용하지 않는 값이 포함되면 `400 REQ_INVALID_PARAMETER`로 응답한다.
 6. `regions`가 미전달이면 전체 `FundamentalModelRegion` 목록을 필터로 사용한다.
 7. `granularity`가 미전달이면 `MONTHLY`를 기본값으로 사용한다.
-8. `granularity=MONTHLY`이면 `columns`의 `label`은 `"26-01"` 형식이고, `year`/`month`는 각각 4자리 연도와 1~12 정수이다.
-9. `granularity=YEARLY`이면 `columns`의 `label`은 연도 문자열이고, `year`는 4자리 연도, `month`는 `null`이다.
-10. 응답의 `unit`은 phase 1에서 `MTPA` 고정이다. 후속 unit 변환 기능은 별도 request contract로 정의한다.
-11. `rows`는 필터를 적용한 뒤 FE가 응답 순서 그대로 렌더링할 수 있게 정렬한다. 선택된 `types` 순서대로 Type section을 만들고, 각 Type section 안에서는 선택된 `regions` 순서대로 `REGION_SUBTOTAL` 행을 먼저 반환한 뒤 해당 Region의 `COUNTRY` 행들을 반환한다. 각 Type section의 마지막 행은 `TYPE_TOTAL`이다.
-12. `typeLabel`은 `type` enum label을 반환한다. `rowLabel`은 `REGION_SUBTOTAL`이면 region enum label, `COUNTRY`이면 country, `TYPE_TOTAL`이면 `Total`을 반환한다.
-13. `TYPE_TOTAL`은 선택된 Region들의 `REGION_SUBTOTAL` 값을 합산해 반환한다. 예: `regions=ASIA,EUROPE`이면 해당 Type의 Asia subtotal + Europe subtotal이 Type total이다.
-14. 응답의 `appliedFilters`에는 실제 적용된 `types`와 `regions` 목록을 반환한다.
-15. 1차 mock에서는 json seed 파일 기반 고정 데이터를 반환하며, 필터는 해당 데이터 범위 내에서 적용한다. seed의 표시 label은 서버가 응답 조립 시 파생한다.
+8. `periods`가 전달되면 선택 기간만 `columns`와 각 row `values`에 포함한다. `MONTHLY`는 `yyyy-MM`, `YEARLY`는 `yyyy` 형식이다.
+9. `granularity=MONTHLY`이면 `columns`의 `label`은 `"26-01"` 형식이고, `year`/`month`는 각각 4자리 연도와 1~12 정수이다.
+10. `granularity=YEARLY`이면 `columns`의 `label`은 연도 문자열이고, `year`는 4자리 연도, `month`는 `null`이다.
+11. 응답의 `unit`은 phase 1에서 `MTPA` 고정이다. 후속 unit 변환 기능은 별도 request contract로 정의한다.
+12. `rows`는 필터를 적용한 뒤 FE가 응답 순서 그대로 렌더링할 수 있게 정렬한다. 선택된 `types` 순서대로 Type section을 만들고, 각 Type section 안에서는 선택된 `regions` 순서대로 `REGION_SUBTOTAL` 행을 먼저 반환한 뒤 해당 Region의 `COUNTRY` 행들을 반환한다. 각 Type section의 마지막 행은 `TYPE_TOTAL`이다.
+13. `typeLabel`은 `type` enum label을 반환한다. `rowLabel`은 `REGION_SUBTOTAL`이면 region enum label, `COUNTRY`이면 country, `TYPE_TOTAL`이면 `Total`을 반환한다.
+14. `TYPE_TOTAL`은 선택된 Region들의 `REGION_SUBTOTAL` 값을 합산해 반환한다. 예: `regions=ASIA,EUROPE`이면 해당 Type의 Asia subtotal + Europe subtotal이 Type total이다.
+15. 응답의 `appliedFilters`에는 실제 적용된 `types`, `regions`, 요청으로 선택한 `periods` 목록을 반환한다.
+16. 1차 mock에서는 json seed 파일 기반 고정 데이터를 반환하며, 필터는 해당 데이터 범위 내에서 적용한다. seed의 표시 label은 서버가 응답 조립 시 파생한다.
 
 ### Trade Flows Data Query
 
@@ -1841,7 +1882,7 @@ phase 1 mock 시연 동선:
 - Delete: `DELETE /{caseId}`, soft delete, returns `BaseResponse<Void>` 200 OK
 - Run: `POST /{caseId}/runs`, returns `202 Accepted`
 - Status: `GET /{caseId}/status`, case 기준 조회
-- Volumes: `GET /{caseId}/volumes`, query params `segment`(`GLOBAL`|`LNG` 필수, `TRADE` 전달 시 400) + `types`(선택) + `regions`(선택) + `granularity`(선택, 기본 `MONTHLY`). `COMPLETED` case 한정. returns `FundamentalModelVolumesRes`
+- Volumes: `GET /{caseId}/volumes`, query params `segment`(`GLOBAL`|`LNG` 필수, `TRADE` 전달 시 400) + `types`(선택) + `regions`(선택) + `granularity`(선택, 기본 `MONTHLY`) + `periods`(선택, `MONTHLY`는 `yyyy-MM`, `YEARLY`는 `yyyy`). `COMPLETED` case 한정. returns `FundamentalModelVolumesRes`
 - Trade Flows: `GET /{caseId}/volumes/trade`, query params `selector`(필수) + `year`(필수, 2023~2030) + `unit`(선택, 기본 `MTPA`) + `types`(선택) + `regions`(선택). `COMPLETED` case 한정. returns `FundamentalModelTradeFlowsRes`
 - Price: `GET /{caseId}/price`, 쿼리 파라미터 없음. `COMPLETED` case 한정. returns `FundamentalModelPriceRes` (차트 + Annual 테이블 + Monthly 테이블 동시 반환)
 - Callback: `POST /api/v1/mi/fundamental-model/runs/{runId}/callback`, 외부 모델 전용

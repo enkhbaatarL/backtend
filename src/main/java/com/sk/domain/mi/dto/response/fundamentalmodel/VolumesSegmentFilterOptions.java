@@ -7,6 +7,7 @@ public record VolumesSegmentFilterOptions(
     FundamentalModelSegment segment,
     List<FilterOption> types,
     List<FilterOption> regions,
-    List<FilterOption> granularities
+    List<FilterOption> granularities,
+    FundamentalModelPeriodFilterOptions periods
 ) {
 }

@@ -20,7 +20,13 @@ public record FundamentalModelVolumesReq(
     List<FundamentalModelRegion> regions,
 
     @Schema(description = "시간 단위. 미전달 시 MONTHLY입니다.", implementation = FundamentalModelGranularity.class, example = "MONTHLY")
-    FundamentalModelGranularity granularity
+    FundamentalModelGranularity granularity,
+
+    @ArraySchema(schema = @Schema(
+        description = "선택 기간. granularity=YEARLY이면 yyyy, MONTHLY이면 yyyy-MM 형식입니다. 미전달 시 전체 기간입니다.",
+        example = "2026-01"
+    ))
+    List<String> periods
 
 ) {
 }
