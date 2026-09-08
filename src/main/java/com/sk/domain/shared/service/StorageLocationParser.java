@@ -65,9 +65,9 @@ public class StorageLocationParser {
         } catch (IllegalArgumentException exception) {
             throw invalidEndPointConfiguration();
         }
-//        if (!isCanonicalEndPoint(uri)) {
-//            throw invalidEndPointConfiguration();
-//        }
+        if (!isCanonicalEndPoint(uri)) {
+            throw invalidEndPointConfiguration();
+        }
         return EndpointAuthority.from(uri);
     }
 
