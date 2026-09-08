@@ -86,7 +86,7 @@ public class JwtUtil {
             .claim(Claim.COMPANY_DOMAIN.getCode(), user.getCustomerCompany().getDynamicMipUrl(requestHost, miDefaultDomain,
                 mipConfig.getMipUrlByCompanyCd(user.getCustomerCompany().getCustomerCompanyCd())))
             .claim(Claim.AUTH_METHOD.getCode(), Claim.AuthMethodValue.SAML2.getCode()) // 인증 방식 추가
-            .expiration(Date.from(Instant.now().plusMillis(jwtProperties.getSaml2().getAccessTokenExpiry().toMillis())))
+            .expiration(Date.from(Instant.now().plusMillis(jwtProperties.resolveSaml2AccessTokenExpiry(user.getUserLoginId()).toMillis())))
             .compact();
     }
 
@@ -105,7 +105,7 @@ public class JwtUtil {
 
     // 리프레시 토큰 생성
     public String generateRefreshToken(User user) {
-        Instant expirationInstant = Instant.now().plusMillis(jwtProperties.getSaml2().getRefreshTokenExpiry().toMillis());
+        Instant expirationInstant = Instant.now().plusMillis(jwtProperties.resolveSaml2RefreshTokenExpiry(user.getUserLoginId()).toMillis());
         long expirationUnixTime = expirationInstant.getEpochSecond();
 
         String refreshToken = createTokenBuilder(user.getUserLoginId())

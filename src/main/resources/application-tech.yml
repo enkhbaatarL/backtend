@@ -87,6 +87,12 @@ jwt:
     #access-token-expiry: 15m
     access-token-expiry: 7d
     refresh-token-expiry: 30m
+  # 특정 로그인 ID에 한해 위 saml2 기본 만료 시간 대신 적용되는 예외 설정 (위에서부터 먼저 매칭되는 항목 적용)
+  # login-ids 는 콤마로 구분된 로그인 ID 목록 (미지정 시 예외 설정 미적용)
+  saml2-overrides:
+    - login-ids: ${SKT_MI_JWT_SAML2_LONG_REFRESH_LOGIN_IDS:}
+      access-token-expiry: 15m
+      refresh-token-expiry: 8h
   oauth2:
     access-token-expiry: 10h
     refresh-token-expiry: 7d
