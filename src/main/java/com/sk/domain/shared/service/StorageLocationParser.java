@@ -10,7 +10,9 @@ import org.springframework.stereotype.Component;
 @Component
 public class StorageLocationParser {
 
+    private static final String HTTP_SCHEME = "http";
     private static final String HTTPS_SCHEME = "https";
+    private static final int DEFAULT_HTTP_PORT = 80;
     private static final int DEFAULT_HTTPS_PORT = 443;
 
     private final EndpointAuthority allowedEndPoint;
@@ -59,6 +61,10 @@ public class StorageLocationParser {
     }
 
     private EndpointAuthority parseConfiguredEndPoint(String value) {
+        if (value == null || value.isBlank()) {
+            throw invalidEndPointConfiguration();
+        }
+
         URI uri;
         try {
             uri = URI.create(value);
@@ -84,19 +90,18 @@ public class StorageLocationParser {
 
     private boolean isCanonicalEndPoint(URI uri) {
         String path = uri.getRawPath();
-        return isAbsoluteHttpsUri(uri)
+        return isAbsoluteUri(uri)
                 && hasCanonicalAuthority(uri)
                 && (path == null || path.isEmpty() || "/".equals(path));
     }
 
     private boolean isValidStorageUri(URI uri) {
-        return isAbsoluteHttpsUri(uri)
+        return isAbsoluteUri(uri)
                 && hasCanonicalAuthority(uri);
     }
 
-    private boolean isAbsoluteHttpsUri(URI uri) {
+    private boolean isAbsoluteUri(URI uri) {
         return uri.isAbsolute()
-                && HTTPS_SCHEME.equalsIgnoreCase(uri.getScheme())
                 && uri.getHost() != null;
     }
 
@@ -132,8 +137,21 @@ public class StorageLocationParser {
     private record EndpointAuthority(String host, int port) {
 
         private static EndpointAuthority from(URI uri) {
-            int effectivePort = uri.getPort() == -1 ? DEFAULT_HTTPS_PORT : uri.getPort();
+            int effectivePort = resolveEffectivePort(uri);
             return new EndpointAuthority(uri.getHost().toLowerCase(Locale.ROOT), effectivePort);
+        }
+
+        private static int resolveEffectivePort(URI uri) {
+            if (uri.getPort() != -1) {
+                return uri.getPort();
+            }
+            if (HTTP_SCHEME.equalsIgnoreCase(uri.getScheme())) {
+                return DEFAULT_HTTP_PORT;
+            }
+            if (HTTPS_SCHEME.equalsIgnoreCase(uri.getScheme())) {
+                return DEFAULT_HTTPS_PORT;
+            }
+            return -1;
         }
     }
 }

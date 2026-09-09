@@ -43,7 +43,13 @@ public record FundamentalModelVolumesRes(
         List<FundamentalModelDataType> types,
 
         @ArraySchema(schema = @Schema(implementation = FundamentalModelRegion.class, example = "ASIA"))
-        List<FundamentalModelRegion> regions
+        List<FundamentalModelRegion> regions,
+
+        @ArraySchema(schema = @Schema(
+            description = "요청으로 선택한 기간. 미전달 시 빈 배열이며 전체 기간이 적용됩니다.",
+            example = "2026-01"
+        ))
+        List<String> periods
 
     ) {
     }

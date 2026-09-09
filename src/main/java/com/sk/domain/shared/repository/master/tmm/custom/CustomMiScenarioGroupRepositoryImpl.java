@@ -74,11 +74,11 @@ public class CustomMiScenarioGroupRepositoryImpl implements CustomMiScenarioGrou
     }
 
     @Override
-    public Page<ScenarioGroupBaseRow> findScenarioGroupPage(ScenarioGroupListReq request) {
+    public Page<ScenarioGroupBaseRow> findScenarioGroupPage(ScenarioGroupListReq request, Long mineUserId) {
 
         Pageable pageable = PageRequest.of(request.page() - 1, request.size());
 
-        BooleanBuilder where = buildGroupWhere(request);
+        BooleanBuilder where = buildGroupWhere(request, mineUserId);
         // 최신순 정렬 기준은 그룹 생성일시
         OrderSpecifier<?> order = request.sort().isAscending()
             ? miScenarioGroup.createDt.asc()
@@ -117,11 +117,16 @@ public class CustomMiScenarioGroupRepositoryImpl implements CustomMiScenarioGrou
         return PageableExecutionUtils.getPage(rows, pageable, countQuery::fetchOne);
     }
 
-    private BooleanBuilder buildGroupWhere(ScenarioGroupListReq request) {
+    private BooleanBuilder buildGroupWhere(ScenarioGroupListReq request, Long mineUserId) {
         BooleanBuilder where = new BooleanBuilder();
         where.and(miScenarioGroup.isDeleted.isFalse());
         // 설계(생성) 진행 중인 그룹은 목록에서 제외 — 생성 완료(created)/실현(realized)만 노출
         where.and(miScenarioGroup.status.ne(ScenarioGroupStatus.CREATING));
+
+        // 내가 만든 그룹 필터 — 소유자(request_usr_id) 기준.
+        if (mineUserId != null) {
+            where.and(miScenarioGroup.requestUserId.eq(mineUserId));
+        }
 
         if (request.startDate() != null) {
             where.and(miScenarioGroup.createDt.goe(request.startDate().atStartOfDay()));
@@ -137,11 +142,11 @@ public class CustomMiScenarioGroupRepositoryImpl implements CustomMiScenarioGrou
     }
 
     @Override
-    public Page<ScenarioIndividualBaseRow> findScenarioPage(ScenarioGroupListReq request) {
+    public Page<ScenarioIndividualBaseRow> findScenarioPage(ScenarioGroupListReq request, Long mineUserId) {
 
         Pageable pageable = PageRequest.of(request.page() - 1, request.size());
 
-        BooleanBuilder where = buildScenarioWhere(request);
+        BooleanBuilder where = buildScenarioWhere(request, mineUserId);
         // 개별 모드: 최신순 정렬/기간 필터 모두 시나리오 생성일시 기준
         OrderSpecifier<?> dateOrder = request.sort().isAscending()
             ? miScenario.createDt.asc()
@@ -191,13 +196,18 @@ public class CustomMiScenarioGroupRepositoryImpl implements CustomMiScenarioGrou
         return PageableExecutionUtils.getPage(rows, pageable, countQuery::fetchOne);
     }
 
-    private BooleanBuilder buildScenarioWhere(ScenarioGroupListReq request) {
+    private BooleanBuilder buildScenarioWhere(ScenarioGroupListReq request, Long mineUserId) {
         BooleanBuilder where = new BooleanBuilder();
         where.and(miScenario.isDeleted.isFalse());
         // 생성 진행 중인 시나리오는 목록에서 제외 — 생성 완료 이후(created/realized/discarded)만 노출
         where.and(miScenario.status.ne(ScenarioStatus.CREATING));
         // "설계중"은 그룹 라이프사이클 상태이므로 그룹 status도 함께 제외
         where.and(miScenarioGroup.status.ne(ScenarioGroupStatus.CREATING));
+
+        // 내가 만든 그룹 필터 — 부모 그룹 소유자(request_usr_id) 기준.
+        if (mineUserId != null) {
+            where.and(miScenarioGroup.requestUserId.eq(mineUserId));
+        }
 
         if (request.startDate() != null) {
             where.and(miScenario.createDt.goe(request.startDate().atStartOfDay()));

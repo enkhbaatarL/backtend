@@ -93,7 +93,7 @@ public class ScenarioGroupServiceImpl implements ScenarioGroupService {
     @Override
     public ScenarioGroupListRes getScenarioGroups(ScenarioGroupListReq request) {
 
-        Page<ScenarioGroupBaseRow> page = scenarioGroupRepository.findScenarioGroupPage(request);
+        Page<ScenarioGroupBaseRow> page = scenarioGroupRepository.findScenarioGroupPage(request, resolveMineUserId(request));
         List<ScenarioGroupBaseRow> bases = page.getContent();
 
         List<Long> groupIds = bases.stream().map(ScenarioGroupBaseRow::scenarioGroupId).toList();
@@ -132,6 +132,13 @@ public class ScenarioGroupServiceImpl implements ScenarioGroupService {
     }
 
     /**
+     * 내가 만든 그룹 필터의 소유자 조건
+     */
+    private Long resolveMineUserId(ScenarioGroupListReq request) {
+        return Boolean.TRUE.equals(request.mineOnly()) ? authorizationService.getUserNo().longValue() : null;
+    }
+
+    /**
      * [개별 모드 목록]
      * - 최신순 정렬/기간 필터 모두 시나리오 생성일시(create_dt) 기준
      * - adjustedProbability는 그룹 단위 계산이라, 페이지에 걸린 그룹들의 시나리오 전체를 일괄 조회해 재분배
@@ -139,7 +146,7 @@ public class ScenarioGroupServiceImpl implements ScenarioGroupService {
     @Override
     public ScenarioIndividualListRes getScenarioGroupScenarios(ScenarioGroupListReq request) {
 
-        Page<ScenarioIndividualBaseRow> page = scenarioGroupRepository.findScenarioPage(request);
+        Page<ScenarioIndividualBaseRow> page = scenarioGroupRepository.findScenarioPage(request, resolveMineUserId(request));
         List<ScenarioIndividualBaseRow> bases = page.getContent();
 
         List<Long> eventTypeL2Ids = bases.stream()

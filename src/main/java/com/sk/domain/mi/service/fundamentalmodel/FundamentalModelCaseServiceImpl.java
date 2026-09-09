@@ -22,6 +22,7 @@ import com.sk.domain.mi.dto.response.fundamentalmodel.FundamentalModelCaseListRe
 import com.sk.domain.mi.dto.response.fundamentalmodel.FundamentalModelCaseStatusRes;
 import com.sk.domain.mi.dto.response.fundamentalmodel.FundamentalModelDownloadFileRes;
 import com.sk.domain.mi.dto.response.fundamentalmodel.FundamentalModelFiveScaleTruncatingNumberSerializer;
+import com.sk.domain.mi.dto.response.fundamentalmodel.FundamentalModelPeriodFilterOptions;
 import com.sk.domain.mi.dto.response.fundamentalmodel.FundamentalModelPriceRes;
 import com.sk.domain.mi.dto.response.fundamentalmodel.FundamentalModelRunAcceptRes;
 import com.sk.domain.mi.dto.response.fundamentalmodel.FundamentalModelRunCallbackRes;
@@ -67,8 +68,10 @@ import com.sk.domain.shared.service.permissions.AuthorizationService;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.Month;
 import java.time.YearMonth;
 import java.time.format.DateTimeFormatter;
+import java.time.format.TextStyle;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashSet;
@@ -103,6 +106,7 @@ public class FundamentalModelCaseServiceImpl implements FundamentalModelCaseServ
         "files는 파일명에 DEMAND, SUPPLY, TRADE 키워드를 각각 정확히 1개씩 포함해야 합니다.";
     private static final String FILE_RELATION_SCENARIO_CASE = "SCNRCASE";
     private static final String FILE_RELATION_SCENARIO_CASE_HISTORY = "SCNRCASEH";
+    private static final String FILE_RELATION_SCENARIO_CASE_HISTORY_INTERMEDIATE = "SCNRCASEHI";
     private static final String CALLBACK_ACTOR = "SYSTEM";
     private static final String JOB_SUBMIT_FAILURE_REASON = "JOB_SUBMIT_FAILED";
     private static final String CALLBACK_PATH_TEMPLATE = "/api/v1/mi/fundamental-model/runs/%s/callback";
@@ -113,6 +117,8 @@ public class FundamentalModelCaseServiceImpl implements FundamentalModelCaseServ
     private static final String VOLUMES_ATTR_TOTAL = "TOTAL";
     private static final int TRADE_FLOW_YEAR_MIN = 2023;
     private static final int TRADE_FLOW_YEAR_MAX = 2030;
+    private static final String VOLUME_YEARLY_PERIOD_PATTERN = "\\d{4}";
+    private static final String VOLUME_MONTHLY_PERIOD_PATTERN = "\\d{4}-(0[1-9]|1[0-2])";
     private static final String TRADE_FLOW_AXIS_FROM = "FROM";
     private static final String TRADE_FLOW_AXIS_TO = "TO";
     private static final String TRADE_FLOW_TOTAL_KEY = "TOTAL";
@@ -235,6 +241,7 @@ public class FundamentalModelCaseServiceImpl implements FundamentalModelCaseServ
         );
         ScenarioCaseRunHistory latestRunHistory = findLatestRunHistory(caseRow.lastRunId()).orElse(null);
         List<FundamentalModelDownloadFileRes> outputFiles = findOutputFiles(latestRunHistory);
+        List<FundamentalModelDownloadFileRes> intermediateFiles = findIntermediateFiles(latestRunHistory);
         FundamentalModelRunStatusRes latestRun = latestRunHistory == null ? null : toLatestRunResponse(latestRunHistory);
 
         return new FundamentalModelCaseDetailRes(
@@ -244,7 +251,7 @@ public class FundamentalModelCaseServiceImpl implements FundamentalModelCaseServ
             caseRow.status(),
             caseRow.assigneeName(),
             caseRow.assigneeUserNo(),
-            new FundamentalModelCaseFilesRes(inputFiles, outputFiles),
+            new FundamentalModelCaseFilesRes(inputFiles, outputFiles, intermediateFiles),
             latestRun,
             caseRow.createdAt(),
             caseRow.updatedAt()
@@ -340,13 +347,15 @@ public class FundamentalModelCaseServiceImpl implements FundamentalModelCaseServ
     }
 
     @Override
-    public FundamentalModelVolumesFilterOptionsRes getVolumesFilterOptions() {
+    @Transactional(readOnly = true)
+    public FundamentalModelVolumesFilterOptionsRes getVolumesFilterOptions(Long caseId) {
         List<FilterOption> allRegions = Arrays.stream(FundamentalModelRegion.values())
             .map(r -> new FilterOption(r.getCode(), r.getLabel()))
             .toList();
         List<FilterOption> granularities = Arrays.stream(FundamentalModelGranularity.values())
             .map(g -> new FilterOption(g.getCode(), g.getLabel()))
             .toList();
+        ScenarioCaseRunHistory latestRunHistory = caseId == null ? null : findCompletedLatestRunHistory(findCompletedCaseForResultQuery(caseId));
 
         VolumesSegmentFilterOptions global = new VolumesSegmentFilterOptions(
             FundamentalModelSegment.GLOBAL,
@@ -354,7 +363,8 @@ public class FundamentalModelCaseServiceImpl implements FundamentalModelCaseServ
                 .map(t -> new FilterOption(t.getCode(), t.getLabel()))
                 .toList(),
             allRegions,
-            granularities
+            granularities,
+            findVolumePeriodOptions(latestRunHistory, FundamentalModelSegment.GLOBAL)
         );
         VolumesSegmentFilterOptions lng = new VolumesSegmentFilterOptions(
             FundamentalModelSegment.LNG,
@@ -363,7 +373,8 @@ public class FundamentalModelCaseServiceImpl implements FundamentalModelCaseServ
                 new FilterOption(FundamentalModelDataType.LNG_EXPORTS.getCode(), FundamentalModelDataType.LNG_EXPORTS.getLabel())
             ),
             allRegions,
-            granularities
+            granularities,
+            findVolumePeriodOptions(latestRunHistory, FundamentalModelSegment.LNG)
         );
         VolumesSegmentFilterOptions trade = new VolumesSegmentFilterOptions(
             FundamentalModelSegment.TRADE,
@@ -371,10 +382,61 @@ public class FundamentalModelCaseServiceImpl implements FundamentalModelCaseServ
                 .map(d -> new FilterOption(d.getCode(), d.getLabel()))
                 .toList(),
             allRegions,
-            List.of()
+            List.of(),
+            FundamentalModelPeriodFilterOptions.empty()
         );
 
         return new FundamentalModelVolumesFilterOptionsRes(List.of(global, lng, trade));
+    }
+
+    private FundamentalModelPeriodFilterOptions findVolumePeriodOptions(
+        ScenarioCaseRunHistory latestRunHistory,
+        FundamentalModelSegment segment
+    ) {
+        if (latestRunHistory == null) {
+            return FundamentalModelPeriodFilterOptions.empty();
+        }
+        return new FundamentalModelPeriodFilterOptions(
+            findVolumePeriodOptions(latestRunHistory.getRunSeq(), segment, FundamentalModelGranularity.YEARLY),
+            findVolumePeriodOptions(latestRunHistory.getRunSeq(), segment, FundamentalModelGranularity.MONTHLY)
+        );
+    }
+
+    private List<FilterOption> findVolumePeriodOptions(
+        Long runSeq,
+        FundamentalModelSegment segment,
+        FundamentalModelGranularity granularity
+    ) {
+        String periodUnitSeparateCode = toPeriodUnitSeparateCode(granularity);
+        List<ScenarioCaseVolumeRegionBucketRow> bucketRows =
+            scenarioCaseVolumeRegionBucketRepository.findRowsByRunSeqAndFilters(
+                runSeq,
+                segment.getCode(),
+                periodUnitSeparateCode,
+                allowedVolumeTypes(segment).stream().map(FundamentalModelDataType::getCode).toList(),
+                Arrays.stream(FundamentalModelRegion.values()).map(FundamentalModelRegion::getCode).toList()
+            );
+        if (bucketRows.isEmpty()) {
+            return List.of();
+        }
+        Set<String> periodKeys = new HashSet<>();
+        parseVolumeBuckets(segment, periodUnitSeparateCode, bucketRows).values().stream()
+            .flatMap(bucket -> bucket.periodKeys().stream())
+            .forEach(periodKeys::add);
+        return periodKeys.stream()
+            .sorted()
+            .map(periodKey -> toPeriodFilterOption(granularity, periodKey))
+            .toList();
+    }
+
+    private FilterOption toPeriodFilterOption(FundamentalModelGranularity granularity, String periodKey) {
+        if (granularity == FundamentalModelGranularity.YEARLY) {
+            return new FilterOption(periodKey, periodKey);
+        }
+        String value = toVolumeColumnKey(periodKey);
+        String label = Month.of(Integer.parseInt(periodKey.substring(4, 6)))
+            .getDisplayName(TextStyle.SHORT, Locale.ENGLISH);
+        return new FilterOption(value, label);
     }
 
     @Override
@@ -387,14 +449,9 @@ public class FundamentalModelCaseServiceImpl implements FundamentalModelCaseServ
         String periodUnitSeparateCode = toPeriodUnitSeparateCode(granularity);
         List<FundamentalModelDataType> appliedTypes = normalizeVolumeTypes(request.segment(), request.types());
         List<FundamentalModelRegion> appliedRegions = normalizeRegions(request.regions());
+        List<String> appliedPeriods = normalizeVolumePeriods(granularity, request.periods());
 
-        ScenarioCase scenarioCase = findActiveCase(caseId);
-        if (scenarioCase.getStatus() != FundamentalModelCaseStatus.COMPLETED) {
-            throw AppErrorException.of(
-                ResultCode.Error.BIZ_RULE_VIOLATION,
-                "fundamental model volumes is available only for completed case. caseId: %d".formatted(caseId)
-            );
-        }
+        ScenarioCase scenarioCase = findCompletedCaseForResultQuery(caseId);
 
         ScenarioCaseRunHistory latestRunHistory = findCompletedLatestRunHistory(scenarioCase);
         List<ScenarioCaseVolumeRegionBucketRow> bucketRows =
@@ -406,7 +463,7 @@ public class FundamentalModelCaseServiceImpl implements FundamentalModelCaseServ
                 appliedRegions.stream().map(FundamentalModelRegion::getCode).toList()
             );
         if (bucketRows.isEmpty()) {
-            return emptyVolumesResponse(caseId, request.segment(), granularity, appliedTypes, appliedRegions);
+            return emptyVolumesResponse(caseId, request.segment(), granularity, appliedTypes, appliedRegions, appliedPeriods);
         }
 
         return buildVolumesResponse(
@@ -415,6 +472,7 @@ public class FundamentalModelCaseServiceImpl implements FundamentalModelCaseServ
             granularity,
             appliedTypes,
             appliedRegions,
+            appliedPeriods,
             parseVolumeBuckets(request.segment(), periodUnitSeparateCode, bucketRows)
         );
     }
@@ -427,13 +485,7 @@ public class FundamentalModelCaseServiceImpl implements FundamentalModelCaseServ
         List<TradeFlowDirection> appliedTypes = normalizeTradeFlowTypes(request.types());
         List<FundamentalModelRegion> appliedRegions = normalizeRegions(request.regions());
 
-        ScenarioCase scenarioCase = findActiveCase(caseId);
-        if (scenarioCase.getStatus() != FundamentalModelCaseStatus.COMPLETED) {
-            throw AppErrorException.of(
-                ResultCode.Error.BIZ_RULE_VIOLATION,
-                "fundamental model trade flows is available only for completed case. caseId: %d".formatted(caseId)
-            );
-        }
+        ScenarioCase scenarioCase = findCompletedCaseForResultQuery(caseId);
 
         ScenarioCaseRunHistory latestRunHistory = findCompletedLatestRunHistory(scenarioCase);
         List<ScenarioCaseTradeFlowHeaderRow> headerRows =
@@ -476,13 +528,7 @@ public class FundamentalModelCaseServiceImpl implements FundamentalModelCaseServ
     @Override
     @Transactional(readOnly = true)
     public FundamentalModelPriceRes getPrice(Long caseId) {
-        ScenarioCase scenarioCase = findActiveCase(caseId);
-        if (scenarioCase.getStatus() != FundamentalModelCaseStatus.COMPLETED) {
-            throw AppErrorException.of(
-                ResultCode.Error.BIZ_RULE_VIOLATION,
-                "fundamental model price is available only for completed case. caseId: %d".formatted(caseId)
-            );
-        }
+        ScenarioCase scenarioCase = findCompletedCaseForResultQuery(caseId);
 
         ScenarioCaseRunHistory latestRunHistory = findCompletedLatestRunHistory(scenarioCase);
         List<ScenarioCasePriceRow> priceRows = scenarioCasePriceRepository.findRowsByRunSeq(latestRunHistory.getRunSeq());
@@ -671,6 +717,38 @@ public class FundamentalModelCaseServiceImpl implements FundamentalModelCaseServ
             return List.of(FundamentalModelRegion.values());
         }
         return List.copyOf(regions);
+    }
+
+    private List<String> normalizeVolumePeriods(FundamentalModelGranularity granularity, List<String> periods) {
+        if (periods == null || periods.isEmpty()) {
+            return List.of();
+        }
+        List<String> normalizedPeriods = new ArrayList<>();
+        Set<String> seenPeriods = new HashSet<>();
+        for (String period : periods) {
+            String normalizedPeriod = normalizeVolumePeriod(granularity, period);
+            if (seenPeriods.add(normalizedPeriod)) {
+                normalizedPeriods.add(normalizedPeriod);
+            }
+        }
+        return List.copyOf(normalizedPeriods);
+    }
+
+    private String normalizeVolumePeriod(FundamentalModelGranularity granularity, String period) {
+        if (period == null || period.isBlank()) {
+            throw AppErrorException.of(ResultCode.Error.REQ_INVALID_PARAMETER, "periods는 빈 값을 포함할 수 없습니다.");
+        }
+        String trimmedPeriod = period.trim();
+        if (granularity == FundamentalModelGranularity.YEARLY) {
+            if (!trimmedPeriod.matches(VOLUME_YEARLY_PERIOD_PATTERN)) {
+                throw AppErrorException.of(ResultCode.Error.REQ_INVALID_PARAMETER, "YEARLY periods는 yyyy 형식이어야 합니다.");
+            }
+            return trimmedPeriod;
+        }
+        if (!trimmedPeriod.matches(VOLUME_MONTHLY_PERIOD_PATTERN)) {
+            throw AppErrorException.of(ResultCode.Error.REQ_INVALID_PARAMETER, "MONTHLY periods는 yyyy-MM 형식이어야 합니다.");
+        }
+        return trimmedPeriod.substring(0, 4) + trimmedPeriod.substring(5, 7);
     }
 
     private void validateVolumesRequest(FundamentalModelVolumesReq request) {
@@ -940,6 +1018,7 @@ public class FundamentalModelCaseServiceImpl implements FundamentalModelCaseServ
         FundamentalModelGranularity granularity,
         List<FundamentalModelDataType> appliedTypes,
         List<FundamentalModelRegion> appliedRegions,
+        List<String> appliedPeriods,
         Map<VolumeBucketKey, ParsedVolumeBucket> buckets
     ) {
         List<String> responsePeriodKeys = null;
@@ -949,6 +1028,7 @@ public class FundamentalModelCaseServiceImpl implements FundamentalModelCaseServ
             responsePeriodKeys = appendTypeVolumeRows(
                 type,
                 appliedRegions,
+                appliedPeriods,
                 buckets,
                 responsePeriodKeys,
                 responseRows
@@ -956,7 +1036,7 @@ public class FundamentalModelCaseServiceImpl implements FundamentalModelCaseServ
         }
 
         if (responsePeriodKeys == null) {
-            return emptyVolumesResponse(caseId, segment, granularity, appliedTypes, appliedRegions);
+            return emptyVolumesResponse(caseId, segment, granularity, appliedTypes, appliedRegions, appliedPeriods);
         }
 
         return new FundamentalModelVolumesRes(
@@ -964,7 +1044,7 @@ public class FundamentalModelCaseServiceImpl implements FundamentalModelCaseServ
             segment,
             granularity,
             FundamentalModelVolumeUnit.MTPA,
-            new FundamentalModelVolumesRes.VolumesAppliedFilters(appliedTypes, appliedRegions),
+            new FundamentalModelVolumesRes.VolumesAppliedFilters(appliedTypes, appliedRegions, toResponsePeriods(granularity, appliedPeriods)),
             toVolumeColumns(granularity, responsePeriodKeys),
             List.copyOf(responseRows)
         );
@@ -973,6 +1053,7 @@ public class FundamentalModelCaseServiceImpl implements FundamentalModelCaseServ
     private List<String> appendTypeVolumeRows(
         FundamentalModelDataType type,
         List<FundamentalModelRegion> appliedRegions,
+        List<String> appliedPeriods,
         Map<VolumeBucketKey, ParsedVolumeBucket> buckets,
         List<String> responsePeriodKeys,
         List<FundamentalModelVolumesRes.VolumesRow> responseRows
@@ -983,7 +1064,11 @@ public class FundamentalModelCaseServiceImpl implements FundamentalModelCaseServ
             if (bucket == null) {
                 continue;
             }
-            responsePeriodKeys = resolveResponsePeriodKeys(responsePeriodKeys, bucket, type, region);
+            List<String> bucketPeriodKeys = filterVolumePeriodKeys(bucket.periodKeys(), appliedPeriods);
+            if (bucketPeriodKeys.isEmpty()) {
+                continue;
+            }
+            responsePeriodKeys = resolveResponsePeriodKeys(responsePeriodKeys, bucketPeriodKeys, type, region);
             if (typeTotals == null) {
                 typeTotals = zeroValues(responsePeriodKeys);
             }
@@ -1008,20 +1093,30 @@ public class FundamentalModelCaseServiceImpl implements FundamentalModelCaseServ
 
     private List<String> resolveResponsePeriodKeys(
         List<String> responsePeriodKeys,
-        ParsedVolumeBucket bucket,
+        List<String> bucketPeriodKeys,
         FundamentalModelDataType type,
         FundamentalModelRegion region
     ) {
         if (responsePeriodKeys == null) {
-            return bucket.periodKeys();
+            return bucketPeriodKeys;
         }
-        if (!responsePeriodKeys.equals(bucket.periodKeys())) {
+        if (!responsePeriodKeys.equals(bucketPeriodKeys)) {
             throw invalidVolumeData(
                 "fundamental model volume bucket periodKeys mismatch. type=%s, region=%s"
                     .formatted(type.getCode(), region.getCode())
             );
         }
         return responsePeriodKeys;
+    }
+
+    private List<String> filterVolumePeriodKeys(List<String> periodKeys, List<String> appliedPeriods) {
+        if (appliedPeriods.isEmpty()) {
+            return periodKeys;
+        }
+        Set<String> appliedPeriodSet = new HashSet<>(appliedPeriods);
+        return periodKeys.stream()
+            .filter(appliedPeriodSet::contains)
+            .toList();
     }
 
     private void appendVolumeBucketRows(
@@ -1053,17 +1148,27 @@ public class FundamentalModelCaseServiceImpl implements FundamentalModelCaseServ
         FundamentalModelSegment segment,
         FundamentalModelGranularity granularity,
         List<FundamentalModelDataType> appliedTypes,
-        List<FundamentalModelRegion> appliedRegions
+        List<FundamentalModelRegion> appliedRegions,
+        List<String> appliedPeriods
     ) {
         return new FundamentalModelVolumesRes(
             caseId,
             segment,
             granularity,
             FundamentalModelVolumeUnit.MTPA,
-            new FundamentalModelVolumesRes.VolumesAppliedFilters(appliedTypes, appliedRegions),
+            new FundamentalModelVolumesRes.VolumesAppliedFilters(appliedTypes, appliedRegions, toResponsePeriods(granularity, appliedPeriods)),
             List.of(),
             List.of()
         );
+    }
+
+    private List<String> toResponsePeriods(FundamentalModelGranularity granularity, List<String> periodKeys) {
+        if (granularity == FundamentalModelGranularity.YEARLY) {
+            return periodKeys;
+        }
+        return periodKeys.stream()
+            .map(this::toVolumeColumnKey)
+            .toList();
     }
 
     private Map<String, Double> zeroValues(List<String> periodKeys) {
@@ -1627,6 +1732,17 @@ public class FundamentalModelCaseServiceImpl implements FundamentalModelCaseServ
             .orElseThrow(() -> caseNotFound(caseId));
     }
 
+    private ScenarioCase findCompletedCaseForResultQuery(Long caseId) {
+        ScenarioCase scenarioCase = findActiveCase(caseId);
+        if (scenarioCase.getStatus() != FundamentalModelCaseStatus.COMPLETED) {
+            throw AppErrorException.of(
+                ResultCode.Error.BIZ_RULE_VIOLATION,
+                "fundamental model result is available only for completed case. caseId: %d".formatted(caseId)
+            );
+        }
+        return scenarioCase;
+    }
+
     private ScenarioCase findActiveOwnedCase(Long caseId) {
         ScenarioCase scenarioCase = findActiveCase(caseId);
         Integer actorUserNo = authorizationService.getUserNo();
@@ -1828,6 +1944,18 @@ public class FundamentalModelCaseServiceImpl implements FundamentalModelCaseServ
         );
     }
 
+    private List<FundamentalModelDownloadFileRes> findIntermediateFiles(
+        ScenarioCaseRunHistory latestRunHistory
+    ) {
+        if (latestRunHistory == null || latestRunHistory.getRunSeq() == null) {
+            return List.of();
+        }
+        return findDownloadFiles(
+            latestRunHistory.getRunSeq(),
+            FILE_RELATION_SCENARIO_CASE_HISTORY_INTERMEDIATE
+        );
+    }
+
     private Optional<ScenarioCaseRunHistory> findLatestRunHistory(String lastRunId) {
         if (lastRunId == null) {
             return Optional.empty();
@@ -1888,4 +2016,5 @@ public class FundamentalModelCaseServiceImpl implements FundamentalModelCaseServ
         Double userAdjustedPrice
     ) {
     }
+
 }

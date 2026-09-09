@@ -24,7 +24,7 @@ public record FundamentalModelCaseDetailRes(
     @Schema(description = "case 업로더 사용자 번호", example = "1")
     Integer assigneeUserNo,
 
-    @Schema(description = "case 관련 input/output 파일명 목록", implementation = FundamentalModelCaseFilesRes.class)
+    @Schema(description = "case 관련 input/output/intermediate 파일명 목록", implementation = FundamentalModelCaseFilesRes.class)
     FundamentalModelCaseFilesRes files,
 
     @Schema(description = "최신 실행 정보. PENDING이면 null입니다.", implementation = FundamentalModelRunStatusRes.class)

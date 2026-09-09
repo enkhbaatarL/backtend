@@ -46,6 +46,7 @@ API path, request/response field, validation, error mapping은 feature spec이 c
 | Case/run table rollout (`tmd_mdl_scnrcasem`, `tmd_mdl_scnrcaseh`) | `docs/design-docs/gas/scenario-case-execution-erd-ddl-draft.md` |
 | Output result data tables, keys, indexes, partition/readiness | this document |
 | Raw output file metadata linkage | `tcm_filel` via `file_rel_obj_spt_cd = 'SCNRCASEH'`, documented in the case execution DDL draft |
+| Model execution intermediate file linkage | `tcm_filel` via `file_rel_obj_spt_cd = 'SCNRCASEHI'` (same `run_seq`), canonical in `docs/design-docs/gas/mi-fundamental-model-intermediate-file-design.md`. Intermediate files are not parsed into result tables |
 
 ## Fixed Decisions
 
@@ -663,6 +664,7 @@ DB-backed real (current state):
 - Python/model side inserts Volumes into `tmd_mdl_scnrcasevolrgnl` and commits result table inserts before invoking success callback.
 - Java/backend does not set `exec_stat_cd = 'COMPLETED'` unless callback validation and result row existence checks pass.
 - `tcm_filel(SCNRCASEH + run_seq)` remains the source for raw output file metadata, not for chart/table API rows.
+- `tcm_filel(SCNRCASEHI + run_seq)` holds model execution intermediate files (2026-09-07). The detail API exposes their file names only; they are never parsed into the result tables in this document.
 - mock seed files are kept only for local/demo mode.
 
 Transition checklist (all complete):

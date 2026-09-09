@@ -6,7 +6,7 @@
 - canonical for: Reference only
 - owner: BE / Agent
 - created at: 2026-07-07
-- last synced: 2026-08-27
+- last synced: 2026-09-03
 - direction: Agent → Backend
 - source documents: `docs/feature-specs/mi-model-parameter-proposal-backend-feature-spec.md` §5.4/§13
 - depends on: `docs/design-docs/gas/mi-model-parameter-proposal-design.md` §3.2/§3.5/§11
@@ -95,7 +95,7 @@ Notion `{status, message, data}` wrapper를 그대로 사용한다.
 | `data.modelParamProposalId` | △ | 성공 시 채운다. 실패 시 규약 1.2.2대로 생략 가능(path `scenarioId`로 대체). 채우면 교차검증. |
 | `data.scenarioId` | △ | 성공 시 채운다. path의 `{scenarioId}`와 일치해야 함. |
 | `data.scenarioGroupId` | △ | 성공 시 채운다. 교차검증용. |
-| `data.eventId` | △ | 성공 시 채운다. 교차검증용. |
+| `data.eventId` | △ | 기존 Agent wrapper 호환을 위해 수신하지만 Backend 교차검증에는 사용하지 않는다. |
 | `data.status` | △ | 성공 시 `PROPOSED`. 실패 시 `FAILED`(생략되면 wrapper `status=error`로 판정). |
 | `data.proposalParameters` | X | 실어 보내면 Feature Spec의 flat parameter array 형식이다. Backend는 **무시**하고 Agent proposal 테이블을 재조회하므로 넣지 않아도 된다. |
 

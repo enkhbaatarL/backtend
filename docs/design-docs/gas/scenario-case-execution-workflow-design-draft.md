@@ -268,6 +268,7 @@ WHERE case_id = :case_id
    ```
    - callback URL은 `--callback-url` arg로 전달하며, backend가 `run_id`를 포함한 전체 URL을 생성해 Job 생성 시점에 주입한다.
    - `--run-seq`는 `tmd_mdl_scnrcaseh.run_seq` 값이다. pod가 실행 완료 후 output 파일을 S3에 업로드하고 `tcm_filel`에 직접 INSERT할 때 `file_rel_obj_spt_cd = 'SCNRCASEH'`, `file_rel_obj_dstg_no = run_seq`로 사용한다. pod는 이미 DB 접근 권한을 가지며, arg로 받아 추가 조회 없이 사용한다.
+   - 실행 중 생성되는 중간파일도 같은 `--run-seq`를 `file_rel_obj_dstg_no`로 사용하되 `file_rel_obj_spt_cd = 'SCNRCASEHI'`로 INSERT해 output과 구분한다 (2026-09-07). 추가 Job arg는 필요하지 않다. pod INSERT 필수 컬럼 계약은 [mi-fundamental-model-intermediate-file-design.md](mi-fundamental-model-intermediate-file-design.md) 가 canonical이다.
    - 모델 이미지는 모델팀이 Dockerfile 기반으로 제공하며, 위 스크립트, 실행 의존성, backend callback 호출 로직을 포함해야 한다.
    - pod stdout/stderr는 Kubernetes log로 남기며 backend application log 직접 소비는 필수 전제가 아니다.
 8. Job 생성 요청에 성공하면 backend는 클라이언트에 `202 Accepted` 수준의 비동기 시작 응답을 반환한다.
@@ -293,7 +294,7 @@ WHERE case_id = :case_id
 ### Stage 4a. 상세 조회
 
 1. 프론트가 case 상세 화면에 진입하면 `caseId` 기준 상세 조회 endpoint를 호출한다.
-2. backend는 case metadata, 업로드 파일 metadata, latest run projection을 한 번에 반환한다.
+2. backend는 case metadata, 업로드 파일 metadata, latest run projection을 한 번에 반환한다. 파일 metadata는 input(`SCNRCASE + case_id`), output(`SCNRCASEH + run_seq`), 중간파일(`SCNRCASEHI + run_seq`)로 구분해 반환하며, output/중간파일은 최신 실행의 `run_seq` 기준이다. 응답 필드 계약은 feature spec이 canonical이다.
 3. 상세 조회는 화면 rendering용 aggregate snapshot이다. FE polling loop는 `GET /cases/{caseId}/status`를 사용하고, 상세 조회를 polling용 API로 반복 호출하지 않는다.
 4. 상세 조회는 full run history를 반환하지 않는다. case의 전체 실행 이력은 별도 runs API가 정의될 때까지 이 workflow의 phase-1 범위에 포함하지 않는다.
 5. 상세 조회는 result payload, result file reference, download URL/path를 반환하지 않는다. 결과 수치 데이터(Volumes/Price)는 `GET /cases/{caseId}/volumes`, `GET /cases/{caseId}/price` API로 분리 제공하며, 결과 파일 다운로드는 별도 API 계약과 persistence 검토가 필요하다.
@@ -525,6 +526,7 @@ workflow 구현자는 아래 역할/연결 규칙만 참고하고, 물리 스키
 |---|---|---|---|
 | 업로드 입력 파일 | `SCNRCASE` | `tmd_mdl_scnrcasem.case_id` | DEMAND/SUPPLY/TRADE 파일 3개 |
 | 모델 실행 output 파일 | `SCNRCASEH` | `tmd_mdl_scnrcaseh.run_seq` | run 단위 결과 파일, pod/python script가 직접 insert |
+| 모델 실행 중간파일 | `SCNRCASEHI` | `tmd_mdl_scnrcaseh.run_seq` | run 단위 중간 산출물 n개, pod/python script가 직접 insert (2026-09-07 추가) |
 
 ```sql
 -- 업로드 입력 파일 조회
@@ -540,11 +542,20 @@ FROM tcm_filel
 WHERE del_yn = 'N'
   AND file_rel_obj_spt_cd = 'SCNRCASEH'
   AND file_rel_obj_dstg_no = :run_seq;
+
+-- 특정 run의 중간파일 조회
+SELECT *
+FROM tcm_filel
+WHERE del_yn = 'N'
+  AND file_rel_obj_spt_cd = 'SCNRCASEHI'
+  AND file_rel_obj_dstg_no = :run_seq;
 ```
 
 - output 파일은 model pod가 S3에 저장한 뒤 pod/python script가 `tcm_filel`에 직접 insert한다.
 - backend callback API는 output 파일 metadata를 저장하지 않고, execution/case 상태를 terminal 상태로 전이하는 책임만 가진다.
 - output 파일은 `run_seq`에 귀속되므로 재실행 시 이전 run의 output 파일과 독립적으로 존재한다. soft-delete 없이 run별로 결과 파일 추적이 가능하다.
+- 중간파일은 output과 같은 `run_seq`에 귀속되므로 관계 코드(`SCNRCASEHI`)만으로 구분한다. backend와 pod가 서로 다른 문자열을 쓰면 오류 없이 목록만 비어 보이므로 연동 시 리터럴 일치를 확인한다.
+- 중간파일은 개수를 고정하지 않는다(n개). 실행 중 순차 업로드를 허용하므로 `RUNNING` 중 상세 조회에 부분 목록이 보일 수 있다.
 - `run_seq`는 `file_rel_obj_dstg_no`(`INT UNSIGNED` 계열) 저장 요건을 충족하기 위한 surrogate key다. `run_id`(`VARCHAR(20)`)는 model pod 연동 키로 그대로 유지한다.
 
 공통코드 등록 초안:
@@ -570,6 +581,8 @@ VALUES (
     '20260518', '99991231', 'Y', NULL, NULL
 );
 ```
+
+중간파일 코드(`SCNRCASEHI`)의 등록/verify/rollback SQL은 canonical DDL draft가 소유한다. 이 문서에 중복 정의하지 않는다.
 
 ## Validation / 운영 정책 초안
 

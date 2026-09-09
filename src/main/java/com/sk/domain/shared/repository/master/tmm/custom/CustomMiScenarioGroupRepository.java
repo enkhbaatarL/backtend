@@ -18,9 +18,9 @@ import org.springframework.data.domain.Page;
 
 public interface CustomMiScenarioGroupRepository {
 
-    Page<ScenarioGroupBaseRow> findScenarioGroupPage(ScenarioGroupListReq request);
+    Page<ScenarioGroupBaseRow> findScenarioGroupPage(ScenarioGroupListReq request, Long mineUserId);
 
-    Page<ScenarioIndividualBaseRow> findScenarioPage(ScenarioGroupListReq request);
+    Page<ScenarioIndividualBaseRow> findScenarioPage(ScenarioGroupListReq request, Long mineUserId);
 
     Optional<ScenarioGroupDetailBaseRow> findScenarioGroupDetail(Long scenarioGroupId);
 

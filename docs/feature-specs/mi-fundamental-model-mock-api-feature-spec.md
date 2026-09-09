@@ -72,6 +72,7 @@ MI Fundamental Model의 1차 mock API는 MI Fundamental Model 화면에서 사�
   - segment(`GLOBAL` | `LNG`) 필수. `TRADE`는 이 엔드포인트에서 허용하지 않는다
   - Type / Region 다중 필터 지원 (미전달 시 전체)
   - granularity(`MONTHLY` | `YEARLY`) 지원, 기본 `MONTHLY`
+  - periods 선택 필터로 원하는 연도 또는 월 컬럼만 조회
   - 1차 mock은 json seed 기반 고정 응답
 - Trade Flows 데이터 조회 (Trade)
   - `COMPLETED` case의 실행 결과 중 Trade Flow 매트릭스 반환
@@ -191,19 +192,24 @@ MI Fundamental Model의 1차 mock API는 MI Fundamental Model 화면에서 사�
 - response DTO: `FundamentalModelCaseDetailRes`
 - 포함 범위:
   - case metadata (`caseId`, `title`, `description`, `status`, `assigneeName`, `createdAt`, `updatedAt`)
-  - 파일명 metadata (`files.input`, `files.output`)
+  - 파일 metadata (`files.input`, `files.output`, `files.intermediate`)
   - 최신 실행 projection (`latestRun`)
 - 제외 범위:
   - full run history
   - result payload
   - result 조회 contract
-  - intermediate file metadata
 
 `files.input`은 `tcm_filel.file_rel_obj_spt_cd = 'SCNRCASE'` 및 `file_rel_obj_dstg_no = case_id` 기준 파일 목록이다.
 `files.output`은 최신 실행의 `run_seq`를 기준으로 `tcm_filel.file_rel_obj_spt_cd = 'SCNRCASEH'` 및 `file_rel_obj_dstg_no = run_seq`에 연결된 파일 목록이다.
-각 파일 항목은 현재 화면 표시용 `fileNm`만 반환한다. 다운로드 기능이 후속 구현되기 전까지
-`fileNo`, `fileSize`는 상세 조회와 수정 응답에 노출하지 않는다. 이 제한은 `FundamentalModelCaseDetailRes.files`에만
-적용되며, 업로드 응답 `FundamentalModelCaseFileRes`는 기존 계약을 그대로 유지한다.
+`files.intermediate`는 같은 `run_seq`를 기준으로 `file_rel_obj_spt_cd = 'SCNRCASEHI'`에 연결된 모델 실행 중간파일 목록이다 (2026-09-07 추가). 개수는 고정하지 않는다(n개).
+세 목록 모두 `del_yn = 'N'`과 파일 유효종료일자 조건을 만족하는 row를 `file_no ASC`로 반환하며, 최신 실행이나 해당 파일이 없으면 빈 배열이다.
+
+각 파일 항목은 화면 표시용 `fileNm`만 반환한다. 다운로드 기능이 후속 구현되기 전까지
+`fileNo`, `fileSize`는 상세 조회와 수정 응답에 노출하지 않는다. 이는 파일 식별자 노출을 줄이기 위한 의도된 결정이며,
+`files.intermediate`에도 동일하게 적용한다. 이 제한은 `FundamentalModelCaseDetailRes.files`에만 적용되며,
+업로드 응답 `FundamentalModelCaseFileRes`는 기존 계약을 그대로 유지한다.
+중간파일 다운로드 활성화는 별도 결정 항목(TODO)이며, 식별 방식과 pod 적재 계약은
+[mi-fundamental-model-intermediate-file-design.md](../design-docs/gas/mi-fundamental-model-intermediate-file-design.md)가 canonical이다.
 
 `GET /cases/{caseId}/status`는 FE polling을 위한 경량 상태 조회로 유지한다. 상태 조회는 파일 metadata와 설명 등 화면 상세 metadata를 반환하지 않는다. 반대로 상세 조회는 화면 상세 rendering에 필요한 projection이며, polling interval에서 반복 호출하는 API로 설계하지 않는다.
 
@@ -320,7 +326,7 @@ createCase(
 
 규칙:
 
-- 존재하는 case이면 case metadata, input/output 파일명 metadata, latest run projection을 반환한다.
+- 존재하는 case이면 case metadata, input/output/intermediate 파일명 metadata, latest run projection을 반환한다.
 - `latestRunId`가 없거나 아직 실행되지 않은 `PENDING` case이면 `latestRun = null`이다.
 - full run history는 반환하지 않는다.
 - result payload, result reference, download URL은 반환하지 않는다. 다운로드 기능이 후속 구현되기 전까지
@@ -458,16 +464,23 @@ Reset API 포함 판단:
 - Method: `GET`
 - Path: `/api/v1/mi/fundamental-model/cases/volumes/filter-options`
 - Path variables: 없음
-- Query parameters: 없음
+- Query parameters:
+
+| 파라미터 | 타입 | 필수 | 기본값 | 설명 |
+|---|---|---|---|---|
+| `caseId` | `Long` | N | — | 기간 옵션을 조회할 Scenario Case ID. 미전달 시 정적 type/region/granularity 옵션만 반환 |
 
 규칙:
 
-- case 독립 정적 endpoint다. caseId 없이 호출한다.
 - segment별로 허용되는 type 목록, region 목록, granularity 목록을 `{ value, label }` 쌍으로 반환한다.
+- `caseId`가 전달되면 해당 case의 최신 완료 Volumes 결과에서 데이터가 있는 yearly/monthly 기간 옵션을 함께 반환한다.
+- `caseId`가 전달되지 않으면 `periods`는 빈 배열을 반환한다.
 - TRADE segment의 `types`는 `TradeFlowDirection` 값(`TO_COUNTRY`, `FROM_COUNTRY`)이며, `granularities`는 빈 배열이다.
+- TRADE segment는 단일 `year` matrix API를 사용하므로 segment `periods`는 빈 배열이다.
 - GLOBAL/LNG segment의 `types`는 `FundamentalModelDataType` 값이며, `granularities`는 `MONTHLY`, `YEARLY`를 반환한다.
+- GLOBAL/LNG segment의 `periods`는 Volumes 결과 bucket의 `periodKeys` 기준으로 반환한다.
 - 항상 GLOBAL → LNG → TRADE 순서로 반환한다.
-- mock/real 구분 없이 enum 기반 정적 응답이다.
+- `caseId`가 `COMPLETED` 상태가 아니면 결과 조회 API와 동일하게 `409 BIZ_RULE_VIOLATION`으로 응답한다.
 
 ### 3.11 Volumes 데이터 조회 (Global / LNG)
 
@@ -486,6 +499,7 @@ Reset API 포함 판단:
 | `types` | `FundamentalModelDataType[]` | N | segment별 전체 | 쉼표 구분 다중값. 미전달 시 segment별 허용 Type 전체 포함. `GLOBAL`: `DEMAND`, `PRODUCTION`, `LNG_IMPORTS`, `LNG_EXPORTS`, `PIPELINE_IMPORTS`, `PIPELINE_EXPORTS`; `LNG`: `LNG_IMPORTS`, `LNG_EXPORTS` |
 | `regions` | `FundamentalModelRegion[]` | N | 전체 | 쉼표 구분 다중값. 미전달 시 전체 포함. `ASIA`, `EUROPE`, `NORTH_AMERICA`, `MIDDLE_EAST`, `AUSTRALIA`, `RUSSIA`, `AFRICA`, `SOUTH_AMERICA` |
 | `granularity` | `FundamentalModelGranularity` | N | `MONTHLY` | `MONTHLY` \| `YEARLY` |
+| `periods` | `String[]` | N | 전체 | 선택 기간. `granularity=YEARLY`이면 `yyyy`, `granularity=MONTHLY`이면 `yyyy-MM` 형식의 쉼표 구분 다중값 |
 
 규칙:
 
@@ -498,6 +512,9 @@ Reset API 포함 판단:
 - FE는 `rows`를 응답 순서 그대로 렌더링할 수 있다. 서버는 각 Type 안에서 Region별로 `REGION_SUBTOTAL` 행을 먼저 반환하고, 이어서 해당 Region의 `COUNTRY` 행들을 반환한다. Type의 마지막 행은 `TYPE_TOTAL`이다.
 - `granularity=YEARLY`이면 월별 데이터를 연간으로 집계해 반환한다. columns의 `month` 필드는 `null`이 된다.
 - `granularity=MONTHLY`이면 columns의 `month` 필드는 1~12 정수다.
+- `periods`가 전달되면 `columns`와 각 row의 `values`는 선택 기간과 일치하는 항목만 포함한다.
+- 선택 기간이 실제 result data에 없으면 에러가 아니라 `200 OK`로 응답하고 `columns=[]`, `rows=[]`를 반환한다.
+- `periods` 값이 granularity별 형식과 맞지 않으면 `400 REQ_INVALID_PARAMETER`로 응답한다.
 - 조회 조건에 매칭되는 실제 result row가 없으면 에러가 아니라 `200 OK`로 응답하고 `columns=[]`, `rows=[]`를 반환한다.
 - 1차 mock에서는 json seed 파일 기반 고정 데이터를 반환한다. 필터는 mock 데이터 내에서 적용한다.
 
@@ -616,6 +633,14 @@ Reset API 포함 판단:
       {
         "fileNm": "output.xlsx"
       }
+    ],
+    "intermediate": [
+      {
+        "fileNm": "step1_demand_curve.csv"
+      },
+      {
+        "fileNm": "step2_supply_stack.csv"
+      }
     ]
   },
   "latestRun": {
@@ -640,14 +665,14 @@ Reset API 포함 판단:
 | `status` | `FundamentalModelCaseStatus` | case 최신 상태 |
 | `assigneeName` | `String` | case를 업로드한 사용자 이름. mock에서는 고정값 사용 |
 | `assigneeUserNo` | `Integer` | case를 업로드한 사용자 번호. DB-backed 구현에서는 `tmd_mdl_scnrcasem.usr_no` |
-| `files` | `FundamentalModelCaseFilesRes` | input/output 파일명 metadata |
+| `files` | `FundamentalModelCaseFilesRes` | input/output/intermediate 파일명 metadata |
 | `latestRun` | `FundamentalModelRunStatusRes` | 최신 실행 정보. `PENDING`이면 `null` |
 | `createdAt` | `LocalDateTime` | case 생성 시각 |
 | `updatedAt` | `LocalDateTime` | case 최종 변경 시각 |
 
 상세 응답은 최신 실행 1건만 포함한다. 전체 실행 이력은 별도 runs API가 정의되기 전까지 이 응답에 포함하지 않는다.
 result payload는 포함하지 않는다. 다운로드 기능이 후속 구현되기 전까지 상세 응답에는 파일명 `fileNm`만 제공하고
-`fileNo`, `fileSize`는 노출하지 않는다. `intermediate` 파일은 현재 응답 대상이 아니므로 포함하지 않는다.
+`fileNo`, `fileSize`는 노출하지 않는다. `intermediate` 파일 목록은 포함하며(2026-09-07 추가), 같은 `fileNm`-only 규칙을 따른다.
 
 #### `FundamentalModelCaseFilesRes`
 
@@ -655,12 +680,15 @@ result payload는 포함하지 않는다. 다운로드 기능이 후속 구현�
 |---|---|---|
 | `input` | `List<FundamentalModelDownloadFileRes>` | `SCNRCASE + case_id`로 연결된 입력 파일 목록. 업로드 기준 3개 |
 | `output` | `List<FundamentalModelDownloadFileRes>` | 최신 실행 `SCNRCASEH + run_seq`로 연결된 output 파일 목록. 최신 실행 또는 output 파일이 없으면 빈 배열 |
+| `intermediate` | `List<FundamentalModelDownloadFileRes>` | 최신 실행 `SCNRCASEHI + run_seq`로 연결된 모델 실행 중간파일 목록(n개). 최신 실행 또는 중간파일이 없으면 빈 배열 |
 
 #### `FundamentalModelDownloadFileRes`
 
 | 필드 | 타입 | 설명 |
 |---|---|---|
-| `fileNm` | `String` | 화면에 표시할 파일명. 현재 다운로드 요청용 `fileNo`, `fileSize`는 노출하지 않음 |
+| `fileNm` | `String` | 화면에 표시할 파일명(`tcm_filel.org_file_nm`). 현재 다운로드 요청용 `fileNo`, `fileSize`는 노출하지 않음 |
+
+`input`, `output`, `intermediate` 모두 동일한 shape이며 `fileNm` 단일 필드다.
 
 ### 4.4 `FundamentalModelCaseCreateRes`
 
@@ -875,6 +903,14 @@ FE는 `latestRun.startedAt`과 `latestRun.finishedAt`으로 소요시간을 계�
 | `columns` | `List<VolumesColumn>` | 시간 축 메타데이터 목록 |
 | `rows` | `List<VolumesRow>` | 데이터 행 목록 |
 
+**`VolumesAppliedFilters`:**
+
+| 필드 | 타입 | 설명 |
+|---|---|---|
+| `types` | `List<FundamentalModelDataType>` | 실제 적용된 type 목록 |
+| `regions` | `List<FundamentalModelRegion>` | 실제 적용된 region 목록 |
+| `periods` | `List<String>` | 요청으로 선택한 기간. 미전달 시 빈 배열이며 전체 기간이 적용됨 |
+
 **`VolumesColumn`:**
 
 | 필드 | 타입 | 설명 |
@@ -953,7 +989,15 @@ FE는 `latestRun.startedAt`과 `latestRun.finishedAt`으로 소요시간을 계�
       "granularities": [
         { "value": "MONTHLY", "label": "Monthly" },
         { "value": "YEARLY",  "label": "Yearly" }
-      ]
+      ],
+      "periods": {
+        "yearly": [
+          { "value": "2023", "label": "2023" }
+        ],
+        "monthly": [
+          { "value": "2023-01", "label": "Jan" }
+        ]
+      }
     },
     {
       "segment": "LNG",
@@ -974,7 +1018,11 @@ FE는 `latestRun.startedAt`과 `latestRun.finishedAt`으로 소요시간을 계�
         { "value": "FROM_COUNTRY", "label": "From country" }
       ],
       "regions": [ "/* 동일 */" ],
-      "granularities": []
+      "granularities": [],
+      "periods": {
+        "yearly": [],
+        "monthly": []
+      }
     }
   ]
 }
@@ -992,6 +1040,14 @@ FE는 `latestRun.startedAt`과 `latestRun.finishedAt`으로 소요시간을 계�
 | `types` | `List<FilterOption>` | 해당 segment에서 선택 가능한 type 목록. TRADE는 `TradeFlowDirection` 값 |
 | `regions` | `List<FilterOption>` | 선택 가능한 region 목록. 모든 segment 동일 |
 | `granularities` | `List<FilterOption>` | 선택 가능한 granularity 목록. TRADE는 빈 배열 |
+| `periods` | `FundamentalModelPeriodFilterOptions` | 해당 segment의 Volumes 결과에 실제 존재하는 연/월 기간 옵션. TRADE 또는 `caseId` 미전달 시 빈 배열 |
+
+**`FundamentalModelPeriodFilterOptions`:**
+
+| 필드 | 타입 | 설명 |
+|---|---|---|
+| `yearly` | `List<FilterOption>` | 연도 옵션. `value`는 `yyyy` 형식 |
+| `monthly` | `List<FilterOption>` | 월 옵션. `value`는 `yyyy-MM` 형식이고 `label`은 `Jan`, `Feb` 같은 영문 월 축약 표기 |
 
 **`FilterOption`:**
 
@@ -1284,8 +1340,8 @@ Swagger 문서에는 다음을 명시한다.
 - 목록 조회 API의 canonical contract는 `non-blank keyword requires searchType`이다. `keyword`가 null 또는 blank이면 `searchType`이 있어도 검색 조건 없음으로 처리한다.
 - 업로드 API는 `multipart/form-data` 전용이다.
 - `files` part는 정확히 3개가 필수다.
-- 상세 조회는 case metadata, input/output 파일명 metadata, latestRun만 반환한다. 파일 항목에는 `fileNm`만 제공하며,
-  full run history/result payload/`fileNo`/`fileSize`/intermediate file metadata는 포함하지 않는다.
+- 상세 조회는 case metadata, input/output/intermediate 파일명 metadata, latestRun을 반환한다. 파일 항목에는 `fileNm`만 제공하며,
+  full run history/result payload/`fileNo`/`fileSize`는 포함하지 않는다.
 - 수정 API는 `title`, `description`만 받으며 응답은 최신 `FundamentalModelCaseDetailRes`다.
 - 삭제 API는 physical delete가 아니라 soft delete이며, 삭제된 case는 이후 active-resource API에서 `404 RSC_NOT_FOUND`로 취급한다.
 - 실행 요청은 `RUNNING` 상태에서 중복 접수를 차단한다.
@@ -1327,7 +1383,7 @@ seed 파일은 다음 최상위 구조를 가진다.
 
 `FundamentalModelCaseMockRecord.assigneeName`은 case 업로드 시점의 사용자 이름을 표현한다. mock에서는 업로드 요청에 업로더 이름을 받지 않으므로 고정값(예: `"홍길동"`)으로 설정한다. 향후 DB 전환 시 `tmd_mdl_scnrcasem.usr_no = tmd_usrm.usr_no`로 JOIN하고, 작성자명 표시는 `tmd_usrm.usr_nm`을 사용한다.
 
-`FundamentalModelFileMockRecord` 는 별도 store map 없이 `FundamentalModelCaseMockRecord.files` 에 `List` 로 직접 포함된다. mock seed의 `files`는 입력 파일을 의미하며, 상세 응답에서는 `files.input`으로 변환한다. output 파일은 DB-backed 구현에서 `SCNRCASEH + run_seq`로 조회하며, 현재 mock seed는 별도 output file store를 갖지 않으므로 `files.output`은 빈 배열로 반환한다. 향후 DB 전환 시에는 이 리스트가 `tcm_filel` 별도 테이블로 분리된다 (§7.2 참고). `FundamentalModelFileMockRecord` 를 응답 DTO와 별개 타입으로 두는 이유는 mock 내부 표현이 presentation layer에 직접 결합되지 않도록 하기 위함이다.
+`FundamentalModelFileMockRecord` 는 별도 store map 없이 `FundamentalModelCaseMockRecord.files` 에 `List` 로 직접 포함된다. mock seed의 `files`는 입력 파일을 의미하며, 상세 응답에서는 `files.input`으로 변환한다. output 파일은 DB-backed 구현에서 `SCNRCASEH + run_seq`로, 중간파일은 `SCNRCASEHI + run_seq`로 조회하며, 현재 mock seed는 별도 output/intermediate file store를 갖지 않으므로 `files.output`과 `files.intermediate`는 빈 배열로 반환한다. 향후 DB 전환 시에는 이 리스트가 `tcm_filel` 별도 테이블로 분리된다 (§7.2 참고). `FundamentalModelFileMockRecord` 를 응답 DTO와 별개 타입으로 두는 이유는 mock 내부 표현이 presentation layer에 직접 결합되지 않도록 하기 위함이다.
 
 동시성:
 
@@ -1483,8 +1539,9 @@ src/main/resources/mock/fundamental-model/fundamental-model-price-data.json
 | `errorMessage` | `tmd_mdl_scnrcaseh.err_msg_cntt` | 최대 길이 후속 확정 |
 | upload files | `tcm_filel` | `file_rel_obj_spt_cd = 'SCNRCASE'`, `file_rel_obj_dstg_no = case_id` |
 | output files | `tcm_filel` | `file_rel_obj_spt_cd = 'SCNRCASEH'`, `file_rel_obj_dstg_no = run_seq` |
+| intermediate files | `tcm_filel` | `file_rel_obj_spt_cd = 'SCNRCASEHI'`, `file_rel_obj_dstg_no = run_seq` |
 
-`SCNRCASE`/`SCNRCASEH` 공통코드는 등록 완료된 것으로 implementation input을 둔다. `tcm_filel.file_rel_obj_dstg_no`와 `tmd_mdl_scnrcasem.case_id`/`tmd_mdl_scnrcaseh.run_seq`의 타입 호환성은 `erd-change-review`에서 재확인한다.
+`SCNRCASE`/`SCNRCASEH` 공통코드는 등록 완료된 것으로 implementation input을 둔다. `SCNRCASEHI`는 2026-09-07 신규 확정이며 등록 전에는 조회 결과가 빈 배열이다(코드 등록 자체가 조회를 막지는 않으나 pod INSERT가 불가능하다). `tcm_filel.file_rel_obj_dstg_no`와 `tmd_mdl_scnrcasem.case_id`/`tmd_mdl_scnrcaseh.run_seq`의 타입 호환성은 `erd-change-review`에서 재확인한다.
 
 Trade Flows의 fromCountries/toCountries country 목록은 base 버전/기준 정보에 따라 변동될 수 있다. region 고유값은 고정이지만 region 내 country 목록이 달라지는 구조이므로, DB-backed 전환 시 header metadata는 [mi-fundamental-model-output-result-persistence-design.md](../design-docs/gas/mi-fundamental-model-output-result-persistence-design.md)의 `tmd_mdl_scnrcasetrdehdrl` row table에 저장한다.
 
@@ -1615,9 +1672,9 @@ phase 1 mock 시연 동선:
 1. `caseId`로 active case를 찾는다.
 2. case가 없거나 `delYn = Y`이면 `RSC_NOT_FOUND`.
 3. case metadata와 `SCNRCASE + case_id` 기준 input 파일명 metadata를 반환한다.
-4. `latestRunId`가 null이면 `latestRun = null`, `files.output = []`로 반환한다.
-5. `latestRunId`가 있으면 run store에서 최신 run 1건만 찾아 `latestRun`으로 반환하고, 해당 run의 `run_seq` 기준 `SCNRCASEH` output 파일명 metadata를 반환한다.
-6. full run history, result payload, intermediate file/download metadata는 반환하지 않는다.
+4. `latestRunId`가 null이면 `latestRun = null`, `files.output = []`, `files.intermediate = []`로 반환한다.
+5. `latestRunId`가 있으면 run store에서 최신 run 1건만 찾아 `latestRun`으로 반환하고, 해당 run의 `run_seq` 기준 `SCNRCASEH` output 파일과 `SCNRCASEHI` 중간파일 metadata를 반환한다.
+6. full run history와 result payload는 반환하지 않는다.
 
 ### Update
 
@@ -1695,14 +1752,15 @@ phase 1 mock 시연 동선:
 5. `types`에 segment에서 허용하지 않는 값이 포함되면 `400 REQ_INVALID_PARAMETER`로 응답한다.
 6. `regions`가 미전달이면 전체 `FundamentalModelRegion` 목록을 필터로 사용한다.
 7. `granularity`가 미전달이면 `MONTHLY`를 기본값으로 사용한다.
-8. `granularity=MONTHLY`이면 `columns`의 `label`은 `"26-01"` 형식이고, `year`/`month`는 각각 4자리 연도와 1~12 정수이다.
-9. `granularity=YEARLY`이면 `columns`의 `label`은 연도 문자열이고, `year`는 4자리 연도, `month`는 `null`이다.
-10. 응답의 `unit`은 phase 1에서 `MTPA` 고정이다. 후속 unit 변환 기능은 별도 request contract로 정의한다.
-11. `rows`는 필터를 적용한 뒤 FE가 응답 순서 그대로 렌더링할 수 있게 정렬한다. 선택된 `types` 순서대로 Type section을 만들고, 각 Type section 안에서는 선택된 `regions` 순서대로 `REGION_SUBTOTAL` 행을 먼저 반환한 뒤 해당 Region의 `COUNTRY` 행들을 반환한다. 각 Type section의 마지막 행은 `TYPE_TOTAL`이다.
-12. `typeLabel`은 `type` enum label을 반환한다. `rowLabel`은 `REGION_SUBTOTAL`이면 region enum label, `COUNTRY`이면 country, `TYPE_TOTAL`이면 `Total`을 반환한다.
-13. `TYPE_TOTAL`은 선택된 Region들의 `REGION_SUBTOTAL` 값을 합산해 반환한다. 예: `regions=ASIA,EUROPE`이면 해당 Type의 Asia subtotal + Europe subtotal이 Type total이다.
-14. 응답의 `appliedFilters`에는 실제 적용된 `types`와 `regions` 목록을 반환한다.
-15. 1차 mock에서는 json seed 파일 기반 고정 데이터를 반환하며, 필터는 해당 데이터 범위 내에서 적용한다. seed의 표시 label은 서버가 응답 조립 시 파생한다.
+8. `periods`가 전달되면 선택 기간만 `columns`와 각 row `values`에 포함한다. `MONTHLY`는 `yyyy-MM`, `YEARLY`는 `yyyy` 형식이다.
+9. `granularity=MONTHLY`이면 `columns`의 `label`은 `"26-01"` 형식이고, `year`/`month`는 각각 4자리 연도와 1~12 정수이다.
+10. `granularity=YEARLY`이면 `columns`의 `label`은 연도 문자열이고, `year`는 4자리 연도, `month`는 `null`이다.
+11. 응답의 `unit`은 phase 1에서 `MTPA` 고정이다. 후속 unit 변환 기능은 별도 request contract로 정의한다.
+12. `rows`는 필터를 적용한 뒤 FE가 응답 순서 그대로 렌더링할 수 있게 정렬한다. 선택된 `types` 순서대로 Type section을 만들고, 각 Type section 안에서는 선택된 `regions` 순서대로 `REGION_SUBTOTAL` 행을 먼저 반환한 뒤 해당 Region의 `COUNTRY` 행들을 반환한다. 각 Type section의 마지막 행은 `TYPE_TOTAL`이다.
+13. `typeLabel`은 `type` enum label을 반환한다. `rowLabel`은 `REGION_SUBTOTAL`이면 region enum label, `COUNTRY`이면 country, `TYPE_TOTAL`이면 `Total`을 반환한다.
+14. `TYPE_TOTAL`은 선택된 Region들의 `REGION_SUBTOTAL` 값을 합산해 반환한다. 예: `regions=ASIA,EUROPE`이면 해당 Type의 Asia subtotal + Europe subtotal이 Type total이다.
+15. 응답의 `appliedFilters`에는 실제 적용된 `types`, `regions`, 요청으로 선택한 `periods` 목록을 반환한다.
+16. 1차 mock에서는 json seed 파일 기반 고정 데이터를 반환하며, 필터는 해당 데이터 범위 내에서 적용한다. seed의 표시 label은 서버가 응답 조립 시 파생한다.
 
 ### Trade Flows Data Query
 
@@ -1793,7 +1851,7 @@ phase 1 mock 시연 동선:
 
 - `tmd_mdl_scnrcasem`, `tmd_mdl_scnrcaseh`, `tcm_filel` 매핑 초안의 타입/인덱스/제약 검증
 - `tcm_filel.file_rel_obj_dstg_no`와 `case_id` 타입 호환성 검증
-- `SCNRCASE`/`SCNRCASEH` 공통코드는 등록 완료된 것으로 implementation input을 둔다. DDL review에서는 환경별 코드 반영 여부와 `tcm_filel.file_rel_obj_dstg_no` 타입 호환성만 확인한다
+- `SCNRCASE`/`SCNRCASEH` 공통코드는 등록 완료된 것으로 implementation input을 둔다. `SCNRCASEHI`는 신규 등록 대상이다. DDL review에서는 환경별 코드 반영 여부와 `tcm_filel.file_rel_obj_dstg_no` 타입 호환성만 확인한다
 - `case_stat_cd`와 `exec_stat_cd` 이중 상태 저장 정합성 검증
 - `RUNNING` 중복 실행 방지를 위한 transaction/lock/index 전략 검토 (workflow draft §5 conditional master update 기준)
 - `run_id` unique 제약과 조회 인덱스 검토
@@ -1824,7 +1882,7 @@ phase 1 mock 시연 동선:
 - Delete: `DELETE /{caseId}`, soft delete, returns `BaseResponse<Void>` 200 OK
 - Run: `POST /{caseId}/runs`, returns `202 Accepted`
 - Status: `GET /{caseId}/status`, case 기준 조회
-- Volumes: `GET /{caseId}/volumes`, query params `segment`(`GLOBAL`|`LNG` 필수, `TRADE` 전달 시 400) + `types`(선택) + `regions`(선택) + `granularity`(선택, 기본 `MONTHLY`). `COMPLETED` case 한정. returns `FundamentalModelVolumesRes`
+- Volumes: `GET /{caseId}/volumes`, query params `segment`(`GLOBAL`|`LNG` 필수, `TRADE` 전달 시 400) + `types`(선택) + `regions`(선택) + `granularity`(선택, 기본 `MONTHLY`) + `periods`(선택, `MONTHLY`는 `yyyy-MM`, `YEARLY`는 `yyyy`). `COMPLETED` case 한정. returns `FundamentalModelVolumesRes`
 - Trade Flows: `GET /{caseId}/volumes/trade`, query params `selector`(필수) + `year`(필수, 2023~2030) + `unit`(선택, 기본 `MTPA`) + `types`(선택) + `regions`(선택). `COMPLETED` case 한정. returns `FundamentalModelTradeFlowsRes`
 - Price: `GET /{caseId}/price`, 쿼리 파라미터 없음. `COMPLETED` case 한정. returns `FundamentalModelPriceRes` (차트 + Annual 테이블 + Monthly 테이블 동시 반환)
 - Callback: `POST /api/v1/mi/fundamental-model/runs/{runId}/callback`, 외부 모델 전용

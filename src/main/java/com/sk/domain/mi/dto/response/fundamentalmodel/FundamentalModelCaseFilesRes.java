@@ -10,7 +10,10 @@ public record FundamentalModelCaseFilesRes(
     List<FundamentalModelDownloadFileRes> input,
 
     @ArraySchema(schema = @Schema(implementation = FundamentalModelDownloadFileRes.class))
-    List<FundamentalModelDownloadFileRes> output
+    List<FundamentalModelDownloadFileRes> output,
+
+    @ArraySchema(schema = @Schema(implementation = FundamentalModelDownloadFileRes.class))
+    List<FundamentalModelDownloadFileRes> intermediate
 
 ) {
 }

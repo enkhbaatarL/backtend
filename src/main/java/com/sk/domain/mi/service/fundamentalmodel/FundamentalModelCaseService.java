@@ -38,7 +38,7 @@ public interface FundamentalModelCaseService {
 
     FundamentalModelCaseStatusRes getCaseStatus(Long caseId);
 
-    FundamentalModelVolumesFilterOptionsRes getVolumesFilterOptions();
+    FundamentalModelVolumesFilterOptionsRes getVolumesFilterOptions(Long caseId);
 
     FundamentalModelVolumesRes getVolumes(Long caseId, FundamentalModelVolumesReq request);
 
