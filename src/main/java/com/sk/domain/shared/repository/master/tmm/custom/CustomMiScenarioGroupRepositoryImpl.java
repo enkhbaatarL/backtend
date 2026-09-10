@@ -84,6 +84,9 @@ public class CustomMiScenarioGroupRepositoryImpl implements CustomMiScenarioGrou
             ? miScenarioGroup.createDt.asc()
             : miScenarioGroup.createDt.desc();
 
+        // 구성 이벤트 수 — 기준 이벤트 조인(min-ID 1행 고정)과 무관하게 활성 매핑 전체를 센다
+        QMiScenarioGroupEvent eventCountSub = new QMiScenarioGroupEvent("eventCountSub");
+
         List<ScenarioGroupBaseRow> rows = queryFactory
             .select(new QScenarioGroupBaseRow(
                 miScenarioGroup.scenarioGroupId,
@@ -91,6 +94,11 @@ public class CustomMiScenarioGroupRepositoryImpl implements CustomMiScenarioGrou
                 miScenarioGroup.title,
                 miScenarioGroup.description,
                 miScenarioGroup.scenarioCount,
+                JPAExpressions.select(eventCountSub.count())
+                    .from(eventCountSub)
+                    .where(
+                        eventCountSub.scenarioGroup.eq(miScenarioGroup),
+                        eventCountSub.isDeleted.isFalse()),
                 miScenarioGroup.createDt,
                 miScenarioGroup.modifyDt,
                 miScenarioGroup.dimensionSelected,

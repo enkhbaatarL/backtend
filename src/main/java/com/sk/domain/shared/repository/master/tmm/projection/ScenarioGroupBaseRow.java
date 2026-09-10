@@ -12,6 +12,7 @@ public record ScenarioGroupBaseRow(
     String title,
     String summary,
     Integer scenarioCount,
+    Long eventCount,
     LocalDateTime createDt,
     LocalDateTime modifyDt,
     String dimensionSelected,
