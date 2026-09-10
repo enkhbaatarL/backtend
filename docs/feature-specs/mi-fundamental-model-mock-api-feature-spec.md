@@ -468,17 +468,23 @@ Reset API 포함 판단:
 
 | 파라미터 | 타입 | 필수 | 기본값 | 설명 |
 |---|---|---|---|---|
-| `caseId` | `Long` | N | — | 기간 옵션을 조회할 Scenario Case ID. 미전달 시 정적 type/region/granularity 옵션만 반환 |
+| `caseId` | `Long` | N | — | 실제 Region/Country/기간 옵션을 조회할 Scenario Case ID. 미전달 시 정적 type/region/granularity 옵션만 반환 |
+| `selector` | `TradeFlowSelector` | N | — | TRADE Region/Country 옵션의 데이터 범위. `year`와 함께 전달해야 하며 `LNG` \| `PNG` |
+| `year` | `Integer` | N | — | TRADE Region/Country 옵션의 데이터 범위. `selector`와 함께 전달해야 하며 2023~2030 |
 
 규칙:
 
-- segment별로 허용되는 type 목록, region 목록, granularity 목록을 `{ value, label }` 쌍으로 반환한다.
-- `caseId`가 전달되면 해당 case의 최신 완료 Volumes 결과에서 데이터가 있는 yearly/monthly 기간 옵션을 함께 반환한다.
-- `caseId`가 전달되지 않으면 `periods`는 빈 배열을 반환한다.
+- segment별로 허용되는 type 목록, Region 아래 Country가 중첩된 region 목록, granularity 목록을 반환한다.
+- `caseId`가 전달되면 해당 case의 최신 완료 run 결과를 기준으로 실제 데이터 row/header가 존재하는 Region/Country만 반환한다. 값이 0인 row/header도 존재하면 옵션에 포함한다.
+- GLOBAL/LNG의 Region/Country는 각각 해당 segment의 MONTHLY/YEARLY 결과 합집합이며, 기간 옵션은 bucket의 `periodKeys`를 기준으로 반환한다.
+- TRADE의 Region/Country는 `caseId + selector + year`에 해당하는 From/To header의 합집합이다. 같은 Country가 양쪽에 있으면 한 번만 반환한다.
+- TRADE 옵션을 실제 데이터로 조회하려면 `caseId`, `selector`, `year`를 함께 전달한다. `selector`와 `year` 중 하나만 전달하거나, `caseId` 없이 두 값을 전달하면 `400 REQ_INVALID_PARAMETER`로 응답한다.
+- `caseId`가 전달되지 않으면 모든 Region을 `countries=[]`로 반환하고 `periods`는 빈 배열을 반환한다.
+- `caseId`만 전달되어 TRADE 조회 범위가 없는 경우 TRADE는 모든 Region을 `countries=[]`로 반환한다. GLOBAL/LNG는 실제 데이터 기준 옵션을 반환한다.
 - TRADE segment의 `types`는 `TradeFlowDirection` 값(`TO_COUNTRY`, `FROM_COUNTRY`)이며, `granularities`는 빈 배열이다.
 - TRADE segment는 단일 `year` matrix API를 사용하므로 segment `periods`는 빈 배열이다.
 - GLOBAL/LNG segment의 `types`는 `FundamentalModelDataType` 값이며, `granularities`는 `MONTHLY`, `YEARLY`를 반환한다.
-- GLOBAL/LNG segment의 `periods`는 Volumes 결과 bucket의 `periodKeys` 기준으로 반환한다.
+- Region은 `FundamentalModelRegion` enum 순서, 각 Region의 Country는 `label` 오름차순으로 반환한다.
 - 항상 GLOBAL → LNG → TRADE 순서로 반환한다.
 - `caseId`가 `COMPLETED` 상태가 아니면 결과 조회 API와 동일하게 `409 BIZ_RULE_VIOLATION`으로 응답한다.
 
@@ -498,6 +504,7 @@ Reset API 포함 판단:
 | `segment` | `FundamentalModelSegment` | Y | — | `GLOBAL` \| `LNG`. `TRADE`는 허용하지 않는다 |
 | `types` | `FundamentalModelDataType[]` | N | segment별 전체 | 쉼표 구분 다중값. 미전달 시 segment별 허용 Type 전체 포함. `GLOBAL`: `DEMAND`, `PRODUCTION`, `LNG_IMPORTS`, `LNG_EXPORTS`, `PIPELINE_IMPORTS`, `PIPELINE_EXPORTS`; `LNG`: `LNG_IMPORTS`, `LNG_EXPORTS` |
 | `regions` | `FundamentalModelRegion[]` | N | 전체 | 쉼표 구분 다중값. 미전달 시 전체 포함. `ASIA`, `EUROPE`, `NORTH_AMERICA`, `MIDDLE_EAST`, `AUSTRALIA`, `RUSSIA`, `AFRICA`, `SOUTH_AMERICA` |
+| `countryKeys` | `String[]` | N | 전체 | Country 식별자 다중값. `COUNTRY:{REGION}:{country}` 형식이며 filter-options의 `regions[].countries[].value`를 전달한다 |
 | `granularity` | `FundamentalModelGranularity` | N | `MONTHLY` | `MONTHLY` \| `YEARLY` |
 | `periods` | `String[]` | N | 전체 | 선택 기간. `granularity=YEARLY`이면 `yyyy`, `granularity=MONTHLY`이면 `yyyy-MM` 형식의 쉼표 구분 다중값 |
 
@@ -505,10 +512,15 @@ Reset API 포함 판단:
 
 - `caseId`에 해당하는 case가 `COMPLETED` 상태여야 한다. `PENDING` 또는 `RUNNING`이면 `409 BIZ_RULE_VIOLATION`, `FAILED` 또는 soft-deleted이면 `404 RSC_NOT_FOUND`로 응답한다.
 - `segment=TRADE`가 전달되면 `400 REQ_INVALID_PARAMETER`로 응답한다. Trade Flows 조회는 `GET /{caseId}/volumes/trade`를 사용한다.
-- `types`, `regions` 모두 미전달 시 segment별 허용 Type과 전체 Region 데이터를 반환한다.
+- `types`, `regions`, `countryKeys` 모두 미전달 시 segment별 허용 Type과 전체 Region/Country 데이터를 반환한다.
+- `regions`와 `countryKeys`를 함께 전달하면 AND 조건으로 적용한다. 즉 선택 Region 안에서 선택 Country만 조회한다.
+- `countryKeys`만 전달하면 key에서 Region을 추출해 `regions`를 자동 적용한다. 응답 `appliedFilters.regions`에는 추출된 Region 목록을 반환한다.
+- `countryKeys`는 대소문자를 포함한 exact match이며 형식이 잘못되거나 Region enum이 유효하지 않으면 `400 REQ_INVALID_PARAMETER`로 응답한다. 형식은 유효하지만 최신 완료 run 결과에 없는 key이면 오류가 아니라 빈 결과를 반환한다.
+- `countryKeys`의 null/빈 목록은 미전달과 같고, 중복 key는 첫 등장 순서를 유지해 제거한다. 응답 `appliedFilters.countryKeys`에는 이 정규화된 요청값을 반환한다.
 - `segment=LNG`에서 `DEMAND`, `PRODUCTION`, `PIPELINE_IMPORTS`, `PIPELINE_EXPORTS`가 `types`로 전달되면 `400 REQ_INVALID_PARAMETER`로 응답한다.
-- `REGION_SUBTOTAL` 행은 선택된 Region별 subtotal을 나타낸다.
-- `TYPE_TOTAL` 행은 선택된 Region들의 `REGION_SUBTOTAL` 값을 합산한 Type별 total을 나타낸다. 모든 Region이 선택되면 전체 Region 기준 Type total과 같다.
+- `countryKeys`가 전달되면 선택된 Country의 `COUNTRY` 행만 반환한다. 각 `REGION_SUBTOTAL`은 해당 Region에서 선택된 Country 값의 합, `TYPE_TOTAL`은 선택된 모든 Country 값의 합으로 다시 계산한다.
+- Country 필터 subtotal/total은 원본 `COUNTRY` 숫자를 `BigDecimal`로 합산한 뒤 응답 경계에서 한 번만 소수 다섯째 자리까지 0 방향 절삭한다. leaf 값을 먼저 절삭한 뒤 합산하지 않는다.
+- `countryKeys`가 전달되지 않으면 `REGION_SUBTOTAL` 행은 선택된 Region별 원본 subtotal을, `TYPE_TOTAL` 행은 선택된 Region들의 `REGION_SUBTOTAL` 합을 나타낸다.
 - FE는 `rows`를 응답 순서 그대로 렌더링할 수 있다. 서버는 각 Type 안에서 Region별로 `REGION_SUBTOTAL` 행을 먼저 반환하고, 이어서 해당 Region의 `COUNTRY` 행들을 반환한다. Type의 마지막 행은 `TYPE_TOTAL`이다.
 - `granularity=YEARLY`이면 월별 데이터를 연간으로 집계해 반환한다. columns의 `month` 필드는 `null`이 된다.
 - `granularity=MONTHLY`이면 columns의 `month` 필드는 1~12 정수다.
@@ -516,7 +528,7 @@ Reset API 포함 판단:
 - 선택 기간이 실제 result data에 없으면 에러가 아니라 `200 OK`로 응답하고 `columns=[]`, `rows=[]`를 반환한다.
 - `periods` 값이 granularity별 형식과 맞지 않으면 `400 REQ_INVALID_PARAMETER`로 응답한다.
 - 조회 조건에 매칭되는 실제 result row가 없으면 에러가 아니라 `200 OK`로 응답하고 `columns=[]`, `rows=[]`를 반환한다.
-- 1차 mock에서는 json seed 파일 기반 고정 데이터를 반환한다. 필터는 mock 데이터 내에서 적용한다.
+- latest completed run의 Volumes result row를 조회하고 application layer에서 필터·subtotal·total을 계산한다.
 
 ### 3.12 Price 데이터 조회
 
@@ -556,22 +568,27 @@ Reset API 포함 판단:
 | `selector` | `TradeFlowSelector` | Y | — | `LNG` \| `PNG` |
 | `year` | `Integer` | Y | — | 조회 연도. 2023~2030 범위 |
 | `unit` | `TradeFlowUnit` | N | `MTPA` | `MTPA` \| `BCM` |
-| `types` | `TradeFlowDirection[]` | N | 전체 | `TO_COUNTRY` \| `FROM_COUNTRY`. 미전달 시 전체. 지역 필터 적용 방향을 결정한다 |
+| `types` | `TradeFlowDirection[]` | N | 전체 | `TO_COUNTRY` \| `FROM_COUNTRY`. 미전달 시 전체. Region/Country 필터 적용 방향을 결정한다 |
 | `regions` | `FundamentalModelRegion[]` | N | 전체 | 쉼표 구분 다중값. 미전달 시 전체 포함 |
+| `countryKeys` | `String[]` | N | 전체 | Country 식별자 다중값. `COUNTRY:{REGION}:{country}` 형식이며 filter-options의 `regions[].countries[].value`를 전달한다 |
 
 규칙:
 
 - `caseId`에 해당하는 case가 `COMPLETED` 상태여야 한다. 상태 조건은 §3.10과 동일하다.
 - `selector`, `year`는 필수다. 미전달 시 `400 REQ_INVALID_PARAMETER`.
 - `year`가 2023~2030 범위 밖이면 `400 REQ_INVALID_PARAMETER`.
-- `types`와 `regions`를 함께 전달하면 direction에 따라 fromCountries/toCountries 헤더와 flows를 필터링한다.
-  - `types=TO_COUNTRY` + `regions=ASIA`: toCountries를 ASIA로 축소, fromCountries는 전체 유지
-  - `types=FROM_COUNTRY` + `regions=ASIA`: fromCountries를 ASIA로 축소, toCountries는 전체 유지
-  - `types=TO_COUNTRY,FROM_COUNTRY` + `regions=ASIA`: 양방향 모두 ASIA로 축소
-- `toRegion=null`인 Total 행 flows는 region 필터와 무관하게 항상 포함된다.
+- `regions`와 `countryKeys`의 조합 및 validation은 §3.11과 동일하다. 두 값이 함께 전달되면 AND 조건이며, `countryKeys`만 전달하면 key에서 Region을 추출한다.
+- `types`는 Region/Country 필터를 적용할 방향을 결정한다.
+  - `types=TO_COUNTRY`이면 To 축만 선택 Region/Country로 축소하고 From 축은 전체 유지한다.
+  - `types=FROM_COUNTRY`이면 From 축만 선택 Region/Country로 축소하고 To 축은 전체 유지한다.
+  - `types=TO_COUNTRY,FROM_COUNTRY`이거나 미전달이면 동일한 Region/Country 선택 목록을 양쪽 축에 각각 적용한다.
+- 방향별 Country 목록은 따로 받지 않는다. 따라서 `FROM_COUNTRY`, `TO_COUNTRY`를 함께 선택한 요청에서 “From은 Angola, To는 Japan”처럼 서로 다른 Country 조건을 지정할 수 없다.
+- Country 필터가 적용된 방향은 선택된 `COUNTRY` header만 반환하고 해당 방향의 원본 `REGION_SUBTOTAL` header/flow는 제외한다.
+- `TOTAL` header/flow는 응답 축의 마지막에 유지한다. Country 필터가 한 방향이라도 적용되면 저장된 집계 flow를 재사용하지 않고 필터 후 남은 Country-to-Country leaf flow로 응답에 남은 Region subtotal과 Total을 다시 계산한다.
+- Country 필터 subtotal/total은 원본 Country-to-Country leaf 숫자를 `BigDecimal`로 합산한 뒤 응답 경계에서 한 번만 소수 다섯째 자리까지 0 방향 절삭한다. 응답용으로 절삭된 leaf 값을 재합산하지 않는다.
 - flows는 0이 아닌 값만 포함한다 (sparse). fromCountries × toCountries 매트릭스에서 값이 없는 셀은 프론트가 0(또는 `-`)으로 처리한다.
 - 조회 조건에 매칭되는 실제 trade result row가 없으면 에러가 아니라 `200 OK`로 응답하고 `fromCountries=[]`, `toCountries=[]`, `flows=[]`를 반환한다. header는 있으나 flow row만 없으면 header는 반환하고 `flows=[]`로 응답한다.
-- 1차 mock에서는 json seed 파일 기반 고정 데이터를 반환한다. `selector`/`year` 값은 응답에 echo하며 필터는 seed 데이터 내에서 적용한다.
+- latest completed run의 Trade header/flow row를 조회하고 `selector`/`year` 및 선택 필터를 적용한다.
 
 ## 4. Response DTO Draft
 
@@ -846,7 +863,9 @@ FE는 `latestRun.startedAt`과 `latestRun.finishedAt`으로 소요시간을 계�
   "unit": "MTPA",
   "appliedFilters": {
     "types": ["DEMAND", "PRODUCTION"],
-    "regions": ["ASIA", "EUROPE"]
+    "regions": ["ASIA"],
+    "countryKeys": ["COUNTRY:ASIA:China", "COUNTRY:ASIA:Japan"],
+    "periods": []
   },
   "columns": [
     { "key": "2026-01", "label": "26-01", "year": 2026, "month": 1 },
@@ -909,6 +928,7 @@ FE는 `latestRun.startedAt`과 `latestRun.finishedAt`으로 소요시간을 계�
 |---|---|---|
 | `types` | `List<FundamentalModelDataType>` | 실제 적용된 type 목록 |
 | `regions` | `List<FundamentalModelRegion>` | 실제 적용된 region 목록 |
+| `countryKeys` | `List<String>` | 실제 적용된 Country key 목록. 미전달 시 빈 배열이며 선택 Region의 전체 Country가 적용됨 |
 | `periods` | `List<String>` | 요청으로 선택한 기간. 미전달 시 빈 배열이며 전체 기간이 적용됨 |
 
 **`VolumesColumn`:**
@@ -930,7 +950,7 @@ FE는 `latestRun.startedAt`과 `latestRun.finishedAt`으로 소요시간을 계�
 | `country` | `String` | 국가명. `rowKind=REGION_SUBTOTAL` 또는 `TYPE_TOTAL`이면 `null` |
 | `rowKind` | `VolumesRowKind` | `COUNTRY` \| `REGION_SUBTOTAL` \| `TYPE_TOTAL` |
 | `rowLabel` | `String` | 행 화면 표시명. `REGION_SUBTOTAL`이면 지역 label, `COUNTRY`이면 국가명, `TYPE_TOTAL`이면 `Total` |
-| `values` | `Map<String, Double>` | column key별 수치 map. key는 `columns[].key`와 동일하며 FE는 `row.values[column.key]`로 조회한다. JSON number로 반환하며 원천값과 `TYPE_TOTAL`은 소수 다섯째 자리까지 0 방향 절삭한다. |
+| `values` | `Map<String, Double>` | column key별 수치 map. key는 `columns[].key`와 동일하며 FE는 `row.values[column.key]`로 조회한다. JSON number로 반환하며 각 원천값과 합계 결과를 소수 다섯째 자리까지 0 방향 절삭한다. Country 필터 합계는 원본 leaf 합산 후 한 번만 절삭한다. |
 
 표시용 text는 `typeLabel`, `rowLabel`을 사용한다. `type`, `region`, `country`, `rowKind`는 필터/집계/스타일 분기용 canonical code 필드로 유지한다. Rowspan은 응답 순서에서 연속된 동일 `type` 구간을 기준으로 FE가 계산한다.
 
@@ -963,6 +983,8 @@ FE는 `latestRun.startedAt`과 `latestRun.finishedAt`으로 소요시간을 계�
 
 ### 4.12 `FundamentalModelVolumesFilterOptionsRes`
 
+아래는 `?caseId=106&selector=LNG&year=2026` 호출 예시다. TRADE의 Region/Country는 이 selector/year의 From/To 합집합이다.
+
 ```json
 {
   "segments": [
@@ -977,14 +999,14 @@ FE는 `latestRun.startedAt`과 `latestRun.finishedAt`으로 소요시간을 계�
         { "value": "PIPELINE_EXPORTS", "label": "Pipeline Exports" }
       ],
       "regions": [
-        { "value": "ASIA",          "label": "Asia" },
-        { "value": "EUROPE",        "label": "Europe" },
-        { "value": "NORTH_AMERICA", "label": "North America" },
-        { "value": "MIDDLE_EAST",   "label": "Middle East" },
-        { "value": "AUSTRALIA",     "label": "Australia" },
-        { "value": "RUSSIA",        "label": "Russia" },
-        { "value": "AFRICA",        "label": "Africa" },
-        { "value": "SOUTH_AMERICA", "label": "South America" }
+        {
+          "value": "ASIA",
+          "label": "Asia",
+          "countries": [
+            { "value": "COUNTRY:ASIA:China", "label": "China" },
+            { "value": "COUNTRY:ASIA:Japan", "label": "Japan" }
+          ]
+        }
       ],
       "granularities": [
         { "value": "MONTHLY", "label": "Monthly" },
@@ -1005,11 +1027,24 @@ FE는 `latestRun.startedAt`과 `latestRun.finishedAt`으로 소요시간을 계�
         { "value": "LNG_IMPORTS", "label": "LNG Imports" },
         { "value": "LNG_EXPORTS", "label": "LNG Exports" }
       ],
-      "regions": [ "/* 동일 */" ],
+      "regions": [
+        {
+          "value": "ASIA",
+          "label": "Asia",
+          "countries": [
+            { "value": "COUNTRY:ASIA:China", "label": "China" },
+            { "value": "COUNTRY:ASIA:Japan", "label": "Japan" }
+          ]
+        }
+      ],
       "granularities": [
         { "value": "MONTHLY", "label": "Monthly" },
         { "value": "YEARLY",  "label": "Yearly" }
-      ]
+      ],
+      "periods": {
+        "yearly": [{ "value": "2026", "label": "2026" }],
+        "monthly": [{ "value": "2026-01", "label": "Jan" }]
+      }
     },
     {
       "segment": "TRADE",
@@ -1017,7 +1052,16 @@ FE는 `latestRun.startedAt`과 `latestRun.finishedAt`으로 소요시간을 계�
         { "value": "TO_COUNTRY",   "label": "To country" },
         { "value": "FROM_COUNTRY", "label": "From country" }
       ],
-      "regions": [ "/* 동일 */" ],
+      "regions": [
+        {
+          "value": "ASIA",
+          "label": "Asia",
+          "countries": [
+            { "value": "COUNTRY:ASIA:China", "label": "China" },
+            { "value": "COUNTRY:ASIA:Japan", "label": "Japan" }
+          ]
+        }
+      ],
       "granularities": [],
       "periods": {
         "yearly": [],
@@ -1038,9 +1082,17 @@ FE는 `latestRun.startedAt`과 `latestRun.finishedAt`으로 소요시간을 계�
 |---|---|---|
 | `segment` | `FundamentalModelSegment` | 탭 구분자 |
 | `types` | `List<FilterOption>` | 해당 segment에서 선택 가능한 type 목록. TRADE는 `TradeFlowDirection` 값 |
-| `regions` | `List<FilterOption>` | 선택 가능한 region 목록. 모든 segment 동일 |
+| `regions` | `List<RegionFilterOption>` | 선택 가능한 Region과 하위 Country 목록. `caseId`가 있으면 segment별 실제 데이터 기준이므로 서로 다를 수 있음 |
 | `granularities` | `List<FilterOption>` | 선택 가능한 granularity 목록. TRADE는 빈 배열 |
 | `periods` | `FundamentalModelPeriodFilterOptions` | 해당 segment의 Volumes 결과에 실제 존재하는 연/월 기간 옵션. TRADE 또는 `caseId` 미전달 시 빈 배열 |
+
+**`RegionFilterOption`:**
+
+| 필드 | 타입 | 설명 |
+|---|---|---|
+| `value` | `String` | Region API 값. `FundamentalModelRegion` 이름과 동일 (예: `ASIA`) |
+| `label` | `String` | Region 화면 표시명 (예: `Asia`) |
+| `countries` | `List<FilterOption>` | 해당 Region 아래 선택 가능한 Country. Country의 `value`는 `COUNTRY:{REGION}:{country}` 형식. 실제 데이터 범위가 없으면 빈 배열 |
 
 **`FundamentalModelPeriodFilterOptions`:**
 
@@ -1167,26 +1219,28 @@ FE는 `latestRun.startedAt`과 `latestRun.finishedAt`으로 소요시간을 계�
   "year": 2026,
   "unit": "MTPA",
   "appliedFilters": {
-    "types": ["TO_COUNTRY", "FROM_COUNTRY"],
-    "regions": ["ASIA", "AFRICA"]
+    "types": ["TO_COUNTRY"],
+    "regions": ["ASIA"],
+    "countryKeys": ["COUNTRY:ASIA:Bangladesh"]
   },
   "fromCountries": [
     { "key": "REGION:AFRICA", "label": "Africa", "kind": "REGION_SUBTOTAL", "region": "AFRICA", "country": null },
     { "key": "COUNTRY:AFRICA:Angola", "label": "Angola", "kind": "COUNTRY", "region": "AFRICA", "country": "Angola" },
     { "key": "REGION:NORTH_AMERICA", "label": "America N", "kind": "REGION_SUBTOTAL", "region": "NORTH_AMERICA", "country": null },
-    { "key": "COUNTRY:NORTH_AMERICA:United States", "label": "United States", "kind": "COUNTRY", "region": "NORTH_AMERICA", "country": "United States" }
+    { "key": "COUNTRY:NORTH_AMERICA:United States", "label": "United States", "kind": "COUNTRY", "region": "NORTH_AMERICA", "country": "United States" },
+    { "key": "TOTAL", "label": "Total", "kind": "GRAND_TOTAL", "region": null, "country": "Total" }
   ],
   "toCountries": [
-    { "key": "REGION:AFRICA", "label": "Africa", "kind": "REGION_SUBTOTAL", "region": "AFRICA", "country": null },
-    { "key": "COUNTRY:AFRICA:Senegal", "label": "Senegal", "kind": "COUNTRY", "region": "AFRICA", "country": "Senegal" },
-    { "key": "REGION:ASIA", "label": "Asia", "kind": "REGION_SUBTOTAL", "region": "ASIA", "country": null },
     { "key": "COUNTRY:ASIA:Bangladesh", "label": "Bangladesh", "kind": "COUNTRY", "region": "ASIA", "country": "Bangladesh" },
     { "key": "TOTAL", "label": "Total", "kind": "GRAND_TOTAL", "region": null, "country": "Total" }
   ],
   "flows": [
     { "fromKey": "COUNTRY:AFRICA:Angola", "toKey": "COUNTRY:ASIA:Bangladesh", "fromRegion": "AFRICA", "fromCountry": "Angola", "toRegion": "ASIA", "toCountry": "Bangladesh", "value": 0.2894 },
     { "fromKey": "COUNTRY:NORTH_AMERICA:United States", "toKey": "COUNTRY:ASIA:Bangladesh", "fromRegion": "NORTH_AMERICA", "fromCountry": "United States", "toRegion": "ASIA", "toCountry": "Bangladesh", "value": 0.4780 },
-    { "fromKey": "COUNTRY:AFRICA:Angola", "toKey": "TOTAL", "fromRegion": "AFRICA", "fromCountry": "Angola", "toRegion": null, "toCountry": "Total", "value": 0.2894 }
+    { "fromKey": "TOTAL", "toKey": "COUNTRY:ASIA:Bangladesh", "fromRegion": null, "fromCountry": "Total", "toRegion": "ASIA", "toCountry": "Bangladesh", "value": 0.7674 },
+    { "fromKey": "COUNTRY:AFRICA:Angola", "toKey": "TOTAL", "fromRegion": "AFRICA", "fromCountry": "Angola", "toRegion": null, "toCountry": "Total", "value": 0.2894 },
+    { "fromKey": "COUNTRY:NORTH_AMERICA:United States", "toKey": "TOTAL", "fromRegion": "NORTH_AMERICA", "fromCountry": "United States", "toRegion": null, "toCountry": "Total", "value": 0.4780 },
+    { "fromKey": "TOTAL", "toKey": "TOTAL", "fromRegion": null, "fromCountry": "Total", "toRegion": null, "toCountry": "Total", "value": 0.7674 }
   ]
 }
 ```
@@ -1198,9 +1252,17 @@ FE는 `latestRun.startedAt`과 `latestRun.finishedAt`으로 소요시간을 계�
 | `year` | `Integer` | 조회 연도 |
 | `unit` | `TradeFlowUnit` | 조회한 수치 단위 |
 | `appliedFilters` | `TradeFlowsAppliedFilters` | 실제 적용된 필터. 미전달 시 전체 enum 목록 |
-| `fromCountries` | `List<TradeCountryHeader>` | From country 축 헤더 목록 (컬럼). 필터 적용 후 순서 보장 |
-| `toCountries` | `List<TradeCountryHeader>` | To country 축 헤더 목록 (행). 마지막 항목은 Total(`region=null`) |
+| `fromCountries` | `List<TradeCountryHeader>` | From country 축 헤더 목록 (컬럼). 필터 적용 후 순서 보장, 마지막 항목은 Total |
+| `toCountries` | `List<TradeCountryHeader>` | To country 축 헤더 목록 (행). 필터 적용 후 순서 보장, 마지막 항목은 Total |
 | `flows` | `List<TradeFlowItem>` | 0이 아닌 trade flow 값 목록 (sparse). 매트릭스에서 없는 셀은 0으로 처리 |
+
+**`TradeFlowsAppliedFilters`:**
+
+| 필드 | 타입 | 설명 |
+|---|---|---|
+| `types` | `List<TradeFlowDirection>` | Region/Country 필터를 실제 적용한 방향 목록 |
+| `regions` | `List<FundamentalModelRegion>` | 실제 적용된 Region 목록. `countryKeys`만 전달하면 key에서 추출된 Region 목록 |
+| `countryKeys` | `List<String>` | 실제 적용된 Country key 목록. 미전달 시 빈 배열이며 선택 Region의 전체 Country가 적용됨 |
 
 **`TradeCountryHeader`:**
 
@@ -1215,8 +1277,9 @@ FE는 `latestRun.startedAt`과 `latestRun.finishedAt`으로 소요시간을 계�
 프론트 렌더링 규칙:
 - `kind == "REGION_SUBTOTAL"` → **볼드** 지역 집계 행/열 (예: "Africa")
 - `kind == "COUNTRY"` → 개별 국가 행/열 (예: "Angola")
-- `kind == "GRAND_TOTAL"` → Total 합계 행 (항상 toCountries 마지막)
+- `kind == "GRAND_TOTAL"` → Total 합계 행/열 (항상 각 축 마지막)
 - 셀 lookup은 `flows`를 `(fromKey, toKey)` 기준으로 map 구성하고, 누락 셀은 0으로 처리한다
+- `GRAND_TOTAL`은 `COUNTRY` flow만 합산한다. `REGION_SUBTOTAL` flow를 다시 더해 중복 집계하지 않는다
 
 **`TradeFlowItem`:**
 
@@ -1228,7 +1291,7 @@ FE는 `latestRun.startedAt`과 `latestRun.finishedAt`으로 소요시간을 계�
 | `fromCountry` | `String` | 수출 국가. `null`이면 지역 집계 |
 | `toRegion` | `FundamentalModelRegion` | 수입 지역. `null`이면 Total 행 |
 | `toCountry` | `String` | 수입 국가. `null`이면 지역 집계. `"Total"`이면 Total 합계 행 |
-| `value` | `Double` | 물량. JSON number로 반환하며 소수점 다섯째 자리까지 0 방향 절삭하고, 여섯째 자리에서 반올림하지 않는다 |
+| `value` | `Double` | 물량. JSON number로 반환하며 소수점 다섯째 자리까지 0 방향 절삭하고, 여섯째 자리에서 반올림하지 않는다. Country 필터 합계는 원본 leaf 합산 후 한 번만 절삭한다 |
 
 **신규 enum:**
 
@@ -1262,10 +1325,13 @@ FE는 `latestRun.startedAt`과 `latestRun.finishedAt`으로 소요시간을 계�
 | Volumes 조회 시 `segment` 누락 | `400` | `REQ_INVALID_PARAMETER` | Volumes는 segment 필수 |
 | Volumes 조회 시 `segment=TRADE` 전달 | `400` | `REQ_INVALID_PARAMETER` | Trade Flows는 `/volumes/trade` 엔드포인트를 사용 |
 | Volumes 조회 시 `types`/`regions`/`segment`가 허용값 외 문자열 | `400` | `REQ_INVALID_PARAMETER` | enum 변환 실패 |
+| filter-options에서 `selector`/`year` 중 하나만 전달하거나 `caseId` 없이 전달 | `400` | `REQ_INVALID_PARAMETER` | TRADE 데이터 범위는 세 값을 함께 전달해야 함 |
+| filter-options 또는 Trade Flows 조회 시 `year`가 2023~2030 범위 밖 | `400` | `REQ_INVALID_PARAMETER` | 허용 연도 초과 |
+| Volumes/Trade Flows 조회 시 `countryKeys` 형식 또는 포함 Region이 유효하지 않음 | `400` | `REQ_INVALID_PARAMETER` | `COUNTRY:{REGION}:{country}` 형식 검증 실패 |
+| Volumes/Trade Flows 조회 시 형식은 유효하지만 결과에 없는 `countryKeys` 전달 | `200` | `SUC-000` | 정상 빈 결과 반환 |
 | Volumes/Price 조회 시 case가 `PENDING` 또는 `RUNNING` 상태 | `409` 권장 | `BIZ_RULE_VIOLATION` | 결과 데이터가 아직 준비되지 않은 상태 |
 | Volumes/Price 조회 시 case가 `FAILED` 상태 | `404` | `RSC_NOT_FOUND` | 실행 실패로 결과 없음 |
 | Trade Flows 조회 시 `selector` 또는 `year` 누락 | `400` | `REQ_INVALID_PARAMETER` | 두 파라미터 모두 필수 |
-| Trade Flows 조회 시 `year`가 2023~2030 범위 밖 | `400` | `REQ_INVALID_PARAMETER` | 허용 연도 초과 |
 | Trade Flows 조회 시 case가 `PENDING` 또는 `RUNNING` 상태 | `409` 권장 | `BIZ_RULE_VIOLATION` | Volumes와 동일 |
 | Trade Flows 조회 시 case가 `FAILED` 상태 | `404` | `RSC_NOT_FOUND` | Volumes와 동일 |
 | 인증 없음 | `401` | `AUTH_REQUIRED` 또는 `AUTH_TOKEN_INVALID` | 기존 security handler 따름 |
@@ -1346,13 +1412,18 @@ Swagger 문서에는 다음을 명시한다.
 - 삭제 API는 physical delete가 아니라 soft delete이며, 삭제된 case는 이후 active-resource API에서 `404 RSC_NOT_FOUND`로 취급한다.
 - 실행 요청은 `RUNNING` 상태에서 중복 접수를 차단한다.
 - 상태 조회는 case 기준 polling용 경량 projection이며 `PENDING` case는 `latestRun = null`이다. 상세 조회와 달리 file metadata를 반환하지 않는다.
-- Volumes 조회는 `COMPLETED` case에만 가능하다. `segment`(`GLOBAL`|`LNG`) 필수, `TRADE` 전달 시 400. `types`/`regions` 미전달 시 전체 반환, `granularity` 기본값 `MONTHLY`.
-- Trade Flows 조회는 `COMPLETED` case에만 가능하다. `selector`/`year` 필수, `unit` 기본값 `MTPA`. fromCountries/toCountries 헤더 배열과 sparse flows 배열로 응답한다. `toRegion=null`인 Total 행은 항상 포함된다.
+- Volumes filter-options는 `caseId`가 있으면 최신 완료 run의 실제 Region/Country/기간만 반환한다. TRADE는 `selector`와 `year`를 함께 전달한 현재 데이터 범위에서 From/To Region/Country 합집합을 반환하며, `regions[].countries[]` 중첩 구조를 사용한다.
+- Volumes 조회는 `COMPLETED` case에만 가능하다. `segment`(`GLOBAL`|`LNG`) 필수, `TRADE` 전달 시 400. `types`/`regions`/`countryKeys` 미전달 시 전체 반환, `granularity` 기본값 `MONTHLY`. Country 선택 시 Region/Type subtotal을 선택 결과로 재계산한다.
+- Trade Flows 조회는 `COMPLETED` case에만 가능하다. `selector`/`year` 필수, `unit` 기본값 `MTPA`. `types`가 지정한 방향에 동일한 `regions`/`countryKeys`를 적용하고, Country 선택 시 subtotal/total을 선택 결과로 재계산한다.
+- filter-options의 `selector`/`year`에는 함께 전달해야 하는 조건과 연도 범위를 `@Parameter`로 명시한다. Volumes/Trade의 `countryKeys`에는 `COUNTRY:ASIA:Japan` 예시, exact-match 의미, `regions`와의 AND 조건을 명시한다.
+- `RegionFilterOption.countries`와 두 결과 DTO의 `appliedFilters.countryKeys`에는 빈 배열의 의미를 `@Schema`로 명시한다.
 - Price 조회는 `COMPLETED` case에만 가능하다. 쿼리 파라미터 없음. 차트 + Annual 테이블 + Monthly 테이블을 단일 응답으로 반환한다.
 - reset API는 mock 설정 flag (`mi.fundamental-model.mock.fundamental-model-cases.api.reset`) 로 활성화한다. 운영 배포에서는 flag 를 `false` 로 두어 사용을 차단한다.
 - callback API는 외부 모델 전용이며 FE가 직접 호출하지 않는다.
 
 ## 7. Data / Model Impact
+
+Region/Country 필터 확장은 기존 Volumes result row와 Trade header/flow를 조회해 응답을 조립하므로 schema/DDL 변경이 없다. Country의 별도 master code를 추가하지 않고 기존 결과의 `region`과 `country`로 `COUNTRY:{REGION}:{country}` key를 만든다. 기존 repository 조회와 application-level 필터/합계 계산을 확장하는 범위이며 별도 ERD review는 필요하지 않다.
 
 ### 7.1 1st Mock Implementation (superseded by real DB implementation, 2026-06-05 ~ 2026-06-19)
 
@@ -1737,6 +1808,15 @@ phase 1 mock 시연 동선:
    - `runId` 는 path 식별자이므로 payload 비교 키에 포함하지 않는다.
 9. timeout 등으로 이미 `FAILED` 처리된 run에 늦은 `COMPLETED` callback이 오면 상태를 되돌리지 않는다. 외부 모델 재시도 폭주를 막기 위해 `200 OK` no-op과 late callback 로그를 권장한다.
 10. callback 처리 안에서는 결과 payload materialization이나 파일 다운로드 처리를 수행하지 않는다.
+
+### Volumes Filter Options Query
+
+1. `caseId`가 없으면 정적 type/Region/granularity를 반환한다. 각 Region의 `countries`와 모든 `periods`는 빈 배열이다.
+2. `caseId`가 있으면 active `COMPLETED` case의 최신 완료 run을 조회한다.
+3. GLOBAL/LNG는 해당 segment의 MONTHLY/YEARLY result row 합집합으로 Region/Country를 만들고, 각 granularity의 `periodKeys`로 기간 옵션을 만든다.
+4. TRADE는 `selector`와 `year`가 함께 있을 때 해당 header의 From/To Region/Country 합집합을 만든다. 두 값이 없으면 정적 Region과 빈 Country 목록을 반환한다.
+5. `selector`/`year`의 일부만 있거나 `caseId` 없이 둘을 전달하면 `400 REQ_INVALID_PARAMETER`로 응답한다.
+6. Region은 enum 순서, Country는 label 오름차순으로 정렬하며 중복 key는 제거한다.
 
 ### Volumes Data Query
 

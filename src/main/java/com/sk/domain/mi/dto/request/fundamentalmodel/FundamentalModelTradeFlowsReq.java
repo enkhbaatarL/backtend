@@ -23,7 +23,13 @@ public record FundamentalModelTradeFlowsReq(
     List<TradeFlowDirection> types,
 
     @ArraySchema(schema = @Schema(implementation = FundamentalModelRegion.class, example = "ASIA"))
-    List<FundamentalModelRegion> regions
+    List<FundamentalModelRegion> regions,
+
+    @ArraySchema(schema = @Schema(
+        description = "Country 식별자. COUNTRY:{REGION}:{country} 형식이며 regions와 함께 전달하면 AND 조건입니다.",
+        example = "COUNTRY:ASIA:Japan"
+    ))
+    List<String> countryKeys
 
 ) {
 }

@@ -30,6 +30,7 @@ import com.sk.domain.mi.dto.response.fundamentalmodel.FundamentalModelRunStatusR
 import com.sk.domain.mi.dto.response.fundamentalmodel.FundamentalModelTradeFlowsRes;
 import com.sk.domain.mi.dto.response.fundamentalmodel.FundamentalModelVolumesFilterOptionsRes;
 import com.sk.domain.mi.dto.response.fundamentalmodel.FundamentalModelVolumesRes;
+import com.sk.domain.mi.dto.response.fundamentalmodel.RegionFilterOption;
 import com.sk.domain.mi.dto.response.fundamentalmodel.VolumesSegmentFilterOptions;
 import com.sk.domain.shared.entity.master.tcm.UploadedFile;
 import com.sk.domain.shared.entity.master.tmd.ScenarioCase;
@@ -74,8 +75,10 @@ import java.time.format.DateTimeFormatter;
 import java.time.format.TextStyle;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Comparator;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -83,6 +86,7 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
+import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
@@ -122,6 +126,7 @@ public class FundamentalModelCaseServiceImpl implements FundamentalModelCaseServ
     private static final String TRADE_FLOW_AXIS_FROM = "FROM";
     private static final String TRADE_FLOW_AXIS_TO = "TO";
     private static final String TRADE_FLOW_TOTAL_KEY = "TOTAL";
+    private static final String COUNTRY_KEY_PREFIX = "COUNTRY";
     private static final String TOTAL_LABEL = "Total";
     private static final List<FundamentalModelPriceRes.PriceColumn> ANNUAL_PRICE_COLUMNS = List.of(
         new FundamentalModelPriceRes.PriceColumn("year", "Year"),
@@ -348,23 +353,37 @@ public class FundamentalModelCaseServiceImpl implements FundamentalModelCaseServ
 
     @Override
     @Transactional(readOnly = true)
-    public FundamentalModelVolumesFilterOptionsRes getVolumesFilterOptions(Long caseId) {
-        List<FilterOption> allRegions = Arrays.stream(FundamentalModelRegion.values())
-            .map(r -> new FilterOption(r.getCode(), r.getLabel()))
-            .toList();
+    public FundamentalModelVolumesFilterOptionsRes getVolumesFilterOptions(
+        Long caseId,
+        TradeFlowSelector selector,
+        Integer year
+    ) {
+        validateVolumesFilterOptionsRequest(caseId, selector, year);
+        List<RegionFilterOption> fallbackRegions = allRegionFilterOptions();
         List<FilterOption> granularities = Arrays.stream(FundamentalModelGranularity.values())
             .map(g -> new FilterOption(g.getCode(), g.getLabel()))
             .toList();
-        ScenarioCaseRunHistory latestRunHistory = caseId == null ? null : findCompletedLatestRunHistory(findCompletedCaseForResultQuery(caseId));
+        ScenarioCaseRunHistory latestRunHistory = caseId == null
+            ? null
+            : findCompletedLatestRunHistory(findCompletedCaseForResultQuery(caseId));
+        VolumeSegmentDataOptions globalDataOptions = latestRunHistory == null
+            ? new VolumeSegmentDataOptions(fallbackRegions, FundamentalModelPeriodFilterOptions.empty())
+            : findVolumeSegmentDataOptions(latestRunHistory.getRunSeq(), FundamentalModelSegment.GLOBAL);
+        VolumeSegmentDataOptions lngDataOptions = latestRunHistory == null
+            ? new VolumeSegmentDataOptions(fallbackRegions, FundamentalModelPeriodFilterOptions.empty())
+            : findVolumeSegmentDataOptions(latestRunHistory.getRunSeq(), FundamentalModelSegment.LNG);
+        List<RegionFilterOption> tradeRegions = latestRunHistory != null && selector != null
+            ? findTradeRegionOptions(latestRunHistory.getRunSeq(), selector, year)
+            : fallbackRegions;
 
         VolumesSegmentFilterOptions global = new VolumesSegmentFilterOptions(
             FundamentalModelSegment.GLOBAL,
             Arrays.stream(FundamentalModelDataType.values())
                 .map(t -> new FilterOption(t.getCode(), t.getLabel()))
                 .toList(),
-            allRegions,
+            globalDataOptions.regions(),
             granularities,
-            findVolumePeriodOptions(latestRunHistory, FundamentalModelSegment.GLOBAL)
+            globalDataOptions.periods()
         );
         VolumesSegmentFilterOptions lng = new VolumesSegmentFilterOptions(
             FundamentalModelSegment.LNG,
@@ -372,16 +391,16 @@ public class FundamentalModelCaseServiceImpl implements FundamentalModelCaseServ
                 new FilterOption(FundamentalModelDataType.LNG_IMPORTS.getCode(), FundamentalModelDataType.LNG_IMPORTS.getLabel()),
                 new FilterOption(FundamentalModelDataType.LNG_EXPORTS.getCode(), FundamentalModelDataType.LNG_EXPORTS.getLabel())
             ),
-            allRegions,
+            lngDataOptions.regions(),
             granularities,
-            findVolumePeriodOptions(latestRunHistory, FundamentalModelSegment.LNG)
+            lngDataOptions.periods()
         );
         VolumesSegmentFilterOptions trade = new VolumesSegmentFilterOptions(
             FundamentalModelSegment.TRADE,
             Arrays.stream(TradeFlowDirection.values())
                 .map(d -> new FilterOption(d.getCode(), d.getLabel()))
                 .toList(),
-            allRegions,
+            tradeRegions,
             List.of(),
             FundamentalModelPeriodFilterOptions.empty()
         );
@@ -389,43 +408,129 @@ public class FundamentalModelCaseServiceImpl implements FundamentalModelCaseServ
         return new FundamentalModelVolumesFilterOptionsRes(List.of(global, lng, trade));
     }
 
-    private FundamentalModelPeriodFilterOptions findVolumePeriodOptions(
-        ScenarioCaseRunHistory latestRunHistory,
+    private void validateVolumesFilterOptionsRequest(Long caseId, TradeFlowSelector selector, Integer year) {
+        if ((selector == null) != (year == null) || caseId == null && selector != null) {
+            throw AppErrorException.of(
+                ResultCode.Error.REQ_INVALID_PARAMETER,
+                "TRADE filter-options 조회에는 caseId, selector, year를 함께 전달해야 합니다."
+            );
+        }
+        if (year != null && (year < TRADE_FLOW_YEAR_MIN || year > TRADE_FLOW_YEAR_MAX)) {
+            throw AppErrorException.of(
+                ResultCode.Error.REQ_INVALID_PARAMETER,
+                "year는 %d~%d 범위여야 합니다.".formatted(TRADE_FLOW_YEAR_MIN, TRADE_FLOW_YEAR_MAX)
+            );
+        }
+    }
+
+    private List<RegionFilterOption> allRegionFilterOptions() {
+        return Arrays.stream(FundamentalModelRegion.values())
+            .map(region -> new RegionFilterOption(region.getCode(), region.getLabel(), List.of()))
+            .toList();
+    }
+
+    private VolumeSegmentDataOptions findVolumeSegmentDataOptions(
+        Long runSeq,
         FundamentalModelSegment segment
     ) {
-        if (latestRunHistory == null) {
-            return FundamentalModelPeriodFilterOptions.empty();
+        Map<FundamentalModelRegion, Set<String>> countriesByRegion = new LinkedHashMap<>();
+        Set<String> yearlyPeriodKeys = new HashSet<>();
+        Set<String> monthlyPeriodKeys = new HashSet<>();
+
+        for (FundamentalModelGranularity granularity : FundamentalModelGranularity.values()) {
+            String periodUnitSeparateCode = toPeriodUnitSeparateCode(granularity);
+            List<ScenarioCaseVolumeRegionBucketRow> bucketRows =
+                scenarioCaseVolumeRegionBucketRepository.findRowsByRunSeqAndFilters(
+                    runSeq,
+                    segment.getCode(),
+                    periodUnitSeparateCode,
+                    allowedVolumeTypes(segment).stream().map(FundamentalModelDataType::getCode).toList(),
+                    Arrays.stream(FundamentalModelRegion.values()).map(FundamentalModelRegion::getCode).toList()
+                );
+            if (bucketRows.isEmpty()) {
+                continue;
+            }
+            Map<VolumeBucketKey, ParsedVolumeBucket> buckets =
+                parseVolumeBuckets(segment, periodUnitSeparateCode, bucketRows);
+            Set<String> periodKeys = granularity == FundamentalModelGranularity.YEARLY
+                ? yearlyPeriodKeys
+                : monthlyPeriodKeys;
+            for (Map.Entry<VolumeBucketKey, ParsedVolumeBucket> entry : buckets.entrySet()) {
+                countriesByRegion.computeIfAbsent(entry.getKey().region(), ignored -> new HashSet<>());
+                entry.getValue().rows().stream()
+                    .filter(row -> row.rowKind() == VolumesRowKind.COUNTRY)
+                    .map(ParsedVolumeRow::country)
+                    .forEach(countriesByRegion.get(entry.getKey().region())::add);
+                periodKeys.addAll(entry.getValue().periodKeys());
+            }
         }
-        return new FundamentalModelPeriodFilterOptions(
-            findVolumePeriodOptions(latestRunHistory.getRunSeq(), segment, FundamentalModelGranularity.YEARLY),
-            findVolumePeriodOptions(latestRunHistory.getRunSeq(), segment, FundamentalModelGranularity.MONTHLY)
+
+        return new VolumeSegmentDataOptions(
+            toRegionFilterOptions(countriesByRegion),
+            new FundamentalModelPeriodFilterOptions(
+                toPeriodFilterOptions(FundamentalModelGranularity.YEARLY, yearlyPeriodKeys),
+                toPeriodFilterOptions(FundamentalModelGranularity.MONTHLY, monthlyPeriodKeys)
+            )
         );
     }
 
-    private List<FilterOption> findVolumePeriodOptions(
-        Long runSeq,
-        FundamentalModelSegment segment,
-        FundamentalModelGranularity granularity
+    private List<FilterOption> toPeriodFilterOptions(
+        FundamentalModelGranularity granularity,
+        Set<String> periodKeys
     ) {
-        String periodUnitSeparateCode = toPeriodUnitSeparateCode(granularity);
-        List<ScenarioCaseVolumeRegionBucketRow> bucketRows =
-            scenarioCaseVolumeRegionBucketRepository.findRowsByRunSeqAndFilters(
-                runSeq,
-                segment.getCode(),
-                periodUnitSeparateCode,
-                allowedVolumeTypes(segment).stream().map(FundamentalModelDataType::getCode).toList(),
-                Arrays.stream(FundamentalModelRegion.values()).map(FundamentalModelRegion::getCode).toList()
-            );
-        if (bucketRows.isEmpty()) {
-            return List.of();
-        }
-        Set<String> periodKeys = new HashSet<>();
-        parseVolumeBuckets(segment, periodUnitSeparateCode, bucketRows).values().stream()
-            .flatMap(bucket -> bucket.periodKeys().stream())
-            .forEach(periodKeys::add);
         return periodKeys.stream()
             .sorted()
             .map(periodKey -> toPeriodFilterOption(granularity, periodKey))
+            .toList();
+    }
+
+    private List<RegionFilterOption> findTradeRegionOptions(
+        Long runSeq,
+        TradeFlowSelector selector,
+        Integer year
+    ) {
+        List<ScenarioCaseTradeFlowHeaderRow> headerRows =
+            scenarioCaseTradeFlowHeaderRepository.findRowsByRunSeqAndSelectorAndYear(
+                runSeq,
+                selector.getCode(),
+                year
+            );
+        if (headerRows.isEmpty()) {
+            return List.of();
+        }
+        TradeFlowHeaders headers = parseTradeFlowHeaders(headerRows);
+        Map<FundamentalModelRegion, Set<String>> countriesByRegion = new LinkedHashMap<>();
+        headers.fromCountries().forEach(header -> addTradeHeaderOption(countriesByRegion, header));
+        headers.toCountries().forEach(header -> addTradeHeaderOption(countriesByRegion, header));
+        return toRegionFilterOptions(countriesByRegion);
+    }
+
+    private void addTradeHeaderOption(
+        Map<FundamentalModelRegion, Set<String>> countriesByRegion,
+        FundamentalModelTradeFlowsRes.TradeCountryHeader header
+    ) {
+        if (header.region() == null) {
+            return;
+        }
+        countriesByRegion.computeIfAbsent(header.region(), ignored -> new HashSet<>());
+        if (header.kind() == TradeCountryHeaderKind.COUNTRY && header.country() != null) {
+            countriesByRegion.get(header.region()).add(header.country());
+        }
+    }
+
+    private List<RegionFilterOption> toRegionFilterOptions(
+        Map<FundamentalModelRegion, Set<String>> countriesByRegion
+    ) {
+        return Arrays.stream(FundamentalModelRegion.values())
+            .filter(countriesByRegion::containsKey)
+            .map(region -> new RegionFilterOption(
+                region.getCode(),
+                region.getLabel(),
+                countriesByRegion.get(region).stream()
+                    .sorted(Comparator.naturalOrder())
+                    .map(country -> new FilterOption(toCountryKey(region, country), country))
+                    .toList()
+            ))
             .toList();
     }
 
@@ -448,7 +553,8 @@ public class FundamentalModelCaseServiceImpl implements FundamentalModelCaseServ
             : FundamentalModelGranularity.MONTHLY;
         String periodUnitSeparateCode = toPeriodUnitSeparateCode(granularity);
         List<FundamentalModelDataType> appliedTypes = normalizeVolumeTypes(request.segment(), request.types());
-        List<FundamentalModelRegion> appliedRegions = normalizeRegions(request.regions());
+        CountrySelection countrySelection = normalizeCountrySelection(request.countryKeys(), request.regions());
+        List<FundamentalModelRegion> appliedRegions = countrySelection.regions();
         List<String> appliedPeriods = normalizeVolumePeriods(granularity, request.periods());
 
         ScenarioCase scenarioCase = findCompletedCaseForResultQuery(caseId);
@@ -463,7 +569,15 @@ public class FundamentalModelCaseServiceImpl implements FundamentalModelCaseServ
                 appliedRegions.stream().map(FundamentalModelRegion::getCode).toList()
             );
         if (bucketRows.isEmpty()) {
-            return emptyVolumesResponse(caseId, request.segment(), granularity, appliedTypes, appliedRegions, appliedPeriods);
+            return emptyVolumesResponse(
+                caseId,
+                request.segment(),
+                granularity,
+                appliedTypes,
+                appliedRegions,
+                countrySelection.keys(),
+                appliedPeriods
+            );
         }
 
         return buildVolumesResponse(
@@ -472,6 +586,7 @@ public class FundamentalModelCaseServiceImpl implements FundamentalModelCaseServ
             granularity,
             appliedTypes,
             appliedRegions,
+            countrySelection.keys(),
             appliedPeriods,
             parseVolumeBuckets(request.segment(), periodUnitSeparateCode, bucketRows)
         );
@@ -483,7 +598,8 @@ public class FundamentalModelCaseServiceImpl implements FundamentalModelCaseServ
         validateTradeFlowsRequest(request);
         TradeFlowUnit unit = request.unit() != null ? request.unit() : TradeFlowUnit.MTPA;
         List<TradeFlowDirection> appliedTypes = normalizeTradeFlowTypes(request.types());
-        List<FundamentalModelRegion> appliedRegions = normalizeRegions(request.regions());
+        CountrySelection countrySelection = normalizeCountrySelection(request.countryKeys(), request.regions());
+        List<FundamentalModelRegion> appliedRegions = countrySelection.regions();
 
         ScenarioCase scenarioCase = findCompletedCaseForResultQuery(caseId);
 
@@ -495,7 +611,15 @@ public class FundamentalModelCaseServiceImpl implements FundamentalModelCaseServ
                 request.year()
             );
         if (headerRows.isEmpty()) {
-            return emptyTradeFlowsResponse(caseId, request.selector(), request.year(), unit, appliedTypes, appliedRegions);
+            return emptyTradeFlowsResponse(
+                caseId,
+                request.selector(),
+                request.year(),
+                unit,
+                appliedTypes,
+                appliedRegions,
+                countrySelection.keys()
+            );
         }
 
         List<ScenarioCaseTradeFlowRow> flowRows =
@@ -504,21 +628,34 @@ public class FundamentalModelCaseServiceImpl implements FundamentalModelCaseServ
                 request.selector().getCode(),
                 request.year()
             );
+        List<ParsedTradeFlow> parsedFlows = parseTradeFlows(flowRows);
 
         TradeFlowHeaders headers = parseTradeFlowHeaders(headerRows);
+        if (!countrySelection.keys().isEmpty()) {
+            return buildCountryFilteredTradeFlowsResponse(
+                caseId,
+                request.selector(),
+                request.year(),
+                unit,
+                appliedTypes,
+                countrySelection,
+                headers,
+                parsedFlows
+            );
+        }
         List<FundamentalModelTradeFlowsRes.TradeCountryHeader> filteredFrom =
             filterFromCountries(headers.fromCountries(), appliedTypes, appliedRegions);
         List<FundamentalModelTradeFlowsRes.TradeCountryHeader> filteredTo =
             filterToCountries(headers.toCountries(), appliedTypes, appliedRegions);
         List<FundamentalModelTradeFlowsRes.TradeFlowItem> filteredFlows =
-            filterTradeFlows(toTradeFlowItems(flowRows), filteredFrom, filteredTo);
+            filterTradeFlows(toTradeFlowItems(parsedFlows), filteredFrom, filteredTo);
 
         return new FundamentalModelTradeFlowsRes(
             caseId,
             request.selector(),
             request.year(),
             unit,
-            new FundamentalModelTradeFlowsRes.TradeFlowsAppliedFilters(appliedTypes, appliedRegions),
+            new FundamentalModelTradeFlowsRes.TradeFlowsAppliedFilters(appliedTypes, appliedRegions, List.of()),
             appendFromTotalHeader(filteredFrom),
             filteredTo,
             appendFromTotalFlows(filteredTo, filteredFlows)
@@ -717,6 +854,53 @@ public class FundamentalModelCaseServiceImpl implements FundamentalModelCaseServ
             return List.of(FundamentalModelRegion.values());
         }
         return List.copyOf(regions);
+    }
+
+    private CountrySelection normalizeCountrySelection(
+        List<String> countryKeys,
+        List<FundamentalModelRegion> requestedRegions
+    ) {
+        if (countryKeys == null || countryKeys.isEmpty()) {
+            return new CountrySelection(List.of(), normalizeRegions(requestedRegions));
+        }
+
+        Set<String> normalizedKeys = new LinkedHashSet<>();
+        Set<FundamentalModelRegion> keyRegions = new LinkedHashSet<>();
+        for (String countryKey : countryKeys) {
+            ParsedCountryKey parsedCountryKey = parseCountryKey(countryKey);
+            normalizedKeys.add(countryKey);
+            keyRegions.add(parsedCountryKey.region());
+        }
+        List<FundamentalModelRegion> regions = requestedRegions == null || requestedRegions.isEmpty()
+            ? List.copyOf(keyRegions)
+            : List.copyOf(requestedRegions);
+        return new CountrySelection(List.copyOf(normalizedKeys), regions);
+    }
+
+    private ParsedCountryKey parseCountryKey(String countryKey) {
+        if (countryKey == null || countryKey.isBlank()) {
+            throw invalidCountryKey(countryKey);
+        }
+        String[] parts = countryKey.split(":", 3);
+        if (parts.length != 3 || !COUNTRY_KEY_PREFIX.equals(parts[0]) || parts[2].isBlank()) {
+            throw invalidCountryKey(countryKey);
+        }
+        FundamentalModelRegion region = Arrays.stream(FundamentalModelRegion.values())
+            .filter(candidate -> candidate.getCode().equals(parts[1]))
+            .findFirst()
+            .orElseThrow(() -> invalidCountryKey(countryKey));
+        return new ParsedCountryKey(region, parts[2]);
+    }
+
+    private AppErrorException invalidCountryKey(String countryKey) {
+        return AppErrorException.of(
+            ResultCode.Error.REQ_INVALID_PARAMETER,
+            "countryKeys는 COUNTRY:{REGION}:{country} 형식이어야 합니다. countryKey=%s".formatted(countryKey)
+        );
+    }
+
+    private String toCountryKey(FundamentalModelRegion region, String country) {
+        return "%s:%s:%s".formatted(COUNTRY_KEY_PREFIX, region.getCode(), country);
     }
 
     private List<String> normalizeVolumePeriods(FundamentalModelGranularity granularity, List<String> periods) {
@@ -992,7 +1176,7 @@ public class FundamentalModelCaseServiceImpl implements FundamentalModelCaseServ
             );
         }
 
-        Map<String, Double> values = new LinkedHashMap<>();
+        Map<String, BigDecimal> values = new LinkedHashMap<>();
         for (int i = 0; i < periodKeys.size(); i++) {
             String periodKey = periodKeys.get(i);
             JsonNode valueNode = valuesNode.get(i);
@@ -1002,7 +1186,7 @@ public class FundamentalModelCaseServiceImpl implements FundamentalModelCaseServ
                         .formatted(dataType.getCode(), region.getCode(), periodKey)
                 );
             }
-            values.put(periodKey, FundamentalModelFiveScaleTruncatingNumberSerializer.truncate(valueNode.decimalValue()));
+            values.put(periodKey, valueNode.decimalValue());
         }
 
         return new ParsedVolumeRow(
@@ -1018,6 +1202,7 @@ public class FundamentalModelCaseServiceImpl implements FundamentalModelCaseServ
         FundamentalModelGranularity granularity,
         List<FundamentalModelDataType> appliedTypes,
         List<FundamentalModelRegion> appliedRegions,
+        List<String> appliedCountryKeys,
         List<String> appliedPeriods,
         Map<VolumeBucketKey, ParsedVolumeBucket> buckets
     ) {
@@ -1028,6 +1213,7 @@ public class FundamentalModelCaseServiceImpl implements FundamentalModelCaseServ
             responsePeriodKeys = appendTypeVolumeRows(
                 type,
                 appliedRegions,
+                appliedCountryKeys,
                 appliedPeriods,
                 buckets,
                 responsePeriodKeys,
@@ -1036,7 +1222,15 @@ public class FundamentalModelCaseServiceImpl implements FundamentalModelCaseServ
         }
 
         if (responsePeriodKeys == null) {
-            return emptyVolumesResponse(caseId, segment, granularity, appliedTypes, appliedRegions, appliedPeriods);
+            return emptyVolumesResponse(
+                caseId,
+                segment,
+                granularity,
+                appliedTypes,
+                appliedRegions,
+                appliedCountryKeys,
+                appliedPeriods
+            );
         }
 
         return new FundamentalModelVolumesRes(
@@ -1044,7 +1238,12 @@ public class FundamentalModelCaseServiceImpl implements FundamentalModelCaseServ
             segment,
             granularity,
             FundamentalModelVolumeUnit.MTPA,
-            new FundamentalModelVolumesRes.VolumesAppliedFilters(appliedTypes, appliedRegions, toResponsePeriods(granularity, appliedPeriods)),
+            new FundamentalModelVolumesRes.VolumesAppliedFilters(
+                appliedTypes,
+                appliedRegions,
+                appliedCountryKeys,
+                toResponsePeriods(granularity, appliedPeriods)
+            ),
             toVolumeColumns(granularity, responsePeriodKeys),
             List.copyOf(responseRows)
         );
@@ -1053,15 +1252,21 @@ public class FundamentalModelCaseServiceImpl implements FundamentalModelCaseServ
     private List<String> appendTypeVolumeRows(
         FundamentalModelDataType type,
         List<FundamentalModelRegion> appliedRegions,
+        List<String> appliedCountryKeys,
         List<String> appliedPeriods,
         Map<VolumeBucketKey, ParsedVolumeBucket> buckets,
         List<String> responsePeriodKeys,
         List<FundamentalModelVolumesRes.VolumesRow> responseRows
     ) {
-        Map<String, Double> typeTotals = null;
+        Map<String, BigDecimal> typeTotals = null;
         for (FundamentalModelRegion region : appliedRegions) {
             ParsedVolumeBucket bucket = buckets.get(new VolumeBucketKey(type, region));
             if (bucket == null) {
+                continue;
+            }
+            if (!appliedCountryKeys.isEmpty() && bucket.rows().stream()
+                .filter(row -> row.rowKind() == VolumesRowKind.COUNTRY)
+                .noneMatch(row -> appliedCountryKeys.contains(toCountryKey(region, row.country())))) {
                 continue;
             }
             List<String> bucketPeriodKeys = filterVolumePeriodKeys(bucket.periodKeys(), appliedPeriods);
@@ -1073,7 +1278,15 @@ public class FundamentalModelCaseServiceImpl implements FundamentalModelCaseServ
                 typeTotals = zeroValues(responsePeriodKeys);
             }
             // 26.07.29 취약점 진단 검토, '누락된 널 값 검사-102234', 오탐 -> typeTotals는 직전 분기에서 zeroValues(신규 맵 반환)로 초기화되어 not null 보장됨.
-            appendVolumeBucketRows(type, region, bucket, responsePeriodKeys, typeTotals, responseRows);
+            appendVolumeBucketRows(
+                type,
+                region,
+                bucket,
+                appliedCountryKeys,
+                responsePeriodKeys,
+                typeTotals,
+                responseRows
+            );
         }
         if (typeTotals == null) {
             return responsePeriodKeys;
@@ -1123,10 +1336,31 @@ public class FundamentalModelCaseServiceImpl implements FundamentalModelCaseServ
         FundamentalModelDataType type,
         FundamentalModelRegion region,
         ParsedVolumeBucket bucket,
+        List<String> appliedCountryKeys,
         List<String> responsePeriodKeys,
-        Map<String, Double> typeTotals,
+        Map<String, BigDecimal> typeTotals,
         List<FundamentalModelVolumesRes.VolumesRow> responseRows
     ) {
+        if (!appliedCountryKeys.isEmpty()) {
+            List<ParsedVolumeRow> selectedCountryRows = bucket.rows().stream()
+                .filter(row -> row.rowKind() == VolumesRowKind.COUNTRY)
+                .filter(row -> appliedCountryKeys.contains(toCountryKey(region, row.country())))
+                .toList();
+            Map<String, BigDecimal> subtotalValues = zeroValues(responsePeriodKeys);
+            selectedCountryRows.forEach(row -> addValuesForPeriods(subtotalValues, row.values(), responsePeriodKeys));
+            ParsedVolumeRow subtotalRow = new ParsedVolumeRow(
+                VolumesRowKind.REGION_SUBTOTAL,
+                null,
+                subtotalValues
+            );
+            responseRows.add(toVolumeResponseRow(type, region, subtotalRow, responsePeriodKeys));
+            addValues(typeTotals, subtotalValues);
+            selectedCountryRows.stream()
+                .map(row -> toVolumeResponseRow(type, region, row, responsePeriodKeys))
+                .forEach(responseRows::add);
+            return;
+        }
+
         ParsedVolumeRow subtotalRow = bucket.rows().stream()
             .filter(row -> row.rowKind() == VolumesRowKind.REGION_SUBTOTAL)
             .findFirst()
@@ -1149,6 +1383,7 @@ public class FundamentalModelCaseServiceImpl implements FundamentalModelCaseServ
         FundamentalModelGranularity granularity,
         List<FundamentalModelDataType> appliedTypes,
         List<FundamentalModelRegion> appliedRegions,
+        List<String> appliedCountryKeys,
         List<String> appliedPeriods
     ) {
         return new FundamentalModelVolumesRes(
@@ -1156,7 +1391,12 @@ public class FundamentalModelCaseServiceImpl implements FundamentalModelCaseServ
             segment,
             granularity,
             FundamentalModelVolumeUnit.MTPA,
-            new FundamentalModelVolumesRes.VolumesAppliedFilters(appliedTypes, appliedRegions, toResponsePeriods(granularity, appliedPeriods)),
+            new FundamentalModelVolumesRes.VolumesAppliedFilters(
+                appliedTypes,
+                appliedRegions,
+                appliedCountryKeys,
+                toResponsePeriods(granularity, appliedPeriods)
+            ),
             List.of(),
             List.of()
         );
@@ -1171,21 +1411,34 @@ public class FundamentalModelCaseServiceImpl implements FundamentalModelCaseServ
             .toList();
     }
 
-    private Map<String, Double> zeroValues(List<String> periodKeys) {
-        Map<String, Double> values = new LinkedHashMap<>();
+    private Map<String, BigDecimal> zeroValues(List<String> periodKeys) {
+        Map<String, BigDecimal> values = new LinkedHashMap<>();
         for (String periodKey : periodKeys) {
-            values.put(periodKey, 0.0);
+            values.put(periodKey, BigDecimal.ZERO);
         }
         return values;
     }
 
-    private void addValues(Map<String, Double> totals, Map<String, Double> values) {
-        for (Map.Entry<String, Double> entry : values.entrySet()) {
+    private void addValues(Map<String, BigDecimal> totals, Map<String, BigDecimal> values) {
+        for (Map.Entry<String, BigDecimal> entry : values.entrySet()) {
             totals.compute(
                 entry.getKey(),
-                (ignored, value) -> FundamentalModelFiveScaleTruncatingNumberSerializer.truncate(
-                    BigDecimal.valueOf(value == null ? 0.0 : value).add(BigDecimal.valueOf(entry.getValue()))
-                )
+                (ignored, value) -> (value == null ? BigDecimal.ZERO : value).add(entry.getValue())
+            );
+        }
+    }
+
+    private void addValuesForPeriods(
+        Map<String, BigDecimal> totals,
+        Map<String, BigDecimal> values,
+        List<String> periodKeys
+    ) {
+        for (String periodKey : periodKeys) {
+            BigDecimal value = values.get(periodKey);
+            totals.compute(
+                periodKey,
+                (ignored, total) -> (total == null ? BigDecimal.ZERO : total)
+                    .add(value == null ? BigDecimal.ZERO : value)
             );
         }
     }
@@ -1208,10 +1461,13 @@ public class FundamentalModelCaseServiceImpl implements FundamentalModelCaseServ
         );
     }
 
-    private Map<String, Double> toResponseValues(Map<String, Double> values, List<String> periodKeys) {
+    private Map<String, Double> toResponseValues(Map<String, BigDecimal> values, List<String> periodKeys) {
         Map<String, Double> responseValues = new LinkedHashMap<>();
         for (String periodKey : periodKeys) {
-            responseValues.put(toVolumeColumnKey(periodKey), values.get(periodKey));
+            responseValues.put(
+                toVolumeColumnKey(periodKey),
+                FundamentalModelFiveScaleTruncatingNumberSerializer.truncate(values.get(periodKey))
+            );
         }
         return responseValues;
     }
@@ -1308,7 +1564,7 @@ public class FundamentalModelCaseServiceImpl implements FundamentalModelCaseServ
         );
     }
 
-    private List<FundamentalModelTradeFlowsRes.TradeFlowItem> toTradeFlowItems(List<ScenarioCaseTradeFlowRow> flowRows) {
+    private List<ParsedTradeFlow> parseTradeFlows(List<ScenarioCaseTradeFlowRow> flowRows) {
         return flowRows.stream()
             .map(row -> {
                 if (row.flowValue() == null) {
@@ -1317,16 +1573,30 @@ public class FundamentalModelCaseServiceImpl implements FundamentalModelCaseServ
                             .formatted(row.fromHeaderKey(), row.toHeaderKey())
                     );
                 }
-                return new FundamentalModelTradeFlowsRes.TradeFlowItem(
+                return new ParsedTradeFlow(
                     row.fromHeaderKey(),
                     row.toHeaderKey(),
                     parseFundamentalModelRegion(row.fromRegionCode()),
                     row.fromNationName(),
                     parseFundamentalModelRegion(row.toRegionCode()),
                     row.toNationName(),
-                    FundamentalModelFiveScaleTruncatingNumberSerializer.truncate(row.flowValue())
+                    BigDecimal.valueOf(row.flowValue())
                 );
             })
+            .toList();
+    }
+
+    private List<FundamentalModelTradeFlowsRes.TradeFlowItem> toTradeFlowItems(List<ParsedTradeFlow> flows) {
+        return flows.stream()
+            .map(flow -> new FundamentalModelTradeFlowsRes.TradeFlowItem(
+                flow.fromKey(),
+                flow.toKey(),
+                flow.fromRegion(),
+                flow.fromCountry(),
+                flow.toRegion(),
+                flow.toCountry(),
+                FundamentalModelFiveScaleTruncatingNumberSerializer.truncate(flow.value())
+            ))
             .toList();
     }
 
@@ -1350,6 +1620,138 @@ public class FundamentalModelCaseServiceImpl implements FundamentalModelCaseServ
         } catch (IllegalArgumentException e) {
             throw invalidTradeFlowData("fundamental model trade flow header has invalid kind. kind=%s".formatted(headerKindCode));
         }
+    }
+
+    private FundamentalModelTradeFlowsRes buildCountryFilteredTradeFlowsResponse(
+        Long caseId,
+        TradeFlowSelector selector,
+        Integer year,
+        TradeFlowUnit unit,
+        List<TradeFlowDirection> appliedTypes,
+        CountrySelection countrySelection,
+        TradeFlowHeaders headers,
+        List<ParsedTradeFlow> flows
+    ) {
+        boolean filterFrom = appliedTypes.contains(TradeFlowDirection.FROM_COUNTRY);
+        boolean filterTo = appliedTypes.contains(TradeFlowDirection.TO_COUNTRY);
+        List<FundamentalModelTradeFlowsRes.TradeCountryHeader> filteredFrom = filterCountryHeaders(
+            headers.fromCountries(),
+            filterFrom,
+            countrySelection
+        );
+        List<FundamentalModelTradeFlowsRes.TradeCountryHeader> filteredTo = filterCountryHeaders(
+            headers.toCountries(),
+            filterTo,
+            countrySelection
+        );
+        if ((filterFrom && filteredFrom.isEmpty()) || (filterTo && filteredTo.isEmpty())) {
+            return emptyTradeFlowsResponse(
+                caseId,
+                selector,
+                year,
+                unit,
+                appliedTypes,
+                countrySelection.regions(),
+                countrySelection.keys()
+            );
+        }
+
+        Set<String> allFromCountryKeys = headers.fromCountries().stream()
+            .filter(header -> header.kind() == TradeCountryHeaderKind.COUNTRY)
+            .map(FundamentalModelTradeFlowsRes.TradeCountryHeader::key)
+            .collect(Collectors.toSet());
+        Set<String> allToCountryKeys = headers.toCountries().stream()
+            .filter(header -> header.kind() == TradeCountryHeaderKind.COUNTRY)
+            .map(FundamentalModelTradeFlowsRes.TradeCountryHeader::key)
+            .collect(Collectors.toSet());
+        List<ParsedTradeFlow> filteredLeafFlows = flows.stream()
+            .filter(flow -> allFromCountryKeys.contains(flow.fromKey()) && allToCountryKeys.contains(flow.toKey()))
+            .filter(flow -> matchesAnyTradeHeader(flow, filteredFrom, true))
+            .filter(flow -> matchesAnyTradeHeader(flow, filteredTo, false))
+            .toList();
+        List<FundamentalModelTradeFlowsRes.TradeCountryHeader> responseFrom = appendFromTotalHeader(filteredFrom);
+        List<FundamentalModelTradeFlowsRes.TradeCountryHeader> responseTo = appendFromTotalHeader(filteredTo);
+
+        return new FundamentalModelTradeFlowsRes(
+            caseId,
+            selector,
+            year,
+            unit,
+            new FundamentalModelTradeFlowsRes.TradeFlowsAppliedFilters(
+                appliedTypes,
+                countrySelection.regions(),
+                countrySelection.keys()
+            ),
+            responseFrom,
+            responseTo,
+            recalculateTradeFlows(filteredLeafFlows, responseFrom, responseTo)
+        );
+    }
+
+    private List<FundamentalModelTradeFlowsRes.TradeCountryHeader> filterCountryHeaders(
+        List<FundamentalModelTradeFlowsRes.TradeCountryHeader> headers,
+        boolean applyFilter,
+        CountrySelection countrySelection
+    ) {
+        return headers.stream()
+            .filter(header -> header.kind() != TradeCountryHeaderKind.GRAND_TOTAL)
+            .filter(header -> !applyFilter || header.kind() == TradeCountryHeaderKind.COUNTRY
+                && header.region() != null
+                && countrySelection.regions().contains(header.region())
+                && countrySelection.keys().contains(toCountryKey(header.region(), header.country())))
+            .toList();
+    }
+
+    private boolean matchesAnyTradeHeader(
+        ParsedTradeFlow flow,
+        List<FundamentalModelTradeFlowsRes.TradeCountryHeader> headers,
+        boolean fromAxis
+    ) {
+        return headers.stream().anyMatch(header -> matchesTradeHeader(flow, header, fromAxis));
+    }
+
+    private boolean matchesTradeHeader(
+        ParsedTradeFlow flow,
+        FundamentalModelTradeFlowsRes.TradeCountryHeader header,
+        boolean fromAxis
+    ) {
+        if (header.kind() == TradeCountryHeaderKind.GRAND_TOTAL) {
+            return true;
+        }
+        if (header.kind() == TradeCountryHeaderKind.COUNTRY) {
+            return header.key().equals(fromAxis ? flow.fromKey() : flow.toKey());
+        }
+        return header.region() == (fromAxis ? flow.fromRegion() : flow.toRegion());
+    }
+
+    private List<FundamentalModelTradeFlowsRes.TradeFlowItem> recalculateTradeFlows(
+        List<ParsedTradeFlow> leafFlows,
+        List<FundamentalModelTradeFlowsRes.TradeCountryHeader> fromHeaders,
+        List<FundamentalModelTradeFlowsRes.TradeCountryHeader> toHeaders
+    ) {
+        List<FundamentalModelTradeFlowsRes.TradeFlowItem> recalculatedFlows = new ArrayList<>();
+        for (FundamentalModelTradeFlowsRes.TradeCountryHeader fromHeader : fromHeaders) {
+            for (FundamentalModelTradeFlowsRes.TradeCountryHeader toHeader : toHeaders) {
+                BigDecimal value = leafFlows.stream()
+                    .filter(flow -> matchesTradeHeader(flow, fromHeader, true))
+                    .filter(flow -> matchesTradeHeader(flow, toHeader, false))
+                    .map(ParsedTradeFlow::value)
+                    .reduce(BigDecimal.ZERO, BigDecimal::add);
+                if (value.signum() == 0) {
+                    continue;
+                }
+                recalculatedFlows.add(new FundamentalModelTradeFlowsRes.TradeFlowItem(
+                    fromHeader.key(),
+                    toHeader.key(),
+                    fromHeader.region(),
+                    fromHeader.country(),
+                    toHeader.region(),
+                    toHeader.country(),
+                    FundamentalModelFiveScaleTruncatingNumberSerializer.truncate(value)
+                ));
+            }
+        }
+        return List.copyOf(recalculatedFlows);
     }
 
     private List<FundamentalModelTradeFlowsRes.TradeCountryHeader> filterFromCountries(
@@ -1448,14 +1850,19 @@ public class FundamentalModelCaseServiceImpl implements FundamentalModelCaseServ
         Integer year,
         TradeFlowUnit unit,
         List<TradeFlowDirection> appliedTypes,
-        List<FundamentalModelRegion> appliedRegions
+        List<FundamentalModelRegion> appliedRegions,
+        List<String> appliedCountryKeys
     ) {
         return new FundamentalModelTradeFlowsRes(
             caseId,
             selector,
             year,
             unit,
-            new FundamentalModelTradeFlowsRes.TradeFlowsAppliedFilters(appliedTypes, appliedRegions),
+            new FundamentalModelTradeFlowsRes.TradeFlowsAppliedFilters(
+                appliedTypes,
+                appliedRegions,
+                appliedCountryKeys
+            ),
             List.of(),
             List.of(),
             List.of()
@@ -1988,6 +2395,24 @@ public class FundamentalModelCaseServiceImpl implements FundamentalModelCaseServ
     ) {
     }
 
+    private record VolumeSegmentDataOptions(
+        List<RegionFilterOption> regions,
+        FundamentalModelPeriodFilterOptions periods
+    ) {
+    }
+
+    private record CountrySelection(
+        List<String> keys,
+        List<FundamentalModelRegion> regions
+    ) {
+    }
+
+    private record ParsedCountryKey(
+        FundamentalModelRegion region,
+        String country
+    ) {
+    }
+
     private record VolumeBucketKey(
         FundamentalModelDataType type,
         FundamentalModelRegion region
@@ -2003,7 +2428,18 @@ public class FundamentalModelCaseServiceImpl implements FundamentalModelCaseServ
     private record ParsedVolumeRow(
         VolumesRowKind rowKind,
         String country,
-        Map<String, Double> values
+        Map<String, BigDecimal> values
+    ) {
+    }
+
+    private record ParsedTradeFlow(
+        String fromKey,
+        String toKey,
+        FundamentalModelRegion fromRegion,
+        String fromCountry,
+        FundamentalModelRegion toRegion,
+        String toCountry,
+        BigDecimal value
     ) {
     }
 

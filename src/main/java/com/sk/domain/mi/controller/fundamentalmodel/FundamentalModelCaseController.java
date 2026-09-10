@@ -154,8 +154,29 @@ public class FundamentalModelCaseController {
     @ApiOrder(8)
     @Operation(
         summary = "MI Fundamental Model 결과 필터 옵션 조회 API",
-        description = "Volumes 탭의 필터 패널에 표시할 옵션 목록을 반환합니다. "
-            + "caseId가 전달되면 해당 case 최신 완료 run의 Volumes 결과에 실제 존재하는 yearly/monthly 기간 옵션도 함께 반환합니다."
+        description = """
+            MI Fundamental Model의 Volumes/Trade 탭에서 사용할 필터 옵션을 조회합니다. <br>
+            F.E는 응답 `segments[]`에서 현재 탭과 같은 `segment`를 찾아 Type, Region/Country, Granularity, 기간 필터를 구성합니다.
+
+            <br><br>
+            ### 호출 방법
+            - Case 선택 전: 파라미터 없이 호출하여 정적 Type/Region/Granularity 옵션을 사용합니다.
+            - GLOBAL/LNG 탭: `caseId`만 전달합니다. 해당 Case의 최신 완료 run에 실제로 존재하는 Region/Country와 YEARLY/MONTHLY 기간을 반환합니다.
+            - TRADE 탭: `caseId`, `selector`, `year`를 모두 전달합니다. selector 또는 year가 바뀌면 변경된 조합으로 다시 호출합니다.
+
+            <br><br>
+            ### segment별 응답 필드
+            - `types`: 해당 segment에서 선택할 수 있는 Type 옵션
+            - `regions[].countries`: Region 아래에 속한 Country 옵션. `countries[].value`를 Volumes/Trade 조회 API의 `countryKeys`로 전달합니다.
+            - GLOBAL/LNG의 `granularities`/`periods`: 선택 가능한 시간 단위와 YEARLY/MONTHLY 기간 옵션
+            - TRADE는 단일 year 기준 matrix이므로 `granularities=[]`, `periods.yearly=[]`, `periods.monthly=[]`입니다.
+
+            <br><br>
+            ### 빈 값과 오류
+            - `caseId` 미전달 시 모든 Region의 `countries=[]`이며, 기간 목록도 빈 배열입니다.
+            - `caseId`만 전달하면 GLOBAL/LNG는 실제 옵션, TRADE는 정적 Region과 `countries=[]`를 반환합니다.
+            - `selector`/`year`를 한 개만 전달하거나 `caseId` 없이 전달하면 400, Case가 COMPLETED 상태가 아니면 409를 반환합니다.
+            """
     )
     @ApiResponse(responseCode = "200", description = "조회 성공")
     @GetMapping("/volumes/filter-options")
@@ -164,10 +185,14 @@ public class FundamentalModelCaseController {
         @PermissionRule(role = Role.ADMIN, conditions = {PermissionCondition.THIRD_PARTY_ADMIN_ONLY})
     })
     public BaseResponse<FundamentalModelVolumesFilterOptionsRes> getVolumesFilterOptions(
-        @Parameter(description = "기간 옵션을 조회할 Scenario Case ID. 미전달 시 정적 옵션만 반환합니다.", example = "106")
-        @RequestParam(required = false) Long caseId
+        @Parameter(description = "실제 Region/Country/기간 옵션을 조회할 Scenario Case ID. 미전달 시 정적 옵션만 반환합니다.", example = "106")
+        @RequestParam(required = false) Long caseId,
+        @Parameter(description = "TRADE 옵션 범위. year와 함께 전달해야 하며 caseId도 필요합니다.", example = "LNG")
+        @RequestParam(required = false) TradeFlowSelector selector,
+        @Parameter(description = "TRADE 옵션 연도. selector와 함께 전달해야 하며 2023~2030 범위입니다.", example = "2026")
+        @RequestParam(required = false) Integer year
     ) {
-        return BaseResponseFactory.create(fundamentalModelCaseService.getVolumesFilterOptions(caseId));
+        return BaseResponseFactory.create(fundamentalModelCaseService.getVolumesFilterOptions(caseId, selector, year));
     }
 
     @ApiOrder(9)
@@ -189,6 +214,8 @@ public class FundamentalModelCaseController {
         @RequestParam(required = false) List<FundamentalModelDataType> types,
         @Parameter(description = "지역 필터. 미전달 시 전체입니다.", example = "ASIA,EUROPE")
         @RequestParam(required = false) List<FundamentalModelRegion> regions,
+        @Parameter(description = "Country key 필터. COUNTRY:ASIA:Japan 형식의 exact match이며 regions와 함께 전달하면 AND 조건입니다.", example = "COUNTRY:ASIA:Japan")
+        @RequestParam(required = false) List<String> countryKeys,
         @Parameter(description = "시간 단위. 미전달 시 MONTHLY입니다.", example = "MONTHLY")
         @RequestParam(required = false) FundamentalModelGranularity granularity,
         @Parameter(description = "선택 기간. YEARLY는 yyyy, MONTHLY는 yyyy-MM 형식입니다. 미전달 시 전체 기간입니다.", example = "2026-01,2026-06")
@@ -196,7 +223,7 @@ public class FundamentalModelCaseController {
     ) {
         return BaseResponseFactory.create(fundamentalModelCaseService.getVolumes(
             caseId,
-            new FundamentalModelVolumesReq(segment, types, regions, granularity, periods)
+            new FundamentalModelVolumesReq(segment, types, regions, countryKeys, granularity, periods)
         ));
     }
 
@@ -219,11 +246,13 @@ public class FundamentalModelCaseController {
         @Parameter(description = "필터 방향. 미전달 시 전체", example = "TO_COUNTRY,FROM_COUNTRY")
         @RequestParam(required = false) List<TradeFlowDirection> types,
         @Parameter(description = "지역 필터. 미전달 시 전체", example = "ASIA,EUROPE")
-        @RequestParam(required = false) List<FundamentalModelRegion> regions
+        @RequestParam(required = false) List<FundamentalModelRegion> regions,
+        @Parameter(description = "Country key 필터. COUNTRY:ASIA:Japan 형식의 exact match이며 regions와 함께 전달하면 AND 조건입니다.", example = "COUNTRY:ASIA:Japan")
+        @RequestParam(required = false) List<String> countryKeys
     ) {
         return BaseResponseFactory.create(fundamentalModelCaseService.getTradeFlows(
             caseId,
-            new FundamentalModelTradeFlowsReq(selector, year, unit, types, regions)
+            new FundamentalModelTradeFlowsReq(selector, year, unit, types, regions, countryKeys)
         ));
     }
 
