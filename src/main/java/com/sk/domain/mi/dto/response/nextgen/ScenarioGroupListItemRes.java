@@ -28,6 +28,9 @@ public record ScenarioGroupListItemRes(
     @Schema(description = "시나리오 수", example = "5")
     int scenarioCount,
 
+    @Schema(description = "그룹을 구성한 이벤트 수", example = "3")
+    int eventCount,
+
     @Schema(description = "동적 표 헤더 정의 (그룹별 차원 칼럼)")
     List<ScenarioDimensionColumnRes> dimensionColumns,
 
@@ -49,6 +52,7 @@ public record ScenarioGroupListItemRes(
             base.modifyDt(),
             base.summary(),
             base.scenarioCount() == null ? 0 : base.scenarioCount(),
+            base.eventCount() == null ? 0 : base.eventCount().intValue(),
             dimensionColumns,
             scenarios
         );

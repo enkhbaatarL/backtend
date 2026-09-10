@@ -6,7 +6,7 @@ import java.util.List;
 public record VolumesSegmentFilterOptions(
     FundamentalModelSegment segment,
     List<FilterOption> types,
-    List<FilterOption> regions,
+    List<RegionFilterOption> regions,
     List<FilterOption> granularities,
     FundamentalModelPeriodFilterOptions periods
 ) {

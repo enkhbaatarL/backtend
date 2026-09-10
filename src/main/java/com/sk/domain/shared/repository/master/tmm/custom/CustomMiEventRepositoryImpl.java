@@ -366,6 +366,7 @@ public class CustomMiEventRepositoryImpl implements CustomMiEventRepository {
         // 연관 시나리오 — 매핑 테이블 경유로 이벤트에 연결된 활성 그룹 전체 조회 (그룹별 표 스택 표기)
         // eventTypeL2Id는 이 이벤트 매핑의 동결값 (v1 template 헤더 해석용, v4는 definitions가 우선)
         QMiScenarioGroupEvent groupEvent = new QMiScenarioGroupEvent("groupEvent");
+        QMiScenarioGroupEvent eventCountSub = new QMiScenarioGroupEvent("eventCountSub");
         List<ScenarioGroupBaseRow> relatedScenarioGroups = queryFactory
             .select(new QScenarioGroupBaseRow(
                 miScenarioGroup.scenarioGroupId,
@@ -373,6 +374,11 @@ public class CustomMiEventRepositoryImpl implements CustomMiEventRepository {
                 miScenarioGroup.title,
                 miScenarioGroup.summary,
                 miScenarioGroup.scenarioCount,
+                JPAExpressions.select(eventCountSub.count())
+                    .from(eventCountSub)
+                    .where(
+                        eventCountSub.scenarioGroup.eq(miScenarioGroup),
+                        eventCountSub.isDeleted.isFalse()),
                 miScenarioGroup.createDt,
                 miScenarioGroup.modifyDt,
                 miScenarioGroup.dimensionSelected,

@@ -72,6 +72,7 @@ public class ScenarioGroupController {
             - `updatedAt`: 수정일시
             - `summary`: 시나리오 그룹 설명 (`description` 값을 `summary` 필드로 반환)
             - `scenarioCount`: 시나리오 수
+            - `eventCount`: 그룹을 구성한 이벤트 수 (활성 매핑 기준, v1 단일 이벤트 그룹은 1)
             - `dimensionColumns`: 그룹별 동적 표 헤더 (key, label + description/rationale)
             - `scenarios`: 그룹 내 시나리오 표 본문 (scenarioId, scenarioName, baseCase, scenarioRole/scenarioRoleLabel[역할 배지 - ceiling 상단/floor 하단/mixed 혼합, 없으면 null], dimensions, probability, adjustedProbability, status, statusLabel[대기/실현/폐기])
             """

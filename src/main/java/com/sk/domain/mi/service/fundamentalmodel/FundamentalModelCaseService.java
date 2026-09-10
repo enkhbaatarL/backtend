@@ -15,6 +15,7 @@ import com.sk.domain.mi.dto.response.fundamentalmodel.FundamentalModelRunCallbac
 import com.sk.domain.mi.dto.response.fundamentalmodel.FundamentalModelTradeFlowsRes;
 import com.sk.domain.mi.dto.response.fundamentalmodel.FundamentalModelVolumesFilterOptionsRes;
 import com.sk.domain.mi.dto.response.fundamentalmodel.FundamentalModelVolumesRes;
+import com.sk.domain.shared.enums.fundamentalmodel.TradeFlowSelector;
 import java.util.List;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -38,7 +39,11 @@ public interface FundamentalModelCaseService {
 
     FundamentalModelCaseStatusRes getCaseStatus(Long caseId);
 
-    FundamentalModelVolumesFilterOptionsRes getVolumesFilterOptions(Long caseId);
+    FundamentalModelVolumesFilterOptionsRes getVolumesFilterOptions(
+        Long caseId,
+        TradeFlowSelector selector,
+        Integer year
+    );
 
     FundamentalModelVolumesRes getVolumes(Long caseId, FundamentalModelVolumesReq request);
 
