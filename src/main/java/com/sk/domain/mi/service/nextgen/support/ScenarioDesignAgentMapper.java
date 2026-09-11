@@ -88,10 +88,14 @@ public final class ScenarioDesignAgentMapper {
     private static DesignTable enrichOverlayTable(DesignTable overlay, Sections sections,
                                                   Map<String, List<DesignDimensionValueOption>> valueOptions,
                                                   Map<Long, List<ScenarioSignpostDefinitionViewRes>> signpostsByScenario) {
+
         Map<String, AgentDimensionDefinitions.Item> itemsById = new LinkedHashMap<>();
         for (AgentDimensionDefinitions.Item item : definitionItems(sections)) {
             itemsById.putIfAbsent(item.dimensionId(), item);
         }
+
+        Map<Long, Row> agentRowsByScenarioId = toAgentRowsByScenarioId(sections);
+
         List<ScenarioDimensionColumnRes> columns = overlay.dimensionColumns() == null
             ? null
             : overlay.dimensionColumns().stream()
@@ -108,14 +112,36 @@ public final class ScenarioDesignAgentMapper {
             return DesignTable.of(columns, overlay.scenarios());
         }
         List<DesignScenarioRow> rows = overlay.scenarios().stream()
-            .map(row -> new DesignScenarioRow(
-                row.scenarioId(), row.isNew(), row.displayOrder(), row.scenarioName(), row.baseCase(),
-                row.scenarioRole(), row.scenarioRoleLabel(), row.pressureBand(), row.pressureBandLabel(), row.pressureRationale(),
-                enrichDimensions(row.dimensions(), valueOptions),
-                row.probability(), row.narrative(),
-                resolveSignposts(row.scenarioId(), signpostsByScenario, row.signposts())))
+            .map(row -> {
+                Row agentRow = row.scenarioId() == null ? null : agentRowsByScenarioId.get(row.scenarioId());
+                ScenarioRole role = row.scenarioRole() != null ? row.scenarioRole() : agentRow == null ? null : ScenarioRole.fromNullable(agentRow.scenarioRole());
+                GlobalPressureBand pressureBand = row.pressureBand() != null ? row.pressureBand() : agentRow == null ? null : GlobalPressureBand.fromNullable(agentRow.pressureBand());
+                String pressureRationale = row.pressureRationale() != null ? row.pressureRationale() : agentRow == null ? null : agentRow.pressureRationale();
+                return new DesignScenarioRow(
+                    row.scenarioId(), row.isNew(), row.displayOrder(), row.scenarioName(), row.baseCase(),
+                    role, role == null ? null : role.getLabel(),
+                    pressureBand, pressureBand == null ? null : pressureBand.getLabel(), pressureRationale,
+                    enrichDimensions(row.dimensions(), valueOptions),
+                    row.probability(), row.narrative(),
+                    resolveSignposts(row.scenarioId(), signpostsByScenario, row.signposts()));
+            })
             .toList();
         return DesignTable.of(columns, rows);
+    }
+
+    /** Agent 표 행 scenarioId 조인 맵 (배지 복원용). 미채번 행(scenarioId null)은 제외한다. */
+    private static Map<Long, Row> toAgentRowsByScenarioId(Sections sections) {
+        ScenarioTable scenarioTable = sections == null || sections.scenarioDesign() == null ? null : sections.scenarioDesign().scenarioTable();
+        if (scenarioTable == null || scenarioTable.rows() == null) {
+            return Map.of();
+        }
+        Map<Long, Row> rowsById = new LinkedHashMap<>();
+        for (Row row : scenarioTable.rows()) {
+            if (row.scenarioId() != null) {
+                rowsById.putIfAbsent(row.scenarioId(), row);
+            }
+        }
+        return rowsById;
     }
 
     /** 행별 Signpost 결정 — 합성 맵에 있으면 그것(DB 산출), 없으면 기존 값 유지. */

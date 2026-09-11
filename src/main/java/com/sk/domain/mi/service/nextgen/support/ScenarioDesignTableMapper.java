@@ -10,6 +10,8 @@ import com.sk.domain.mi.dto.response.nextgen.design.DesignEditTable;
 import com.sk.domain.mi.dto.response.nextgen.design.DesignScenarioRow;
 import com.sk.domain.mi.dto.response.nextgen.design.DesignTable;
 import com.sk.domain.mi.dto.response.nextgen.design.ScenarioDesignTable;
+import com.sk.domain.shared.enums.nextgen.GlobalPressureBand;
+import com.sk.domain.shared.enums.nextgen.ScenarioRole;
 import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.Comparator;
@@ -50,7 +52,7 @@ public final class ScenarioDesignTableMapper {
                         cells.put(d.key(), d.value()); // value=null -> Agent 자동생성
                     }
                 }
-                return new ScenarioDesignTable.Row(r.scenarioId(), r.displayOrder(), r.scenarioName(), null, cells, null, null, null);
+                return new ScenarioDesignTable.Row(r.scenarioId(), r.displayOrder(), r.scenarioName(), null, cells, null, null, null, null, null, null, null);
             })
             .toList();
 
@@ -82,7 +84,7 @@ public final class ScenarioDesignTableMapper {
                 }
                 ScenarioDesignTable.Metrics metrics = new ScenarioDesignTable.Metrics(r.probability() == null ? null : BigDecimal.valueOf(r.probability()), null);
                 List<ScenarioDesignTable.Signpost> signposts = r.signposts() == null ? List.of() : r.signposts().stream().map(ScenarioDesignTableMapper::toAgentSignpost).toList();
-                return new ScenarioDesignTable.Row(r.scenarioId(), r.displayOrder(), r.scenarioName(), r.narrative(), cells, metrics, r.baseCase() ? "Y" : "N", signposts);
+                return new ScenarioDesignTable.Row(r.scenarioId(), r.displayOrder(), r.scenarioName(), r.narrative(), cells, metrics, r.baseCase() ? "Y" : "N", signposts, null, null, null, null);
             })
             .toList();
 
@@ -100,7 +102,11 @@ public final class ScenarioDesignTableMapper {
             sp.used() ? "Y" : "N");
     }
 
-    /** Agent 표 → step1 DesignTable. headers는 displayOrder 순으로 컬럼/셀을 만든다. */
+    /**
+     * Agent 표 → step1 DesignTable. headers는 displayOrder 순으로 컬럼/셀을 만든다.
+     * 배지(scenarioRole/pressureBand/pressureRationale)는 검토 콜백이 재산출해 보낸 값을 파싱해 채운다 —
+     * 없으면(구 캐시, Agent 미전송) null로 두고 조회 측(enrichOverlayTable)이 presentation 표에서 폴백 복원한다.
+     */
     public static DesignTable toDesignTable(ScenarioDesignTable agentTable) {
         if (agentTable == null) {
             return DesignTable.of(List.of(), List.of());
@@ -124,7 +130,8 @@ public final class ScenarioDesignTableMapper {
                     .map(h -> new ScenarioDimensionRes(h.key(), h.label(), cells.get(h.key()), cells.get(h.key()), null, null))
                     .toList();
                 return DesignScenarioRow.of(row.scenarioId(), row.displayOrder(), row.title(), "Y".equalsIgnoreCase(row.baselineYn()),
-                    null, null, null, dimensions, null, null, null);
+                    ScenarioRole.fromNullable(row.scenarioRole()), GlobalPressureBand.fromNullable(row.pressureBand()),
+                    row.pressureRationale(), dimensions, null, null, null);
             })
             .toList();
 

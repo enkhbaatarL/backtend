@@ -23,7 +23,9 @@ public record ScenarioDesignTable(
         Integer displayOrder
     ) {}
 
-    /** 시나리오 행. scenarioId가 null이면 신규 추가(미채번) 행. */
+    /**
+     * 시나리오 행. scenarioId가 null이면 신규 추가(미채번) 행.
+     */
     @JsonInclude(JsonInclude.Include.NON_NULL)
     public record Row(
         Long scenarioId,
@@ -33,7 +35,11 @@ public record ScenarioDesignTable(
         Map<String, String> cells,
         Metrics metrics,
         String baselineYn,
-        List<Signpost> signposts
+        List<Signpost> signposts,
+        String scenarioRole,
+        String pressureTarget,
+        String pressureBand,
+        String pressureRationale
     ) {}
 
     /** 확률 메트릭. */
