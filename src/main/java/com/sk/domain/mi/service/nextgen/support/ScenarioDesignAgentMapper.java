@@ -117,8 +117,9 @@ public final class ScenarioDesignAgentMapper {
                 ScenarioRole role = row.scenarioRole() != null ? row.scenarioRole() : agentRow == null ? null : ScenarioRole.fromNullable(agentRow.scenarioRole());
                 GlobalPressureBand pressureBand = row.pressureBand() != null ? row.pressureBand() : agentRow == null ? null : GlobalPressureBand.fromNullable(agentRow.pressureBand());
                 String pressureRationale = row.pressureRationale() != null ? row.pressureRationale() : agentRow == null ? null : agentRow.pressureRationale();
+                boolean baseCase = row.baseCase() || (agentRow != null && "Y".equalsIgnoreCase(agentRow.baselineYn()));
                 return new DesignScenarioRow(
-                    row.scenarioId(), row.isNew(), row.displayOrder(), row.scenarioName(), row.baseCase(),
+                    row.scenarioId(), row.isNew(), row.displayOrder(), row.scenarioName(), baseCase,
                     role, role == null ? null : role.getLabel(),
                     pressureBand, pressureBand == null ? null : pressureBand.getLabel(), pressureRationale,
                     enrichDimensions(row.dimensions(), valueOptions),
