@@ -67,12 +67,18 @@ public class ModelParamProposalController {
         return BaseResponseFactory.create(modelParamProposalService.createProposal(scenarioId));
     }
 
+    @Deprecated
     @ApiOrder(2)
     @Operation(
-        summary = "수급모델 파라미터 현재 상태 조회 API",
+        summary = "수급모델 파라미터 현재 상태 조회 API (deprecated)",
+        deprecated = true,
         description = """
+            deprecated - 시나리오 파라미터 비교 팝업 전환 후 그룹 현황 일괄 조회 API(GET /scenario-groups/{scenarioGroupId}/model-param-proposals)를 사용하세요.
+            구 단건 팝업 호환을 위해 유지되며 FE 전환 완료 후 제거 예정입니다.
+
             팝업 진입 또는 생성 POST 오류 후 시나리오의 최신 요청 상태를 조회합니다.
             새 생성 오류는 PROPOSAL_FAILED입니다. PROPOSAL_NO_CHANGES는 과거 저장 상태의 읽기 호환용입니다.
+            PROPOSAL_RETRYABLE은 통신 오류로 중단된 상태로, 재시도 버튼을 노출하고 생성 POST를 다시 호출하면 됩니다.
             두 실패에서는 로딩과 반복 조회를 종료하고 failureReason을 표시하세요.
             parameterSource=NONE, modelFiles=[]이므로 이전 제안 표를 비우고 해당 요청의 확정/실행을 막아야 합니다.
             Agent ID 발급 전 실패이면 modelParamProposalId가 null일 수 있으며, executionInputFiles도 null입니다.
@@ -104,10 +110,17 @@ public class ModelParamProposalController {
         return BaseResponseFactory.create(modelParamProposalService.getCurrentProposal(scenarioId));
     }
 
+    @Deprecated
     @ApiOrder(3)
     @Operation(
-        summary = "수급모델 파라미터 제안 상태/결과 조회 API",
-        description = "Backend execution-preparation row와 Agent proposal table을 조합해 상태와 제안 결과를 조회합니다."
+        summary = "수급모델 파라미터 제안 상태/결과 조회 API (deprecated)",
+        deprecated = true,
+        description = """
+            deprecated - 시나리오 파라미터 비교 팝업 전환 후 그룹 비교 그리드 조회 API(GET /scenario-groups/{scenarioGroupId}/model-param-proposals/compare)를 사용하세요.
+            구 단건 팝업 호환을 위해 유지되며 FE 전환 완료 후 제거 예정입니다.
+
+            Backend execution-preparation row와 Agent proposal table을 조합해 상태와 제안 결과를 조회합니다.
+            """
     )
     @ApiResponse(responseCode = "200", description = "조회 성공")
     @GetMapping("/model-param-proposals/{modelParamProposalId}")
@@ -122,10 +135,17 @@ public class ModelParamProposalController {
         return BaseResponseFactory.create(modelParamProposalService.getProposal(scenarioId, modelParamProposalId));
     }
 
+    @Deprecated
     @ApiOrder(4)
     @Operation(
-        summary = "수급모델 파라미터 제안 SSE 구독 API",
-        description = "Agent proposal 완료/실패 신호를 scenario 단위 SSE로 구독합니다. 이벤트명은 `model-parameter-proposal`입니다."
+        summary = "수급모델 파라미터 제안 SSE 구독 API (deprecated)",
+        deprecated = true,
+        description = """
+            deprecated - 시나리오 파라미터 비교 팝업 전환 후 그룹 SSE 구독 API(GET /scenario-groups/{scenarioGroupId}/model-param-proposals/stream)를 사용하세요.
+            구 단건 팝업 호환을 위해 유지되며 FE 전환 완료 후 제거 예정입니다.
+
+            Agent proposal 완료/실패 신호를 scenario 단위 SSE로 구독합니다. 이벤트명은 `model-parameter-proposal`입니다.
+            """
     )
     @ApiResponse(responseCode = "200", description = "SSE 연결 성공 (text/event-stream)")
     @GetMapping(value = "/model-param-proposals/stream", produces = MediaType.TEXT_EVENT_STREAM_VALUE)

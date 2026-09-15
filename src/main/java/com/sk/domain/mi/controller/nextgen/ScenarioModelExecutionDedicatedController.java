@@ -58,10 +58,17 @@ public class ScenarioModelExecutionDedicatedController {
             .body(BaseResponseFactory.create(response));
     }
 
+    @Deprecated
     @ApiOrder(5)
     @Operation(
-        summary = "파라미터를 확정하고 인풋파일 생성하여 수급모델 실행 접수 API",
-        description = "Agent 확정값으로 입력 Excel 3개를 생성한 뒤 MI 수급모델 실행을 비동기로 접수합니다."
+        summary = "파라미터를 확정하고 인풋파일 생성하여 수급모델 실행 접수 API (deprecated)",
+        deprecated = true,
+        description = """
+            deprecated - 시나리오 파라미터 비교 팝업 전환 후 그룹 일괄 실행 API(POST /scenario-groups/{scenarioGroupId}/model-executions)를 사용하세요.
+            구 단건 팝업 호환을 위해 유지되며 FE 전환 완료 후 제거 예정입니다. 내부 파이프라인은 그룹 일괄 실행이 동일하게 재사용합니다.
+
+            Agent 확정값으로 입력 Excel 3개를 생성한 뒤 MI 수급모델 실행을 비동기로 접수합니다.
+            """
     )
     @ApiResponse(responseCode = "202", description = "비동기 실행 접수 성공")
     @PostMapping(value = "/model-executions/from-parameters", consumes = MediaType.APPLICATION_JSON_VALUE)

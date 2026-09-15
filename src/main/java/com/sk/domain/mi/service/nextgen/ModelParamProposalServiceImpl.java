@@ -68,6 +68,13 @@ import java.util.stream.Collectors;
 public class ModelParamProposalServiceImpl implements ModelParamProposalService {
 
     private static final String CREATE_FAILURE_REASON = "파라미터 제안 생성 요청에 실패했습니다.";
+    private static final String INTERRUPTED_FAILURE_REASON = "파라미터 제안 요청이 통신 오류로 중단되었습니다.";
+    private static final String SUPERSEDED_FAILURE_REASON = "재시도 요청으로 대체되었습니다.";
+    /** 통신 계층 오류만 재시도 대상 — Agent가 명시적으로 응답한 오류는 일반 실패로 확정한다. */
+    private static final Set<ResultCode.Error> COMMUNICATION_INTERRUPT_ERRORS = Set.of(
+        ResultCode.Error.API_TIMEOUT,
+        ResultCode.Error.API_SERVICE_UNAVAILABLE
+    );
     private static final Set<String> PUBLIC_CREATE_FAILURE_REASONS = Set.of(
         "파라미터로 반영할 변경 항목이 없습니다.",
         "파라미터를 적용할 모델 입력 위치를 찾지 못했습니다.",
@@ -122,6 +129,11 @@ public class ModelParamProposalServiceImpl implements ModelParamProposalService 
                     .ifPresent(body -> markRequestFailed(preparation.getExecPrepId(), createFailureReason(body)));
             }
             throw e;
+        } catch (AppErrorException e) {
+            if (COMMUNICATION_INTERRUPT_ERRORS.contains(e.getErrorCode())) {
+                markRequestInterrupted(preparation.getExecPrepId());
+            }
+            throw e;
         }
         AgentModelParamProposalCreateRes agentResponse = validateCreateAgentResponse(
             preparation.getExecPrepId(), responseBody
@@ -162,23 +174,19 @@ public class ModelParamProposalServiceImpl implements ModelParamProposalService 
 
     @Override
     public ModelParamProposalRes getProposal(Long scenarioId, Long modelParamProposalId) {
+
         ModelExecutionPreparation preparation = modelExecutionPreparationRepository
-            .findFirstByScenarioIdAndAgentProposalIdAndIsDeletedFalseOrderByExecPrepIdDesc(
-                scenarioId,
-                modelParamProposalId
-            )
+            .findFirstByScenarioIdAndAgentProposalIdAndIsDeletedFalseOrderByExecPrepIdDesc(scenarioId, modelParamProposalId)
             .orElseThrow(() -> AppErrorException.of(
                 ResultCode.Error.RSC_NOT_FOUND,
-                "model parameter proposal preparation not found. scenarioId: %d, modelParamProposalId: %d"
-                    .formatted(scenarioId, modelParamProposalId)
+                "model parameter proposal preparation not found. scenarioId: %d, modelParamProposalId: %d".formatted(scenarioId, modelParamProposalId)
             ));
 
         AgentModelParamProposal proposal = agentModelParamProposalRepository
             .findByModelParamProposalIdAndScenarioIdAndIsDeletedFalse(modelParamProposalId, scenarioId)
             .orElseThrow(() -> AppErrorException.of(
                 ResultCode.Error.RSC_NOT_FOUND,
-                "Agent model parameter proposal not found. scenarioId: %d, modelParamProposalId: %d"
-                    .formatted(scenarioId, modelParamProposalId)
+                "Agent model parameter proposal not found. scenarioId: %d, modelParamProposalId: %d".formatted(scenarioId, modelParamProposalId)
             ));
 
         JsonNode parameters = resolveParameters(proposal);
@@ -207,6 +215,19 @@ public class ModelParamProposalServiceImpl implements ModelParamProposalService 
                 preparation.getStatus() == ModelExecutionPreparationStatus.REQUEST_NO_CHANGES
                     ? CurrentModelParamProposalState.PROPOSAL_NO_CHANGES
                     : CurrentModelParamProposalState.PROPOSAL_FAILED,
+                ModelParamParameterSource.NONE,
+                null,
+                null,
+                null,
+                preparation.getErrorMessage()
+            );
+        }
+
+        if (preparation.getStatus() == ModelExecutionPreparationStatus.REQUEST_INTERRUPTED) {
+            return currentResponse(
+                preparation,
+                proposal.orElse(null),
+                CurrentModelParamProposalState.PROPOSAL_RETRYABLE,
                 ModelParamParameterSource.NONE,
                 null,
                 null,
@@ -564,6 +585,7 @@ public class ModelParamProposalServiceImpl implements ModelParamProposalService 
             rejectDiscardedScenario(scenario);
             rejectIfActiveExecutionExists(scenarioId);
             rejectIfActivePreparationExists(scenarioId);
+            supersedeInterruptedPreparation(scenarioId);
 
             Integer actorUserNo = authorizationService.getUserNo();
             try {
@@ -643,6 +665,46 @@ public class ModelParamProposalServiceImpl implements ModelParamProposalService 
         // 합의된 사용자용 첫 줄 문구만 공개하고 외부 응답의 상세 내용은 제외한다.
         String headline = message.lines().findFirst().orElse("").strip();
         return PUBLIC_CREATE_FAILURE_REASONS.contains(headline) ? headline : CREATE_FAILURE_REASON;
+    }
+
+    /**
+     * 통신 오류(타임아웃/커넥션)로 Agent 접수 여부가 불명일 때 재시도 가능 상태로 확정한다.
+     * REQUESTING에서만 전이한다 — 그 사이 콜백이 먼저 도착해 상태를 진전시켰다면 0건 갱신으로 건너뛴다.
+     */
+    private void markRequestInterrupted(Long execPrepId) {
+        transactionOperations.executeWithoutResult(status -> {
+            int updated = modelExecutionPreparationRepository.transitionStatus(
+                execPrepId,
+                List.of(ModelExecutionPreparationStatus.REQUESTING),
+                ModelExecutionPreparationStatus.REQUEST_INTERRUPTED,
+                INTERRUPTED_FAILURE_REASON,
+                authorizationService.getSubject(),
+                LocalDateTime.now()
+            );
+            if (updated == 0) {
+                log.info("Communication interrupt did not transition preparation. execPrepId={}", execPrepId);
+            }
+        });
+    }
+
+    /**
+     * 재시도 POST가 이전 통신 중단 행을 대체한다.
+     * 콜백 후보에 REQUEST_INTERRUPTED가 포함되므로, 새 요청 행과 이전 중단 행이 동시에 콜백 후보가 되는
+     * 모호성을 없애기 위해 새 행 생성 전에 이전 중단 행을 일반 실패로 닫는다.
+     */
+    private void supersedeInterruptedPreparation(Long scenarioId) {
+        modelExecutionPreparationRepository.findLatestByScenarioIdAndStatuses(
+                scenarioId,
+                List.of(ModelExecutionPreparationStatus.REQUEST_INTERRUPTED)
+            )
+            .ifPresent(interrupted -> modelExecutionPreparationRepository.transitionStatus(
+                interrupted.getExecPrepId(),
+                List.of(ModelExecutionPreparationStatus.REQUEST_INTERRUPTED),
+                ModelExecutionPreparationStatus.REQUEST_FAILED,
+                SUPERSEDED_FAILURE_REASON,
+                authorizationService.getSubject(),
+                LocalDateTime.now()
+            ));
     }
 
     private void markRequestFailed(Long execPrepId, String failureReason) {

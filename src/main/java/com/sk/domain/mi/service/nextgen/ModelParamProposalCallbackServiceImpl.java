@@ -13,6 +13,7 @@ import com.sk.domain.shared.enums.nextgen.AgentModelParamProposalStatus;
 import com.sk.domain.shared.enums.nextgen.ModelExecutionPreparationStatus;
 import com.sk.domain.shared.repository.master.tmd.ModelExecutionPreparationRepository;
 import com.sk.domain.shared.repository.master.tmm.AgentModelParamProposalRepository;
+import com.sk.domain.shared.repository.master.tmm.MiScenarioRepository;
 import com.sk.domain.shared.service.permissions.AuthorizationService;
 import java.time.LocalDateTime;
 import java.util.List;
@@ -31,13 +32,19 @@ import org.springframework.transaction.support.TransactionSynchronizationManager
 @Transactional(readOnly = true)
 public class ModelParamProposalCallbackServiceImpl implements ModelParamProposalCallbackService {
 
+    /**
+     * REQUEST_INTERRUPTED 포함 — 통신 오류로 중단됐지만 Agent가 실제로는 접수했던 요청을 늦은 콜백이 복구한다.
+     * 재시도 POST는 생성 전에 이전 중단 행을 REQUEST_FAILED로 대체하므로 후보는 항상 1건 이하로 유지된다.
+     */
     private static final List<ModelExecutionPreparationStatus> CALLBACK_CANDIDATE_STATUSES = List.of(
         ModelExecutionPreparationStatus.REQUESTING,
-        ModelExecutionPreparationStatus.PROPOSAL_PENDING
+        ModelExecutionPreparationStatus.PROPOSAL_PENDING,
+        ModelExecutionPreparationStatus.REQUEST_INTERRUPTED
     );
 
     private final ModelExecutionPreparationRepository modelExecutionPreparationRepository;
     private final AgentModelParamProposalRepository agentModelParamProposalRepository;
+    private final MiScenarioRepository miScenarioRepository;
     private final AuthorizationService authorizationService;
     private final SseEventPublisher sseEventPublisher;
 
@@ -82,7 +89,14 @@ public class ModelParamProposalCallbackServiceImpl implements ModelParamProposal
 
         validateCallbackSnapshot(request, proposal);
         attachAgentProposalIdIfNecessary(preparation, modelParamProposalId);
-        applyCanonicalStatus(preparation.getExecPrepId(), scenarioId, modelParamProposalId, proposal.getStatus(), request.message());
+        applyCanonicalStatus(
+            preparation.getExecPrepId(),
+            scenarioId,
+            proposal.getScenarioGroupId(),
+            modelParamProposalId,
+            proposal.getStatus(),
+            request.message()
+        );
     }
 
     private void validateEnvelope(Long pathScenarioId, ModelParamProposalCallbackReq request) {
@@ -145,10 +159,18 @@ public class ModelParamProposalCallbackServiceImpl implements ModelParamProposal
         if (updated > 0) {
             publishAfterCommit(ModelParamProposalSseEvent.of(
                 preparation.getScenarioId(),
+                resolveScenarioGroupId(preparation.getScenarioId()),
                 null,
                 AgentModelParamProposalStatus.FAILED.name()
             ));
         }
+    }
+
+    /** Agent proposal 없이 실패 콜백이 온 경우의 그룹 스트림 라우팅용. 시나리오 미조회 시 null(시나리오 스트림에만 전달). */
+    private Long resolveScenarioGroupId(Long scenarioId) {
+        return miScenarioRepository.findByScenarioIdAndIsDeletedFalse(scenarioId)
+            .map(scenario -> scenario.getScenarioGroup().getScenarioGroupId())
+            .orElse(null);
     }
 
     private void validateCallbackSnapshot(ModelParamProposalCallbackReq request, AgentModelParamProposal proposal) {
@@ -194,6 +216,7 @@ public class ModelParamProposalCallbackServiceImpl implements ModelParamProposal
     private void applyCanonicalStatus(
         Long execPrepId,
         Long scenarioId,
+        Long scenarioGroupId,
         Long modelParamProposalId,
         AgentModelParamProposalStatus agentStatus,
         String message
@@ -202,13 +225,13 @@ public class ModelParamProposalCallbackServiceImpl implements ModelParamProposal
             case PROPOSED -> {
                 int updated = transition(execPrepId, ModelExecutionPreparationStatus.PROPOSAL_PENDING, null);
                 if (updated > 0) {
-                    publishAfterCommit(ModelParamProposalSseEvent.of(scenarioId, modelParamProposalId, agentStatus.name()));
+                    publishAfterCommit(ModelParamProposalSseEvent.of(scenarioId, scenarioGroupId, modelParamProposalId, agentStatus.name()));
                 }
             }
             case FAILED -> {
                 int updated = transition(execPrepId, ModelExecutionPreparationStatus.REQUEST_FAILED, message);
                 if (updated > 0) {
-                    publishAfterCommit(ModelParamProposalSseEvent.of(scenarioId, modelParamProposalId, agentStatus.name()));
+                    publishAfterCommit(ModelParamProposalSseEvent.of(scenarioId, scenarioGroupId, modelParamProposalId, agentStatus.name()));
                 }
             }
             case PROCESSING -> transition(execPrepId, ModelExecutionPreparationStatus.PROPOSAL_PENDING, null);

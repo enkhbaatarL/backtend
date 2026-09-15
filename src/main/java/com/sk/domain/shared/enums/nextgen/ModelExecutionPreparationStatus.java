@@ -8,6 +8,7 @@ public enum ModelExecutionPreparationStatus {
     PROPOSAL_PENDING,
     REQUEST_FAILED,
     REQUEST_NO_CHANGES,
+    REQUEST_INTERRUPTED,
     CONFIRMING,
     PREPARING_EXECUTION,
     EXECUTING,
