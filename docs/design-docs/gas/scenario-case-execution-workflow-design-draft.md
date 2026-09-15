@@ -3,12 +3,12 @@
 - domain: gas
 - status: implemented (base workflow); Review (MI Base rollout pending)
 - owner: platform BE
-- updated at: 2026-09-14 (MI Base 상세 결과 조회·읽기 전용 정책 반영)
+- updated at: 2026-09-15 (상세 output/intermediate 다운로드 metadata 계약 동기화)
 - role: Scenario Case 업로드, 비동기 실행, 상태 추적, timeout 처리의 backend workflow와 persistence를 정리하는 설계 문서
 - canonical for: shared Scenario Case/run lifecycle, callback idempotency, timeout and backend-forced terminal semantics
 - upstream sources: `mi-scenario-workbench-backend-feature-spec.md`, `mi-scenario-model-execution-workflow-design.md`
 - dependencies: canonical DDL draft, scheduler-enabled dedicated deployment, Kubernetes RBAC
-- last sync date: 2026-09-14
+- last sync date: 2026-09-15
 - open questions: 없음. MI Base extension의 DBA 적용 상태는 canonical DDL draft에서 관리한다.
 
 > 빠른 진입점:
@@ -51,7 +51,7 @@
 - 실제 API request/response field contract
 - model pod callback payload 상세
 - canonical DDL/ERD 확정본
-- 결과 파일 다운로드 및 결과 파일 물리 관리 (결과 데이터 조회 API인 `GET /cases/{caseId}/volumes`, `GET /cases/{caseId}/price`는 1차 mock scope에 포함되었으며 feature spec이 계약을 관리한다)
+- 공통 파일 다운로드 API 자체의 동작·인가 및 결과 파일 물리 관리 (상세 응답의 다운로드 metadata는 feature spec이 계약을 관리한다)
 - Scenario Workbench 하위 resource path 또는 `scenarioId` 기반 API scope
 
 ## 도메인 구조
@@ -295,7 +295,7 @@ WHERE case_id = :case_id
 1. 프론트는 canonical 1차 mock API 기준으로 `caseId` 상태 조회 endpoint를 폴링한다.
 2. backend는 case 최신 상태와 latest run projection을 조회해 상태/시작/종료 시각을 반환한다.
 3. 결과 파일 자체는 model pod가 S3/object storage에 저장/관리한다.
-4. backend는 결과 파일 download URL 또는 결과 파일 pointer/reference를 저장하지 않는다. 결과 데이터 조회(Volumes/Price 수치 데이터)는 `GET /cases/{caseId}/volumes`, `GET /cases/{caseId}/price` API로 분리되어 제공한다. 1차 mock 단계에서는 json seed 기반 고정 데이터를 반환했으나, 2026-06-15 real DB 구현 완료로 현재는 `mi-fundamental-model-output-result-persistence-design.md`의 테이블에서 조회한다.
+4. backend는 case/run 테이블에 결과 파일 download URL 또는 별도 pointer/reference 컬럼을 저장하지 않는다. output/intermediate 파일은 `tcm_filel` 관계로 조회하며 상세 응답 metadata 계약은 feature spec을 따른다. 결과 데이터 조회(Volumes/Price 수치 데이터)는 `GET /cases/{caseId}/volumes`, `GET /cases/{caseId}/price` API로 분리되어 제공한다. 1차 mock 단계에서는 json seed 기반 고정 데이터를 반환했으나, 2026-06-15 real DB 구현 완료로 현재는 `mi-fundamental-model-output-result-persistence-design.md`의 테이블에서 조회한다.
 5. `runId` 단독 조회는 후속 이력 조회 계약에서 별도로 검토한다.
 
 ### Stage 4a. 상세 조회
@@ -304,7 +304,7 @@ WHERE case_id = :case_id
 2. backend는 active `exec_type_cd IN ('INDEPENDENT', 'MI_BASE')` case의 metadata, `execType`, 업로드 파일 metadata, latest run projection을 한 번에 반환한다. 파일 metadata는 input(`SCNRCASE + case_id`), output(`SCNRCASEH + run_seq`), 중간파일(`SCNRCASEHI + run_seq`)로 구분해 반환하며, output/중간파일은 최신 실행의 `run_seq` 기준이다. 응답 필드 계약은 feature spec이 canonical이다.
 3. 상세 조회는 화면 rendering용 aggregate snapshot이다. FE polling loop는 `GET /cases/{caseId}/status`를 사용하고, 상세 조회를 polling용 API로 반복 호출하지 않는다.
 4. 상세 조회는 full run history를 반환하지 않는다. case의 전체 실행 이력은 별도 runs API가 정의될 때까지 이 workflow의 phase-1 범위에 포함하지 않는다.
-5. 상세 조회는 result payload, result file reference, download URL/path를 반환하지 않는다. 결과 수치 데이터(Volumes/Price)는 `GET /cases/{caseId}/volumes`, `GET /cases/{caseId}/price` API로 분리 제공하며, 결과 파일 다운로드는 별도 API 계약과 persistence 검토가 필요하다.
+5. 상세 조회는 result payload와 download URL/path를 반환하지 않는다. input은 파일명만 반환하고 output/intermediate는 기존 공통 File API 요청용 `fileNo`, `fileNm`, `fileSize`를 반환한다. 필드 계약은 feature spec이 canonical이다. 결과 수치 데이터(Volumes/Price)는 `GET /cases/{caseId}/volumes`, `GET /cases/{caseId}/price` API로 분리 제공한다.
 6. phase-1 mock 구현은 기존 in-memory case aggregate와 run store의 `latestRunId` pointer를 사용해 이 projection을 만들었다. real DB 구현 완료 후에는 master case, `tcm_filel`, latest execution row를 같은 ownership/permission scope에서 조회한다.
 7. `SCENARIO`와 soft-deleted case는 active resource가 아니므로 상세 조회에서 `404 RSC_NOT_FOUND`로 처리한다.
 8. current `MI_BASE` 상세에서는 결과 탭을 노출한다. 상태·Volumes filter-options·Volumes·Trade Flows·Price read는 active `INDEPENDENT | MI_BASE`를 허용하고 기존 result query/response 계약을 그대로 사용한다.
@@ -656,7 +656,7 @@ mi:
 
 ### Closed Decisions
 
-- 결과 payload/pointer 저장 (2026-05-19): phase 1 scope에서 제외. `req_param_json`, `rslt_ref_json` 컬럼을 DDL에서 제거했다. 요청 정보는 case metadata + `tcm_filel`, 결과 payload/파일은 model pod가 S3/object storage에 저장/관리한다. 결과 조회/download spec이 별도로 확정되면 그때 재도입을 검토한다.
+- 결과 payload/pointer 저장 (2026-05-19, 2026-09-15 metadata 계약 동기화): `req_param_json`, `rslt_ref_json` 컬럼은 도입하지 않는다. 요청 정보는 case metadata + `tcm_filel`, 결과 payload/파일은 model pod가 DB와 S3/object storage에 저장·관리한다. 상세 응답은 `tcm_filel`의 output/intermediate 다운로드 metadata를 반환하며 필드 계약은 feature spec이 canonical이다.
 - run_id format (2026-05-21): backend 생성 포맷은 `yyyymmdd_hhmmss_XXXX` 로 확정한다. `tmd_mdl_scnrcaseh.run_id` 는 `VARCHAR(20) PRIMARY KEY` 로 사용하며, `tmd_mdl_scnrcasem.last_run_id` 는 `VARCHAR(20)` 기준으로 설계한다.
 - run_seq surrogate key (2026-05-22, type fixed 2026-06-11): `tmd_mdl_scnrcaseh`에 `run_seq INT UNSIGNED AUTO_INCREMENT UNIQUE` 를 추가한다. `file_rel_obj_dstg_no`가 `INT UNSIGNED` 계열이므로 `run_id`(`VARCHAR(20)`)를 직접 저장할 수 없는 제약을 해결하기 위한 surrogate key다. output 파일은 `SCNRCASEH` / `run_seq` 로 `tcm_filel`에 연결한다. `run_id`는 model pod 연동 키로 그대로 유지한다. Java/JPA는 insert 직후 엔티티 필드 자동 반영을 가정하지 않고, flush 후 `run_id` 기준으로 `run_seq`를 재조회해 Kubernetes Job arg로 사용한다. 이전 "surrogate key를 두지 않는다" 결정과 `BIGINT UNSIGNED` 후보는 superseded된다.
 - latest execution pointer (2026-05-19, 2026-05-21 length updated): `tmd_mdl_scnrcasem.last_run_id VARCHAR(20) NULL` 컬럼으로 도입. `tmd_mdl_scnrcaseh.run_id` 에 대한 logical reference 이며 물리 FK 는 걸지 않고 애플리케이션이 갱신 순서와 invariant 를 보장한다.

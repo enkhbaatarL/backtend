@@ -130,9 +130,9 @@ public class FundamentalModelCaseController {
     @ApiOrder(3)
     @Operation(
         summary = "MI Fundamental Model Scenario Case 상세 조회 API",
-        description = "active `INDEPENDENT`와 current `MI_BASE`의 case metadata, input/output/intermediate 파일명, latestRun만 조회합니다. "
-            + "중간파일은 최신 실행의 run_seq 기준이며, 최신 실행 또는 파일이 없으면 빈 배열입니다. 다운로드 기능이 제공되기 전까지 "
-            + "fileNo와 fileSize는 포함하지 않으며, full run history와 result payload도 포함하지 않습니다. "
+        description = "active `INDEPENDENT`와 current `MI_BASE`의 case metadata, input 파일명, output/intermediate 다운로드 metadata, latestRun만 조회합니다. "
+            + "input은 fileNm만 반환하고 output/intermediate는 공통 File API 요청용 fileNo, fileNm, fileSize를 반환합니다. "
+            + "output/intermediate는 최신 실행의 run_seq 기준이며, 최신 실행 또는 파일이 없으면 빈 배열입니다. full run history와 result payload는 포함하지 않습니다. "
             + "`MI_BASE`는 결과 조회만 허용되며 상세 조회가 수정·삭제·재실행 권한을 넓히지 않습니다. `SCENARIO`와 soft-deleted case는 조회되지 않습니다."
     )
     @ApiResponse(
@@ -158,8 +158,8 @@ public class FundamentalModelCaseController {
                         "assigneeUserNo": 1,
                         "files": {
                           "input": [{"fileNm": "DEMAND.xlsm"}, {"fileNm": "SUPPLY.xlsm"}, {"fileNm": "TRADE.xlsm"}],
-                          "output": [{"fileNm": "result.xlsx"}],
-                          "intermediate": []
+                          "output": [{"fileNo": 2011, "fileNm": "result.xlsx", "fileSize": 54321}],
+                          "intermediate": [{"fileNo": 3011, "fileNm": "step1_demand_curve.csv", "fileSize": 1234}]
                         },
                         "latestRun": {
                           "runId": "20260630_162500_A1B2",

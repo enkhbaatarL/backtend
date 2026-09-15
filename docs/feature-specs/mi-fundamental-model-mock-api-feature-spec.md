@@ -13,10 +13,10 @@
   - `docs/conventions/openapi-documentation-conventions.md`
 - supersedes:
   - 이 문서의 1차 mock runtime 구성·reset API·in-memory store 구현 handoff
-- last synced: 2026-09-14
+- last synced: 2026-09-15
 - open questions:
   - 현재 구현된 API와 Region/Country 필터 확장 계약에는 없음
-  - callback 인증/서명, 결과 파일 다운로드, 필터 저장은 별도 후속 계약에서 확정
+  - callback 인증/서명, 필터 저장은 별도 후속 계약에서 확정
 
 Notion `MI Fundamental Model 실행`(`350263ff004c8035b20ef02683447f4b`)과
 `MI Fundamental Model`(`34c263ff004c81ad817bc0a5a1c2992f`)은 reference only다.
@@ -82,7 +82,7 @@ SQL은 각각 source code와 canonical DDL/design 문서가 소유한다.
 - Scenario Case 상세 조회
   - case metadata
   - 실행 유형 `execType` (`INDEPENDENT | MI_BASE`)
-  - input/output 파일명 metadata
+  - input 파일명과 output/intermediate 다운로드 metadata
   - latestRun projection
 - Scenario Case metadata 수정
   - `title`, `description`만 허용
@@ -118,7 +118,6 @@ SQL은 각각 source code와 canonical DDL/design 문서가 소유한다.
 
 ### Current Exclusions
 
-- 결과 파일 다운로드
 - 운영 수준 callback 인증/서명/재시도 정책
 - Volumes 필터 저장
 - input workbook 내용 조회·편집·재생성
@@ -183,7 +182,7 @@ input 내용 제공 endpoint와 응답 형식은 아직 이 표에 추가하지 
 
 | 항목 | 현재 상태 | 필요한 후속 source of truth |
 |---|---|---|
-| 결과 파일 다운로드 | 현재 제외 | result/download API feature spec + result/file ERD review |
+| output/intermediate 파일 다운로드 metadata | 상세 응답 계약 확정 | 이 feature spec의 `FundamentalModelCaseFilesRes`; 다운로드는 기존 공통 File API 사용 |
 | 운영 Kubernetes Job dispatch | 구현 완료 (2026-06-12, 재시도 정책 no-retry 확정 2026-06-21) | external model interface spec + workflow design |
 | callback 인증/서명 | 재시도 정책은 확정, 인증/서명 세부는 별도 운영 정책 | security/integration design + feature spec update |
 | DB persistence / DDL (volumes/trade flows/price 포함) | 구현 완료 (2026-06-15 real DB rollout) | case/run DDL은 `scenario-case-execution-erd-ddl-draft.md`, output result data persistence는 `mi-fundamental-model-output-result-persistence-design.md` |
@@ -232,11 +231,10 @@ input 내용 제공 endpoint와 응답 형식은 아직 이 표에 추가하지 
 `files.intermediate`는 같은 `run_seq`를 기준으로 `file_rel_obj_spt_cd = 'SCNRCASEHI'`에 연결된 모델 실행 중간파일 목록이다 (2026-09-07 추가). 개수는 고정하지 않는다(n개).
 세 목록 모두 `del_yn = 'N'`과 파일 유효종료일자 조건을 만족하는 row를 `file_no ASC`로 반환하며, 최신 실행이나 해당 파일이 없으면 빈 배열이다.
 
-각 파일 항목은 화면 표시용 `fileNm`만 반환한다. 다운로드 기능이 후속 구현되기 전까지
-`fileNo`, `fileSize`는 상세 조회와 수정 응답에 노출하지 않는다. 이는 파일 식별자 노출을 줄이기 위한 의도된 결정이며,
-`files.intermediate`에도 동일하게 적용한다. 이 제한은 `FundamentalModelCaseDetailRes.files`에만 적용되며,
-업로드 응답 `FundamentalModelCaseFileRes`는 기존 계약을 그대로 유지한다.
-중간파일 다운로드 활성화는 별도 결정 항목(TODO)이며, 식별 방식과 pod 적재 계약은
+`files.input` 항목은 화면 표시용 `fileNm`만 반환한다. `files.output`과 `files.intermediate` 항목은 기존 공통
+File API 다운로드 요청에 전달할 `fileNo`, `fileNm`, `fileSize`를 반환한다. 이 역할별 차이는 상세 조회와 같은
+projection을 반환하는 수정 응답에도 동일하게 적용한다. 업로드 응답 `FundamentalModelCaseFileRes`는 기존 계약을 유지한다.
+중간파일 식별 방식과 pod 적재 계약은
 [mi-fundamental-model-intermediate-file-design.md](../design-docs/gas/mi-fundamental-model-intermediate-file-design.md)가 canonical이다.
 
 `GET /cases/{caseId}/status`는 FE polling을 위한 경량 상태 조회로 유지한다. 상태 조회는 파일 metadata와 설명 등 화면 상세 metadata를 반환하지 않는다. 반대로 상세 조회는 화면 상세 rendering에 필요한 projection이며, polling interval에서 반복 호출하는 API로 설계하지 않는다.
@@ -359,11 +357,11 @@ createCase(
 
 규칙:
 
-- active `execType = INDEPENDENT | MI_BASE` case이면 case metadata, `execType`, input/output/intermediate 파일명 metadata, latest run projection을 반환한다. `SCENARIO`는 이 API의 active resource가 아니므로 `404 RSC_NOT_FOUND`로 처리한다.
+- active `execType = INDEPENDENT | MI_BASE` case이면 case metadata, `execType`, input 파일명, output/intermediate 다운로드 metadata, latest run projection을 반환한다. `SCENARIO`는 이 API의 active resource가 아니므로 `404 RSC_NOT_FOUND`로 처리한다.
 - `latestRunId`가 없거나 아직 실행되지 않은 `PENDING` case이면 `latestRun = null`이다.
 - full run history는 반환하지 않는다.
-- result payload, result reference, download URL은 반환하지 않는다. 다운로드 기능이 후속 구현되기 전까지
-  `files.*[]`에는 `fileNm`만 반환하고 `fileNo`, `fileSize`는 노출하지 않는다.
+- result payload, result reference, download URL은 반환하지 않는다. `files.input[]`은 `fileNm`만 반환하고,
+  `files.output[]`과 `files.intermediate[]`은 공통 File API 다운로드 요청용 `fileNo`, `fileNm`, `fileSize`를 반환한다.
 - case가 없으면 `404 RSC_NOT_FOUND`로 응답한다.
 
 Acceptance criteria:
@@ -682,15 +680,21 @@ Acceptance criteria:
     ],
     "output": [
       {
-        "fileNm": "output.xlsx"
+        "fileNo": 2011,
+        "fileNm": "output.xlsx",
+        "fileSize": 54321
       }
     ],
     "intermediate": [
       {
-        "fileNm": "step1_demand_curve.csv"
+        "fileNo": 3011,
+        "fileNm": "step1_demand_curve.csv",
+        "fileSize": 1234
       },
       {
-        "fileNm": "step2_supply_stack.csv"
+        "fileNo": 3012,
+        "fileNm": "step2_supply_stack.csv",
+        "fileSize": 2345
       }
     ]
   },
@@ -717,31 +721,39 @@ Acceptance criteria:
 | `execType` | `FundamentalModelExecType` | 실행 유형. 상세 조회에서는 `INDEPENDENT \| MI_BASE`, non-null |
 | `assigneeName` | `String` | `tmd_mdl_scnrcasem.usr_no`로 연결된 사용자 이름 |
 | `assigneeUserNo` | `Integer` | case를 업로드한 사용자 번호. `tmd_mdl_scnrcasem.usr_no` |
-| `files` | `FundamentalModelCaseFilesRes` | input/output/intermediate 파일명 metadata |
+| `files` | `FundamentalModelCaseFilesRes` | input 파일명과 output/intermediate 다운로드 metadata |
 | `latestRun` | `FundamentalModelRunStatusRes` | 최신 실행 정보. `PENDING`이면 `null` |
 | `createdAt` | `LocalDateTime` | case 생성 시각 |
 | `updatedAt` | `LocalDateTime` | case 최종 변경 시각 |
 
 상세 응답은 active `INDEPENDENT | MI_BASE` case를 지원하고 최신 실행 1건만 포함한다. 전체 실행 이력은 별도 runs API가 정의되기 전까지 이 응답에 포함하지 않는다.
 상세 `GET` 허용 범위는 수정·삭제·실행 범위를 넓히지 않으며, 이 mutation들은 active `INDEPENDENT`만 허용한다. MI Base 지정 actor/time은 별도 계약 전까지 응답하지 않는다.
-result payload는 포함하지 않는다. 다운로드 기능이 후속 구현되기 전까지 상세 응답에는 파일명 `fileNm`만 제공하고
-`fileNo`, `fileSize`는 노출하지 않는다. `intermediate` 파일 목록은 포함하며(2026-09-07 추가), 같은 `fileNm`-only 규칙을 따른다.
+result payload는 포함하지 않는다. input 파일은 `fileNm`만 제공하고, output/intermediate 파일은 기존 공통 File API에
+전달할 `fileNo`, `fileNm`, `fileSize`를 제공한다.
 
 #### `FundamentalModelCaseFilesRes`
 
 | 필드 | 타입 | 설명 |
 |---|---|---|
-| `input` | `List<FundamentalModelDownloadFileRes>` | `SCNRCASE + case_id`로 연결된 입력 파일 목록. 업로드 기준 3개 |
+| `input` | `List<FundamentalModelFileNameRes>` | `SCNRCASE + case_id`로 연결된 입력 파일명 목록. 업로드 기준 3개 |
 | `output` | `List<FundamentalModelDownloadFileRes>` | 최신 실행 `SCNRCASEH + run_seq`로 연결된 output 파일 목록. 최신 실행 또는 output 파일이 없으면 빈 배열 |
 | `intermediate` | `List<FundamentalModelDownloadFileRes>` | 최신 실행 `SCNRCASEHI + run_seq`로 연결된 모델 실행 중간파일 목록(n개). 최신 실행 또는 중간파일이 없으면 빈 배열 |
+
+#### `FundamentalModelFileNameRes`
+
+| 필드 | 타입 | 설명 |
+|---|---|---|
+| `fileNm` | `String` | 화면에 표시할 input 파일명(`tcm_filel.org_file_nm`) |
 
 #### `FundamentalModelDownloadFileRes`
 
 | 필드 | 타입 | 설명 |
 |---|---|---|
-| `fileNm` | `String` | 화면에 표시할 파일명(`tcm_filel.org_file_nm`). 현재 다운로드 요청용 `fileNo`, `fileSize`는 노출하지 않음 |
+| `fileNo` | `Long` | 공통 File API 다운로드 요청의 `fileNo` |
+| `fileNm` | `String` | 공통 File API 다운로드 요청의 `fileNm` (`tcm_filel.org_file_nm`) |
+| `fileSize` | `Long` | 공통 File API 다운로드 요청의 `fileSize` (byte) |
 
-`input`, `output`, `intermediate` 모두 동일한 shape이며 `fileNm` 단일 필드다.
+`input`은 파일명-only shape이고, `output`과 `intermediate`는 동일한 다운로드 metadata shape다.
 
 ### 4.4 `FundamentalModelCaseCreateRes`
 
@@ -1443,8 +1455,8 @@ Swagger 문서에는 다음을 명시한다.
 - 목록 조회 API의 canonical contract는 `non-blank keyword requires searchType`이다. `keyword`가 null 또는 blank이면 `searchType`이 있어도 검색 조건 없음으로 처리한다.
 - 업로드 API는 `multipart/form-data` 전용이다.
 - `files` part는 정확히 3개가 필수다.
-- 상세 조회는 case metadata, input/output/intermediate 파일명 metadata, latestRun을 반환한다. 파일 항목에는 `fileNm`만 제공하며,
-  full run history/result payload/`fileNo`/`fileSize`는 포함하지 않는다.
+- 상세 조회는 case metadata, input 파일명, output/intermediate 다운로드 metadata, latestRun을 반환한다. input에는 `fileNm`만,
+  output/intermediate에는 `fileNo`, `fileNm`, `fileSize`를 제공하며 full run history/result payload는 포함하지 않는다.
 - 수정 API는 `title`, `description`만 받으며 응답은 최신 `FundamentalModelCaseDetailRes`다.
 - 삭제 API는 physical delete가 아니라 soft delete이며, 삭제된 case는 이후 active-resource API에서 `404 RSC_NOT_FOUND`로 취급한다.
 - 실행 요청은 `PENDING` 최초 실행과 `FAILED` 모델 호출 재시도만 허용한다. `RUNNING` 중복 접수와 `COMPLETED` case 재실행은 차단한다.
@@ -1658,7 +1670,7 @@ src/main/resources/mock/fundamental-model/fundamental-model-price-data.json
 Trade Flows의 fromCountries/toCountries country 목록은 base 버전/기준 정보에 따라 변동될 수 있다. region 고유값은 고정이지만 region 내 country 목록이 달라지는 구조이므로, header metadata는 [mi-fundamental-model-output-result-persistence-design.md](../design-docs/gas/mi-fundamental-model-output-result-persistence-design.md)의 `tmd_mdl_scnrcasetrdehdrl` row table에 저장한다.
 
 callback payload에는 결과 payload/pointer를 포함하지 않는다. parsed result persistence는 output result design의
-별도 table을 사용하고, 결과 파일 다운로드 계약이 확정되면 필요한 file reference 노출을 다시 검토한다.
+별도 table을 사용하고, output/intermediate file reference는 상세 응답의 다운로드 metadata 계약을 따른다.
 
 ## 8. Current Data Access Approach
 
@@ -1684,7 +1696,7 @@ callback payload에는 결과 payload/pointer를 포함하지 않는다. parsed 
 | Persistence | `ScenarioCaseRepository`, `ScenarioCaseRunHistoryRepository`, `UploadedFileRepository`, Volumes/Trade/Price result repositories |
 | Request DTO | `FundamentalModelCaseListReq`, `FundamentalModelCaseUpdateReq`, `FundamentalModelVolumesReq`, `FundamentalModelTradeFlowsReq` |
 | Callback DTO | `FundamentalModelRunCallbackReq` |
-| Response DTO | `FundamentalModelCaseListRes`, `FundamentalModelCaseListItemRes`, `FundamentalModelCaseDetailRes`, `FundamentalModelCaseFilesRes`, `FundamentalModelDownloadFileRes`, `FundamentalModelCaseCreateRes`, `FundamentalModelCaseFileRes`, `FundamentalModelRunAcceptRes`, `FundamentalModelCaseStatusRes`, `FundamentalModelRunStatusRes`, `FundamentalModelRunCallbackRes`, `FundamentalModelVolumesRes`, `FundamentalModelTradeFlowsRes`, `FundamentalModelPriceRes` |
+| Response DTO | `FundamentalModelCaseListRes`, `FundamentalModelCaseListItemRes`, `FundamentalModelCaseDetailRes`, `FundamentalModelCaseFilesRes`, `FundamentalModelFileNameRes`, `FundamentalModelDownloadFileRes`, `FundamentalModelCaseCreateRes`, `FundamentalModelCaseFileRes`, `FundamentalModelRunAcceptRes`, `FundamentalModelCaseStatusRes`, `FundamentalModelRunStatusRes`, `FundamentalModelRunCallbackRes`, `FundamentalModelVolumesRes`, `FundamentalModelTradeFlowsRes`, `FundamentalModelPriceRes` |
 | Enum | `FundamentalModelCaseStatus`, `FundamentalModelRunStatus`, `FundamentalModelCaseSearchType`, `FundamentalModelSegment`, `FundamentalModelDataType`, `FundamentalModelRegion`, `FundamentalModelGranularity`, `VolumesRowKind`, `PriceSeriesType`, `TradeFlowSelector`, `TradeFlowUnit`, `TradeFlowDirection`, `TradeCountryHeaderKind` |
 
 package는 현재 `com.sk.domain.mi.*.fundamentalmodel` 경계를 사용한다.
@@ -1884,7 +1896,7 @@ callback endpoint는 현재 별도 permission annotation 없이 dedicated deploy
 - Region/Country 필터 확장 계약의 open question은 없다. `countryKeys` 식별자, AND 조합, Trade 방향 적용, 현재 `selector/year` 합집합, 합계 재계산 규칙이 확정되었다.
 - 외부 모델 완료 동기화는 callback 방식으로 구현되어 있다. 남은 항목은 운영 인증 방식과 header/signature 규격이다. Job dispatch 재시도는 no-retry로 확정됐다.
 - `run_id` 생성 주체는 backend로 확정한다. 생성 포맷은 `yyyymmdd_hhmmss_XXXX` 이다. Kubernetes Job 연동 계약에서는 backend가 Job/pod에 전달한 `run_id` 를 완료/실패 callback path에 그대로 사용하는지만 확인한다.
-- 결과 payload는 model pod가 object storage와 parsed result table에 적재하고 backend가 조회한다. 결과 파일 다운로드 API는 별도 계약 전까지 제외한다.
+- 결과 payload는 model pod가 object storage와 parsed result table에 적재하고 backend가 조회한다. output/intermediate 파일은 상세 응답의 metadata를 기존 공통 File API에 전달해 다운로드한다.
 - Volumes/Trade Flows/Price 결과 데이터는 [mi-fundamental-model-output-result-persistence-design.md](../design-docs/gas/mi-fundamental-model-output-result-persistence-design.md)의 table/key/index 계약을 따른다.
 - Volumes 필터 Save 토글은 현재 제외한다. 후속 구현 시 user preference API/schema 설계가 필요하다.
 - 삭제는 case active-resource 제외를 위한 soft delete다. 보존 기간, audit 조회, 복구 정책은 후속 정책 범위다.
@@ -1916,7 +1928,7 @@ Region/Country 필터 확장 implementation readiness: `ready`.
 - Kubernetes Job 실제 dispatch 연동 및 재시도 정책 확정(no-retry, 2026-06-12/06-21)
 - Volumes/Trade Flows/Price DB persistence implementation (canonical table/key/partition/index design은 `mi-fundamental-model-output-result-persistence-design.md`에 확정, 2026-06-15 rollout 완료)
 - 목록/상세/status와 owner-scoped update/delete/run, active-resource hiding
-- `SCNRCASE` input, `SCNRCASEH` output, `SCNRCASEHI` intermediate 파일명 조회
+- `SCNRCASE` input 파일명과 `SCNRCASEH` output/`SCNRCASEHI` intermediate 다운로드 metadata 조회
 - callback과 timeout/reconciliation의 terminal 상태 전이
 - `BaseResponse<T>` 응답 wrapper
 
@@ -1927,7 +1939,6 @@ Region/Country 필터 확장 implementation readiness: `ready`.
 아직 안정적이지 않은 항목:
 
 - callback 운영 인증/서명 세부 정책 (재시도 정책은 no-retry로 확정됨, 2026-06-21)
-- 결과 파일 다운로드
 - timeout scheduler 운영 활성화 (구현은 2026-06-22 완료 — 10분 임계값/30초 polling, `SCENARIO`/`INDEPENDENT` 공통 적용. DBA index 검증 전까지 feature flag 기본 비활성. 상세는 `mi-scenario-model-execution-workflow-design.md` Open Questions 참고)
 - Volumes 필터 Save 기능 (user preference 저장)
 
@@ -1944,7 +1955,7 @@ Region/Country 필터 확장 implementation readiness: `ready`.
 - `ASSIGNEE_NAME` 검색 JOIN 경계는 `tmd_mdl_scnrcasem.usr_no = tmd_usrm.usr_no`, 표시 컬럼은 `tmd_usrm.usr_nm`으로 확정한다. DDL review에서는 JOIN 양측 인덱스 커버리지를 확인한다
 - callback compare-and-set update 조건과 terminal overwrite 방지 전략 검토
 - `tmd_mdl_scnrcasem.last_run_id` 컬럼의 invariant 와 application-validated 운용 방식 검토. case 최신 상태 동기화 시 `last_run_id = :run_id` 조건이 race condition 과 late callback 에 대해 충분한지 확인
-- `req_param_json`, `rslt_ref_json` 제거는 workflow draft Closed Decisions 에서 확정되었다. 결과 조회/download spec 이 별도로 확정되면 그 시점의 컬럼/테이블 도입을 별도 review 로 다룬다.
+- `req_param_json`, `rslt_ref_json` 미도입은 workflow draft Closed Decisions에서 확정되었다. output/intermediate 다운로드 metadata는 기존 `tcm_filel` 관계를 사용하므로 추가 컬럼/테이블이 필요 없다. 향후 별도 result reference 저장 구조를 도입할 때만 schema review를 수행한다.
 - DB-backed update predicate는 `case_id + usr_no ownership + del_yn = 'N' + exec_type_cd = 'INDEPENDENT'` 조건으로 active 소유 독립실행 case만 갱신하고, `case_titl_nm`, `case_expn`, `mod_*` 컬럼만 변경한다.
 - DB-backed delete predicate는 `case_id + usr_no ownership + del_yn = 'N' + exec_type_cd = 'INDEPENDENT'` 조건으로 active 소유 독립실행 case만 soft delete하고, `del_yn = 'Y'`, `mod_*` 컬럼만 변경한다.
 

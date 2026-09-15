@@ -22,6 +22,7 @@ import com.sk.domain.mi.dto.response.fundamentalmodel.FundamentalModelCaseListIt
 import com.sk.domain.mi.dto.response.fundamentalmodel.FundamentalModelCaseListRes;
 import com.sk.domain.mi.dto.response.fundamentalmodel.FundamentalModelCaseStatusRes;
 import com.sk.domain.mi.dto.response.fundamentalmodel.FundamentalModelDownloadFileRes;
+import com.sk.domain.mi.dto.response.fundamentalmodel.FundamentalModelFileNameRes;
 import com.sk.domain.mi.dto.response.fundamentalmodel.FundamentalModelFiveScaleTruncatingNumberSerializer;
 import com.sk.domain.mi.dto.response.fundamentalmodel.FundamentalModelPeriodFilterOptions;
 import com.sk.domain.mi.dto.response.fundamentalmodel.FundamentalModelPriceRes;
@@ -250,10 +251,7 @@ public class FundamentalModelCaseServiceImpl implements FundamentalModelCaseServ
         ScenarioCaseDetailRow caseRow = scenarioCaseRepository.findDetailRow(caseId)
             .orElseThrow(() -> caseNotFound(caseId));
 
-        List<FundamentalModelDownloadFileRes> inputFiles = findDownloadFiles(
-            caseId,
-            FILE_RELATION_SCENARIO_CASE
-        );
+        List<FundamentalModelFileNameRes> inputFiles = findInputFiles(caseId);
         ScenarioCaseRunHistory latestRunHistory = findLatestRunHistory(caseRow.lastRunId()).orElse(null);
         List<FundamentalModelDownloadFileRes> outputFiles = findOutputFiles(latestRunHistory);
         List<FundamentalModelDownloadFileRes> intermediateFiles = findIntermediateFiles(latestRunHistory);
@@ -2453,6 +2451,15 @@ public class FundamentalModelCaseServiceImpl implements FundamentalModelCaseServ
         );
     }
 
+    private List<FundamentalModelFileNameRes> findInputFiles(Long caseId) {
+        return uploadedFileRepository.findActiveRelationshipFilesOrderByFileNoAsc(
+            Math.toIntExact(caseId),
+            FILE_RELATION_SCENARIO_CASE
+        ).stream()
+            .map(uploadedFile -> new FundamentalModelFileNameRes(uploadedFile.getOriginalFileNm()))
+            .toList();
+    }
+
     private List<FundamentalModelDownloadFileRes> findDownloadFiles(
         Long relationshipObjectDistinguishNo,
         String relationshipObjectSeparateCd
@@ -2465,7 +2472,9 @@ public class FundamentalModelCaseServiceImpl implements FundamentalModelCaseServ
         List<FundamentalModelDownloadFileRes> files = new ArrayList<>();
         for (UploadedFile uploadedFile : uploadedFiles) {
             files.add(new FundamentalModelDownloadFileRes(
-                uploadedFile.getOriginalFileNm()
+                uploadedFile.getFileNo(),
+                uploadedFile.getOriginalFileNm(),
+                uploadedFile.getFileSize()
             ));
         }
         return files;
