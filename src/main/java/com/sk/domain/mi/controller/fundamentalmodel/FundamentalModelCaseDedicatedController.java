@@ -13,6 +13,8 @@ import com.sk.domain.shared.enums.PermissionCondition;
 import com.sk.domain.shared.enums.Role;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.media.Content;
+import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import java.util.List;
@@ -67,9 +69,27 @@ public class FundamentalModelCaseDedicatedController {
     @ApiOrder(6)
     @Operation(
         summary = "MI Fundamental Model Scenario Case 실행 요청 API",
-        description = "PENDING/COMPLETED/FAILED 상태의 case를 RUNNING 상태로 전이하고 runId를 발급합니다."
+        description = "active `INDEPENDENT`의 PENDING 상태 case를 최초 실행하거나 FAILED 상태의 모델 호출을 재시도합니다. "
+            + "대상 case를 RUNNING 상태로 전이하고 새 runId를 발급하며, COMPLETED 상태의 case는 재실행할 수 없습니다. "
+            + "`MI_BASE | SCENARIO`는 resource hiding 규칙에 따라 조회되지 않습니다."
     )
     @ApiResponse(responseCode = "202", description = "비동기 실행 접수 성공")
+    @ApiResponse(
+        responseCode = "404",
+        description = "RSC_NOT_FOUND: active INDEPENDENT가 아니거나 소유하지 않은 case",
+        content = @Content(
+            mediaType = MediaType.APPLICATION_JSON_VALUE,
+            schema = @Schema(implementation = BaseResponse.class)
+        )
+    )
+    @ApiResponse(
+        responseCode = "409",
+        description = "BIZ_RULE_VIOLATION: case가 RUNNING 또는 COMPLETED 상태여서 실행할 수 없음",
+        content = @Content(
+            mediaType = MediaType.APPLICATION_JSON_VALUE,
+            schema = @Schema(implementation = BaseResponse.class)
+        )
+    )
     @PostMapping("/{caseId}/runs")
     @RequiredPermissionRules(rules = {
         @PermissionRule(role = Role.USER, conditions = {PermissionCondition.SKGAS_COMPANY_USER_ONLY}),

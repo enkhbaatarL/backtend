@@ -4,11 +4,13 @@ import com.sk.domain.shared.entity.master.tmd.ScenarioCase;
 import com.sk.domain.shared.enums.fundamentalmodel.FundamentalModelCaseStatus;
 import com.sk.domain.shared.enums.fundamentalmodel.FundamentalModelExecType;
 import com.sk.domain.shared.repository.master.tmd.custom.CustomScenarioCaseRepository;
+import jakarta.persistence.LockModeType;
 import java.time.LocalDateTime;
 import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Lock;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -16,6 +18,23 @@ import org.springframework.data.repository.query.Param;
 public interface ScenarioCaseRepository extends JpaRepository<ScenarioCase, Long>, CustomScenarioCaseRepository {
 
     Optional<ScenarioCase> findByCaseIdAndIsDeletedFalse(Long caseId);
+
+    @Lock(LockModeType.PESSIMISTIC_WRITE)
+    @Query("""
+        SELECT c
+          FROM ScenarioCase c
+         WHERE c.activeBaseYn = 'Y'
+        """)
+    Optional<ScenarioCase> findCurrentMiBaseForUpdate();
+
+    @Lock(LockModeType.PESSIMISTIC_WRITE)
+    @Query("""
+        SELECT c
+          FROM ScenarioCase c
+         WHERE c.caseId = :caseId
+           AND c.isDeleted = false
+        """)
+    Optional<ScenarioCase> findActiveCaseForUpdate(@Param("caseId") Long caseId);
 
     Optional<ScenarioCase> findByCaseIdAndScenarioIdAndExecTypeAndIsDeletedFalse(
         Long caseId,
@@ -82,11 +101,13 @@ public interface ScenarioCaseRepository extends JpaRepository<ScenarioCase, Long
                c.modifyUserId = :actorLoginId
          WHERE c.caseId = :caseId
            AND c.isDeleted = false
+           AND c.execType = :execType
            AND c.status IN :claimableStatuses
         """)
     int claimRun(
         @Param("caseId") Long caseId,
         @Param("runId") String runId,
+        @Param("execType") FundamentalModelExecType execType,
         @Param("runningStatus") FundamentalModelCaseStatus runningStatus,
         @Param("claimableStatuses") Collection<FundamentalModelCaseStatus> claimableStatuses,
         @Param("modifiedAt") LocalDateTime modifiedAt,

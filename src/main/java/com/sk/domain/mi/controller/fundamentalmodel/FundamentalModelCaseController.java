@@ -10,7 +10,11 @@ import com.sk.domain.mi.dto.request.fundamentalmodel.FundamentalModelCaseListReq
 import com.sk.domain.mi.dto.request.fundamentalmodel.FundamentalModelCaseUpdateReq;
 import com.sk.domain.mi.dto.request.fundamentalmodel.FundamentalModelTradeFlowsReq;
 import com.sk.domain.mi.dto.request.fundamentalmodel.FundamentalModelVolumesReq;
+import com.sk.domain.mi.dto.response.fundamentalmodel.FundamentalModelCaseDetailOpenApiRes;
 import com.sk.domain.mi.dto.response.fundamentalmodel.FundamentalModelCaseDetailRes;
+import com.sk.domain.mi.dto.response.fundamentalmodel.FundamentalModelCaseListItemOpenApiRes;
+import com.sk.domain.mi.dto.response.fundamentalmodel.FundamentalModelCaseListItemRes;
+import com.sk.domain.mi.dto.response.fundamentalmodel.FundamentalModelCaseListOpenApiRes;
 import com.sk.domain.mi.dto.response.fundamentalmodel.FundamentalModelCaseListRes;
 import com.sk.domain.mi.dto.response.fundamentalmodel.FundamentalModelCaseStatusRes;
 import com.sk.domain.mi.dto.response.fundamentalmodel.FundamentalModelPriceRes;
@@ -30,17 +34,24 @@ import com.sk.domain.shared.enums.fundamentalmodel.TradeFlowSelector;
 import com.sk.domain.shared.enums.fundamentalmodel.TradeFlowUnit;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.media.Content;
+import io.swagger.v3.oas.annotations.media.ExampleObject;
+import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
+import jakarta.validation.constraints.Min;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.annotation.Profile;
+import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
@@ -58,10 +69,47 @@ public class FundamentalModelCaseController {
 
     @ApiOrder(1)
     @Operation(
-        summary = "MI Fundamental Model Scenario Case 목록 조회 API",
-        description = "MI Fundamental Model case 목록을 조회합니다. keyword가 non-blank인 경우에만 searchType이 필수입니다."
+        summary = "MI Fundamental Model 실행 Case 및 MI Base 목록 조회 API",
+        description = """
+            current MI Base와 그 외 실행 case를 각각 `miBase`, `cases`로 분리해 반환합니다.
+
+            - `miBase`: 검색 조건과 무관하게 고정 반환되는 active `MI_BASE` 단건이며, 없으면 `null`입니다.
+            - `cases`: 검색 조건이 적용된 active `INDEPENDENT` 목록이며, `createdAt DESC, caseId DESC`로 정렬됩니다.
+            - `totalCount`: current MI Base 0~1건과 필터된 `cases.size()`의 합입니다.
+            - `SCENARIO`는 두 영역에서 모두 제외됩니다.
+
+            `keyword`가 non-blank인 경우에만 `searchType`이 필수입니다. 각 항목의 `execType`은 current 기준값과 일반 독립실행을 구분합니다.
+            """
     )
-    @ApiResponse(responseCode = "200", description = "조회 성공")
+    @ApiResponse(
+        responseCode = "200",
+        description = "조회 성공",
+        useReturnTypeSchema = true,
+        content = @Content(
+            mediaType = MediaType.APPLICATION_JSON_VALUE,
+            schema = @Schema(implementation = FundamentalModelCaseListOpenApiRes.class),
+            examples = @ExampleObject(
+                name = "current MI Base와 독립실행 목록",
+                value = """
+                    {
+                      "status": true,
+                      "code": "SUC-000",
+                      "message": "Success.",
+                      "data": {
+                        "totalCount": 2,
+                        "miBase": {"caseId": 105, "title": "현재 기준", "status": "COMPLETED", "execType": "MI_BASE", "assigneeName": "홍길동", "createdAt": "2026-06-30T16:25:00", "updatedAt": "2026-06-30T16:25:00"},
+                        "cases": [{"caseId": 110, "title": "독립 실행", "status": "COMPLETED", "execType": "INDEPENDENT", "assigneeName": "홍길동", "createdAt": "2026-06-30T17:30:00", "updatedAt": "2026-06-30T17:34:00"}]
+                      }
+                    }
+                    """
+            )
+        )
+    )
+    @ApiResponse(
+        responseCode = "400",
+        description = "REQ_INVALID_PARAMETER: non-blank keyword에 searchType이 없음",
+        content = @Content(mediaType = MediaType.APPLICATION_JSON_VALUE, schema = @Schema(implementation = BaseResponse.class))
+    )
     @GetMapping
     @RequiredPermissionRules(rules = {
         @PermissionRule(role = Role.USER, conditions = {PermissionCondition.SKGAS_COMPANY_USER_ONLY}),
@@ -82,11 +130,59 @@ public class FundamentalModelCaseController {
     @ApiOrder(3)
     @Operation(
         summary = "MI Fundamental Model Scenario Case 상세 조회 API",
-        description = "case metadata, input/output/intermediate 파일명, latestRun만 조회합니다. "
+        description = "active `INDEPENDENT`와 current `MI_BASE`의 case metadata, input/output/intermediate 파일명, latestRun만 조회합니다. "
             + "중간파일은 최신 실행의 run_seq 기준이며, 최신 실행 또는 파일이 없으면 빈 배열입니다. 다운로드 기능이 제공되기 전까지 "
-            + "fileNo와 fileSize는 포함하지 않으며, full run history와 result payload도 포함하지 않습니다."
+            + "fileNo와 fileSize는 포함하지 않으며, full run history와 result payload도 포함하지 않습니다. "
+            + "`MI_BASE`는 결과 조회만 허용되며 상세 조회가 수정·삭제·재실행 권한을 넓히지 않습니다. `SCENARIO`와 soft-deleted case는 조회되지 않습니다."
     )
-    @ApiResponse(responseCode = "200", description = "조회 성공")
+    @ApiResponse(
+        responseCode = "200",
+        description = "조회 성공",
+        content = @Content(
+            mediaType = MediaType.APPLICATION_JSON_VALUE,
+            schema = @Schema(implementation = FundamentalModelCaseDetailOpenApiRes.class),
+            examples = @ExampleObject(
+                name = "current MI Base 상세",
+                value = """
+                    {
+                      "status": true,
+                      "code": "SUC-000",
+                      "message": "Success.",
+                      "data": {
+                        "caseId": 105,
+                        "title": "현재 기준",
+                        "description": "현재 MI Base",
+                        "status": "COMPLETED",
+                        "execType": "MI_BASE",
+                        "assigneeName": "홍길동",
+                        "assigneeUserNo": 1,
+                        "files": {
+                          "input": [{"fileNm": "DEMAND.xlsm"}, {"fileNm": "SUPPLY.xlsm"}, {"fileNm": "TRADE.xlsm"}],
+                          "output": [{"fileNm": "result.xlsx"}],
+                          "intermediate": []
+                        },
+                        "latestRun": {
+                          "runId": "20260630_162500_A1B2",
+                          "status": "COMPLETED",
+                          "requestedAt": "2026-06-30T16:20:00",
+                          "startedAt": "2026-06-30T16:20:00",
+                          "finishedAt": "2026-06-30T16:25:00",
+                          "failureReason": null,
+                          "errorMessage": null
+                        },
+                        "createdAt": "2026-06-30T16:20:00",
+                        "updatedAt": "2026-06-30T16:25:00"
+                      }
+                    }
+                    """
+            )
+        )
+    )
+    @ApiResponse(
+        responseCode = "404",
+        description = "RSC_NOT_FOUND: case 없음, soft delete 또는 SCENARIO",
+        content = @Content(mediaType = MediaType.APPLICATION_JSON_VALUE, schema = @Schema(implementation = BaseResponse.class))
+    )
     @GetMapping("/{caseId}")
     @RequiredPermissionRules(rules = {
         @PermissionRule(role = Role.USER, conditions = {PermissionCondition.SKGAS_COMPANY_USER_ONLY}),
@@ -101,9 +197,14 @@ public class FundamentalModelCaseController {
     @ApiOrder(4)
     @Operation(
         summary = "MI Fundamental Model Scenario Case 수정 API",
-        description = "case title/description만 수정하고 최신 상세 응답을 반환합니다."
+        description = "active `INDEPENDENT` case의 title/description만 수정하고 최신 상세 응답을 반환합니다. `MI_BASE | SCENARIO`는 수정할 수 없습니다."
     )
     @ApiResponse(responseCode = "200", description = "수정 성공")
+    @ApiResponse(
+        responseCode = "404",
+        description = "RSC_NOT_FOUND: active INDEPENDENT가 아니거나 소유하지 않은 case",
+        content = @Content(mediaType = MediaType.APPLICATION_JSON_VALUE, schema = @Schema(implementation = BaseResponse.class))
+    )
     @PatchMapping("/{caseId}")
     @RequiredPermissionRules(rules = {
         @PermissionRule(role = Role.USER, conditions = {PermissionCondition.SKGAS_COMPANY_USER_ONLY}),
@@ -119,9 +220,14 @@ public class FundamentalModelCaseController {
     @ApiOrder(5)
     @Operation(
         summary = "MI Fundamental Model Scenario Case 삭제 API",
-        description = "case를 physical delete하지 않고 soft delete 처리합니다."
+        description = "active `INDEPENDENT` case를 physical delete하지 않고 soft delete 처리합니다. `MI_BASE | SCENARIO`는 삭제할 수 없습니다."
     )
     @ApiResponse(responseCode = "200", description = "삭제 성공")
+    @ApiResponse(
+        responseCode = "404",
+        description = "RSC_NOT_FOUND: active INDEPENDENT가 아니거나 소유하지 않은 case",
+        content = @Content(mediaType = MediaType.APPLICATION_JSON_VALUE, schema = @Schema(implementation = BaseResponse.class))
+    )
     @DeleteMapping("/{caseId}")
     @RequiredPermissionRules(rules = {
         @PermissionRule(role = Role.USER, conditions = {PermissionCondition.SKGAS_COMPANY_USER_ONLY}),
@@ -137,9 +243,14 @@ public class FundamentalModelCaseController {
     @ApiOrder(7)
     @Operation(
         summary = "MI Fundamental Model Scenario Case 상태 조회 API",
-        description = "polling용 경량 상태를 조회합니다. PENDING case는 latestRun이 null이며 file metadata는 포함하지 않습니다."
+        description = "active `INDEPENDENT | MI_BASE`의 polling용 경량 상태를 조회합니다. PENDING case는 latestRun이 null이며 file metadata는 포함하지 않습니다. `SCENARIO`와 soft-deleted case는 조회되지 않습니다."
     )
     @ApiResponse(responseCode = "200", description = "조회 성공")
+    @ApiResponse(
+        responseCode = "404",
+        description = "RSC_NOT_FOUND: case 없음, soft delete 또는 SCENARIO",
+        content = @Content(mediaType = MediaType.APPLICATION_JSON_VALUE, schema = @Schema(implementation = BaseResponse.class))
+    )
     @GetMapping("/{caseId}/status")
     @RequiredPermissionRules(rules = {
         @PermissionRule(role = Role.USER, conditions = {PermissionCondition.SKGAS_COMPANY_USER_ONLY}),
@@ -174,11 +285,27 @@ public class FundamentalModelCaseController {
             <br><br>
             ### 빈 값과 오류
             - `caseId` 미전달 시 모든 Region의 `countries=[]`이며, 기간 목록도 빈 배열입니다.
-            - `caseId`만 전달하면 GLOBAL/LNG는 실제 옵션, TRADE는 정적 Region과 `countries=[]`를 반환합니다.
+            - `caseId`만 전달하면 active `INDEPENDENT | MI_BASE`의 GLOBAL/LNG 실제 옵션, TRADE 정적 Region과 `countries=[]`를 반환합니다.
             - `selector`/`year`를 한 개만 전달하거나 `caseId` 없이 전달하면 400, Case가 COMPLETED 상태가 아니면 409를 반환합니다.
+            - `MI_BASE` read 허용은 수정·삭제·재실행 권한을 넓히지 않습니다. `SCENARIO`와 soft-deleted case는 조회되지 않습니다.
             """
     )
     @ApiResponse(responseCode = "200", description = "조회 성공")
+    @ApiResponse(
+        responseCode = "400",
+        description = "REQ_INVALID_PARAMETER: caseId/selector/year 조합 또는 범위 오류",
+        content = @Content(mediaType = MediaType.APPLICATION_JSON_VALUE, schema = @Schema(implementation = BaseResponse.class))
+    )
+    @ApiResponse(
+        responseCode = "404",
+        description = "RSC_NOT_FOUND: case 없음, FAILED, soft delete 또는 SCENARIO",
+        content = @Content(mediaType = MediaType.APPLICATION_JSON_VALUE, schema = @Schema(implementation = BaseResponse.class))
+    )
+    @ApiResponse(
+        responseCode = "409",
+        description = "BIZ_RULE_VIOLATION: case가 PENDING 또는 RUNNING",
+        content = @Content(mediaType = MediaType.APPLICATION_JSON_VALUE, schema = @Schema(implementation = BaseResponse.class))
+    )
     @GetMapping("/volumes/filter-options")
     @RequiredPermissionRules(rules = {
         @PermissionRule(role = Role.USER, conditions = {PermissionCondition.SKGAS_COMPANY_USER_ONLY}),
@@ -198,10 +325,26 @@ public class FundamentalModelCaseController {
     @ApiOrder(9)
     @Operation(
         summary = "MI Fundamental Model Volumes 데이터 조회 API",
-        description = "COMPLETED 상태의 case에 대해 segment/type/region/granularity/periods 필터가 적용된 Volumes 데이터를 조회합니다. "
-            + "periods는 선택한 기간만 columns와 row values에 포함하며, YEARLY는 yyyy, MONTHLY는 yyyy-MM 형식입니다."
+        description = "active `INDEPENDENT | MI_BASE` 중 COMPLETED 상태의 case에 대해 segment/type/region/granularity/periods 필터가 적용된 Volumes 데이터를 조회합니다. "
+            + "periods는 선택한 기간만 columns와 row values에 포함하며, YEARLY는 yyyy, MONTHLY는 yyyy-MM 형식입니다. "
+            + "`MI_BASE` read 허용은 mutation 권한을 넓히지 않으며 `SCENARIO`와 soft-deleted case는 조회되지 않습니다."
     )
     @ApiResponse(responseCode = "200", description = "조회 성공")
+    @ApiResponse(
+        responseCode = "400",
+        description = "REQ_INVALID_PARAMETER: 필수/enum/Country key/기간 형식 오류",
+        content = @Content(mediaType = MediaType.APPLICATION_JSON_VALUE, schema = @Schema(implementation = BaseResponse.class))
+    )
+    @ApiResponse(
+        responseCode = "404",
+        description = "RSC_NOT_FOUND: case 없음, FAILED, soft delete 또는 SCENARIO",
+        content = @Content(mediaType = MediaType.APPLICATION_JSON_VALUE, schema = @Schema(implementation = BaseResponse.class))
+    )
+    @ApiResponse(
+        responseCode = "409",
+        description = "BIZ_RULE_VIOLATION: case가 PENDING 또는 RUNNING",
+        content = @Content(mediaType = MediaType.APPLICATION_JSON_VALUE, schema = @Schema(implementation = BaseResponse.class))
+    )
     @GetMapping("/{caseId}/volumes")
     @RequiredPermissionRules(rules = {
         @PermissionRule(role = Role.USER, conditions = {PermissionCondition.SKGAS_COMPANY_USER_ONLY}),
@@ -230,9 +373,26 @@ public class FundamentalModelCaseController {
     @ApiOrder(10)
     @Operation(
         summary = "MI Fundamental Model Trade Flows 데이터 조회 API",
-        description = "COMPLETED 상태의 case에 대해 selector/year 기준 Trade Flow sparse matrix 데이터를 조회합니다. fromCountries/toCountries 헤더 배열과 non-zero flows 배열로 응답합니다."
+        description = "active `INDEPENDENT | MI_BASE` 중 COMPLETED 상태의 case에 대해 selector/year 기준 Trade Flow sparse matrix 데이터를 조회합니다. "
+            + "fromCountries/toCountries 헤더 배열과 non-zero flows 배열로 응답합니다. `MI_BASE` read 허용은 mutation 권한을 넓히지 않으며 "
+            + "`SCENARIO`와 soft-deleted case는 조회되지 않습니다."
     )
     @ApiResponse(responseCode = "200", description = "조회 성공")
+    @ApiResponse(
+        responseCode = "400",
+        description = "REQ_INVALID_PARAMETER: selector/year/enum/Country key 오류",
+        content = @Content(mediaType = MediaType.APPLICATION_JSON_VALUE, schema = @Schema(implementation = BaseResponse.class))
+    )
+    @ApiResponse(
+        responseCode = "404",
+        description = "RSC_NOT_FOUND: case 없음, FAILED, soft delete 또는 SCENARIO",
+        content = @Content(mediaType = MediaType.APPLICATION_JSON_VALUE, schema = @Schema(implementation = BaseResponse.class))
+    )
+    @ApiResponse(
+        responseCode = "409",
+        description = "BIZ_RULE_VIOLATION: case가 PENDING 또는 RUNNING",
+        content = @Content(mediaType = MediaType.APPLICATION_JSON_VALUE, schema = @Schema(implementation = BaseResponse.class))
+    )
     @GetMapping("/{caseId}/volumes/trade")
     @RequiredPermissionRules(rules = {
         @PermissionRule(role = Role.USER, conditions = {PermissionCondition.SKGAS_COMPANY_USER_ONLY}),
@@ -259,10 +419,21 @@ public class FundamentalModelCaseController {
     @ApiOrder(11)
     @Operation(
         summary = "MI Fundamental Model Price 데이터 조회 API",
-        description = "COMPLETED 상태의 case에 대해 Price chart, annualTable, monthlyTable 데이터를 조회합니다. "
-            + "chart는 그래프 우상단 granularity 드롭다운(Monthly/Yearly)에 대응하는 monthlySeriesSets/yearlySeriesSets를 모두 포함합니다."
+        description = "active `INDEPENDENT | MI_BASE` 중 COMPLETED 상태의 case에 대해 Price chart, annualTable, monthlyTable 데이터를 조회합니다. "
+            + "chart는 그래프 우상단 granularity 드롭다운(Monthly/Yearly)에 대응하는 monthlySeriesSets/yearlySeriesSets를 모두 포함합니다. "
+            + "`MI_BASE` read 허용은 mutation 권한을 넓히지 않으며 `SCENARIO`와 soft-deleted case는 조회되지 않습니다."
     )
     @ApiResponse(responseCode = "200", description = "조회 성공")
+    @ApiResponse(
+        responseCode = "404",
+        description = "RSC_NOT_FOUND: case 없음, FAILED, soft delete 또는 SCENARIO",
+        content = @Content(mediaType = MediaType.APPLICATION_JSON_VALUE, schema = @Schema(implementation = BaseResponse.class))
+    )
+    @ApiResponse(
+        responseCode = "409",
+        description = "BIZ_RULE_VIOLATION: case가 PENDING 또는 RUNNING",
+        content = @Content(mediaType = MediaType.APPLICATION_JSON_VALUE, schema = @Schema(implementation = BaseResponse.class))
+    )
     @GetMapping("/{caseId}/price")
     @RequiredPermissionRules(rules = {
         @PermissionRule(role = Role.USER, conditions = {PermissionCondition.SKGAS_COMPANY_USER_ONLY}),
@@ -272,5 +443,75 @@ public class FundamentalModelCaseController {
         @Parameter(description = "Scenario Case ID", example = "2") @PathVariable Long caseId
     ) {
         return BaseResponseFactory.create(fundamentalModelCaseService.getPrice(caseId));
+    }
+
+    @ApiOrder(12)
+    @Operation(
+        summary = "독립실행 case MI Base 지정 API",
+        description = """
+            완료된 active `INDEPENDENT` case를 전역 current MI Base로 지정합니다. 기존 current MI Base는 같은 transaction에서 `INDEPENDENT`로 복귀합니다.
+
+            같은 current case를 다시 지정하면 latest completed run, input 3종, Price 결과 적격성을 다시 검증한 뒤 멱등하게 변경 없이 `200 OK`를 반환합니다. 지정 성공은 이후 새로 시작하는 수급모델 input 생성부터 적용되며 기존 실행에는 소급 적용되지 않습니다. 성공 또는 지정 경쟁 충돌 뒤에는 `GET /cases`로 current를 다시 조회합니다.
+
+            이 기능은 DBA가 `actv_base_yn` generated column과 `tmd_mdl_scnrcasem_uq02` unique constraint를 먼저 적용한 환경에서만 활성화해야 합니다.
+            """
+    )
+    @ApiResponses({
+        @ApiResponse(
+            responseCode = "200",
+            description = "지정 성공 또는 같은 current MI Base의 멱등 재지정",
+            useReturnTypeSchema = true,
+            content = @Content(
+                mediaType = MediaType.APPLICATION_JSON_VALUE,
+                schema = @Schema(implementation = FundamentalModelCaseListItemOpenApiRes.class),
+                examples = @ExampleObject(
+                    name = "MI Base 지정 성공",
+                    value = """
+                        {
+                          "status": true,
+                          "code": "SUC-000",
+                          "message": "Success.",
+                          "data": {"caseId": 110, "title": "독립 실행", "status": "COMPLETED", "execType": "MI_BASE", "assigneeName": "홍길동", "createdAt": "2026-06-30T17:30:00", "updatedAt": "2026-07-23T16:50:00"}
+                        }
+                        """
+                )
+            )
+        ),
+        @ApiResponse(
+            responseCode = "400",
+            description = "REQ_INVALID_PARAMETER: caseId가 1 미만이거나 형식이 잘못됨",
+            content = @Content(mediaType = MediaType.APPLICATION_JSON_VALUE, schema = @Schema(implementation = BaseResponse.class))
+        ),
+        @ApiResponse(
+            responseCode = "401",
+            description = "인증되지 않은 요청",
+            content = @Content(mediaType = MediaType.APPLICATION_JSON_VALUE, schema = @Schema(implementation = BaseResponse.class))
+        ),
+        @ApiResponse(
+            responseCode = "403",
+            description = "허용되지 않은 role 또는 permission condition",
+            content = @Content(mediaType = MediaType.APPLICATION_JSON_VALUE, schema = @Schema(implementation = BaseResponse.class))
+        ),
+        @ApiResponse(
+            responseCode = "404",
+            description = "RSC_NOT_FOUND: case 없음, soft delete 또는 SCENARIO/지정 불가 MI_BASE",
+            content = @Content(mediaType = MediaType.APPLICATION_JSON_VALUE, schema = @Schema(implementation = BaseResponse.class))
+        ),
+        @ApiResponse(
+            responseCode = "409",
+            description = "BIZ_RULE_VIOLATION: 상태·run/input/Price 부적격 또는 지정 경쟁 충돌",
+            content = @Content(mediaType = MediaType.APPLICATION_JSON_VALUE, schema = @Schema(implementation = BaseResponse.class))
+        )
+    })
+    @PutMapping("/{caseId}/mi-base")
+    @RequiredPermissionRules(rules = {
+        @PermissionRule(role = Role.USER, conditions = {PermissionCondition.SKGAS_COMPANY_USER_ONLY}),
+        @PermissionRule(role = Role.ADMIN, conditions = {PermissionCondition.THIRD_PARTY_ADMIN_ONLY})
+    })
+    public BaseResponse<FundamentalModelCaseListItemRes> designateMiBase(
+        @Parameter(description = "MI Base로 지정할 완료 독립실행 Scenario Case ID", example = "110")
+        @PathVariable @Min(1) Long caseId
+    ) {
+        return BaseResponseFactory.create(fundamentalModelCaseService.designateMiBase(caseId));
     }
 }

@@ -1,14 +1,15 @@
 # Scenario Case Execution Workflow Design Draft
 
 - domain: gas
-- status: implemented (real DB rollout complete; workflow/domain semantics remain canonical)
+- status: implemented (base workflow); Review (MI Base rollout pending)
 - owner: platform BE
-- updated at: 2026-07-23 (model container resource requests source-of-truth 참조 반영)
+- updated at: 2026-09-14 (MI Base 상세 결과 조회·읽기 전용 정책 반영)
 - role: Scenario Case 업로드, 비동기 실행, 상태 추적, timeout 처리의 backend workflow와 persistence를 정리하는 설계 문서
 - canonical for: shared Scenario Case/run lifecycle, callback idempotency, timeout and backend-forced terminal semantics
 - upstream sources: `mi-scenario-workbench-backend-feature-spec.md`, `mi-scenario-model-execution-workflow-design.md`
 - dependencies: canonical DDL draft, scheduler-enabled dedicated deployment, Kubernetes RBAC
-- last sync date: 2026-07-23
+- last sync date: 2026-09-14
+- open questions: 없음. MI Base extension의 DBA 적용 상태는 canonical DDL draft에서 관리한다.
 
 > 빠른 진입점:
 > - 이 문서는 `Scenario Case -> Execution History -> run_id/status` 흐름의 workflow/domain semantics source로 사용한다.
@@ -71,12 +72,17 @@ tcm_filel (공통 파일 내역)
 - `Scenario Case`는 현업 용어다. API hierarchy상 `Scenario` 또는 Scenario Workbench 하위 resource라는 의미가 아니다.
 - 2026-05-20 canonical feature spec 기준으로 1차 mock API는 `scenarioId` path/query/body/response 필드를 사용하지 않는다.
 - 업로드 요청 단위의 case는 `caseId`로 식별하고, 실행 요청 단위의 execution history는 `runId`로 식별한다.
-- case 1개는 실행 요청 단위의 execution history를 여러 개 가질 수 있다.
+- case 1개는 실행 요청 단위의 execution history를 여러 개 가질 수 있다. 다만 `INDEPENDENT`에서 두 번째 run은 직전 모델 호출이 `FAILED`일 때의 재시도에만 생성한다.
 - case에 연결된 업로드 파일은 `tmd_mdl_scnrcasem` 의 반복 컬럼이 아니라 기존 공통 파일 테이블 `tcm_filel` 에 저장한다.
-- 현재 제품 요구는 사실상 `case:execution = 1:1`에 가깝지만, 재실행 가능성을 고려해 물리적으로는 분리한다.
+- 정상 완료 기준 제품 요구는 `case:execution = 1:1`이다. 모델 호출이 `FAILED`인 경우에만 같은 case로 재시도해 추가 execution history를 남길 수 있으므로 물리적으로는 1:N으로 분리한다.
 - `tmd_mdl_scnrcasem` 은 `case_id`를 primary identity로 갖는다. MI Fundamental Model row는 `scnr_id = NULL`이고, MI 수급모델 row는 nullable `scnr_id`에 scenario 식별자를 저장한다. `scnr_id`는 `tmm_mi_scenario_m.scenario_id`(INT UNSIGNED)에 대한 application-validated 논리 참조이며 물리 FK는 두지 않는다.
-- 실행유형은 `exec_type_cd VARCHAR(20) DEFAULT 'INDEPENDENT' NOT NULL` 명시 컬럼으로 구분한다. 값은 `INDEPENDENT`(독립실행, MI Fundamental Model), `SCENARIO`(MI 수급모델 시나리오 실행), `MI_BASE`(MI Base 적재 데이터) 3종이다. `INDEPENDENT`/`MI_BASE` 는 둘 다 `scnr_id = NULL` 이라 `scnr_id` 만으로 구분되지 않으므로(2026-06-16 MI Base 적재 데이터를 실행 테이블에 두기로 결정) 명시 컬럼이 필요하다. `scnr_id` 와의 정합은 `tmd_mdl_scnrcasem_ck01 CHECK ((exec_type_cd = 'SCENARIO') = (scnr_id IS NOT NULL))` 로 DB 가 강제한다. `MI_BASE` 는 사용자 실행이 아니라 적재 데이터(admin `usr_no`)이며, 사용자 화면 목록/상세/ASSIGNEE 조회는 `exec_type_cd` 조건으로 `MI_BASE` 를 제외한다. "1건 유지" 는 강제하지 않고 조회 시 최신 1건(`exec_type_cd='MI_BASE' ORDER BY case_id DESC LIMIT 1`)을 선택한다. 물리 컬럼/제약/공통코드는 [scenario-case-execution-erd-ddl-draft.md](scenario-case-execution-erd-ddl-draft.md) 가 canonical source다.
-- ownership scope는 `usr_no`(업로더/소유자) only로 확정한다.
+- 실행유형은 `exec_type_cd VARCHAR(20) DEFAULT 'INDEPENDENT' NOT NULL` 명시 컬럼으로 구분한다. 값은 `INDEPENDENT`(독립실행, MI Fundamental Model), `SCENARIO`(MI 수급모델 시나리오 실행), `MI_BASE`(현재 MI Base) 3종이다. `INDEPENDENT`/`MI_BASE`는 둘 다 `scnr_id = NULL`이므로 명시 컬럼이 필요하고, `scnr_id`와의 정합은 `tmd_mdl_scnrcasem_ck01`이 강제한다. 2026-06-16의 "MI Base 별도 적재/admin 소유·case_id 최신값 선택" 설명은 아래 현재 운영 규칙으로 superseded된다. 물리 컬럼/제약/공통코드는 [scenario-case-execution-erd-ddl-draft.md](scenario-case-execution-erd-ddl-draft.md)가 canonical source다.
+- 2026-09-07 확정 운영 규칙: MI Base는 기존 완료 `INDEPENDENT` case 중 선택한 건을 `MI_BASE`로 지정한다. 새 지정 시 이전 current는 `INDEPENDENT`로 복귀한다. current는 전역 최대 1건이며 case/run/소유자/`SCNRCASE + caseId` input Excel 3개/결과를 보존한다. 과거 MI Base 지정 여부는 case type에 이력으로 남기지 않는다.
+- 지정 commit 이후 시작되는 수급모델 input 생성은 새 MI Base의 input 3개를 기준으로 한다. 한 input 생성은 시작 시 current `caseId`와 `DEMAND`, `SUPPLY`, `TRADE` file metadata를 한 번만 source snapshot으로 고정하므로 생성 도중 지정이 바뀌어도 case를 섞지 않는다. 이미 생성·staging·접수·완료된 실행의 input·결과·기준값은 소급 변경하지 않는다. MI Base가 없을 때만 기존 플랫폼 기본 template 3개 전체를 하나의 snapshot으로 사용하며, 지정된 MI Base 파일을 읽지 못하면 default로 조용히 fallback하지 않는다.
+- 기존 Scenario Case 목록 API는 current MI Base를 `miBase`, active `INDEPENDENT` 실행 건을 `cases`로 분리하도록 변경한다. 이전 MI Base는 새 지정 시 `INDEPENDENT`로 복귀해 `cases`에 포함된다. field·검색·정렬 계약은 [mi-fundamental-model-mi-base-designation-feature-spec.md](../../feature-specs/mi-fundamental-model-mi-base-designation-feature-spec.md)를 따른다.
+- 일반 case metadata 변경·실행·삭제의 ownership scope는 기존과 같이 `usr_no`(업로더/소유자)다. 반면 MI Base 지정은 권한 있는 사용자가 전체 독립실행 case 중 현재 기준을 선택하는 command이므로 대상에 `usr_no` 또는 소유 회사 predicate를 적용하지 않는다. 지정 actor는 기존 MI 수급모델 실행과 동일한 `USER + SKGAS_COMPANY_USER_ONLY`, `ADMIN + THIRD_PARTY_ADMIN_ONLY`이며, 대상에는 active/type/status와 run/input/Price 적격성만 검증한다. metadata 변경·삭제에는 기존 owner predicate와 함께 지정 경쟁을 막는 row-lock 또는 atomic `exec_type_cd = 'INDEPENDENT'` 조건을 적용한다. 실행은 `PENDING | FAILED`, 지정은 `COMPLETED`만 허용하므로 두 command의 적격 상태는 겹치지 않는다.
+- current `MI_BASE`는 상세·상태·Volumes filter-options·Volumes·Trade Flows·Price만 조회하는 읽기 전용 case다. FE는 상세의 `execType = MI_BASE`를 기준으로 결과 탭은 노출하되 수정·삭제·재실행 action을 노출하거나 호출하지 않는다. backend도 직접 호출에 대비해 mutation을 active `INDEPENDENT`로 제한한다.
+- current MI Base를 비워 두는 별도 지정 해제 command는 제공하지 않는다. 기준 변경은 새 완료 `INDEPENDENT` case를 지정해 기존 current를 교체하는 흐름만 사용한다.
 
 ## Boundary Against Existing ScenarioModelExecution API
 
@@ -88,7 +94,8 @@ tcm_filel (공통 파일 내역)
 
 | Actor | 설명 | 주요 액션 |
 |---|---|---|
-| `User` | MI Fundamental Model 화면 사용자 | 목록 조회, 파일 업로드, 실행 요청, 상태 조회 |
+| `SKGAS User` | `USER + SKGAS_COMPANY_USER_ONLY`를 만족하는 MI 사용자 | 목록·상세·결과 조회, 파일 업로드, 독립실행 요청, MI Base 지정 |
+| `Third-party access Admin` | `ADMIN + THIRD_PARTY_ADMIN_ONLY`를 만족하는 관리자 | 타사 범위 목록·상세·결과 조회와 MI Base 지정 |
 | `Platform BE` | 업로드/저장/상태 관리 주체 | case 생성, execution 생성, 상태 갱신 |
 | `Kubernetes Job / model pod` | 실제 모델 실행 수행 주체 | 모델 이미지 pod 실행, `engine/run_all_parallel.py` 실행, storage 결과 저장, 완료/실패 callback 통보 |
 | `Scheduler` | timeout 감시 주체 | 장시간 RUNNING 건 실패 전환 |
@@ -101,8 +108,8 @@ tcm_filel (공통 파일 내역)
 |---|---|---|---|
 | `PENDING` | 업로드 완료, 실행 대기 | case 생성 완료 | 실행 시작 |
 | `RUNNING` | 실행 중 | execution 생성 + Kubernetes Job 생성 요청 성공 직전/직후 | 완료, 실패 |
-| `COMPLETED` | 최신 실행 성공 | model pod 또는 pod 내부 실행 프로세스 callback 통보 | 재실행 시 RUNNING |
-| `FAILED` | 최신 실행 실패 | Job 생성 실패, model pod 실패 callback, 또는 timeout | 재실행 시 RUNNING |
+| `COMPLETED` | 최신 실행 성공 | model pod 또는 pod 내부 실행 프로세스 callback 통보 | terminal. 같은 case 재실행 불가 |
+| `FAILED` | 최신 실행 실패 | Job 생성 실패, model pod 실패 callback, 또는 timeout | 사용자의 모델 호출 재시도 시 RUNNING |
 
 ### execution 상태 (`exec_stat_cd`)
 
@@ -127,7 +134,7 @@ tcm_filel (공통 파일 내역)
 - 업로드 단위 metadata와 실행 단위 status/history는 분리한다.
 - 이유:
   - 파일 3개와 사용자 입력 제목/설명은 업로드 시점에 확정된다.
-  - 실행은 재시도/재실행 가능성이 있어 별도 lifecycle을 가진다.
+  - 실행은 `FAILED` 모델 호출 재시도 가능성이 있어 별도 lifecycle을 가진다.
 
 ### 2. 최신 상태의 이중 보관
 
@@ -136,7 +143,7 @@ tcm_filel (공통 파일 내역)
 - 상세 실행 기록은 `tmd_mdl_scnrcaseh` 에 남긴다.
 - 이유:
   - 프론트 목록/상세 조회 시 최신 상태와 최신 실행을 단일 row 조회로 단순화할 수 있다.
-  - 이력은 별도 테이블에 남겨 재실행/운영 추적을 지원할 수 있다.
+  - 이력은 별도 테이블에 남겨 실패 재시도와 운영 추적을 지원한다.
 - invariant: `case_stat_cd` 와 `last_run_id` 가 가리키는 `tmd_mdl_scnrcaseh.exec_stat_cd` 는 항상 같은 terminal/RUNNING 상태여야 한다. 갱신 순서는 execution → case 또는 conditional case update 후 execution insert 로 한 transaction 안에서 보장한다.
 - invariant (2026-06-10 추가, 2026-06-10 generated column 으로 변경): scenario 당 active 실행 1건은 `actv_scnr_id INT UNSIGNED AS (IF(case_stat_cd = 'RUNNING', scnr_id, NULL)) STORED` generated column 과 `tmd_mdl_scnrcasem_uq01 UNIQUE (actv_scnr_id)` 가 DB 레벨에서 보장한다. helper 는 `case_stat_cd`/`scnr_id` 에서 DB 가 자동 파생하므로 `case_stat_cd` 를 바꾸는 INSERT/UPDATE 가 별도로 helper 를 동기화할 필요가 없다(수동 컬럼 시절의 drift 위험 제거). fundamental row 는 `scnr_id = NULL` → `actv_scnr_id = NULL` 이라 unique 가 바인딩되지 않으므로 본 문서의 case 단위 가드에는 영향이 없다.
 
@@ -173,7 +180,7 @@ Job 생성 API 실패와 Job이 생성된 뒤 Pod 실행 실패를 분리해서 
 | 실패 유형 | 정책 | 구현 전제 |
 |---|---|---|
 | 입력값 오류, 권한 오류, 필수 파일 누락 | 재시도 `0회`. Job을 생성하지 않고 backend 검증 단계에서 거절한다. | backend validation이 해당 오류를 Job 생성 전에 확정해야 한다. |
-| 일시적 인프라 오류 | Job controller 재시도 `0회`. 실패한 run은 즉시 `FAILED`로 확정하고 사용자 또는 운영자가 새 run으로 재실행한다. | 자동 회복보다 중복 실행·비용·실패 확정 지연 방지를 우선한다. |
+| 일시적 인프라 오류 | Job controller 재시도 `0회`. 실패한 run은 즉시 `FAILED`로 확정하고 사용자 또는 운영자가 같은 case에 새 run을 요청해 모델 호출을 재시도한다. | 자동 회복보다 중복 실행·비용·실패 확정 지연 방지를 우선한다. |
 | 모델 코드/비즈니스 로직 오류 | Job controller 재시도 `0회`. | 동일 입력의 반복 실행을 방지한다. |
 | 이미지 pull 실패 | Job controller 재시도 `0회`. registry, image tag, `imagePullSecret`, service account 권한을 복구한다. | 무한 `ImagePullBackOff` 관측을 막기 위해 Job/backend timeout을 함께 적용한다. |
 
@@ -181,9 +188,9 @@ Job 생성 API 실패와 Job이 생성된 뒤 Pod 실행 실패를 분리해서 
 - 향후 retry를 다시 도입하려면, 모델 이미지의 exit code 계약과 Kubernetes `podFailurePolicy`를 포함한 failure classification을 먼저 확정한다.
 - Job 생성 API의 network/timeout/5xx 재시도는 별도 application 정책이다. 현재 구현에는 없으며, 도입 시 동일 Job 이름의 `409 Conflict`를 이미 생성된 Job으로 확인하는 멱등 처리와 함께 설계한다.
 
-### 5. 중복 실행 방지
+### 5. 실행 선점 및 실패 재시도
 
-- 동일 case에 대해 `RUNNING` 상태가 있으면 새 실행을 차단한다.
+- `PENDING`은 최초 실행, `FAILED`는 모델 호출 실패 재시도만 허용한다. 동일 case가 `RUNNING` 또는 `COMPLETED`이면 새 실행을 차단한다.
 - DB-backed 구현 권장안은 `tmd_mdl_scnrcasem` conditional update를 먼저 성공시킨 뒤, 같은 transaction에서 `tmd_mdl_scnrcaseh` row를 insert하는 방식이다.
 - `run_id` 는 실행 요청마다 새로 생성되는 unique key이므로, `run_id + exec_stat_cd` 조합만으로는 동일 case에 서로 다른 `run_id` 를 가진 `RUNNING` row 2개가 생기는 것을 막을 수 없다.
 - `UNIQUE (case_id, exec_stat_cd)` 는 `RUNNING` 중복은 막을 수 있지만 과거 `COMPLETED`/`FAILED` 이력도 case당 1건으로 제한하므로 이력 테이블에는 부적합하다.
@@ -197,12 +204,12 @@ SET case_stat_cd = 'RUNNING',
     mod_usr_logn_id = :actor
 WHERE case_id = :case_id
   AND del_yn = 'N'
-  AND case_stat_cd IN ('PENDING', 'COMPLETED', 'FAILED');
+  AND case_stat_cd IN ('PENDING', 'FAILED');
 -- actv_scnr_id 는 generated column 이라 case_stat_cd='RUNNING' 전이 시 자동으로 scnr_id(또는 fundamental 은 NULL)로 채워진다. 별도 SET 불필요.
 ```
 
 - affected row count가 `1` 이면 해당 요청이 실행을 선점한 것이므로 `tmd_mdl_scnrcaseh` 에 `RUNNING` row를 insert한다.
-- affected row count가 `0` 이면 case 없음 또는 이미 `RUNNING` 인 상태이므로 `caseId` 단독 재조회 후 `404` 또는 `409` 로 분기한다.
+- affected row count가 `0` 이면 case 없음 또는 `RUNNING`/`COMPLETED` 등 실행 불가 상태이므로 `caseId` 단독 재조회 후 `404` 또는 `409` 로 분기한다.
 - `last_run_id` 는 late callback이 이전 실행의 결과로 case 최신 상태를 덮어쓰지 않도록 하는 latest execution pointer로 사용한다.
 - `SELECT ... FOR UPDATE` 방식은 대안으로 남기되, 현재 권장안은 conditional master update다.
 - (2026-06-10) scenario 단위(`MI 수급모델 실행`) 중복 실행 방지는 본 case 단위 가드와 별개로 `actv_scnr_id` generated column unique(`tmd_mdl_scnrcasem_uq01`)가 담당한다. 수급모델 실행 접수는 새 case row INSERT 이므로 conditional update 가 아니라 INSERT 시 unique 충돌 → 409 매핑으로 막는다. 자세한 흐름은 [mi-scenario-model-execution-workflow-design.md](mi-scenario-model-execution-workflow-design.md) 참고.
@@ -251,9 +258,9 @@ WHERE case_id = :case_id
 2. backend는 `run_id` 를 먼저 생성한다.
 3. backend는 `case_id`, `usr_no` ownership scope, `del_yn = 'N'` 기준으로 active owned case인지 확인한다. 소유자가 아니면 active resource hiding 규칙에 따라 `404 RSC_NOT_FOUND`로 처리한다.
 4. 같은 transaction에서 `tmd_mdl_scnrcasem` conditional update를 수행해 실행 권한을 선점한다.
-   - 조건: `case_id`, `del_yn = 'N'`, `case_stat_cd IN ('PENDING', 'COMPLETED', 'FAILED')`
+   - 조건: `case_id`, `del_yn = 'N'`, `case_stat_cd IN ('PENDING', 'FAILED')`
    - update 값: `case_stat_cd = 'RUNNING'`, `last_run_id = :run_id`
-5. affected row count가 `0` 이면 case 없음 또는 이미 `RUNNING` 인 상태이므로 `caseId` 단독 재조회 후 `404` 또는 `409` 로 분기한다.
+5. affected row count가 `0` 이면 case 없음, 이미 `RUNNING`, 또는 재실행할 수 없는 `COMPLETED` 상태이므로 `caseId` 단독 재조회 후 `404` 또는 `409` 로 분기한다.
 6. affected row count가 `1` 이면 해당 요청이 실행을 선점한 것이므로 `tmd_mdl_scnrcaseh` 에 `RUNNING` 상태 row를 생성한다.
 7. `tcm_filel` 에서 case에 연결된 파일 정보를 조회하고, 파일명의 `DEMAND`/`SUPPLY`/`TRADE` 키워드로 각 파일 경로를 매핑한다.
 8. Kubernetes Job을 생성한다. Job pod의 기본 실행 command는 아래와 같다.
@@ -281,7 +288,7 @@ WHERE case_id = :case_id
 3. execution이 아직 `RUNNING` 인 경우에만 compare-and-set 조건으로 terminal 상태와 종료 시각, 실패 사유/오류 메시지를 갱신한다.
 4. case 최신 상태는 callback 대상 execution이 현재 case의 latest/active execution과 일치할 때만 (`tmd_mdl_scnrcasem.last_run_id = :run_id` 조건) 반영한다. `case_stat_cd` 를 terminal 로 바꾸면 `actv_scnr_id` generated column 이 자동으로 NULL 로 풀려 active 점유가 해제되므로 helper 를 따로 해제할 필요가 없다. `last_run_id` 자체는 변경하지 않고 그대로 두어 terminal 결과가 어느 run의 결과인지 보존한다.
 5. 이미 terminal 상태인 execution에 도착한 callback은 상태를 덮어쓰지 않고 idempotent no-op으로 처리한다.
-6. timeout 또는 재실행 이후 늦게 도착한 이전 `run_id` callback은 case 최신 상태를 바꾸지 않고 성공 ack와 로그만 남긴다.
+6. timeout 또는 실패 재시도 이후 늦게 도착한 이전 `run_id` callback은 case 최신 상태를 바꾸지 않고 성공 ack와 로그만 남긴다.
 
 ### Stage 4. 상태 조회
 
@@ -294,12 +301,14 @@ WHERE case_id = :case_id
 ### Stage 4a. 상세 조회
 
 1. 프론트가 case 상세 화면에 진입하면 `caseId` 기준 상세 조회 endpoint를 호출한다.
-2. backend는 case metadata, 업로드 파일 metadata, latest run projection을 한 번에 반환한다. 파일 metadata는 input(`SCNRCASE + case_id`), output(`SCNRCASEH + run_seq`), 중간파일(`SCNRCASEHI + run_seq`)로 구분해 반환하며, output/중간파일은 최신 실행의 `run_seq` 기준이다. 응답 필드 계약은 feature spec이 canonical이다.
+2. backend는 active `exec_type_cd IN ('INDEPENDENT', 'MI_BASE')` case의 metadata, `execType`, 업로드 파일 metadata, latest run projection을 한 번에 반환한다. 파일 metadata는 input(`SCNRCASE + case_id`), output(`SCNRCASEH + run_seq`), 중간파일(`SCNRCASEHI + run_seq`)로 구분해 반환하며, output/중간파일은 최신 실행의 `run_seq` 기준이다. 응답 필드 계약은 feature spec이 canonical이다.
 3. 상세 조회는 화면 rendering용 aggregate snapshot이다. FE polling loop는 `GET /cases/{caseId}/status`를 사용하고, 상세 조회를 polling용 API로 반복 호출하지 않는다.
 4. 상세 조회는 full run history를 반환하지 않는다. case의 전체 실행 이력은 별도 runs API가 정의될 때까지 이 workflow의 phase-1 범위에 포함하지 않는다.
 5. 상세 조회는 result payload, result file reference, download URL/path를 반환하지 않는다. 결과 수치 데이터(Volumes/Price)는 `GET /cases/{caseId}/volumes`, `GET /cases/{caseId}/price` API로 분리 제공하며, 결과 파일 다운로드는 별도 API 계약과 persistence 검토가 필요하다.
 6. phase-1 mock 구현은 기존 in-memory case aggregate와 run store의 `latestRunId` pointer를 사용해 이 projection을 만들었다. real DB 구현 완료 후에는 master case, `tcm_filel`, latest execution row를 같은 ownership/permission scope에서 조회한다.
-7. soft-deleted case는 active resource가 아니므로 상세 조회에서 `404 RSC_NOT_FOUND`로 처리한다.
+7. `SCENARIO`와 soft-deleted case는 active resource가 아니므로 상세 조회에서 `404 RSC_NOT_FOUND`로 처리한다.
+8. current `MI_BASE` 상세에서는 결과 탭을 노출한다. 상태·Volumes filter-options·Volumes·Trade Flows·Price read는 active `INDEPENDENT | MI_BASE`를 허용하고 기존 result query/response 계약을 그대로 사용한다.
+9. current `MI_BASE`의 상세·결과 `GET` 허용은 metadata 수정·삭제·실행까지 허용한다는 뜻이 아니다. FE는 이 action을 노출하거나 호출하지 않고 backend mutation도 기존대로 active `INDEPENDENT`에만 허용한다. 상세에서 MI Base 지정 actor/time을 제공하는 계약은 이번 범위에 포함하지 않는다.
 
 ### Stage 4b. Case metadata 수정
 
@@ -322,6 +331,7 @@ SET case_titl_nm = :title,
     mod_usr_logn_id = :actor
 WHERE case_id = :case_id
   AND usr_no = :usr_no
+  AND exec_type_cd = 'INDEPENDENT'
   AND del_yn = 'N';
 ```
 
@@ -348,17 +358,32 @@ SET del_yn = 'Y',
     mod_usr_logn_id = :actor
 WHERE case_id = :case_id
   AND usr_no = :usr_no
+  AND exec_type_cd = 'INDEPENDENT'
   AND del_yn = 'N';
 ```
 
 affected row count가 `0`이면 case 없음, ownership 불일치, 또는 이미 삭제된 case로 보고 active resource 관점의 `404 RSC_NOT_FOUND`로 처리한다.
+
+### Stage 4d. 현재 MI Base 지정
+
+1. 권한 있는 사용자가 완료된 독립실행 case를 MI Base로 지정한다.
+2. backend는 대상이 active이고 `scnr_id IS NULL`, `COMPLETED`, `INDEPENDENT`인지 확인한다. 단, 현재 MI Base와 같은 `caseId`의 반복 요청은 `MI_BASE` type을 멱등 예외로 허용하고 나머지 적격성을 다시 확인한 뒤 성공으로 처리한다.
+3. 대상의 `last_run_id`와 completed run history 정합, `SCNRCASE + caseId` input 3개의 `DEMAND`/`SUPPLY`/`TRADE` 역할, MI Base 그래프에 필요한 Price 결과 존재를 확인한다. 하나라도 실패하면 기존 MI Base를 변경하지 않는다.
+4. 같은 transaction에서 current MI Base를 write lock으로 조회한다. 기존 current type을 `INDEPENDENT`로 되돌린 UPDATE를 DB에 flush한 뒤 대상 type을 `MI_BASE`로 변경한다. generated unique가 있는 상태에서 UPDATE 순서가 뒤집히지 않도록 JPA 자동 flush 순서에 맡기지 않는다. case/run/file/result 식별자와 데이터는 보존한다.
+5. `exec_type_cd`와 `del_yn`에서 파생되는 generated `actv_base_yn` unique constraint가 application lock 밖의 경합에서도 active `MI_BASE` 2건 생성을 막는다. application은 helper 값을 직접 쓰지 않는다. unique 충돌은 현재 옵션을 재조회할 수 있는 `409`로 매핑한다.
+   current가 없는 상태에서 서로 다른 두 대상을 최초 지정하면 공통 current row lock이 없으므로 한 요청이 unique 충돌로 `409`가 될 수 있다. current가 있는 교체 경합은 공통 current row lock으로 직렬화한다.
+6. 교체 commit 이후 시작되는 수급모델 input 생성은 대상 case의 input 3개를 기준으로 한다. 이미 생성·접수·완료된 실행에는 소급 적용하지 않는다.
+7. 현재 MI Base가 없을 때는 기존 플랫폼 기본 template을 사용한다. 현재 MI Base가 있는데 해당 input을 읽을 수 없으면 이전/default 기준으로 자동 fallback하지 않고 실행 준비를 실패시킨다.
+8. 별도 지정 해제 API는 제공하지 않는다. current 변경은 새 완료 `INDEPENDENT` case 지정으로만 수행하고 이전 current는 같은 transaction에서 `INDEPENDENT`로 복귀한다.
+
+endpoint, 응답 DTO, 권한, 대표 오류는 [MI Fundamental Model MI Base 지정 Feature Spec](../../feature-specs/mi-fundamental-model-mi-base-designation-feature-spec.md), generated current marker와 rollout SQL은 [Scenario Case Execution ERD / DDL Draft](scenario-case-execution-erd-ddl-draft.md)를 따른다.
 
 ### Stage 5. timeout 정리
 
 1. scheduler-enabled dedicated namespace의 단일 Backend replica가 30초 `fixedDelay`로 `exec_type_cd IN ('SCENARIO', 'INDEPENDENT')`, `exec_stat_cd = 'RUNNING'`, `exec_bgn_dtm < DB NOW() - 10분` 인 execution을 조회한다. `MI_BASE` 는 조회 대상이 아니다.
 2. 임계치 초과 건은 execution을 `FAILED` 로 전환한다.
 3. `fail_rsn_cd = TIMEOUT` 과 `exec_end_dtm` 을 함께 기록한다.
-4. `tmd_mdl_scnrcasem.case_stat_cd` 를 `FAILED` 로 동기화한다. `SCENARIO` case는 `actv_scnr_id` generated column 이 자동으로 NULL 로 풀려 active 점유가 해제되므로 helper 를 따로 해제할 필요가 없다. `INDEPENDENT` case는 `scnr_id = NULL` 이므로 scenario active-run helper에 영향을 주지 않는다. `last_run_id` 는 그대로 두어 어떤 run이 timeout 되었는지 추적할 수 있게 한다. case update 는 callback 흐름과 동일하게 `last_run_id = :run_id` 조건을 사용해, 사용자가 이미 재실행한 경우에는 case 최신 상태를 덮어쓰지 않는다.
+4. `tmd_mdl_scnrcasem.case_stat_cd` 를 `FAILED` 로 동기화한다. `SCENARIO` case는 `actv_scnr_id` generated column 이 자동으로 NULL 로 풀려 active 점유가 해제되므로 helper 를 따로 해제할 필요가 없다. `INDEPENDENT` case는 `scnr_id = NULL` 이므로 scenario active-run helper에 영향을 주지 않는다. `last_run_id` 는 그대로 두어 어떤 run이 timeout 되었는지 추적할 수 있게 한다. case update 는 callback 흐름과 동일하게 `last_run_id = :run_id` 조건을 사용해, 사용자가 이미 실패 run을 재시도한 경우에는 case 최신 상태를 덮어쓰지 않는다.
 5. DB timeout 처리 후 같은 scheduler tick의 reconciliation 단계가 `FAILED + TIMEOUT`인데 Kubernetes에서 아직 active인 Job을 삭제한다. DB transaction과 Kubernetes API 호출은 분리하며 Job 삭제 실패는 다음 tick에서 재시도한다.
 
 ### Stage 6. Scenario lifecycle cancellation reconciliation
@@ -379,8 +404,7 @@ stateDiagram-v2
     RUNNING --> COMPLETED: external callback success
     RUNNING --> FAILED: external callback failure
     RUNNING --> FAILED: scheduler timeout
-    COMPLETED --> RUNNING: rerun
-    FAILED --> RUNNING: rerun
+    FAILED --> RUNNING: retry failed model call
 ```
 
 ## Callback Idempotency / Late Callback 처리
@@ -417,7 +441,7 @@ stateDiagram-v2
 ### 4. timeout 후 late callback
 
 - timeout scheduler가 execution을 `FAILED/TIMEOUT` 으로 전이한 뒤 도착한 late success callback은 `FAILED -> COMPLETED` 로 되돌리지 않는다.
-- 해당 late callback이 이전 `run_id` 에 대한 것이고 사용자가 이미 재실행해 새 execution이 latest가 된 경우에도 `tmd_mdl_scnrcasem.case_stat_cd` 를 바꾸지 않는다.
+- 해당 late callback이 이전 `run_id` 에 대한 것이고 사용자가 이미 실패 run을 재시도해 새 execution이 latest가 된 경우에도 `tmd_mdl_scnrcasem.case_stat_cd` 를 바꾸지 않는다.
 - 운영 추적을 위해 애플리케이션 로그에 `LATE_CALLBACK_IGNORED` 성격의 이벤트를 남긴다.
 - 이 처리는 상태 전이가 아니며, `exec_stat_cd`, `case_stat_cd`, `exec_end_dtm` 을 변경하지 않는다.
 - `TIMEOUT`과 `SCENARIO_CANCELLED`는 backend-forced terminal reason이다. 이 reason의 late callback은 exact-payload 일치 여부와 무관하게 `200 OK` no-op으로 ack한다.
@@ -492,11 +516,11 @@ flowchart TD
 
 ```mermaid
 flowchart TD
-    A["POST /run 요청\n(case_id)"] --> B["run_id 생성"]
-    B --> C["case conditional UPDATE\ncase_stat_cd = RUNNING\nlast_run_id = run_id\nWHERE case_stat_cd IN\n(PENDING, COMPLETED, FAILED)"]
+    A["POST /runs 요청\n(case_id)"] --> B["run_id 생성"]
+    B --> C["case conditional UPDATE\ncase_stat_cd = RUNNING\nlast_run_id = run_id\nWHERE case_stat_cd IN\n(PENDING, FAILED)"]
     C --> D{affected row count}
     D -- "0" --> E["case 재조회"]
-    E --> F["404 case 없음\n또는 409 이미 RUNNING"]
+    E --> F["404 case 없음\n또는 409 실행 불가 상태"]
     D -- "1" --> G["execution INSERT\nRUNNING"]
     G --> H["tcm_filel 조회\nSCNRCASE + case_id"]
     H --> I["Kubernetes Job 생성\nmodel image pod 실행"]
@@ -553,7 +577,7 @@ WHERE del_yn = 'N'
 
 - output 파일은 model pod가 S3에 저장한 뒤 pod/python script가 `tcm_filel`에 직접 insert한다.
 - backend callback API는 output 파일 metadata를 저장하지 않고, execution/case 상태를 terminal 상태로 전이하는 책임만 가진다.
-- output 파일은 `run_seq`에 귀속되므로 재실행 시 이전 run의 output 파일과 독립적으로 존재한다. soft-delete 없이 run별로 결과 파일 추적이 가능하다.
+- output 파일은 `run_seq`에 귀속되므로 실패 재시도 시 이전 run의 output 파일과 독립적으로 존재한다. soft-delete 없이 run별로 결과 파일 추적이 가능하다.
 - 중간파일은 output과 같은 `run_seq`에 귀속되므로 관계 코드(`SCNRCASEHI`)만으로 구분한다. backend와 pod가 서로 다른 문자열을 쓰면 오류 없이 목록만 비어 보이므로 연동 시 리터럴 일치를 확인한다.
 - 중간파일은 개수를 고정하지 않는다(n개). 실행 중 순차 업로드를 허용하므로 `RUNNING` 중 상세 조회에 부분 목록이 보일 수 있다.
 - `run_seq`는 `file_rel_obj_dstg_no`(`INT UNSIGNED` 계열) 저장 요건을 충족하기 위한 surrogate key다. `run_id`(`VARCHAR(20)`)는 model pod 연동 키로 그대로 유지한다.
@@ -596,7 +620,7 @@ VALUES (
 | `last_run_id` invariant | `case_stat_cd` 와 `last_run_id` 가 가리키는 `tmd_mdl_scnrcaseh.exec_stat_cd` 는 항상 같은 terminal/RUNNING 상태여야 한다 | 갱신은 한 transaction 안에서 수행. terminal/timeout 동기화 시 `last_run_id` 자체는 변경하지 않는다 |
 | 실패 추적 | `fail_rsn_cd`, `err_msg_cntt` 기록 | 운영 추적 목적 |
 | backend-forced terminal | `TIMEOUT`, `SCENARIO_CANCELLED` | late callback은 저장 상태를 덮어쓰지 않고 payload 차이와 무관하게 성공 ack. `SCENARIO_CANCELLED`는 18자로 `VARCHAR(20)` 범위 내 |
-| Kubernetes Job 재시도 | 모든 Pod 실행 실패에 `backoffLimit: 0` | 자동 재시도 없이 terminal failure로 확정한다. 재실행은 사용자 또는 운영자가 새 run으로 요청한다 |
+| Kubernetes Job 재시도 | 모든 Pod 실행 실패에 `backoffLimit: 0` | 자동 재시도 없이 terminal failure로 확정한다. 사용자는 같은 case에 새 run을 요청해 실패한 모델 호출만 재시도한다 |
 | soft delete | case delete는 `tmd_mdl_scnrcasem.del_yn = 'Y'`만 갱신 | phase-1 및 future DB-backed 기본 semantics. `tmd_mdl_scnrcaseh` / `tcm_filel`은 물리 삭제하지 않는다 |
 
 ## Kubernetes Job 실행 설정
@@ -627,7 +651,7 @@ mi:
 - `activeDeadlineSeconds` 는 Backend timeout과 독립적으로 현재 미적용이다.
 - soft-deleted case의 보존 기간, audit 조회, 복구 정책은 정해지지 않았다.
 - Kubernetes Job reconciliation 운영 활성화에는 jobs get/list/delete RBAC, scheduler feature flag, dedicated single-replica 조건 확인이 필요하다.
-- 재실행 시 별도 retry count 컬럼이 필요한지는 추후 운영 운영 모니터링/SLA 요구가 들어오면 재검토한다.
+- `FAILED` 모델 호출 재시도에 별도 retry count 컬럼이 필요한지는 추후 운영 모니터링/SLA 요구가 들어오면 재검토한다.
 - 향후 Pod 실행 재시도를 도입할 경우에만 모델 이미지의 permanent/transient exit code, `podFailurePolicy` 지원 Kubernetes 버전, environment별 `backoffLimit` 값을 사전에 확정한다.
 
 ### Closed Decisions
@@ -639,13 +663,16 @@ mi:
 - `run_id` callback 전달 방식 (2026-05-21): callback URL path에 `runId` 를 포함하는 방식으로 확정 (`POST /api/v1/mi/fundamental-model/runs/{runId}/callback`). payload에 별도로 포함하지 않는다.
 - 실행 방식 (2026-05-21): 외부 model API 호출에서 Python `ProcessBuilder` 직접 실행으로 변경. 이 결정은 2026-05-22 k8s Job 방식으로 superseded 되었다.
 - 실행 방식 (2026-05-22): backend는 Kubernetes Job 생성 요청으로 모델 이미지 pod를 실행한다. pod 내부에서 `python engine/run_all_parallel.py` 를 실행하고, 결과를 S3/object storage에 저장한 뒤 backend callback API를 호출한다.
-- Kubernetes Job Pod 실행 재시도 정책 (2026-06-21): 입력/권한/필수 파일 누락은 Job 생성 전 backend가 거절한다. Job 생성 후 모든 Pod 실행 실패(일시적 인프라, 모델 코드, image pull 포함)는 `backoffLimit: 0`으로 자동 재시도하지 않는다. 실패 run은 terminal failure로 확정하며, 재실행은 사용자 또는 운영자가 새 run으로 요청한다. Job 생성 API 재시도는 별도 멱등성 정책으로 남긴다.
+- Kubernetes Job Pod 실행 재시도 정책 (2026-06-21, 2026-09-10 의미 명확화): 입력/권한/필수 파일 누락은 Job 생성 전 backend가 거절한다. Job 생성 후 모든 Pod 실행 실패(일시적 인프라, 모델 코드, image pull 포함)는 `backoffLimit: 0`으로 자동 재시도하지 않는다. 실패 run은 terminal `FAILED`로 확정하며, 사용자는 같은 case에 새 run을 요청해 모델 호출을 재시도할 수 있다. `COMPLETED` case는 재실행하지 않는다. Job 생성 API 재시도는 별도 멱등성 정책으로 남긴다.
 - callback URL 전달 방식 (2026-05-22, updated 2026-05-22): callback URL은 `--callback-url` Job arg로 pod에 전달하는 방식으로 확정한다. backend가 `run_id`를 포함한 전체 callback URL(`{backend_host}/api/v1/mi/fundamental-model/runs/{run_id}/callback`)을 Job 생성 시점에 생성해 주입한다. auth header/signature 규격은 운영 연동 설계에서 확정한다.
 - 파일 타입 구분 방식 (2026-05-21): `tcm_filel`에 별도 파일 타입 컬럼 없음. 파일명의 `DEMAND`/`SUPPLY`/`TRADE` 키워드로 구분. 업로드 시점 검증 추가.
 - 외부 모델 완료 동기화 방식 (2026-05-19): polling 이 아니라 backend callback 호출 방식으로 확정. 자세한 흐름은 본문 §4 와 Callback Idempotency 섹션 참고.
 - ownership scope (2026-05-20): `usr_no` only로 확정. 조직/부서/tenant 정책 키는 본 모델에 추가하지 않는다.
 - `ASSIGNEE_NAME` JOIN boundary (2026-05-20): `tmd_mdl_scnrcasem.usr_no = tmd_usrm.usr_no`, 표시 컬럼은 `tmd_usrm.usr_nm`으로 확정.
 - 실행유형 명시 컬럼 (2026-06-16): 기존 `scnr_id` NULL 여부 기반 암묵 구분을 `exec_type_cd`(`INDEPENDENT`/`SCENARIO`/`MI_BASE`) 명시 컬럼으로 분리한다. 트리거는 `MI Base` 적재 데이터를 실행 테이블에 두기로 한 결정이며, `INDEPENDENT`/`MI_BASE` 가 동일 `scnr_id = NULL` 이라 `scnr_id` 만으로 구분 불가해졌다. `MI_BASE` 는 사용자 실행 흐름(`PENDING`→`RUNNING`→terminal)을 타지 않고, 적재 주체(배치/admin)가 case + `tmd_mdl_scnrcaseh` row 를 `COMPLETED` 로 직접 INSERT 해 Volumes/Price 결과를 `run_seq` 로 연결한다. 물리 스키마/공통코드/CHECK 는 [scenario-case-execution-erd-ddl-draft.md](scenario-case-execution-erd-ddl-draft.md) 가 canonical source다.
+- MI Base 지정·목록 정정 (2026-09-07 확정, 위 2026-06-16 운영 설명 부분 supersede): MI Base는 기존 완료 실행 case를 지정한 건이며 별도 case/run/file을 INSERT하지 않는다. 새 지정 시 이전 MI Base는 `INDEPENDENT`로 복귀하고 대상만 `MI_BASE`가 된다. generated current marker unique로 active `MI_BASE`를 최대 1건만 허용하며 이후 시작되는 수급모델 input 생성에만 새 기준을 적용한다. 기존 `/cases`는 current `miBase`와 active `INDEPENDENT` `cases` 구조로 변경한다.
+- MI Base 읽기 전용 상세 정책 (2026-09-14): current `MI_BASE` 상세에서는 status/Volumes filter-options/Volumes/Trade Flows/Price 결과 탭을 조회할 수 있다. FE는 `execType=MI_BASE`일 때 수정·삭제·재실행 action을 노출·호출하지 않고 backend도 mutation을 active `INDEPENDENT` 전용으로 유지한다. current 교체는 지정 API만 사용하며 별도 지정 해제 API는 제공하지 않는다.
+- INDEPENDENT 실행 재사용 정책 (2026-09-10): `PENDING`은 최초 실행, `FAILED`는 모델 호출 실패 재시도만 허용한다. `COMPLETED`는 성공 종료 상태로 같은 case를 다시 실행하지 않으며, 새로운 정상 실행은 업로드 API로 별도 `INDEPENDENT` case를 생성한다.
 - Volumes/Trade Flows/Price 결과 데이터 조회 API (2026-06-07): 결과 파일 다운로드와 분리하여 `GET /cases/{caseId}/volumes`, `GET /cases/{caseId}/volumes/trade`, `GET /cases/{caseId}/price`를 1차 mock scope에 포함. 상세 조회(`GET /cases/{caseId}`)는 metadata + files + latestRun만 반환하는 경계를 유지한다. 1차 mock은 json seed 기반 고정 데이터 반환. parsed result table, key, partition/index, mock-to-real 경계는 [mi-fundamental-model-output-result-persistence-design.md](mi-fundamental-model-output-result-persistence-design.md)를 따른다. (2026-06-15 real DB 구현 완료로 세 API 모두 위 테이블에서 조회하도록 전환됨.)
 - scenario lifecycle cancellation (2026-07-06): RUNNING execution은 `FAILED + SCENARIO_CANCELLED` terminal 전이 후 case/history를 soft delete한다. Kubernetes Job은 request transaction에서 삭제하지 않고 timeout scheduler 확장 reconciler가 eventual cleanup한다. normal terminal Job TTL 보존과 backend-forced terminal cleanup을 구분한다.
 

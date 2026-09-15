@@ -4,6 +4,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.sk.common.enums.ResultCode;
 import com.sk.common.exception.AppErrorException;
+import com.sk.common.exception.AppHttpStatusException;
 import com.sk.common.utils.DateUtil;
 import com.sk.domain.admin.dto.response.file.FileUploadRes;
 import com.sk.domain.mi.dto.request.fundamentalmodel.FundamentalModelCaseListReq;
@@ -89,7 +90,12 @@ import java.util.UUID;
 import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.hibernate.exception.ConstraintViolationException;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.dao.ConcurrencyFailureException;
+import org.springframework.dao.DataIntegrityViolationException;
+import org.springframework.dao.QueryTimeoutException;
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.TransactionStatus;
 import org.springframework.transaction.annotation.Transactional;
@@ -111,6 +117,7 @@ public class FundamentalModelCaseServiceImpl implements FundamentalModelCaseServ
     private static final String FILE_RELATION_SCENARIO_CASE = "SCNRCASE";
     private static final String FILE_RELATION_SCENARIO_CASE_HISTORY = "SCNRCASEH";
     private static final String FILE_RELATION_SCENARIO_CASE_HISTORY_INTERMEDIATE = "SCNRCASEHI";
+    private static final String MI_BASE_UNIQUE_CONSTRAINT = "tmd_mdl_scnrcasem_uq02";
     private static final String CALLBACK_ACTOR = "SYSTEM";
     private static final String JOB_SUBMIT_FAILURE_REASON = "JOB_SUBMIT_FAILED";
     private static final String CALLBACK_PATH_TEMPLATE = "/api/v1/mi/fundamental-model/runs/%s/callback";
@@ -144,7 +151,6 @@ public class FundamentalModelCaseServiceImpl implements FundamentalModelCaseServ
     private static final DateTimeFormatter RUN_ID_TIMESTAMP_FORMATTER = DateTimeFormatter.ofPattern("yyyyMMdd_HHmmss");
     private static final List<FundamentalModelCaseStatus> RUN_CLAIMABLE_CASE_STATUSES = List.of(
         FundamentalModelCaseStatus.PENDING,
-        FundamentalModelCaseStatus.COMPLETED,
         FundamentalModelCaseStatus.FAILED
     );
 
@@ -183,7 +189,11 @@ public class FundamentalModelCaseServiceImpl implements FundamentalModelCaseServ
             .stream()
             .map(this::toListItemResponse)
             .toList();
-        return new FundamentalModelCaseListRes(cases.size(), cases);
+        FundamentalModelCaseListItemRes miBase = scenarioCaseRepository.findCurrentMiBaseListRow()
+            .map(this::toListItemResponse)
+            .orElse(null);
+        int totalCount = cases.size() + (miBase == null ? 0 : 1);
+        return new FundamentalModelCaseListRes(totalCount, miBase, cases);
     }
 
     @Override
@@ -254,6 +264,7 @@ public class FundamentalModelCaseServiceImpl implements FundamentalModelCaseServ
             caseRow.title(),
             caseRow.description(),
             caseRow.status(),
+            caseRow.execType(),
             caseRow.assigneeName(),
             caseRow.assigneeUserNo(),
             new FundamentalModelCaseFilesRes(inputFiles, outputFiles, intermediateFiles),
@@ -268,7 +279,7 @@ public class FundamentalModelCaseServiceImpl implements FundamentalModelCaseServ
     public FundamentalModelCaseDetailRes updateCase(Long caseId, FundamentalModelCaseUpdateReq request) {
         String normalizedTitle = validateAndNormalizeTitle(request == null ? null : request.title());
         String description = request.description();
-        ScenarioCase scenarioCase = findActiveOwnedCase(caseId);
+        ScenarioCase scenarioCase = findMutableOwnedCaseForUpdate(caseId);
 
         scenarioCase.updateMetadata(
             normalizedTitle,
@@ -283,8 +294,66 @@ public class FundamentalModelCaseServiceImpl implements FundamentalModelCaseServ
     @Override
     @Transactional
     public void deleteCase(Long caseId) {
-        ScenarioCase scenarioCase = findActiveOwnedCase(caseId);
+        ScenarioCase scenarioCase = findMutableOwnedCaseForUpdate(caseId);
         scenarioCase.softDelete(authorizationService.getSubject());
+    }
+
+    @Override
+    @Transactional
+    public FundamentalModelCaseListItemRes designateMiBase(Long caseId) {
+        if (caseId == null || caseId < 1) {
+            throw AppErrorException.of(
+                ResultCode.Error.REQ_INVALID_PARAMETER,
+                "caseId는 1 이상이어야 합니다."
+            );
+        }
+
+        Optional<ScenarioCase> currentMiBase;
+        ScenarioCase target;
+        try {
+            currentMiBase = scenarioCaseRepository.findCurrentMiBaseForUpdate();
+            target = currentMiBase
+                .filter(current -> Objects.equals(current.getCaseId(), caseId))
+                .orElseGet(() -> scenarioCaseRepository.findActiveCaseForUpdate(caseId)
+                    .orElseThrow(() -> caseNotFound(caseId)));
+        } catch (ConcurrencyFailureException | QueryTimeoutException exception) {
+            throw miBaseDesignationConcurrencyConflict(caseId, exception);
+        }
+
+        validateMiBaseDesignationTarget(target, currentMiBase.orElse(null));
+        ScenarioCaseRunHistory latestCompletedRun = findEligibleMiBaseRun(target);
+        validateMiBaseInputFiles(target.getCaseId());
+        validateMiBasePriceResult(target.getCaseId(), latestCompletedRun.getRunSeq());
+
+        if (target.getExecType() == FundamentalModelExecType.MI_BASE) {
+            return scenarioCaseRepository.findListRowByCaseId(caseId)
+                .map(this::toListItemResponse)
+                .orElseThrow(() -> caseNotFound(caseId));
+        }
+
+        String actorLoginId = authorizationService.getSubject();
+        try {
+            currentMiBase.ifPresent(current ->
+                current.changeExecType(FundamentalModelExecType.INDEPENDENT, actorLoginId)
+            );
+            if (currentMiBase.isPresent()) {
+                scenarioCaseRepository.flush();
+            }
+
+            target.changeExecType(FundamentalModelExecType.MI_BASE, actorLoginId);
+            scenarioCaseRepository.flush();
+        } catch (DataIntegrityViolationException exception) {
+            if (!hasConstraintViolation(exception, MI_BASE_UNIQUE_CONSTRAINT)) {
+                throw exception;
+            }
+            throw miBaseDesignationConcurrencyConflict(caseId, exception);
+        } catch (ConcurrencyFailureException | QueryTimeoutException exception) {
+            throw miBaseDesignationConcurrencyConflict(caseId, exception);
+        }
+
+        return scenarioCaseRepository.findListRowByCaseId(caseId)
+            .map(this::toListItemResponse)
+            .orElseThrow(() -> caseNotFound(caseId));
     }
 
     @Override
@@ -298,6 +367,7 @@ public class FundamentalModelCaseServiceImpl implements FundamentalModelCaseServ
         int claimCount = scenarioCaseRepository.claimRun(
             caseId,
             runId,
+            FundamentalModelExecType.INDEPENDENT,
             FundamentalModelCaseStatus.RUNNING,
             RUN_CLAIMABLE_CASE_STATUSES,
             requestedAt,
@@ -336,7 +406,7 @@ public class FundamentalModelCaseServiceImpl implements FundamentalModelCaseServ
     @Override
     @Transactional(readOnly = true)
     public FundamentalModelCaseStatusRes getCaseStatus(Long caseId) {
-        ScenarioCase scenarioCase = findActiveCase(caseId);
+        ScenarioCase scenarioCase = findReadableActiveCase(caseId);
         FundamentalModelRunStatusRes latestRun = scenarioCase.getStatus() == FundamentalModelCaseStatus.PENDING
             ? null
             : findLatestRun(scenarioCase.getLastRunId());
@@ -773,18 +843,22 @@ public class FundamentalModelCaseServiceImpl implements FundamentalModelCaseServ
     private void handleRunClaimFailure(Long caseId) {
         ScenarioCase scenarioCase = scenarioCaseRepository.findById(caseId)
             .orElseThrow(() -> caseNotFound(caseId));
-        if (Boolean.TRUE.equals(scenarioCase.getIsDeleted())) {
+        if (Boolean.TRUE.equals(scenarioCase.getIsDeleted())
+            || scenarioCase.getExecType() != FundamentalModelExecType.INDEPENDENT) {
             throw caseNotFound(caseId);
         }
         if (scenarioCase.getStatus() == FundamentalModelCaseStatus.RUNNING) {
-            throw AppErrorException.of(
+            throw AppHttpStatusException.of(
+                HttpStatus.CONFLICT,
                 ResultCode.Error.BIZ_RULE_VIOLATION,
                 "fundamental model case is already running. caseId: %d".formatted(caseId)
             );
         }
-        throw AppErrorException.of(
+        throw AppHttpStatusException.of(
+            HttpStatus.CONFLICT,
             ResultCode.Error.BIZ_RULE_VIOLATION,
-            "fundamental model case cannot be run from current status. caseId: %d".formatted(caseId)
+            "fundamental model case cannot be run from current status. caseId: %d, currentStatus: %s"
+                .formatted(caseId, scenarioCase.getStatus())
         );
     }
 
@@ -2131,18 +2205,23 @@ public class FundamentalModelCaseServiceImpl implements FundamentalModelCaseServ
                 || "SCENARIO_CANCELLED".equals(runHistory.getFailureReasonCode()));
     }
 
-    private ScenarioCase findActiveCase(Long caseId) {
-        // fundamental-model 엔드포인트는 독립 실행(INDEPENDENT)만 다룬다.
-        // SCENARIO / MI_BASE 케이스는 active resource hiding 규칙에 따라 404 처리한다.
+    private ScenarioCase findReadableActiveCase(Long caseId) {
+        // 상세·상태·결과 read는 INDEPENDENT와 current MI_BASE를 허용한다.
+        // SCENARIO는 active resource hiding 규칙에 따라 404 처리한다.
         return scenarioCaseRepository.findByCaseIdAndIsDeletedFalse(caseId)
-            .filter(scenarioCase -> scenarioCase.getExecType() == FundamentalModelExecType.INDEPENDENT)
+            .filter(scenarioCase -> scenarioCase.getExecType() == FundamentalModelExecType.INDEPENDENT
+                || scenarioCase.getExecType() == FundamentalModelExecType.MI_BASE)
             .orElseThrow(() -> caseNotFound(caseId));
     }
 
     private ScenarioCase findCompletedCaseForResultQuery(Long caseId) {
-        ScenarioCase scenarioCase = findActiveCase(caseId);
+        ScenarioCase scenarioCase = findReadableActiveCase(caseId);
+        if (scenarioCase.getStatus() == FundamentalModelCaseStatus.FAILED) {
+            throw caseNotFound(caseId);
+        }
         if (scenarioCase.getStatus() != FundamentalModelCaseStatus.COMPLETED) {
-            throw AppErrorException.of(
+            throw AppHttpStatusException.of(
+                HttpStatus.CONFLICT,
                 ResultCode.Error.BIZ_RULE_VIOLATION,
                 "fundamental model result is available only for completed case. caseId: %d".formatted(caseId)
             );
@@ -2151,7 +2230,9 @@ public class FundamentalModelCaseServiceImpl implements FundamentalModelCaseServ
     }
 
     private ScenarioCase findActiveOwnedCase(Long caseId) {
-        ScenarioCase scenarioCase = findActiveCase(caseId);
+        ScenarioCase scenarioCase = scenarioCaseRepository.findByCaseIdAndIsDeletedFalse(caseId)
+            .filter(found -> found.getExecType() == FundamentalModelExecType.INDEPENDENT)
+            .orElseThrow(() -> caseNotFound(caseId));
         Integer actorUserNo = authorizationService.getUserNo();
         if (!scenarioCase.getUserNo().equals(actorUserNo)) {
             throw caseNotFound(caseId);
@@ -2159,11 +2240,116 @@ public class FundamentalModelCaseServiceImpl implements FundamentalModelCaseServ
         return scenarioCase;
     }
 
-    private AppErrorException caseNotFound(Long caseId) {
-        return AppErrorException.of(
+    private ScenarioCase findMutableOwnedCaseForUpdate(Long caseId) {
+        ScenarioCase scenarioCase = scenarioCaseRepository.findActiveCaseForUpdate(caseId)
+            .filter(found -> found.getExecType() == FundamentalModelExecType.INDEPENDENT)
+            .orElseThrow(() -> caseNotFound(caseId));
+        Integer actorUserNo = authorizationService.getUserNo();
+        if (!scenarioCase.getUserNo().equals(actorUserNo)) {
+            throw caseNotFound(caseId);
+        }
+        return scenarioCase;
+    }
+
+    private AppHttpStatusException caseNotFound(Long caseId) {
+        return AppHttpStatusException.of(
+            HttpStatus.NOT_FOUND,
             ResultCode.Error.RSC_NOT_FOUND,
             FUNDAMENTAL_MODEL_CASE_NOT_FOUND_MESSAGE.formatted(caseId)
         );
+    }
+
+    private void validateMiBaseDesignationTarget(ScenarioCase target, ScenarioCase currentMiBase) {
+        boolean isCurrentTarget = currentMiBase != null
+            && Objects.equals(currentMiBase.getCaseId(), target.getCaseId());
+        boolean validExecType = target.getExecType() == FundamentalModelExecType.INDEPENDENT
+            || (isCurrentTarget && target.getExecType() == FundamentalModelExecType.MI_BASE);
+
+        if (target.getScenarioId() != null || !validExecType) {
+            throw caseNotFound(target.getCaseId());
+        }
+        if (target.getStatus() != FundamentalModelCaseStatus.COMPLETED) {
+            throw miBaseDesignationConflict(target.getCaseId(), "case is not completed");
+        }
+    }
+
+    private ScenarioCaseRunHistory findEligibleMiBaseRun(ScenarioCase target) {
+        String lastRunId = target.getLastRunId();
+        if (lastRunId == null) {
+            throw miBaseDesignationConflict(target.getCaseId(), "lastRunId is missing");
+        }
+
+        ScenarioCaseRunHistory runHistory = scenarioCaseRunHistoryRepository
+            .findByRunIdAndIsDeletedFalse(lastRunId)
+            .orElseThrow(() -> miBaseDesignationConflict(target.getCaseId(), "latest run is missing"));
+        if (!Objects.equals(runHistory.getCaseId(), target.getCaseId())
+            || runHistory.getStatus() != FundamentalModelRunStatus.COMPLETED
+            || runHistory.getRunSeq() == null) {
+            throw miBaseDesignationConflict(target.getCaseId(), "latest run is not an active completed run");
+        }
+        return runHistory;
+    }
+
+    private void validateMiBaseInputFiles(Long caseId) {
+        List<UploadedFile> inputFiles = uploadedFileRepository.findActiveRelationshipFilesOrderByFileNoAsc(
+            Math.toIntExact(caseId),
+            FILE_RELATION_SCENARIO_CASE
+        );
+        if (inputFiles.size() != REQUIRED_FILE_COUNT) {
+            throw miBaseDesignationConflict(caseId, "input file count must be exactly 3");
+        }
+
+        Map<String, Integer> roleCounts = new LinkedHashMap<>();
+        REQUIRED_INPUT_FILE_ROLE_KEYWORDS.forEach(role -> roleCounts.put(role, 0));
+        for (UploadedFile inputFile : inputFiles) {
+            String normalizedFileName = Optional.ofNullable(inputFile.getOriginalFileNm())
+                .orElse("")
+                .toUpperCase(Locale.ROOT);
+            List<String> matchedRoles = REQUIRED_INPUT_FILE_ROLE_KEYWORDS.stream()
+                .filter(normalizedFileName::contains)
+                .toList();
+            if (matchedRoles.size() != 1) {
+                throw miBaseDesignationConflict(caseId, "input file roles are incomplete or duplicated");
+            }
+            String role = matchedRoles.get(0);
+            roleCounts.put(role, roleCounts.get(role) + 1);
+        }
+
+        if (roleCounts.values().stream().anyMatch(count -> count != 1)) {
+            throw miBaseDesignationConflict(caseId, "input file roles are incomplete or duplicated");
+        }
+    }
+
+    private void validateMiBasePriceResult(Long caseId, Long runSeq) {
+        if (!scenarioCasePriceRepository.existsByRunSeqAndIsDeletedFalse(runSeq)) {
+            throw miBaseDesignationConflict(caseId, "latest completed run has no Price result");
+        }
+    }
+
+    private AppHttpStatusException miBaseDesignationConflict(Long caseId, String reason) {
+        return AppHttpStatusException.of(
+            HttpStatus.CONFLICT,
+            ResultCode.Error.BIZ_RULE_VIOLATION,
+            "fundamental model case is not eligible for MI Base designation. caseId: %d, reason: %s"
+                .formatted(caseId, reason)
+        );
+    }
+
+    private AppHttpStatusException miBaseDesignationConcurrencyConflict(Long caseId, RuntimeException exception) {
+        log.info("MI Base designation concurrency conflict. caseId={}", caseId, exception);
+        return miBaseDesignationConflict(caseId, "concurrent designation conflict");
+    }
+
+    private boolean hasConstraintViolation(Throwable throwable, String constraintName) {
+        Throwable current = throwable;
+        while (current != null) {
+            if (current instanceof ConstraintViolationException constraintViolation
+                && constraintName.equalsIgnoreCase(constraintViolation.getConstraintName())) {
+                return true;
+            }
+            current = current.getCause();
+        }
+        return false;
     }
 
     private void validateFiles(List<MultipartFile> files) {
@@ -2260,6 +2446,7 @@ public class FundamentalModelCaseServiceImpl implements FundamentalModelCaseServ
             row.caseId(),
             row.title(),
             row.status(),
+            row.execType(),
             row.assigneeName(),
             row.createdAt(),
             row.updatedAt()

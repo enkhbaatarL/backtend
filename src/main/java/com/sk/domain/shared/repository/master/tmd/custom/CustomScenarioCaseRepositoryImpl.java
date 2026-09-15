@@ -60,6 +60,7 @@ public class CustomScenarioCaseRepositoryImpl implements CustomScenarioCaseRepos
                 scenarioCase.caseId,
                 scenarioCase.title,
                 scenarioCase.status,
+                scenarioCase.execType,
                 user.userNm,
                 scenarioCase.createDt,
                 scenarioCase.modifyDt
@@ -72,6 +73,51 @@ public class CustomScenarioCaseRepositoryImpl implements CustomScenarioCaseRepos
     }
 
     @Override
+    public Optional<ScenarioCaseListRow> findCurrentMiBaseListRow() {
+        return Optional.ofNullable(queryFactory
+            .select(Projections.constructor(
+                ScenarioCaseListRow.class,
+                scenarioCase.caseId,
+                scenarioCase.title,
+                scenarioCase.status,
+                scenarioCase.execType,
+                user.userNm,
+                scenarioCase.createDt,
+                scenarioCase.modifyDt
+            ))
+            .from(scenarioCase)
+            .join(user).on(scenarioCase.userNo.eq(user.userNo))
+            .where(scenarioCase.activeBaseYn.eq("Y"))
+            .fetchOne());
+    }
+
+    @Override
+    public Optional<ScenarioCaseListRow> findListRowByCaseId(Long caseId) {
+        return Optional.ofNullable(queryFactory
+            .select(Projections.constructor(
+                ScenarioCaseListRow.class,
+                scenarioCase.caseId,
+                scenarioCase.title,
+                scenarioCase.status,
+                scenarioCase.execType,
+                user.userNm,
+                scenarioCase.createDt,
+                scenarioCase.modifyDt
+            ))
+            .from(scenarioCase)
+            .join(user).on(scenarioCase.userNo.eq(user.userNo))
+            .where(
+                scenarioCase.caseId.eq(caseId),
+                scenarioCase.isDeleted.isFalse(),
+                scenarioCase.execType.in(
+                    FundamentalModelExecType.INDEPENDENT,
+                    FundamentalModelExecType.MI_BASE
+                )
+            )
+            .fetchOne());
+    }
+
+    @Override
     public Optional<ScenarioCaseDetailRow> findDetailRow(Long caseId) {
         return Optional.ofNullable(queryFactory
             .select(Projections.constructor(
@@ -80,6 +126,7 @@ public class CustomScenarioCaseRepositoryImpl implements CustomScenarioCaseRepos
                 scenarioCase.title,
                 scenarioCase.description,
                 scenarioCase.status,
+                scenarioCase.execType,
                 user.userNm,
                 scenarioCase.userNo,
                 scenarioCase.lastRunId,
@@ -91,7 +138,10 @@ public class CustomScenarioCaseRepositoryImpl implements CustomScenarioCaseRepos
             .where(
                 scenarioCase.caseId.eq(caseId),
                 scenarioCase.isDeleted.isFalse(),
-                scenarioCase.execType.eq(FundamentalModelExecType.INDEPENDENT)
+                scenarioCase.execType.in(
+                    FundamentalModelExecType.INDEPENDENT,
+                    FundamentalModelExecType.MI_BASE
+                )
             )
             .fetchOne());
     }
@@ -150,7 +200,7 @@ public class CustomScenarioCaseRepositoryImpl implements CustomScenarioCaseRepos
     }
 
     @Override
-    public List<MiBasePriceRow> findLatestMiBasePrices(IndexName indexName, PeriodUnitSeparateCd periodUnit) {
+    public List<MiBasePriceRow> findCurrentMiBasePrices(IndexName indexName, PeriodUnitSeparateCd periodUnit) {
         return queryFactory
             .select(new QMiBasePriceRow(
                 scenarioCaseRunPrice.periodKey,
@@ -161,7 +211,10 @@ public class CustomScenarioCaseRepositoryImpl implements CustomScenarioCaseRepos
             .innerJoin(scenarioCaseRunHistory).on(scenarioCaseRunHistory.runId.eq(scenarioCase.lastRunId))
             .innerJoin(scenarioCaseRunPrice).on(scenarioCaseRunPrice.runSeq.eq(scenarioCaseRunHistory.runSeq))
             .where(
-                scenarioCase.caseId.eq(latestMiBaseCaseId()),
+                scenarioCase.activeBaseYn.eq("Y"),
+                scenarioCase.status.eq(FundamentalModelCaseStatus.COMPLETED),
+                scenarioCaseRunHistory.status.eq(FundamentalModelRunStatus.COMPLETED),
+                scenarioCaseRunHistory.isDeleted.isFalse(),
                 scenarioCaseRunPrice.priceRegionName.equalsIgnoreCase(indexName.getPriceRegionName()),
                 scenarioCaseRunPrice.periodUnit.eq(periodUnit),
                 scenarioCaseRunPrice.isDeleted.isFalse()
@@ -190,21 +243,6 @@ public class CustomScenarioCaseRepositoryImpl implements CustomScenarioCaseRepos
                 scenarioCaseRunHistory.runSeq.eq(latestCompletedRunSeq())
             )
             .fetch();
-    }
-
-    /**
-     * exec_type_cd=MI_BASE 케이스 중 최신 1건의 case_id (case_id 최대).
-     * <p>보통 1건이지만 새 baseline이 새 세트로 INSERT되므로 최신 케이스를 선택한다.
-     */
-    private JPQLSubQuery<Long> latestMiBaseCaseId() {
-        QScenarioCase miBaseCase = new QScenarioCase("miBaseCase");
-        return JPAExpressions
-            .select(miBaseCase.caseId.max())
-            .from(miBaseCase)
-            .where(
-                miBaseCase.execType.eq(FundamentalModelExecType.MI_BASE),
-                miBaseCase.isDeleted.isFalse()
-            );
     }
 
     /**

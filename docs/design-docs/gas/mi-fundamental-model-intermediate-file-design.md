@@ -323,7 +323,7 @@ DELETE FROM tcm_commcdd WHERE cd_grp_id = 'file_rel_obj_spt_cd' AND cd_id = 'SCN
 - Q3. `RUNNING` 중 부분 업로드된 중간파일을 상세 조회에 노출할지. 현재 가정: **노출**(실패 원인 분석에 유용하고 조회 조건을 추가하지 않는 쪽이 단순하다). 숨기려면 run 상태가 terminal 일 때만 조회하도록 조건을 추가한다.
 - Q4. 중간파일 개수/총 용량 상한을 둘지. 초안 권장: 상한 없음(R5). 단 n 이 수십 개 이상이면 §5.1-B(별도 endpoint + 페이징)로 재검토.
 - Q5. 보존/정리 정책. output 파일도 동일하게 미정 상태이며(`mi-fundamental-model-output-result-persistence-design.md` open question), 이번 범위 밖으로 둔다.
-- Q7. 공통코드 `cd_id` 값이 용어사전 정합 대상인지 공통코드 담당/DBA 확인. 규정 문서(`db-term-dictionary-usage.md` §3)는 테이블명/컬럼명만 대상으로 하지만 2026-06-10 코드값 rename 전례가 있다. "대상이다" 로 판정되면 `중간` 표준단어(`INTR` 등)를 등록하고 `SCNRCASEHINTR` 로 재검토한다. 등록·적재 전인 지금이 변경 비용이 가장 낮다.
+- ~~Q7. 공통코드 `cd_id` 값 확정~~ → **해소 (2026-09-07)**: `SCNRCASEHI` 로 확정한다. 공통코드 등록은 필요하며, §7 의 `tcm_commcdd` INSERT 문을 DBA/공통코드 담당 rollout 입력으로 사용한다.
 - Q6. DRM 정책 (다운로드 활성화 시점 확인): 중간파일 확장자가 암호화 대상(`FileDownloadEncryptor` 정책)에 포함되면 다운로드 시 재암호화되어 내려간다. 이번 범위에서는 다운로드가 없으므로 영향이 없다.
 
 ## 10. 영향 범위
@@ -386,7 +386,7 @@ DELETE FROM tcm_commcdd WHERE cd_grp_id = 'file_rel_obj_spt_cd' AND cd_id = 'SCN
 
 - 공통코드 `SCNRCASEHI` 등록 (DBA/공통코드 담당)
 - 모델팀이 동일 리터럴로 INSERT 하도록 인터페이스 문서 반영
-- Q3~Q6 은 구현을 막지 않는 운영/정책 항목이다
+- Q3~Q6 은 구현을 막지 않는 운영/정책 항목이다. Q7 은 코드값 확정으로 해소되었다
 
 ### TODO (별도 결정 후 진행)
 

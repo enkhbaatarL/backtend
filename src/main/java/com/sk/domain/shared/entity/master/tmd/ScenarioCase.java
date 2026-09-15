@@ -35,7 +35,8 @@ import org.hibernate.type.SqlTypes;
         @Index(name = "tmd_mdl_scnrcasem_ix03", columnList = "last_run_id, del_yn")
     },
     uniqueConstraints = {
-        @UniqueConstraint(name = "tmd_mdl_scnrcasem_uq01", columnNames = {"actv_scnr_id"})
+        @UniqueConstraint(name = "tmd_mdl_scnrcasem_uq01", columnNames = {"actv_scnr_id"}),
+        @UniqueConstraint(name = "tmd_mdl_scnrcasem_uq02", columnNames = {"actv_base_yn"})
     }
 )
 @Check(
@@ -89,6 +90,15 @@ public class ScenarioCase extends BaseEntity {
     @JdbcTypeCode(SqlTypes.INTEGER)
     @Comment("활성시나리오ID (case_stat_cd = RUNNING 이면 scnr_id, 그 외 NULL. DB STORED generated column, scenario 당 active 1건 unique helper)")
     private Long activeScenarioId;
+
+    @Column(
+        name = "actv_base_yn",
+        columnDefinition = "char(1) generated always as (if(del_yn = 'N' and exec_type_cd = 'MI_BASE', 'Y', null)) stored",
+        insertable = false,
+        updatable = false
+    )
+    @Comment("활성MI베이스여부 (active MI_BASE이면 Y, 그 외 NULL. DB STORED generated column, current MI Base 1건 unique helper)")
+    private String activeBaseYn;
 
     @Column(name = "last_run_id", length = 20)
     @Comment("최신실행ID")
@@ -175,6 +185,12 @@ public class ScenarioCase extends BaseEntity {
 
     public void softDelete(String actorLoginId) {
         super.softDelete();
+        this.modifyUserId = actorLoginId;
+        this.modifyDt = LocalDateTime.now();
+    }
+
+    public void changeExecType(FundamentalModelExecType execType, String actorLoginId) {
+        this.execType = execType;
         this.modifyUserId = actorLoginId;
         this.modifyDt = LocalDateTime.now();
     }

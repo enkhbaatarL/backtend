@@ -9,6 +9,8 @@ import org.springframework.data.repository.query.Param;
 
 public interface ScenarioCasePriceRepository extends JpaRepository<ScenarioCasePrice, Long> {
 
+    boolean existsByRunSeqAndIsDeletedFalse(Long runSeq);
+
     @Query("""
         SELECT new com.sk.domain.shared.repository.master.tmd.projection.ScenarioCasePriceRow(
             p.periodUnitSeparateCode,

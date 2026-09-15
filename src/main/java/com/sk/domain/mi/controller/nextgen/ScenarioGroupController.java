@@ -151,7 +151,7 @@ public class ScenarioGroupController {
             ### 응답 필드
             - `periodUnit` / `periodUnitLabel`: 기간 단위 (monthly:월별 / yearly:연도별)
             - `dates`: x축 기간 목록 (월별 `yyyy-MM` / 연도별 `yyyy`)
-            - `baseSeries`: 기준선 — `MI Base`(exec_type_cd=MI_BASE 최신 케이스 가격) 제공
+            - `baseSeries`: 기준선 — generated marker로 지정된 current `MI Base`의 latest completed run 가격 제공
               - `seriesId` / `seriesName` / `values`(dates와 동일 순서, 빠진 구간 null)
             - `scenarioSeries`: 시나리오별 시리즈
               - `scenarioId` / `scenarioName` / `baseCase`
