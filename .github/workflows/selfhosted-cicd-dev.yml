@@ -1,0 +1,100 @@
+name: DEV-selfhosted-build-push-deploy
+on:
+  push:
+    branches: [ "dev" ]
+
+concurrency:
+  group: selfhosted-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  APP_NAME: mi-backend-dev
+  ACR_LOGIN_SERVER: ${{ secrets.ACR_LOGIN_SERVER }}
+  ACR_REPO: mi-backend-dev
+  IMAGE_SHA: ${{ github.sha }}
+  BRANCH_TAG: ${{ github.ref_name }}-latest
+  # demo와 반드시 다른 디렉터리를 써야 한다 — 같은 값이면 demo 배포를 덮어쓴다.
+  # 시크릿이 아직 없으면 기본값도 demo(/opt/app)와 겹치지 않는 경로를 쓴다.
+  COMPOSE_DIR: ${{ secrets.COMPOSE_DIR_BACKEND_DEV || '/opt/app-backend-dev' }}
+  ACR_USER_NAME: ${{ secrets.ACR_USERNAME }}
+  ACR_USER_PASS: ${{ secrets.ACR_PASSWORD }}
+
+jobs:
+  build-push-deploy:
+    runs-on: self-hosted
+    permissions:
+      id-token: write     # OIDC(Azure)용
+      contents: read
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      # ---- 레지스트리 로그인 (옵션 A: ACR Admin 계정) ----
+      - name: Docker login ACR (admin)
+        if: ${{ env.ACR_USER_NAME && env.ACR_USER_PASS }}
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.ACR_LOGIN_SERVER }}
+          username: ${{ env.ACR_USER_NAME }}
+          password: ${{ env.ACR_USER_PASS }}
+
+      - name: Derive image tags
+        id: tags
+        run: |
+          set -eux
+          echo "sha=${ACR_LOGIN_SERVER}/${ACR_REPO}:${IMAGE_SHA}" >> $GITHUB_OUTPUT
+          echo "br=${ACR_LOGIN_SERVER}/${ACR_REPO}:${BRANCH_TAG}" >> $GITHUB_OUTPUT
+
+      - name: Build & Push (multi-stage Dockerfile)
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: ./Dockerfile
+          push: true
+          tags: |
+            ${{ steps.tags.outputs.sha }}
+            ${{ steps.tags.outputs.br }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: Ensure compose directory & .env
+        run: |
+          set -eux
+          mkdir -p "${COMPOSE_DIR}"
+          touch "${COMPOSE_DIR}/.env"   # 없으면 생성만
+
+      - name: Update .env with new IMAGE tag (persist)
+        run: |
+          set -eux
+          cd "${COMPOSE_DIR}"
+          NEW_IMAGE="${{ steps.tags.outputs.sha }}"
+          # .env에 IMAGE= 라인이 있으면 치환, 없으면 추가
+          if grep -qE '^IMAGE=' .env; then
+            sed -i "s|^IMAGE=.*|IMAGE=${NEW_IMAGE}|" .env
+          else
+            echo "IMAGE=${NEW_IMAGE}" >> .env
+          fi
+          echo "----- .env after update -----"
+          cat .env
+
+      - name: Pull image(s) locally (optional warm-up)
+        run: |
+          set -eux
+          docker pull "${{ steps.tags.outputs.sha }}" || true
+          docker pull "${{ steps.tags.outputs.br }}" || true
+
+      - name: Deploy with Docker Compose (apply updated .env)
+        run: |
+          set -eux
+          cd "${COMPOSE_DIR}"
+          # ${COMPOSE_DIR}/docker-compose.yml은 이 워크플로가 만들지 않는다 (demo와 동일한 관례).
+          # demo와 다른 container_name·다른 host 포트로 이 디렉터리에 미리 배치해둬야
+          # 같은 self-hosted 서버에서 demo 컨테이너를 덮어쓰지 않는다.
+          docker compose up -d --pull always
+
+      - name: Cleanup dangling images
+        run: docker image prune -f
