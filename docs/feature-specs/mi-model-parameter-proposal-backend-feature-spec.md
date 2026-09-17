@@ -6,7 +6,7 @@
 - status: Review
 - owner: BE (platform)
 - created at: 2026-07-03
-- updated at: 2026-09-03
+- updated at: 2026-09-17
 - canonical for: frontend-facing API contract, Backend callback endpoint/minimum compatibility contract, proposed Agent integration questions
 - canonical design reference: `docs/design-docs/gas/mi-model-parameter-proposal-design.md`
 - price interpretation rerun reference: `docs/design-docs/gas/price-forecast-interpretation-domain-design.md`
@@ -26,7 +26,7 @@
   - `docs/design-docs/gas/mi-model-parameter-proposal-design.md`
   - `docs/conventions/source-of-truth-governance.md`
 - supersedes: 없음
-- last synced: 2026-09-03
+- last synced: 2026-09-17
 - open questions: 13절 및 duplicate-slot Agent payload의 A6/Excel 실행 좌표 호환성 참조
 - 2026-08-27 오류 계약 정정: 생성 `status=error`는 `REQUEST_FAILED → PROPOSAL_FAILED`로 처리한다(§5.2.1). `REQUEST_NO_CHANGES/PROPOSAL_NO_CHANGES`는 과거 데이터 읽기 호환만 유지한다. 운영 데이터/배포는 변경하지 않는다.
 - integration model: callback = 완료 신호. Backend가 Agent proposal 테이블을 read-only 직접 조회해 결과 서빙(proposal payload hash/snapshot 없음, Backend 상태 조건부 갱신 유지). 공유 DB read 및 read 권한은 확정(조회 가능). callback path `scenarioId`는 proposal identity가 아니라 현재 in-flight execution-preparation을 찾는 scope key다.
@@ -662,7 +662,9 @@ Response data examples:
    - `파라미터로 반영할 변경 항목이 없습니다.`
    - `파라미터를 적용할 모델 입력 위치를 찾지 못했습니다.`
    - `적용할 파라미터 값을 생성하지 못했습니다.`
-5. 실패 commit 후 생성 POST는 HTTP 500 / `API_RESPONSE_ERROR(API-004)` / 표준 BaseResponse를 반환한다. 정상 HTTP의 error envelope도 같은 공개 오류로 정규화한다. Agent 원문/숫자 코드는 응답 data에 추가하지 않는다. 저장 실패는 성공적으로 종료 저장한 것으로 표현하지 않는다.
+5. 실패 commit 후 생성 POST는 HTTP 500 / `API_RESPONSE_ERROR(API-004)` / 표준 BaseResponse를 반환한다. 정상 HTTP의 error envelope도 같은 공개 오류로 정규화한다. top-level `message`는 `API_RESPONSE_ERROR`의 표준 문구를 유지하고, `data.failureReason`에는 4번에서 선별한 안전한 문구를 반환한다. Agent 원문 전체와 숫자 코드는 응답에 추가하지 않는다. 저장 실패는 성공적으로 종료 저장한 것으로 표현하지 않는다.
+   - 명시적 실패 예시: `{"status":false,"code":"API-004","message":"Received an error response from external API.","data":{"failureReason":"파라미터로 반영할 변경 항목이 없습니다."}}`
+   - timeout, 응답 유실, malformed/unknown status처럼 실패가 확정되지 않은 오류는 기존처럼 `data=null`을 유지한다.
 6. 명시적 error가 없는 통신/응답 오류는 기존 요청 기록을 보존한다. 새로운 재전송/복구 job은 추가하지 않는다. POST 예외 처리 때문에 commit한 실패가 rollback되지 않아야 한다.
 
 **기존 데이터 호환과 비동기 경계**
@@ -1410,7 +1412,7 @@ FE가 반드시 처리해야 하는 최소 상태는 `PROCESSING`, `PROPOSED`, `
 | Agent proposal 요청 timeout/통신 예외 (`AppErrorException`) | 400 | `API_TIMEOUT`/`API_SERVICE_UNAVAILABLE`/`API_CALL_FAILED` | 현행 공통 handler HTTP 유지. 명시적 오류 envelope가 없으므로 `REQUESTING` 유지 |
 | Agent proposal HTTP 4xx/5xx이나 완전한 `status=error` envelope가 아님 (`ApiErrorException`) | 500 | `API_RESPONSE_ERROR` | 실패 응답을 반환하되 생성 실패는 확정하지 않고 `REQUESTING` 유지 |
 | Agent proposal HTTP 2xx이나 status/성공 payload/JSON 형식이 유효하지 않음 | 400 | `API_RESPONSE_ERROR` | 현행 `AppErrorException` HTTP 유지. `REQUESTING` 유지 |
-| Agent 생성 응답의 `status=error` (숫자 코드 무관, HTTP 2xx 포함) | 500 | `API_RESPONSE_ERROR` | §5.2.1의 실패 commit 성공 시 `REQUEST_FAILED`; FE는 A4a로 확인. 일반 Agent 오류 표보다 이 행이 우선 |
+| Agent 생성 응답의 `status=error` (숫자 코드 무관, HTTP 2xx 포함) | 500 | `API_RESPONSE_ERROR` | §5.2.1의 실패 commit 성공 시 `REQUEST_FAILED`; POST `data.failureReason`으로 안전한 사유를 즉시 표시하고 A4a로 상태를 동기화. 일반 Agent 오류 표보다 이 행이 우선 |
 | current-state GET에서 생성 실패 조회 | 200 | `SUC-000` | §5.2.1에 따라 `PROPOSAL_FAILED`와 안전한 사유 반환. 과거 NO_CHANGES 읽기는 유지. 조회 성공이지 생성 성공이 아님 |
 | callback Bearer token 없음/유효하지 않음 | 401 | 공통 authentication error | 저장하지 않음 |
 | callback token은 유효하나 호출 권한 없음 | 403 | 공통 permission error | 저장하지 않음 |
@@ -1439,7 +1441,7 @@ FE가 반드시 처리해야 하는 최소 상태는 `PROCESSING`, `PROPOSED`, `
 
 ## 9. Swagger Annotation Recommendation
 
-- 명시적 오류 slice의 current-state operation은 새 오류의 `PROPOSAL_FAILED`와 POST 오류 후 조회 시점을 설명한다. §5.2.1의 `parameterSource=NONE`, 빈 목록/null 허용 예시를 GET 200 operation-specific example로 사용한다. 과거 데이터의 `PROPOSAL_NO_CHANGES` enum/읽기 계약은 유지하고 새 쓰기와 구분한다. 생성 POST는 `status=error`의 HTTP 500/`API_RESPONSE_ERROR`와 불확정 응답의 상태 유지 정책을 문서화한다. 숫자 Agent 코드를 새 public error code로 추가하지 않으며 generated OpenAPI로 검증한다.
+- 명시적 오류 slice의 current-state operation은 새 오류의 `PROPOSAL_FAILED`와 POST 오류 후 조회 시점을 설명한다. §5.2.1의 `parameterSource=NONE`, 빈 목록/null 허용 예시를 GET 200 operation-specific example로 사용한다. 과거 데이터의 `PROPOSAL_NO_CHANGES` enum/읽기 계약은 유지하고 새 쓰기와 구분한다. 생성 POST는 `status=error`의 HTTP 500/`API_RESPONSE_ERROR`, operation-specific `data.failureReason`, 불확정 응답의 `data=null`/상태 유지 정책을 문서화한다. 숫자 Agent 코드를 새 public error code로 추가하지 않으며 generated OpenAPI로 검증한다.
 - proposal request summary: `MI 수급모델 파라미터 제안 생성 접수 API`
 - proposal current-state query summary: `MI 수급모델 파라미터 현재 상태 조회 API`
 - proposal query summary: `MI 수급모델 파라미터 제안 상태/결과 조회 API`
@@ -1578,6 +1580,7 @@ FE가 반드시 처리해야 하는 최소 상태는 `PROCESSING`, `PROPOSED`, `
 
 ## 14. Change Log / Sync Note
 
+- 2026-09-17: **생성 POST 즉시 실패 사유 추가.** 명시적 `status=error`를 `REQUEST_FAILED`로 commit한 경우 기존 HTTP 500/`API-004`/표준 message를 유지하면서, GET과 동일한 Backend 승인 문구를 `data.failureReason`으로 반환한다. Agent 원문 전체·숫자 코드는 공개하지 않으며 실패 미확정 오류는 `data=null`을 유지한다. DB/schema/lifecycle 변화는 없다.
 - 2026-08-27 후속 정정: **명시적 오류 일반 실패 저장.** Notion HTTP wrapper와 사용자 최종 결정에 따라 `status=error`는 숫자 코드 유무/값과 무관하게 `REQUEST_FAILED → PROPOSAL_FAILED`로 처리한다. 아래 같은 날 전용 상태 도입/FE 문구 기록은 이력이며 새 쓰기 계약을 뜻하지 않는다. 과거 enum/조회는 유지하고 불확정 응답은 실패로 확정하지 않는다. API shape/DB/callback/confirmation 변경은 없다.
 - 2026-08-27: **전용 Backend 실패 상태 설계 통합.** `REQUEST_NO_CHANGES` 저장 → A4a `PROPOSAL_NO_CHANGES` 조회로 정리하고 사유 코드 컬럼 대안을 이번 범위에서 제외했다. 생성 오류의 실제 `ApiErrorException` 경로, 안전한 사유 저장, 실패 우선 조회, FE 실패 분기, canonical DDL 배포 절차를 연결했다. 저장 방식 미정은 해소했지만 요청 간 callback과 호환 배포 확인은 남아 있으며 미구현/미배포다.
 - 2026-08-27: **FE 실패 의미 보강.** 사용자 피드백에 따라 `PROPOSAL_NO_CHANGES`를 제안 생성 실패의 세부 유형으로 명시하고, 정상 안내로 오해할 수 있는 표현을 제거했다. 예정 상태명/응답 shape/구현 범위는 변경하지 않았다.

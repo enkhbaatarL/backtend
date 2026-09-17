@@ -13,11 +13,11 @@
   - `docs/design-docs/gas/mi-model-param-proposal-execprep-erd-ddl-draft.md`
 - supersedes:
   - 없음
-- last synced: 2026-08-27
+- last synced: 2026-09-17
 - open questions:
   - 4절 참조
 - created at: 2026-07-08
-- updated at: 2026-08-27
+- updated at: 2026-09-17
 - purpose: "MI 파라미터 제안 기반 수급모델 실행 준비" 기능 구현을 위해 개발/변경해야 할 Backend API를 빠짐없이 도출하고, 기존 재사용 대상과 신규 대상을 구분한다.
 - canonical references:
   - `docs/feature-specs/mi-model-parameter-proposal-backend-feature-spec.md` (API 계약)
@@ -27,6 +27,7 @@
   - `docs/design-docs/gas/mi-scenario-model-execution-workflow-design.md` (기존 case/run 실행 흐름)
 - note: 이 문서는 canonical 계약을 대체하지 않는다. endpoint/DTO 계약은 feature-spec, lifecycle는 design doc이 canonical이다.
 - change log:
+  - 2026-09-17: A3 명시적 `status=error`의 실패 commit 성공 시 기존 HTTP 500/`API-004`를 유지하고 operation-specific `data.failureReason`으로 Backend 승인 사유를 즉시 반환한다. 실패 미확정 오류는 `data=null` 유지. DB/상태 전이 변경 없음.
   - 2026-08-27 후속 정정: A3 `status=error`는 코드와 무관하게 기존 일반 실패를 저장하고 A4a `PROPOSAL_FAILED`로 표시한다. 아래 전용 상태 도입 기록을 대체하며 NO_CHANGES는 과거 데이터 읽기에만 남긴다. B1/X2/실행 API/DB 변경 없음.
   - 2026-08-27: A3 생성 오류 저장 `REQUEST_NO_CHANGES`와 A4a 공개 `PROPOSAL_NO_CHANGES` 예정 변경을 연결했다. 둘 다 변경 항목 없음으로 인한 제안 생성 실패이며 미구현/미배포다. 물리 컬럼 추가는 없고, callback 상관관계/호환 배포 gate는 spec §13 및 canonical DDL을 따른다.
   - 2026-07-14: A8/A9 flat `parameters`를 제거하고 endpoint별 `parameterSource`와 A4a 동일 `modelFiles` tree를 반환하도록 변경했다. 세 API는 공통 projector를 사용하고 latest Case anchor 및 Agent current-value 의미는 유지한다.
@@ -88,7 +89,7 @@ Agent 팀이 로컬 연동 테스트용으로 제공한 VM 배포 endpoint다. �
 |---|---|---|---|---|---|---|---|---|
 | A1 | `GET /api/v1/mi/next-gen/scenario-groups/{scenarioGroupId}/graph` | 그래프 + `parameterProposalTarget` | **변경(완료)** — 필드 이미 존재 | 없음 | +`parameterProposalTarget:boolean` | `MiScenarioGroup.eventTypeL2` | spec 4, 5.0.1 | — |
 | A2 | `GET .../scenarios/{scenarioId}/model-execution-options` | 실행 입력 mode 조회 | **기존** | 없음 | res: 기존 mode fields | `ModelInputMode.from(eventTypeL2Id)` | spec 5.0 | 가격전망해석 연계로 인한 변경 없음 |
-| A3 | `POST .../scenarios/{scenarioId}/model-param-proposals` | 제안 생성 접수 | **기존 API 변경** | (신규 row) `REQUESTING` → `PROPOSAL_PENDING` / `REQUEST_FAILED` | req: **body 없음** / 성공 res: `ModelParamProposalAcceptRes`. 오류/저장 분류는 spec 5.2.1 | Agent client(X1), 선행 commit, RUNNING pre-check, active UNIQUE, 같은 요청의 조건부 갱신 | spec 5.1/5.2.1; design 3.2/3.6 | 정확한 `status=error`만 일반 실패 저장. 코드 유무 무관. 불확정 응답은 요청 상태 유지 |
+| A3 | `POST .../scenarios/{scenarioId}/model-param-proposals` | 제안 생성 접수 | **기존 API 변경** | (신규 row) `REQUESTING` → `PROPOSAL_PENDING` / `REQUEST_FAILED` | req: **body 없음** / 성공 res: `ModelParamProposalAcceptRes`. 명시적 실패 res: HTTP 500/`API-004` + `data.failureReason`; 오류/저장 분류는 spec 5.2.1 | Agent client(X1), 선행 commit, RUNNING pre-check, active UNIQUE, 같은 요청의 조건부 갱신 | spec 5.1/5.2.1; design 3.2/3.6 | 정확한 `status=error`만 일반 실패 저장·안전 사유 반환. 코드 유무 무관. 불확정 응답은 요청 상태와 `data=null` 유지 |
 | A4a | `GET .../scenarios/{scenarioId}/model-param-proposals` | 팝업 current-state 조회 | **설명/예시 정정** | 없음(read) | 기존 `CurrentModelParamProposalRes` shape/enum 유지. 새 오류는 `PROPOSAL_FAILED`, 과거 NO_CHANGES 읽기 유지. 상세는 spec 5.2.1 | 최신 preparation의 실패 판정 우선 → 필요한 Agent/Case/Run read. 성공 실행에서만 파일 조회 | spec 5.2.1/5.2.2/5.7; design 3.2/6 | Agent row가 없어도 종료 실패 우선. 이전 제안/실행값으로 fallback하지 않음 |
 | A4 | `GET .../scenarios/{scenarioId}/model-param-proposals/{modelParamProposalId}` | 상태/결과 조회 | **신규** | 없음(read) | res: `ModelParamProposalRes`(status, `parameters[]`=Agent flat data + response-only `groupedRationales`, failureReason) | **Agent proposal 테이블 read-only**(R1) + orchestration 상태 overlay | spec 5.2/5.2.2; Agent doc 3 | 기존 DB/schema 직접 read. runtime table visibility/권한/type 확인 |
 | A5 | `GET .../scenarios/{scenarioId}/model-param-proposals/stream` | 완료/실패 SSE 신호 | **신규** | 없음 | SSE event `model-parameter-proposal` {scenarioId, id, status} | after-commit SSE publish | spec 5.3; design 6 rule 24 | scenario-scope 신규 SSE로 확정. 기존 group SSE 채널에 합치지 않음 |

@@ -3,11 +3,14 @@ package com.sk.domain.mi.controller.nextgen;
 import com.sk.common.annotation.ApiOrder;
 import com.sk.common.annotation.PermissionRule;
 import com.sk.common.annotation.RequiredPermissionRules;
+import com.sk.common.enums.ResultCode;
 import com.sk.common.model.BaseResponse;
 import com.sk.common.model.BaseResponseFactory;
 import com.sk.domain.mi.dto.response.nextgen.CurrentModelParamProposalRes;
 import com.sk.domain.mi.dto.response.nextgen.ModelParamProposalAcceptRes;
+import com.sk.domain.mi.dto.response.nextgen.ModelParamProposalCreateFailureRes;
 import com.sk.domain.mi.dto.response.nextgen.ModelParamProposalRes;
+import com.sk.domain.mi.exception.ModelParamProposalCreateRejectedException;
 import com.sk.domain.mi.service.nextgen.ModelParamProposalService;
 import com.sk.domain.mi.service.nextgen.sse.registry.ModelParamProposalSseRegistry;
 import com.sk.domain.shared.enums.PermissionCondition;
@@ -22,7 +25,9 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.annotation.Profile;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
@@ -42,19 +47,19 @@ public class ModelParamProposalController {
         summary = "수급모델 파라미터 제안 생성 접수 API",
         description = """
             시나리오의 파라미터 제안 생성을 요청합니다. 접수 성공은 생성 완료를 뜻하지 않습니다.
-            Agent 응답의 status=error이면 오류 코드와 무관하게 일반 실패를 저장하고 HTTP 500 / API_RESPONSE_ERROR를 반환합니다.
-            POST 오류 후에도 같은 경로의 GET으로 현재 상태와 실패 사유를 확인하세요.
-            즉시 -202 거절에는 callback/SSE가 없으며 GET으로 실패를 확인할 수 있습니다.
-            status 누락/알 수 없는 값, 응답 형식 오류, timeout은 실패를 확정하지 않고 기존 요청 상태를 유지합니다.
+            Agent 응답의 status=error이면 오류 코드와 무관하게 일반 실패를 저장하고 HTTP 500 / API_RESPONSE_ERROR와
+            data.failureReason을 반환합니다. 이 안전한 사유를 즉시 표시하고 같은 경로의 GET으로 상태를 동기화하세요.
+            즉시 -202 거절에는 callback/SSE가 없습니다. status 누락/알 수 없는 값, 응답 형식 오류, timeout은 실패를
+            확정하지 않고 기존 요청 상태와 오류 응답의 data=null을 유지합니다.
             """
     )
     @ApiResponse(responseCode = "200", description = "접수 성공")
     @ApiResponse(responseCode = "409", description = "RSC_ALREADY_EXISTS: 이미 진행 중인 제안 요청 또는 모델 실행이 존재함",
         content = @Content(mediaType = MediaType.APPLICATION_JSON_VALUE, schema = @Schema(implementation = BaseResponse.class)))
-    @ApiResponse(responseCode = "500", description = "API_RESPONSE_ERROR: Agent 오류 응답. status=error는 일반 실패로 저장하며 현재 상태는 GET으로 확인",
+    @ApiResponse(responseCode = "500", description = "API_RESPONSE_ERROR: 명시적 status=error는 data.failureReason을 즉시 표시하고 GET으로 상태 동기화",
         content = @Content(mediaType = MediaType.APPLICATION_JSON_VALUE, schema = @Schema(implementation = BaseResponse.class),
             examples = @ExampleObject(name = "API_RESPONSE_ERROR", value = """
-                {"status":false,"code":"API-004","message":"Received an error response from external API.","data":null}
+                {"status":false,"code":"API-004","message":"Received an error response from external API.","data":{"failureReason":"파라미터로 반영할 변경 항목이 없습니다."}}
                 """)))
     @PostMapping(value = "/model-param-proposals", produces = MediaType.APPLICATION_JSON_VALUE)
     @RequiredPermissionRules(rules = {
@@ -65,6 +70,15 @@ public class ModelParamProposalController {
         @Parameter(description = "시나리오 ID", example = "309") @PathVariable Long scenarioId
     ) {
         return BaseResponseFactory.create(modelParamProposalService.createProposal(scenarioId));
+    }
+
+    @ExceptionHandler(ModelParamProposalCreateRejectedException.class)
+    private ResponseEntity<BaseResponse<ModelParamProposalCreateFailureRes>> handleCreateRejected(
+        ModelParamProposalCreateRejectedException ex
+    ) {
+        ModelParamProposalCreateFailureRes data = new ModelParamProposalCreateFailureRes(ex.getFailureReason());
+        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+            .body(BaseResponseFactory.create(ResultCode.Error.API_RESPONSE_ERROR, data));
     }
 
     @Deprecated

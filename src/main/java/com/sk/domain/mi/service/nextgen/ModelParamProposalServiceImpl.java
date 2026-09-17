@@ -10,6 +10,7 @@ import com.sk.common.exception.ApiErrorException;
 import com.sk.common.exception.AppErrorException;
 import com.sk.common.exception.AppHttpStatusException;
 import com.sk.domain.mi.dto.response.nextgen.*;
+import com.sk.domain.mi.exception.ModelParamProposalCreateRejectedException;
 import com.sk.domain.mi.service.nextgen.paramproposal.ModelParamSlotAxisResolver;
 import com.sk.domain.mi.service.nextgen.paramproposal.ModelParamSlotAxisResolver.InvalidSlotAxisMetadataException;
 import com.sk.domain.mi.service.nextgen.paramproposal.ModelParameterResponseProjector;
@@ -124,9 +125,9 @@ public class ModelParamProposalServiceImpl implements ModelParamProposalService 
             responseBody = callAgent(() -> modelParamProposalAgentApi.createProposal(scenarioId), "create model parameter proposal");
         } catch (ApiErrorException e) {
             if (e.getStatusCode() >= 400 && e.getStatusCode() < 600) {
-                readCreateEnvelope(e.getMessage())
-                    .filter(this::isCreateError)
-                    .ifPresent(body -> markRequestFailed(preparation.getExecPrepId(), createFailureReason(body)));
+                Optional<JsonNode> errorBody = readCreateEnvelope(e.getMessage()).filter(this::isCreateError);
+                errorBody.ifPresent(
+                    jsonNode -> rejectCreate(preparation.getExecPrepId(), jsonNode, e));
             }
             throw e;
         } catch (AppErrorException e) {
@@ -707,8 +708,8 @@ public class ModelParamProposalServiceImpl implements ModelParamProposalService 
             ));
     }
 
-    private void markRequestFailed(Long execPrepId, String failureReason) {
-        transactionOperations.executeWithoutResult(status -> {
+    private boolean markRequestFailed(Long execPrepId, String failureReason) {
+        return Boolean.TRUE.equals(transactionOperations.execute(status -> {
             int updated = modelExecutionPreparationRepository.transitionStatus(
                 execPrepId,
                 REQUEST_CREATE_TRANSITION_FROM,
@@ -726,14 +727,22 @@ public class ModelParamProposalServiceImpl implements ModelParamProposalService 
                 log.info("Agent error did not transition preparation. execPrepId={}, status={}",
                     execPrepId, current.getStatus());
             }
-        });
+            return updated == 1;
+        }));
+    }
+
+    private void rejectCreate(Long execPrepId, JsonNode body, RuntimeException fallback) {
+        String failureReason = createFailureReason(body);
+        if (markRequestFailed(execPrepId, failureReason)) {
+            throw new ModelParamProposalCreateRejectedException(failureReason);
+        }
+        throw fallback;
     }
 
     private AgentModelParamProposalCreateRes validateCreateAgentResponse(Long execPrepId, String responseBody) {
         JsonNode body = readCreateEnvelope(responseBody).orElseThrow(this::invalidCreateResponse);
         if (isCreateError(body)) {
-            markRequestFailed(execPrepId, createFailureReason(body));
-            throw ApiErrorException.of(ResultCode.Error.API_RESPONSE_ERROR);
+            rejectCreate(execPrepId, body, ApiErrorException.of(ResultCode.Error.API_RESPONSE_ERROR));
         }
 
         AgentModelParamProposalCreateRes response;
