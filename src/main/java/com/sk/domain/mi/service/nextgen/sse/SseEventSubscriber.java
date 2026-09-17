@@ -4,6 +4,7 @@ import com.sk.common.utils.JsonUtil;
 import com.sk.domain.mi.dto.response.nextgen.ModelParamProposalSseEvent;
 import com.sk.domain.mi.dto.response.nextgen.design.ScenarioDesignSseEvent;
 import com.sk.domain.mi.dto.response.nextgen.priceinterp.PriceInterpretationSseEvent;
+import com.sk.domain.mi.service.nextgen.sse.registry.GroupModelParamProposalSseRegistry;
 import com.sk.domain.mi.service.nextgen.sse.registry.ModelParamProposalSseRegistry;
 import com.sk.domain.mi.service.nextgen.sse.registry.PriceInterpretationSseRegistry;
 import com.sk.domain.mi.service.nextgen.sse.registry.ScenarioDesignSseRegistry;
@@ -30,6 +31,7 @@ public class SseEventSubscriber implements MessageListener {
     private final ScenarioDesignSseRegistry designSseRegistry;
     private final PriceInterpretationSseRegistry priceInterpSseRegistry;
     private final ModelParamProposalSseRegistry modelParamProposalSseRegistry;
+    private final GroupModelParamProposalSseRegistry groupModelParamProposalSseRegistry;
 
     @Override
     public void onMessage(Message message, byte[] pattern) {
@@ -60,6 +62,10 @@ public class SseEventSubscriber implements MessageListener {
             try {
                 ModelParamProposalSseEvent event = JsonUtil.fromJson(body, ModelParamProposalSseEvent.class);
                 modelParamProposalSseRegistry.emit(event.scenarioId(), event);
+                // 그룹 스트림 팬아웃 — scenarioGroupId가 없는 구버전 발행분은 시나리오 스트림에만 전달된다
+                if (event.scenarioGroupId() != null) {
+                    groupModelParamProposalSseRegistry.emit(event.scenarioGroupId(), event);
+                }
             } catch (Exception e) {
                 log.warn("[ModelParamProposal SSE] subscribe failed (deserialize): {}", e.getMessage());
             }

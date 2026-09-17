@@ -22,7 +22,7 @@
   - `docs/design-docs/gas/mi-fundamental-model-volumes-region-bucket-json-plan-b.md` as a separate Plan B candidate; the approved `tmd_mdl_scnrcasevolrgnl` decision is folded into this canonical document
   - `docs/design-docs/gas/mi-fundamental-model-trade-flow-erd-ddl-draft.md` as canonical Trade Flow persistence design
   - "DB-backed 전환 시 별도 ERD review 필요" notes for Volumes/Trade Flows/Price result data in older drafts
-- last synced: 2026-07-03
+- last synced: 2026-09-15
 - implementation status: physical rollout complete (real DB implementation shipped 2026-06-15 for Volumes/Trade Flows/Price; see `docs/work-notes/2026/2026-06-15-*-real-db-implementation.md`). Remaining open questions below are follow-up DBA policy items, not rollout blockers.
 - open questions:
   - result retention policy: keep latest N runs per case, keep runs for M months, or archive by explicit DBA operation
@@ -664,7 +664,7 @@ DB-backed real (current state):
 - Python/model side inserts Volumes into `tmd_mdl_scnrcasevolrgnl` and commits result table inserts before invoking success callback.
 - Java/backend does not set `exec_stat_cd = 'COMPLETED'` unless callback validation and result row existence checks pass.
 - `tcm_filel(SCNRCASEH + run_seq)` remains the source for raw output file metadata, not for chart/table API rows.
-- `tcm_filel(SCNRCASEHI + run_seq)` holds model execution intermediate files (2026-09-07). The detail API exposes their file names only; they are never parsed into the result tables in this document.
+- `tcm_filel(SCNRCASEHI + run_seq)` holds model execution intermediate files (2026-09-07). The detail API exposes output/intermediate download metadata according to the canonical feature spec; intermediate files are never parsed into the result tables in this document.
 - mock seed files are kept only for local/demo mode.
 
 Transition checklist (all complete):

@@ -9,5 +9,6 @@ public record ModelParamPayloadItem(
     ModelParamTarget modelTarget,
     String rationale,
     List<Map<String, Object>> values
+
 ) {
 }

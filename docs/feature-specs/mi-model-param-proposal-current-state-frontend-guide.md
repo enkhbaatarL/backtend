@@ -13,7 +13,7 @@
 - supersedes:
   - 이 문서의 이전 A4a top-level `parameters`/navigation-only `modelFiles`/`parameterShapes` 안내
   - A4a `leaf.parameter` 전체를 그대로 A6 `confirmationParameters[]`로 전송하던 예시
-- last synced: 2026-09-03
+- last synced: 2026-09-17
 - open questions:
   - duplicate-slot Agent payload는 GET에서 모든 `values[]`를 보존하지만 현재 A6 validator가 동일 slot identity를 거절하므로 실행 좌표 계약 확인이 필요함
 
@@ -92,7 +92,20 @@ FE ──④ SSE 받으면 다시 ② GET──▶ 최신 상태로 화면 갱�
 
 **접수 성공 = 생성 완료 아님.** 이후 완료 신호는 SSE(E)로 오고, 최신 상태는 GET(C)으로 확인합니다.
 
-**POST 오류 후에도 GET(C)을 호출하세요.** Agent가 `status=error`를 반환하면 BE는 일반 실패를 저장하고 POST에 HTTP 500 / `API-004`를 반환합니다. GET의 `PROPOSAL_FAILED`에서는 로딩/반복 조회를 끝내고 `failureReason`을 표시하며, 이전 파라미터 표를 비우고 확정/실행을 막습니다. Agent ID 발급 전이면 `modelParamProposalId`는 null입니다. 즉시 -202 거절에는 callback/SSE가 없으므로 SSE만 기다리지 않습니다. status 누락/알 수 없는 값, 잘못된 JSON, timeout은 실패 확정 근거가 아니므로 GET이 `GENERATING`을 반환할 수 있습니다. 상세 계약은 canonical feature spec §5.2.1을 따릅니다.
+Agent가 `status=error`를 반환하면 BE는 일반 실패를 저장하고 POST에 HTTP 500 / `API-004`와 `data.failureReason`을 반환합니다. 이 안전한 사유를 즉시 표시하고, GET(C)으로 `PROPOSAL_FAILED` 상태를 동기화하세요. 실패 상태에서는 로딩/반복 조회를 끝내고 이전 파라미터 표를 비우며 확정/실행을 막습니다. Agent ID 발급 전이면 `modelParamProposalId`는 null입니다. 즉시 -202 거절에는 callback/SSE가 없으므로 SSE만 기다리지 않습니다. status 누락/알 수 없는 값, 잘못된 JSON, timeout은 실패 확정 근거가 아니므로 POST `data`가 null이고 GET이 `GENERATING`을 반환할 수 있습니다. 상세 계약은 canonical feature spec §5.2.1을 따릅니다.
+
+명시적 실패 POST 예시:
+
+```json
+{
+  "status": false,
+  "code": "API-004",
+  "message": "Received an error response from external API.",
+  "data": {
+    "failureReason": "파라미터로 반영할 변경 항목이 없습니다."
+  }
+}
+```
 
 거부 케이스:
 - 이미 진행 중인 제안/실행 존재 → `409 Conflict`
@@ -282,7 +295,7 @@ EXECUTED_CONFIRMED  (종료)
 | `FILE_UPLOAD` 모드에서 제안 API 호출 | `409` | `BIZ_RULE_VIOLATION` |
 | 폐기(DISCARDED) 시나리오 요청 | `400` | `BIZ_RULE_VIOLATION` |
 | 시나리오/제안 리소스 없음 | `404` | `RSC_NOT_FOUND` |
-| 제안 생성의 명시적 Agent `status=error` | `500` | `API-004` (`API_RESPONSE_ERROR`). GET으로 일반 실패/사유 확인 |
+| 제안 생성의 명시적 Agent `status=error` | `500` | `API-004` (`API_RESPONSE_ERROR`). `data.failureReason` 즉시 표시 후 GET으로 상태 동기화 |
 | 제안 생성의 timeout/통신 예외 또는 잘못된 2xx 응답 | `400` | 현행 공통 handler 매핑 유지. `API_TIMEOUT`/통신 오류/`API_RESPONSE_ERROR`; 생성 실패를 확정하지 않음 |
 | 제안 생성의 Agent HTTP 오류이나 명시적 error envelope가 아님 | `500` | `API-004`; 생성 실패를 확정하지 않음 |
 | payload 없음/파싱 실패, parameter/rendering 누락·중복·좌표 불일치 | `409` | `BIZ_RULE_VIOLATION` (불완전 tree를 반환하지 않음) |

@@ -16,6 +16,10 @@ public interface CustomScenarioCaseRepository {
 
     List<ScenarioCaseListRow> findListRows(FundamentalModelCaseSearchType searchType, String keyword);
 
+    Optional<ScenarioCaseListRow> findCurrentMiBaseListRow();
+
+    Optional<ScenarioCaseListRow> findListRowByCaseId(Long caseId);
+
     Optional<ScenarioCaseDetailRow> findDetailRow(Long caseId);
 
     List<ScenarioPriceRow> findLatestCompletedPricesByScenarioIds(List<Long> scenarioIds, IndexName indexName, PeriodUnitSeparateCd periodUnit);
@@ -28,7 +32,7 @@ public interface CustomScenarioCaseRepository {
      */
     List<ScenarioLatestRunRow> findLatestCompletedRunIdByScenarioIds(List<Long> scenarioIds);
 
-    /** MI Base 기준선 가격 — exec_type_cd=MI_BASE 케이스 중 최신 1건(case_id 최대)의 가격 결과. */
-    List<MiBasePriceRow> findLatestMiBasePrices(IndexName indexName, PeriodUnitSeparateCd periodUnit);
+    /** current MI Base 기준선 가격 — active generated marker가 Y인 단일 케이스의 가격 결과. */
+    List<MiBasePriceRow> findCurrentMiBasePrices(IndexName indexName, PeriodUnitSeparateCd periodUnit);
 
 }

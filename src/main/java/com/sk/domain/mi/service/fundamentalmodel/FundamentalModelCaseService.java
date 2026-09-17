@@ -8,6 +8,7 @@ import com.sk.domain.mi.dto.request.fundamentalmodel.FundamentalModelVolumesReq;
 import com.sk.domain.mi.dto.response.fundamentalmodel.FundamentalModelCaseCreateRes;
 import com.sk.domain.mi.dto.response.fundamentalmodel.FundamentalModelCaseDetailRes;
 import com.sk.domain.mi.dto.response.fundamentalmodel.FundamentalModelCaseListRes;
+import com.sk.domain.mi.dto.response.fundamentalmodel.FundamentalModelCaseListItemRes;
 import com.sk.domain.mi.dto.response.fundamentalmodel.FundamentalModelCaseStatusRes;
 import com.sk.domain.mi.dto.response.fundamentalmodel.FundamentalModelPriceRes;
 import com.sk.domain.mi.dto.response.fundamentalmodel.FundamentalModelRunAcceptRes;
@@ -34,6 +35,8 @@ public interface FundamentalModelCaseService {
     FundamentalModelCaseDetailRes updateCase(Long caseId, FundamentalModelCaseUpdateReq request);
 
     void deleteCase(Long caseId);
+
+    FundamentalModelCaseListItemRes designateMiBase(Long caseId);
 
     FundamentalModelRunAcceptRes runCase(Long caseId);
 

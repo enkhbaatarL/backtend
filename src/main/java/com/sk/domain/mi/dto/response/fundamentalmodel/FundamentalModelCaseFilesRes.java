@@ -6,8 +6,8 @@ import java.util.List;
 
 public record FundamentalModelCaseFilesRes(
 
-    @ArraySchema(schema = @Schema(implementation = FundamentalModelDownloadFileRes.class))
-    List<FundamentalModelDownloadFileRes> input,
+    @ArraySchema(schema = @Schema(implementation = FundamentalModelFileNameRes.class))
+    List<FundamentalModelFileNameRes> input,
 
     @ArraySchema(schema = @Schema(implementation = FundamentalModelDownloadFileRes.class))
     List<FundamentalModelDownloadFileRes> output,

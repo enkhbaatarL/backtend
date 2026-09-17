@@ -1,214 +1,108 @@
-# MI Base 데이터 적재 가이드 (외부 적재 주체용)
+# MI Base 운영 지정 가이드
 
-- domain: gas
-- status: draft (적재 주체 협의용)
-- owner: platform BE
-- updated at: 2026-06-16
-- role: MI Base baseline 데이터를 플랫폼 실행 테이블에 직접 INSERT 하는 외부 적재 주체에게 대상 테이블/컬럼/규칙/순서를 안내하는 핸드오프 문서
+## Document Control
 
-> 이 문서는 "적재하는 쪽"이 보는 가이드다. 플랫폼 백엔드는 MI Base 데이터를 **조회 전용**으로만 사용하고, 적재(INSERT)는 하지 않는다.
+- status: Review
+- canonical for: 기존 독립수급모델 실행 건을 현재 MI Base로 지정할 때의 운영 사전·사후 확인 절차
+- owner: BE / Operator
+- source documents:
+  - `docs/design-docs/gas/scenario-case-execution-workflow-design-draft.md`
+- depends on:
+  - `docs/design-docs/gas/scenario-case-execution-erd-ddl-draft.md`
+  - `docs/feature-specs/mi-fundamental-model-mi-base-designation-feature-spec.md`
+- supersedes:
+  - 2026-06-16 작성된 별도 MI Base case/run/result/file INSERT 가이드 내용
+- last synced: 2026-09-14
+- open questions: 없음
 
 ## 1. 목적
 
-플랫폼 가격전망 화면은 차트에 `MI Base`(가장 최신 기준) 곡선을 오버레이로 그린다. 이를 위해 MI Base baseline 결과를 플랫폼이 이미 쓰는 **실행 테이블 구조**(시나리오 케이스/실행이력/가격결과)에 한 세트로 적재해야 한다.
+MI Base는 별도로 생성·적재하는 실행 세트가 아니다. 기존 독립수급모델 실행 case 중 선택한 1건을 현재 MI Base로 지정한다. 새 지정 시 이전 MI Base는 `INDEPENDENT`로 복귀하고 대상만 `MI_BASE`가 된다. current MI Base는 상세와 결과만 조회하는 읽기 전용 case이며, 별도 해제 없이 새 지정으로만 교체한다.
 
-- 사용자가 실행하는 데이터(독립실행/시나리오실행)와 **같은 테이블**을 공유하되, `exec_type_cd = 'MI_BASE'` 로 구분한다.
-- MI Base는 사용자 실행 흐름(대기→실행중→완료)을 타지 않는다. 적재 시점에 이미 완료된 데이터이므로 `COMPLETED` 상태로 바로 INSERT 한다.
+이 문서는 권한 있는 사용자가 지정하기 전후에 확인할 절차를 정리한다. 상태 전이와 새 기준 적용 시점은 workflow design, API path·응답·권한 계약은 enhancement feature spec, 물리 제약과 rollout SQL은 ERD/DDL draft가 canonical source다.
 
-## 2. 적재 대상 테이블
+## 2. 현재 데이터 구조
 
-| 순서 | 테이블 | 역할 | 적재 row 수 |
-|---|---|---|---|
-| 1 | `tmd_mdl_scnrcasem` | 시나리오 케이스 마스터 (1세트의 머리) | 1건 |
-| 2 | `tmd_mdl_scnrcaseh` | 실행 이력 (결과 연결 키 `run_seq` 발급) | 1건 |
-| 3 | `tmd_mdl_scnrcaseprcl` | 가격 결과 (차트에 그려지는 실제 데이터) | N건 (지역 × 연도별·월별 기간 모두) |
-| 4 | `tcm_filel` (입력 파일) | 입력 파일 메타데이터 (`SCNRCASE` + `case_id`) | 입력 파일 수만큼 |
-| 5 | `tcm_filel` (출력 파일) | 출력 파일 메타데이터 (`SCNRCASEH` + `run_seq`) | 출력 파일 수만큼 |
+MI Base로 지정되기 전에 해당 건은 일반 독립실행으로 생성·실행된다.
 
-- 결과 데이터는 전부 `tmd_mdl_scnrcaseh.run_seq` 를 외래 키처럼 사용해 `run_seq` 단위로 연결된다.
-- MI Base는 **가격전망 차트 오버레이**가 목적이므로 가격(`tmd_mdl_scnrcaseprcl`)만 적재하면 된다. Volumes/Trade Flows 결과 테이블은 MI Base 범위가 아니다(필요해지면 동일하게 `run_seq` 로 연결, 별도 협의).
-- 파일은 **실제 바이너리는 S3(object storage)에 업로드**하고, `tcm_filel` 에는 그 메타데이터(원본/저장 파일명, 저장 경로, 크기, 관계 키)만 INSERT 한다. `tcm_filel` 자체에 파일 바이너리를 넣지 않는다.
-- 파일과 케이스/실행의 연결 기준:
-
-| 구분 | `file_rel_obj_spt_cd` | `file_rel_obj_dstg_no` |
+| 데이터 | 연결 기준 | MI Base 지정 시 처리 |
 |---|---|---|
-| 입력 파일 | `SCNRCASE` | `tmd_mdl_scnrcasem.case_id` |
-| 출력 파일 | `SCNRCASEH` | `tmd_mdl_scnrcaseh.run_seq` |
+| case master | `tmd_mdl_scnrcasem.case_id` | 대상 row 유지·`exec_type_cd = MI_BASE`. 이전 current는 `INDEPENDENT`로 복귀 |
+| run history | `tmd_mdl_scnrcaseh.case_id` | 기존 row·`run_id`·`run_seq` 유지 |
+| input Excel | `tcm_filel(SCNRCASE + case_id)` | 기존 `DEMAND/SUPPLY/TRADE` 3개 유지 |
+| output files | `tcm_filel(SCNRCASEH + run_seq)` | 기존 row 유지 |
+| parsed result | latest run의 `run_seq` | 기존 Volumes/Trade Flows/Price 결과 유지 |
+| owner/audit | `usr_no`, `crt_*`, `mod_*` | 기존 실행 소유자와 생성 이력 유지. 교체되는 case들의 `mod_*`만 요청 actor/변경 시각으로 갱신 |
 
-## 3. 핵심 규칙 (반드시 준수)
+## 3. 핵심 규칙
 
-1. **`exec_type_cd = 'MI_BASE'`, `scnr_id = NULL`** — 이 둘은 같이 가야 한다. 마스터에는 `CHECK ((exec_type_cd = 'SCENARIO') = (scnr_id IS NOT NULL))` 제약(`tmd_mdl_scnrcasem_ck01`)이 걸려 있어, `MI_BASE` 인데 `scnr_id` 를 채우면 INSERT 가 거부된다.
-2. **상태는 `COMPLETED`** — 마스터 `case_stat_cd = 'COMPLETED'`, 이력 `exec_stat_cd = 'COMPLETED'`. `PENDING`/`RUNNING` 단계를 거치지 않는다.
-3. **`usr_no` 는 admin 사용자 번호** — MI Base는 특정 업로더가 없으므로 운영에서 합의한 admin `usr_no` 고정값을 넣는다. (실제 값은 §7 참고)
-4. **`run_id` 형식** — `yyyymmdd_hhmmss_XXXX` (예: `20260616_021500_b0a1`), `VARCHAR(20)`, 전역 unique. 적재 주체가 생성한다.
-5. **`run_seq` 는 자동 증가** — `tmd_mdl_scnrcaseh.run_seq` 는 `AUTO_INCREMENT` 다. INSERT 시 값을 넣지 말고, 넣은 뒤 `run_id` 로 다시 조회해 `run_seq` 를 얻어 가격 결과에 사용한다.
-6. **"최신 1건" 은 강제 제약이 아니라 조회 규칙** — 플랫폼은 `exec_type_cd = 'MI_BASE'` 중 `case_id` 가 가장 큰(가장 최근) 1건을 읽는다. 따라서 새 baseline 이 나오면 **새 케이스 세트를 새로 INSERT** 하면 되고, 과거 건은 그대로 둬도 된다(이력 누적). 굳이 정리하려면 과거 마스터를 `del_yn = 'Y'` 로 soft delete 한다(물리 삭제 금지).
+1. 별도 `tmd_mdl_scnrcasem`, `tmd_mdl_scnrcaseh`, 결과, 파일 row를 INSERT하지 않는다.
+2. 지정 대상은 `scnr_id IS NULL`, `case_stat_cd = 'COMPLETED'`인 active 독립실행 case다. `SCENARIO`, 미완료 case, soft-deleted case는 지정하지 않는다.
+3. MI Base 지정 시 `case_id`, `usr_no`, `case_stat_cd`, `last_run_id`, case/run 상태와 결과, input/output 파일을 변경하지 않는다.
+4. `tmd_mdl_scnrcasem_ck01` 제약에 따라 `MI_BASE`는 `scnr_id = NULL`을 유지한다.
+5. current MI Base는 전역에서 최대 1건이다. 새 지정 시 이전 current는 `INDEPENDENT`로 복귀하고 해당 UPDATE가 DB에 반영된 뒤 대상만 `MI_BASE`가 된다. 두 변경은 한 transaction에서 처리한다.
+6. 이전 MI Base row를 물리 삭제하거나 soft delete하지 않는다. 원래 case/run/input/result와 소유자는 보존하며, 복귀 후 일반 `INDEPENDENT` case로 목록에 노출한다.
+7. `exec_type_cd`와 `del_yn`에서 파생되는 generated `actv_base_yn` unique constraint가 동시 지정에서도 active `MI_BASE` 2건 생성을 막는다. application은 helper 값을 직접 쓰지 않는다.
+8. `case_id` 크기는 현재 MI Base 판정 기준이 아니다. 더 오래된 case도 지정 요청이 성공하면 현재 MI Base가 된다.
+9. 지정 commit 이후 시작되는 수급모델 input 생성만 새 MI Base의 `DEMAND`, `SUPPLY`, `TRADE`를 사용한다. 이미 생성·접수·완료된 실행의 input, 결과, 기준값은 바꾸지 않는다.
+10. MI Base가 아직 없으면 기존 플랫폼 기본 template을 사용한다. 지정된 MI Base가 있으면 해당 파일을 읽지 못할 때 이전/default template으로 조용히 fallback하지 않고 실행 준비를 실패시킨다.
+11. 기존 Scenario Case 목록 API는 current `miBase`와 active `INDEPENDENT` `cases`를 분리하도록 변경한다. 이전 MI Base는 복귀 후 `cases`에 포함한다. 구체적인 필드·검색·정렬 계약은 enhancement feature spec을 따른다.
+12. 한 input 생성은 시작 시 현재 MI Base `caseId`와 세 역할 파일 metadata를 한 번만 source snapshot으로 고정한다. 생성 중 지정이 바뀌어도 `DEMAND`, `SUPPLY`, `TRADE`를 서로 다른 case에서 섞지 않는다.
+13. 지정과 기존 수정·삭제 command는 같은 row-lock 또는 atomic `exec_type_cd = 'INDEPENDENT'` 조건으로 직렬화한다. MI Base로 바뀐 row를 뒤늦은 수정·삭제가 변경하지 못해야 한다. 실행은 `PENDING | FAILED`, 지정은 `COMPLETED`만 허용하므로 두 command의 적격 상태가 겹치지 않는다.
+14. current MI Base는 상세·상태·Volumes filter-options·Volumes·Trade Flows·Price 조회를 허용한다. FE는 `execType = MI_BASE`에서 결과 탭은 노출하되 수정·삭제·재실행 action을 노출하거나 호출하지 않으며, backend도 mutation을 active `INDEPENDENT` 전용으로 유지한다.
+15. MI Base 지정 취소만 수행하는 해제 API는 제공하지 않는다. current 변경은 새 완료 `INDEPENDENT` case를 지정해 기존 current를 자동 복귀시키는 흐름만 사용한다.
 
-## 4. 적재 순서 (한 트랜잭션 권장)
+## 4. 지정 전 확인
 
-```text
-1) tmd_mdl_scnrcasem INSERT (MI_BASE, COMPLETED)  → case_id 확보 (AUTO_INCREMENT)
-2) run_id 생성 (yyyymmdd_hhmmss_XXXX)
-3) tmd_mdl_scnrcaseh INSERT (case_id, COMPLETED)  → run_seq 확보 (run_id 로 재조회)
-4) tmd_mdl_scnrcasem UPDATE last_run_id = run_id    (최신 실행 포인터 연결)
-5) tmd_mdl_scnrcaseprcl INSERT × N (run_seq 로 연결)
-6) 입력 파일 → S3 업로드 후 tcm_filel INSERT (SCNRCASE + case_id)
-7) 출력 파일 → S3 업로드 후 tcm_filel INSERT (SCNRCASEH + run_seq)
-```
+운영 지정 수단은 최소한 다음을 확인해야 한다.
 
-> 파일이 없으면 6/7 단계는 생략. 입력 파일은 baseline 생성에 쓴 원본이 있을 때만 적재하면 된다(필수 아님). 출력 파일(결과 산출물)이 차트 외 다운로드로 제공돼야 하면 7단계로 적재한다.
+- active case이고 `case_stat_cd = 'COMPLETED'`, `exec_type_cd = 'INDEPENDENT'`인지 확인한다. 단, 현재 MI Base와 같은 `caseId` 반복 요청은 `MI_BASE` type을 멱등 예외로 허용하고 나머지 적격성을 다시 확인한 뒤 성공으로 처리한다.
+- `scnr_id IS NULL`인지
+- `SCNRCASE + case_id`에 active input 파일이 정확히 3개인지
+- 파일명으로 `DEMAND`, `SUPPLY`, `TRADE` 역할이 각각 1개씩 식별되는지
+- `last_run_id`가 가리키는 run history와 case 상태가 정합한지
+- MI Base 그래프에 필요한 Price 결과가 해당 latest completed run에 존재하는지
 
-## 5. INSERT 예시
+사전 확인이 하나라도 실패하면 기존 MI Base를 변경하지 않고 지정 전체를 실패시킨다.
 
-> 컬럼은 명시적으로 나열한다. `actv_scnr_id`(생성 컬럼), `run_seq`(자동 증가)는 값으로 넣지 않는다.
-> `:admin_usr_no`, `:admin_login_id` 는 운영 합의값으로 치환한다.
+## 5. 지정 후 검증
 
-### 5-1. 마스터 (`tmd_mdl_scnrcasem`)
+- 대상 case의 `exec_type_cd = 'MI_BASE'`인지 확인한다.
+- 이전 current가 있었다면 `INDEPENDENT`로 복귀했는지 확인한다. active `MI_BASE`와 generated current marker는 정확히 1건이어야 한다.
+- case/run/file/result의 식별자와 row 건수가 지정 전과 같은지 확인한다.
+- `GET /api/v1/mi/fundamental-model/cases` 응답의 `miBase`에 지정 대상이 노출되고 `execType = MI_BASE`인지 확인한다.
+- current `miBase.caseId`로 상세·상태·Volumes filter-options·Volumes·Trade Flows·Price를 조회할 수 있고, 기존 latest completed run 결과가 반환되는지 확인한다.
+- current `MI_BASE`에 수정·삭제·재실행을 직접 요청해도 backend가 active `INDEPENDENT` 제한으로 거부하는지 확인한다. FE에서도 해당 action이 노출되거나 호출되지 않아야 한다.
+- 지정 이후 생성한 수급모델 input은 대상 case의 3개 input을 기준으로 하고, 지정 전 실행 결과는 변하지 않았는지 확인한다.
+- input 생성 도중 MI Base를 교체해도 진행 중 생성의 세 파일은 처음 선택한 단일 source snapshot에 고정되고 다음 생성부터 새 base가 적용되는지 확인한다.
+- 지정-vs-update, 지정-vs-delete 경쟁에서 MI Base row가 수정·삭제되지 않는지 확인한다. 실행 API는 `PENDING | FAILED`만 허용하므로 `COMPLETED` 지정 대상과 적격 상태가 겹치지 않는다.
+- 허용 actor가 다른 사용자가 생성한 적격 case도 소유자·소유 회사 조건 없이 지정할 수 있는지 확인한다.
 
-```sql
-INSERT INTO tmd_mdl_scnrcasem
-    (usr_no, scnr_id, exec_type_cd, case_titl_nm, case_expn, case_stat_cd, last_run_id,
-     crt_usr_logn_id, crt_dtm, mod_usr_logn_id, mod_dtm, del_yn)
-VALUES
-    (:admin_usr_no, NULL, 'MI_BASE', 'MI Base 2026-06-16', 'MI Base baseline 적재', 'COMPLETED', NULL,
-     :admin_login_id, NOW(), :admin_login_id, NOW(), 'N');
--- 발급된 case_id 확보 (LAST_INSERT_ID() 등)
-```
+## 6. 권한 경계
 
-### 5-2. 실행 이력 (`tmd_mdl_scnrcaseh`)
+- MI Base 지정은 기존 MI 수급모델 실행 접수와 동일한 `USER + SKGAS_COMPANY_USER_ONLY`, `ADMIN + THIRD_PARTY_ADMIN_ONLY`를 허용한다. 별도 operator entitlement는 추가하지 않는다.
+- MI Base 지정 대상에는 `usr_no = currentUser` 또는 소유 회사 predicate를 적용하지 않는다. 서버는 대상 소유자나 회사를 지정 조건으로 조회하지 않는다.
+- 대상 `caseId`에는 active/type/status와 run/input/Price 적격성만 검증한다.
 
-```sql
-INSERT INTO tmd_mdl_scnrcaseh
-    (run_id, case_id, exec_stat_cd, exec_bgn_dtm, exec_end_dtm,
-     crt_usr_logn_id, crt_dtm, mod_usr_logn_id, mod_dtm, del_yn)
-VALUES
-    ('20260616_021500_b0a1', :case_id, 'COMPLETED', NOW(), NOW(),
-     :admin_login_id, NOW(), :admin_login_id, NOW(), 'N');
--- run_seq 재조회
-SELECT run_seq FROM tmd_mdl_scnrcaseh WHERE run_id = '20260616_021500_b0a1';
+지정 API의 정확한 role/condition, endpoint, 오류 응답은 [MI Fundamental Model MI Base 지정 Feature Spec](../../feature-specs/mi-fundamental-model-mi-base-designation-feature-spec.md)을 따른다. Input 내용 제공은 별도 [MI Fundamental Model Input 제공 Feature Spec](../../feature-specs/mi-fundamental-model-input-provision-feature-spec.md)에서 관리한다.
 
--- 마스터 최신 실행 포인터 연결
-UPDATE tmd_mdl_scnrcasem
-SET last_run_id = '20260616_021500_b0a1', mod_dtm = NOW()
-WHERE case_id = :case_id;
-```
+## 7. 비범위
 
-### 5-3. 가격 결과 (`tmd_mdl_scnrcaseprcl`)
+- MI Base 지정 취소만 수행하는 해제 API
+- 별도 지정 승인 workflow 및 지정 이력 table/API
+- MI Base용 별도 case/run/result/file 적재
+- Input 내용 조회·전달·편집 API
 
-지역(JKM/TTF/HH) × 기간 조합마다 1행. `UNIQUE (run_seq, prc_rgn_nm, perd_key)` 가 있어 같은 run_seq 안에서 (지역, 기간) 중복은 거부된다.
+## 8. Canonical References
 
-**연도별(`Y`)과 월별(`M`) 데이터를 모두 적재해야 한다.** 같은 run_seq 안에 두 단위가 함께 들어간다.
+- lifecycle/business semantics: `docs/design-docs/gas/scenario-case-execution-workflow-design-draft.md`
+- physical schema/constraints: `docs/design-docs/gas/scenario-case-execution-erd-ddl-draft.md`
+- list/detail/status/result/지정 API contract: `docs/feature-specs/mi-fundamental-model-mi-base-designation-feature-spec.md`
+- input 제공 API draft: `docs/feature-specs/mi-fundamental-model-input-provision-feature-spec.md`
 
-- 연도별: `perd_unit_spt_cd = 'Y'`, `perd_key = 'YYYY'` (예: `2026`)
-- 월별: `perd_unit_spt_cd = 'M'`, `perd_key = 'YYYYMM'` (예: `202607`)
-- `perd_unit_spt_cd` 가 unique 키에는 없지만 `perd_key` 형식(4자리 vs 6자리)이 달라 연/월 행은 서로 충돌하지 않는다.
+## 9. Implementation Readiness
 
-```sql
-INSERT INTO tmd_mdl_scnrcaseprcl
-    (run_seq, perd_unit_spt_cd, perd_key, prc_rgn_nm, base_case_prc, user_adj_prc,
-     crt_usr_logn_id, crt_dtm, mod_usr_logn_id, mod_dtm, del_yn)
-VALUES
-    -- 연도별 (Y)
-    (:run_seq, 'Y', '2026', 'JKM', 11.60, 11.60, :admin_login_id, NOW(), :admin_login_id, NOW(), 'N'),
-    (:run_seq, 'Y', '2026', 'TTF', 10.20, 10.20, :admin_login_id, NOW(), :admin_login_id, NOW(), 'N'),
-    (:run_seq, 'Y', '2026', 'HH',   3.50,  3.50, :admin_login_id, NOW(), :admin_login_id, NOW(), 'N'),
-    -- 월별 (M)
-    (:run_seq, 'M', '202607', 'JKM', 11.85, 11.85, :admin_login_id, NOW(), :admin_login_id, NOW(), 'N'),
-    (:run_seq, 'M', '202607', 'TTF', 10.40, 10.40, :admin_login_id, NOW(), :admin_login_id, NOW(), 'N'),
-    (:run_seq, 'M', '202607', 'HH',   3.55,  3.55, :admin_login_id, NOW(), :admin_login_id, NOW(), 'N');
-    -- ... 연/월 각각 기간·지역 전체 반복
-```
-
-가격 컬럼 의미:
-
-| 컬럼 | 타입 | 설명 |
-|---|---|---|
-| `perd_unit_spt_cd` | VARCHAR(2) | 기간 단위. `M`(월) / `Y`(년) |
-| `perd_key` | VARCHAR(6) | 기간 키. 월이면 `YYYYMM`, 년이면 `YYYY` |
-| `prc_rgn_nm` | VARCHAR(200) | 가격 지역명. `JKM` / `TTF` / `HH` |
-| `base_case_prc` | DOUBLE | 베이스케이스 가격 (단위: USD/MMBtu) |
-| `user_adj_prc` | DOUBLE | 사용자 조정 가격. MI Base는 조정 개념이 없으므로 `base_case_prc` 와 동일 값으로 채운다(협의 필요) |
-
-### 5-4. 입력 파일 (`tcm_filel`, `SCNRCASE` + `case_id`)
-
-먼저 파일 바이너리를 **S3에 업로드**한 뒤, 그 메타데이터를 `tcm_filel` 에 INSERT 한다. `file_rel_obj_spt_cd = 'SCNRCASE'`, `file_rel_obj_dstg_no = case_id` 로 케이스에 연결한다. (입력 원본이 있을 때만, 파일 1개당 1행)
-
-```sql
--- 1) S3 업로드 (예시: 적재 주체의 storage client 사용)
---    s3://{bucket}/mi-base/{case_id}/demand_20260616.xlsx  등으로 PUT
-
--- 2) 업로드 결과 메타데이터를 tcm_filel 에 INSERT
-INSERT INTO tcm_filel
-    (org_file_nm, strg_file_nm, strg_path_nm, file_size, filex_nm, mime_type_nm,
-     file_rel_obj_spt_cd, file_rel_obj_dstg_no, img_conv_cmpt_yn,
-     crt_usr_logn_id, crt_dtm, mod_usr_logn_id, mod_dtm, del_yn)
-VALUES
-    ('demand_2026.xlsx', 'demand_20260616_021500.xlsx', 'mi-base/12345',
-     20480, 'xlsx', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-     'SCNRCASE', :case_id, 'N',
-     :admin_login_id, NOW(), :admin_login_id, NOW(), 'N');
-    -- 입력 파일이 여러 개면 행 반복 (file_rel_obj_dstg_no 는 동일 case_id)
-```
-
-### 5-5. 출력 파일 (`tcm_filel`, `SCNRCASEH` + `run_seq`)
-
-출력 산출물도 **S3 업로드 후** `tcm_filel` 에 INSERT 한다. 입력과 달리 `file_rel_obj_spt_cd = 'SCNRCASEH'`, `file_rel_obj_dstg_no = run_seq` (실행 단위) 로 연결한다.
-
-```sql
--- 1) S3 업로드
---    s3://{bucket}/mi-base/{case_id}/output/{run_id}/result.xlsx  등으로 PUT
-
--- 2) tcm_filel INSERT
-INSERT INTO tcm_filel
-    (org_file_nm, strg_file_nm, strg_path_nm, file_size, filex_nm, mime_type_nm,
-     file_rel_obj_spt_cd, file_rel_obj_dstg_no, img_conv_cmpt_yn,
-     crt_usr_logn_id, crt_dtm, mod_usr_logn_id, mod_dtm, del_yn)
-VALUES
-    ('mi_base_result.xlsx', 'result_20260616_021500.xlsx', 'mi-base/12345/output',
-     51200, 'xlsx', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-     'SCNRCASEH', :run_seq, 'N',
-     :admin_login_id, NOW(), :admin_login_id, NOW(), 'N');
-    -- 출력 파일이 여러 개면 행 반복 (file_rel_obj_dstg_no 는 동일 run_seq)
-```
-
-`tcm_filel` 주요 컬럼:
-
-| 컬럼 | 타입 | 설명 |
-|---|---|---|
-| `file_no` | BIGINT UNSIGNED | PK, AUTO_INCREMENT (직접 넣지 않음) |
-| `org_file_nm` | VARCHAR(100) | 원본 파일명 (NOT NULL) |
-| `strg_file_nm` | VARCHAR(100) | S3 저장 파일명 (NOT NULL) |
-| `strg_path_nm` | VARCHAR(100) | S3 저장 경로(prefix/bucket 정책에 맞춤, NOT NULL) |
-| `file_size` | INT UNSIGNED | 파일 크기(byte) |
-| `filex_nm` | VARCHAR(20) | 파일 확장자명 |
-| `mime_type_nm` | VARCHAR(100) | MIME 유형명 |
-| `file_rel_obj_spt_cd` | VARCHAR(20) | 관계객체 구분코드. 입력 `SCNRCASE` / 출력 `SCNRCASEH` |
-| `file_rel_obj_dstg_no` | INT UNSIGNED | 관계객체 식별번호. 입력 `case_id` / 출력 `run_seq` |
-| `img_conv_cmpt_yn` | CHAR(1) | 이미지변환완료여부 (NOT NULL). 비이미지 파일은 `'N'` |
-
-## 6. 제약 / 주의
-
-- `tmd_mdl_scnrcasem_ck01` CHECK: `MI_BASE` 는 `scnr_id` 가 반드시 NULL. (위반 시 INSERT 실패)
-- `tmd_mdl_scnrcaseh.run_id` PK + `run_seq` UNIQUE: 같은 `run_id` 재사용 금지.
-- `tmd_mdl_scnrcaseprcl` UNIQUE `(run_seq, prc_rgn_nm, perd_key)`: 동일 실행 안에서 (지역, 기간) 중복 금지.
-- `actv_scnr_id` 는 DB 생성 컬럼이라 직접 INSERT/UPDATE 불가. `MI_BASE` 는 `scnr_id = NULL` 이라 항상 NULL 로 파생되어 active 시나리오 unique 가드와 무관하다.
-- 모든 테이블에 공통 audit 컬럼(`crt_usr_logn_id`, `crt_dtm`, `mod_usr_logn_id`, `mod_dtm`, `del_yn`)이 NOT NULL 로 존재한다. `del_yn` 기본 `'N'`.
-- 물리 삭제(`DELETE`) 금지. 폐기는 `del_yn = 'Y'` soft delete.
-- 파일은 **S3 업로드가 먼저, `tcm_filel` INSERT 가 나중**이다. 메타데이터만 적재하며 바이너리는 넣지 않는다.
-- `tcm_filel.file_rel_obj_dstg_no` 는 `INT UNSIGNED` 다. 입력은 `case_id`, 출력은 `run_seq` 를 정확히 넣어야 플랫폼 조회가 연결된다(혼동 시 파일이 화면에 안 붙는다).
-- `tcm_filel.img_conv_cmpt_yn` 은 NOT NULL 이므로 비이미지(xlsx 등)는 `'N'` 으로 채운다.
-- 파일 연결 코드 `SCNRCASE` / `SCNRCASEH` 는 공통코드(`file_rel_obj_spt_cd` 그룹)에 등록돼 있어야 한다(플랫폼 측에서 관리, [erd-ddl-draft.md](scenario-case-execution-erd-ddl-draft.md) 참고).
-
-## 7. 운영 협의 필요 항목
-
-- **admin `usr_no` / 로그인 ID 실제값** — 환경별(dev/prod) MI Base 적재용 admin 계정 식별자 확정.
-- **케이스 제목/설명 규칙** — `case_titl_nm` 에 baseline 기준일자 등을 어떻게 표기할지(예: `MI Base YYYY-MM-DD`).
-- **`user_adj_prc` 채움 규칙** — MI Base에 조정 개념이 없으면 `base_case_prc` 동일값으로 둘지 확정.
-- **갱신 주기/방식** — 새 baseline 시 신규 세트 INSERT(누적) vs 과거 soft delete 정리 정책.
-- **결과 범위** — 가격 외 Volumes/Trade Flows도 MI Base가 채워야 하는지(현재 가이드는 가격 only 전제).
-
-## 8. 참고 (플랫폼 측 canonical 문서)
-
-- 실행유형 컬럼/CHECK/공통코드 등 물리 스키마: [scenario-case-execution-erd-ddl-draft.md](scenario-case-execution-erd-ddl-draft.md)
-- 실행 workflow/도메인 의미: [scenario-case-execution-workflow-design-draft.md](scenario-case-execution-workflow-design-draft.md)
-- 결과 데이터(Volumes/Price/Trade) 영속 설계: [mi-fundamental-model-output-result-persistence-design.md](mi-fundamental-model-output-result-persistence-design.md)
+- status: `contract ready; activation blocked by DBA review/rollout`
+- domain rule: 새 지정 시 이전 MI Base의 `INDEPENDENT` 복귀로 확정
+- API contract: endpoint, lifecycle, actor role/condition, 대상 공통 적격성 검증, MI Base 상세 결과 조회와 읽기 전용 mutation 차단은 ready. 대상 소유자·회사 제한은 적용하지 않고 별도 지정 해제 API도 제공하지 않는다.
+- schema dependency: generated `actv_base_yn`과 unique DDL의 DBA 검토·선행 적용이 필요하다.

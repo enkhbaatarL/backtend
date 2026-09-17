@@ -1,23 +1,37 @@
-# MI Fundamental Model - 1st Mock API Feature Spec
+# MI Fundamental Model Case API Feature Spec
 
-- domain: gas
-- status: implemented — 1st implementation shipped against real DB (2026-06-05 ~ 2026-06-19); endpoint/request/response contract below remains canonical
-- owner: platform BE
-- updated at: 2026-08-20 (case 상세 파일 응답에서 다운로드 전용 metadata 비노출 반영)
-- canonical design input: [scenario-case-execution-workflow-design-draft.md](../design-docs/gas/scenario-case-execution-workflow-design-draft.md)
-- reference only:
-  - Notion `MI Fundamental Model 실행` (`350263ff004c8035b20ef02683447f4b`)
-  - Notion `MI Fundamental Model` (`34c263ff004c81ad817bc0a5a1c2992f`)
+## Document Control
+
+- status: Approved
+- canonical for: MI Fundamental Model Case real-DB endpoint, request/response DTO, validation, error/status mapping
+- owner: BE
+- source documents:
+  - `docs/design-docs/gas/scenario-case-execution-workflow-design-draft.md`
+  - `docs/design-docs/gas/mi-fundamental-model-output-result-persistence-design.md`
+- depends on:
+  - `docs/design-docs/gas/scenario-case-execution-erd-ddl-draft.md`
+  - `docs/conventions/openapi-documentation-conventions.md`
+- supersedes:
+  - 이 문서의 1차 mock runtime 구성·reset API·in-memory store 구현 handoff
+- last synced: 2026-09-15
+- open questions:
+  - 현재 구현된 API와 Region/Country 필터 확장 계약에는 없음
+  - callback 인증/서명, 필터 저장은 별도 후속 계약에서 확정
+
+Notion `MI Fundamental Model 실행`(`350263ff004c8035b20ef02683447f4b`)과
+`MI Fundamental Model`(`34c263ff004c81ad817bc0a5a1c2992f`)은 reference only다.
 
 ## Document Roles / Source of Truth
 
-이 문서는 MI Fundamental Model 1차 mock API의 endpoint, request/response DTO, error mapping, mock behavior handoff의 canonical source다.
+이 문서는 MI Fundamental Model Case API의 현재 real-DB endpoint, request/response DTO, validation,
+error/status mapping의 canonical source다. 1차 mock 설명은 real-DB 전환 전 의사결정의 historical
+reference일 뿐 현재 runtime 또는 구현 handoff가 아니다.
 
 관련 문서 역할은 다음처럼 분리한다.
 
 | 문서 | 역할 | canonical 범위 |
 |---|---|---|
-| 이 feature spec | API 구현 계약 | endpoint path, method, DTO field, response shape, error/status mapping, phase 1 mock behavior |
+| 이 feature spec | API 구현 계약 | endpoint path, method, DTO field, response shape, validation, error/status mapping |
 | [scenario-case-execution-workflow-design-draft.md](../design-docs/gas/scenario-case-execution-workflow-design-draft.md) | workflow/domain design | Scenario Case aggregate, state transition, callback/timeout semantics, future persistence rationale |
 | [scenario-case-execution-erd-ddl-draft.md](../design-docs/gas/scenario-case-execution-erd-ddl-draft.md) | DBA rollout 계약 | physical table/column DDL, index, common-code registration, pre-check/apply/rollback/verify SQL (현재 template 상태) |
 | [mi-fundamental-model-output-result-persistence-design.md](../design-docs/gas/mi-fundamental-model-output-result-persistence-design.md) | output result persistence 설계 | Volumes / Trade Flows / Price parsed result table, key, index, partition-ready strategy, mock→real 전환 경계 |
@@ -26,15 +40,31 @@
 
 Work note와 외부 문서가 이 feature spec 또는 canonical design draft와 충돌하면, 구현자는 feature spec/design draft를 우선하고 충돌 내용을 새 work note에 기록한다.
 
+### Related Enhancement Contract
+
+다음 MI Base 변경 계약은 [MI Fundamental Model MI Base 지정 Feature Spec](mi-fundamental-model-mi-base-designation-feature-spec.md)이 canonical source다. 본 문서의 기존 Scenario Case 목록 request/response/behavior 절은 해당 변경에 한해 superseded된다.
+
+- 기존 목록 변경: `GET /api/v1/mi/fundamental-model/cases`가 current `miBase`와 current 제외 `cases`를 분리 반환
+- 목록 DTO 변경: `FundamentalModelCaseListRes.miBase`, `FundamentalModelCaseListItemRes.execType` 추가. `totalCount`는 두 영역의 표시 건수 합계
+- 상세/결과 read 변경: active `MI_BASE`를 상세·상태·Volumes filter-options·Volumes·Trade Flows·Price에서 조회할 수 있다. 기존 query parameter, response DTO, completed-case 검증, 빈 결과와 오류 계약은 이 문서를 유지하고 `MI_BASE` 허용 범위는 enhancement spec이 소유한다.
+- MI Base mutation 정책: FE는 `execType=MI_BASE`에서 수정·삭제·재실행 action을 노출하거나 호출하지 않고, backend도 해당 mutation을 active `INDEPENDENT` 전용으로 유지한다. 별도 MI Base 지정 해제 API는 제공하지 않는다.
+- MI Base 지정: 완료 독립실행 case를 현재 MI Base로 원자적으로 지정하고, 이전 current는 `INDEPENDENT`로 복귀시키며, 이후 시작되는 수급모델 input 생성에 적용하는 신규 idempotent API. 기존 MI 수급모델 실행과 같은 `USER/SKGAS_COMPANY_USER_ONLY`, `ADMIN/THIRD_PARTY_ADMIN_ONLY`를 사용하고 지정 대상의 소유자·회사 조건은 적용하지 않는다.
+- input 내용 제공: 별도 [MI Fundamental Model Input 제공 Feature Spec](mi-fundamental-model-input-provision-feature-spec.md)에서 `caseId` 식별 경계와 미확정 전달 계약을 관리한다.
+
+이 문서의 upload 및 status/result 세부 계약은 그대로 유지한다. detail/status/result의 `MI_BASE` 허용과 update/delete/run 차단 경계는 enhancement spec이 supersede한다.
+
 ## 1. Feature Goal
 
-MI Fundamental Model의 1차 mock API는 MI Fundamental Model 화면에서 사용자가 Scenario Case를 업로드하고, 특정 case 실행을 요청한 뒤, 실행 상태를 확인하고, 외부 모델 완료 callback 형태로 mock 실행을 terminal 상태로 전이할 수 있게 하는 backend 계약이다.
+MI Fundamental Model Case API는 사용자가 Scenario Case와 input Excel 3개를 등록하고, 특정 case의
+모델 실행을 비동기로 요청하며, 실행 상태와 real-DB에 적재된 Volumes/Trade Flows/Price 결과를
+조회할 수 있게 한다. 모델 callback은 run/case 상태를 terminal 상태로 전이한다.
 
 `Scenario Case`는 현업에서 사용하는 업무 용어이므로 유지한다. 다만 API hierarchy에서 MI Next Gen의 `Scenario` 하위 resource라는 의미는 아니다. MI Fundamental Model은 MI Next Gen와 동급 메뉴이며, 이 문서의 canonical API는 Next Gen path family를 사용하지 않는다.
 
-이번 문서는 구현자가 바로 controller/service/DTO/mock store를 만들 수 있는 API feature spec을 제공한다. 단, 이 문서는 Java 구현을 포함하지 않으며 DB rollout 가능한 DDL도 확정하지 않는다.
+이 문서는 현재 controller/service/DTO와 후속 API 변경의 계약 입력이다. Java 구현과 물리 schema/rollout
+SQL은 각각 source code와 canonical DDL/design 문서가 소유한다.
 
-### Phase 1 Scope
+### Current Scope
 
 - Scenario Case 업로드
   - 파일 3개
@@ -51,7 +81,8 @@ MI Fundamental Model의 1차 mock API는 MI Fundamental Model 화면에서 사�
   - 상태: `PENDING`, `RUNNING`, `COMPLETED`, `FAILED`
 - Scenario Case 상세 조회
   - case metadata
-  - input/output 파일명 metadata
+  - 실행 유형 `execType` (`INDEPENDENT | MI_BASE`)
+  - input 파일명과 output/intermediate 다운로드 metadata
   - latestRun projection
 - Scenario Case metadata 수정
   - `title`, `description`만 허용
@@ -60,42 +91,37 @@ MI Fundamental Model의 1차 mock API는 MI Fundamental Model 화면에서 사�
 - Scenario Case soft delete
   - active resource에서 제외
   - upload files, run history, latestRun/result payload는 물리 삭제하지 않음
-- 개발/시연용 mock 동작
-  - in-memory/mock store 기준
-  - 반복 시연을 위한 reset API 포함
-- 외부 모델 callback API mock 구현
-  - endpoint path 추천
-  - callback DTO 초안
-  - terminal 상태 전이/idempotency 규칙
+- 외부 모델 callback
+  - `runId` 기준 real-DB run/case terminal 상태 전이
+  - callback DTO와 idempotency 규칙
 - Volumes 데이터 조회 (Global / LNG)
   - `COMPLETED` case의 실행 결과 중 Volumes 뷰 반환
   - segment(`GLOBAL` | `LNG`) 필수. `TRADE`는 이 엔드포인트에서 허용하지 않는다
-  - Type / Region 다중 필터 지원 (미전달 시 전체)
+  - Type / Region / Country 다중 필터 지원 (미전달 시 전체)
   - granularity(`MONTHLY` | `YEARLY`) 지원, 기본 `MONTHLY`
   - periods 선택 필터로 원하는 연도 또는 월 컬럼만 조회
-  - 1차 mock은 json seed 기반 고정 응답
+  - latest completed run의 real-DB 결과 조회
 - Trade Flows 데이터 조회 (Trade)
   - `COMPLETED` case의 실행 결과 중 Trade Flow 매트릭스 반환
   - 별도 엔드포인트 `GET /{caseId}/volumes/trade` 사용
   - selector(`LNG` | `PNG`), year(2023~2030) 필수
   - unit(`MTPA` | `BCM`) 선택, 기본 `MTPA`
-  - types(`TO_COUNTRY` | `FROM_COUNTRY`), Region 다중 필터 지원 (미전달 시 전체)
+  - types(`TO_COUNTRY` | `FROM_COUNTRY`), Region / Country 다중 필터 지원 (미전달 시 전체)
   - granularity 없음 (단일 연도 매트릭스 구조)
   - fromCountries / toCountries 헤더 배열 + sparse flows 배열로 응답
-  - 1차 mock은 json seed 기반 고정 응답
+  - latest completed run의 real-DB 결과 조회
 - Price 데이터 조회
   - `COMPLETED` case의 실행 결과 중 Price 뷰 반환
   - 필터 없음, segment 없음, granularity 없음
   - 차트 데이터(Base case price / User adjusted price) + Annual 테이블 + Monthly 테이블 동시 반환
-  - 1차 mock은 json seed 기반 고정 응답
+  - latest completed run의 real-DB 결과 조회
 
-### Explicitly Not Implemented
+### Current Exclusions
 
-- 결과 파일 다운로드
 - 운영 수준 callback 인증/서명/재시도 정책
-- 실제 Kubernetes Job dispatch 연동
-- timeout scheduler 구현
-- DB persistence 구현
+- Volumes 필터 저장
+- input workbook 내용 조회·편집·재생성
+- MI Base 지정 및 current MI Base 목록/상세/결과 read 확장과 mutation 차단. 해당 계약은 enhancement feature spec이 소유한다.
 
 ### Boundary Against Existing ScenarioModelExecution API
 
@@ -108,11 +134,11 @@ MI Fundamental Model의 1차 mock API는 MI Fundamental Model 화면에서 사�
 | 주요 resource | `model-executions` | `fundamental-model/cases` |
 | 실행 식별자 | `executionId`, `externalRunId` | `caseId`, `runId` |
 | 입력 방식 | JSON parameter | multipart file upload + metadata |
-| 목적 | Scenario MI 수급모델 실행 | Scenario Case 기반 MI Fundamental Model mock 실행 |
+| 목적 | Scenario MI 수급모델 실행 | Scenario Case 기반 MI Fundamental Model 독립 실행 |
 
 ## 2. Endpoint
 
-### Recommended Path Family
+### Canonical Path Family
 
 권장 base path:
 
@@ -124,13 +150,14 @@ MI Fundamental Model의 1차 mock API는 MI Fundamental Model 화면에서 사�
 
 - MI Fundamental Model은 MI Next Gen와 동급 메뉴다.
 - `Scenario Case` 명칭은 현업 용어로 유지하지만, API parent가 `Scenario`라는 뜻은 아니다.
-- `scenarioId`는 MI Fundamental Model 1차 mock API의 path variable, query parameter, multipart part, response DTO에서 사용하지 않는다.
+- `scenarioId`는 MI Fundamental Model Case API의 path variable, query parameter, multipart part, response DTO에서 사용하지 않는다.
 - canonical endpoint는 `/api/v1/mi/fundamental-model/**` path family만 사용한다.
 - 기존 `/api/v1/mi/next-gen/**/fundamental-*` 및 `/api/v1/mi/next-gen/scenarios/{scenarioId}/fundamental-model-cases/**` 형태는 superseded contract다. 구현자는 이 경로를 신규 controller 계약으로 사용하지 않는다.
 
-### Phase 1 Implemented Endpoint Summary
+### Current Implemented Endpoint Summary
 
-아래 endpoint는 1차 mock API 구현 대상이다. 단, callback endpoint는 mock store 상태 전이를 위한 구현 범위이며, 운영 수준 Kubernetes Job dispatch, callback 인증/서명/재시도 정책은 future integration scope로 남긴다.
+아래 endpoint는 현재 real-DB 구현 기준이다. case upload/run은 dedicated controller, 나머지 case 조회·변경과
+결과 조회는 non-dedicated controller, callback은 dedicated run controller가 담당한다.
 
 | 기능 | Method | Path | HTTP status | Response data |
 |---|---|---|---|---|
@@ -146,45 +173,45 @@ MI Fundamental Model의 1차 mock API는 MI Fundamental Model 화면에서 사�
 | Trade Flows 데이터 조회 | `GET` | `/api/v1/mi/fundamental-model/cases/{caseId}/volumes/trade` | `200 OK` | `FundamentalModelTradeFlowsRes` |
 | Price 데이터 조회 | `GET` | `/api/v1/mi/fundamental-model/cases/{caseId}/price` | `200 OK` | `FundamentalModelPriceRes` |
 | 외부 모델 완료 callback | `POST` | `/api/v1/mi/fundamental-model/runs/{runId}/callback` | `200 OK` | `FundamentalModelRunCallbackRes` |
-| Mock 데이터 초기화 | `POST` | `/api/v1/mi/fundamental-model/cases/reset` | `200 OK` | `Void` |
 
-### Future / Deferred Contracts
+input 내용 제공 endpoint와 응답 형식은 아직 이 표에 추가하지 않는다. `caseId` 대상 식별과 서버 측 원본 선택 규칙은 [MI Fundamental Model Input 제공 Feature Spec](mi-fundamental-model-input-provision-feature-spec.md)을 따르며, 구조화 JSON의 DRM 비적용 가능 여부와 FE 데이터 요구를 확인한 후 해당 문서에서 최종 계약을 확정한다.
+
+### Current and Deferred Integration Status
 
 아래 항목은 이 문서에서 경계만 기록하며, 구현하려면 별도 feature spec 또는 DDL/ERD review가 필요하다.
 
 | 항목 | 현재 상태 | 필요한 후속 source of truth |
 |---|---|---|
-| 결과 파일 다운로드 | phase 1 제외 | result/download API feature spec + result/file ERD review |
+| output/intermediate 파일 다운로드 metadata | 상세 응답 계약 확정 | 이 feature spec의 `FundamentalModelCaseFilesRes`; 다운로드는 기존 공통 File API 사용 |
 | 운영 Kubernetes Job dispatch | 구현 완료 (2026-06-12, 재시도 정책 no-retry 확정 2026-06-21) | external model interface spec + workflow design |
-| callback 인증/서명 | 재시도 정책은 확정, 인증/서명 세부는 여전히 mock 구현 밖의 운영 정책 | security/integration design + feature spec update |
+| callback 인증/서명 | 재시도 정책은 확정, 인증/서명 세부는 별도 운영 정책 | security/integration design + feature spec update |
 | DB persistence / DDL (volumes/trade flows/price 포함) | 구현 완료 (2026-06-15 real DB rollout) | case/run DDL은 `scenario-case-execution-erd-ddl-draft.md`, output result data persistence는 `mi-fundamental-model-output-result-persistence-design.md` |
 | Ownership scope | DB-backed 확정 사항 | owner-scoped mutation(run/update/delete 등)은 `usr_no` only로 확정. 조직/부서/tenant 정책 키는 본 모델에 추가하지 않는다. Volumes/Trade Flows/Price result read는 다른 사용자가 실행한 결과도 조회 가능한 shared read model이므로 `usr_no` owner predicate를 적용하지 않는다 |
 | `ASSIGNEE_NAME` DB 검색 경계 | DB-backed 확정 사항 + 검증 필요 | `tmd_mdl_scnrcasem.usr_no = tmd_usrm.usr_no` JOIN, 표시값 `tmd_usrm.usr_nm` 사용. rollout 전 JOIN 양측 인덱스 EXPLAIN 검증 필요 |
 | timeout scheduler | 코드 구현 완료 (2026-06-22), DBA index 검증 전까지 feature flag 기본 비활성 | 상세는 `mi-scenario-model-execution-workflow-design.md` Open Questions 참고 |
-| Volumes/Price 필터 저장 (Save 토글) | phase 1 제외. FE 로컬 상태로 관리 | user preference API feature spec + DB 테이블 설계 |
+| Volumes/Price 필터 저장 (Save 토글) | 현재 제외. FE 로컬 상태로 관리 | user preference API feature spec + DB 테이블 설계 |
 
-### Future Contract Only
+### Deferred Contracts
 
-아래 내용은 phase 1 구현 계약이 아니라 후속 실연동 또는 DB-backed 전환 시 계약 초안으로만 사용한다.
+아래 내용은 현재 구현 계약이 아니며 별도 feature spec/design에서 확정한 뒤 구현한다.
 
-- 운영 Kubernetes Job dispatch request/response
-- 운영 callback 인증/서명/재시도/idempotency 세부 정책
+- 운영 callback 인증/서명 세부 정책
 - result 조회/download endpoint와 result pointer/reference persistence
-- DB-backed timeout scheduler query와 batch update strategy
+- Volumes/Price 필터 저장 API와 user preference persistence
 - delete retention/audit policy beyond `tmd_mdl_scnrcasem.del_yn = 'Y'`
 
-### Status Query Recommendation
+### Status Query Contract
 
-1차 구현은 case 기준 상태 조회를 권장한다.
+현재 계약은 case 기준 상태 조회를 사용한다.
 
 | 방식 | 장점 | 단점 | 판단 |
 |---|---|---|---|
-| case 기준 | `PENDING`처럼 아직 `run_id`가 없는 상태도 조회 가능하다. FE가 업로드 응답의 `caseId`만 보관하면 된다. | 과거 실행 이력 중 특정 run만 조회하려면 추가 endpoint가 필요하다. 후속 DB 전환 시 case ownership/permission 검증을 별도 설계해야 한다. | 1차 mock API 권장 |
+| case 기준 | `PENDING`처럼 아직 `run_id`가 없는 상태도 조회 가능하다. FE가 업로드 응답의 `caseId`만 보관하면 된다. | 과거 실행 이력 중 특정 run만 조회하려면 추가 endpoint가 필요하다. | 현재 계약 |
 | `run_id` 기준 | 외부 모델 callback 추적 키가 동일하다. 실행 이력 중심 조회에 적합하다. | 업로드 직후 `PENDING` case 조회가 불가능하다. | 후속 실연동/이력 조회에서 검토 |
 
 후속으로 이력 조회가 필요해지면 `GET /api/v1/mi/fundamental-model/runs/{runId}` 또는 case 하위 `GET /api/v1/mi/fundamental-model/cases/{caseId}/runs/{runId}`를 별도 계약으로 추가한다.
 
-### Detail Query Recommendation
+### Detail Query Contract
 
 상세 조회는 화면 상세 진입 시 필요한 case aggregate projection을 반환한다.
 
@@ -204,16 +231,15 @@ MI Fundamental Model의 1차 mock API는 MI Fundamental Model 화면에서 사�
 `files.intermediate`는 같은 `run_seq`를 기준으로 `file_rel_obj_spt_cd = 'SCNRCASEHI'`에 연결된 모델 실행 중간파일 목록이다 (2026-09-07 추가). 개수는 고정하지 않는다(n개).
 세 목록 모두 `del_yn = 'N'`과 파일 유효종료일자 조건을 만족하는 row를 `file_no ASC`로 반환하며, 최신 실행이나 해당 파일이 없으면 빈 배열이다.
 
-각 파일 항목은 화면 표시용 `fileNm`만 반환한다. 다운로드 기능이 후속 구현되기 전까지
-`fileNo`, `fileSize`는 상세 조회와 수정 응답에 노출하지 않는다. 이는 파일 식별자 노출을 줄이기 위한 의도된 결정이며,
-`files.intermediate`에도 동일하게 적용한다. 이 제한은 `FundamentalModelCaseDetailRes.files`에만 적용되며,
-업로드 응답 `FundamentalModelCaseFileRes`는 기존 계약을 그대로 유지한다.
-중간파일 다운로드 활성화는 별도 결정 항목(TODO)이며, 식별 방식과 pod 적재 계약은
+`files.input` 항목은 화면 표시용 `fileNm`만 반환한다. `files.output`과 `files.intermediate` 항목은 기존 공통
+File API 다운로드 요청에 전달할 `fileNo`, `fileNm`, `fileSize`를 반환한다. 이 역할별 차이는 상세 조회와 같은
+projection을 반환하는 수정 응답에도 동일하게 적용한다. 업로드 응답 `FundamentalModelCaseFileRes`는 기존 계약을 유지한다.
+중간파일 식별 방식과 pod 적재 계약은
 [mi-fundamental-model-intermediate-file-design.md](../design-docs/gas/mi-fundamental-model-intermediate-file-design.md)가 canonical이다.
 
 `GET /cases/{caseId}/status`는 FE polling을 위한 경량 상태 조회로 유지한다. 상태 조회는 파일 metadata와 설명 등 화면 상세 metadata를 반환하지 않는다. 반대로 상세 조회는 화면 상세 rendering에 필요한 projection이며, polling interval에서 반복 호출하는 API로 설계하지 않는다.
 
-### Callback Path Recommendation
+### Callback Path Contract
 
 외부 모델 완료 callback은 `runId` 단독 path를 권장한다.
 
@@ -230,9 +256,11 @@ POST /api/v1/mi/fundamental-model/runs/{runId}/callback
 
 callback URL은 실행 요청 dispatch 시 backend가 생성해 Kubernetes Job args/env로 전달한다. pod 또는 pod 내부 실행 프로세스는 해당 URL을 사용해 실행 완료/실패 시 호출한다.
 
-## 3. Request DTO Draft
+## 3. Request Contract
 
 ### 3.1 Scenario Case 목록 조회
+
+> 이 절의 기존 list request/behavior는 enhancement 계약으로 superseded됐다. current MI Base 포함, 검색 적용 범위, 응답 DTO는 [MI Fundamental Model MI Base 지정 Feature Spec](mi-fundamental-model-mi-base-designation-feature-spec.md)이 canonical source다.
 
 - Method: `GET`
 - Path variables: 없음
@@ -249,7 +277,7 @@ callback URL은 실행 요청 dispatch 시 backend가 생성해 Kubernetes Job a
 - canonical contract는 `non-blank keyword requires searchType`이다.
 - `keyword`가 null 또는 blank(trim 후 빈 문자열)이면 검색 조건 없음으로 처리하고 전체 case를 반환한다. 이때 `searchType`이 함께 전달되어도 검색 조건 없음으로 본다.
 - `keyword`가 non-blank인데 `searchType`이 없으면 `400 REQ_INVALID_PARAMETER`로 거절한다.
-- 검색 조건이 없으면 전체 case를 반환한다. 1차 mock 계약은 `scenarioId` 필터를 제공하지 않는다.
+- 검색 조건이 없으면 전체 case를 반환한다. 현재 계약은 `scenarioId` 필터를 제공하지 않는다.
 - `TITLE` 검색은 case 제목에서 대소문자 구분 없이 부분 일치한다.
 - `ASSIGNEE_NAME` 검색은 case 업로더 이름에서 대소문자 구분 없이 부분 일치한다.
 - 페이지네이션 없이 전체 반환한다. 정렬 기준은 `createdAt` 내림차순(최신순)이다.
@@ -292,8 +320,8 @@ createCase(
 - `files.size() == 3` 이 아니면 거절한다.
 - 파일 중 하나라도 비어 있으면 거절한다.
 - 파일명에는 `DEMAND`, `SUPPLY`, `TRADE` 키워드가 각각 정확히 1개씩 포함되어야 한다. 비교는 대소문자 무관이며, 하나의 파일명이 여러 역할 키워드를 동시에 포함하거나 특정 역할 키워드가 누락/중복되면 `400 REQ_INVALID_PARAMETER`로 거절한다.
-- 1차 mock에서는 확장자/MIME allowlist를 확정하지 않는다. 단, 구현 시 기존 `FileService` 정책을 재사용할 수 있으면 `FILE_FORMAT_ERROR`, `FILE_SIZE_ERROR`로 매핑한다.
-- 같은 파일명 중복은 1차 mock에서는 허용한다. 운영 정책상 막아야 하면 후속 open question으로 남긴다.
+- 확장자/MIME/크기 검증은 기존 `FileService` 정책을 재사용하고 해당 오류를 `FILE_FORMAT_ERROR`, `FILE_SIZE_ERROR`로 매핑한다.
+- 같은 파일명 자체는 허용하지만 `DEMAND`, `SUPPLY`, `TRADE` 역할 키워드는 각각 정확히 1개여야 한다.
 
 ### 3.3 Scenario Case 실행 요청
 
@@ -307,11 +335,14 @@ createCase(
 
 - Request body: 없음
 
-1차 기본 동작은 실행 요청 직후 상태를 `RUNNING`으로 두고 자동 완료시키지 않는다. 데모에서 완료/실패 전환이 필요하면 phase 1에 포함된 callback endpoint를 호출해 terminal 상태로 전이한다. 자동 완료 모드 (`AUTO_COMPLETE`, `AUTO_FAIL`) 같은 데모 편의 옵션은 1차 scope에서 제외한다.
+실행 요청은 Kubernetes Job dispatch가 성공하면 상태를 `RUNNING`으로 유지하고 `202 Accepted`를 반환한다.
+완료/실패는 callback 또는 timeout/reconciliation 경로가 terminal 상태로 전이하며 자동 완료 데모 옵션은 사용하지 않는다.
+
+실행 가능한 case 상태는 최초 실행의 `PENDING`과 모델 호출 실패 후 재시도의 `FAILED`다. `COMPLETED`는 성공 종료 상태이므로 같은 case를 다시 실행할 수 없다. 새로운 정상 실행은 파일 업로드 API로 별도 `INDEPENDENT` case를 생성한다. `FAILED` 재시도는 기존 case를 유지하면서 새 `runId`와 `tmd_mdl_scnrcaseh` 이력만 생성한다.
 
 실제 연동에서는 backend가 Kubernetes Job을 생성할 때 `runId`, 입력 파일 storage path 3개, output storage prefix, callback URL/auth 정보를 함께 전달한다. Kubernetes API의 Job 생성 성공은 장시간 실행 결과가 아니라 dispatch 접수 성공 여부만 표현한다. 접수 성공이면 backend는 case/run 상태를 `RUNNING`으로 유지하고 클라이언트에 `202 Accepted`를 반환한다. pod 내부 실행 완료 또는 실패는 pod 또는 실행 프로세스가 backend callback API를 호출해 terminal 상태로 전이한다. backend가 pod 내부 Python 완료 여부를 주기적으로 polling 하는 방식은 채택하지 않는다.
 
-실행 요청은 case 상태를 변경하고 새 run을 생성하는 owner-scoped mutation이다. DB-backed 구현은 `case_id + usr_no ownership + del_yn = 'N'` 기준으로 active owned case인지 확인한 뒤 실행 선점/상태 전이를 수행한다. 소유자가 아닌 사용자가 실행을 요청하면 active resource hiding 규칙에 따라 `RSC_NOT_FOUND`로 처리한다.
+실행 요청은 case 상태를 변경하고 새 run을 생성하는 owner-scoped mutation이다. DB-backed 구현은 `case_id + usr_no ownership + del_yn = 'N' + exec_type_cd = 'INDEPENDENT'` 기준으로 active owned 독립실행 case인지 확인한 뒤 실행 선점/상태 전이를 수행한다. 소유자가 아니거나 `MI_BASE | SCENARIO`인 case의 실행 요청은 active resource hiding 규칙에 따라 `RSC_NOT_FOUND`로 처리한다.
 
 ### 3.4 Scenario Case 상세 조회
 
@@ -326,18 +357,21 @@ createCase(
 
 규칙:
 
-- 존재하는 case이면 case metadata, input/output/intermediate 파일명 metadata, latest run projection을 반환한다.
+- active `execType = INDEPENDENT | MI_BASE` case이면 case metadata, `execType`, input 파일명, output/intermediate 다운로드 metadata, latest run projection을 반환한다. `SCENARIO`는 이 API의 active resource가 아니므로 `404 RSC_NOT_FOUND`로 처리한다.
 - `latestRunId`가 없거나 아직 실행되지 않은 `PENDING` case이면 `latestRun = null`이다.
 - full run history는 반환하지 않는다.
-- result payload, result reference, download URL은 반환하지 않는다. 다운로드 기능이 후속 구현되기 전까지
-  `files.*[]`에는 `fileNm`만 반환하고 `fileNo`, `fileSize`는 노출하지 않는다.
+- result payload, result reference, download URL은 반환하지 않는다. `files.input[]`은 `fileNm`만 반환하고,
+  `files.output[]`과 `files.intermediate[]`은 공통 File API 다운로드 요청용 `fileNo`, `fileNm`, `fileSize`를 반환한다.
 - case가 없으면 `404 RSC_NOT_FOUND`로 응답한다.
 
 Acceptance criteria:
 
-- Given seed case ID, when 상세 조회하면, then case metadata, files, latestRun을 반환한다.
+- Given active case ID, when 상세 조회하면, then case metadata, files, latestRun을 반환한다.
 - Given 업로드 직후 case, when 상세 조회하면, then `status = PENDING`, files 3개, `latestRun = null`을 반환한다.
 - Given 실행 요청 후 case, when 상세 조회하면, then `status = RUNNING`, latestRun 정보를 반환한다.
+- Given 목록의 current MI Base case ID, when 상세 조회하면, then 기존 상세 정보와 `execType = MI_BASE`를 반환한다.
+- Given active INDEPENDENT case ID, when 상세 조회하면, then `execType = INDEPENDENT`를 반환한다.
+- Given SCENARIO case ID, when 상세 조회하면, then `404 RSC_NOT_FOUND`로 응답한다.
 - Given 존재하지 않는 caseId, when 상세 조회하면, then `404 RSC_NOT_FOUND`로 응답한다.
 - Given soft-deleted caseId, when 상세 조회하면, then `404 RSC_NOT_FOUND`로 응답한다.
 
@@ -373,7 +407,7 @@ Acceptance criteria:
 - 수정 대상은 case metadata인 `case_titl_nm`, `case_expn`뿐이다.
 - files, status, latestRun, run history, result payload/download 정보는 수정하지 않는다.
 - 수정 응답은 최신 `FundamentalModelCaseDetailRes`를 반환한다.
-- case가 없거나 soft-deleted 상태이면 `404 RSC_NOT_FOUND`로 응답한다.
+- 수정은 active `INDEPENDENT`만 허용한다. case가 없거나 soft-deleted 또는 `MI_BASE | SCENARIO`이면 `404 RSC_NOT_FOUND`로 응답한다.
 
 Acceptance criteria:
 
@@ -381,6 +415,7 @@ Acceptance criteria:
 - Given active case with files/latestRun/status, when 수정하면, then files/latestRun/status는 유지된다.
 - Given blank title, when 수정하면, then `400 REQ_INVALID_PARAMETER`로 거절한다.
 - Given soft-deleted caseId, when 수정하면, then `404 RSC_NOT_FOUND`로 응답한다.
+- Given current MI Base caseId, when 수정하면, then `404 RSC_NOT_FOUND`로 응답한다.
 
 ### 3.6 Scenario Case 삭제
 
@@ -397,16 +432,18 @@ Acceptance criteria:
 규칙:
 
 - 삭제는 physical delete가 아니라 `tmd_mdl_scnrcasem.del_yn = 'Y'` soft delete semantics로 처리한다.
-- phase-1 mock 구현은 record에 `delYn`을 두고 `Y`로 갱신해 DB soft-delete 동작을 반영한다.
+- real-DB 구현은 `tmd_mdl_scnrcasem.del_yn`을 `Y`로 갱신한다.
 - 삭제 시 upload files, run history, latestRun/result payload는 물리 삭제하지 않는다.
 - 삭제된 case는 list/detail/status/run/update/delete에서 active resource가 아니므로 `404 RSC_NOT_FOUND`로 취급한다.
 - 반복 delete는 이미 active resource가 아니므로 `404 RSC_NOT_FOUND`로 응답한다.
+- 삭제는 active `INDEPENDENT`만 허용한다. `MI_BASE | SCENARIO` case는 `404 RSC_NOT_FOUND`로 응답한다.
 
 Acceptance criteria:
 
 - Given active case, when 삭제하면, then `200 OK`와 `BaseResponse<Void>`를 반환한다.
 - Given deleted case, when 목록 조회하면, then 목록에서 제외된다.
 - Given deleted case, when detail/status/run/update/delete를 호출하면, then `404 RSC_NOT_FOUND`로 응답한다.
+- Given current MI Base caseId, when 삭제하면, then `404 RSC_NOT_FOUND`로 응답한다.
 
 ### 3.7 Scenario Case 상태 조회
 
@@ -421,18 +458,10 @@ Acceptance criteria:
 
 상태 조회는 polling용 경량 projection이다. 상세 조회와 달리 `description`, `assigneeName`, `files`를 반환하지 않는다.
 
-### 3.8 Mock 데이터 초기화
+### 3.8 Removed: Mock 데이터 초기화 (historical)
 
-- Method: `POST`
-- Path variables: 없음
-
-- Request body: 없음
-
-Reset API 포함 판단:
-
-- 1차 개발/시연에서는 같은 브라우저 세션에서 list/upload/run/status를 반복 검증해야 하므로 포함을 권장한다.
-- 운영 배포에서는 [`FundamentalModelMockProperties`](src/main/java/com/sk/domain/mi/config/FundamentalModelMockProperties.java) 의 reset 전용 flag (`mi.fundamental-model.mock.fundamental-model-cases.api.reset`) 를 **controller** 에서 직접 확인해 `false` 일 때 `404 Not Found` 로 차단한다. `@Profile("mock")` 같은 전체 프로필 분기는 사용하지 않는다.
-- path와 summary에 `[mockapi 전용]` 을 명시한다.
+1차 mock의 `POST /api/v1/mi/fundamental-model/cases/reset` 계약은 real-DB 전환 때 제거되었다.
+현재 controller/service에는 reset endpoint와 method가 없으며, 이 경로를 다시 구현하거나 OpenAPI에 노출하지 않는다.
 
 ### 3.9 외부 모델 완료 Callback
 
@@ -549,7 +578,7 @@ Reset API 포함 판단:
 - Annual 테이블과 Monthly 테이블의 행 `label`은 데이터 기반 동적 값이다. 서버가 고정 enum으로 강제하지 않는다.
 - Price 응답의 수치 필드(`chart.*.points[].value`, `annualTable.rows[].baseCasePrice`, `annualTable.rows[].userAdjustedPrice`, `monthlyTable.rows[].baseCasePrice`, `monthlyTable.rows[].userAdjustedPrice`)는 원본 값을 변경하지 않고 응답 직렬화 시 소수점 셋째 자리에서 `HALF_UP`으로 반올림한 JSON number로 반환한다.
 - 실제 price result row가 없으면 에러가 아니라 `200 OK`로 응답하고 chart series와 table rows는 빈 배열로 반환한다. table columns는 유지한다.
-- 1차 mock에서는 json seed 파일 기반 고정 데이터를 반환한다.
+- latest completed run의 Price result row를 조회해 응답을 조립한다.
 
 
 ### 3.13 Trade Flows 데이터 조회
@@ -590,11 +619,13 @@ Reset API 포함 판단:
 - 조회 조건에 매칭되는 실제 trade result row가 없으면 에러가 아니라 `200 OK`로 응답하고 `fromCountries=[]`, `toCountries=[]`, `flows=[]`를 반환한다. header는 있으나 flow row만 없으면 header는 반환하고 `flows=[]`로 응답한다.
 - latest completed run의 Trade header/flow row를 조회하고 `selector`/`year` 및 선택 필터를 적용한다.
 
-## 4. Response DTO Draft
+## 4. Response Contract
 
 모든 응답은 `BaseResponse<T>`를 사용한다. 성공 시 `status=true`, `code=SUC-000`, `message=Success.`, `data=<DTO>` 형태를 따른다.
 
 ### 4.1 `FundamentalModelCaseListRes`
+
+> 아래 1차 mock 예시와 필드 표는 historical baseline이다. `miBase`, `execType`, 변경된 `totalCount` 의미는 [MI Base 지정 feature spec](mi-fundamental-model-mi-base-designation-feature-spec.md)이 supersede한다.
 
 ```json
 {
@@ -624,7 +655,7 @@ Reset API 포함 판단:
 | `caseId` | `Long` | case ID |
 | `title` | `String` | case 제목 |
 | `status` | `FundamentalModelCaseStatus` | case 최신 상태. `PENDING`, `RUNNING`, `COMPLETED`, `FAILED` |
-| `assigneeName` | `String` | case를 업로드한 사용자 이름. mock에서는 고정값 사용 |
+| `assigneeName` | `String` | `tmd_mdl_scnrcasem.usr_no`로 연결된 사용자 이름 |
 | `createdAt` | `LocalDateTime` | case 생성 시각 |
 | `updatedAt` | `LocalDateTime` | case 최종 변경 시각 |
 
@@ -638,6 +669,7 @@ Reset API 포함 판단:
   "title": "JKM price upside case",
   "description": "May demand shock scenario case",
   "status": "RUNNING",
+  "execType": "INDEPENDENT",
   "assigneeName": "홍길동",
   "assigneeUserNo": 1,
   "files": {
@@ -648,15 +680,21 @@ Reset API 포함 판단:
     ],
     "output": [
       {
-        "fileNm": "output.xlsx"
+        "fileNo": 2011,
+        "fileNm": "output.xlsx",
+        "fileSize": 54321
       }
     ],
     "intermediate": [
       {
-        "fileNm": "step1_demand_curve.csv"
+        "fileNo": 3011,
+        "fileNm": "step1_demand_curve.csv",
+        "fileSize": 1234
       },
       {
-        "fileNm": "step2_supply_stack.csv"
+        "fileNo": 3012,
+        "fileNm": "step2_supply_stack.csv",
+        "fileSize": 2345
       }
     ]
   },
@@ -680,32 +718,42 @@ Reset API 포함 판단:
 | `title` | `String` | case 제목 |
 | `description` | `String` | case 설명 |
 | `status` | `FundamentalModelCaseStatus` | case 최신 상태 |
-| `assigneeName` | `String` | case를 업로드한 사용자 이름. mock에서는 고정값 사용 |
-| `assigneeUserNo` | `Integer` | case를 업로드한 사용자 번호. DB-backed 구현에서는 `tmd_mdl_scnrcasem.usr_no` |
-| `files` | `FundamentalModelCaseFilesRes` | input/output/intermediate 파일명 metadata |
+| `execType` | `FundamentalModelExecType` | 실행 유형. 상세 조회에서는 `INDEPENDENT \| MI_BASE`, non-null |
+| `assigneeName` | `String` | `tmd_mdl_scnrcasem.usr_no`로 연결된 사용자 이름 |
+| `assigneeUserNo` | `Integer` | case를 업로드한 사용자 번호. `tmd_mdl_scnrcasem.usr_no` |
+| `files` | `FundamentalModelCaseFilesRes` | input 파일명과 output/intermediate 다운로드 metadata |
 | `latestRun` | `FundamentalModelRunStatusRes` | 최신 실행 정보. `PENDING`이면 `null` |
 | `createdAt` | `LocalDateTime` | case 생성 시각 |
 | `updatedAt` | `LocalDateTime` | case 최종 변경 시각 |
 
-상세 응답은 최신 실행 1건만 포함한다. 전체 실행 이력은 별도 runs API가 정의되기 전까지 이 응답에 포함하지 않는다.
-result payload는 포함하지 않는다. 다운로드 기능이 후속 구현되기 전까지 상세 응답에는 파일명 `fileNm`만 제공하고
-`fileNo`, `fileSize`는 노출하지 않는다. `intermediate` 파일 목록은 포함하며(2026-09-07 추가), 같은 `fileNm`-only 규칙을 따른다.
+상세 응답은 active `INDEPENDENT | MI_BASE` case를 지원하고 최신 실행 1건만 포함한다. 전체 실행 이력은 별도 runs API가 정의되기 전까지 이 응답에 포함하지 않는다.
+상세 `GET` 허용 범위는 수정·삭제·실행 범위를 넓히지 않으며, 이 mutation들은 active `INDEPENDENT`만 허용한다. MI Base 지정 actor/time은 별도 계약 전까지 응답하지 않는다.
+result payload는 포함하지 않는다. input 파일은 `fileNm`만 제공하고, output/intermediate 파일은 기존 공통 File API에
+전달할 `fileNo`, `fileNm`, `fileSize`를 제공한다.
 
 #### `FundamentalModelCaseFilesRes`
 
 | 필드 | 타입 | 설명 |
 |---|---|---|
-| `input` | `List<FundamentalModelDownloadFileRes>` | `SCNRCASE + case_id`로 연결된 입력 파일 목록. 업로드 기준 3개 |
+| `input` | `List<FundamentalModelFileNameRes>` | `SCNRCASE + case_id`로 연결된 입력 파일명 목록. 업로드 기준 3개 |
 | `output` | `List<FundamentalModelDownloadFileRes>` | 최신 실행 `SCNRCASEH + run_seq`로 연결된 output 파일 목록. 최신 실행 또는 output 파일이 없으면 빈 배열 |
 | `intermediate` | `List<FundamentalModelDownloadFileRes>` | 최신 실행 `SCNRCASEHI + run_seq`로 연결된 모델 실행 중간파일 목록(n개). 최신 실행 또는 중간파일이 없으면 빈 배열 |
+
+#### `FundamentalModelFileNameRes`
+
+| 필드 | 타입 | 설명 |
+|---|---|---|
+| `fileNm` | `String` | 화면에 표시할 input 파일명(`tcm_filel.org_file_nm`) |
 
 #### `FundamentalModelDownloadFileRes`
 
 | 필드 | 타입 | 설명 |
 |---|---|---|
-| `fileNm` | `String` | 화면에 표시할 파일명(`tcm_filel.org_file_nm`). 현재 다운로드 요청용 `fileNo`, `fileSize`는 노출하지 않음 |
+| `fileNo` | `Long` | 공통 File API 다운로드 요청의 `fileNo` |
+| `fileNm` | `String` | 공통 File API 다운로드 요청의 `fileNm` (`tcm_filel.org_file_nm`) |
+| `fileSize` | `Long` | 공통 File API 다운로드 요청의 `fileSize` (byte) |
 
-`input`, `output`, `intermediate` 모두 동일한 shape이며 `fileNm` 단일 필드다.
+`input`은 파일명-only shape이고, `output`과 `intermediate`는 동일한 다운로드 metadata shape다.
 
 ### 4.4 `FundamentalModelCaseCreateRes`
 
@@ -731,9 +779,9 @@ result payload는 포함하지 않는다. 다운로드 기능이 후속 구현�
 
 | 필드 | 타입 | 설명 |
 |---|---|---|
-| `caseId` | `Long` | mock store가 생성한 case ID. future DB는 `tmd_mdl_scnrcasem.case_id` 후보 |
+| `caseId` | `Long` | `tmd_mdl_scnrcasem.case_id` |
 | `title` | `String` | 제목 |
-| `description` | `String` | 설명. 입력 없으면 `null`. 기존 NextGen mock의 optional 문자열 필드 패턴과 동일. 향후 DB 전환 시 `tmd_mdl_scnrcasem.case_expn TEXT NULL` 과 자연스럽게 매핑됨 |
+| `description` | `String` | 설명. 입력 없으면 `null`. `tmd_mdl_scnrcasem.case_expn`에 매핑 |
 | `status` | `FundamentalModelCaseStatus` | 생성 직후 `PENDING` |
 | `files` | `List<FundamentalModelCaseFileRes>` | 업로드 파일 3개 metadata |
 | `createdAt` | `LocalDateTime` | case 생성 시각 |
@@ -743,7 +791,7 @@ result payload는 포함하지 않는다. 다운로드 기능이 후속 구현�
 
 | 필드 | 타입 | 설명 |
 |---|---|---|
-| `fileNo` | `Long` | 파일 식별자. canonical contract는 DB-backed 기준 `tcm_filel.file_no`를 사용한다. mock 구현도 같은 필드명으로 응답한다 |
+| `fileNo` | `Long` | 파일 식별자. `tcm_filel.file_no` |
 | `fileIndex` | `Integer` | 1부터 시작하는 업로드 순서 |
 | `originalFileName` | `String` | 원본 파일명 |
 | `contentType` | `String` | multipart content type |
@@ -765,10 +813,10 @@ result payload는 포함하지 않는다. 다운로드 기능이 후속 구현�
 | 필드 | 타입 | 설명 |
 |---|---|---|
 | `caseId` | `Long` | 실행 대상 case ID |
-| `runId` | `String` | backend/mock store가 생성한 `yyyymmdd_hhmmss_XXXX` 포맷 실행 ID. future DB는 `tmd_mdl_scnrcaseh.run_id` |
+| `runId` | `String` | backend가 생성해 `tmd_mdl_scnrcaseh.run_id`에 저장하는 `yyyymmdd_hhmmss_XXXX` 포맷 실행 ID |
 | `status` | `FundamentalModelRunStatus` | 실행 접수 직후 `RUNNING` |
 | `requestedAt` | `LocalDateTime` | 실행 요청 시각 |
-| `startedAt` | `LocalDateTime` | mock 실행 시작 시각. 1차에서는 `requestedAt`과 동일 |
+| `startedAt` | `LocalDateTime` | 실행 시작 시각. 현재 접수 시각과 동일하게 저장 |
 | `statusEndpoint` | `String` | case 기준 상태 조회 endpoint |
 
 ### 4.7 `FundamentalModelCaseStatusRes`
@@ -808,8 +856,8 @@ result payload는 포함하지 않는다. 다운로드 기능이 후속 구현�
 | `runId` | `String` | `yyyymmdd_hhmmss_XXXX` 포맷의 실행 추적 ID |
 | `status` | `FundamentalModelRunStatus` | 실행 상태. `RUNNING`, `COMPLETED`, `FAILED` 만 가질 수 있다 |
 | `requestedAt` | `LocalDateTime` | 실행 요청 시각 |
-| `startedAt` | `LocalDateTime` | 실행 시작 시각. future DB `tmd_mdl_scnrcaseh.exec_bgn_dtm` 매핑 |
-| `finishedAt` | `LocalDateTime` | 완료/실패 시각. future DB `tmd_mdl_scnrcaseh.exec_end_dtm` 매핑. 실행 중이면 `null` |
+| `startedAt` | `LocalDateTime` | 실행 시작 시각. `tmd_mdl_scnrcaseh.exec_bgn_dtm` 매핑 |
+| `finishedAt` | `LocalDateTime` | 완료/실패 시각. `tmd_mdl_scnrcaseh.exec_end_dtm` 매핑. 실행 중이면 `null` |
 | `failureReason` | `String` | `TIMEOUT`, `EXTERNAL_ERROR`, `UNKNOWN` 후보. 실패 전에는 `null` |
 | `errorMessage` | `String` | 실패 상세 메시지. 실패 전에는 `null` |
 
@@ -917,7 +965,7 @@ FE는 `latestRun.startedAt`과 `latestRun.finishedAt`으로 소요시간을 계�
 | `caseId` | `Long` | case ID |
 | `segment` | `FundamentalModelSegment` | 조회한 segment |
 | `granularity` | `FundamentalModelGranularity` | 조회한 시간 단위 |
-| `unit` | `FundamentalModelVolumeUnit` | 수치 단위. phase 1에서는 `MTPA` 고정 |
+| `unit` | `FundamentalModelVolumeUnit` | 수치 단위. 현재 `MTPA` 고정 |
 | `appliedFilters` | `VolumesAppliedFilters` | 실제 적용된 필터. 미전달 시 전체 enum 목록 |
 | `columns` | `List<VolumesColumn>` | 시간 축 메타데이터 목록 |
 | `rows` | `List<VolumesRow>` | 데이터 행 목록 |
@@ -979,7 +1027,7 @@ FE는 `latestRun.startedAt`과 `latestRun.finishedAt`으로 소요시간을 계�
 `MONTHLY`, `YEARLY`
 
 **`FundamentalModelVolumeUnit` enum:**
-`MTPA` — phase 1에서는 Volumes 응답의 `unit`이 항상 `MTPA`다. 후속 unit 변환 기능은 별도 request contract로 정의한다.
+`MTPA` — 현재 Volumes 응답의 `unit`은 항상 `MTPA`다. 후속 unit 변환 기능은 별도 request contract로 정의한다.
 
 ### 4.12 `FundamentalModelVolumesFilterOptionsRes`
 
@@ -1305,7 +1353,8 @@ FE는 `latestRun.startedAt`과 `latestRun.finishedAt`으로 소요시간을 계�
 
 ## 5. Representative Error Scenarios
 
-현재 `ResultCode`에는 전용 state conflict enum이 활성화되어 있지 않다. 따라서 1차 구현은 기존 enum을 우선 사용하고, 필요 시 후속으로 더 구체적인 enum 추가를 검토한다.
+현재 `ResultCode`에는 전용 state conflict enum이 활성화되어 있지 않다. 현재 계약은 기존 enum을 사용하고,
+별도 요구가 생기기 전에는 새 오류 코드를 추가하지 않는다.
 
 | 시나리오 | HTTP status | ResultCode 후보 | 처리 |
 |---|---|---|---|
@@ -1315,13 +1364,14 @@ FE는 `latestRun.startedAt`과 `latestRun.finishedAt`으로 소요시간을 계�
 | `caseId`가 없거나 존재하지 않음 | `404` | `RSC_NOT_FOUND` | 존재하지 않는 case 리소스로 처리 |
 | 삭제된 `caseId`로 list 외 active-resource API 호출 | `404` | `RSC_NOT_FOUND` | detail/status/run/update/delete 모두 active resource가 아니므로 not found |
 | title 누락 또는 blank | `400` | `REQ_INVALID_PARAMETER` | Bean Validation 또는 수동 검증 |
-| title 200자 초과 | `400` | `REQ_INVALID_PARAMETER` | future DB `case_titl_nm VARCHAR(200)` 정합성 |
+| title 200자 초과 | `400` | `REQ_INVALID_PARAMETER` | `case_titl_nm VARCHAR(200)` 정합성 |
 | 파일 part 누락 | `400` | `REQ_MISSING_PARAMETER` 또는 `REQ_INVALID_PARAMETER` | handler가 missing part를 잡으면 공통 handler는 `REQ_INVALID_PARAMETER` 가능 |
 | 파일 개수가 3개가 아님 | `400` | `REQ_INVALID_PARAMETER` | 메시지에 expected/actual count 포함 |
 | 빈 파일 포함 | `400` | `FILE_INVALID` | 각 file `isEmpty()` 검증 |
 | 파일 크기 제한 초과 | `400` | `FILE_SIZE_ERROR` | 제한값은 구현 설정 확인 필요 |
 | 허용하지 않는 파일 형식 | `400` | `FILE_FORMAT_ERROR` | allowlist 확정 후 적용 |
 | 이미 `RUNNING`인 case 실행 요청 | `409` 권장 | `BIZ_RULE_VIOLATION` 1차 후보, 후속 `BIZ_STATE_CONFLICT` 재활성화 검토 | 중복 실행 차단 |
+| 이미 `COMPLETED`인 case 실행 요청 | `409` 권장 | `BIZ_RULE_VIOLATION` | 완료 case 재사용 금지. 새 실행은 새 case로 생성 |
 | Volumes 조회 시 `segment` 누락 | `400` | `REQ_INVALID_PARAMETER` | Volumes는 segment 필수 |
 | Volumes 조회 시 `segment=TRADE` 전달 | `400` | `REQ_INVALID_PARAMETER` | Trade Flows는 `/volumes/trade` 엔드포인트를 사용 |
 | Volumes 조회 시 `types`/`regions`/`segment`가 허용값 외 문자열 | `400` | `REQ_INVALID_PARAMETER` | enum 변환 실패 |
@@ -1336,7 +1386,7 @@ FE는 `latestRun.startedAt`과 `latestRun.finishedAt`으로 소요시간을 계�
 | Trade Flows 조회 시 case가 `FAILED` 상태 | `404` | `RSC_NOT_FOUND` | Volumes와 동일 |
 | 인증 없음 | `401` | `AUTH_REQUIRED` 또는 `AUTH_TOKEN_INVALID` | 기존 security handler 따름 |
 | 권한 없음 | `403` | `AUTH_INSUFFICIENT_PERMISSIONS` 또는 `AUTH_ACCESS_DENIED` | `@RequiredPermissionRules` 결과 따름 |
-| mock store 내부 오류 | `500` | `SYS_INTERNAL_ERROR` | 예외 로그 포함 |
+| persistence 또는 응답 조립 중 내부 오류 | `500` | `SYS_INTERNAL_ERROR` | client에는 내부 상세를 노출하지 않음 |
 | callback 대상 `runId` 없음 | `404` | `RSC_NOT_FOUND` | 존재하지 않는 실행 |
 | callback `status`가 `COMPLETED | FAILED` 외 값 | `400` | `REQ_INVALID_PARAMETER` | terminal 상태만 허용 |
 | 이미 terminal 상태인데 동일 payload 재전송 | `200` | `SUC-000` | idempotent no-op |
@@ -1354,7 +1404,7 @@ FE는 `latestRun.startedAt`과 `latestRun.finishedAt`으로 소요시간을 계�
 }
 ```
 
-## 6. Swagger Annotation Recommendation
+## 6. OpenAPI Contract
 
 Controller tag 권장:
 
@@ -1367,7 +1417,7 @@ Controller tag 권장:
 )
 ```
 
-`FundamentalModelRunController`:
+`FundamentalModelRunDedicatedController`:
 
 ```text
 @Tag(
@@ -1388,29 +1438,28 @@ Endpoint summary 권장:
 | Controller | Endpoint | `@Operation.summary` |
 |---|---|---|
 | `FundamentalModelCaseController` | list | `MI Fundamental Model Scenario Case 목록 조회 API` |
-| `FundamentalModelCaseController` | upload | `MI Fundamental Model Scenario Case 업로드 API` |
+| `FundamentalModelCaseDedicatedController` | upload | `MI Fundamental Model Scenario Case 업로드 API` |
 | `FundamentalModelCaseController` | detail | `MI Fundamental Model Scenario Case 상세 조회 API` |
 | `FundamentalModelCaseController` | update | `MI Fundamental Model Scenario Case 수정 API` |
 | `FundamentalModelCaseController` | delete | `MI Fundamental Model Scenario Case 삭제 API` |
-| `FundamentalModelCaseController` | run | `MI Fundamental Model Scenario Case 실행 요청 API` |
+| `FundamentalModelCaseDedicatedController` | run | `MI Fundamental Model Scenario Case 실행 요청 API` |
 | `FundamentalModelCaseController` | status | `MI Fundamental Model Scenario Case 상태 조회 API` |
 | `FundamentalModelCaseController` | volumes-filter-options | `MI Fundamental Model Volumes 필터 옵션 조회 API` |
 | `FundamentalModelCaseController` | volumes | `MI Fundamental Model Volumes 데이터 조회 API` |
 | `FundamentalModelCaseController` | trade-flows | `MI Fundamental Model Trade Flows 데이터 조회 API` |
 | `FundamentalModelCaseController` | price | `MI Fundamental Model Price 데이터 조회 API` |
-| `FundamentalModelCaseController` | reset | `[mockapi 전용] MI Fundamental Model Scenario Case 데이터 초기화 API` |
-| `FundamentalModelRunController` | callback | `MI Fundamental Model Scenario Case 실행 완료 Callback API` |
+| `FundamentalModelRunDedicatedController` | callback | `MI Fundamental Model Scenario Case 실행 완료 Callback API` |
 
 Swagger 문서에는 다음을 명시한다.
 
 - 목록 조회 API의 canonical contract는 `non-blank keyword requires searchType`이다. `keyword`가 null 또는 blank이면 `searchType`이 있어도 검색 조건 없음으로 처리한다.
 - 업로드 API는 `multipart/form-data` 전용이다.
 - `files` part는 정확히 3개가 필수다.
-- 상세 조회는 case metadata, input/output/intermediate 파일명 metadata, latestRun을 반환한다. 파일 항목에는 `fileNm`만 제공하며,
-  full run history/result payload/`fileNo`/`fileSize`는 포함하지 않는다.
+- 상세 조회는 case metadata, input 파일명, output/intermediate 다운로드 metadata, latestRun을 반환한다. input에는 `fileNm`만,
+  output/intermediate에는 `fileNo`, `fileNm`, `fileSize`를 제공하며 full run history/result payload는 포함하지 않는다.
 - 수정 API는 `title`, `description`만 받으며 응답은 최신 `FundamentalModelCaseDetailRes`다.
 - 삭제 API는 physical delete가 아니라 soft delete이며, 삭제된 case는 이후 active-resource API에서 `404 RSC_NOT_FOUND`로 취급한다.
-- 실행 요청은 `RUNNING` 상태에서 중복 접수를 차단한다.
+- 실행 요청은 `PENDING` 최초 실행과 `FAILED` 모델 호출 재시도만 허용한다. `RUNNING` 중복 접수와 `COMPLETED` case 재실행은 차단한다.
 - 상태 조회는 case 기준 polling용 경량 projection이며 `PENDING` case는 `latestRun = null`이다. 상세 조회와 달리 file metadata를 반환하지 않는다.
 - Volumes filter-options는 `caseId`가 있으면 최신 완료 run의 실제 Region/Country/기간만 반환한다. TRADE는 `selector`와 `year`를 함께 전달한 현재 데이터 범위에서 From/To Region/Country 합집합을 반환하며, `regions[].countries[]` 중첩 구조를 사용한다.
 - Volumes 조회는 `COMPLETED` case에만 가능하다. `segment`(`GLOBAL`|`LNG`) 필수, `TRADE` 전달 시 400. `types`/`regions`/`countryKeys` 미전달 시 전체 반환, `granularity` 기본값 `MONTHLY`. Country 선택 시 Region/Type subtotal을 선택 결과로 재계산한다.
@@ -1418,7 +1467,6 @@ Swagger 문서에는 다음을 명시한다.
 - filter-options의 `selector`/`year`에는 함께 전달해야 하는 조건과 연도 범위를 `@Parameter`로 명시한다. Volumes/Trade의 `countryKeys`에는 `COUNTRY:ASIA:Japan` 예시, exact-match 의미, `regions`와의 AND 조건을 명시한다.
 - `RegionFilterOption.countries`와 두 결과 DTO의 `appliedFilters.countryKeys`에는 빈 배열의 의미를 `@Schema`로 명시한다.
 - Price 조회는 `COMPLETED` case에만 가능하다. 쿼리 파라미터 없음. 차트 + Annual 테이블 + Monthly 테이블을 단일 응답으로 반환한다.
-- reset API는 mock 설정 flag (`mi.fundamental-model.mock.fundamental-model-cases.api.reset`) 로 활성화한다. 운영 배포에서는 flag 를 `false` 로 두어 사용을 차단한다.
 - callback API는 외부 모델 전용이며 FE가 직접 호출하지 않는다.
 
 ## 7. Data / Model Impact
@@ -1427,7 +1475,12 @@ Region/Country 필터 확장은 기존 Volumes result row와 Trade header/flow�
 
 ### 7.1 1st Mock Implementation (superseded by real DB implementation, 2026-06-05 ~ 2026-06-19)
 
-1차 mock 구현은 DB schema 변경 없이 `src/main/resources/mock/fundamental-model/fundamental-model-cases.json` seed 파일을 읽어 in-memory store로 동작했다. `Next Gen` mock API와 동일하게 기능/메뉴별 mock resource 폴더를 두되, `Fundamental Model`은 `fundamental-model` 폴더를 canonical 위치로 사용했다. 현재는 real DB(`tmd_mdl_scnrcasem`/`tmd_mdl_scnrcaseh` 및 결과 테이블)로 전환 완료됐으며, 아래 seed 구조는 local/demo mock profile에만 남아 있다.
+아래 내용은 real-DB 전환 전 1차 mock의 historical reference다. 현재 source tree에는 case mock
+service/properties/delegator/reset endpoint와 아래 seed resource가 없으며, 클래스명·경로·로딩 규칙을
+현재 구현 입력으로 사용하지 않는다.
+
+1차 mock 구현은 DB schema 변경 없이 `src/main/resources/mock/fundamental-model/fundamental-model-cases.json`
+seed 파일을 읽어 in-memory store로 동작했다.
 
 seed 파일은 다음 최상위 구조를 가진다.
 
@@ -1589,12 +1642,12 @@ src/main/resources/mock/fundamental-model/fundamental-model-price-data.json
 - `fundamental-model-price-data.json`이 없으면 Price API는 빈 응답(`chart.series: [], annualTable.rows: [], monthlyTable.rows: []`)을 반환한다.
 - reset API는 Volumes/Trade Flows/Price seed를 재로딩하지 않는다. case/run seed(`fundamental-model-cases.json`)만 재로딩한다.
 
-### 7.2 Future DB Mapping Notes
+### 7.2 Current real-DB Mapping
 
-| API 필드 | 향후 DB 후보 | 메모 |
+| API 필드 | 현재 DB mapping | 메모 |
 |---|---|---|
 | `caseId` | `tmd_mdl_scnrcasem.case_id` | `INT UNSIGNED` 초안. Java DTO는 `Long` 사용 가능하나 mapper 변환 주의 |
-| `scenarioId` | superseded | MI Fundamental Model 1차 mock API 계약에서는 제거한다. workflow/ERD draft 기준으로 `scenario_id` 전제는 제거 완료되었고 superseded 이력으로만 유지한다 |
+| `scenarioId` | API 미노출 | Fundamental Model 독립실행 case는 `scnr_id = NULL`; Scenario 실행과 같은 table을 공유하지만 API에 `scenarioId`를 노출하지 않는다 |
 | `title` | `tmd_mdl_scnrcasem.case_titl_nm` | 최대 200자 |
 | `description` | `tmd_mdl_scnrcasem.case_expn` | nullable |
 | `delYn` | `tmd_mdl_scnrcasem.del_yn` | soft delete flag. active resource 조회 조건은 `del_yn = 'N'` |
@@ -1614,77 +1667,45 @@ src/main/resources/mock/fundamental-model/fundamental-model-price-data.json
 
 `SCNRCASE`/`SCNRCASEH` 공통코드는 등록 완료된 것으로 implementation input을 둔다. `SCNRCASEHI`는 2026-09-07 신규 확정이며 등록 전에는 조회 결과가 빈 배열이다(코드 등록 자체가 조회를 막지는 않으나 pod INSERT가 불가능하다). `tcm_filel.file_rel_obj_dstg_no`와 `tmd_mdl_scnrcasem.case_id`/`tmd_mdl_scnrcaseh.run_seq`의 타입 호환성은 `erd-change-review`에서 재확인한다.
 
-Trade Flows의 fromCountries/toCountries country 목록은 base 버전/기준 정보에 따라 변동될 수 있다. region 고유값은 고정이지만 region 내 country 목록이 달라지는 구조이므로, DB-backed 전환 시 header metadata는 [mi-fundamental-model-output-result-persistence-design.md](../design-docs/gas/mi-fundamental-model-output-result-persistence-design.md)의 `tmd_mdl_scnrcasetrdehdrl` row table에 저장한다.
+Trade Flows의 fromCountries/toCountries country 목록은 base 버전/기준 정보에 따라 변동될 수 있다. region 고유값은 고정이지만 region 내 country 목록이 달라지는 구조이므로, header metadata는 [mi-fundamental-model-output-result-persistence-design.md](../design-docs/gas/mi-fundamental-model-output-result-persistence-design.md)의 `tmd_mdl_scnrcasetrdehdrl` row table에 저장한다.
 
-결과 payload/pointer 컬럼은 phase 1 scope에서 제외하기로 결정되었다 (workflow draft Closed Decisions 참고). callback 처리 안에서 결과 데이터를 저장하지 않으며, 결과 조회/download 가 별도 spec으로 확정되면 그 시점에 컬럼 또는 별도 테이블을 재검토한다.
+callback payload에는 결과 payload/pointer를 포함하지 않는다. parsed result persistence는 output result design의
+별도 table을 사용하고, output/intermediate file reference는 상세 응답의 다운로드 metadata 계약을 따른다.
 
-## 8. Recommended Data Access Approach
+## 8. Current Data Access Approach
 
-1차 mock:
+현재 구현은 `FundamentalModelCaseServiceImpl` 단일 real service가 담당하며 mock delegator를 사용하지 않는다.
 
-- DB 접근 없음.
-- `src/main/resources/mock/fundamental-model/fundamental-model-cases.json` 를 classpath resource로 읽어 Service 내부 in-memory mock store를 초기화한다.
-- 업로드/실행/callback/update/delete로 발생하는 변경은 런타임 메모리 store에만 반영한다. json 파일 자체를 API 호출 중 수정하지 않는다.
-- 기존 Next Gen mock service/delegator 구조를 참고하되, 기존 `ScenarioModelExecutionMockService` 와 store 를 공유하지 않는다.
-- mock 활성화 방식은 신규 [`FundamentalModelMockProperties`](src/main/java/com/sk/domain/mi/config/FundamentalModelMockProperties.java) 의 per-API boolean flag 와 `@Primary` Delegator 패턴을 따른다. `NextGenMockProperties` 와 별개 클래스이며 prefix 는 `mi.fundamental-model.mock` 이다. `@Profile("mock")` 같은 전체 프로필 분기는 사용하지 않는다.
-- 업로드/상세/수정/삭제/실행/상태/callback API 의 flag 는 `FundamentalModelCaseServiceDelegator` 내부에서 확인한다 (`mi.fundamental-model.mock.fundamental-model-cases.api.*`). Delegator 가 각 호출마다 real 또는 mock 구현체를 선택한다. 1차에서는 real 구현이 없으므로 flag 기본값은 모두 `true` 로 두되, real 구현이 추가되는 시점부터 개별 flag 를 `false` 로 전환해 점진적으로 real 구현으로 옮길 수 있다.
-- `reset` flag 는 Delegator 가 아닌 **controller** 에서 직접 확인한다. 기존 `NextGen` 의 Delegator 패턴과 의도적으로 분리한다. flag 가 `false` 이면 controller 가 `404 Not Found` 를 반환하고 mock service 는 호출되지 않는다.
-
-DB 전환 시 권장:
-
-- command성 upload/run/status latest 조회는 MyBatis 또는 JPA 모두 가능하다.
-- 파일 테이블 `tcm_filel` 및 기존 공통 파일 저장 흐름과 조인/연계가 필요하면 MyBatis가 운영 SQL 확인과 DBA 리뷰에 유리하다.
-- 단순 aggregate 저장을 JPA로 시작할 경우에도 `tcm_filel` 연계와 transaction boundary는 명확히 분리해야 한다.
-
-이 spec의 1차 구현 handoff는 mock store 기준이므로 data access 구현은 후속 DB 전환 시 다시 결정한다.
+- case/run command와 상태 전이는 `ScenarioCaseRepository`, `ScenarioCaseRunHistoryRepository`를 사용한다.
+- input/output/intermediate 파일 metadata는 `UploadedFileRepository`와 기존 `FileService`를 사용한다.
+- Volumes/Trade Flows/Price는 각 result repository projection으로 latest completed run의 row를 읽고 application layer에서 응답을 조립한다.
+- upload/run/callback은 transaction boundary 안에서 상태 불변식을 지키며, callback은 running-to-terminal compare-and-set과 latest run 조건으로 late overwrite를 막는다.
+- 목록·상세·결과 조회는 active resource와 endpoint별 ownership/shared-read 규칙을 적용한다.
 
 ## 9. Implementation Touch Points
 
-권장 신규 package/file 후보:
+현재 구현 touch point:
 
-| 구분 | 후보 |
+| 구분 | 현재 구현 |
 |---|---|
-| Case Controller | `FundamentalModelCaseController` — `@RequestMapping("/api/v1/mi/fundamental-model/cases")`. list / upload / detail / update / delete / run / status / reset 을 담당한다. |
-| Run Controller | `FundamentalModelRunController` — `@RequestMapping("/api/v1/mi/fundamental-model/runs")`. callback endpoint 전용. `FundamentalModelCaseService`(Delegator) 를 주입받아 `handleCallback` 을 호출한다. |
+| Case Controller | `FundamentalModelCaseController` — list/detail/update/delete/status/Volumes/Trade Flows/Price |
+| Dedicated Case Controller | `FundamentalModelCaseDedicatedController` — upload/run과 운영용 Kubernetes Job 권한 검증 endpoint |
+| Dedicated Run Controller | `FundamentalModelRunDedicatedController` — callback endpoint 전용 |
 | Service interface | `FundamentalModelCaseService` |
-| Real service (placeholder) | `FundamentalModelCaseServiceImpl` (1차에는 미구현, Delegator 가 mock 으로 라우팅) |
-| Mock service | `FundamentalModelCaseMockService` |
-| Delegator | `FundamentalModelCaseServiceDelegator` (`@Service @Primary`, real/mock 구현체 주입 + `FundamentalModelMockProperties` 로 메서드별 분기) |
-| Mock 설정 properties | 신규 `com.sk.domain.mi.config.FundamentalModelMockProperties` 생성 (`mi.fundamental-model.mock` prefix, `NextGenMockProperties` 와 별개) |
+| Real service | `FundamentalModelCaseServiceImpl` |
+| Persistence | `ScenarioCaseRepository`, `ScenarioCaseRunHistoryRepository`, `UploadedFileRepository`, Volumes/Trade/Price result repositories |
 | Request DTO | `FundamentalModelCaseListReq`, `FundamentalModelCaseUpdateReq`, `FundamentalModelVolumesReq`, `FundamentalModelTradeFlowsReq` |
 | Callback DTO | `FundamentalModelRunCallbackReq` |
-| Response DTO | `FundamentalModelCaseListRes`, `FundamentalModelCaseListItemRes`, `FundamentalModelCaseDetailRes`, `FundamentalModelCaseFilesRes`, `FundamentalModelDownloadFileRes`, `FundamentalModelCaseCreateRes`, `FundamentalModelCaseFileRes`, `FundamentalModelRunAcceptRes`, `FundamentalModelCaseStatusRes`, `FundamentalModelRunStatusRes`, `FundamentalModelRunCallbackRes`, `FundamentalModelVolumesRes`, `FundamentalModelTradeFlowsRes`, `FundamentalModelPriceRes` |
+| Response DTO | `FundamentalModelCaseListRes`, `FundamentalModelCaseListItemRes`, `FundamentalModelCaseDetailRes`, `FundamentalModelCaseFilesRes`, `FundamentalModelFileNameRes`, `FundamentalModelDownloadFileRes`, `FundamentalModelCaseCreateRes`, `FundamentalModelCaseFileRes`, `FundamentalModelRunAcceptRes`, `FundamentalModelCaseStatusRes`, `FundamentalModelRunStatusRes`, `FundamentalModelRunCallbackRes`, `FundamentalModelVolumesRes`, `FundamentalModelTradeFlowsRes`, `FundamentalModelPriceRes` |
 | Enum | `FundamentalModelCaseStatus`, `FundamentalModelRunStatus`, `FundamentalModelCaseSearchType`, `FundamentalModelSegment`, `FundamentalModelDataType`, `FundamentalModelRegion`, `FundamentalModelGranularity`, `VolumesRowKind`, `PriceSeriesType`, `TradeFlowSelector`, `TradeFlowUnit`, `TradeFlowDirection`, `TradeCountryHeaderKind` |
 
-package는 이번 feature spec 수정에서 확정하지 않는다. MI Fundamental Model이 Next Gen와 동급 메뉴로 정리되었으므로 implementation follow-up에서 기존 `nextgen` package 후보를 `fundamentalmodel` package로 옮길지 검토해야 한다.
+package는 현재 `com.sk.domain.mi.*.fundamentalmodel` 경계를 사용한다.
 
-service method signature는 canonical contract에 맞게 `scenarioId`를 받지 않는다. 예: `listCases(searchType, keyword)`, `createCase(title, description, files)`, `getCaseDetail(caseId)`, `updateCase(caseId, request)`, `deleteCase(caseId)`, `runCase(caseId)`, `getStatus(caseId)`, `getVolumes(caseId, request)`, `getPrice(caseId)`, `reset()`, `handleCallback(runId, request)` 형태를 기준으로 구현한다.
-
-`application.yml` 설정 예시 (1차 mock 기준, 모든 API mock 활성화):
-
-```yaml
-mi:
-  fundamental-model:
-    mock:
-      fundamental-model-cases:
-        api:
-          list-cases: true
-          create-case: true
-          get-detail: true
-          update: true
-          delete: true
-          run: true
-          get-status: true
-          get-volumes: true
-          get-trade-flows: true
-          get-price: true
-          reset: true
-      fundamental-model-runs:
-        api:
-          callback: true
-```
-
-운영 배포에서는 real 구현이 준비된 API 부터 해당 flag 를 `false` 로 전환한다. `reset` flag 가 `false` 이면 controller 는 `404 Not Found` 로 차단한다.
+service method signature는 `scenarioId`를 받지 않고 `caseId` 또는 `runId`로 식별한다.
+`listCases(request)`, `createCase(title, description, files)`, `getCaseDetail(caseId)`,
+`updateCase(caseId, request)`, `deleteCase(caseId)`, `runCase(caseId)`, `getCaseStatus(caseId)`,
+`getVolumesFilterOptions(caseId)`, `getVolumes(caseId, request)`, `getTradeFlows(caseId, request)`,
+`getPrice(caseId)`, `handleCallback(runId, request)`가 현재 interface다.
 
 권장 permission:
 
@@ -1695,7 +1716,8 @@ mi:
 })
 ```
 
-Reset API도 1차 개발/시연 편의상 같은 권한을 적용하되, mock 설정 flag 로만 활성화한다 (§3.6 참고). 외부 모델 callback API는 1차 mock 구현 범위에 포함한다. 다만 운영 수준 callback 인증/서명/재시도 정책은 실제 Kubernetes Job 연동 전에 별도 보안 설계에서 확정한다.
+사용자 화면용 case API는 위 permission rule을 적용한다. 외부 모델 callback은 사용자 화면에서 호출하지 않으며,
+운영 인증/서명 경계는 별도 보안·integration 계약에서 확정한다.
 
 callback API 권한 권장:
 
@@ -1709,17 +1731,16 @@ callback API 권한 권장:
 
 사용자 화면에서 호출하는 API가 아니므로 `Role.USER` 와 일반 `Role.ADMIN` user-scope 조건은 넣지 않는 쪽을 권장한다. 실제 model pod가 JWT 기반으로 호출하지 못한다면 별도 callback 인증 filter, HMAC signature, mTLS, private network allowlist 중 하나를 보안 설계에서 확정한다.
 
-phase 1 mock 시연 동선:
+callback endpoint는 현재 별도 permission annotation 없이 dedicated deployment에 노출된다. 인증/신뢰 경계의
+추가 변경은 이 문서에서 가정하지 않고 별도 security-sensitive 계약과 검증을 거친다.
 
-- callback API의 권한 annotation 은 mock/운영 환경에 관계없이 동일하게 유지한다. 본 spec 의 mocking 방식은 controller/권한 swap 이 아니라 service 구현체 swap (Delegator 패턴, §8/§9 참고) 이므로 권한을 환경별로 다르게 적용하지 않는다.
-- 시연 시에는 SYSTEM-scope 권한을 가진 내부 계정 (예: `API_SUB_ADMIN`, `API_PLUS_OPERATOR`) 으로 Swagger 또는 별도 도구에서 callback endpoint 를 호출해 terminal 상태로 전이한다.
-- 일반 USER 가 직접 완료 전이를 트리거해야 하는 시연 요구가 있으면, callback path 와 권한을 그대로 두고 시연 전용 trigger endpoint 를 별도 path/권한으로 새로 정의한다 (후속 feature spec 사항).
-
-## 10. Mock Behavior Rules
+## 10. Observable Behavior Rules
 
 ### List Cases
 
-1. `delYn != Y` 인 active mock case를 대상으로 `createdAt` 내림차순 정렬한다.
+> current MI Base를 포함하는 최신 목록 동작은 enhancement feature spec §3이 canonical source다.
+
+1. `del_yn = 'N'`인 active Fundamental Model case를 대상으로 `createdAt` 내림차순 정렬한다.
 2. `keyword`가 null 또는 blank(trim 후 빈 문자열)이면 검색 조건 없음으로 처리한다. 이 경우 `searchType`이 함께 전달되어도 필터를 적용하지 않는다.
 3. `keyword`가 non-blank인 경우에만 `searchType`을 필수로 요구하고, 둘 다 유효하면 필터를 적용한다.
    - `TITLE`: case 제목에서 대소문자 구분 없이 부분 일치 필터
@@ -1733,8 +1754,8 @@ phase 1 mock 시연 동선:
 1. `title`, `description`, `files`를 받는다.
 2. `files`가 정확히 3개인지 검증한다.
 3. 각 파일이 비어 있지 않은지 검증한다.
-4. mock `caseId`를 증가값으로 생성한다.
-5. 파일 binary는 저장하지 않고 metadata만 mock store에 보관한다.
+4. case를 `tmd_mdl_scnrcasem`에 저장하고 DB가 `caseId`를 발급한다.
+5. 파일 binary는 기존 storage 흐름으로 저장하고 metadata는 `tcm_filel`에 `SCNRCASE + case_id`로 연결한다.
 6. case 상태는 `PENDING`으로 저장한다.
 7. `FundamentalModelCaseCreateRes`를 반환한다.
 
@@ -1744,58 +1765,56 @@ phase 1 mock 시연 동선:
 2. case가 없거나 `delYn = Y`이면 `RSC_NOT_FOUND`.
 3. case metadata와 `SCNRCASE + case_id` 기준 input 파일명 metadata를 반환한다.
 4. `latestRunId`가 null이면 `latestRun = null`, `files.output = []`, `files.intermediate = []`로 반환한다.
-5. `latestRunId`가 있으면 run store에서 최신 run 1건만 찾아 `latestRun`으로 반환하고, 해당 run의 `run_seq` 기준 `SCNRCASEH` output 파일과 `SCNRCASEHI` 중간파일 metadata를 반환한다.
+5. `latestRunId`가 있으면 `tmd_mdl_scnrcaseh`에서 최신 run 1건을 찾아 `latestRun`으로 반환하고, 해당 run의 `run_seq` 기준 `SCNRCASEH` output 파일과 `SCNRCASEHI` 중간파일 metadata를 반환한다.
 6. full run history와 result payload는 반환하지 않는다.
 
 ### Update
 
-1. `caseId`로 active case를 찾는다.
-2. case가 없거나 `delYn = Y`이면 `RSC_NOT_FOUND`.
+1. `caseId`로 active `INDEPENDENT` case를 찾는다.
+2. case가 없거나 `delYn = Y` 또는 `MI_BASE | SCENARIO`이면 `RSC_NOT_FOUND`.
 3. `title`을 trim 후 1-200자 필수로 검증한다.
-4. `description`은 nullable/optional로 받아 record에 반영한다.
-5. `status`, `files`, `latestRunId`, run store는 변경하지 않는다.
+4. `description`은 nullable/optional로 받아 case row에 반영한다.
+5. `status`, `files`, `latestRunId`, run history는 변경하지 않는다.
 6. `updatedAt`을 갱신한다.
 7. 최신 `FundamentalModelCaseDetailRes`를 반환한다.
 
 ### Delete
 
-1. `caseId`로 active case를 찾는다.
-2. case가 없거나 `delYn = Y`이면 `RSC_NOT_FOUND`.
-3. record의 `delYn`을 `Y`로 바꾸고 `updatedAt`을 갱신한다.
+1. `caseId`로 active `INDEPENDENT` case를 찾는다.
+2. case가 없거나 `delYn = Y` 또는 `MI_BASE | SCENARIO`이면 `RSC_NOT_FOUND`.
+3. case row의 `del_yn`을 `Y`로 바꾸고 수정 audit 정보를 갱신한다.
 4. upload files, run history, latestRun/result payload는 물리 삭제하지 않는다.
 5. 이후 list/detail/status/run/update/delete에서 해당 case는 active resource가 아니므로 `RSC_NOT_FOUND`로 취급한다.
 6. 응답은 `BaseResponse<Void>` 200 OK다.
 
 ### Run Request
 
-1. `caseId`로 active case를 찾는다.
-2. case가 없거나 `delYn = Y`이면 `RSC_NOT_FOUND`.
+1. `caseId`로 active `INDEPENDENT` case를 찾는다.
+2. case가 없거나 `delYn = Y` 또는 `MI_BASE | SCENARIO`이면 `RSC_NOT_FOUND`.
 3. case owner가 현재 사용자와 다르면 `RSC_NOT_FOUND`.
 4. case status가 `RUNNING`이면 `409 + BIZ_RULE_VIOLATION` 후보로 거절한다.
-5. 실행 가능 상태는 `PENDING`, `COMPLETED`, `FAILED`다.
+5. 실행 가능 상태는 최초 실행의 `PENDING`과 모델 호출 실패 재시도의 `FAILED`다. `COMPLETED`는 재실행할 수 없으며 새로운 정상 실행은 새 case를 생성해야 한다.
 6. `runId`는 `yyyymmdd_hhmmss_XXXX` 포맷으로 생성한다. `yyyymmdd_hhmmss`는 실행 요청 시각 기준이고, `XXXX`는 같은 초 안의 충돌을 방지하는 4자리 suffix다.
-7. run record를 `RUNNING`으로 생성한다.
+7. `tmd_mdl_scnrcaseh` run row를 `RUNNING`으로 생성한다.
 8. case 최신 상태를 `RUNNING`으로 변경하고 `latestRunId`를 갱신한다.
 9. `FundamentalModelRunAcceptRes`를 `202 Accepted`로 반환한다.
 
 ### Status Query
 
-1. `caseId`로 active case를 찾는다.
+1. `caseId`로 active `INDEPENDENT | MI_BASE` case를 찾는다. `SCENARIO` 또는 soft-deleted case는 `RSC_NOT_FOUND`로 처리한다.
 2. case status와 latest run 정보를 반환한다.
 3. `PENDING` case는 아직 실행 이력이 없으므로 `latestRun = null`이다.
 4. status query는 polling용 경량 projection이므로 `description`, `assigneeName`, `files`를 반환하지 않는다.
-5. 1차 기본 mock은 자동으로 `COMPLETED` 또는 `FAILED`로 전이하지 않는다.
+5. terminal 전이는 callback 또는 timeout/reconciliation 경로에서 처리한다.
 
-### Reset
+### Removed Mock Reset
 
-1. 현재 메모리 store의 cases와 runs를 삭제한다.
-2. `src/main/resources/mock/fundamental-model/fundamental-model-cases.json` seed 파일을 다시 읽어 초기 cases/runs를 복원한다.
-3. mock store의 case ID sequence는 seed case의 최대 `caseId` 이상으로 재설정한다. reset 이후 신규 업로드는 seed case와 충돌하지 않는 다음 ID를 사용한다.
-4. 응답은 `BaseResponse<Void>` 또는 `BaseResponse<ResetRes>` 중 하나를 선택한다. 기존 reset API와 맞추려면 `BaseResponse<Void>`를 권장한다.
+- real-DB 전환 후 reset endpoint와 동작은 존재하지 않는다.
+- 테스트 데이터 초기화는 API 계약이 아니라 테스트 fixture 또는 승인된 운영 절차로 처리한다.
 
 ### External Callback Handling
 
-1. path `runId`로 run record를 찾는다.
+1. path `runId`로 `tmd_mdl_scnrcaseh` run row를 찾는다.
 2. run이 없으면 `RSC_NOT_FOUND`.
 3. run이 `RUNNING`이면 terminal 상태로 전이한다.
 4. callback의 `finishedAt`은 offset 없는 UTC `LocalDateTime`으로 해석하고 KST(`Asia/Seoul`) `LocalDateTime`으로 변환한다.
@@ -1830,17 +1849,18 @@ phase 1 mock 시연 동선:
    - `LNG`: `LNG_IMPORTS`, `LNG_EXPORTS`
    - `TRADE`: 이 API에서 허용하지 않는다. Trade Flows API를 사용한다.
 5. `types`에 segment에서 허용하지 않는 값이 포함되면 `400 REQ_INVALID_PARAMETER`로 응답한다.
-6. `regions`가 미전달이면 전체 `FundamentalModelRegion` 목록을 필터로 사용한다.
-7. `granularity`가 미전달이면 `MONTHLY`를 기본값으로 사용한다.
-8. `periods`가 전달되면 선택 기간만 `columns`와 각 row `values`에 포함한다. `MONTHLY`는 `yyyy-MM`, `YEARLY`는 `yyyy` 형식이다.
-9. `granularity=MONTHLY`이면 `columns`의 `label`은 `"26-01"` 형식이고, `year`/`month`는 각각 4자리 연도와 1~12 정수이다.
-10. `granularity=YEARLY`이면 `columns`의 `label`은 연도 문자열이고, `year`는 4자리 연도, `month`는 `null`이다.
-11. 응답의 `unit`은 phase 1에서 `MTPA` 고정이다. 후속 unit 변환 기능은 별도 request contract로 정의한다.
-12. `rows`는 필터를 적용한 뒤 FE가 응답 순서 그대로 렌더링할 수 있게 정렬한다. 선택된 `types` 순서대로 Type section을 만들고, 각 Type section 안에서는 선택된 `regions` 순서대로 `REGION_SUBTOTAL` 행을 먼저 반환한 뒤 해당 Region의 `COUNTRY` 행들을 반환한다. 각 Type section의 마지막 행은 `TYPE_TOTAL`이다.
-13. `typeLabel`은 `type` enum label을 반환한다. `rowLabel`은 `REGION_SUBTOTAL`이면 region enum label, `COUNTRY`이면 country, `TYPE_TOTAL`이면 `Total`을 반환한다.
-14. `TYPE_TOTAL`은 선택된 Region들의 `REGION_SUBTOTAL` 값을 합산해 반환한다. 예: `regions=ASIA,EUROPE`이면 해당 Type의 Asia subtotal + Europe subtotal이 Type total이다.
-15. 응답의 `appliedFilters`에는 실제 적용된 `types`, `regions`, 요청으로 선택한 `periods` 목록을 반환한다.
-16. 1차 mock에서는 json seed 파일 기반 고정 데이터를 반환하며, 필터는 해당 데이터 범위 내에서 적용한다. seed의 표시 label은 서버가 응답 조립 시 파생한다.
+6. `regions`가 미전달이고 `countryKeys`도 없으면 전체 `FundamentalModelRegion` 목록을 필터로 사용한다. `countryKeys`만 있으면 key에서 Region을 추출한다.
+7. `regions`와 `countryKeys`가 함께 있으면 Region AND Country 조건을 적용한다. Country key 형식은 `COUNTRY:{REGION}:{country}`이며 exact match한다.
+8. `granularity`가 미전달이면 `MONTHLY`를 기본값으로 사용한다.
+9. `periods`가 전달되면 선택 기간만 `columns`와 각 row `values`에 포함한다. `MONTHLY`는 `yyyy-MM`, `YEARLY`는 `yyyy` 형식이다.
+10. `granularity=MONTHLY`이면 `columns`의 `label`은 `"26-01"` 형식이고, `year`/`month`는 각각 4자리 연도와 1~12 정수이다.
+11. `granularity=YEARLY`이면 `columns`의 `label`은 연도 문자열이고, `year`는 4자리 연도, `month`는 `null`이다.
+12. 응답의 `unit`은 현재 `MTPA` 고정이다. 후속 unit 변환 기능은 별도 request contract로 정의한다.
+13. `rows`는 필터를 적용한 뒤 FE가 응답 순서 그대로 렌더링할 수 있게 정렬한다. 선택된 `types` 순서대로 Type section을 만들고, 각 Type section 안에서는 선택된 `regions` 순서대로 `REGION_SUBTOTAL` 행을 먼저 반환한 뒤 해당 Region의 선택된 `COUNTRY` 행들을 반환한다. 각 Type section의 마지막 행은 `TYPE_TOTAL`이다.
+14. `typeLabel`은 `type` enum label을 반환한다. `rowLabel`은 `REGION_SUBTOTAL`이면 region enum label, `COUNTRY`이면 country, `TYPE_TOTAL`이면 `Total`을 반환한다.
+15. `countryKeys`가 있으면 `REGION_SUBTOTAL`과 `TYPE_TOTAL`을 선택된 Country 값만으로 다시 계산한다. 없으면 기존 Region subtotal 기반 계산을 유지한다.
+16. 응답의 `appliedFilters`에는 실제 적용된 `types`, `regions`, `countryKeys`, 요청으로 선택한 `periods` 목록을 반환한다.
+17. latest completed run의 Volumes result row를 조회하고, 표시 label과 필터 결과는 서버가 응답 조립 시 파생한다.
 
 ### Trade Flows Data Query
 
@@ -1850,14 +1870,14 @@ phase 1 mock 시연 동선:
 4. `year`가 2023~2030 범위 밖이면 `400 REQ_INVALID_PARAMETER`.
 5. `unit` 미전달 시 `MTPA`를 기본값으로 사용한다.
 6. `types` 미전달 시 전체 `TradeFlowDirection` 목록(`TO_COUNTRY`, `FROM_COUNTRY`)을 필터로 사용한다.
-7. `regions` 미전달 시 전체 `FundamentalModelRegion` 목록을 필터로 사용한다.
-8. `types`와 `regions`가 함께 전달되면 direction에 따라 헤더를 필터링한다.
-   - `FROM_COUNTRY`가 types에 포함되면 fromCountries를 선택된 regions로 축소한다. `TO_COUNTRY`만이면 fromCountries는 전체 유지.
-   - `TO_COUNTRY`가 types에 포함되면 toCountries를 선택된 regions로 축소한다. `FROM_COUNTRY`만이면 toCountries는 전체 유지.
-   - `region=null`(Total)인 toCountries 항목은 필터와 무관하게 항상 포함된다.
-9. flows는 fromCountries/toCountries 범위 내의 non-zero 값만 포함한다. `toRegion=null`인 Total flows는 항상 포함된다.
-10. 응답의 `appliedFilters`에는 실제 적용된 `types`와 `regions` 목록을 반환한다.
-11. 1차 mock에서는 json seed 파일 기반 고정 데이터를 반환한다. `selector`/`year` 값은 응답에 echo하며 필터는 seed 데이터 범위 내에서 적용한다.
+7. `regions` 미전달이고 `countryKeys`도 없으면 전체 `FundamentalModelRegion` 목록을 필터로 사용한다. `countryKeys`만 있으면 key에서 Region을 추출한다.
+8. `regions`와 `countryKeys`가 함께 있으면 Region AND Country 조건을 적용한다. Country key 형식과 validation은 Volumes Data Query와 같다.
+9. `types`에 `FROM_COUNTRY`가 포함되면 From 축, `TO_COUNTRY`가 포함되면 To 축에 동일한 Region/Country 목록을 적용한다. 포함되지 않은 방향은 전체를 유지한다.
+10. Country 필터가 적용된 방향은 선택 Country header만 남기고 `REGION_SUBTOTAL`을 제외한다. Region만 필터링한 방향은 기존 Region subtotal과 Country header를 함께 유지한다.
+11. 각 축 마지막의 `TOTAL` header와 관련 flow는 유지한다. Country 필터가 한 방향이라도 적용되면 필터 후 남은 Country-to-Country leaf flow를 기준으로 응답에 남은 Region subtotal과 Total을 다시 계산하며 저장된 `REGION_SUBTOTAL`/`GRAND_TOTAL` flow를 중복 포함하지 않는다.
+12. flows는 fromCountries/toCountries 범위 내의 non-zero 값만 포함한다.
+13. 응답의 `appliedFilters`에는 실제 적용된 `types`, `regions`, `countryKeys` 목록을 반환한다.
+14. latest completed run의 Trade header/flow row를 조회하고 `selector`/`year` 및 선택 필터를 적용한다.
 
 ### Price Data Query
 
@@ -1868,62 +1888,57 @@ phase 1 mock 시연 동선:
 5. `annualTable`과 `monthlyTable`의 행 `label`은 데이터 기반 동적 값으로, 서버가 고정 enum으로 강제하지 않는다.
 6. `annualTable.columns`의 `month`는 `null`이다.
 7. `monthlyTable.columns`의 `month`는 1~12 정수다.
-8. 1차 mock에서는 json seed 파일 기반 고정 데이터를 반환한다.
-9. DB-backed 전환 시 Price 조회는 `caseId -> active case -> last_run_id -> run_seq`로 latest result를 해석한다. Price result read는 다른 사용자가 실행한 결과도 로그인 사용자가 조회할 수 있는 shared read model이므로 `usr_no` owner predicate를 적용하지 않는다. endpoint 권한은 controller permission rule로 처리하고, `usr_no` ownership predicate는 update/delete처럼 소유자 변경 작업에 적용한다.
-10. DB-backed Price 조회는 result row를 DB에서 조회한 뒤 응답을 조립한다. chart point는 조회 결과 중 monthly는 서버 현재월 - 6개월, yearly는 서버 현재연도 - 1년부터 포함한다. 이 기간 필터는 chart에만 적용하고 `annualTable`/`monthlyTable` row는 조회된 기간 전체를 유지한다.
+8. Price 조회는 `caseId -> active case -> last_run_id -> run_seq`로 latest result를 해석한다. Price result read는 다른 사용자가 실행한 결과도 로그인 사용자가 조회할 수 있는 shared read model이므로 `usr_no` owner predicate를 적용하지 않는다. endpoint 권한은 controller permission rule로 처리하고, `usr_no` ownership predicate는 update/delete처럼 소유자 변경 작업에 적용한다.
+9. result row를 DB에서 조회한 뒤 응답을 조립한다. chart point는 조회 결과 중 monthly는 서버 현재월 - 6개월, yearly는 서버 현재연도 - 1년부터 포함한다. 이 기간 필터는 chart에만 적용하고 `annualTable`/`monthlyTable` row는 조회된 기간 전체를 유지한다.
 
 ## 11. Risks / Open Questions
 
-- 외부 모델 완료 동기화는 callback 방식으로 확정한다. phase 1 mock은 callback endpoint를 구현한다. 남은 항목은 실제 Kubernetes Job 연동용 인증 방식, header/signature 규격, retry 정책이다.
+- Region/Country 필터 확장 계약의 open question은 없다. `countryKeys` 식별자, AND 조합, Trade 방향 적용, 현재 `selector/year` 합집합, 합계 재계산 규칙이 확정되었다.
+- 외부 모델 완료 동기화는 callback 방식으로 구현되어 있다. 남은 항목은 운영 인증 방식과 header/signature 규격이다. Job dispatch 재시도는 no-retry로 확정됐다.
 - `run_id` 생성 주체는 backend로 확정한다. 생성 포맷은 `yyyymmdd_hhmmss_XXXX` 이다. Kubernetes Job 연동 계약에서는 backend가 Job/pod에 전달한 `run_id` 를 완료/실패 callback path에 그대로 사용하는지만 확인한다.
-- 결과 payload와 결과 파일은 model pod가 S3/object storage에 저장/관리하며 backend 소관이 아니다. 1차 범위에서는 backend가 result pointer/reference도 저장하지 않는다.
-- Volumes/Trade Flows/Price 결과 데이터는 1차 mock에서 json seed 기반 고정 응답으로 처리했다. 2026-06-15 DB-backed 전환 완료 후에는 [mi-fundamental-model-output-result-persistence-design.md](../design-docs/gas/mi-fundamental-model-output-result-persistence-design.md)의 parsed result table/key/partition/index를 따른다.
-- 결과 파일 다운로드는 이번 1차 scope에서 제외한다. 단, status response의 `latestRun.runId`는 후속 결과 조회의 연결 키가 될 수 있다.
-- Volumes 필터의 Save 토글(사용자별 필터 저장)은 1차 scope에서 제외한다. 후속 구현 시 user preference 테이블 설계가 필요하다.
-- 삭제는 phase-1에서 case active-resource 제외를 위한 soft delete만 구현한다. 보존 기간, audit 조회, 복구 정책은 후속 정책 범위다.
-- timeout은 설계 문서에서 5분 가정이 있으나 아직 scheduler 임계 시간/주기가 확정되지 않아 미구현이다(`mi-scenario-model-execution-workflow-design.md` Open Questions와 동일 항목).
-- 운영 입력 파일명에는 `DEMAND`/`SUPPLY`/`TRADE` 키워드가 포함되는 것으로 확정한다. DB-backed run dispatch 전환 후 backend는 `SCNRCASE + caseId` 파일 목록에서 파일명 키워드로 입력 파일 역할을 매핑한다.
-- mock store는 1차 mock 단계의 동작이었다. real DB 전환(2026-06-19) 이후 case/run 상태는 DB에 영속되며, mock store 기반 reset 동작은 local/demo profile 전용으로만 유지된다.
-- `caseId`를 path에 노출하므로 후속 DB 전환 시 case 접근 정책과 권한 검증이 필수다. Price read의 active case/latest-run 검증과 `usr_no` 소유자 검증은 분리한다.
-- DB-backed update/delete 전환 시 predicate는 `case_id + usr_no ownership + del_yn = 'N'`을 포함해야 한다.
-- workflow/ERD draft/ERD draft의 `scenario_id` 상태 해석은 §7.2 Future DB Mapping Notes의 superseded note를 따른다.
+- 결과 payload는 model pod가 object storage와 parsed result table에 적재하고 backend가 조회한다. output/intermediate 파일은 상세 응답의 metadata를 기존 공통 File API에 전달해 다운로드한다.
+- Volumes/Trade Flows/Price 결과 데이터는 [mi-fundamental-model-output-result-persistence-design.md](../design-docs/gas/mi-fundamental-model-output-result-persistence-design.md)의 table/key/index 계약을 따른다.
+- Volumes 필터 Save 토글은 현재 제외한다. 후속 구현 시 user preference API/schema 설계가 필요하다.
+- 삭제는 case active-resource 제외를 위한 soft delete다. 보존 기간, audit 조회, 복구 정책은 후속 정책 범위다.
+- timeout scheduler는 구현됐고 10분 임계값/30초 polling을 사용한다. 운영 활성화 조건은 workflow design의 feature flag와 DBA index 검증 상태를 따른다.
+- 운영 입력 파일명에는 `DEMAND`/`SUPPLY`/`TRADE` 키워드가 포함되어야 하며, backend는 `SCNRCASE + caseId` 파일 목록에서 역할을 매핑한다.
+- `caseId` 접근 정책은 mutation의 `usr_no` ownership과 shared result read를 구분한다.
+- update/delete predicate는 `case_id + usr_no ownership + del_yn = 'N'`을 포함한다.
+- `scenarioId` 비노출과 `scnr_id` 저장 의미는 §7.2 Current real-DB Mapping을 따른다.
 
 ## 12. Exit Criteria / Handoff
 
 ### Contract Stability
 
-이 계약은 1차 mock 구현에는 충분히 안정적이다.
+기존 API 계약과 Region/Country 필터 확장 계약은 구현에 충분히 안정적이다.
 
-구현 가능 항목:
+Region/Country 필터 확장 implementation readiness: `ready`.
 
-- 목록 조회 controller (`non-blank keyword requires searchType` 검증, `createdAt` 내림차순 정렬)
-- multipart 업로드 controller
-- case 상세 조회 controller
-- case metadata 수정 controller
-- case soft delete controller
-- 파일 3개 필수 검증
-- in-memory case/run/file metadata store
-- `PENDING -> RUNNING` 상태 전이
-- `RUNNING` 중복 실행 차단
-- case 기준 status polling
-- callback endpoint를 통한 `RUNNING -> COMPLETED | FAILED` terminal 전이
-- 삭제된 case의 list 제외 및 detail/status/run/update/delete `404 RSC_NOT_FOUND` 처리
-- mock reset
-- `BaseResponse<T>` 래핑
-- Volumes 데이터 조회 (`COMPLETED` case 한정, segment `GLOBAL`|`LNG` 필수, `TRADE` 전달 시 400, types/regions 다중 필터, granularity MONTHLY/YEARLY)
-- Trade Flows 데이터 조회 (`COMPLETED` case 한정, selector/year 필수, unit/types/regions 선택 필터, fromCountries/toCountries 헤더 + sparse flows 응답, Total 행 항상 포함)
-- Price 데이터 조회 (`COMPLETED` case 한정, 차트 + Annual 테이블 + Monthly 테이블 단일 응답)
+- 포함 endpoint: `GET /cases/volumes/filter-options`, `GET /cases/{caseId}/volumes`, `GET /cases/{caseId}/volumes/trade`
+- 제외 endpoint: Price, Case CRUD/run/callback, 필터 Save
+- 신규/변경 DTO: `RegionFilterOption`, `VolumesSegmentFilterOptions.regions`, Volumes/Trade request의 `countryKeys`, 두 응답의 `appliedFilters.countryKeys`
+- query strategy: 기존 최신 완료 run의 Volumes bucket 및 Trade header/flow 조회를 재사용하고 application layer에서 옵션 합집합·필터·합계를 계산한다.
+- schema/ERD: 변경 없음, 추가 review 불필요
+- OpenAPI readiness: §3, §4, §5, §6의 parameter/schema/error/example 계획이 구현 입력으로 충분하다. 구현 후 generated `/v3/api-docs` focused test로 동기화를 검증한다.
+- 권장 검증: 관련 service focused test → generated OpenAPI focused test → `./gradlew compileJava -x test`
 
-**구현 완료 (2026-06 real DB 전환):**
+현재 real-DB 구현 baseline:
 
 - case CRUD/run/callback의 real DB 구현 (`tmd_mdl_scnrcasem`/`tmd_mdl_scnrcaseh`, 2026-06-05~06-08)
 - Kubernetes Job 실제 dispatch 연동 및 재시도 정책 확정(no-retry, 2026-06-12/06-21)
 - Volumes/Trade Flows/Price DB persistence implementation (canonical table/key/partition/index design은 `mi-fundamental-model-output-result-persistence-design.md`에 확정, 2026-06-15 rollout 완료)
+- 목록/상세/status와 owner-scoped update/delete/run, active-resource hiding
+- `SCNRCASE` input 파일명과 `SCNRCASEH` output/`SCNRCASEHI` intermediate 다운로드 metadata 조회
+- callback과 timeout/reconciliation의 terminal 상태 전이
+- `BaseResponse<T>` 응답 wrapper
+
+다음 구현 slice:
+
+- Volumes/Trade Region-Country 필터 확장 (`countryKeys`, 중첩 filter-options, Region AND Country, 선택 결과 subtotal/total 재계산)
 
 아직 안정적이지 않은 항목:
 
 - callback 운영 인증/서명 세부 정책 (재시도 정책은 no-retry로 확정됨, 2026-06-21)
-- 결과 파일 다운로드
 - timeout scheduler 운영 활성화 (구현은 2026-06-22 완료 — 10분 임계값/30초 polling, `SCENARIO`/`INDEPENDENT` 공통 적용. DBA index 검증 전까지 feature flag 기본 비활성. 상세는 `mi-scenario-model-execution-workflow-design.md` Open Questions 참고)
 - Volumes 필터 Save 기능 (user preference 저장)
 
@@ -1936,39 +1951,38 @@ phase 1 mock 시연 동선:
 - `RUNNING` 중복 실행 방지를 위한 transaction/lock/index 전략 검토 (workflow draft §5 conditional master update 기준)
 - `run_id` unique 제약과 조회 인덱스 검토
 - backend-generated `yyyymmdd_hhmmss_XXXX` 저장 길이(`VARCHAR(20)`)와 외부 모델 왕복 payload의 `run_id` 보존 규칙 검토
-- 목록 조회 query shape는 1차 mock canonical contract 기준으로 scenario scope를 전제하지 않는다. `scenario_id` 상태는 §7.2 Future DB Mapping Notes의 superseded note를 기준으로 해석한다.
+- 목록 조회 query shape는 scenario scope를 전제하지 않는다. `scenarioId` 비노출과 `scnr_id` 저장 의미는 §7.2 Current real-DB Mapping을 기준으로 해석한다.
 - `ASSIGNEE_NAME` 검색 JOIN 경계는 `tmd_mdl_scnrcasem.usr_no = tmd_usrm.usr_no`, 표시 컬럼은 `tmd_usrm.usr_nm`으로 확정한다. DDL review에서는 JOIN 양측 인덱스 커버리지를 확인한다
 - callback compare-and-set update 조건과 terminal overwrite 방지 전략 검토
 - `tmd_mdl_scnrcasem.last_run_id` 컬럼의 invariant 와 application-validated 운용 방식 검토. case 최신 상태 동기화 시 `last_run_id = :run_id` 조건이 race condition 과 late callback 에 대해 충분한지 확인
-- `req_param_json`, `rslt_ref_json` 제거는 workflow draft Closed Decisions 에서 확정되었다. 결과 조회/download spec 이 별도로 확정되면 그 시점의 컬럼/테이블 도입을 별도 review 로 다룬다.
-- DB-backed update predicate는 `case_id + usr_no ownership + del_yn = 'N'` 조건으로 active 소유 case만 갱신하고, `case_titl_nm`, `case_expn`, `mod_*` 컬럼만 변경한다.
-- DB-backed delete predicate는 `case_id + usr_no ownership + del_yn = 'N'` 조건으로 active 소유 case만 soft delete하고, `del_yn = 'Y'`, `mod_*` 컬럼만 변경한다.
+- `req_param_json`, `rslt_ref_json` 미도입은 workflow draft Closed Decisions에서 확정되었다. output/intermediate 다운로드 metadata는 기존 `tcm_filel` 관계를 사용하므로 추가 컬럼/테이블이 필요 없다. 향후 별도 result reference 저장 구조를 도입할 때만 schema review를 수행한다.
+- DB-backed update predicate는 `case_id + usr_no ownership + del_yn = 'N' + exec_type_cd = 'INDEPENDENT'` 조건으로 active 소유 독립실행 case만 갱신하고, `case_titl_nm`, `case_expn`, `mod_*` 컬럼만 변경한다.
+- DB-backed delete predicate는 `case_id + usr_no ownership + del_yn = 'N' + exec_type_cd = 'INDEPENDENT'` 조건으로 active 소유 독립실행 case만 soft delete하고, `del_yn = 'Y'`, `mod_*` 컬럼만 변경한다.
 
 ### Input for `design-consistency-review`
 
-- 이 feature spec과 `scenario-case-execution-workflow-design-draft.md`의 용어/path/model 정합성 확인. 특히 `scenario_id` 상태 진술이 §7.2 Future DB Mapping Notes와 일치하는지 확인
+- 이 feature spec과 `scenario-case-execution-workflow-design-draft.md`의 용어/path/model 정합성 확인. 특히 `scenarioId` 비노출과 `scnr_id` 저장 의미가 §7.2 Current real-DB Mapping과 일치하는지 확인
 - Notion 공유 문서가 canonical 계약처럼 읽히지 않는지 확인
 - 기존 `ScenarioModelExecution` API와 naming/path/scope가 혼동되지 않는지 확인. MI Fundamental Model은 Next Gen 하위 API가 아니다
-- 결과 조회/download 제외 범위와 edit/delete phase-1 soft-delete 범위가 feature spec과 design doc에서 일관되는지 확인
+- 결과 조회/download 제외 범위와 edit/delete soft-delete 범위가 feature spec과 design doc에서 일관되는지 확인
 - callback path가 Design callback의 canonical-id 중심 구조와 일관되는지 확인
 
 ### Input for `spring-api-implementation`
 
-- Controller path family: `FundamentalModelCaseController` → `/api/v1/mi/fundamental-model/cases` (list / upload / detail / update / delete / run / status / volumes / volumes/trade / price / reset). `FundamentalModelRunController` → `/api/v1/mi/fundamental-model/runs` (callback 전용).
-- List: `GET`, query params `searchType` (enum `TITLE`|`ASSIGNEE_NAME`) + `keyword` (`keyword` null/blank이면 전체 반환, non-blank이면 `searchType` 필수), 결과 `FundamentalModelCaseListRes`, `createdAt` 내림차순
+- Controller path family: `FundamentalModelCaseController` → `/api/v1/mi/fundamental-model/cases` (list/detail/update/delete/status/volumes/volumes-trade/price), `FundamentalModelCaseDedicatedController` → 같은 base path의 upload/run, `FundamentalModelRunDedicatedController` → `/api/v1/mi/fundamental-model/runs` callback.
+- List: `GET`, query params `searchType` (enum `TITLE`|`ASSIGNEE_NAME`) + `keyword` (`keyword` null/blank이면 검색 없음, non-blank이면 `searchType` 필수). 변경된 `miBase + cases`, `execType`, `totalCount`, 검색 범위는 enhancement feature spec §3을 따른다.
 - Upload: `POST`, multipart, `title`, `description`, `files` exactly 3
-- Detail: `GET /{caseId}`, returns `FundamentalModelCaseDetailRes`
-- Update: `PATCH /{caseId}`, request `FundamentalModelCaseUpdateReq(title, description)`, returns latest `FundamentalModelCaseDetailRes`
-- Delete: `DELETE /{caseId}`, soft delete, returns `BaseResponse<Void>` 200 OK
-- Run: `POST /{caseId}/runs`, returns `202 Accepted`
-- Status: `GET /{caseId}/status`, case 기준 조회
-- Volumes: `GET /{caseId}/volumes`, query params `segment`(`GLOBAL`|`LNG` 필수, `TRADE` 전달 시 400) + `types`(선택) + `regions`(선택) + `granularity`(선택, 기본 `MONTHLY`) + `periods`(선택, `MONTHLY`는 `yyyy-MM`, `YEARLY`는 `yyyy`). `COMPLETED` case 한정. returns `FundamentalModelVolumesRes`
-- Trade Flows: `GET /{caseId}/volumes/trade`, query params `selector`(필수) + `year`(필수, 2023~2030) + `unit`(선택, 기본 `MTPA`) + `types`(선택) + `regions`(선택). `COMPLETED` case 한정. returns `FundamentalModelTradeFlowsRes`
-- Price: `GET /{caseId}/price`, 쿼리 파라미터 없음. `COMPLETED` case 한정. returns `FundamentalModelPriceRes` (차트 + Annual 테이블 + Monthly 테이블 동시 반환)
+- Detail: `GET /{caseId}`, active `INDEPENDENT | MI_BASE`, returns non-null `execType`을 포함한 `FundamentalModelCaseDetailRes`
+- Update: `PATCH /{caseId}`, active `INDEPENDENT`만 허용. request `FundamentalModelCaseUpdateReq(title, description)`, returns latest `FundamentalModelCaseDetailRes`
+- Delete: `DELETE /{caseId}`, active `INDEPENDENT`만 soft delete, returns `BaseResponse<Void>` 200 OK
+- Run: `POST /{caseId}/runs`, active `INDEPENDENT`의 `PENDING` 최초 실행 또는 `FAILED` 모델 호출 재시도만 허용하고 `COMPLETED`는 `409 BIZ_RULE_VIOLATION`, returns `202 Accepted` on success. `MI_BASE | SCENARIO`는 `404 RSC_NOT_FOUND`
+- Status: `GET /{caseId}/status`, active `INDEPENDENT | MI_BASE` case 기준 조회
+- Filter options: `GET /volumes/filter-options`, `caseId`를 전달하면 active `INDEPENDENT | MI_BASE`의 결과 범위를 조회한다. query params `caseId`(선택) + TRADE 조회 범위용 `selector`/`year`(선택 pair). `regions`는 `RegionFilterOption`으로 변경하고 Country child는 `FilterOption`을 재사용한다. TRADE는 현재 `selector/year`의 From/To 합집합이다.
+- Volumes: `GET /{caseId}/volumes`, active `INDEPENDENT | MI_BASE` 중 `COMPLETED` case 한정. query params `segment`(`GLOBAL`|`LNG` 필수, `TRADE` 전달 시 400) + `types`(선택) + `regions`(선택) + `countryKeys`(선택) + `granularity`(선택, 기본 `MONTHLY`) + `periods`(선택, `MONTHLY`는 `yyyy-MM`, `YEARLY`는 `yyyy`). Country 선택 시 subtotal/total을 재계산한다. returns `FundamentalModelVolumesRes`
+- Trade Flows: `GET /{caseId}/volumes/trade`, active `INDEPENDENT | MI_BASE` 중 `COMPLETED` case 한정. query params `selector`(필수) + `year`(필수, 2023~2030) + `unit`(선택, 기본 `MTPA`) + `types`(선택) + `regions`(선택) + `countryKeys`(선택). `types`에 포함된 방향에 동일한 Region/Country 목록을 적용하고 Country 선택 시 subtotal/total을 재계산한다. returns `FundamentalModelTradeFlowsRes`
+- Price: `GET /{caseId}/price`, active `INDEPENDENT | MI_BASE` 중 `COMPLETED` case 한정. 쿼리 파라미터 없음. returns `FundamentalModelPriceRes` (차트 + Annual 테이블 + Monthly 테이블 동시 반환)
 - Callback: `POST /api/v1/mi/fundamental-model/runs/{runId}/callback`, 외부 모델 전용
-- Reset: `POST /reset`, `FundamentalModelMockProperties` 의 per-API flag (`mi.fundamental-model.mock.fundamental-model-cases.api.reset`) 로 활성화. controller 에서 직접 확인. `@Profile` 분기는 사용하지 않음
-- Service signatures: `scenarioId` 없이 `caseId` 또는 `runId` 단독 식별자로 처리한다. `getVolumes(caseId, request)`, `getPrice(caseId)` 추가
-- Mock 활성화: 신규 `FundamentalModelCaseServiceDelegator` (`@Service @Primary`) + `FundamentalModelMockProperties` 의 per-API flag (`get-volumes`, `get-trade-flows`, `get-price` flag 추가). 1차에는 모든 flag `true` 기본값, real 구현 추가 시 개별 flag `false` 로 전환. `reset` flag 는 Delegator 가 아닌 controller 에서 확인
+- Service: `FundamentalModelCaseService` + `FundamentalModelCaseServiceImpl` 단일 real 구현. `scenarioId` 없이 `caseId` 또는 `runId`로 식별하며 mock delegator/reset method는 없다.
 - Active-resource rule: `delYn = Y` case는 list에서 제외하고 detail/status/run/update/delete/volumes/price에서 `RSC_NOT_FOUND` 처리
 - Data state rule: volumes/price는 `COMPLETED` case만 허용. `PENDING`/`RUNNING`이면 `409 BIZ_RULE_VIOLATION`, `FAILED`이면 `404 RSC_NOT_FOUND`
 - 신규 enum: `FundamentalModelSegment` (`GLOBAL`, `LNG`, `TRADE` — `TRADE`는 `/volumes`에서 불허), `FundamentalModelDataType` (`DEMAND`, `PRODUCTION`, `LNG_IMPORTS`, `LNG_EXPORTS`, `PIPELINE_IMPORTS`, `PIPELINE_EXPORTS`), `FundamentalModelRegion` (`ASIA`, `EUROPE`, `NORTH_AMERICA`, `MIDDLE_EAST`, `AUSTRALIA`, `RUSSIA`, `AFRICA`, `SOUTH_AMERICA`), `FundamentalModelGranularity` (`MONTHLY`, `YEARLY`), `FundamentalModelVolumeUnit` (`MTPA`), `VolumesRowKind` (`COUNTRY`, `REGION_SUBTOTAL`, `TYPE_TOTAL`), `PriceSeriesType` (`BASE_CASE`, `USER_ADJUSTED`), `TradeFlowSelector` (`LNG`, `PNG`), `TradeFlowUnit` (`MTPA`, `BCM`), `TradeFlowDirection` (`TO_COUNTRY`, `FROM_COUNTRY`), `TradeCountryHeaderKind` (`REGION_SUBTOTAL`, `COUNTRY`, `GRAND_TOTAL`)

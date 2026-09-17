@@ -62,11 +62,9 @@ public class CmeBenchmarkServiceImpl implements CmeBenchmarkService {
         return CmeBenchmarkGraphRes.of(indexName, periodUnit, dates, values).clip(window);
     }
 
-    /**
-     * MI Base 가장 큰 기간 조회
-     */
+    /** current MI Base 가격 결과의 가장 큰 기간 조회. */
     private String getMiBaseEndResult(IndexName indexName, GraphPeriodUnit periodUnit) {
-        return scenarioCaseRepository.findLatestMiBasePrices(indexName, periodUnit.getDbUnit()).stream()
+        return scenarioCaseRepository.findCurrentMiBasePrices(indexName, periodUnit.getDbUnit()).stream()
             .map(MiBasePriceRow::periodKey)
             .max(Comparator.naturalOrder())
             .map(periodUnit::formatPeriodKey)
