@@ -13,6 +13,10 @@ import com.sk.domain.mi.dto.response.nextgen.GroupModelExecutionRes;
 import com.sk.domain.mi.dto.response.nextgen.GroupModelParamCompareRes;
 import com.sk.domain.mi.dto.response.nextgen.GroupModelParamProposalItemRes;
 import com.sk.domain.mi.dto.response.nextgen.GroupModelParamProposalsRes;
+import com.sk.common.utils.DateUtil;
+import com.sk.domain.mi.service.nextgen.execution.GroupModelInputFilesArchive;
+import com.sk.domain.mi.service.nextgen.execution.GroupModelInputFilesArchiver;
+import com.sk.domain.mi.service.nextgen.execution.GroupModelInputFilesArchiver.ScenarioInputFiles;
 import com.sk.domain.mi.service.nextgen.paramproposal.ModelParamCompareMerger;
 import com.sk.domain.mi.service.nextgen.paramproposal.ModelParamCompareMerger.CompareSource;
 import com.sk.domain.mi.service.nextgen.support.ScenarioProbabilityAllocator;
@@ -63,6 +67,7 @@ public class ModelParamProposalGroupServiceImpl implements ModelParamProposalGro
     private final ModelParamProposalService modelParamProposalService;
     private final ModelParamCompareMerger modelParamCompareMerger;
     private final ScenarioModelExecutionService scenarioModelExecutionService;
+    private final GroupModelInputFilesArchiver groupModelInputFilesArchiver;
 
     @Override
     public GroupModelParamProposalsRes getGroupProposals(Long scenarioGroupId) {
@@ -127,6 +132,46 @@ public class ModelParamProposalGroupServiceImpl implements ModelParamProposalGro
             results.add(executeSingle(item));
         }
         return GroupModelExecutionRes.of(scenarioGroupId, results);
+    }
+
+    /**
+     * 실행 완료 시나리오들의 실행 입력 파일(병합본)을 시나리오별 폴더 구조 zip으로 내린다.
+     * 파일 메타가 불완전한 시나리오(role 누락·중복)는 경고 로그 후 제외한다.
+     * 스토리지 IO가 길어질 수 있어 트랜잭션을 걸지 않는다.
+     */
+    @Override
+    @Transactional(propagation = Propagation.NOT_SUPPORTED)
+    public GroupModelInputFilesArchive downloadInputFilesArchive(Long scenarioGroupId) {
+        MiScenarioGroup group = findGroup(scenarioGroupId);
+
+        List<ScenarioInputFiles> sources = new ArrayList<>();
+        for (MiScenario scenario : findGroupScenarios(scenarioGroupId)) {
+            CurrentModelParamProposalRes current = modelParamProposalService.getCurrentProposal(scenario.getScenarioId());
+
+            if (current.executionInputFiles() == null) continue;
+
+            if (!current.executionInputFiles().complete()) {
+                log.warn("Skip scenario with incomplete execution input files in group archive. scenarioGroupId={}, scenarioId={}, missingRoles={}", scenarioGroupId, scenario.getScenarioId(), current.executionInputFiles().missingFileRoles());
+                continue;
+            }
+
+            sources.add(new ScenarioInputFiles(
+                scenario.getDisplayOrder(),
+                scenario.getTitle(),
+                current.executionInputFiles().files()
+            ));
+
+        }
+
+        if (sources.isEmpty()) {
+            throw AppErrorException.of(ResultCode.Error.RSC_NOT_FOUND, "실행 완료된 시나리오의 인풋 파일이 없습니다. scenarioGroupId: %d".formatted(scenarioGroupId));
+        }
+
+        String fileName = "인풋파일_%s_%s.zip".formatted(
+            GroupModelInputFilesArchiver.sanitizeFileName(group.getTitle()),
+            DateUtil.currentYYYYMMDDHHMMSS()
+        );
+        return new GroupModelInputFilesArchive(fileName, groupModelInputFilesArchiver.archive(sources));
     }
 
     private GroupModelExecutionItemRes executeSingle(GroupModelExecutionItemReq item) {

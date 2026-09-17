@@ -4,6 +4,7 @@ import com.sk.domain.mi.dto.request.nextgen.GroupModelExecutionReq;
 import com.sk.domain.mi.dto.response.nextgen.GroupModelExecutionRes;
 import com.sk.domain.mi.dto.response.nextgen.GroupModelParamCompareRes;
 import com.sk.domain.mi.dto.response.nextgen.GroupModelParamProposalsRes;
+import com.sk.domain.mi.service.nextgen.execution.GroupModelInputFilesArchive;
 
 public interface ModelParamProposalGroupService {
 
@@ -12,5 +13,7 @@ public interface ModelParamProposalGroupService {
     GroupModelParamCompareRes getGroupCompare(Long scenarioGroupId);
 
     GroupModelExecutionRes executeGroup(Long scenarioGroupId, GroupModelExecutionReq request);
+
+    GroupModelInputFilesArchive downloadInputFilesArchive(Long scenarioGroupId);
 
 }

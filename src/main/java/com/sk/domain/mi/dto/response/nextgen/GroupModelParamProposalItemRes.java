@@ -45,6 +45,9 @@ public record GroupModelParamProposalItemRes(
     @Schema(description = "Backend 요청 이력 ID. 요청 전에는 null", example = "51001", nullable = true)
     Long execPrepId,
 
+    @Schema(description = "실행에 사용된 입력 파일 3개(DEMAND/SUPPLY/TRADE) 메타", nullable = true)
+    ModelExecutionInputFilesRes executionInputFiles,
+
     @Schema(description = "실패 사유. 실패/재시도 상태 외에는 null", nullable = true)
     String failureReason,
 
@@ -75,6 +78,7 @@ public record GroupModelParamProposalItemRes(
             current.currentState(),
             current.modelParamProposalId(),
             current.execPrepId(),
+            current.executionInputFiles(),
             current.failureReason(),
             current.requestedAt(),
             current.completedAt(),
