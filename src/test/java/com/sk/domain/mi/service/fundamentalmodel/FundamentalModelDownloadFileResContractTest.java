@@ -21,7 +21,8 @@ class FundamentalModelDownloadFileResContractTest {
         FundamentalModelCaseFilesRes response = new FundamentalModelCaseFilesRes(
             List.of(new FundamentalModelFileNameRes("input_1.xlsx")),
             List.of(new FundamentalModelDownloadFileRes(2001L, "output.xlsx", 54321L)),
-            List.of(new FundamentalModelDownloadFileRes(3001L, "step1_demand_curve.csv", 1234L))
+            List.of(new FundamentalModelDownloadFileRes(3001L, "step1_demand_curve.csv", 1234L)),
+            List.of(new FundamentalModelDownloadFileRes(4001L, "trade_flow_result.xlsx", 67890L))
         );
 
         JsonNode json = objectMapper.valueToTree(response);
@@ -33,6 +34,12 @@ class FundamentalModelDownloadFileResContractTest {
             3001L,
             "step1_demand_curve.csv",
             1234L
+        );
+        assertDownloadMetadata(
+            json.path("tradeOutput").path(0),
+            4001L,
+            "trade_flow_result.xlsx",
+            67890L
         );
     }
 
@@ -54,23 +61,29 @@ class FundamentalModelDownloadFileResContractTest {
     }
 
     @Test
-    void exposesIntermediateInOpenApiSchema() {
+    void exposesDownloadMetadataArraysInOpenApiSchema() {
         var schemas = ModelConverters.getInstance()
             .read(FundamentalModelCaseFilesRes.class);
         Schema<?> schema = schemas.get("FundamentalModelCaseFilesRes");
         Schema<?> inputSchema = (Schema<?>) schema.getProperties().get("input");
         Schema<?> outputSchema = (Schema<?>) schema.getProperties().get("output");
         Schema<?> intermediateSchema = (Schema<?>) schema.getProperties().get("intermediate");
+        Schema<?> tradeOutputSchema = (Schema<?>) schema.getProperties().get("tradeOutput");
 
         assertThat(schemas).containsKey("FundamentalModelCaseFilesRes");
         assertThat(schema.getProperties())
-            .containsKeys("input", "output", "intermediate");
+            .containsKeys("input", "output", "intermediate", "tradeOutput");
+        assertThat(schema.getRequired()).contains("tradeOutput");
         assertThat(inputSchema.getItems().get$ref())
             .isEqualTo("#/components/schemas/FundamentalModelFileNameRes");
         assertThat(outputSchema.getItems().get$ref())
             .isEqualTo("#/components/schemas/FundamentalModelDownloadFileRes");
         assertThat(intermediateSchema.getItems().get$ref())
             .isEqualTo("#/components/schemas/FundamentalModelDownloadFileRes");
+        assertThat(tradeOutputSchema.getItems().get$ref())
+            .isEqualTo("#/components/schemas/FundamentalModelDownloadFileRes");
+        assertThat(tradeOutputSchema.getDescription())
+            .contains("Trade Flow", "같은 run_seq", "빈 배열");
     }
 
     private static void assertFileNameOnly(JsonNode file, String expectedFileName) {

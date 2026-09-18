@@ -118,6 +118,7 @@ public class FundamentalModelCaseServiceImpl implements FundamentalModelCaseServ
     private static final String FILE_RELATION_SCENARIO_CASE = "SCNRCASE";
     private static final String FILE_RELATION_SCENARIO_CASE_HISTORY = "SCNRCASEH";
     private static final String FILE_RELATION_SCENARIO_CASE_HISTORY_INTERMEDIATE = "SCNRCASEHI";
+    private static final String FILE_RELATION_SCENARIO_CASE_HISTORY_TRADE_OUTPUT = "SCNRCASEHTF";
     private static final String MI_BASE_UNIQUE_CONSTRAINT = "tmd_mdl_scnrcasem_uq02";
     private static final String CALLBACK_ACTOR = "SYSTEM";
     private static final String JOB_SUBMIT_FAILURE_REASON = "JOB_SUBMIT_FAILED";
@@ -255,6 +256,7 @@ public class FundamentalModelCaseServiceImpl implements FundamentalModelCaseServ
         ScenarioCaseRunHistory latestRunHistory = findLatestRunHistory(caseRow.lastRunId()).orElse(null);
         List<FundamentalModelDownloadFileRes> outputFiles = findOutputFiles(latestRunHistory);
         List<FundamentalModelDownloadFileRes> intermediateFiles = findIntermediateFiles(latestRunHistory);
+        List<FundamentalModelDownloadFileRes> tradeOutputFiles = findTradeOutputFiles(latestRunHistory);
         FundamentalModelRunStatusRes latestRun = latestRunHistory == null ? null : toLatestRunResponse(latestRunHistory);
 
         return new FundamentalModelCaseDetailRes(
@@ -265,7 +267,7 @@ public class FundamentalModelCaseServiceImpl implements FundamentalModelCaseServ
             caseRow.execType(),
             caseRow.assigneeName(),
             caseRow.assigneeUserNo(),
-            new FundamentalModelCaseFilesRes(inputFiles, outputFiles, intermediateFiles),
+            new FundamentalModelCaseFilesRes(inputFiles, outputFiles, intermediateFiles, tradeOutputFiles),
             latestRun,
             caseRow.createdAt(),
             caseRow.updatedAt()
@@ -2556,6 +2558,18 @@ public class FundamentalModelCaseServiceImpl implements FundamentalModelCaseServ
         return findDownloadFiles(
             latestRunHistory.getRunSeq(),
             FILE_RELATION_SCENARIO_CASE_HISTORY_INTERMEDIATE
+        );
+    }
+
+    private List<FundamentalModelDownloadFileRes> findTradeOutputFiles(
+        ScenarioCaseRunHistory latestRunHistory
+    ) {
+        if (latestRunHistory == null || latestRunHistory.getRunSeq() == null) {
+            return List.of();
+        }
+        return findDownloadFiles(
+            latestRunHistory.getRunSeq(),
+            FILE_RELATION_SCENARIO_CASE_HISTORY_TRADE_OUTPUT
         );
     }
 
