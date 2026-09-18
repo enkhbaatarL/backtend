@@ -34,9 +34,14 @@ public class ExceptionHandlerFilter extends OncePerRequestFilter implements Orde
 
     }
 
+    /**
+     * HttpLoggingFilter 안쪽에 둔다.
+     * 바깥에 두면 HttpLoggingFilter의 finally(응답 로깅, MDC 정리)가 먼저 끝난 뒤에 에러 로그와 에러 본문이 만들어져
+     * 에러 로그의 uuid가 유실되고 res 로그의 body가 빈다.
+     */
     @Override
     public int getOrder() {
-        return Ordered.HIGHEST_PRECEDENCE;
+        return Ordered.HIGHEST_PRECEDENCE + 1;
     }
 
 }

@@ -45,70 +45,119 @@ public class HttpLoggingFilter extends OncePerRequestFilter implements Ordered {
 
     }
 
+    /**
+     * 이 필터는 최외곽이라 여기서 나간 예외는 아무도 처리하지 못한다.
+     * 따라서 로깅·MDC 작업은 모두 예외를 삼켜 요청 처리에 영향을 주지 않고,
+     * 밖으로 나가는 예외는 filterChain 에서 올라온 것(안쪽 ExceptionHandlerFilter 가 이미 처리한 것)만 남긴다.
+     * MDC 와 데이터소스 키 정리는 어떤 경로로 끝나든 실행되도록 최상위 finally 에 둔다.
+     */
     @Override
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain) throws ServletException, IOException {
-
-        Enumeration<String> headerNames = request.getHeaderNames();
 
         if (passUriStartsWith.stream().anyMatch(pass -> request.getRequestURI().startsWith(pass))) {
             filterChain.doFilter(request, response);
             return;
         }
 
-        // 26.07.29 취약점 진단 수정, '표준 라이브러리의 널 반환 값 역참조-102109,102110'
+        try {
+            runQuietly("request header logging", () -> logHeaders(request));
+
+            String contentType = request.getContentType();
+            String requestUri = request.getRequestURI();
+
+            if (isMultipartRequest(contentType) || isDownloadResponse(requestUri)) {
+                doFilterWithoutCaching(request, response, filterChain);
+                return;
+            }
+
+            CustomContentCachingRequestWrapper cachingRequestWrapper = cacheRequest(request);
+
+            // 요청 본문 캐싱은 로깅 목적이므로, 실패해도 요청 자체는 캐싱 없이 진행한다
+            if (cachingRequestWrapper == null) {
+                doFilterWithoutCaching(request, response, filterChain);
+                return;
+            }
+
+            if (isStreamResponse(requestUri)) {
+                runQuietly("MDC initialize", () -> initializeMDC(cachingRequestWrapper));
+                runQuietly("request logging", () -> logRequest(request));
+
+                try {
+                    filterChain.doFilter(cachingRequestWrapper, response);
+                } finally {
+                    runQuietly("response logging", () -> logResponse(response));
+                }
+                return;
+            }
+
+            CustomContentCachingResponseWrapper cachingResponseWrapper = new CustomContentCachingResponseWrapper(response);
+
+            runQuietly("MDC initialize", () -> initializeMDC(cachingRequestWrapper));
+            runQuietly("request logging", () -> logRequest(cachingRequestWrapper));
+
+            try {
+                filterChain.doFilter(cachingRequestWrapper, cachingResponseWrapper);
+            } finally {
+                // 응답 로깅이 실패해도 본문 전송은 반드시 수행한다
+                runQuietly("response logging", () -> logResponse(cachingResponseWrapper));
+                cachingResponseWrapper.copyBodyToResponse();
+            }
+
+        } finally {
+            MDCUtil.clear();
+            DataSourceContextHolder.clearDataSourceKey();
+        }
+
+    }
+
+    /**
+     * 요청/응답 본문 캐싱 없이 처리한다. multipart·다운로드 응답과 본문 캐싱 실패가 같은 경로를 쓴다.
+     */
+    private void doFilterWithoutCaching(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain)
+        throws ServletException, IOException {
+
+        runQuietly("MDC initialize", () -> initializeMDC(request));
+        runQuietly("request logging", () -> logRequest(request));
+
+        try {
+            filterChain.doFilter(request, response);
+        } finally {
+            runQuietly("response logging", () -> logResponse(response));
+        }
+    }
+
+    /**
+     * @return 본문을 캐싱한 request wrapper, 캐싱에 실패하면 null
+     */
+    private CustomContentCachingRequestWrapper cacheRequest(HttpServletRequest request) {
+        try {
+            return new CustomContentCachingRequestWrapper(request);
+        } catch (IOException e) {
+            log.warn("request body caching failed, proceeding without caching : {}", e.getMessage());
+            return null;
+        }
+    }
+
+    /**
+     * 로깅 실패가 요청 처리나 컨텍스트 정리를 막지 않도록 예외를 삼킨다.
+     */
+    private void runQuietly(String action, Runnable task) {
+        try {
+            task.run();
+        } catch (Exception e) {
+            log.warn("http logging failed - {} : {}", action, e.getMessage());
+        }
+    }
+
+    // 26.07.29 취약점 진단 수정, '표준 라이브러리의 널 반환 값 역참조-102109,102110'
+    private void logHeaders(HttpServletRequest request) {
+        Enumeration<String> headerNames = request.getHeaderNames();
+
         while (headerNames != null && headerNames.hasMoreElements()) {
             String headerName = headerNames.nextElement();
             String headerValue = request.getHeader(headerName);
             log.debug("Header: {}={}", headerName, headerValue);
         }
-
-        String contentType = request.getContentType();
-        String requestUri = request.getRequestURI();
-
-        if (isMultipartRequest(contentType) || isDownloadResponse(requestUri)) {
-
-            initializeMDC(request);
-            logRequest(request);
-
-            try {
-                filterChain.doFilter(request, response);
-            } finally {
-                logResponse(response);
-                MDCUtil.clear();
-                DataSourceContextHolder.clearDataSourceKey();
-            }
-
-        } else if (isStreamResponse(requestUri)){
-            CustomContentCachingRequestWrapper cachingRequestWrapper = new CustomContentCachingRequestWrapper(request);
-            initializeMDC(cachingRequestWrapper);
-            logRequest(request);
-
-            try {
-                filterChain.doFilter(cachingRequestWrapper, response);
-            } finally {
-                logResponse(response);
-                MDCUtil.clear();
-                DataSourceContextHolder.clearDataSourceKey();
-            }
-        } else {
-
-            CustomContentCachingRequestWrapper cachingRequestWrapper = new CustomContentCachingRequestWrapper(request);
-            CustomContentCachingResponseWrapper cachingResponseWrapper = new CustomContentCachingResponseWrapper(response);
-
-            initializeMDC(cachingRequestWrapper);
-            logRequest(cachingRequestWrapper);
-
-            try {
-                filterChain.doFilter(cachingRequestWrapper, cachingResponseWrapper);
-            } finally {
-                logResponse(cachingResponseWrapper);
-                cachingResponseWrapper.copyBodyToResponse();
-                MDCUtil.clear();
-                DataSourceContextHolder.clearDataSourceKey();
-            }
-
-        }
-
     }
 
     /**
@@ -232,8 +281,13 @@ public class HttpLoggingFilter extends OncePerRequestFilter implements Ordered {
         return requestUri.matches(".*/stream/?(\\\\?.*)?$");
     }
 
+    /**
+     * 최외곽에 둔다.
+     * ExceptionHandlerFilter보다 바깥이어야 에러 응답이 response wrapper에 담긴 뒤 이 필터의 finally가 실행되어,
+     * 에러 로그에 uuid가 남고 res 로그의 body에 에러 본문이 기록된다.
+     */
     @Override
     public int getOrder() {
-        return Ordered.HIGHEST_PRECEDENCE + 1;
+        return Ordered.HIGHEST_PRECEDENCE;
     }
 }
