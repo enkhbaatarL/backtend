@@ -5,5 +5,6 @@ public enum AgentModelParamProposalStatus {
     PROCESSING,
     PROPOSED,
     CONFIRMED,
-    FAILED
+    FAILED,
+    ABSTAINED
 }

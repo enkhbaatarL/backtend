@@ -11,9 +11,9 @@ import lombok.RequiredArgsConstructor;
 @RequiredArgsConstructor
 public enum ModelInputFile {
 
-    DEMAND("Demand", "복호화_(Base)_Demand_Model_Input.xlsm"),
-    SUPPLY("Supply", "복호화_(Base)_Supply_Model_Input.xlsm"),
-    TRADE("Trade", "복호화_(Base)_Trade_Model_Input.xlsm");
+    DEMAND("Demand", "Demand_v5_플랫폼입력_최종.xlsm"),
+    SUPPLY("Supply", "Supply_v14_플랫폼입력_최종.xlsm"),
+    TRADE("Trade", "복호화_Trade_v11_플랫폼입력_최종.xlsm");
 
     private final String code;
     private final String basecaseFileName;

@@ -86,7 +86,8 @@ public class ModelParamExecutionCoordinator {
                 agentProposal.getConfirmationParameters(),
                 request.confirmationParameters()
             );
-            case PROCESSING, FAILED -> throw AppHttpStatusException.of(
+            // ABSTAINED(보류)는 실패와 동일 처리 — 범위 이탈 값이므로 실행을 허용하지 않는다.
+            case PROCESSING, FAILED, ABSTAINED -> throw AppHttpStatusException.of(
                 HttpStatus.CONFLICT,
                 ResultCode.Error.BIZ_RULE_VIOLATION,
                 "Agent proposal must be PROPOSED or CONFIRMED for execution. modelParamProposalId: %d"

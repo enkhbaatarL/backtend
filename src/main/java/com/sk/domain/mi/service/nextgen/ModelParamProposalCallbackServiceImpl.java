@@ -122,8 +122,9 @@ public class ModelParamProposalCallbackServiceImpl implements ModelParamProposal
         }
         if (data.status() != null
             && data.status() != AgentModelParamProposalStatus.PROPOSED
-            && data.status() != AgentModelParamProposalStatus.FAILED) {
-            throw AppErrorException.of(ResultCode.Error.REQ_INVALID_PARAMETER, "callback data.status must be PROPOSED or FAILED.");
+            && data.status() != AgentModelParamProposalStatus.FAILED
+            && data.status() != AgentModelParamProposalStatus.ABSTAINED) {
+            throw AppErrorException.of(ResultCode.Error.REQ_INVALID_PARAMETER, "callback data.status must be PROPOSED, FAILED or ABSTAINED.");
         }
         if (data.status() == AgentModelParamProposalStatus.PROPOSED && request.status() != AgentCallbackResult.SUCCESS) {
             throw AppErrorException.of(ResultCode.Error.REQ_INVALID_PARAMETER, "PROPOSED callback must use success status.");
@@ -131,6 +132,7 @@ public class ModelParamProposalCallbackServiceImpl implements ModelParamProposal
         if (data.status() == AgentModelParamProposalStatus.FAILED && request.status() != AgentCallbackResult.FAILURE) {
             throw AppErrorException.of(ResultCode.Error.REQ_INVALID_PARAMETER, "FAILED callback must use error/failure status.");
         }
+        // ABSTAINED(보류)는 envelope status 짝을 강제하지 않는다 — Agent 계약에 success/failure 어느 쪽인지 명시가 없어 둘 다 수용한다.
     }
 
     private AgentModelParamProposalStatus resolveSignalStatus(ModelParamProposalCallbackReq request) {
@@ -147,7 +149,8 @@ public class ModelParamProposalCallbackServiceImpl implements ModelParamProposal
         AgentModelParamProposalStatus signalStatus,
         String message
     ) {
-        if (signalStatus != AgentModelParamProposalStatus.FAILED) {
+        if (signalStatus != AgentModelParamProposalStatus.FAILED
+            && signalStatus != AgentModelParamProposalStatus.ABSTAINED) {
             throw AppErrorException.of(ResultCode.Error.REQ_INVALID_PARAMETER, "modelParamProposalId is required for success callback.");
         }
 
@@ -161,7 +164,7 @@ public class ModelParamProposalCallbackServiceImpl implements ModelParamProposal
                 preparation.getScenarioId(),
                 resolveScenarioGroupId(preparation.getScenarioId()),
                 null,
-                AgentModelParamProposalStatus.FAILED.name()
+                signalStatus.name()
             ));
         }
     }
@@ -228,7 +231,8 @@ public class ModelParamProposalCallbackServiceImpl implements ModelParamProposal
                     publishAfterCommit(ModelParamProposalSseEvent.of(scenarioId, scenarioGroupId, modelParamProposalId, agentStatus.name()));
                 }
             }
-            case FAILED -> {
+            // ABSTAINED(보류)는 실패와 동일 처리(2026-09-21 기획 확정) — preparation은 REQUEST_FAILED로 확정하고 화면 구분은 Agent 상태(ABSTAINED)로만 한다.
+            case FAILED, ABSTAINED -> {
                 int updated = transition(execPrepId, ModelExecutionPreparationStatus.REQUEST_FAILED, message);
                 if (updated > 0) {
                     publishAfterCommit(ModelParamProposalSseEvent.of(scenarioId, scenarioGroupId, modelParamProposalId, agentStatus.name()));
