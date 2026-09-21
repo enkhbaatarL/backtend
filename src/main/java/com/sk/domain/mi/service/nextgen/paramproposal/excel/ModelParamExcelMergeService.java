@@ -5,7 +5,6 @@ import com.sk.common.exception.AppErrorException;
 import com.sk.common.exception.SystemErrorException;
 import com.sk.domain.shared.entity.master.tmm.MiModelParam;
 import com.sk.domain.shared.repository.master.tmm.MiModelParamRepository;
-import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -13,24 +12,22 @@ import java.util.ArrayList;
 import java.util.EnumMap;
 import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.poi.openxml4j.exceptions.InvalidFormatException;
-import org.apache.poi.ss.usermodel.Sheet;
-import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 import org.springframework.stereotype.Service;
 
 /**
  * 수급모델 파라미터 확정값 Excel 병합 서비스
  * 확정된 제안 파라미터(proposedValue = 최종 입력값)를 basecase 원본 xlsm 3개에 병합해 실행용 입력 파일 3개를 만든다.
  *
- * 메모리 정책(OOM 대응): 워크북은 한 번에 1개만 연다 — 파일 단위 순차 처리로 동시 3권 DOM을 만들지 않는다.
- * 원본은 임시 파일에서 File 기반으로 열어 zip 전체를 힙에 버퍼링하지 않으며,
- * 병합 대상이 없는 파일은 POI를 거치지 않고 원본 바이트 그대로 포함한다(재직렬화로 인한 원본 변형도 없음).
+ * 메모리 정책(OOM 대응): POI DOM을 만들지 않는다 — XlsmStreamMerger가 zip/XML을 스트리밍으로 직접 조작해
+ * 파일 크기와 무관하게 수십 MB 수준으로 동작한다. 파일 단위 순차 처리에 원본·산출물 모두 임시 파일 기반이며,
+ * 병합 대상이 없는 파일은 다운로드한 원본 임시 파일이 그대로 산출물이 된다(바이트 동일).
  */
 @Slf4j
 @Service
@@ -43,6 +40,7 @@ public class ModelParamExcelMergeService {
     /**
      * 확정 파라미터 전체를 병합해 수급모델 입력 파일 3개를 만든다.
      * 병합 대상이 없는 파일도 원본 그대로 포함해 항상 3개를 반환한다.
+     * 산출물은 임시 파일로 반환되며, 호출 측이 사용 후 cleanup()으로 삭제해야 한다.
      */
     public MergedModelInputFiles merge(List<ModelParamAdjustment> adjustments) {
 
@@ -53,48 +51,52 @@ public class ModelParamExcelMergeService {
         Map<String, MiModelParam> masters = loadMasters(adjustments);
         Map<ModelInputFile, List<ModelParamAdjustment>> adjustmentsByFile = groupByFile(masters, adjustments);
 
-        Map<ModelInputFile, byte[]> contents = new EnumMap<>(ModelInputFile.class);
+        Map<ModelInputFile, Path> outputs = new EnumMap<>(ModelInputFile.class);
         WriteSummary total = new WriteSummary(0, 0);
         List<String> details = new ArrayList<>();
 
-        for (ModelInputFile file : ModelInputFile.values()) {
-            Path source = workbookProvider.materialize(file);
-            try {
+        try {
+            for (ModelInputFile file : ModelInputFile.values()) {
+                Path source = workbookProvider.materialize(file);
                 List<ModelParamAdjustment> fileAdjustments = adjustmentsByFile.getOrDefault(file, List.of());
 
                 if (fileAdjustments.isEmpty()) {
-                    contents.put(file, readOriginal(file, source));
+                    // 병합 대상 없음 — 다운로드한 원본 임시 파일이 곧 산출물 (바이트 동일, 재계산 플래그도 불필요)
+                    outputs.put(file, source);
                     details.add("[%s] pass-through(병합 대상 없음)".formatted(file.getCode()));
                     continue;
                 }
 
-                XSSFWorkbook workbook = openWorkbook(file, source);
-                try {
+                try (XlsmStreamMerger merger = new XlsmStreamMerger(source, file.getBasecaseFileName())) {
                     for (ModelParamAdjustment adjustment : fileAdjustments) {
                         MiModelParam param = masters.get(adjustment.parameterName());
-                        WriteSummary summary = apply(workbook, file, param, adjustment);
+                        WriteSummary summary = apply(merger, file, param, adjustment);
                         total = WriteSummary.sum(total, summary);
                         details.add(describe(param, summary));
                     }
-                    contents.put(file, serialize(file, workbook));
+                    Path out = createOutputFile(file);
+                    outputs.put(file, out);
+                    merger.writeTo(out);
                 } finally {
-                    // File 기반으로 연 워크북의 close는 원본으로의 저장 없이 패키지를 revert한다 — 임시 원본은 아래 finally에서 삭제된다.
-                    closeQuietly(workbook);
+                    if (!source.equals(outputs.get(file))) {
+                        deleteQuietly(source);
+                    }
                 }
-            } finally {
-                deleteQuietly(source);
             }
+        } catch (RuntimeException e) {
+            outputs.values().forEach(this::deleteQuietly);
+            throw e;
         }
 
         log.info("[ModelInput Merge] - DONE - parameters={}, cells(write={}, append={}) — {}",
             adjustments.size(), total.writeCount(), total.appendCount(), String.join(" / ", details));
 
-        return MergedModelInputFiles.of(contents);
+        return MergedModelInputFiles.of(outputs);
 
     }
 
     /**
-     * 확정 파라미터를 대상 파일별로 묶는다. 파일 단위 순차 처리(한 번에 워크북 1개)의 기반.
+     * 확정 파라미터를 대상 파일별로 묶는다. 파일 단위 순차 처리의 기반.
      */
     private Map<ModelInputFile, List<ModelParamAdjustment>> groupByFile(
         Map<String, MiModelParam> masters,
@@ -109,32 +111,12 @@ public class ModelParamExcelMergeService {
         return grouped;
     }
 
-    /** 병합 대상이 없는 파일은 POI를 거치지 않고 원본 바이트를 그대로 반환한다. */
-    private byte[] readOriginal(ModelInputFile file, Path source) {
-        try {
-            return Files.readAllBytes(source);
-        } catch (IOException e) {
-            log.error("[ModelInput Merge] 원본 읽기 실패: {}", file.getBasecaseFileName(), e);
-            throw SystemErrorException.of(ResultCode.Error.SYS_INTERNAL_ERROR, "수급모델 입력 병합 실패 — Basecase 원본을 읽을 수 없습니다: %s".formatted(file.getBasecaseFileName()));
-        }
-    }
-
-    /** 임시 파일에서 File 기반(zip 랜덤 액세스)으로 연다 — 스트림 오픈과 달리 zip 전체를 힙에 올리지 않는다. */
-    private XSSFWorkbook openWorkbook(ModelInputFile file, Path source) {
-        try {
-            return new XSSFWorkbook(source.toFile());
-        } catch (IOException | InvalidFormatException e) {
-            log.error("[ModelInput Merge] 원본 오픈 실패: {}", file.getBasecaseFileName(), e);
-            throw SystemErrorException.of(ResultCode.Error.SYS_INTERNAL_ERROR, "수급모델 입력 병합 실패 — Basecase 원본을 열 수 없습니다: %s".formatted(file.getBasecaseFileName()));
-        }
-    }
-
     /**
      * 확정 파라미터 1건을 대상 시트에 기입한다.
      * read mode에 따라 기입 전략이 다름.
      * 제안 미대상(use_yn=N)이어도 사용자 확정에 포함되었으면 기입한다 — 단 경고 흔적을 반드시 남긴다.
      */
-    private WriteSummary apply(XSSFWorkbook workbook, ModelInputFile file, MiModelParam param, ModelParamAdjustment adjustment) {
+    private WriteSummary apply(XlsmStreamMerger merger, ModelInputFile file, MiModelParam param, ModelParamAdjustment adjustment) {
         String context = ValueRows.context(param);
 
         if (!Boolean.TRUE.equals(param.getIsUsed())) {
@@ -145,7 +127,7 @@ public class ModelParamExcelMergeService {
             throw ValueRows.error(context, "기입할 values가 없습니다");
         }
 
-        Sheet sheet = workbook.getSheet(param.getModelSheet());
+        MergeSheet sheet = merger.sheet(param.getModelSheet());
 
         if (sheet == null) {
             throw SystemErrorException.of(ResultCode.Error.SYS_INTERNAL_ERROR, "수급모델 입력 병합 실패 [%s] — Basecase 원본(%s)에 시트가 없습니다 (마스터-원본 정합 확인 필요)".formatted(context, file.getBasecaseFileName()));
@@ -204,34 +186,20 @@ public class ModelParamExcelMergeService {
 
     }
 
-    /**
-     * 워크북 1개를 바이트로 직렬화한다. 값이 바뀐 셀에 걸린 수식들이 다음 오픈 시 재계산되도록 플래그를 켠다.
-     * (pass-through 파일은 셀 변경이 없으므로 이 과정을 거치지 않는다)
-     */
-    private byte[] serialize(ModelInputFile file, XSSFWorkbook workbook) {
-        workbook.setForceFormulaRecalculation(true);
-        try (ByteArrayOutputStream out = new ByteArrayOutputStream()) {
-            workbook.write(out);
-            return out.toByteArray();
+    private Path createOutputFile(ModelInputFile file) {
+        try {
+            return Files.createTempFile("merged-%s-".formatted(file.name().toLowerCase(Locale.ROOT)), ".xlsm");
         } catch (IOException e) {
-            log.error("[ModelInput Merge] 직렬화 실패: {}", file.getBasecaseFileName(), e);
+            log.error("[ModelInput Merge] 산출물 임시 파일 생성 실패: {}", file.getBasecaseFileName(), e);
             throw SystemErrorException.of(ResultCode.Error.SYS_INTERNAL_ERROR, "수급모델 입력 병합 실패 — 병합 파일 생성에 실패했습니다: %s".formatted(file.getBasecaseFileName()));
         }
     }
 
-    private void closeQuietly(XSSFWorkbook workbook) {
+    private void deleteQuietly(Path path) {
         try {
-            workbook.close();
+            Files.deleteIfExists(path);
         } catch (IOException e) {
-            log.warn("[ModelInput Merge] workbook close 실패: {}", e.getMessage());
-        }
-    }
-
-    private void deleteQuietly(Path source) {
-        try {
-            Files.deleteIfExists(source);
-        } catch (IOException e) {
-            log.warn("[ModelInput Merge] 임시 원본 삭제 실패: {}", source, e);
+            log.warn("[ModelInput Merge] 임시 파일 삭제 실패: {}", path, e);
         }
     }
 
