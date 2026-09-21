@@ -7,7 +7,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.poi.ss.usermodel.Sheet;
 
 /**
  * matrix_time_columns 모드 기입기 — 월별 값이 열 방향으로 있는 matrix 표 (패키지 외부 비공개).
@@ -31,13 +30,13 @@ final class MatrixTimeColumnsWriter {
     private record SlotCell(int columnIndex, Object expected) {
     }
 
-    private final Sheet sheet;
+    private final MergeSheet sheet;
     private final MiModelParam param;
     private final ColumnRoleMap roles;
     private final RowFilter rowFilter;
     private final String context;
 
-    MatrixTimeColumnsWriter(Sheet sheet, MiModelParam param, ColumnRoleMap roles) {
+    MatrixTimeColumnsWriter(MergeSheet sheet, MiModelParam param, ColumnRoleMap roles) {
         this.sheet = sheet;
         this.param = param;
         this.roles = roles;
@@ -59,7 +58,7 @@ final class MatrixTimeColumnsWriter {
         int columnIndex = findTimeColumn(slotAxes);
 
         double proposedValue = ValueRows.proposedValue(context, valueRow);
-        Object previous = ExcelCells.writeValue(sheet, rowIndex, columnIndex, proposedValue);
+        Object previous = sheet.writeValue(rowIndex, columnIndex, proposedValue);
         log.info("[ModelInput Merge] - WRITE - [{}] cell={} (행={}, 열={}/{}) value: {} -> {}",
             context, ExcelCells.cellAddress(rowIndex, columnIndex), nonTimeSlots,
             ExcelCells.display(slotAxes.get("Year")), ExcelCells.display(slotAxes.get("Month")),
