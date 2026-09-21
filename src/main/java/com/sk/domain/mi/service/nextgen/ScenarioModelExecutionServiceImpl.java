@@ -15,6 +15,7 @@ import com.sk.domain.mi.service.nextgen.execution.ScenarioExecutionFileStager;
 import com.sk.domain.mi.service.nextgen.execution.ScenarioExecutionRegistrar;
 import com.sk.domain.mi.service.nextgen.execution.StagedScenarioExecutionFiles;
 import com.sk.domain.mi.service.nextgen.paramproposal.ModelParameterTreeProjector;
+import com.sk.domain.mi.service.nextgen.paramproposal.excel.MergedModelInputFiles;
 import com.sk.domain.mi.service.nextgen.paramproposal.ModelParameterTreeProjector.InvalidModelParameterTreeException;
 import com.sk.domain.mi.service.nextgen.query.LatestModelParamProposalExecutionContextResolver;
 import com.sk.domain.mi.service.nextgen.query.LatestModelParamProposalExecutionContextResolver.LatestModelParamProposalExecutionContext;
@@ -113,8 +114,10 @@ public class ScenarioModelExecutionServiceImpl implements ScenarioModelExecution
     ) {
         ExecutionConfirmationContext context = beginJsonExecution(scenarioId, request);
         StagedScenarioExecutionFiles stagedFiles = null;
+        MergedModelInputFiles mergedFiles = null;
         try {
-            List<MultipartFile> files = modelParamExecutionCoordinator.confirmAndMerge(scenarioId, request, context);
+            mergedFiles = modelParamExecutionCoordinator.confirmAndMerge(scenarioId, request, context);
+            List<MultipartFile> files = mergedFiles.toMultipartFiles();
             validateFiles(files);
             stagedFiles = scenarioExecutionFileStager.stageSequentially(files);
             StagedScenarioExecutionFiles filesToAttach = stagedFiles;
@@ -136,6 +139,11 @@ public class ScenarioModelExecutionServiceImpl implements ScenarioModelExecution
             scenarioExecutionFileStager.discard(stagedFiles);
             modelParamExecutionCoordinator.markFailed(context.execPrepId(), e);
             throw e;
+        } finally {
+            // 병합 산출물은 임시 파일 — staging(스토리지 업로드) 이후에는 성공/실패와 무관하게 삭제한다
+            if (mergedFiles != null) {
+                mergedFiles.cleanup();
+            }
         }
     }
 

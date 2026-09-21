@@ -3,18 +3,13 @@ package com.sk.domain.mi.service.nextgen.paramproposal.excel;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.function.IntPredicate;
-import org.apache.poi.ss.usermodel.Cell;
-import org.apache.poi.ss.usermodel.CellType;
-import org.apache.poi.ss.usermodel.Row;
-import org.apache.poi.ss.usermodel.Sheet;
 import org.apache.poi.ss.util.CellReference;
 
 /**
- * basecase 병합 전용 셀 read/write/비교 헬퍼.
- *
+ * basecase 병합 전용 셀 read/비교 헬퍼.
  *
  * 값 정규화 규칙: 숫자 셀은 Double, 문자 셀은 trim String, 빈 문자열/BLANK/ERROR(#REF! 등)는 null.
- * 수식 셀은 캐시된 결과값으로 판독한다.
+ * 셀 접근은 MergeSheet 추상화를 통한다 — 실제 판독·기입은 XlsmStreamMerger가 담당한다.
  */
 final class ExcelCells {
 
@@ -42,7 +37,7 @@ final class ExcelCells {
      * stop_when_all_key_columns_empty 규칙 — 연속 빈 행이 한도를 넘으면 종료하고,
      * 데이터 행마다 rowMatches 판정으로 일치 행을 수집한다.
      */
-    static RowScan scanRows(Sheet sheet, int startRowIndex, List<Integer> keyColumnIndexes, IntPredicate rowMatches) {
+    static RowScan scanRows(MergeSheet sheet, int startRowIndex, List<Integer> keyColumnIndexes, IntPredicate rowMatches) {
         List<Integer> matched = new ArrayList<>();
         int lastDataRowIndex = startRowIndex - 1;
         int blankStreak = 0;
@@ -66,32 +61,12 @@ final class ExcelCells {
     }
 
     /** 셀 값을 정규화해 읽는다. 값이 없거나 판독 불가(ERROR 등)면 null. */
-    static Object readValue(Sheet sheet, int rowIndex, int columnIndex) {
-        Row row = sheet.getRow(rowIndex);
-        if (row == null) {
-            return null;
-        }
-        return readValue(row.getCell(columnIndex));
-    }
-
-    private static Object readValue(Cell cell) {
-        if (cell == null) {
-            return null;
-        }
-        CellType type = cell.getCellType() == CellType.FORMULA ? cell.getCachedFormulaResultType() : cell.getCellType();
-        return switch (type) {
-            case NUMERIC -> cell.getNumericCellValue();
-            case STRING -> {
-                String text = cell.getStringCellValue().trim();
-                yield text.isEmpty() ? null : text;
-            }
-            case BOOLEAN -> cell.getBooleanCellValue();
-            default -> null; // BLANK, ERROR(#REF! 등), _NONE
-        };
+    static Object readValue(MergeSheet sheet, int rowIndex, int columnIndex) {
+        return sheet.readValue(rowIndex, columnIndex);
     }
 
     /** 지정 컬럼들이 모두 빈 값인 행인지 판정한다. */
-    static boolean isRowBlank(Sheet sheet, int rowIndex, List<Integer> columnIndexes) {
+    static boolean isRowBlank(MergeSheet sheet, int rowIndex, List<Integer> columnIndexes) {
         return columnIndexes.stream().allMatch(col -> readValue(sheet, rowIndex, col) == null);
     }
 
@@ -132,30 +107,6 @@ final class ExcelCells {
             return d == Math.rint(d) ? String.valueOf((long) d) : String.valueOf(d);
         }
         return String.valueOf(value).trim();
-    }
-
-    /**
-     * 셀에 값을 기입한다. 숫자성 값은 숫자 셀로, 그 외는 문자열 셀로 쓴다. 행/셀이 없으면 생성한다.
-     * 기입 전에 있던 값을 반환한다 (로그의 이전값 -> 새값 표기용, 없었으면 null).
-     */
-    static Object writeValue(Sheet sheet, int rowIndex, int columnIndex, Object value) {
-        Row row = sheet.getRow(rowIndex);
-        if (row == null) {
-            row = sheet.createRow(rowIndex);
-        }
-        Cell cell = row.getCell(columnIndex);
-        if (cell == null) {
-            cell = row.createCell(columnIndex);
-        }
-        Object previous = readValue(cell);
-        Double number = asNumber(value);
-        // 26.07.29 취약점 진단 검토, '누락된 널 값 검사-102245', 오탐 -> cell은 위 null 검사 분기에서 createCell로 생성되어 not null 보장됨.
-        if (number != null) {
-            cell.setCellValue(number);
-        } else {
-            cell.setCellValue(String.valueOf(value));
-        }
-        return previous;
     }
 
     /** 엑셀 셀 주소 표기 (예: AY11) — 로그/에러는 항상 엑셀 1-based 표기로 말한다. */

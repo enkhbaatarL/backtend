@@ -9,7 +9,6 @@ import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.poi.ss.usermodel.Sheet;
 
 /**
  * fixed_columns 모드 기입기 - slot/value가 고정 컬럼에 있는 행 단위 표
@@ -28,13 +27,13 @@ final class FixedColumnsWriter {
     private record SlotCell(int columnIndex, Object expected) {
     }
 
-    private final Sheet sheet;
+    private final MergeSheet sheet;
     private final MiModelParam param;
     private final ColumnRoleMap roles;
     private final RowFilter rowFilter;
     private final String context;
 
-    FixedColumnsWriter(Sheet sheet, MiModelParam param, ColumnRoleMap roles) {
+    FixedColumnsWriter(MergeSheet sheet, MiModelParam param, ColumnRoleMap roles) {
         this.sheet = sheet;
         this.param = param;
         this.roles = roles;
@@ -84,7 +83,7 @@ final class FixedColumnsWriter {
 
         if (scan.matchedRowIndexes().size() == 1) {
             int rowIndex = scan.matchedRowIndexes().get(0);
-            Object previous = ExcelCells.writeValue(sheet, rowIndex, valueRole.columnIndex(), proposedValue);
+            Object previous = sheet.writeValue(rowIndex, valueRole.columnIndex(), proposedValue);
             log.info("[ModelInput Merge] - WRITE  [{}] cell={} slot={} value: {} -> {}",
                 context, ExcelCells.cellAddress(rowIndex, valueRole.columnIndex()), slotAxes,
                 ExcelCells.display(previous), ExcelCells.display(proposedValue));
@@ -132,11 +131,11 @@ final class FixedColumnsWriter {
 
     /** 신규 행에 slot 값·필터 값·proposedValue를 기입한다. 필터 값이 빠지면 이후 그 행을 다시 찾을 수 없다. */
     private void appendRow(int rowIndex, List<SlotCell> slots, Role valueRole, double proposedValue) {
-        slots.forEach(slot -> ExcelCells.writeValue(sheet, rowIndex, slot.columnIndex(), slot.expected()));
+        slots.forEach(slot -> sheet.writeValue(rowIndex, slot.columnIndex(), slot.expected()));
         if (rowFilter != null) {
-            ExcelCells.writeValue(sheet, rowIndex, rowFilter.columnIndex(), rowFilter.expected());
+            sheet.writeValue(rowIndex, rowFilter.columnIndex(), rowFilter.expected());
         }
-        ExcelCells.writeValue(sheet, rowIndex, valueRole.columnIndex(), proposedValue);
+        sheet.writeValue(rowIndex, valueRole.columnIndex(), proposedValue);
     }
 
     /** POI 0-based 행 인덱스를 엑셀 표기(1-based)로 변환 — 에러/로그는 항상 엑셀 행 번호로 말한다. */

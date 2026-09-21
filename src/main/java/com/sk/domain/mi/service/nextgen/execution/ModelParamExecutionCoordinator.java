@@ -33,7 +33,6 @@ import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.transaction.support.TransactionOperations;
-import org.springframework.web.multipart.MultipartFile;
 
 @Slf4j
 @Component
@@ -142,7 +141,8 @@ public class ModelParamExecutionCoordinator {
         return new ExecutionConfirmationContext(preparation.getExecPrepId(), confirmationRequired);
     }
 
-    public List<MultipartFile> confirmAndMerge(
+    /** 산출물은 임시 파일 기반 — 호출 측이 접수 완료/실패 후 반드시 cleanup()으로 삭제해야 한다. */
+    public MergedModelInputFiles confirmAndMerge(
         Long scenarioId,
         ModelParamProposalExecutionReq request,
         ExecutionConfirmationContext context
@@ -159,10 +159,9 @@ public class ModelParamExecutionCoordinator {
             request,
             context.execPrepId()
         );
-        MergedModelInputFiles mergedFiles = modelParamExcelMergeService.merge(
+        return modelParamExcelMergeService.merge(
             ModelParamAdjustment.listFromJson(confirmationParametersJson)
         );
-        return mergedFiles.toMultipartFiles();
     }
 
     public void markFailed(Long execPrepId, RuntimeException failure) {

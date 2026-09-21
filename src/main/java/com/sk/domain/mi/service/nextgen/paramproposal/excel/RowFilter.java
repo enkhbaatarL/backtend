@@ -1,7 +1,5 @@
 package com.sk.domain.mi.service.nextgen.paramproposal.excel;
 
-import org.apache.poi.ss.usermodel.Sheet;
-
 /**
  * 마스터의 basecase_row_filter 파서
  *
@@ -29,7 +27,7 @@ record RowFilter(int columnIndex, String expected) {
     }
 
     /** 해당 행이 필터 조건을 만족하는지 판정한다. */
-    boolean matches(Sheet sheet, int rowIndex) {
+    boolean matches(MergeSheet sheet, int rowIndex) {
         return ExcelCells.matches(expected, ExcelCells.readValue(sheet, rowIndex, columnIndex));
     }
 
