@@ -132,6 +132,7 @@ public class FundamentalModelCaseController {
         summary = "MI Fundamental Model Scenario Case 상세 조회 API",
         description = "active `INDEPENDENT`와 current `MI_BASE`의 case metadata, input 파일명, output/intermediate/tradeOutput 다운로드 metadata, latestRun만 조회합니다. "
             + "input은 fileNm만 반환하고 output/intermediate/tradeOutput은 공통 File API 요청용 fileNo, fileNm, fileSize를 반환합니다. "
+            + "네 파일 목록은 각각 fileNm을 대소문자 구분 없이 일반 문자열 오름차순으로 정렬하고, 동률이면 fileNo 오름차순으로 반환합니다. "
             + "output/intermediate/tradeOutput은 최신 실행의 같은 run_seq 기준이며, 최신 실행, run_seq 또는 파일이 없으면 빈 배열입니다. full run history와 result payload는 포함하지 않습니다. "
             + "`MI_BASE`는 결과 조회만 허용되며 상세 조회가 수정·삭제·재실행 권한을 넓히지 않습니다. `SCENARIO`와 soft-deleted case는 조회되지 않습니다."
     )
@@ -198,7 +199,7 @@ public class FundamentalModelCaseController {
     @ApiOrder(4)
     @Operation(
         summary = "MI Fundamental Model Scenario Case 수정 API",
-        description = "active `INDEPENDENT` case의 title/description만 수정하고 files.tradeOutput을 포함한 최신 상세 응답을 반환합니다. `MI_BASE | SCENARIO`는 수정할 수 없습니다."
+        description = "active `INDEPENDENT` case의 title/description만 수정하고, files.tradeOutput을 포함한 파일 목록을 fileNm 대소문자 무시 오름차순으로 정렬한 최신 상세 응답을 반환합니다. `MI_BASE | SCENARIO`는 수정할 수 없습니다."
     )
     @ApiResponse(responseCode = "200", description = "수정 성공")
     @ApiResponse(

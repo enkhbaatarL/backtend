@@ -230,7 +230,9 @@ input 내용 제공 endpoint와 응답 형식은 아직 이 표에 추가하지 
 `files.output`은 최신 실행의 `run_seq`를 기준으로 `tcm_filel.file_rel_obj_spt_cd = 'SCNRCASEH'` 및 `file_rel_obj_dstg_no = run_seq`에 연결된 파일 목록이다.
 `files.intermediate`는 같은 `run_seq`를 기준으로 `file_rel_obj_spt_cd = 'SCNRCASEHI'`에 연결된 모델 실행 중간파일 목록이다 (2026-09-07 추가). 개수는 고정하지 않는다(n개).
 `files.tradeOutput`은 같은 `run_seq`를 기준으로 `file_rel_obj_spt_cd = 'SCNRCASEHTF'`에 연결된 Trade Flow 결과파일 목록이다 (2026-09-17 추가). 기존 output/intermediate와 별도 목록이며 개수는 고정하지 않는다.
-네 목록 모두 `del_yn = 'N'`과 파일 유효종료일자 조건을 만족하는 row를 `file_no ASC`로 반환하며, 최신 실행이나 해당 파일이 없으면 빈 배열이다.
+네 목록 모두 `del_yn = 'N'`과 파일 유효종료일자 조건을 만족하는 row를 반환한다.
+각 목록은 서로 독립적으로 `fileNm`을 대소문자 구분 없이 일반 문자열 오름차순으로 정렬하며, 숫자 자연정렬은 적용하지 않는다.
+파일명 비교 결과가 같으면 원본 row의 `file_no ASC`를 보조 기준으로 사용한다. 최신 실행이나 해당 파일이 없으면 빈 배열이다.
 
 `files.input` 항목은 화면 표시용 `fileNm`만 반환한다. `files.output`, `files.intermediate`, `files.tradeOutput` 항목은 기존 공통
 File API 다운로드 요청에 전달할 `fileNo`, `fileNm`, `fileSize`를 반환한다. 이 역할별 차이는 상세 조회와 같은
