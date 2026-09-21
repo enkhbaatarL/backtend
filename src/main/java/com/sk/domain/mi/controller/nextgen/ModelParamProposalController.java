@@ -93,7 +93,8 @@ public class ModelParamProposalController {
             팝업 진입 또는 생성 POST 오류 후 시나리오의 최신 요청 상태를 조회합니다.
             새 생성 오류는 PROPOSAL_FAILED입니다. PROPOSAL_NO_CHANGES는 과거 저장 상태의 읽기 호환용입니다.
             PROPOSAL_RETRYABLE은 통신 오류로 중단된 상태로, 재시도 버튼을 노출하고 생성 POST를 다시 호출하면 됩니다.
-            두 실패에서는 로딩과 반복 조회를 종료하고 failureReason을 표시하세요.
+            ABSTAINED는 보류(값 생성됐으나 유효 범위 이탈)로, 처리 방식은 실패와 동일하며 표기와 failureReason(보류 사유)만 구분합니다.
+            실패·보류에서는 로딩과 반복 조회를 종료하고 failureReason을 표시하세요.
             parameterSource=NONE, modelFiles=[]이므로 이전 제안 표를 비우고 해당 요청의 확정/실행을 막아야 합니다.
             Agent ID 발급 전 실패이면 modelParamProposalId가 null일 수 있으며, executionInputFiles도 null입니다.
             HTTP 200은 상태 조회 성공을 뜻합니다. GET 자체의 오류나 GENERATING은 제안 생성 실패와 구별하세요.

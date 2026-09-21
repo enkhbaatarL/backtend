@@ -63,6 +63,7 @@ public class ModelParamProposalGroupController {
             `scenarioId`로 갱신할 팝업 행을 판별하고, `status`로 결과를 분기합니다.
             - `status=PROPOSED`: 생성 완료 — 해당 시나리오 상태를 완료로 바꾸고, [그룹 파라미터 비교 그리드 조회 API]를 재조회해 열을 채웁니다.
             - `status=FAILED`: 생성 실패 — 실패 표기로 바꾸고 실패 사유는 [그룹 파라미터 제안 현황 일괄 조회 API]로 확인합니다.
+            - `status=ABSTAINED`: 보류 (값 생성됐으나 유효 범위 이탈) — 처리 방식은 실패와 동일하며 표기만 보류로 구분합니다. 보류 사유도 현황 일괄 조회 API의 failureReason으로 확인합니다.
             ```
             event: model-parameter-proposal
             data: {"scenarioId":309,"scenarioGroupId":61,"modelParamProposalId":10001,"status":"PROPOSED"}
@@ -97,13 +98,14 @@ public class ModelParamProposalGroupController {
         summary = "그룹 파라미터 제안 현황 일괄 조회 API",
         description = """
             수급모델 실행 팝업 진입 시 그룹 내 시나리오 전체의 제안 상태를 한 번에 조회합니다.
-            시나리오별 currentState는 단건 현재 상태 조회 API와 동일한 규칙이며, 팝업 상태 컬럼(5종)은 아래 매핑으로 표시합니다.
+            시나리오별 currentState는 단건 현재 상태 조회 API와 동일한 규칙이며, 팝업 상태 컬럼(6종)은 아래 매핑으로 표시합니다.
 
             ### currentState → 상태 컬럼 매핑
             - NOT_REQUESTED → 생성 ([생성] 버튼)
             - GENERATING → 생성 중 (스피너)
             - PROPOSAL_READY / CONFIRMED_PENDING_EXECUTION / EXECUTING / EXECUTED_CONFIRMED / EXECUTION_FAILED → 완료 (실행 실패도 확정 파라미터가 존재해 그리드 노출·선택·재실행이 가능하므로 완료 그룹. EXECUTING은 그리드 값 영역 스켈레톤 처리)
             - PROPOSAL_FAILED / PROPOSAL_NO_CHANGES → 실패 (failureReason 툴팁, 체크 불가)
+            - ABSTAINED → 보류 (값이 생성됐으나 유효 범위 이탈 — 처리 방식은 실패와 동일: failureReason 툴팁에 보류 사유, 체크·실행 불가, 그리드 미노출, 단건 생성 POST로 재생성 가능)
             - PROPOSAL_RETRYABLE → 재시도 (통신 오류 중단 — 시나리오 단건 생성 POST 재호출로 재시도)
 
             분기값·차원 헤더는 그룹 상세 API를 사용하세요.

@@ -210,17 +210,26 @@ public class ModelParamProposalServiceImpl implements ModelParamProposalService 
 
         if (preparation.getStatus() == ModelExecutionPreparationStatus.REQUEST_NO_CHANGES
             || preparation.getStatus() == ModelExecutionPreparationStatus.REQUEST_FAILED) {
+            // 보류(ABSTAINED)는 실패와 동일 처리로 preparation이 REQUEST_FAILED로 확정된다 — 화면 구분은 Agent 상태로만 한다.
+            boolean abstained = proposal.map(AgentModelParamProposal::getStatus).orElse(null) == AgentModelParamProposalStatus.ABSTAINED;
+            CurrentModelParamProposalState state;
+            if (preparation.getStatus() == ModelExecutionPreparationStatus.REQUEST_NO_CHANGES) {
+                state = CurrentModelParamProposalState.PROPOSAL_NO_CHANGES;
+            } else {
+                state = abstained ? CurrentModelParamProposalState.ABSTAINED : CurrentModelParamProposalState.PROPOSAL_FAILED;
+            }
+            String failureReason = abstained
+                ? Optional.ofNullable(resolveFailureReason(proposal.orElseThrow())).orElse(preparation.getErrorMessage())
+                : preparation.getErrorMessage();
             return currentResponse(
                 preparation,
                 proposal.orElse(null),
-                preparation.getStatus() == ModelExecutionPreparationStatus.REQUEST_NO_CHANGES
-                    ? CurrentModelParamProposalState.PROPOSAL_NO_CHANGES
-                    : CurrentModelParamProposalState.PROPOSAL_FAILED,
+                state,
                 ModelParamParameterSource.NONE,
                 null,
                 null,
                 null,
-                preparation.getErrorMessage()
+                failureReason
             );
         }
 
@@ -237,11 +246,16 @@ public class ModelParamProposalServiceImpl implements ModelParamProposalService 
             );
         }
 
-        if (proposal.map(AgentModelParamProposal::getStatus).orElse(null) == AgentModelParamProposalStatus.FAILED) {
+        AgentModelParamProposalStatus terminalAgentStatus = proposal.map(AgentModelParamProposal::getStatus).orElse(null);
+        if (terminalAgentStatus == AgentModelParamProposalStatus.FAILED
+            || terminalAgentStatus == AgentModelParamProposalStatus.ABSTAINED) {
+            // 콜백 유실로 preparation이 아직 진행 상태여도 Agent 테이블이 정본 — 실패/보류를 그대로 화면에 반영한다.
             return currentResponse(
                 preparation,
                 proposal.orElse(null),
-                CurrentModelParamProposalState.PROPOSAL_FAILED,
+                terminalAgentStatus == AgentModelParamProposalStatus.ABSTAINED
+                    ? CurrentModelParamProposalState.ABSTAINED
+                    : CurrentModelParamProposalState.PROPOSAL_FAILED,
                 ModelParamParameterSource.NONE,
                 null,
                 null,
@@ -865,7 +879,8 @@ public class ModelParamProposalServiceImpl implements ModelParamProposalService 
         String json = switch (proposal.getStatus()) {
             case PROPOSED -> proposal.getProposalParameters();
             case CONFIRMED -> proposal.getConfirmationParameters();
-            case PROCESSING, FAILED -> null;
+            // ABSTAINED(보류)는 실패와 동일 처리 — 값이 저장돼 있어도 화면에 노출하지 않는다.
+            case PROCESSING, FAILED, ABSTAINED -> null;
         };
         JsonNode parameters = parseArrayOrEmpty(json);
         try {
@@ -1200,8 +1215,10 @@ public class ModelParamProposalServiceImpl implements ModelParamProposalService 
         );
     }
 
+    /** 실패/보류의 상세 사유 — Agent가 오류 메시지 컬럼에 담아 주는 상세 문자열을 우선 노출한다. */
     private String resolveFailureReason(AgentModelParamProposal proposal) {
-        if (proposal.getStatus() != AgentModelParamProposalStatus.FAILED) {
+        if (proposal.getStatus() != AgentModelParamProposalStatus.FAILED
+            && proposal.getStatus() != AgentModelParamProposalStatus.ABSTAINED) {
             return null;
         }
         if (proposal.getErrorMessage() != null && !proposal.getErrorMessage().isBlank()) {
