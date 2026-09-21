@@ -137,6 +137,10 @@ public class FundamentalModelCaseServiceImpl implements FundamentalModelCaseServ
     private static final String TRADE_FLOW_TOTAL_KEY = "TOTAL";
     private static final String COUNTRY_KEY_PREFIX = "COUNTRY";
     private static final String TOTAL_LABEL = "Total";
+    private static final Comparator<UploadedFile> FILE_NAME_ORDER = Comparator.comparing(
+        UploadedFile::getOriginalFileNm,
+        String.CASE_INSENSITIVE_ORDER
+    ).thenComparing(UploadedFile::getFileNo);
     private static final List<FundamentalModelPriceRes.PriceColumn> ANNUAL_PRICE_COLUMNS = List.of(
         new FundamentalModelPriceRes.PriceColumn("year", "Year"),
         new FundamentalModelPriceRes.PriceColumn("priceRegion", "Price Region"),
@@ -2458,6 +2462,7 @@ public class FundamentalModelCaseServiceImpl implements FundamentalModelCaseServ
             Math.toIntExact(caseId),
             FILE_RELATION_SCENARIO_CASE
         ).stream()
+            .sorted(FILE_NAME_ORDER)
             .map(uploadedFile -> new FundamentalModelFileNameRes(uploadedFile.getOriginalFileNm()))
             .toList();
     }
@@ -2471,15 +2476,14 @@ public class FundamentalModelCaseServiceImpl implements FundamentalModelCaseServ
             relationshipObjectSeparateCd
         );
 
-        List<FundamentalModelDownloadFileRes> files = new ArrayList<>();
-        for (UploadedFile uploadedFile : uploadedFiles) {
-            files.add(new FundamentalModelDownloadFileRes(
+        return uploadedFiles.stream()
+            .sorted(FILE_NAME_ORDER)
+            .map(uploadedFile -> new FundamentalModelDownloadFileRes(
                 uploadedFile.getFileNo(),
                 uploadedFile.getOriginalFileNm(),
                 uploadedFile.getFileSize()
-            ));
-        }
-        return files;
+            ))
+            .toList();
     }
 
     private FundamentalModelJobArgs buildJobArgs(Long caseId, String runId, Long runSeq) {

@@ -476,6 +476,7 @@ public class FileService {
 
         try (ByteArrayOutputStream baos = new ByteArrayOutputStream();
                 ZipOutputStream zos = new ZipOutputStream(baos)) {
+            Set<String> addedNames = new HashSet<>();
 
             for (UploadedFile f : uploadedFiles) {
                 String bucketName = getBucketName(f.getStoragePathNm());
@@ -486,7 +487,8 @@ public class FileService {
                     if (s3is == null)
                         continue;
 
-                    zos.putNextEntry(new ZipEntry(fileName));
+                    String zipEntryName = uniqueFileName(fileName, addedNames);
+                    zos.putNextEntry(new ZipEntry(zipEntryName));
                     DownloadEncryptionDecision decision = fileEncryptionPolicy.evaluateDownload(role, companyCd, fileName);
                     if (decision.shouldEncrypt()) {
                         byte[] plainData = IOUtils.toByteArray(s3is);
