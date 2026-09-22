@@ -35,6 +35,22 @@ public interface ModelExecutionPreparationRepository extends JpaRepository<Model
         @Param("statuses") Collection<ModelExecutionPreparationStatus> statuses
     );
 
+    /**
+     * 지정 상태의 in-flight 실행준비가 있는 시나리오 ID 집합 조회.
+     * activeScenarioId는 in-flight 이고 미삭제인 행에만 값이 있는 unique helper 컬럼이라
+     * 삭제 필터가 불필요하고 시나리오당 결과가 최대 1건이다.
+     */
+    @Query("""
+        SELECT p.activeScenarioId
+          FROM ModelExecutionPreparation p
+         WHERE p.activeScenarioId IN :scenarioIds
+           AND p.status IN :statuses
+        """)
+    List<Long> findActiveScenarioIdsByStatuses(
+        @Param("scenarioIds") Collection<Long> scenarioIds,
+        @Param("statuses") Collection<ModelExecutionPreparationStatus> statuses
+    );
+
     @Query("""
         SELECT p
           FROM ModelExecutionPreparation p

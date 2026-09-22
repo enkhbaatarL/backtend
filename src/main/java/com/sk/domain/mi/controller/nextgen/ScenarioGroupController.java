@@ -183,14 +183,21 @@ public class ScenarioGroupController {
         summary = "Scenario Group 수급모델 진행상태 폴링 API",
         description = """
             그래프 화면에서 시나리오별 수급모델 진행상태를 경량 조회합니다. <br>
-            수급모델 실행 후 해당 API를 폴링하다가 `modelRunning` 필드가 `true` → `false` 전환 시, [Scenario Group 그래프 데이터 조회 API]를 재조회해 완료된 그래프를 반영합니다. <br>
+            수급모델 실행 후 해당 API를 폴링하다가 `anyRunning`과 `anyPreparing`이 **모두** `false`로 전환되면, [Scenario Group 그래프 데이터 조회 API]를 재조회해 완료된 그래프를 반영합니다. <br>
+            `preparing`은 실행 접수 후 아직 수급모델이 기동되기 전 준비 구간(파라미터 확정 반영, 엑셀 병합, 파일 스테이징)입니다. 이 구간에는 `modelRunning`이 아직 `false`이므로 폴링 종료 판단에 두 필드를 함께 사용해야 합니다. <br>
 
             <br><br>
             ### 응답 필드
-            - `anyRunning`: 그룹 내 실행중 시나리오 존재 여부 (그룹 단위 폴링 종료 판단)
+            - `anyRunning`: 그룹 내 실행중 시나리오 존재 여부
+            - `anyPreparing`: 그룹 내 실행 준비중(접수 후 RUNNING 전) 시나리오 존재 여부
             - `scenarios[]`
               - `scenarioId` : 시나리오 ID
-              - `modelRunning` : 모델 실행중 여부 (재조회 트리거: `true` → `false` 전환)
+              - `modelRunning` : 모델 실행중 여부
+              - `preparing` : 실행 준비중 여부 (접수됨, 엑셀 병합 등으로 아직 RUNNING 케이스 생성 전)
+
+            <br>
+            ### 주의
+            - 그룹 일괄 실행은 **순차 접수**라 아직 접수 차례가 오지 않은 시나리오는 `preparing=false`일 수 있습니다. 그룹 단위 진행 여부 판단은 `anyRunning || anyPreparing`을 사용하세요.
             """
     )
     @ApiResponse(responseCode = "200", description = "조회 성공")
