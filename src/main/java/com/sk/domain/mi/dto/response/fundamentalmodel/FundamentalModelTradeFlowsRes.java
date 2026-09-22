@@ -27,12 +27,16 @@ public record FundamentalModelTradeFlowsRes(
     @Schema(description = "실제 적용된 필터", implementation = TradeFlowsAppliedFilters.class)
     TradeFlowsAppliedFilters appliedFilters,
 
-    @ArraySchema(schema = @Schema(implementation = TradeCountryHeader.class,
-        description = "From country 축 헤더 목록 (컬럼). region+country=null은 지역 집계"))
+    @Schema(
+        description = "From country 축 헤더 목록 (컬럼). Country 필터 적용 시 매칭 Country의 저장 REGION_SUBTOTAL을 원래 순서로 유지하고 마지막은 TOTAL"
+    )
+    @ArraySchema(schema = @Schema(implementation = TradeCountryHeader.class))
     List<TradeCountryHeader> fromCountries,
 
-    @ArraySchema(schema = @Schema(implementation = TradeCountryHeader.class,
-        description = "To country 축 헤더 목록 (행). 마지막 항목은 region=null, country=Total"))
+    @Schema(
+        description = "To country 축 헤더 목록 (행). Country 필터 적용 시 매칭 Country의 저장 REGION_SUBTOTAL을 원래 순서로 유지하고 마지막은 TOTAL"
+    )
+    @ArraySchema(schema = @Schema(implementation = TradeCountryHeader.class))
     List<TradeCountryHeader> toCountries,
 
     @ArraySchema(schema = @Schema(implementation = TradeFlowItem.class,
@@ -46,7 +50,11 @@ public record FundamentalModelTradeFlowsRes(
         @ArraySchema(schema = @Schema(implementation = TradeFlowDirection.class, example = "TO_COUNTRY"))
         List<TradeFlowDirection> types,
 
-        @ArraySchema(schema = @Schema(implementation = FundamentalModelRegion.class, example = "ASIA"))
+        @ArraySchema(schema = @Schema(
+            implementation = FundamentalModelRegion.class,
+            description = "실제 적용된 Region. regions 없이 countryKeys만 전달하면 key에서 추출한 Region입니다.",
+            example = "ASIA"
+        ))
         List<FundamentalModelRegion> regions,
 
         @ArraySchema(schema = @Schema(

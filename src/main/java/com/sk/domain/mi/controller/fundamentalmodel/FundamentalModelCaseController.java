@@ -376,7 +376,10 @@ public class FundamentalModelCaseController {
     @Operation(
         summary = "MI Fundamental Model Trade Flows 데이터 조회 API",
         description = "active `INDEPENDENT | MI_BASE` 중 COMPLETED 상태의 case에 대해 selector/year 기준 Trade Flow sparse matrix 데이터를 조회합니다. "
-            + "fromCountries/toCountries 헤더 배열과 non-zero flows 배열로 응답합니다. `MI_BASE` read 허용은 mutation 권한을 넓히지 않으며 "
+            + "fromCountries/toCountries 헤더 배열과 non-zero flows 배열로 응답합니다. Country 필터 적용 축에는 실제 매칭 Country와 그 Country가 속한 "
+            + "저장 `REGION_SUBTOTAL` 헤더를 원래 순서로 유지하고, subtotal/total은 선택된 Country-to-Country leaf만으로 재계산합니다. "
+            + "`regions` 없이 `countryKeys`만 전달하면 key의 Region을 적용하며, 유효하지만 실제 header에 매칭되는 Country가 없으면 빈 matrix를 반환합니다. "
+            + "`MI_BASE` read 허용은 mutation 권한을 넓히지 않으며 "
             + "`SCENARIO`와 soft-deleted case는 조회되지 않습니다."
     )
     @ApiResponse(responseCode = "200", description = "조회 성공")
@@ -409,7 +412,12 @@ public class FundamentalModelCaseController {
         @RequestParam(required = false) List<TradeFlowDirection> types,
         @Parameter(description = "지역 필터. 미전달 시 전체", example = "ASIA,EUROPE")
         @RequestParam(required = false) List<FundamentalModelRegion> regions,
-        @Parameter(description = "Country key 필터. COUNTRY:ASIA:Japan 형식의 exact match이며 regions와 함께 전달하면 AND 조건입니다.", example = "COUNTRY:ASIA:Japan")
+        @Parameter(
+            description = "Country key 필터. COUNTRY:ASIA:Japan 형식의 exact match입니다. "
+                + "regions 미전달 시 key의 Region을 적용하고, 함께 전달하면 AND 조건입니다. "
+                + "유효하지만 실제 결과에 없는 key만 전달하면 빈 결과입니다.",
+            example = "COUNTRY:ASIA:Japan"
+        )
         @RequestParam(required = false) List<String> countryKeys
     ) {
         return BaseResponseFactory.create(fundamentalModelCaseService.getTradeFlows(

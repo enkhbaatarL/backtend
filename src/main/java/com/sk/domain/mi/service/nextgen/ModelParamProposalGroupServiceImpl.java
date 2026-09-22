@@ -184,9 +184,29 @@ public class ModelParamProposalGroupServiceImpl implements ModelParamProposalGro
             );
 
         } catch (RuntimeException e) {
-            log.warn("Group model execution item failed. scenarioId={}, modelParamProposalId={}", item.scenarioId(), item.modelParamProposalId(), e);
-            return GroupModelExecutionItemRes.failure(item.scenarioId(), errorCodeOf(e), e.getMessage());
+            String errorMessage = errorMessageOf(e);
+            log.warn("Group model execution item failed. scenarioId={}, modelParamProposalId={}, reason={}", item.scenarioId(), item.modelParamProposalId(), errorMessage, e);
+            return GroupModelExecutionItemRes.failure(item.scenarioId(), errorCodeOf(e), errorMessage);
         }
+    }
+
+    /**
+     * 시나리오별 실패 사유 메시지.
+     * 상세 사유가 담기는 additionalMessage를 우선 사용하고, 없으면 getMessage()로 폴백한다.
+     */
+    private String errorMessageOf(RuntimeException e) {
+        String additionalMessage = null;
+        if (e instanceof AppErrorException appError) {
+            additionalMessage = appError.getAdditionalMessage();
+        } else if (e instanceof AppHttpStatusException httpStatusError) {
+            additionalMessage = httpStatusError.getAdditionalMessage();
+        } else if (e instanceof SystemErrorException systemError) {
+            additionalMessage = systemError.getAdditionalMessage();
+        }
+        if (additionalMessage != null && !additionalMessage.isBlank()) {
+            return additionalMessage;
+        }
+        return e.getMessage();
     }
 
     private String errorCodeOf(RuntimeException e) {

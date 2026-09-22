@@ -130,6 +130,7 @@ public class ModelParamExcelMergeService {
         MergeSheet sheet = merger.sheet(param.getModelSheet());
 
         if (sheet == null) {
+            log.error("[ModelInput Merge] - SHEET-MISSING [{}] Basecase 원본({})에 시트가 없습니다 — 마스터(tmm_mi_model_param_m)-원본 정합 확인 필요", context, file.getBasecaseFileName());
             throw SystemErrorException.of(ResultCode.Error.SYS_INTERNAL_ERROR, "수급모델 입력 병합 실패 [%s] — Basecase 원본(%s)에 시트가 없습니다 (마스터-원본 정합 확인 필요)".formatted(context, file.getBasecaseFileName()));
         }
 

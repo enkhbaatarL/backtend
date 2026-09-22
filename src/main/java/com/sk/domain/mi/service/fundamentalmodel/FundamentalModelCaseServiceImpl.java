@@ -1747,8 +1747,12 @@ public class FundamentalModelCaseServiceImpl implements FundamentalModelCaseServ
             .filter(flow -> matchesAnyTradeHeader(flow, filteredFrom, true))
             .filter(flow -> matchesAnyTradeHeader(flow, filteredTo, false))
             .toList();
-        List<FundamentalModelTradeFlowsRes.TradeCountryHeader> responseFrom = appendFromTotalHeader(filteredFrom);
-        List<FundamentalModelTradeFlowsRes.TradeCountryHeader> responseTo = appendFromTotalHeader(filteredTo);
+        List<FundamentalModelTradeFlowsRes.TradeCountryHeader> responseFrom = appendFromTotalHeader(
+            includeMatchedRegionHeaders(headers.fromCountries(), filteredFrom, filterFrom)
+        );
+        List<FundamentalModelTradeFlowsRes.TradeCountryHeader> responseTo = appendFromTotalHeader(
+            includeMatchedRegionHeaders(headers.toCountries(), filteredTo, filterTo)
+        );
 
         return new FundamentalModelTradeFlowsRes(
             caseId,
@@ -1777,6 +1781,34 @@ public class FundamentalModelCaseServiceImpl implements FundamentalModelCaseServ
                 && header.region() != null
                 && countrySelection.regions().contains(header.region())
                 && countrySelection.keys().contains(toCountryKey(header.region(), header.country())))
+            .toList();
+    }
+
+    private List<FundamentalModelTradeFlowsRes.TradeCountryHeader> includeMatchedRegionHeaders(
+        List<FundamentalModelTradeFlowsRes.TradeCountryHeader> allHeaders,
+        List<FundamentalModelTradeFlowsRes.TradeCountryHeader> filteredHeaders,
+        boolean applyCountryFilter
+    ) {
+        if (!applyCountryFilter) {
+            return filteredHeaders;
+        }
+
+        Set<FundamentalModelRegion> matchedRegions = filteredHeaders.stream()
+            .filter(header -> header.kind() == TradeCountryHeaderKind.COUNTRY)
+            .map(FundamentalModelTradeFlowsRes.TradeCountryHeader::region)
+            .filter(Objects::nonNull)
+            .collect(Collectors.toSet());
+        Set<String> matchedCountryKeys = filteredHeaders.stream()
+            .filter(header -> header.kind() == TradeCountryHeaderKind.COUNTRY)
+            .map(FundamentalModelTradeFlowsRes.TradeCountryHeader::key)
+            .collect(Collectors.toSet());
+
+        return allHeaders.stream()
+            .filter(header ->
+                (header.kind() == TradeCountryHeaderKind.REGION_SUBTOTAL
+                    && matchedRegions.contains(header.region()))
+                    || (header.kind() == TradeCountryHeaderKind.COUNTRY
+                        && matchedCountryKeys.contains(header.key())))
             .toList();
     }
 
