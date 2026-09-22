@@ -40,10 +40,12 @@ import com.sk.domain.shared.entity.master.tmm.MiSignpost;
 import com.sk.domain.shared.enums.fundamentalmodel.FundamentalModelCaseStatus;
 import com.sk.domain.shared.enums.fundamentalmodel.FundamentalModelRunStatus;
 import com.sk.domain.shared.enums.nextgen.GraphPeriodUnit;
+import com.sk.domain.shared.enums.nextgen.ModelExecutionPreparationStatus;
 import com.sk.domain.shared.enums.nextgen.ScenarioApiVersion;
 import com.sk.domain.shared.enums.nextgen.IndexName;
 import com.sk.domain.shared.enums.nextgen.ScenarioDisplayStatus;
 import com.sk.domain.shared.enums.nextgen.ScenarioStatus;
+import com.sk.domain.shared.repository.master.tmd.ModelExecutionPreparationRepository;
 import com.sk.domain.shared.repository.master.tmd.ScenarioCaseRepository;
 import com.sk.domain.shared.repository.master.tmd.ScenarioCaseRunHistoryRepository;
 import com.sk.domain.shared.repository.master.tmd.projection.MiBasePriceRow;
@@ -62,6 +64,7 @@ import java.util.Comparator;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -77,11 +80,23 @@ public class ScenarioGroupServiceImpl implements ScenarioGroupService {
 
     private static final String SCENARIO_CANCELLED = "SCENARIO_CANCELLED";
 
+    /**
+     * 수급모델 실행 접수 후 아직 RUNNING 케이스가 생성되기 전 준비 구간 상태.
+     * CONFIRMING(파라미터 확정 반영 중), PREPARING_EXECUTION(엑셀 병합, 파일 스테이징 중)만 해당한다.
+     * REQUESTING, PROPOSAL_PENDING은 파라미터 제안 생성 단계라 실행 접수와 무관하고,
+     * EXECUTING은 실행 콜백 이후에도 유지되는 준종결 상태라 포함하면 안 된다.
+     */
+    private static final List<ModelExecutionPreparationStatus> MODEL_EXECUTION_PREPARING_STATUSES = List.of(
+        ModelExecutionPreparationStatus.CONFIRMING,
+        ModelExecutionPreparationStatus.PREPARING_EXECUTION
+    );
+
     private final MiScenarioGroupRepository scenarioGroupRepository;
     private final MiScenarioGroupEventRepository scenarioGroupEventRepository;
     private final ScenarioDesignAgentApi scenarioDesignAgentApi;
     private final ScenarioCaseRepository scenarioCaseRepository;
     private final ScenarioCaseRunHistoryRepository scenarioCaseRunHistoryRepository;
+    private final ModelExecutionPreparationRepository modelExecutionPreparationRepository;
     private final AuthorizationService authorizationService;
     private final PriceInterpretationStore priceInterpretationStore;
 
@@ -207,7 +222,9 @@ public class ScenarioGroupServiceImpl implements ScenarioGroupService {
 
     /**
      * [그래프 실행상태 폴링]
-     * - 가격 없이 시나리오별 실행중(modelRunning)만 가볍게 반환 — FE는 anyRunning(=modelRunning) true→false 전환 시 그래프를 재조회
+     * - 가격 없이 시나리오별 실행중(modelRunning)/준비중(preparing)만 가볍게 반환
+     * - preparing은 실행 접수 후 RUNNING 케이스 생성 전 구간(파라미터 확정 반영, 엑셀 병합, 파일 스테이징) — 일괄 실행은 순차 접수라 아직 차례가 오지 않은 시나리오는 false일 수 있다
+     * - FE는 anyRunning과 anyPreparing이 모두 false로 전환될 때 그래프를 재조회
      */
     @Override
     public ScenarioGroupRunStatusRes getScenarioGroupGraphRunStatus(Long scenarioGroupId) {
@@ -219,12 +236,24 @@ public class ScenarioGroupServiceImpl implements ScenarioGroupService {
 
         List<Long> scenarioIds = scenarioIdsOf(scenarioRows);
         ScenarioRunStates runStates = resolveRunStates(scenarioIds);
+        Set<Long> preparingScenarioIds = findPreparingScenarioIds(scenarioIds);
 
         List<ScenarioRunStatus> scenarios = scenarioIds.stream()
-            .map(scenarioId -> new ScenarioRunStatus(scenarioId, runStates.isRunning(scenarioId)))
+            .map(scenarioId -> new ScenarioRunStatus(scenarioId, runStates.isRunning(scenarioId), preparingScenarioIds.contains(scenarioId)))
             .toList();
 
         return ScenarioGroupRunStatusRes.of(scenarioGroupId, scenarios);
+    }
+
+    /**
+     * 실행 접수 후 준비중인 시나리오 집합.
+     * 활성시나리오ID(actv_scnr_id) unique helper 컬럼 기준 조회라 시나리오당 최대 1행만 읽는다.
+     */
+    private Set<Long> findPreparingScenarioIds(List<Long> scenarioIds) {
+        if (scenarioIds.isEmpty()) {
+            return Set.of();
+        }
+        return Set.copyOf(modelExecutionPreparationRepository.findActiveScenarioIdsByStatuses(scenarioIds, MODEL_EXECUTION_PREPARING_STATUSES));
     }
 
     /**
