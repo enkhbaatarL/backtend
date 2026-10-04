@@ -50,7 +50,7 @@ spring:
             singlelogout:
               url: ${MI_DOMAIN:https://dev-mi.sk.com}/saml2/SingleLogout
             assertingparty:
-              metadata-uri: classpath:saml/idp/devn.gdisso.sk.com.metadata.xml
+              metadata-uri: classpath:saml/idp/new_sso/dev-sso-mip.xml
             signing:
               credentials:
                 - private-key-location: classpath:saml/sp/key/sp-private.key
