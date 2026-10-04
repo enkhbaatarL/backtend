@@ -36,7 +36,7 @@ import org.springframework.test.web.servlet.MockMvc;
 @SpringBootTest(
     classes = McpOpenApiTest.TestApplication.class,
     properties = {
-        "spring.profiles.active=testdb",
+        "spring.profiles.active=testdb,dedicated",
         "springdoc.api-docs.enabled=true",
         "springdoc.swagger-ui.enabled=false"
     })
@@ -194,8 +194,7 @@ class McpOpenApiTest {
     })
     @Import({
         SwaggerConfig.class,
-        McpEventController.class,
-        McpScenarioGroupController.class,
+        McpEventDedicatedController.class,
         McpScenarioGroupDedicatedController.class
     })
     static class TestApplication {

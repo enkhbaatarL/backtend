@@ -33,15 +33,14 @@ class McpControllerDelegationTest {
     @Mock
     private CmeBenchmarkService cmeBenchmarkService;
 
-    private McpEventController eventController;
-    private McpScenarioGroupController scenarioGroupController;
-    private McpScenarioGroupDedicatedController dedicatedController;
+    private McpEventDedicatedController eventController;
+    private McpScenarioGroupDedicatedController scenarioGroupController;
 
     @BeforeEach
     void setUp() {
-        eventController = new McpEventController(eventService);
-        scenarioGroupController = new McpScenarioGroupController(scenarioGroupService, priceInterpretationService);
-        dedicatedController = new McpScenarioGroupDedicatedController(cmeBenchmarkService);
+        eventController = new McpEventDedicatedController(eventService);
+        scenarioGroupController = new McpScenarioGroupDedicatedController(
+            scenarioGroupService, priceInterpretationService, cmeBenchmarkService);
     }
 
     @Test
@@ -88,7 +87,7 @@ class McpControllerDelegationTest {
     @Test
     @DisplayName("CME GET 1건은 datasource 로직 복제 없이 원본 CmeBenchmarkService에 위임한다")
     void delegatesCmeOperation() {
-        dedicatedController.getScenarioGroupGraphCmeBenchmark(IndexName.TTF, GraphPeriodUnit.YEARLY);
+        scenarioGroupController.getScenarioGroupGraphCmeBenchmark(IndexName.TTF, GraphPeriodUnit.YEARLY);
 
         then(cmeBenchmarkService).should().getCmeBenchmarkGraph(IndexName.TTF, GraphPeriodUnit.YEARLY);
         then(cmeBenchmarkService).shouldHaveNoMoreInteractions();
