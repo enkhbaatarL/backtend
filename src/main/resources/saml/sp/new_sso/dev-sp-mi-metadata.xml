@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<md:EntityDescriptor xmlns:md="urn:oasis:names:tc:SAML:2.0:metadata" entityID="https://dev-mi.sk.com/saml/metadata">
+   <md:SPSSODescriptor AuthnRequestsSigned="false" WantAssertionsSigned="true" protocolSupportEnumeration="urn:oasis:names:tc:SAML:2.0:protocol">
+      <md:SingleLogoutService Binding="urn:oasis:names:tc:SAML:2.0:bindings:HTTP-POST" Location="https://dev-mi.sk.com/saml2/SingleLogout" />
+      <md:NameIDFormat>urn:oasis:names:tc:SAML:1.1:nameid-format:emailAddress</md:NameIDFormat>
+      <md:AssertionConsumerService Binding="urn:oasis:names:tc:SAML:2.0:bindings:HTTP-POST" Location="https://dev-mi.sk.com/login/saml2/sso/mi" index="0" isDefault="true" />
+   </md:SPSSODescriptor>
+   <md:Organization>
+      <md:OrganizationName xml:lang="en">SK</md:OrganizationName>
+      <md:OrganizationDisplayName xml:lang="en">SK</md:OrganizationDisplayName>
+      <md:OrganizationURL xml:lang="en">https://www.sk.com/</md:OrganizationURL>
+   </md:Organization>
+</md:EntityDescriptor>
