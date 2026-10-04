@@ -128,6 +128,19 @@ class McpOpenApiTest {
     }
 
     @Test
+    @DisplayName("그래프·가격전망 해석 operation은 빈 결과의 판단 기준(수급모델 실행 상태)을 노출한다")
+    void exposesEmptyResultGuidanceForGraphAndInterpretations() throws Exception {
+        JsonNode paths = apiDocument("MCP API").path("paths");
+
+        assertThat(paths.path(MCP_PREFIX + "scenario-groups/{scenarioGroupId}/graph").path("get").path("description").asText())
+            .contains("executed = false, modelRunning = false")
+            .contains("미실행");
+        assertThat(paths.path(MCP_PREFIX + "scenario-groups/{scenarioGroupId}/price-interpretations").path("get").path("description").asText())
+            .contains("generatable = false, interpretations = []")
+            .contains("scenarioSeries[].executed");
+    }
+
+    @Test
     @DisplayName("MCP 경로는 ETC와 SK Gas 기존 그룹에 중복되지 않는다")
     void excludesMcpPathsFromExistingGroups() throws Exception {
         assertNoMcpPath(apiDocument("ETC API"));

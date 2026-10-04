@@ -72,7 +72,21 @@ public class McpScenarioGroupDedicatedController {
     }
 
     @ApiOrder(3)
-    @Operation(summary = "시나리오 그룹 가격전망 그래프 조회", description = "단일 인덱스와 기간 단위의 MI Base·시나리오 가격전망을 조회합니다.")
+    @Operation(
+        summary = "시나리오 그룹 가격전망 그래프 조회",
+        description = """
+            단일 인덱스와 기간 단위의 MI Base·시나리오 가격전망을 조회합니다.
+
+            시나리오별 가격은 해당 시나리오의 MI 수급모델 실행이 완료된 경우에만 채워집니다.
+            가격이 비어 있으면 오류가 아니라 실행 상태 때문이며, scenarioSeries[]의 필드로 판단합니다
+            (화면도 같은 기준으로 '미실행' 범례를 표시합니다).
+            - status = discarded : 폐기 판정된 시나리오. 응답에는 다른 시나리오와 같은 기준으로 가격이 내려오지만, 화면은 '폐기'로 표시하고 그래프에 그리지 않습니다.
+            - executed = false, modelRunning = true : 수급모델 실행 중입니다. 완료 후 다시 조회하면 가격이 채워집니다.
+            - executed = false, modelRunning = false : 완료된 수급모델 실행이 없습니다(미실행, 또는 실행했으나 실패). baseCaseValues/userAdjustedValues가 null입니다.
+            - executed = true 인데 baseCaseValues/userAdjustedValues가 null : 실행은 완료됐으나 요청한 인덱스(indexName)의 가격 결과가 없습니다.
+            - executed = true 이고 값 있음 : 정상. 값 목록은 dates와 같은 순서이며, 빠진 기간은 null입니다.
+            executed는 인덱스와 무관하게 '완료된 실행이 있는지'만 뜻하므로, 가격 null 여부와 함께 봐야 합니다.
+            """)
     @Parameter(name = "indexName", description = "조회 인덱스 (JKM / TTF / HH). 기본값 JKM")
     @Parameter(name = "periodUnit", description = "기간 단위 (monthly / yearly, 대소문자 무관). 기본값 monthly")
     @ApiResponse(responseCode = "200", description = "조회 성공")
@@ -120,7 +134,21 @@ public class McpScenarioGroupDedicatedController {
     }
 
     @ApiOrder(6)
-    @Operation(summary = "가격전망 해석 조회", description = "시나리오 그룹의 시나리오별 가격전망 해석 section을 조회합니다.")
+    @Operation(
+        summary = "가격전망 해석 조회",
+        description = """
+            시나리오 그룹의 시나리오별 가격전망 해석 section을 조회합니다.
+
+            해석은 수급모델 실행이 완료된 시나리오에 대해 사용자가 화면에서 '가격전망 해석 생성'을 요청해야 만들어집니다.
+            interpretations가 빈 배열이면 오류가 아니라 아직 생성되지 않은 상태이며, 다음으로 판단합니다.
+            - generatable = 그룹 안에 (수급모델 실행 완료) AND (해석 없음 또는 재실행으로 재생성 필요)인 시나리오가 하나라도 있는지 여부.
+            - generatable = false, interpretations = [] : 수급모델을 실행한 시나리오가 없어 해석을 만들 수 없습니다(수급모델 미실행).
+            - generatable = true, interpretations = [] : 수급모델은 실행됐으나 해석을 아직 생성하지 않았습니다.
+            - generatable = true, 일부만 존재 : 해석이 없거나 재실행으로 최신이 아닌 시나리오가 있습니다.
+            - interpretations[].status : generating(생성중) / generated(생성완료) / failed(재생성 실패 — 직전 해석이 있을 때만 포함).
+            '수급모델 미실행'과 '실행 시나리오 없음'을 정확히 구분하려면 시나리오 그룹 가격전망 그래프 조회 결과의
+            scenarioSeries[].executed를 함께 확인합니다(화면도 그래프 결과와 함께 판단합니다).
+            """)
     @ApiResponse(responseCode = "200", description = "조회 성공")
     @GetMapping("/{scenarioGroupId}/price-interpretations")
     @RequiredPermissionRules(rules = {
