@@ -166,7 +166,7 @@ public class CustomMiEventRepositoryImpl implements CustomMiEventRepository {
 
     /**
      * 이벤트에 연결된 시나리오 그룹과 각 그룹의 구성 이벤트를 평탄화 행으로 조회.
-     * 이벤트 목록의 연결 그룹 펼침 패널용 — 그룹명, 진행 단계, 구성 이벤트명을 한 번에 가져온다.
+     * 이벤트 목록의 연결 그룹 펼침 패널용 — 그룹명, 생성일시, 진행 단계, 구성 이벤트명을 한 번에 가져온다.
      * 그룹 최신순(scenarioGroupId 내림차순), 그룹 내 구성 이벤트는 display_order 순.
      */
     @Override
@@ -182,6 +182,7 @@ public class CustomMiEventRepositoryImpl implements CustomMiEventRepository {
                 miScenarioGroup.status,
                 miScenarioGroup.stage,
                 miScenarioGroup.requestUserId,
+                miScenarioGroup.createDt,
                 member.displayOrder,
                 // note: 이벤트명은 event_title 대신 one_line_summary 표기 (이벤트 도메인과 동일 기준)
                 memberEvent.oneLineSummary

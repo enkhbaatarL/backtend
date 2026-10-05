@@ -47,7 +47,7 @@ public class SwaggerConfig {
     private static final String BASE_RESPONSE_SCHEMA_REF = "#/components/schemas/" + BASE_RESPONSE_SCHEMA;
 
     // note: 안정화 후 투머치 문서 모두 삭제예정
-    private static final String SW_VERSION_BASE = "v1.3.0";
+    private static final String SW_VERSION_BASE = "v1.3.1";
     private static final DateTimeFormatter SW_DEPLOY_DATE_FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
 
     @Bean
@@ -144,6 +144,18 @@ public class SwaggerConfig {
 
   ## 수정사항
   <details open>
+    <summary><strong>v1.3.1 (2026-10-05)</strong></summary>
+
+  - [Scenario Design — 동일 조합 중복 생성 허용]
+    - 이벤트 조합 설계 상태 조회 API 응답 교체 — `designStatus` 등 CTA 분기 필드 제거, 구성이 같은 그룹 목록(`sameCombinationGroupCount`/`sameCombinationGroups`) 제공 (이벤트 1개 선택 시 빈 목록)
+    - 시나리오 그룹 생성 API: 동일 조합 그룹이 있어도 항상 새로 생성, 동일 조합 자동 재연결 제거, 요청 본문 `operationId`/`lastSequence` 제거
+    - 시나리오 그룹 생성 스트림 재연결 API 추가 (`GET .../{scenarioGroupId}/creation/stream?lastSequence=`)
+  - [Event]
+    - 이벤트 연결 시나리오 그룹 목록 API: `creatorName`(생성자명)/`createdAt`(생성일시) 추가
+
+  </details>
+
+  <details>
     <summary><strong>v1.3.0 (2026-08-18)</strong></summary>
 
   - [Scenario Design — v4 멀티 이벤트 전환]

@@ -4,6 +4,7 @@ import com.sk.domain.shared.enums.nextgen.ScenarioDesignDisplayStatus;
 import com.sk.domain.shared.enums.nextgen.ScenarioGroupStage;
 import com.sk.domain.shared.enums.nextgen.ScenarioGroupStatus;
 import io.swagger.v3.oas.annotations.media.Schema;
+import java.time.LocalDateTime;
 import java.util.List;
 
 /**
@@ -16,6 +17,12 @@ public record EventLinkedScenarioGroupRes(
 
     @Schema(description = "시나리오 그룹명", example = "시나리오 그룹명 01 - 카타르 LNG 공급 차질 확산")
     String title,
+
+    @Schema(description = "생성자명", example = "홍길동", nullable = true)
+    String creatorName,
+
+    @Schema(description = "생성일시", example = "2026-08-27 15:52:00")
+    LocalDateTime createdAt,
 
     @Schema(description = "그룹 상태 (creating/created/realized)", example = "creating")
     ScenarioGroupStatus status,
@@ -43,12 +50,14 @@ public record EventLinkedScenarioGroupRes(
 
 ) {
 
-    public static EventLinkedScenarioGroupRes of(Long scenarioGroupId, String title, ScenarioGroupStatus status, ScenarioGroupStage stage, Boolean mine, List<String> events) {
+    public static EventLinkedScenarioGroupRes of(Long scenarioGroupId, String title, String creatorName, LocalDateTime createdAt, ScenarioGroupStatus status, ScenarioGroupStage stage, Boolean mine, List<String> events) {
         boolean creating = status == ScenarioGroupStatus.CREATING;
         ScenarioDesignDisplayStatus.CreatingStep designStep = creating ? ScenarioDesignDisplayStatus.CreatingStep.of(stage) : null;
         return new EventLinkedScenarioGroupRes(
             scenarioGroupId,
             title,
+            creatorName,
+            createdAt,
             status,
             status == null ? null : status.getLabel(),
             stage,

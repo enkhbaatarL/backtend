@@ -23,6 +23,7 @@ import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
+import jakarta.validation.constraints.PositiveOrZero;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -47,8 +48,8 @@ public class ScenarioDesignController {
     @Operation(
         summary = "이벤트 조합 설계 상태 조회 API",
         description = """
-            선택한 이벤트 조합과 일치하는 시나리오 그룹의 설계 상태를 조회합니다. <br>
-            이벤트 목록 플로팅바의 CTA 분기에 사용합니다. (이벤트 선택 변경 시마다 호출)
+            선택한 이벤트 조합과 구성이 같은 시나리오 그룹 목록을 조회합니다. <br>
+            이벤트 목록 플로팅바의 동일 조합 안내에 사용합니다. (이벤트 선택 변경 시마다 호출)
 
             <br><br>
             ### 요청 파라미터
@@ -56,18 +57,17 @@ public class ScenarioDesignController {
 
             <br><br>
             ### 응답 필드
-            - `designStatus` / `designStatusLabel`: `designable`(설계가능) / `creating`(설계중) / `created`(설계완료)
-            - `scenarioGroupId`: 일치 그룹 ID (`designable`이면 null)
-            - `designStep` / `designStepLabel`: 설계중 세부 단계 — `step1`(분기항목 설계) / `step2`(Signpost 설계). 설계중이 아니면 null
-            - `occupied` / `occupantUserId` / `occupantUserName`: 점유 여부와 점유 사용자 (설계중일 때만)
-            - `mine`: 점유자가 로그인 사용자인지 (설계중일 때만, 그 외 null)
+            - `sameCombinationGroupCount`: 구성이 같은 그룹 수 — 0이면 안내 미노출
+            - `sameCombinationGroups[]`: 구성이 같은 그룹 목록 (생성일시 최신순)
+              - `scenarioGroupId` / `title` / `creatorName` / `createdAt`
+              - `status` / `stage` (+라벨)
+              - `designStep` / `designStepLabel`: 설계중 세부 단계 — `step1`(1단계) / `step2`(2단계). 설계중이 아니면 null
+              - `mine`: 설계중 그룹의 진행자가 로그인 사용자인지 (설계중이 아니면 null)
 
             <br><br>
-            ### designStatus별 CTA 분기
-            - `designable`: 일치 그룹 없음 — "시나리오 설계" 버튼 노출
-            - `creating` + `mine=true`: 로그인 사용자 진행 중 — 단계 배지 표시, 클릭 시 해당 단계 화면으로 이동
-            - `creating` + `mine=false`: 다른 사용자가 진행 중 — 잠금 + 단계 배지 표시, 클릭 시 안내 모달
-            - `created`: 완료 그룹 존재 — 클릭 시 그룹 상세로 이동
+            ### 참고
+            - 이벤트 1개 선택 시에는 동일 조합 검사를 하지 않습니다 (빈 목록).
+            - 동일 조합 그룹이 있어도 [시나리오 그룹 생성 API]는 항상 새 그룹을 생성합니다.
             """
     )
     @ApiResponse(responseCode = "200", description = "조회 성공")
@@ -92,27 +92,20 @@ public class ScenarioDesignController {
             <br><br>
             ### 요청 본문
             - `miEventIds`: 설계 대상 이벤트 ID 목록 (1~5개)
-            - `operationId` 오퍼레이션 ID (재연결 시, 사용)
-            - `lastSequence`: 마지막 시퀀스 (재연결 시, 사용)
 
             <br><br>
-            ### 재연결 자동 처리
-            연결이 끊기면 **동일한 `miEventIds` 조합으로 API를 다시 호출합니다.**
-            동일 조합의 진행중 작업이 있으면 B.E가 새 생성 대신 그 작업의 스트림으로 자동으로 재연결합니다. <br>
-            이때 **커서 쌍(`operationId`+`lastSequence`)을 함께 보내면, 재연결 대상 작업과 `operationId`가 일치할 때 그 다음 sequence부터 replay** 됩니다.
-            (불일치하거나 생략하면 0부터 전체 replay — 중복은 커서로 무시)
+            ### 동일 조합
+            동일 조합 그룹이 있어도 **항상 새 그룹을 생성**합니다.
 
             <br><br>
-            ### sequence 커서 (FE 관리)
-            F.E는 스트림 수신 중 `accepted`의 `operationId`와 마지막으로 처리한 `sequence`를 **쌍으로** 유지하다가, 재연결 재호출 때 그대로 보냅니다.
-            SSE 종료 event를 처리하면 커서 쌍을 폐기합니다 (끝난 작업의 커서를 새 작업에 적용하지 않기 위함).
+            ### 재연결
+            연결이 끊기면 `accepted`의 `scenarioGroupId`로 [시나리오 그룹 생성 스트림 재연결 API]를 호출합니다.
+            F.E는 마지막으로 처리한 `sequence`를 유지하다가 재연결 시 `lastSequence`로 보냅니다.
 
             <br><br>
             ### 전송 형식
             `text/event-stream`. <br>
-            **요청의 Accept 헤더는 `text/event-stream, application/json`으로 보냅니다** — 접수 실패 시 오류는
-            SSE가 아니라 JSON(BaseResponse)으로 응답되는데, Accept에 JSON이 없으면 콘텐츠 협상에 걸려 오류 본문이 비어
-            409 재연결 식별자(scenarioGroupId/operationId)를 받을 수 없습니다. <br>
+            **요청의 Accept 헤더는 `text/event-stream, application/json`으로 보냅니다** — 접수 실패 시 오류는 JSON(BaseResponse)으로 응답됩니다. <br>
             각 프레임은 `id:`(= sequence), `event:`(이벤트 종류), `data:`(JSON)로 구성됩니다. <br>
             진행 이벤트가 없는 동안 keep-alive 주석 프레임(`: keep-alive`)이 약 15초 간격으로 전달됩니다.
             (id/event/data가 없는 주석 프레임이므로 연결 생존 신호로만 취급(무시)합니다.)
@@ -179,8 +172,7 @@ public class ScenarioDesignController {
     )
     @ApiResponse(responseCode = "200", description = "SSE 연결 성공 (text/event-stream)")
     @ApiResponse(responseCode = "400", description = "요청 검증 실패(개수/중복/양수, B.E 선검증)")
-    @ApiResponse(responseCode = "403", description = "동일 조합 작업/그룹이 타 사용자 소유. 오류 수신 시 [이벤트 조합 설계 상태 조회 API]를 재조회해 CTA를 갱신합니다 (JSON 오류는 code/message만 내려감)")
-    @ApiResponse(responseCode = "500", description = "Agent 오류 — 409/403 외 Agent의 모든 오류 응답은 B.E-Agent 구간 문제로 취급해 API-004(외부 API 오류 표준 메시지)로 내려갑니다 (원문은 서버 로그)")
+    @ApiResponse(responseCode = "500", description = "Agent 오류 — 409/403 외 Agent의 모든 오류 응답은 API-004(외부 API 오류 표준 메시지)로 내려갑니다 (원문은 서버 로그)")
     @PostMapping(value = "/creation/stream", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
     @RequiredPermissionRules(rules = {
         @PermissionRule(role = Role.USER, conditions = {PermissionCondition.SKGAS_COMPANY_USER_ONLY}),
@@ -193,6 +185,41 @@ public class ScenarioDesignController {
     }
 
     @ApiOrder(3)
+    @Operation(
+        summary = "시나리오 그룹 생성 스트림 재연결 API (SSE)",
+        description = """
+            진행 중인 시나리오 그룹 생성 스트림에 재연결합니다. <br>
+            연결 끊김, 새로고침, 진행 중 그룹 [보기] 진입 시 사용합니다.
+
+            <br><br>
+            ### 요청 파라미터
+            - `scenarioGroupId`: 시나리오 그룹 ID
+            - `lastSequence`: 마지막으로 처리한 sequence — 주면 그 다음부터, 생략하면 0부터 전체 replay
+
+            <br><br>
+            ### 참고
+            - 이벤트 종류와 data 형식은 [시나리오 그룹 생성 API]와 같습니다.
+            - 진행자 본인만 재연결할 수 있습니다.
+            - 생성 작업이 이미 끝났으면 오류가 반환됩니다 — [설계 화면 데이터 조회 API]로 조회합니다.
+            """
+    )
+    @ApiResponse(responseCode = "200", description = "SSE 연결 성공 (text/event-stream)")
+    @ApiResponse(responseCode = "400", description = "그룹 없음(RSC-001) / 진행 중인 생성 작업 없음(BIZ-001)")
+    @ApiResponse(responseCode = "403", description = "다른 사용자가 진행 중인 그룹")
+    @ApiResponse(responseCode = "500", description = "Agent 오류 — API-004(외부 API 오류 표준 메시지) (원문은 서버 로그)")
+    @GetMapping(value = "/{scenarioGroupId}/creation/stream", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
+    @RequiredPermissionRules(rules = {
+        @PermissionRule(role = Role.USER, conditions = {PermissionCondition.SKGAS_COMPANY_USER_ONLY}),
+        @PermissionRule(role = Role.ADMIN, conditions = {PermissionCondition.THIRD_PARTY_ADMIN_ONLY})
+    })
+    public SseEmitter resumeScenarioGroupStream(
+        @Parameter(description = "시나리오 그룹 ID", example = "410") @PathVariable Long scenarioGroupId,
+        @Parameter(description = "마지막으로 처리한 sequence (생략 시 0부터 전체 replay)", example = "7") @RequestParam(required = false) @PositiveOrZero Integer lastSequence
+    ) {
+        return scenarioDesignV4Service.resumeDesignStream(scenarioGroupId, lastSequence);
+    }
+
+    @ApiOrder(4)
     @Operation(
         summary = "설계 화면 데이터 조회 API",
         description = """
@@ -260,7 +287,7 @@ public class ScenarioDesignController {
         return BaseResponseFactory.create(scenarioDesignV4Service.getPresentation(scenarioGroupId, operationId));
     }
 
-    @ApiOrder(4)
+    @ApiOrder(5)
     @Operation(
         summary = "추가 분기항목 후보 조회 API",
         description = """
@@ -293,7 +320,7 @@ public class ScenarioDesignController {
         return BaseResponseFactory.create(scenarioDesignV4Service.getAdditionalDimensions(scenarioGroupId));
     }
 
-    @ApiOrder(5)
+    @ApiOrder(6)
     @Operation(
         summary = "시나리오 검토/Signpost 생성 API (SSE)",
         description = """
@@ -370,7 +397,7 @@ public class ScenarioDesignController {
         return sseRegistry.connect(scenarioGroupId);
     }
 
-    @ApiOrder(6)
+    @ApiOrder(7)
     @Operation(
         summary = "시나리오 변경사항 검토 요청 API",
         description = """
@@ -400,7 +427,7 @@ public class ScenarioDesignController {
         return BaseResponseFactory.create(scenarioDesignService.validateDesign(scenarioGroupId, request));
     }
 
-    @ApiOrder(7)
+    @ApiOrder(8)
     @Operation(
         summary = "Signpost 생성 API (step2 진입)",
         description = """
@@ -430,7 +457,7 @@ public class ScenarioDesignController {
         return BaseResponseFactory.create(scenarioDesignService.createSignposts(scenarioGroupId, request));
     }
 
-    @ApiOrder(8)
+    @ApiOrder(9)
     @Operation(
         summary = "시나리오 설계 최종 확정 API",
         description = """
@@ -460,7 +487,7 @@ public class ScenarioDesignController {
         return BaseResponseFactory.create(scenarioDesignService.confirmDesign(scenarioGroupId, request));
     }
 
-    @ApiOrder(9)
+    @ApiOrder(10)
     @Operation(
         summary = "시나리오 설계 전체 초기화 API",
         description = """

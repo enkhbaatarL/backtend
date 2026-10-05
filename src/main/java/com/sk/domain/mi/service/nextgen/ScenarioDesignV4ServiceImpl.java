@@ -5,6 +5,7 @@ import com.sk.common.enums.ResultCode;
 import com.sk.common.exception.AgentDesignApiException;
 import com.sk.common.exception.ApiErrorException;
 import com.sk.common.exception.AppErrorException;
+import com.sk.common.exception.AppHttpStatusException;
 import com.sk.common.utils.DateUtil;
 import com.sk.common.utils.JsonUtil;
 import com.sk.domain.mi.dto.request.nextgen.design.ScenarioDesignStartV4Req;
@@ -26,14 +27,12 @@ import com.sk.domain.shared.client.dto.response.AdditionalDimensionsAgentRes;
 import com.sk.domain.shared.client.dto.response.ScenarioPresentationAgentRes;
 import com.sk.domain.shared.entity.master.tmd.User;
 import com.sk.domain.shared.entity.master.tmm.MiScenarioGroup;
-import com.sk.domain.shared.entity.master.tmm.MiScenarioGroupEvent;
 import com.sk.domain.shared.entity.master.tmm.MiScenarioGroupOperation;
 import com.sk.domain.shared.enums.nextgen.DesignOperationStatus;
 import com.sk.domain.shared.enums.nextgen.DesignOperationType;
 import com.sk.domain.shared.enums.nextgen.ScenarioGroupStage;
 import com.sk.domain.shared.enums.nextgen.ScenarioGroupStatus;
 import com.sk.domain.shared.repository.master.tmd.UserRepository;
-import com.sk.domain.shared.repository.master.tmm.MiScenarioGroupEventRepository;
 import com.sk.domain.shared.repository.master.tmm.MiScenarioGroupOperationRepository;
 import com.sk.domain.shared.repository.master.tmm.MiScenarioGroupRepository;
 import com.sk.domain.shared.repository.master.tmm.projection.ScenarioGroupBaseEventRow;
@@ -43,6 +42,7 @@ import java.time.LocalDateTime;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
@@ -70,12 +70,10 @@ import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
  * JSON 오류(중복 정책 등)면 그대로 예외로 변환해 BaseResponse 오류 응답이 되고,
  * 스트림이 열리면 SseEmitter를 반환한 뒤 전용 스레드가 프레임을 계속 중계한다.
  *
- * 재연결 정책(이중 구조): 정상 경로는 DB 선조회 — 내 진행중 작업 중 동일 이벤트 조합이 있으면
- * 생성 요청 없이 바로 해당 operation 스트림에 재연결한다. 선조회와 생성 사이의 레이스는
- * Agent 409 백스톱이 흡수한다(응답의 식별자로 같은 emitter에 재연결 — 계약 5.2의 정석 플로우).
- * 재연결 replay 시작점은 FE 커서다 — 요청의 lastSequence를 Agent Last-Event-ID로 전달해
+ * 동일 이벤트 조합의 그룹 중복 생성을 허용한다 — 생성 요청은 항상 새 그룹을 만들고,
+ * 조합으로는 재연결 대상을 특정할 수 없으므로 재연결은 그룹 ID 기준의 별도 API로 받는다.
+ * 재연결 replay 시작점은 FE 커서다 — lastSequence를 Agent Last-Event-ID로 전달해
  * 그 다음 sequence부터 replay하고, 커서가 없으면(브라우저 재시작 등) 0부터 전체 replay한다.
- * FE는 연결 끊김/새로고침 후에도 같은 생성 API 재호출만으로 복구된다.
  */
 @Slf4j
 @Service
@@ -97,7 +95,6 @@ public class ScenarioDesignV4ServiceImpl implements ScenarioDesignV4Service {
     private final ScenarioDesignAgentApi scenarioDesignAgentApi;
     private final MiScenarioGroupRepository scenarioGroupRepository;
     private final MiScenarioGroupOperationRepository operationRepository;
-    private final MiScenarioGroupEventRepository groupEventRepository;
     private final ScenarioDesignValidationStore validationStore;
     private final FailedCreatingGroupResolver failedCreatingGroupResolver;
     private final AuthorizationService authorizationService;
@@ -106,68 +103,54 @@ public class ScenarioDesignV4ServiceImpl implements ScenarioDesignV4Service {
 
     /**
      * [이벤트 조합 설계 상태 조회]
-     * 선택한 이벤트 조합과 정확히 일치하는 그룹의 상태를 판정한다 (이벤트 목록 플로팅바 CTA 분기).
+     * 선택한 이벤트 조합과 구성이 같은 그룹 목록을 조회한다 (이벤트 목록 플로팅바의 동일 조합 안내).
+     * 단건 선택은 동일 조합 검사 대상이 아니므로 빈 목록을 반환한다.
      */
     @Override
     public ScenarioDesignStatusRes getDesignStatus(List<Long> miEventIds) {
 
         validateEventIds(miEventIds);
 
-        Set<Long> requested = Set.copyOf(miEventIds);
+        if (miEventIds.size() == 1) return ScenarioDesignStatusRes.of(List.of());
 
-        // 요청 이벤트 ID 하나로 후보를 좁히고, 비교로 확정
-        List<MiScenarioGroup> matched = groupEventRepository
-            .findActiveWithGroupByMiEventId(miEventIds.get(0))
-            .stream()
-            .map(MiScenarioGroupEvent::getScenarioGroup)
-            .filter(group -> requested.equals(Set.copyOf(groupEventRepository.findActiveEventIdsByScenarioGroupId(group.getScenarioGroupId()))))
+        List<MiScenarioGroup> matched = scenarioGroupRepository.findActiveByExactEventSet(miEventIds, miEventIds.size());
+
+        // 실패 방치(좀비) 그룹 제외 (FailedCreatingGroupResolver 단일 지점 위임)
+        Set<Long> zombieGroupIds = failedCreatingGroupResolver.resolve(matched.stream()
+            .filter(group -> group.getStatus() == ScenarioGroupStatus.CREATING)
+            .map(MiScenarioGroup::getScenarioGroupId)
+            .toList());
+
+        List<MiScenarioGroup> groups = matched.stream()
+            .filter(group -> !zombieGroupIds.contains(group.getScenarioGroupId()))
             .toList();
 
-        MiScenarioGroup creating = matched.stream()
-            .filter(group -> group.getStatus() == ScenarioGroupStatus.CREATING)
-            .filter(group -> !isFailedCreating(group.getScenarioGroupId()))
-            .findFirst()
-            .orElse(null);
+        Map<Long, String> userNames = resolveUserNames(groups.stream().map(MiScenarioGroup::getRequestUserId).toList());
+        Long userId = authorizationService.getUserNo().longValue();
 
-        // [생성중] 응답
-        // mine은 설계중일 때만 값을 갖는다 (designable/created는 점유 개념이 없어 null).
-        // 진행자 미상(request_usr_id null)은 Agent 적재 결함이므로 소유권 판정을 fail-closed로 두어 타인 점유로 본다.
-        if (creating != null) {
-            Long userId = authorizationService.getUserNo().longValue();
-            return ScenarioDesignStatusRes.creating(
-                creating.getScenarioGroupId(),
-                creating.getStage(),
-                creating.getRequestUserId(),
-                resolveUserName(creating.getRequestUserId()),
-                userId.equals(creating.getRequestUserId()));
-        }
-
-        // [생성완료 || 생성가능] 응답
-        return matched.stream()
-            .filter(group -> group.getStatus() == ScenarioGroupStatus.CREATED || group.getStatus() == ScenarioGroupStatus.REALIZED)
-            .findFirst()
-            .map(group -> ScenarioDesignStatusRes.created(group.getScenarioGroupId()))
-            .orElseGet(ScenarioDesignStatusRes::designable);
+        // mine: 진행자 미상(request_usr_id null)은 Agent 적재 결함이므로 fail-closed로 타인 진행 취급한다.
+        return ScenarioDesignStatusRes.of(groups.stream()
+            .map(group -> ScenarioDesignStatusRes.SameCombinationGroup.of(
+                group.getScenarioGroupId(),
+                group.getTitle(),
+                userNames.get(group.getRequestUserId()),
+                group.getCreateDt(),
+                group.getStatus(),
+                group.getStage(),
+                userId.equals(group.getRequestUserId())))
+            .toList());
     }
 
-    /**
-     * 실패 방치(좀비) 그룹 판정 (FailedCreatingGroupResolver 단일 지점 위임).
-     */
-    private boolean isFailedCreating(Long scenarioGroupId) {
-        return failedCreatingGroupResolver.isFailedCreating(scenarioGroupId);
-    }
-
-    private String resolveUserName(Long userId) {
-        if (userId == null) return null;
-        return userRepository.findByUserNoInAndIsDeletedFalse(List.of(userId.intValue())).stream()
-            .findFirst()
-            .map(User::getUserNm)
-            .orElse(null);
+    private Map<Long, String> resolveUserNames(List<Long> userIds) {
+        List<Integer> userNos = userIds.stream().filter(Objects::nonNull).distinct().map(Long::intValue).toList();
+        if (userNos.isEmpty()) return Map.of();
+        return userRepository.findByUserNoInAndIsDeletedFalse(userNos).stream()
+            .collect(Collectors.toMap(user -> user.getUserNo().longValue(), User::getUserNm, (first, second) -> first));
     }
 
     /**
      * [설계 시작 SSE 연결]
-     * 이벤트 1~5개 검증 후 Agent 생성 스트림을 개설해 FE로 직결 중계
+     * 이벤트 1~5개 검증 후 Agent 생성 스트림을 개설해 FE로 직결 중계 (동일 조합 그룹이 있어도 항상 새로 생성)
      * 개수/중복/양수는 B.E 선검증으로 Agent의 FastAPI 422 응답이 FE로 새는 것을 막는다.
      */
     @Override
@@ -177,45 +160,47 @@ public class ScenarioDesignV4ServiceImpl implements ScenarioDesignV4Service {
         Long userId = authorizationService.getUserNo().longValue();
 
         SseEmitter emitter = new SseEmitter(EMITTER_TIMEOUT_MILLIS);
-
-        ReconnectTarget active = findMyActiveOperation(userId, request.miEventIds());
-
-        if (active != null) {
-            String lastEventId = resolveLastEventId(request, active.operationId());
-            log.info("[Design v4] - 설계 재연결 시도: scenarioGroupId={}, operationId={}, lastSequence={}", active.scenarioGroupId(), active.operationId(), lastEventId);
-
-            openStreamOn(emitter,
-                (target, connectGate) -> sseClient.pipeOperationStream(active.scenarioGroupId(), active.operationId(), lastEventId, target, connectGate),
-                "resumeOperationStream");
-            return emitter;
-        }
-
         ScenarioGroupCreateV4AgentReq agentRequest = ScenarioGroupCreateV4AgentReq.of(request.miEventIds(), userId);
 
         try {
             openStreamOn(emitter, (target, connectGate) -> sseClient.pipeCreateStream(agentRequest, target, connectGate), "startDesignStream");
         } catch (AgentDesignApiException e) {
-            ReconnectTarget reconnect = resolveReconnectTarget(e);
-
-            if (reconnect == null) throw e;
-
-            String lastEventId = resolveLastEventId(request, reconnect.operationId());
-            log.info("[Design V4] 동일 조합 작업 진행 중 - 자동 재연결: scenarioGroupId={}, operationId={}, lastSequence={}", reconnect.scenarioGroupId(), reconnect.operationId(), lastEventId);
-            openStreamOn(emitter, (target, connectGate) -> sseClient.pipeOperationStream(reconnect.scenarioGroupId(), reconnect.operationId(), lastEventId, target, connectGate), "reconnectOperationStream");
+            log.warn("[Design V4] 시나리오 그룹 생성 거절: miEventIds={}, userId={}, status={}, agentMessage={}, agentData={}",
+                request.miEventIds(), userId, e.getHttpStatus().value(), e.getAgentMessage(), e.getAgentData());
+            throw e;
         }
         return emitter;
     }
 
     /**
-     * FE 커서 적용 판정
-     * 재연결 대상 operation과 쌍의 operationId가 일치할 때만 Last-Event-ID로 적용하고,
-     * 불일치·미제공이면 0부터 전체 replay한다 (다른 operation에 커서를 적용하면 초반 이벤트가 유실된다).
+     * [설계 생성 스트림 재연결]
+     * 그룹의 진행중 create operation 스트림에 재연결한다. 진행자 본인만 허용한다.
      */
-    private String resolveLastEventId(ScenarioDesignStartV4Req request, String targetOperationId) {
-        if (request.lastSequence() == null || request.operationId() == null || !request.operationId().equals(targetOperationId)) {
-            return null;
+    @Override
+    public SseEmitter resumeDesignStream(Long scenarioGroupId, Integer lastSequence) {
+
+        MiScenarioGroup group = scenarioGroupRepository.findByScenarioGroupIdAndIsDeletedFalse(scenarioGroupId)
+            .orElseThrow(() -> AppErrorException.of(ResultCode.Error.RSC_NOT_FOUND, "Scenario group not found: %d".formatted(scenarioGroupId)));
+
+        Long userId = authorizationService.getUserNo().longValue();
+        if (!userId.equals(group.getRequestUserId())) {
+            throw AppHttpStatusException.of(HttpStatus.FORBIDDEN, ResultCode.Error.BIZ_RULE_VIOLATION, "다른 사용자가 진행 중인 설계 세션입니다: %d".formatted(scenarioGroupId));
         }
-        return String.valueOf(request.lastSequence());
+
+        MiScenarioGroupOperation operation = operationRepository
+            .findFirstByScenarioGroup_ScenarioGroupIdAndOperationTypeInAndStatusInAndIsDeletedFalseOrderByOperationIdDesc(
+                scenarioGroupId, List.of(DesignOperationType.CREATE.getCode()), DesignOperationStatus.activeCodes())
+            .orElseThrow(() -> AppErrorException.of(ResultCode.Error.BIZ_RULE_VIOLATION, "진행 중인 생성 작업이 없습니다: %d".formatted(scenarioGroupId)));
+
+        String operationId = operation.getOperationId();
+        String lastEventId = lastSequence == null ? null : String.valueOf(lastSequence);
+        log.info("[Design V4] 생성 스트림 재연결: scenarioGroupId={}, operationId={}, lastSequence={}", scenarioGroupId, operationId, lastEventId);
+
+        SseEmitter emitter = new SseEmitter(EMITTER_TIMEOUT_MILLIS);
+        openStreamOn(emitter,
+            (target, connectGate) -> sseClient.pipeOperationStream(scenarioGroupId, operationId, lastEventId, target, connectGate),
+            "resumeDesignStream");
+        return emitter;
     }
 
     /**
@@ -375,41 +360,6 @@ public class ScenarioDesignV4ServiceImpl implements ScenarioDesignV4Service {
             log.warn("[Design V4] lastError 파싱 실패: operationId={}, {}", operationId, e.getMessage());
             return null;
         }
-    }
-
-    /**
-     * 요청 사용자 진행중 작업 중 요청 이벤트 조합과 정확히 일치하는 그룹의 작업을 찾는다 (선조회 정상 경로).
-     */
-    private ReconnectTarget findMyActiveOperation(Long userId, List<Long> miEventIds) {
-        Set<Long> requested = Set.copyOf(miEventIds);
-        return operationRepository
-            .findActiveWithGroupByRequestUserId(userId, DesignOperationStatus.activeCodes())
-            .stream()
-            .filter(operation -> DesignOperationType.CREATE == DesignOperationType.fromNullable(operation.getOperationType()))
-            .filter(operation -> requested.equals(Set.copyOf(groupEventRepository.findActiveEventIdsByScenarioGroupId(operation.getScenarioGroup().getScenarioGroupId()))))
-            .findFirst()
-            .map(operation -> new ReconnectTarget(operation.getScenarioGroup().getScenarioGroupId(), operation.getOperationId()))
-            .orElse(null);
-    }
-
-    /**
-     * 409(동일 조합 작업 진행 중)이고 재연결에 필요한 두 ID가 모두 있으면 재연결 대상을 만든다.
-     * Agent 계약상 409 data에는 scenarioGroupId와 operationId가 함께 오며, 타 사용자 소유면 409가 아니라 403이다.
-     */
-    private ReconnectTarget resolveReconnectTarget(AgentDesignApiException e) {
-        if (e.getHttpStatus() != HttpStatus.CONFLICT || e.getAgentData() == null) {
-            return null;
-        }
-        JsonNode data = e.getAgentData();
-        long scenarioGroupId = data.path("scenarioGroupId").asLong(0);
-        String operationId = data.path("operationId").asText(null);
-        if (scenarioGroupId <= 0 || operationId == null || operationId.isBlank()) {
-            return null;
-        }
-        return new ReconnectTarget(scenarioGroupId, operationId);
-    }
-
-    private record ReconnectTarget(Long scenarioGroupId, String operationId) {
     }
 
     private void validateEventIds(List<Long> miEventIds) {
