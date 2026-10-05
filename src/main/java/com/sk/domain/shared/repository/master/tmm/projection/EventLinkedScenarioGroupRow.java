@@ -3,6 +3,7 @@ package com.sk.domain.shared.repository.master.tmm.projection;
 import com.querydsl.core.annotations.QueryProjection;
 import com.sk.domain.shared.enums.nextgen.ScenarioGroupStage;
 import com.sk.domain.shared.enums.nextgen.ScenarioGroupStatus;
+import java.time.LocalDateTime;
 
 /**
  * 이벤트에 연결된 시나리오 그룹의 평탄화 행 (그룹 x 구성 이벤트).
@@ -14,6 +15,7 @@ public record EventLinkedScenarioGroupRow(
     ScenarioGroupStatus status,
     ScenarioGroupStage stage,
     Long requestUserId,
+    LocalDateTime createDt,
     Integer memberDisplayOrder,
     String memberEventName
 ) {

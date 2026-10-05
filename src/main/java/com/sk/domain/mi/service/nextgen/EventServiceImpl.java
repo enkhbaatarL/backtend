@@ -236,7 +236,7 @@ public class EventServiceImpl implements EventService {
 
     /**
      * [이벤트 연결 시나리오 그룹 목록] (이벤트 목록의 그룹 N 펼침 패널)
-     * - 그룹 최신순, 그룹별 구성 이벤트명(표시 순서)과 진행 단계를 함께 반환
+     * - 그룹 최신순, 그룹별 생성자/생성일시, 구성 이벤트명(표시 순서)과 진행 단계를 함께 반환
      * - 실패 방치 그룹 잠정 필터: 설계중(creating)인데 최신 operation이 failed/interrupted면 제외.
      *   operation이 없는 그룹(v1 등)과 설계 완료 그룹은 필터하지 않는다. Agent의 실패 그룹 처리 규약 확정 시 교체 예정
      */
@@ -252,6 +252,7 @@ public class EventServiceImpl implements EventService {
             .collect(Collectors.groupingBy(EventLinkedScenarioGroupRow::scenarioGroupId, LinkedHashMap::new, Collectors.toList()));
 
         Set<Long> zombieGroupIds = resolveFailedCreatingGroupIds(rowsByGroup);
+        Map<Long, String> creatorNames = resolveOccupantNames(rowsByGroup.values().stream().map(groupRows -> groupRows.get(0).requestUserId()).toList());
         Long userId = authorizationService.getUserNo().longValue();
 
         List<EventLinkedScenarioGroupRes> result = new ArrayList<>(rowsByGroup.size());
@@ -266,7 +267,8 @@ public class EventServiceImpl implements EventService {
             // 진행자 미상(request_usr_id null)은 Agent 적재 결함이므로 fail-closed로 타인 점유 취급한다.
             // 설계중이 아닌 그룹(created/realized)은 점유 개념이 없어 of()에서 null로 덮는다.
             Boolean mine = userId.equals(first.requestUserId());
-            result.add(EventLinkedScenarioGroupRes.of(first.scenarioGroupId(), first.groupTitle(), first.status(), first.stage(), mine, events));
+            result.add(EventLinkedScenarioGroupRes.of(first.scenarioGroupId(), first.groupTitle(), creatorNames.get(first.requestUserId()),
+                first.createDt(), first.status(), first.stage(), mine, events));
         }
         return result;
     }

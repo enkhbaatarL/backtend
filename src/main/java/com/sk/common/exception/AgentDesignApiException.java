@@ -9,9 +9,8 @@ import org.springframework.http.HttpStatus;
 /**
  * 외부 Agent API 오류 응답 예외 (시나리오 설계 v4).
  *
- * Agent 오류 body의 data 객체(error_name, scenarioGroupId, operationId)는 B.E 내부 처리용으로만 보존한다 —
- * 409 자동 재연결이 data의 식별자를 소비한다. FE 응답에는 싣지 않으며(GlobalExceptionHandler가
- * HTTP status 유지 + code/message만 래핑), FE는 오류 수신 후 이벤트 조합 설계 상태 조회 API 재조회로 CTA를 갱신한다.
+ * Agent 오류 body의 data 객체(error_name, scenarioGroupId, operationId)는 로그용으로만 보존한다 —
+ * FE 응답에는 싣지 않는다(GlobalExceptionHandler가 HTTP status 유지 + code/message만 래핑).
  */
 @Getter
 public class AgentDesignApiException extends RuntimeException {
@@ -37,7 +36,6 @@ public class AgentDesignApiException extends RuntimeException {
 
     /**
      * SSE 경로(생성 스트림)용 — 409/403만 Agent가 판정한 업무 상태로 보고 status를 보존한다.
-     * 409는 B.E가 agentData의 식별자로 자동 재연결하는 원료이고, 403은 FE가 CTA 재조회로 대응하는 계약이다.
      * 그 외 4xx/5xx는 전부 B.E-Agent 구간 문제로 보고 500 + API-004로 내린다
      * (선검증을 통과한 요청이 Agent에서 거절되면 계약 문제라는 전제 — REST 프록시와 동일 정책).
      */

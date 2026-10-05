@@ -16,6 +16,8 @@ public interface ScenarioDesignV4Service {
 
     SseEmitter startDesignStream(ScenarioDesignStartV4Req request);
 
+    SseEmitter resumeDesignStream(Long scenarioGroupId, Integer lastSequence);
+
     ScenarioDesignPresentationRes getPresentation(Long scenarioGroupId, String operationId);
 
     AdditionalDimensionsRes getAdditionalDimensions(Long scenarioGroupId);
