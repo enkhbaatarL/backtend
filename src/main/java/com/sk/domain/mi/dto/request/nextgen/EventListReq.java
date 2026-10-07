@@ -1,6 +1,7 @@
 package com.sk.domain.mi.dto.request.nextgen;
 
 import com.sk.domain.shared.enums.nextgen.ContentStatus;
+import com.sk.domain.shared.enums.nextgen.EventSourceType;
 import com.sk.domain.shared.enums.nextgen.SortOrder;
 import io.swagger.v3.oas.annotations.media.ArraySchema;
 import io.swagger.v3.oas.annotations.media.Schema;
@@ -32,6 +33,12 @@ public record EventListReq(
     @Schema(description = "추천 항목만 보기 (시나리오화 추천 = scenario_suggest_yn=Y)", example = "false", defaultValue = "false")
     Boolean suggestedOnly,
 
+    @Schema(description = "출처 (`platform` / `user`). 생략 시 전체", implementation = EventSourceType.class, nullable = true)
+    EventSourceType sourceType,
+
+    @Schema(description = "내가 만든 이벤트만 보기 (true면 출처는 `user`로 고정)", example = "false", defaultValue = "false")
+    Boolean mine,
+
     @Min(value = 1, message = "페이지 번호는 1 이상이어야 합니다")
     @Schema(description = "페이지 번호", example = "1", defaultValue = "1")
     Integer page,
@@ -48,6 +55,8 @@ public record EventListReq(
         sort = sort == null ? SortOrder.LATEST : sort;
         keyword = keyword == null ? "" : keyword;
         suggestedOnly = suggestedOnly != null && suggestedOnly;
+        mine = mine != null && mine;
+        sourceType = mine ? EventSourceType.USER : sourceType;
         page = page == null ? 1 : page;
         size = size == null ? 20 : size;
     }

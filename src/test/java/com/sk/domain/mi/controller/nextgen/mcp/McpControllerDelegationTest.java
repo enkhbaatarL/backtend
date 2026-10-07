@@ -46,7 +46,7 @@ class McpControllerDelegationTest {
     @Test
     @DisplayName("이벤트 GET 5건은 원본 EventService 메서드와 파라미터를 그대로 사용한다")
     void delegatesAllEventOperations() {
-        EventListReq request = new EventListReq(null, null, null, null, null, null, null, null, null);
+        EventListReq request = new EventListReq(null, null, null, null, null, null, null, null, null, null, null);
 
         eventController.getEventTypesL1();
         eventController.getEvents(request);

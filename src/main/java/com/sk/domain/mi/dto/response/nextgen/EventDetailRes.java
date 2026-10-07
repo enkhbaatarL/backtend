@@ -5,6 +5,7 @@ import com.sk.domain.shared.enums.nextgen.ContentStatus;
 import com.sk.domain.shared.enums.nextgen.EventSignalType;
 import com.sk.domain.shared.repository.master.tmm.projection.DriverTagScoreboardRow;
 import com.sk.domain.shared.repository.master.tmm.projection.EventDetailRow;
+import com.sk.domain.shared.enums.nextgen.EventSourceType;
 import io.swagger.v3.oas.annotations.media.Schema;
 
 import java.time.LocalDateTime;
@@ -26,6 +27,15 @@ public record EventDetailRes(
 
     @Schema(description = "상태 라벨", example = "신규")
     String statusLabel,
+
+    @Schema(description = "출처 (platform|user)", example = "user")
+    EventSourceType sourceType,
+
+    @Schema(description = "출처 라벨 — user면 사용자 등록 배지 표기", example = "사용자 등록")
+    String sourceTypeLabel,
+
+    @Schema(description = "등록자명 (사용자 등록 이벤트만, 그 외 또는 미존재 사용자면 null)", example = "홍길동", nullable = true)
+    String registrantName,
 
     @Schema(description = "생성일시 (KST). tmm_mi_mievent_m.oldest_record_first_created, 응답 시 KST 변환", example = "2026-05-12 15:08:34")
     LocalDateTime createdAt,
@@ -65,17 +75,21 @@ public record EventDetailRes(
 
 ) {
 
-    public static EventDetailRes from(EventDetailRow row, List<EventRelatedScenariosRes> relatedEventScenarios) {
+    public static EventDetailRes from(EventDetailRow row, String registrantName, List<EventRelatedScenariosRes> relatedEventScenarios) {
 
         ContentStatus status = Boolean.TRUE.equals(row.isNew()) ? ContentStatus.NEW : ContentStatus.UPDATED;
         EventSignalType signalType = Boolean.TRUE.equals(row.isSignal()) ? EventSignalType.SIGNAL : EventSignalType.NOISE;
         EventImpactAnalysisRes impactAnalysis = EventImpactAnalysisRes.from(row);
+        EventSourceType sourceType = EventSourceType.of(row.createLoginUserId(), row.modifyLoginUserId());
 
         return new EventDetailRes(
             row.miEventId(),
             row.eventTitle(),
             status,
             status.getLabel(),
+            sourceType,
+            sourceType.getLabel(),
+            registrantName,
             DateUtil.utcToKst(row.oldestRecordFirstCreated()),
             DateUtil.utcToKst(row.latestRecordFirstCreated()),
             DateUtil.utcToKst(row.latestRecordFirstCreated()),

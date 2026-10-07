@@ -15,7 +15,10 @@ import com.sk.domain.shared.repository.master.tmm.projection.EventOutlookRow;
 
 public interface CustomMiEventRepository {
 
-    Page<EventListRow> getEventsByConditions(EventListReq request);
+    /**
+     * @param currentUserLoginId 로그인 사용자 로그인 ID — "내가 만든 이벤트" 필터에 사용
+     */
+    Page<EventListRow> getEventsByConditions(EventListReq request, String currentUserLoginId);
 
     Optional<EventDetailRow> findEventDetail(Long eventId);
 

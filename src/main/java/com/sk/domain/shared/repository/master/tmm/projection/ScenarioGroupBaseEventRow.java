@@ -12,7 +12,9 @@ public record ScenarioGroupBaseEventRow(
     String eventTypeLv1Code,
     String eventTypeLv1Label,
     Boolean isScenarioSuggested,
-    LocalDateTime latestRecordFirstCreated
+    LocalDateTime latestRecordFirstCreated,
+    String createLoginUserId,
+    String modifyLoginUserId
 ) {
 
     @QueryProjection

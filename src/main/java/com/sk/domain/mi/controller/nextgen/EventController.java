@@ -101,6 +101,7 @@ public class EventController {
             - `updatedAt`: 수정일시
             - `latestRecordFirstCreated`: 최신 연관 레코드 최초 생성일시 (최신순 정렬 기준)
             - `status` / `statusLabel`: 신규(`new`) / 갱신(`updated`)
+            - `sourceType` / `sourceTypeLabel`: 플랫폼 등록(`platform`) / 사용자 등록(`user`) — `user`면 사용자 등록 배지
             - `signalType` / `signalTypeLabel`: 신호(`signal`) / 소음(`noise`)
             - `isScenarioSuggested`: 시나리오화 추천 여부
             - `scenarioSuggestReason`: 시나리오화 추천 근거
@@ -119,6 +120,8 @@ public class EventController {
     @Parameter(name = "sort", description = "정렬 기준 (`latest` / `oldest`, 대소문자 무관). 기본값 `latest`")
     @Parameter(name = "keyword", description = "이벤트 제목 검색 키워드")
     @Parameter(name = "suggestedOnly", description = "추천 항목만 보기. 기본값 false")
+    @Parameter(name = "sourceType", description = "출처 (`platform` / `user`). 생략 시 전체")
+    @Parameter(name = "mine", description = "내가 만든 이벤트만 보기. true면 출처는 `user`로 고정. 기본값 false")
     @Parameter(name = "page", description = "페이지 번호 (1-based). 기본값 1")
     @Parameter(name = "size", description = "페이지당 항목 수. 기본값 20")
     @ApiResponse(responseCode = "200", description = "조회 성공")
@@ -174,6 +177,8 @@ public class EventController {
             ### 상위(top-level) 필드
             - `eventId`, `eventName`
             - `status` / `statusLabel`: 신규(`new`) / 갱신(`updated`)
+            - `sourceType` / `sourceTypeLabel`: 플랫폼 등록(`platform`) / 사용자 등록(`user`) — `user`면 사용자 등록 배지
+            - `registrantName`: 등록자명 (사용자 등록 이벤트만, 그 외 null)
             - `signalType` / `signalTypeLabel`: 신호(`signal`) / 소음(`noise`)
             - `isScenarioSuggested`: 시나리오화 추천 여부
             - `scenarioSuggestReason`: 시나리오화 추천 근거 (추천 아님일 때 null)

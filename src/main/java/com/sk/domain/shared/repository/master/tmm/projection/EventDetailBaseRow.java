@@ -10,6 +10,8 @@ public record EventDetailBaseRow(
     LocalDateTime modifyDt,
     LocalDateTime latestRecordFirstCreated,
     LocalDateTime oldestRecordFirstCreated,
+    String createLoginUserId,
+    String modifyLoginUserId,
     String level1Code,
     String level1Label,
     String level2Code,

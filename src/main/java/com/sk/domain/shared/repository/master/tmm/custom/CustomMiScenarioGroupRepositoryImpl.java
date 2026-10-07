@@ -296,7 +296,9 @@ public class CustomMiScenarioGroupRepositoryImpl implements CustomMiScenarioGrou
                 miEventTypeL1.level1Code,
                 miEventTypeL1.level1Label,
                 miEvent.isScenarioSuggested,
-                miEvent.latestRecordFirstCreated
+                miEvent.latestRecordFirstCreated,
+                miEvent.createUserId,
+                miEvent.modifyUserId
             ))
             .from(miScenarioGroupEvent)
             .innerJoin(miScenarioGroupEvent.miEvent, miEvent)

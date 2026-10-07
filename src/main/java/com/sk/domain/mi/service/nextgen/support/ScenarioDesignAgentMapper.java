@@ -28,6 +28,7 @@ import com.sk.domain.shared.enums.nextgen.DesignOperationStatus;
 import com.sk.domain.shared.enums.nextgen.GlobalPressureBand;
 import com.sk.domain.shared.enums.nextgen.ScenarioRole;
 import com.sk.domain.shared.repository.master.tmm.projection.ScenarioGroupBaseEventRow;
+import com.sk.domain.shared.enums.nextgen.EventSourceType;
 import java.util.Comparator;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -197,13 +198,18 @@ public final class ScenarioDesignAgentMapper {
             return List.of();
         }
         return rows.stream()
-            .map(row -> new EventBundle(
-                row.eventId(),
-                row.eventName(),
-                row.eventTypeLv1Code(),
-                row.eventTypeLv1Label(),
-                row.isScenarioSuggested(),
-                DateUtil.utcToKst(row.latestRecordFirstCreated())))
+            .map(row -> {
+                EventSourceType sourceType = EventSourceType.of(row.createLoginUserId(), row.modifyLoginUserId());
+                return new EventBundle(
+                    row.eventId(),
+                    row.eventName(),
+                    row.eventTypeLv1Code(),
+                    row.eventTypeLv1Label(),
+                    row.isScenarioSuggested(),
+                    sourceType,
+                    sourceType.getLabel(),
+                    DateUtil.utcToKst(row.latestRecordFirstCreated()));
+            })
             .toList();
     }
 

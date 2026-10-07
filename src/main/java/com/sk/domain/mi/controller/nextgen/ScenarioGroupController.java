@@ -222,7 +222,7 @@ public class ScenarioGroupController {
             <br><br>
             ### 상위(top-level) 필드
             - `scenarioGroupId`, `groupName`, `createdAt`, `updatedAt`
-            - `eventBundles`: 그룹을 구성하는 이벤트 목록 (Base Event 표, 표시 순서) — eventId, eventName, eventTypeLv1/Label, isScenarioSuggested, latestRecordFirstCreated(KST)
+            - `eventBundles`: 그룹을 구성하는 이벤트 목록 (Base Event 표, 표시 순서) — eventId, eventName, eventTypeLv1/Label, isScenarioSuggested, sourceType/Label(출처 배지), latestRecordFirstCreated(KST)
             - `evidence`: 생성 근거 마크다운 ('근거 보기' — eventAnalysisMarkdown[Event 관계 분석] / roleSelectionMarkdown[대표 시나리오 선정]). v1 그룹 등 스냅샷이 없으면 null
             - `summary`: 시나리오 그룹 설명 (`description` 값을 `summary` 필드로 반환) — 요약 탭
             - `scenarioCount`: 시나리오 수
