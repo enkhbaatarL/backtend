@@ -15,6 +15,8 @@ public record EventListBaseRow(
     LocalDateTime createDt,
     LocalDateTime modifyDt,
     LocalDateTime latestRecordFirstCreated,
+    String createLoginUserId,
+    String modifyLoginUserId,
     Long scenarioGroupCount
 ) {
 

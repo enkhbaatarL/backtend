@@ -41,6 +41,7 @@ import com.sk.domain.shared.repository.master.tmm.projection.EventLinkedScenario
 import com.sk.domain.shared.repository.master.tmm.projection.EventListRow;
 import com.sk.domain.shared.repository.master.tmm.projection.ScenarioBaseRow;
 import com.sk.domain.shared.repository.master.tmm.projection.ScenarioGroupBaseRow;
+import com.sk.domain.shared.enums.nextgen.EventSourceType;
 
 import java.util.ArrayList;
 import java.util.Collection;
@@ -91,7 +92,9 @@ public class EventServiceImpl implements EventService {
      */
     @Override
     public EventListRes getEvents(EventListReq request) {
-        Page<EventListRow> page = miEventRepository.getEventsByConditions(request);
+        // 로그인 ID(JWT subject)는 "내가 만든 이벤트" 필터에서만 필요하다
+        String currentUserLoginId = request.mine() ? authorizationService.getSubject() : null;
+        Page<EventListRow> page = miEventRepository.getEventsByConditions(request, currentUserLoginId);
 
         return new EventListRes(
             EventAppliedFilterRes.from(request),
@@ -109,7 +112,17 @@ public class EventServiceImpl implements EventService {
         EventDetailRow row = miEventRepository.findEventDetail(eventId)
             .orElseThrow(() -> AppErrorException.of(ResultCode.Error.RSC_NOT_FOUND, "Event not found: %d".formatted(eventId)));
 
-        return EventDetailRes.from(row, buildRelatedScenarios(row));
+        return EventDetailRes.from(row, resolveRegistrantName(row), buildRelatedScenarios(row));
+    }
+
+    /** 사용자 등록 이벤트의 등록자명 (플랫폼 등록이거나 사용자 미존재면 null) */
+    private String resolveRegistrantName(EventDetailRow row) {
+        String registrantLoginId = EventSourceType.registrantLoginId(row.createLoginUserId(), row.modifyLoginUserId());
+        if (registrantLoginId == null) return null;
+        return userRepository.findByUserLoginIdAndIsDeletedFalse(registrantLoginId).stream()
+            .findFirst()
+            .map(User::getUserNm)
+            .orElse(null);
     }
 
     /**

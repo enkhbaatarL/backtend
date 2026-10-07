@@ -2,6 +2,7 @@ package com.sk.domain.mi.dto.response.nextgen;
 
 import com.sk.domain.mi.dto.request.nextgen.EventListReq;
 import com.sk.domain.shared.enums.nextgen.ContentStatus;
+import com.sk.domain.shared.enums.nextgen.EventSourceType;
 import com.sk.domain.shared.enums.nextgen.SortOrder;
 import io.swagger.v3.oas.annotations.media.Schema;
 import java.time.LocalDate;
@@ -28,7 +29,13 @@ public record EventAppliedFilterRes(
     String keyword,
 
     @Schema(description = "추천 항목만 보기 적용 여부", example = "false")
-    Boolean suggestedOnly
+    Boolean suggestedOnly,
+
+    @Schema(description = "출처 (null이면 전체)", nullable = true)
+    EventSourceType sourceType,
+
+    @Schema(description = "내가 만든 이벤트만 보기 적용 여부", example = "false")
+    Boolean mine
 
 ) {
 
@@ -40,7 +47,9 @@ public record EventAppliedFilterRes(
             request.endDate(),
             request.sort(),
             request.keyword(),
-            request.suggestedOnly()
+            request.suggestedOnly(),
+            request.sourceType(),
+            request.mine()
         );
     }
 

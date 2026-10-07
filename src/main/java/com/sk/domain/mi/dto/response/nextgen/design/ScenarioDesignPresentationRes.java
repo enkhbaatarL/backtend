@@ -5,6 +5,7 @@ import com.sk.domain.shared.enums.nextgen.DesignOperationPhase;
 import com.sk.domain.shared.enums.nextgen.DesignOperationStatus;
 import com.sk.domain.shared.enums.nextgen.DesignOperationType;
 import com.sk.domain.shared.enums.nextgen.ScenarioGroupStage;
+import com.sk.domain.shared.enums.nextgen.EventSourceType;
 import io.swagger.v3.oas.annotations.media.Schema;
 import java.time.LocalDateTime;
 import java.util.List;
@@ -65,6 +66,12 @@ public record ScenarioDesignPresentationRes(
 
         @Schema(description = "시나리오 제안 이벤트 여부", example = "true")
         Boolean isScenarioSuggested,
+
+        @Schema(description = "출처 (platform|user)", example = "user")
+        EventSourceType sourceType,
+
+        @Schema(description = "출처 라벨 — user면 사용자 등록 배지 표기", example = "사용자 등록")
+        String sourceTypeLabel,
 
         @Schema(description = "최신 연관 레코드 최초 생성일시 (KST, tmm_mi_mievent_m.latest_record_first_created, 응답 시 KST 변환", example = "2026-05-12 15:08:34")
         LocalDateTime latestRecordFirstCreated

@@ -152,6 +152,7 @@ public class SwaggerConfig {
     - 시나리오 그룹 생성 스트림 재연결 API 추가 (`GET .../{scenarioGroupId}/creation/stream?lastSequence=`)
   - [Event]
     - 이벤트 연결 시나리오 그룹 목록 API: `creatorName`(생성자명)/`createdAt`(생성일시) 추가
+    - 사용자 등록 이벤트 구분: 목록 `sourceType`/`mine` 필터 + 행 `sourceType`, 상세 `sourceType`/`registrantName`, 그룹 상세·설계 화면 `eventBundles[].sourceType` 추가
 
   </details>
 

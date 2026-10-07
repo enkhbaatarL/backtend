@@ -4,6 +4,7 @@ import com.sk.common.utils.DateUtil;
 import com.sk.domain.shared.enums.nextgen.ContentStatus;
 import com.sk.domain.shared.enums.nextgen.EventSignalType;
 import com.sk.domain.shared.repository.master.tmm.projection.EventListRow;
+import com.sk.domain.shared.enums.nextgen.EventSourceType;
 import io.swagger.v3.oas.annotations.media.Schema;
 import java.time.LocalDateTime;
 import java.util.List;
@@ -21,6 +22,12 @@ public record EventListItemRes(
 
     @Schema(description = "상태 라벨", example = "신규")
     String statusLabel,
+
+    @Schema(description = "출처 (platform|user)", example = "user")
+    EventSourceType sourceType,
+
+    @Schema(description = "출처 라벨 — user면 사용자 등록 배지 표기", example = "사용자 등록")
+    String sourceTypeLabel,
 
     @Schema(description = "이벤트 유형 Lv1", example = "supply")
     String eventTypeLv1,
@@ -60,12 +67,15 @@ public record EventListItemRes(
     public static EventListItemRes from(EventListRow row) {
         ContentStatus status = Boolean.TRUE.equals(row.isNew()) ? ContentStatus.NEW : ContentStatus.UPDATED;
         EventSignalType signalType = Boolean.TRUE.equals(row.isSignal()) ? EventSignalType.SIGNAL : EventSignalType.NOISE;
+        EventSourceType sourceType = EventSourceType.of(row.createLoginUserId(), row.modifyLoginUserId());
 
         return new EventListItemRes(
             row.miEventId(),
             row.eventTitle(),
             status,
             status.getLabel(),
+            sourceType,
+            sourceType.getLabel(),
             row.level1Code(),
             row.level1Label(),
             row.createDt(),

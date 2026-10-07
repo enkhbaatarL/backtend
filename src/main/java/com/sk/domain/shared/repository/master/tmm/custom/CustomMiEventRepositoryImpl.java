@@ -22,6 +22,7 @@ import com.querydsl.core.BooleanBuilder;
 import com.querydsl.core.types.Expression;
 import com.querydsl.core.types.OrderSpecifier;
 import com.querydsl.core.types.dsl.BooleanExpression;
+import com.querydsl.core.types.dsl.StringPath;
 import com.querydsl.core.types.dsl.CaseBuilder;
 import com.querydsl.core.types.dsl.NumberExpression;
 import com.querydsl.jpa.JPAExpressions;
@@ -39,6 +40,7 @@ import com.sk.domain.shared.enums.nextgen.DesignOperationType;
 import com.sk.domain.shared.enums.nextgen.IndexName;
 import com.sk.domain.shared.enums.nextgen.ScenarioGroupStatus;
 import com.sk.domain.shared.enums.nextgen.TargetType;
+import com.sk.domain.shared.enums.nextgen.EventSourceType;
 import com.sk.domain.shared.repository.master.tmm.projection.DriverTagScoreboardRow;
 import com.sk.domain.shared.repository.master.tmm.projection.EventDesignAvailabilityRow;
 import com.sk.domain.shared.repository.master.tmm.projection.EventDetailBaseRow;
@@ -86,11 +88,11 @@ public class CustomMiEventRepositoryImpl implements CustomMiEventRepository {
     private final JPAQueryFactory queryFactory;
 
     @Override
-    public Page<EventListRow> getEventsByConditions(EventListReq request) {
+    public Page<EventListRow> getEventsByConditions(EventListReq request, String currentUserLoginId) {
 
         Pageable pageable = PageRequest.of(request.page() - 1, request.size());
 
-        BooleanBuilder where = buildEventWhere(request);
+        BooleanBuilder where = buildEventWhere(request, currentUserLoginId);
         OrderSpecifier<?> order = buildEventOrder(request);
 
         // 멀티 이벤트 전환으로 이벤트:활성 그룹은 N건이 정식이다. 목록의 시나리오 표기는 그룹 개수(count 서브쿼리)만 사용하고,
@@ -112,6 +114,8 @@ public class CustomMiEventRepositoryImpl implements CustomMiEventRepository {
                 miEvent.createDt,
                 miEvent.modifyDt,
                 miEvent.latestRecordFirstCreated,
+                miEvent.createUserId,
+                miEvent.modifyUserId,
                 JPAExpressions.select(groupEventCount.count())
                     .from(groupEventCount)
                     .where(
@@ -156,6 +160,8 @@ public class CustomMiEventRepositoryImpl implements CustomMiEventRepository {
                 base.createDt(),
                 base.modifyDt(),
                 base.latestRecordFirstCreated(),
+                base.createLoginUserId(),
+                base.modifyLoginUserId(),
                 base.scenarioGroupCount(),
                 impactsByEventId.getOrDefault(base.miEventId(), List.of())
             ))
@@ -245,12 +251,14 @@ public class CustomMiEventRepositoryImpl implements CustomMiEventRepository {
             .otherwise(false);
     }
 
-    private BooleanBuilder buildEventWhere(EventListReq request) {
+    private BooleanBuilder buildEventWhere(EventListReq request, String currentUserLoginId) {
         BooleanBuilder where = new BooleanBuilder();
         where.and(miEvent.isDeleted.isFalse());
 
         applyStatusFilter(where, request.eventStatus());
         applySuggestedFilter(where, request.suggestedOnly());
+        applySourceFilter(where, request.sourceType());
+        applyMineFilter(where, request.mine(), currentUserLoginId);
         applyTypeFilter(where, request.eventTypeL1Id());
         applyPeriodFilter(where, request);
         applyKeywordFilter(where, request.keyword());
@@ -276,6 +284,24 @@ public class CustomMiEventRepositoryImpl implements CustomMiEventRepository {
         if (Boolean.TRUE.equals(suggestedOnly)) {
             where.and(miEvent.isScenarioSuggested.isTrue());
         }
+    }
+
+    /** 출처 필터 — 판별 규칙은 EventSourceType.of와 동일 (생성자·수정자 중 하나라도 `mcp_` 접두어면 사용자 등록) */
+    private void applySourceFilter(BooleanBuilder where, EventSourceType sourceType) {
+        if (sourceType == null) return;
+        BooleanExpression userRegistered = isUserLoginId(miEvent.createUserId).or(isUserLoginId(miEvent.modifyUserId));
+        where.and(sourceType == EventSourceType.USER ? userRegistered : userRegistered.not());
+    }
+
+    private BooleanExpression isUserLoginId(StringPath loginId) {
+        // `_`는 LIKE 와일드카드라 이스케이프한다
+        return loginId.like(EventSourceType.USER_LOGIN_ID_PREFIX.replace("_", "!_") + "%", '!');
+    }
+
+    private void applyMineFilter(BooleanBuilder where, Boolean mine, String currentUserLoginId) {
+        if (!Boolean.TRUE.equals(mine)) return;
+        String loginId = EventSourceType.registeredLoginId(currentUserLoginId);
+        where.and(miEvent.createUserId.eq(loginId).or(miEvent.modifyUserId.eq(loginId)));
     }
 
     private BooleanExpression isSignalEvent() {
@@ -326,6 +352,8 @@ public class CustomMiEventRepositoryImpl implements CustomMiEventRepository {
                 miEvent.modifyDt,
                 miEvent.latestRecordFirstCreated,
                 miEvent.oldestRecordFirstCreated,
+                miEvent.createUserId,
+                miEvent.modifyUserId,
                 miEventTypeL1.level1Code,
                 miEventTypeL1.level1Label,
                 miEventTypeL2.level2Code,
