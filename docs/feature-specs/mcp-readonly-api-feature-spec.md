@@ -5,7 +5,7 @@
 - status: Approved
 - owner: BE
 - created at: 2026-08-24
-- updated at: 2026-08-25
+- updated at: 2026-10-09
 - canonical for:
   - MCP 채널의 endpoint / request / response / HTTP error 계약
   - `X-User-Id` 헤더 계약
@@ -16,6 +16,7 @@
   - 실행 계획, 변경 파일, 검증 결과:
     - `docs/work-notes/2026/2026-08-21-mcp-readonly-api-set.md`
     - `docs/work-notes/2026/2026-08-25-x-user-id-login-id-first-match-implementation.md`
+    - `docs/work-notes/2026/2026-10-09-mcp-event-snapshot-api.md` (이벤트 Snapshot, 4.6절)
   - 원본 API의 업무 의미와 필드 정의: `docs/design-docs/gas/nextgen-mi-integrated-functional-spec.md` 및 각 원본 API의 OpenAPI 문서
 - source documents:
   - `docs/design-docs/gas/nextgen-mi-mcp-api-channel-design.md`
@@ -25,12 +26,12 @@
   - `docs/conventions/source-of-truth-governance.md`
   - branch `feature/gas2`
 - supersedes: 없음
-- last synced: 2026-08-25
+- last synced: 2026-10-09 — 현재 코드 기준: MCP Basic Auth 인증(backend PR #595), MCP 컨트롤러 전부 `dedicated` (`d60ebbc0`), 이벤트 Snapshot(4.6절)
 - open questions:
-  - **Q2 (운영 MCP client 인증·권한 방식)** — MCP client는 모든 삭제되지 않은 유효 사용자의 신뢰된 위임자로 확정됐다.
-    정확한 인증 기술, credential owner, 권한 표현과 회전 방식은 운영 배포 전 확정·구현한다 (9절).
-  - **Q7 (MCP 서버의 호출 대상 서버)** — **사용자 검토 중**. MCP 서버는 서버를 2개 알아야 한다 — 일반 서버(4.1·4.2)와 SK Gas 전용 서버(4.3). 전용 서버는 subdomain이 다르다. 상세는 4.4절
-  - **Q9 (MCP 채널의 배포 대상 backend)** — **미확정**. 전용 backend가 skgas/ske/skhy 3개다. 배포 범위로 정리되면 코드 변경은 없다. 4.5.1절 참조
+  - ~~Q2 (운영 MCP client 인증·권한 방식)~~ — **해소 (2026-10-08, PR #595)**: MCP 인증 키(`tmd_mcpauthinfom`)로 Basic Auth 인증한다.
+    키는 관리자 화면에서 회사 단위로 발급하며 키 회사와 위임 사용자 회사가 같아야 한다 (3.2절, 9절).
+  - ~~Q7 (MCP 서버의 호출 대상 서버)~~ — **해소**: MCP 채널 전체가 SK Gas 전용 서버(`dedicated`)에만 있으므로 MCP 서버는 base URL 하나만 쓴다 (4.4절).
+  - **Q9 (MCP 채널의 배포 대상 backend)** — **미확정**. 전용 backend가 skgas/ske/skhy 3개이고 셋 다 `dedicated` 프로파일이라 배포하면 MCP 채널이 모두 뜬다. 4.5.1절 참조
 
 ---
 
@@ -39,21 +40,25 @@
 - 목적: MCP(Model Context Protocol) 서버가 Next Gen MI 조회 데이터를 읽어갈 수 있는 **전용 API 채널**의 계약을 정의한다.
 - 성격: 기존 조회 API의 **서비스 계층을 그대로 재사용**하는 얇은 위임 채널이다. 새로운 업무 로직이 없다.
 - 핵심 계약 3가지:
-  1. 화면용 **사용자 JWT는 사용하지 않는다.** 개발 단계에는 제한된 인증 예외를 쓰고, 운영 전 MCP client 인증을 붙인다.
+  1. 화면용 **사용자 JWT는 사용하지 않는다.** MCP client는 관리자 화면에서 발급한 **MCP 인증 키로 Basic Auth 인증**한다 (모든 환경).
   2. `X-User-Id`는 호출 시스템이 아니라 **effective user(위임 사용자)**를 지정한다. 이 헤더 자체는 인증 수단이 아니다.
-  3. **성공 응답의 `data` 계약은 원본 API와 동일하다.** `/mcp` 한 조각을 뺀 경로가 원본이다.
+  3. **성공 응답의 `data` 계약은 원본 API와 동일하다.** `/mcp` 한 조각을 뺀 경로가 원본이다. (예외: 원본이 없는 MCP 전용 endpoint, 4.6절)
 
 ### 1.1 원본 API와 다른 점 / 같은 점
 
 | 항목 | MCP 채널 |
 |---|---|
 | 경로 | 원본 경로의 `/api/v1` 뒤에 `/mcp` 삽입 |
-| 인증 | 개발: 승인된 임시 예외 / 운영: MCP client 인증 필수 (Q2) |
+| 인증 | Basic Auth — MCP 인증 키 (`tmd_mcpauthinfom`, 회사 단위 발급). 원본: 사용자 Bearer JWT |
+| 배포 서버 | **SK Gas 전용 서버(`dedicated`)만** (`d60ebbc0`). 원본 이벤트·시나리오 API 는 일반 서버 |
 | 위임 사용자 식별 | `X-User-Id` 헤더 (원본: 사용자 JWT claim) |
 | 요청 파라미터 | **원본과 동일** |
 | 성공 응답 `data` | **원본과 동일** — 필드·타입·null 의미 전부 |
 | 응답 래핑 | **원본과 동일** `BaseResponse` |
 | Swagger 그룹 | `MCP API` 단독 (원본: `SK Gas API`) |
+
+> **예외 — MCP 전용 endpoint (원본 화면 API 없음)**: 이벤트 Snapshot(버전 이력) 조회 6종(4.6절)은 소비자가 MCP 뿐이라 원본 API 없이
+> MCP 채널에만 둔다. 이 endpoint 들은 "원본과 동일" 원칙의 대상이 아니며 전용 서비스(`EventSnapshotService`)를 쓴다 (설계 Decision Log D-1).
 
 ---
 
@@ -70,7 +75,7 @@
 
 - 쓰기 API (POST / PATCH / DELETE) 노출
 - SSE 스트림 엔드포인트 노출 — MCP 호출 모델과 맞지 않는다
-- 서비스 / 레포지토리 계층 로직 변경 또는 복제
+- 서비스 / 레포지토리 계층 로직 변경 또는 복제 — 단 MCP 전용 endpoint(4.6절 이벤트 Snapshot)는 원본이 없으므로 전용 서비스·리포지토리를 신설한다 (D-1)
 - MCP 서버 자체 구현
 - 멀티테넌시(고객사) 필터 신설
 - **Deprecated된 조회 API 3종** 노출 — 원본에 `@Deprecated`가 붙어 있다 (목록은 8.2절)
@@ -92,9 +97,12 @@ MCP :  /api/v1/mcp/mi/next-gen/{...}
 ### 3.2 인증
 
 - 화면용 사용자 Bearer JWT는 사용하지 않는다.
-- 개발 단계에서는 승인된 개발 환경의 읽기 전용 GET MCP 경로만 임시 인증 예외로 둔다.
-- 운영 단계에서는 MCP client 인증이 필수다. 정확한 credential 전달 방식은 Q2 확정 후 이 계약과 OpenAPI에 반영한다.
-- 인증되지 않은 운영 요청은 `401`로 거부한다.
+- 모든 MCP 요청은 `Authorization: Basic base64(<MCP 인증 ID>:<Secret>)` 이 필수다. 환경 구분 없이 같다.
+  - 키는 `tmd_mcpauthinfom` 에 있으며 관리자 화면(시스템 관리 > MCP API 인증관리)에서 **회사 단위**로 발급한다.
+  - Secret 은 발급·재발행 응답에서 한 번만 보여주고 서버에는 단방향 해시(PBKDF2-HMAC-SHA256, 키별 솔트)만 남는다.
+- 키가 없거나 틀리면 `401` 이다 (5.1절).
+- 키의 회사와 `X-User-Id` 사용자의 회사가 같아야 한다. 예외: ADMIN 사용자는 관리회사 키로 요청할 때만 회사가 달라도 허용한다. 위반은 `403` (5.1절).
+- 이전의 개발용 임시 인증 예외(`mcp.read-only-api.development-auth-bypass-enabled`)는 삭제됐다 (PR #595).
 
 ### 3.3 `X-User-Id` 헤더 계약
 
@@ -107,14 +115,15 @@ MCP :  /api/v1/mcp/mi/next-gen/{...}
 
 **서버가 검증하는 것**: 값이 공백이 아니고, 해당 로그인 ID로 조회한 삭제되지 않은 사용자가 한 명 이상이며,
 선택된 사용자의 소속 고객사가 사용·미삭제 상태이고 현재일이 고객사 사용 기간 안에 있는가.
+그리고 그 사용자의 고객사가 Basic Auth 키의 고객사와 같은가 (ADMIN + 관리회사 키 예외, 3.2절).
 
 **다중 행 선택 규칙**: `UserRepository.findByUserLoginIdAndIsDeletedFalse`가 여러 `User` 행을 반환하면
 반환 목록의 첫 번째 행을 effective user로 사용한다. 별도 역할·고객사 우선순위나 정렬은 적용하지 않는다.
 
 **서버가 검증하지 않는 것**: MCP client와 effective user가 같은 주체인지. MCP client는 사용자를 대신하는 시스템 주체다.
 
-> **이 헤더는 인증 수단이 아니다.** 개발 단계에서는 위조 가능한 값이고,
-> 운영 단계에서는 인증된 MCP client만 이 위임 값을 보낼 수 있어야 한다.
+> **이 헤더는 인증 수단이 아니다.** 인증은 Basic Auth 키가 하고, 이 헤더는 그 키의 회사 범위 안에서 위임할 사용자를 지정한다.
+> 키를 가진 client 는 같은 회사의 어느 사용자로든 위임할 수 있다.
 > 다만 일부 endpoint(4.1.4 `/records`, 4.1.6 `/{eventId}/scenario-groups`)는 **응답 내용이 이 헤더 값에 따라 달라진다.**
 > 상세한 보안 경계는 9절.
 
@@ -372,85 +381,38 @@ MCP :  /api/v1/mcp/mi/next-gen/{...}
 
 단일 인덱스 × 단일 기간단위만 반환한다. 여러 인덱스가 필요하면 인덱스 수만큼 호출한다.
 
-#### 4.3.2 환경 제약 — **다른 endpoint와 뜨는 환경이 반대다**
-
-원본 컨트롤러가 서로 배타적인 프로파일에 걸려 있다.
-
-| 프로파일 | 4.1 이벤트 · 4.2 시나리오 그룹<br>(`@Profile("!dedicated")`) | 4.3 CME 벤치마크<br>(`@Profile({"dedicated","testdb"})`) |
-|---|:--:|:--:|
-| `dev` (개발계) | 있음 | **없음** |
-| `prod` (운영계) | 있음 | **없음** |
-| `dedicated` (SK Gas 전용) | **없음** | 있음 |
-| `testdb` (로컬) | 있음 | 있음 |
-
-**두 묶음이 동시에 존재하는 환경은 로컬(`testdb`)뿐이다.**
-
-데이터소스도 분리돼 있다.
+#### 4.3.2 데이터소스 제약
 
 - `CmeBenchmarkServiceImpl`은 `DataSourceContextHolder`로 `midb-skgas` 테넌트에 라우팅한다
   (설정 키: `mi.next-gen.cme.benchmark.datasource-key`, 기본값 `${SKT_MI_DB_DEDICATED_NAME:midb-skgas}`).
 - 이 테넌트 키는 `SKT_MI_DB_DEDICATED_NAME` 환경변수로 결정된다. 실제 SK Gas 전용 배포 환경에는 `midb-skgas`로 설정되어 있다 (2026-08-24 사용자 확인).
   저장소 자체의 하드코딩 기본값은 서로 다르다 — 서비스 코드는 `midb-skgas`, `application-dedicated.yml`의 테넌트는 `midb-skens`.
-  `application-dev.yml`·`application-testdb.yml`에는 `midb-skgas` 테넌트가 아예 없어, 로컬 `testdb`에서는 이 endpoint를 실데이터로 검증할 수 없다 — CME 검증은 실제 SK Gas 전용 배포 환경에서만 수행한다.
-- 따라서 **컨트롤러 프로파일만 풀어도 개발계에서는 조회가 실패한다.** 데이터소스가 없다.
+  로컬 `testdb` 설정에는 `midb-skgas` 테넌트가 없어 이 endpoint를 실데이터로 검증할 수 없다 — CME 검증은 실제 SK Gas 전용 배포 환경에서만 수행한다.
+- CME 데이터는 SK Gas 데이터이므로 **SK Gas 전용 backend 에서만 의미 있는 결과**를 준다 (4.5.1절).
 
-근거는 원본 컨트롤러 클래스 주석에 있다 — CME 데이터는 고객사 전용 DB(`midb-skgas`)에 적재되어 일반 서버에서 접근할 수 없다.
+#### 4.3.3 MCP 컨트롤러 구성 (`d60ebbc0`, 2026-10-05 이후)
 
-#### 4.3.3 대응 — 컨트롤러만 분리, `@Profile` 미부착 (확정 2026-08-24)
+**MCP 컨트롤러는 모두 `@Profile("dedicated")` 다.** 일반 서버에는 MCP 경로가 등록되지 않는다.
 
-**전용 DB에 접근하는 API는 컨트롤러 클래스를 분리한다. 다만 Spring `@Profile`로 막지는 않는다.**
-어느 서버가 무엇을 서비스하는지는 **배포 설정**이 정한다.
-
-| 구분 | MCP 컨트롤러 | `@Profile` | 담는 endpoint |
-|---|---|---|---|
-| 일반 | `McpEventController` | `!dedicated` | 4.1 이벤트 **6건** |
-| 일반 | `McpScenarioGroupController` | `!dedicated` | 4.2 시나리오 그룹 **6건** |
-| **전용** | `McpScenarioGroupDedicatedController` | **없음** | 4.3 CME 벤치마크 **1건** |
-
-`McpScenarioGroupController`는 `ScenarioGroupService`와 `PriceInterpretationService` 두 개를 주입한다
-(원본은 컨트롤러가 나뉘어 있으나, MCP는 `/scenario-groups` 경로를 한 컨트롤러로 묶는다).
-
-- 채널 인프라(인터셉터 · Security matcher · Swagger 그룹)는 **prefix 단위로 걸리므로 그대로 재사용한다.** 전용 컨트롤러를 위해 따로 손댈 설정이 없다.
-- 구현 비용은 컨트롤러 클래스 1개 추가다.
-- 저장소에 선례가 있다 — `ScenarioModelExecutionDedicatedController`도 `@Profile` 없이 클래스 이름만 `Dedicated`다.
-
-**향후 전용 endpoint를 추가할 때도 이 컨트롤러에 넣는다.** 일반 컨트롤러에 섞지 않는다.
-
-#### 4.3.4 일반 서버에서 호출했을 때 — **응답을 신뢰하지 말 것**
-
-`@Profile`이 없으므로 이 endpoint는 일반 서버(`dev` / `prod`)에도 등록되고 해당 서버의 `MCP API` Swagger에도 나타난다.
-**그러나 일반 서버에서는 유효한 데이터를 얻을 수 없다.**
-
-호출해도 "사용할 수 없다"는 오류가 오지 않는다. 데이터소스 라우팅이 실패 대신 폴백하기 때문이다.
-
-| 일반 서버에서 호출한 결과 | 조건 |
-|---|---|
-| `500` (SQL 오류) | 일반 DB에 CME 테이블이 없을 때 |
-| **`200` + 빈 `baseSeries`** | 테이블은 있으나 비어 있을 때 |
-
-> **소비자 주의**: 일반 서버에서 받은 빈 결과를 "CME 데이터가 없다"는 사실로 해석하면 안 된다.
-> 이 endpoint는 **SK Gas 전용 서버(subdomain이 다르다)로만 호출한다.** 4.4절 참조.
-
-이 경고는 OpenAPI `description`에도 동일하게 노출한다.
-
-### 4.4 호출 대상 서버 (Q7 — 검토 중)
-
-**MCP 서버는 base URL을 두 개 알아야 한다.**
-
-| 대상 | 서버 | 해당 endpoint |
+| MCP 컨트롤러 | `@Profile` | 담는 endpoint |
 |---|---|---|
-| 일반 서버 | `dev` / `prod` 프로파일 | 4.1 이벤트 (6건), 4.2 시나리오 그룹 (6건) |
-| SK Gas 전용 서버 | `dedicated` 프로파일 | 4.3 CME 벤치마크 (1건) |
+| `McpEventDedicatedController` | `dedicated` | 4.1 이벤트 **6건** |
+| `McpScenarioGroupDedicatedController` | `dedicated` | 4.2 시나리오 그룹 **6건** + 4.3 CME 벤치마크 **1건** |
+| `McpEventSnapshotDedicatedController` | `dedicated` | 4.6 이벤트 Snapshot **6건** (MCP 전용) |
 
-- SK Gas 전용 서버는 **subdomain이 다르다.** 이것은 **배포 설정에서 정해지며 애플리케이션 코드에는 없다** — 저장소를 뒤져도 전용 서버 base URL 설정은 나오지 않는다.
-- 화면(FE)은 이미 같은 구조로 동작한다. 전용 endpoint만 별도 base URL로 호출해 결과를 합친다.
-- 전용 서버는 개발계 · 운영계 양쪽에 존재한다. 개발계 MCP 서버는 개발계 전용 서버를, 운영계 MCP 서버는 운영계 전용 서버를 호출하는 구성이 자연스럽다.
+- 채널 인프라(인증 · 인터셉터 · Swagger 그룹)는 **prefix 단위로 걸리므로 그대로 재사용한다.** 컨트롤러를 추가해도 손댈 설정이 없다.
+- CME 의 OpenAPI `description` 에는 "SK Gas 전용 서버 전용 · 일반 서버의 응답은 신뢰할 수 없습니다" 경고가 남아 있다.
+  MCP 경로가 일반 서버에 노출되던 시기(`d60ebbc0` 이전)에 쓴 문구이며, 지금은 ske/skhy 전용 backend 배포 시의 주의로 유효하다 (4.5.1절).
 
-**미확정**: MCP 서버가 두 서버를 모두 호출할지, 한쪽만 볼지. 이 결정은 계약 자체를 바꾸지는 않는다 —
-어느 쪽이든 endpoint 계약은 위와 같고, 달라지는 것은 MCP 서버가 어느 base URL로 어느 endpoint를 부르느냐다.
-따라서 **이 결정을 기다리지 않고 구현에 착수할 수 있다.**
+### 4.4 호출 대상 서버 (Q7 해소)
 
-### 4.5 서버별 endpoint 노출 (확정 — 2026-08-24)
+**MCP 서버는 base URL 하나만 쓴다 — SK Gas 전용 backend.**
+
+- MCP 채널 19건 전부가 `dedicated` 프로파일 서버에만 있다. 일반 서버는 호출 대상이 아니다.
+- `skgas-test-mcp` 는 `MI_MCP_BASE_URL` 하나로 이 서버를 가리킨다 (개발계 `https://dev-mi-skgas.sk.com`).
+- 전용 서버는 subdomain 이 다르며, 이 주소는 배포 설정에서 정해지고 애플리케이션 코드에는 없다.
+
+### 4.5 서버별 endpoint 노출 (2026-10-09 기준)
 
 **개발계 활성 프로파일** (사용자 확인, 2026-08-24)
 
@@ -465,55 +427,88 @@ MCP :  /api/v1/mcp/mi/next-gen/{...}
 
 **결과 — MCP endpoint의 서버별 상태**
 
-| backend | 4.1 이벤트 (6건) · 4.2 시나리오 그룹 (6건) | 4.3 CME (1건) |
-|---|:--:|---|
-| 일반 | **노출 · 정상** | 노출 · **데이터 신뢰 불가** (4.3.4절 — 일반 DB로 폴백) |
-| 전용 · skgas | 미노출 (`!dedicated`가 false) | **노출 · 정상** |
-| 전용 · ske | 미노출 | 배포하면 노출되나 **무의미** (4.5.1절) |
-| 전용 · skhy | 미노출 | 배포하면 노출되나 **무의미** (4.5.1절) |
+| backend | MCP 채널 19건 (4.1 6 · 4.2 6 · 4.3 CME 1 · 4.6 Snapshot 6) |
+|---|---|
+| 일반 | **미노출** (MCP 컨트롤러가 `dedicated` 전용) |
+| 전용 · skgas | **노출 · 정상** |
+| 전용 · ske | 배포하면 노출된다. CME 는 **무의미** (4.5.1절) |
+| 전용 · skhy | 배포하면 노출된다. CME 는 **무의미** (4.5.1절) |
 
-> **소비자에게 주는 의미**: 13건을 모두 쓰려면 **서버 두 곳**을 호출해야 한다.
-> 이벤트·시나리오 12건은 **일반 backend**, CME 1건은 **skgas 전용 backend**.
-> CME가 정상 동작하는 서버는 **skgas 전용 backend 하나뿐**이다.
+> **소비자에게 주는 의미**: MCP 채널은 **skgas 전용 backend 한 곳**만 호출한다.
 
-#### 4.5.1 전용 backend가 3개다 — MCP 배포 대상 결정 필요
+#### 4.5.1 전용 backend가 3개다 — MCP 배포 대상 결정 필요 (Q9)
 
 전용 backend는 skgas / ske / skhy 3개가 따로 뜨고, 셋 다 활성 프로파일이 `dev,dedicated`로 같다.
-MCP CME 컨트롤러에는 `@Profile`이 없으므로, **MCP 채널을 배포하는 전용 backend마다 이 endpoint가 뜬다.**
+MCP 컨트롤러는 `@Profile("dedicated")` 이므로 **MCP 채널을 배포하는 전용 backend마다 19건이 모두 뜬다.**
 
 CME는 SK Gas 데이터이고 라우팅 키는 `midb-skgas`로 고정이다(변경 예정 없음).
-따라서 ske / skhy backend에 배포하면 그 endpoint는 의미 있는 결과를 주지 못한다.
-
-**결정 필요 (Q9): MCP 채널을 어느 backend에 배포하는가?**
+따라서 ske / skhy backend에 배포하면 그곳의 CME endpoint는 의미 있는 결과를 주지 못한다.
 
 | 배포 대상 | 결과 |
 |---|---|
-| 일반 backend + **skgas** 전용 backend | 13건 모두 의미 있게 동작. 추가 조치 없음 |
-| ske / skhy 전용 backend에도 배포 | 그곳의 CME endpoint는 무의미. 노출을 막으려면 `SKGAS_COMPANY_USER_ONLY` 애노테이션 부착(코드 1줄)을 검토한다 |
+| **skgas** 전용 backend 만 | 19건 모두 의미 있게 동작. 추가 조치 없음 |
+| ske / skhy 전용 backend에도 배포 | 그곳의 CME endpoint는 무의미. 이벤트·시나리오·Snapshot 의 권한 규칙은 `SKGAS_COMPANY_USER_ONLY` 이므로 그 회사 사용자는 통과하지 못한다 |
 
 배포 범위로 통제되면 코드 변경은 없다.
+
+### 4.6 이벤트 Snapshot (버전 이력) — **MCP 전용, 원본 화면 API 없음** (확정 — 2026-10-09)
+
+파이프라인이 Event 를 생성·갱신할 때마다 쌓는 버전 이력(`tmm_mi_mievent_snapshot_m`)과
+그 버전의 근거 Record·기관 전망 사본(`tmm_mi_mievent_snapshot_record_map`, `tmm_mi_mievent_snapshot_institution_view_m`)을 조회한다.
+원본 API 가 없어 1.1절 "원본과 동일" 원칙의 예외다. 컨트롤러 `McpEventSnapshotDedicatedController` (`@Profile("dedicated")`), 서비스 `EventSnapshotService`.
+
+| endpoint | operationId | 군 | 요청 | 응답 `data` |
+|---|---|---|---|---|
+| `GET /api/v1/mcp/mi/next-gen/events/{eventId}/snapshots` | `getEventSnapshots` | A | `startDate`, `endDate`(KST 날짜, `crt_dtm`), `updateTrigger`(`RECORD_INGESTION`/`MCP_USER_EDIT`), `createdBy`(대소문자 무시), `page`=1, `size`=20 | `PaginationRes<EventSnapshotSummaryRes>` — 버전 번호 내림차순, 상세분석 본문 제외 |
+| `GET .../events/{eventId}/snapshots/lookup` | `lookupEventSnapshot` | A | `versionNo` 또는 `asOf`(KST `yyyy-MM-dd'T'HH:mm:ss`). 둘 다 없으면 최신 | `EventSnapshotLookupRes { criteria, found, snapshot }` — 이력 없으면 `found=false` |
+| `GET .../events/{eventId}/snapshots/{snapshotId}` | `getEventSnapshot` | A | — | `EventSnapshotDetailRes` |
+| `GET .../events/{eventId}/snapshots/{snapshotId}/compare` | `compareEventSnapshot` | A | `target`=`previous`(기본)/`current` | `EventSnapshotCompareRes { comparable, differences[], sameFields[], recordedChangedFields[] }` |
+| `GET .../events/{eventId}/snapshots/{snapshotId}/records` | `getEventSnapshotRecords` | **B** | `recordType`, `refNm`(부분 일치), `startDate`/`endDate`(`record_first_created`), `page`=1, `size`=10 | `PaginationRes<EventSnapshotRecordRes>` — 발생 시각 내림차순 |
+| `GET .../events/{eventId}/snapshots/{snapshotId}/outlooks` | `getEventSnapshotOutlooks` | A | `institutionName`(부분 일치), `startDate`/`endDate`(`view_date`, 양끝 포함), `page`=1, `size`=10 | `PaginationRes<EventSnapshotOutlookRes>` — `view_date DESC, institution_view_id DESC` |
+
+**규칙**
+
+- 근거 Record 는 Snapshot 사본(`tmm_mi_mievent_snapshot_record_map`)만, 기관 전망은 Snapshot 사본만 조회한다. 현재 연결(`tmm_mi_mievent_record_map`)이나
+  원본 현재 값(`tmm_mi_institution_view`)으로 대체하지 않는다.
+- `/records` 는 B군이다: 사본에 원본 Record 의 현재 제목·요약·상품 정보를 붙이고(식별용), `isPermitted` 를 4.1.4 와 같은 방식으로 계산한다.
+  원본이 삭제됐어도 행은 유지되며 `isSourceAvailable=false` 다.
+- `changedFields`/`recordedChangedFields` 는 파이프라인이 기록한 본문 4개 컬럼의 직전·직후 비교 결과이고, `/compare` 의 `differences` 는 두 상태를 직접 비교한 결과다. 둘은 다를 수 있다.
+- `previous` 비교는 `previous_mi_event_snapshot_id` 기준이며 없으면 `comparable=false` (버전 번호 −1 로 대신 찾지 않는다). `current` 는 `tmm_mi_mievent_m` 과 비교(삭제 여부 무관).
+- 시각: Snapshot 관련 시각 컬럼은 모두 UTC 저장으로 보고 응답은 KST 로 변환한다. 입력(`asOf`, 날짜 필터)은 KST 로 받아 UTC 로 바꿔 비교한다.
+- 행 논리 삭제(`del_yn='Y'`) 이력은 제외한다. 저장 당시 Event 삭제 여부(`event_del_yn`)로는 거르지 않고 `isEventDeleted` 로만 응답한다. 원본 Event 가 삭제·부재여도 이력은 조회된다.
+- 하위 테이블의 `crt_usr_logn_id`·`crt_dtm`(이력 행 생성 정보)은 응답하지 않는다.
+
+**오류**: 채널 공통(인증·`X-User-Id`) 외에 — `{snapshotId}` 가 없거나 다른 Event 소속이면 `RSC-001`(HTTP 400, 4.1.2 와 동일),
+`lookup` 에 `versionNo` 와 `asOf` 를 같이 주면 `REQ-003`(HTTP 400). 목록이 비면 빈 페이지(200).
+
+**범위 밖 (P2, 별도 슬라이스)**: Record 반영 타임라인(`/snapshots/record-timeline`), 과거 내용 검색(`/events/snapshots/search`).
 
 ---
 
 ## 5. 오류 계약
 
-### 5.1 채널 공통 오류 (`X-User-Id` 관련)
+### 5.1 채널 공통 오류 (인증 · `X-User-Id`)
 
-모든 MCP endpoint에 공통 적용된다. 컨트롤러 진입 전 인터셉터 단계에서 판정한다.
+모든 MCP endpoint에 공통 적용된다. 인증은 Security 필터에서, `X-User-Id` 위임은 컨트롤러 진입 전 인터셉터에서 판정한다.
 
 | 상황 | HTTP | `code` | 비고 |
 |---|---|---|---|
-| `X-User-Id` 헤더 없음 또는 공백 | `401` | `AUTH-001` | |
-| 해당 `usr_logn_id`로 삭제되지 않은 사용자를 조회할 수 없음 | `401` | `AUTH-001` | 존재 여부를 응답으로 구분해주지 않기 위해 헤더 부재와 같은 코드를 쓴다 |
-| effective user의 소속 고객사가 미사용·삭제 상태이거나 현재일이 사용 기간 밖임 | `401` | `AUTH-001` | 사용자·고객사의 세부 상태를 응답으로 구분하지 않는다 |
+| `Authorization` (Basic Auth) 없음 | `401` | `AUTH-001` | |
+| 키 ID·Secret 불일치, 삭제된 키, 키의 회사가 삭제됨 | `401` | `AUTH-002` | 존재하지 않는 ID 도 같은 응답 (응답 시간도 같게 처리) |
+| `X-User-Id` 헤더 없음 또는 공백 | `403` | `AUTH-007` | 메시지 `X-User-Id header is required.` |
+| 해당 `usr_logn_id`로 삭제되지 않은 사용자를 조회할 수 없음 | `403` | `AUTH-007` | 메시지 `X-User-Id is not allowed for this MCP key.` |
+| effective user의 소속 고객사가 미사용·삭제 상태이거나 현재일이 사용 기간 밖임 | `403` | `AUTH-007` | 위와 같은 메시지 |
+| effective user 의 고객사가 키의 고객사와 다름 (ADMIN + 관리회사 키 제외) | `403` | `AUTH-007` | 위와 같은 메시지 |
+
+사용자 없음·비활성·회사 불일치를 같은 메시지로 응답해, 키를 가진 client 가 다른 회사 사용자 ID 의 존재 여부를 알 수 없게 한다.
 
 오류 응답도 `BaseResponse` 포맷이다.
 
 ```json
 {
   "status": false,
-  "code": "AUTH-001",
-  "message": "Authentication is required for this request.",
+  "code": "AUTH-007",
+  "message": "Access denied. You do not have permission to access this resource.(X-User-Id header is required.)",
   "data": null
 }
 ```
@@ -527,12 +522,11 @@ CME는 SK Gas 데이터이고 라우팅 키는 `midb-skgas`로 고정이다(변�
 | `page` / `size`가 1 미만 | `400` | Jakarta Validation |
 | 존재하지 않는 `eventId` / `scenarioGroupId` | 원본과 동일 | 원본 API의 계약을 따른다 |
 
-### 5.3 결정 사항 — AUTH-001의 HTTP status
+### 5.3 결정 사항 — 401 과 403 의 구분 (2026-10-08)
 
-`AUTH-001`은 `AppHttpStatusException`으로 **401**을 명시해 던진다.
-
-- 저장소 기본값인 `AppErrorException`을 쓰면 HTTP `400`이 되는데, 인증 컨텍스트 부재를 `400`으로 내리면 MCP 서버 쪽에서 파라미터 오류와 구분하기 어렵다.
-- 문자열 로그인 ID 조회 결과가 없거나 삭제된 사용자만 존재하는 경우도 사용자 존재 여부를 노출하지 않고 `401 / AUTH-001`로 통일한다.
+- `401` 은 **MCP client 인증 실패**(Basic Auth 없음·불일치)에만 쓴다. MCP 서버가 401 을 "인증정보를 다시 확인" 신호로 쓸 수 있게 한다.
+- `X-User-Id` 문제는 인증은 통과했지만 그 사용자로 위임할 수 없다는 뜻이므로 `403 / AUTH-007` 이다 (`AppHttpStatusException` 으로 명시).
+- 이전(2026-08-25)에는 `X-User-Id` 문제를 `401 / AUTH-001` 로 응답했다.
 
 ---
 
@@ -554,7 +548,8 @@ MCP 호출은 기존 API 접근 로그에 **`SYSTEM`이 아니라 `X-User-Id`가
 |---|---|
 | 그룹 / 표시명 | `MCP API` |
 | 매칭 경로 | `/api/v1/mcp/**` |
-| 인증 스키마 | 개발 단계에는 사용자 `BearerAuth`를 노출하지 않음. 운영 MCP client 인증 방식은 Q2 확정 후 반영 |
+| 인증 스키마 | `McpBasicAuth` (HTTP basic) 를 문서 전체와 모든 operation 의 보안 요구로 노출. 사용자 `BearerAuth` 는 제거 |
+| 공통 응답 예시 | 모든 operation 에 400(`REQ-003`)·401(`AUTH-001`)·403(`AUTH-007`) 자동 추가 |
 | `X-User-Id` | 필수 헤더 파라미터로 노출 |
 | 기존 그룹 중복 노출 | **없음** — `ETC API` 그룹의 `pathsToExclude`에 `/api/v1/mcp/**`를 추가한다 |
 
@@ -576,11 +571,9 @@ MCP 호출은 기존 API 접근 로그에 **`SYSTEM`이 아니라 `X-User-Id`가
    - Security / Swagger / 인터셉터 설정은 **건드리지 않는다.** prefix 단위로 이미 걸려 있다.
    - 요청/응답 DTO는 원본 것을 그대로 재사용한다.
 3. **B군을 추가하는 경우**, 응답이 `X-User-Id` 값에 따라 달라진다는 점을 이 문서 4절에 명시한다.
-4. **원본 컨트롤러의 `@Profile`을 확인한다.** Next Gen MI 컨트롤러는 두 종류다.
-   - `@Profile("!dedicated")` — 일반 서버 (dev / prod / local)
-   - `@Profile({"dedicated","testdb"})` — 고객사 전용 서버. 전용 DB 테넌트를 읽으므로 일반 서버에서 동작하지 않는다
-   **전용 DB에 접근하는 endpoint는 `McpScenarioGroupDedicatedController`(또는 새 전용 컨트롤러)에 넣는다.** 일반 컨트롤러에 섞지 않는다.
-   MCP 전용 컨트롤러에는 `@Profile`을 붙이지 않으므로, **일반 서버에서 호출됐을 때의 동작을 확인하고 description에 경고를 남긴다** (4.3.4절 참조).
+4. **MCP 컨트롤러는 모두 `@Profile("dedicated")` 다** (`d60ebbc0`, 4.3.3절). 새 endpoint 도 기존 `Mcp*DedicatedController` 또는
+   새 `Mcp*DedicatedController` 에 `@Profile("dedicated")` 로 둔다. 원본 컨트롤러가 일반 서버(`!dedicated`)용이어도 MCP 쪽은 전용 서버에 둔다.
+   전용 DB 테넌트를 읽는 endpoint(CME 등)는 SK Gas 전용 backend 에서만 의미가 있으므로 description 에 그 사실을 적는다.
 5. **쓰기 API나 SSE**를 추가하려는 경우는 이 채널의 범위 밖이다. 별도 설계 검토가 필요하다.
 
 ### 8.2 확장 후보 인벤토리 (Next Gen MI 조회 API 전수)
@@ -603,7 +596,7 @@ MCP 호출은 기존 API 접근 로그에 **`SYSTEM`이 아니라 `X-User-Id`가
 | ◯† | `GET /scenario-groups/graph/cme-benchmark` | `CmeBenchmarkService.getCmeBenchmarkGraph` |
 | ◯ | `GET /scenario-groups/{id}/price-interpretations` | `PriceInterpretationService.getInterpretations` |
 
-† 2026-08-24 추가 확정. **전용 DB(`midb-skgas`) 접근** — MCP도 별도 컨트롤러로 분리하되 `@Profile`은 붙이지 않는다. **SK Gas 전용 서버로만 호출해야 한다** (4.3절).
+† 2026-08-24 추가 확정. **전용 DB(`midb-skgas`) 접근** — SK Gas 전용 backend 에서만 의미 있는 결과를 준다 (4.3절). MCP 채널 전체가 `dedicated` 전용이다 (4.3.3절).
 
 **B군 — 사용자 컨텍스트 필수 (응답이 `X-User-Id`에 따라 달라짐)**
 
@@ -611,6 +604,19 @@ MCP 호출은 기존 API 접근 로그에 **`SYSTEM`이 아니라 `X-User-Id`가
 |:--:|---|---|
 | ◯ | `GET /events/{eventId}/records` | 항목별 `isPermitted` (상품 조회 권한) |
 | ◯ | `GET /events/{eventId}/scenario-groups` | 그룹별 `mine` (설계 점유자가 본인인지) |
+
+**MCP 전용 — 원본 화면 API 없음 (4.6절, 2026-10-09)**
+
+| 대상 | MCP 엔드포인트 (`/api/v1/mcp/mi/next-gen` 생략) | 서비스 메서드 | 군 |
+|:--:|---|---|:--:|
+| ◯ | `GET /events/{eventId}/snapshots` | `EventSnapshotService.getEventSnapshots` | A |
+| ◯ | `GET /events/{eventId}/snapshots/lookup` | `EventSnapshotService.lookupEventSnapshot` | A |
+| ◯ | `GET /events/{eventId}/snapshots/{snapshotId}` | `EventSnapshotService.getEventSnapshot` | A |
+| ◯ | `GET /events/{eventId}/snapshots/{snapshotId}/compare` | `EventSnapshotService.compareEventSnapshot` | A |
+| ◯ | `GET /events/{eventId}/snapshots/{snapshotId}/records` | `EventSnapshotService.getEventSnapshotRecords` | B (`isPermitted`) |
+| ◯ | `GET /events/{eventId}/snapshots/{snapshotId}/outlooks` | `EventSnapshotService.getEventSnapshotOutlooks` | A |
+| - | `GET /events/{eventId}/snapshots/record-timeline` | (P2) | A |
+| - | `GET /events/snapshots/search` | (P2) | A |
 
 **대상 제외**
 
@@ -645,47 +651,47 @@ MCP가 읽어갈 것은 시장 정보 콘텐츠이지, 화면이 다음에 무�
 
 ### 9.1 소비자가 알아야 하는 사실
 
-- 개발 단계의 임시 인증 예외에서는 경로를 아는 호출자가 요청할 수 있고 `X-User-Id`도 위조 가능하다.
-- 운영 단계에서는 인증된 MCP client만 호출하고 사용자 위임을 수행할 수 있어야 한다.
+- MCP 인증 키(Basic Auth)를 가진 client 만 호출할 수 있다. 키 없이는 어떤 환경에서도 `401` 이다.
+- 키는 회사 단위다. 키를 가진 client 는 그 회사의 어느 사용자로든 `X-User-Id` 위임을 할 수 있다 (ADMIN + 관리회사 키는 회사 무관).
 - `/records`의 `isPermitted`는 SKGAS USER이면 effective user의 개인+회사 상품 권한,
   타사 접근 가능 ADMIN이면 서버가 해석한 SKGAS 고객사의 회사 단위 상품 권한으로 계산된다.
 - MCP 요청의 `X-Company-No`는 계약에 없으며, 숫자·비숫자와 관계없이 상품 권한 대상 결정에 사용하지 않는다.
 - 고객사·역할·datasource는 헤더로 직접 선택하지 않고 서버가 조회한 사용자 정보와 서버 설정에서 결정한다.
 
-### 9.2 개발 단계 임시 인증 예외
+### 9.2 MCP 인증 키 관리 (2026-10-08)
 
-**2026-08-24 사용자 결정**: 짧은 개발 기간에는 임시 인증 예외로 진행하되 무인증 상태로 운영 배포하지 않는다.
-
-| 환경 | 상태 |
+| 항목 | 내용 |
 |---|---|
-| 로컬 / 개발계 | 승인된 환경의 읽기 전용 GET MCP 경로만 임시 인증 예외 |
-| 운영계 | **MCP client 인증·권한 방식 구현 전 배포 금지** |
+| 저장 | `tmd_mcpauthinfom`. Secret 은 PBKDF2-HMAC-SHA256 + 키별 16바이트 솔트로 단방향 저장 (반복 횟수 키별 저장, 신규 기본 `mcp.auth.hash-iterations=1000`) |
+| 발급 | 관리자 화면 시스템 관리 > MCP API 인증관리 (관리 API `/api/v1/admin/system-management/mcp-auth`, 일반 서버). Secret 은 발급 시 1회만 표시 |
+| 재발행 | 이전 Secret 은 즉시 무효 |
+| 삭제 | 논리 삭제. ID 를 `d_{등록번호}_{원래ID}` 로 바꿔 같은 ID 재등록 허용 |
+| 로그 | `Authorization`, `X-MCP-Authorization` 헤더는 요청 로그·MDC 에서 마스킹 |
+
+개발용 임시 인증 예외는 삭제됐다 (PR #595). 개발계·운영계 모두 같은 인증이 적용된다.
 
 ### 9.3 운영 배포 게이트
 
-**Q2가 확정·구현되기 전에는 운영계에 배포하지 않는다.**
+MCP client 인증(Q2)은 구현됐다. 운영 배포 전 남은 확인 사항:
 
-MCP client는 모든 삭제되지 않은 유효 사용자의 신뢰된 위임자다. 이 권한은 인증된 MCP client에만 부여한다.
-인증 기술, credential owner, endpoint 권한 표현과 회전 방식은 설계문서 Q2에서 확정한다.
-
-- 미인증 운영 요청은 `401`이어야 한다.
-- 위임 사용자가 없거나 삭제된 상태이면 실패해야 한다.
-- matcher overlap, 미인증 위임, effective user 범위를 넘는 고객사·datasource 변조,
-  외부 `X-Company-No` 무시, 서로 다른 고객사 요청 간 컨텍스트 누출, CME 오라우팅을 음수 테스트한다.
+- 배포 대상 DB 에 `tmd_mcpauthinfom` 과 이벤트 Snapshot 3개 테이블이 있어야 한다 (`ddl-auto: validate` — 없으면 기동 실패).
+- 운영 MCP 서버용 키를 발급하고 MCP 서버 설정(`MI_MCP_USERNAME` / `MI_MCP_PASSWORD`)에 넣는다.
+- 음수 테스트: 미인증·틀린 키, 다른 회사 사용자 위임, effective user 범위를 넘는 고객사·datasource 변조,
+  외부 `X-Company-No` 무시, 서로 다른 고객사 요청 간 컨텍스트 누출, CME 오라우팅.
 
 ---
 
 ## 10. Acceptance criteria
 
-- [ ] 개발용 인증 예외 설정에서 MCP 경로를 사용자 Bearer JWT 없이 호출하면 `200`이 반환된다.
-- [ ] 운영 보안 설정에서 인증되지 않은 MCP client 요청은 `401`로 거부된다.
-- [ ] 운영 보안 설정에서 인증된 MCP client만 `X-User-Id` 위임을 수행할 수 있다.
-- [ ] MCP 응답 본문(`data`)이 원본 API 응답과 **동일하다** (동일 파라미터·동일 사용자 기준 diff 결과 무차이).
-- [ ] `X-User-Id` 없음 → `401` / `AUTH-001`.
+- [ ] Basic Auth 키 없이 MCP 경로를 호출하면 모든 환경에서 `401` / `AUTH-001` 이 반환된다.
+- [ ] 틀린 키(ID·Secret 불일치, 삭제된 키)는 `401` / `AUTH-002` 로 거부된다.
+- [ ] 인증된 MCP client 만 `X-User-Id` 위임을 수행하며, 키 회사와 다른 회사 사용자 위임은 `403` / `AUTH-007` 이다 (ADMIN + 관리회사 키 예외).
+- [ ] MCP 응답 본문(`data`)이 원본 API 응답과 **동일하다** (4.1~4.3, 동일 파라미터·동일 사용자 기준 diff 결과 무차이).
+- [ ] `X-User-Id` 없음 → `403` / `AUTH-007`.
 - [ ] 영문·이메일 형식의 `X-User-Id` 로그인 ID가 숫자 파싱 없이 처리된다.
-- [ ] `X-User-Id` 로그인 ID 조회 결과가 없으면 → `401` / `AUTH-001`.
+- [ ] `X-User-Id` 로그인 ID 조회 결과가 없으면 → `403` / `AUTH-007`.
 - [ ] 같은 로그인 ID로 여러 사용자가 조회되면 반환 목록의 첫 번째 사용자가 effective user가 된다.
-- [ ] effective user의 소속 고객사가 미사용·삭제·사용 시작 전·사용 종료 후 → `401` / `AUTH-001`.
+- [ ] effective user의 소속 고객사가 미사용·삭제·사용 시작 전·사용 종료 후 → `403` / `AUTH-007`.
 - [ ] `/records`의 `isPermitted`가 SKGAS USER의 개인+회사 상품 권한으로 계산된다 (권한 있는 사용자 / 없는 사용자 각각 확인).
 - [ ] 타사 접근 가능 ADMIN의 `/records.isPermitted`가 ADMIN 소속 회사와 무관하게 SKGAS 회사 단위 상품 권한으로 계산된다.
 - [ ] `X-Company-No`에 다른 실제 고객사 번호 또는 비숫자 값을 보내도 값이 무시되고, 헤더 미전송 요청과 동일한 SKGAS 상품 권한 결과가 나온다.
@@ -693,17 +699,25 @@ MCP client는 모든 삭제되지 않은 유효 사용자의 신뢰된 위임자
 - [ ] API 접근 로그에 `SYSTEM`이 아닌 effective user로 기록된다.
 - [ ] MCP 인증/Infra 로그에서 MCP client identity를 추적하고 request/trace id로 API 로그와 연결할 수 있다.
 - [ ] Swagger UI에 `MCP API` 그룹이 단독 노출되고, `MI` / `SK Gas` / `ETC` 그룹에 중복 노출되지 않는다.
-- [ ] MCP 그룹에 사용자 `BearerAuth`가 노출되지 않고, `X-User-Id`가 필수 헤더로 노출된다.
-- [ ] Q2 확정 후 MCP 그룹의 인증 스키마가 실제 MCP client 인증 방식과 일치한다.
+- [ ] MCP 그룹에 사용자 `BearerAuth`가 노출되지 않고, `McpBasicAuth` 보안 요구와 `X-User-Id` 필수 헤더가 노출된다.
+- [ ] MCP 그룹의 인증 스키마(`McpBasicAuth`)가 실제 MCP client 인증 방식(Basic Auth)과 일치한다.
 - [ ] 기존 API의 동작·계약·권한이 변경되지 않는다 (회귀 테스트 baseline 대비 무변화).
 - [ ] MCP 경로 밖에서는 사용자 컨텍스트 합성이 일어나지 않는다.
 - [ ] 요청 정상·예외 종료 후 `SecurityContext`가 다음 요청에 남지 않는다.
 - [ ] 요청값으로 effective user의 고객사 범위를 넓히거나 datasource를 바꾸는 시도가 실패한다.
 - [ ] 서로 다른 고객사 사용자의 연속 요청 간 `SecurityContext`와 tenant context가 누출되지 않는다.
 - [ ] CME 벤치마크의 OpenAPI `description`에 "SK Gas 전용 서버 전용 · 일반 서버 응답 신뢰 불가" 경고가 노출된다.
-- [ ] 일반 서버에서 CME를 호출했을 때의 실제 반환(500 또는 빈 목록)을 확인해 4.3.4절 표를 사실로 확정한다.
-- [ ] 4.5절 서버별 노출표대로 실제 노출된다 (일반 backend에 12건, skgas 전용 backend에 CME 1건).
+- [ ] 일반 backend 에는 MCP 경로가 등록되지 않는다 (4.3.3절).
+- [ ] 4.5절 서버별 노출표대로 실제 노출된다 (skgas 전용 backend 에 19건, 일반 backend 에 0건).
 - [ ] 전용 컨트롤러도 동일한 `X-User-Id` 계약과 오류 계약을 따른다 (채널 인프라 재사용 확인).
+
+- [ ] (4.6 이벤트 Snapshot) 버전 목록이 `snapshot_version_no DESC`(+ `crt_dtm DESC, mi_event_snapshot_id DESC`)로 정렬되고 기간·트리거·생성자 필터가 동작한다.
+- [ ] (4.6) 다른 Event 의 snapshotId 는 `RSC-001`, `lookup` 의 `versionNo`+`asOf` 동시 지정은 `REQ-003`, 이력이 없으면 `found=false`.
+- [ ] (4.6) `asOf` 는 `crt_dtm <= asOf(KST→UTC)` 중 최신 1건이고 동시각이면 버전이 큰 것이다.
+- [ ] (4.6) 근거 Record·기관 전망은 Snapshot 사본에서만 조회되고, 원본이 삭제돼도 근거 Record 행이 빠지지 않는다.
+- [ ] (4.6) `/compare` 의 `differences` 와 `recordedChangedFields` 가 구분돼 내려가고, 이전 Snapshot 이 없으면 `comparable=false`.
+- [ ] (4.6) 응답 시각이 KST 이고 목록 응답에 상세분석 본문이 없다.
+- [ ] (4.6) OpenAPI description 에 Snapshot 조회 주의사항이 노출된다 (`McpOpenApiTest`).
 
 ---
 
@@ -712,6 +726,7 @@ MCP client는 모든 삭제되지 않은 유효 사용자의 신뢰된 위임자
 - 설계 근거 / 결정 로그: `docs/design-docs/gas/nextgen-mi-mcp-api-channel-design.md`
 - 실행 계획 / 검증 기록: `docs/work-notes/2026/2026-08-21-mcp-readonly-api-set.md`
 - `X-User-Id` 로그인 ID 변경 실행 기록: `docs/work-notes/2026/2026-08-25-x-user-id-login-id-first-match-implementation.md`
+- 이벤트 Snapshot 실행 기록: `docs/work-notes/2026/2026-10-09-mcp-event-snapshot-api.md`
 - 원본 도메인 기능 정의: `docs/design-docs/gas/nextgen-mi-integrated-functional-spec.md`
 - OpenAPI 서술 규칙: `docs/conventions/openapi-documentation-conventions.md`
 - 소유권 규칙: `docs/conventions/source-of-truth-governance.md`

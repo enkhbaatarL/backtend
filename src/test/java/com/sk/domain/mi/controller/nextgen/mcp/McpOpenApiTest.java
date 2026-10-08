@@ -11,6 +11,7 @@ import com.sk.common.enums.ResultCode;
 import com.sk.common.interceptor.McpUserContextInterceptor;
 import com.sk.domain.mi.service.nextgen.CmeBenchmarkService;
 import com.sk.domain.mi.service.nextgen.EventService;
+import com.sk.domain.mi.service.nextgen.EventSnapshotService;
 import com.sk.domain.mi.service.nextgen.PriceInterpretationService;
 import com.sk.domain.mi.service.nextgen.ScenarioGroupService;
 import java.util.LinkedHashSet;
@@ -60,7 +61,14 @@ class McpOpenApiTest {
         "/api/v1/mcp/mi/next-gen/scenario-groups/{scenarioGroupId}/price-interpretations",
         "/api/v1/mcp/mi/next-gen/scenario-groups/{scenarioGroupId}/scenarios/{scenarioId}",
         "/api/v1/mcp/mi/next-gen/events/{eventId}/scenario-groups",
-        CME_PATH);
+        CME_PATH,
+        // [MCP Snapshot] 이벤트 Snapshot 6건 추가 (13 → 19)
+        "/api/v1/mcp/mi/next-gen/events/{eventId}/snapshots",
+        "/api/v1/mcp/mi/next-gen/events/{eventId}/snapshots/lookup",
+        "/api/v1/mcp/mi/next-gen/events/{eventId}/snapshots/{snapshotId}",
+        "/api/v1/mcp/mi/next-gen/events/{eventId}/snapshots/{snapshotId}/compare",
+        "/api/v1/mcp/mi/next-gen/events/{eventId}/snapshots/{snapshotId}/records",
+        "/api/v1/mcp/mi/next-gen/events/{eventId}/snapshots/{snapshotId}/outlooks");
 
     @Autowired
     private MockMvc mockMvc;
@@ -80,8 +88,12 @@ class McpOpenApiTest {
     @MockitoBean
     private CmeBenchmarkService cmeBenchmarkService;
 
+    @MockitoBean
+    // [MCP Snapshot]
+    private EventSnapshotService eventSnapshotService;
+
     @Test
-    @DisplayName("MCP API 그룹에 GET 13건, 필수 문자열 X-User-Id, Basic Auth 보안 요구를 노출한다")
+    @DisplayName("MCP API 그룹에 GET 19건, 필수 문자열 X-User-Id, Basic Auth 보안 요구를 노출한다")
     void exposesTwelveMcpOperationsWithOnlyUserDelegationHeader() throws Exception {
         JsonNode document = apiDocument("MCP API");
         JsonNode paths = document.path("paths");
@@ -142,6 +154,38 @@ class McpOpenApiTest {
         assertThat(paths.path(MCP_PREFIX + "scenario-groups/{scenarioGroupId}/price-interpretations").path("get").path("description").asText())
             .contains("generatable = false, interpretations = []")
             .contains("scenarioSeries[].executed");
+    }
+
+    @Test
+    // [MCP Snapshot] OpenAPI description = MCP tool 설명이므로 조회 주의사항 노출을 고정
+    @DisplayName("이벤트 Snapshot operation은 조회 시 주의사항(갱신 후 상태·changedFields·사본 기준)을 노출한다")
+    void exposesSnapshotGuidance() throws Exception {
+        JsonNode paths = apiDocument("MCP API").path("paths");
+        String snapshots = MCP_PREFIX + "events/{eventId}/snapshots";
+
+        assertThat(operation(paths, snapshots, "getEventSnapshots").path("description").asText())
+            .contains("최신 Snapshot 과 현재 Event(이벤트 상세 조회)가 다를 수 있습니다")
+            .contains("changedFields")
+            .contains("isEventDeleted 는 저장 당시 Event 상태");
+        assertThat(operation(paths, snapshots + "/lookup", "lookupEventSnapshot").path("description").asText())
+            .contains("versionNo 와 asOf 는 동시에 줄 수 없습니다")
+            .contains("found=false");
+        assertThat(operation(paths, snapshots + "/{snapshotId}/compare", "compareEventSnapshot").path("description").asText())
+            .contains("recordedChangedFields 는 파이프라인이 기록한 값")
+            .contains("comparable=false");
+        assertThat(operation(paths, snapshots + "/{snapshotId}/records", "getEventSnapshotRecords").path("description").asText())
+            .contains("LLM 에 전달된 근거 Record")
+            .contains("snapshotCreatedAt");
+        assertThat(operation(paths, snapshots + "/{snapshotId}/outlooks", "getEventSnapshotOutlooks").path("description").asText())
+            .contains("활성 기관 전망 전체의 사본");
+        assertThat(operation(paths, snapshots + "/{snapshotId}", "getEventSnapshot").path("description").asText())
+            .contains("RSC-001");
+    }
+
+    private JsonNode operation(JsonNode paths, String path, String operationId) {
+        JsonNode operation = paths.path(path).path("get");
+        assertThat(operation.path("operationId").asText()).as(path).isEqualTo(operationId);
+        return operation;
     }
 
     @Test
@@ -212,7 +256,9 @@ class McpOpenApiTest {
     @Import({
         SwaggerConfig.class,
         McpEventDedicatedController.class,
-        McpScenarioGroupDedicatedController.class
+        McpScenarioGroupDedicatedController.class,
+        // [MCP Snapshot]
+        McpEventSnapshotDedicatedController.class
     })
     static class TestApplication {
     }
