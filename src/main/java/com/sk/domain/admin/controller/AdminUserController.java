@@ -7,10 +7,13 @@ import org.springframework.web.bind.WebDataBinder;
 import org.springframework.web.bind.annotation.InitBinder;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
+import io.swagger.v3.oas.annotations.enums.ParameterIn;
 import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 
 import org.springframework.context.annotation.Profile;
+import org.springframework.http.HttpStatus;
+import org.springframework.security.core.AuthenticationException;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.web.bind.annotation.DeleteMapping;
@@ -19,6 +22,7 @@ import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
@@ -27,8 +31,11 @@ import com.sk.common.annotation.AccessIpCheck;
 import com.sk.common.annotation.ApiOrder;
 import com.sk.common.annotation.RequiredPermission;
 import com.sk.common.annotation.TrimmedNotEmpty;
+import com.sk.common.config.security.mcp.McpClientAuthenticationToken;
+import com.sk.common.config.security.mcp.McpCredentialVerifier;
 import com.sk.common.enums.ResultCode;
 import com.sk.common.exception.AppErrorException;
+import com.sk.common.exception.AppHttpStatusException;
 import com.sk.common.model.BaseResponse;
 import com.sk.common.model.BaseResponseFactory;
 import com.sk.common.model.PaginationRes;
@@ -64,6 +71,8 @@ import lombok.extern.slf4j.Slf4j;
 public class AdminUserController {
 
     private final AdminUserService adminUserService;
+    // [MCP 인증] by-mcp-user-id 의 MCP 키 검증
+    private final McpCredentialVerifier mcpCredentialVerifier;
 
     @ApiOrder(1)
     @Parameters({
@@ -180,16 +189,75 @@ public class AdminUserController {
                             example = "sample.user@example.com"))
             @RequestParam("userLoginId") @NotBlank @Size(min = 1, max = 50) String userLoginId,
             @Parameter(hidden = true) @AuthenticationPrincipal Jwt jwt) {
+        validateLoginId(userLoginId);
+        return BaseResponseFactory.create(findUserByLoginId(userLoginId, jwt));
+    }
+
+    // [MCP 인증] by-login-id + (1) X-MCP-Authorization 키 검증 (2) Bearer 토큰 회사 == 키 회사
+    @ApiOrder(13)
+    @Operation(summary = "MCP 인증 키와 로그인 ID로 사용자 상세 조회", description = """
+            로그인 ID로 사용자 상세 조회(GET /users/by-login-id)와 같은 업무를 수행하되, 먼저 MCP 인증 키를 검증합니다.
+            1. X-MCP-Authorization 헤더의 MCP 인증 키(Basic base64(id:secret))를 검증합니다.
+               형식 오류는 400(REQ-003), 인증정보 불일치는 401(AUTH-002)입니다.
+            2. Bearer 토큰의 회사와 MCP 인증 키의 회사가 같아야 합니다. 다르면 403(AUTH-007)입니다.
+            3. 이후 by-login-id 와 같은 권한 범위로 사용자를 조회합니다.
+            MCP 인증 키는 쿼리 파라미터가 아닌 헤더로 받습니다. 쿼리 문자열은 요청 로그에 남기 때문입니다.
+            """, security = @SecurityRequirement(name = "BearerAuth"))
+    @ApiResponse(responseCode = "200", description = "by-login-id 와 같은 사용자 상세. 다건 일치도 첫 행 한 건 반환",
+            useReturnTypeSchema = true, content = @Content(mediaType = "application/json"))
+    @GetMapping(value = "/users/by-mcp-user-id", produces = "application/json")
+    @RequiredPermission(roles = {Role.ADMIN, Role.API_PLUS_OPERATOR})
+    public BaseResponse<UserDetailRes> getUserByMcpUserId(
+            @Parameter(in = ParameterIn.HEADER, name = McpCredentialVerifier.MCP_AUTHORIZATION_HEADER, required = true,
+                    description = "MCP 인증 키. MCP API 에 보내는 Authorization 과 같은 'Basic base64(id:secret)' 형식입니다.",
+                    schema = @Schema(type = "string", example = "Basic c2tjYy1tY3AwMTpzZWNyZXQ="))
+            @RequestHeader(McpCredentialVerifier.MCP_AUTHORIZATION_HEADER) String mcpAuthorization,
+            @Parameter(description = "로그인 ID 문자열. by-login-id 의 userLoginId 와 같은 규칙입니다.",
+                    required = true, schema = @Schema(type = "string", minLength = 1, maxLength = 50,
+                            example = "sample.user@example.com"))
+            @RequestParam("userLoginId") @NotBlank @Size(min = 1, max = 50) String userLoginId,
+            @Parameter(hidden = true) @AuthenticationPrincipal Jwt jwt) {
+        McpClientAuthenticationToken mcpClient = verifyMcpAuthorization(mcpAuthorization);
+        validateSameCompany(mcpClient, jwt);
+        validateLoginId(userLoginId);
+        return BaseResponseFactory.create(findUserByLoginId(userLoginId, jwt));
+    }
+
+    // [MCP 인증] 형식 오류 400, 인증정보 불일치 401
+    private McpClientAuthenticationToken verifyMcpAuthorization(String mcpAuthorization) {
+        try {
+            return mcpCredentialVerifier.verifyBasic(mcpAuthorization);
+        } catch (IllegalArgumentException e) {
+            throw AppErrorException.of(ResultCode.Error.REQ_INVALID_PARAMETER, e.getMessage());
+        } catch (AuthenticationException e) {
+            throw AppHttpStatusException.of(HttpStatus.UNAUTHORIZED, ResultCode.Error.AUTH_INVALID_CREDENTIALS, e.getMessage());
+        }
+    }
+
+    // [MCP 인증] Bearer 토큰 companyNo 와 키 회사가 다르면 403
+    private void validateSameCompany(McpClientAuthenticationToken mcpClient, Jwt jwt) {
+        Object tokenCompanyNo = jwt.getClaim(Claim.COMPANY_NO.getCode());
+        if (tokenCompanyNo == null || !tokenCompanyNo.toString().equals(String.valueOf(mcpClient.getCustomerCompanyNo()))) {
+            throw AppHttpStatusException.of(HttpStatus.FORBIDDEN, ResultCode.Error.AUTH_ACCESS_DENIED,
+                    "The bearer token company does not match the MCP key company.");
+        }
+    }
+
+    // [MCP 인증] by-login-id 의 기존 검사를 그대로 추출 (by-login-id 동작 변경 없음)
+    private void validateLoginId(String userLoginId) {
         if (userLoginId.codePoints().anyMatch(Character::isISOControl)
                 || Character.isSpaceChar(userLoginId.codePointAt(0))
                 || Character.isSpaceChar(userLoginId.codePointBefore(userLoginId.length()))) {
             throw AppErrorException.of(ResultCode.Error.REQ_INVALID_PARAMETER);
         }
+    }
+
+    // [MCP 인증] by-login-id 의 기존 조회 분기를 그대로 추출 (by-login-id 동작 변경 없음)
+    private UserDetailRes findUserByLoginId(String userLoginId, Jwt jwt) {
         Role callerRole = Role.valueOf(jwt.getClaimAsString(Claim.ROLE.getCode()));
-        UserDetailRes detail = callerRole == Role.ADMIN
+        return callerRole == Role.ADMIN
                 ? adminUserService.getUserByLoginId(userLoginId)
                 : adminUserService.getUserByLoginIdForClient(userLoginId, jwt.getClaimAsString(Claim.COMPANY_CD.getCode()));
-        return BaseResponseFactory.create(detail);
     }
 
     @InitBinder("userLoginId")

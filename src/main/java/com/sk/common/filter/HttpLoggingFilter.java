@@ -1,6 +1,7 @@
 package com.sk.common.filter;
 
 import com.sk.common.config.database.DataSourceContextHolder;
+import com.sk.common.config.security.mcp.McpCredentialVerifier;
 import com.sk.common.filter.wrapper.CustomContentCachingRequestWrapper;
 import com.sk.common.filter.wrapper.CustomContentCachingResponseWrapper;
 import com.sk.common.utils.MDCUtil;
@@ -13,13 +14,16 @@ import jakarta.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.util.Enumeration;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.atomic.AtomicLong;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.RandomStringUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.core.Ordered;
+import org.springframework.http.HttpHeaders;
 import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
 import org.springframework.web.util.ContentCachingRequestWrapper;
@@ -32,6 +36,10 @@ public class HttpLoggingFilter extends OncePerRequestFilter implements Ordered {
 
     // Custom Header Key
     private static final String X_COMPANY_NO_KEY = "X-Company-No";
+
+    // [MCP 인증] 인증정보(Basic Auth 시크릿, Bearer 토큰, MCP 인증 키)는 로그·MDC 에 남기지 않음
+    private static final String MASKED_VALUE = "****";
+    private static final List<String> SENSITIVE_HEADERS = List.of(HttpHeaders.AUTHORIZATION, McpCredentialVerifier.MCP_AUTHORIZATION_HEADER);
 
     private final List<String> passUriStartsWith = List.of("/swagger-ui", "/v3/api-docs", "/favicon.ico");
     private final AtomicLong id = new AtomicLong(0);
@@ -149,13 +157,19 @@ public class HttpLoggingFilter extends OncePerRequestFilter implements Ordered {
         }
     }
 
+    // [MCP 인증] Authorization / X-MCP-Authorization 헤더 여부
+    private static boolean isSensitiveHeader(String headerName) {
+        return SENSITIVE_HEADERS.stream().anyMatch(sensitive -> sensitive.equalsIgnoreCase(headerName));
+    }
+
     // 26.07.29 취약점 진단 수정, '표준 라이브러리의 널 반환 값 역참조-102109,102110'
     private void logHeaders(HttpServletRequest request) {
         Enumeration<String> headerNames = request.getHeaderNames();
 
         while (headerNames != null && headerNames.hasMoreElements()) {
             String headerName = headerNames.nextElement();
-            String headerValue = request.getHeader(headerName);
+            // [MCP 인증] 인증 헤더는 DEBUG 로그에서 마스킹
+            String headerValue = isSensitiveHeader(headerName) ? MASKED_VALUE : request.getHeader(headerName);
             log.debug("Header: {}={}", headerName, headerValue);
         }
     }
@@ -187,7 +201,10 @@ public class HttpLoggingFilter extends OncePerRequestFilter implements Ordered {
         MDCUtil.setValue(MDCUtil.REQUEST_METHOD, request.getMethod());
         MDCUtil.setValue(MDCUtil.REQUEST_UUID, RandomStringUtils.secure().next(8, true, true));
         MDCUtil.setValue(MDCUtil.REQUEST_START_TIME, String.valueOf(startTime));
-        MDCUtil.setJsonValue(MDCUtil.HEADER_MAP, request.getHeaderMap());
+        Map<String, String> headerMap = new HashMap<>(request.getHeaderMap());
+        // [MCP 인증] 인증 헤더는 MDC HEADER_MAP 에서 마스킹
+        headerMap.replaceAll((name, value) -> isSensitiveHeader(name) ? MASKED_VALUE : value);
+        MDCUtil.setJsonValue(MDCUtil.HEADER_MAP, headerMap);
         MDCUtil.setValue(MDCUtil.REQUEST_BODY, new String(request.getContentAsByteArray(), StandardCharsets.UTF_8));
         MDCUtil.setValue(MDCUtil.REQUEST_URI, request.getRequestURI());
         MDCUtil.setValue(MDCUtil.REQUEST_QUERY_STRING, request.getQueryString());

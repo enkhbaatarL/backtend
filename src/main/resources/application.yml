@@ -61,8 +61,9 @@ security:
   enabled: true
 
 mcp:
-  read-only-api:
-    development-auth-bypass-enabled: ${MCP_READ_ONLY_API_DEVELOPMENT_AUTH_BYPASS_ENABLED:true}
+  auth:
+    # [MCP 인증] mcp.read-only-api(개발용 인증 우회) 삭제. MCP Basic Auth 시크릿 PBKDF2 반복 횟수 (신규 발급·재발급에 적용, 기존 키는 키별로 저장된 값 사용). 최소 1000
+    hash-iterations: ${MCP_AUTH_HASH_ITERATIONS:1000}
 
 mi:
   autocomplete:
