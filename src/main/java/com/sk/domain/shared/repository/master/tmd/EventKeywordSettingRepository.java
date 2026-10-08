@@ -4,6 +4,7 @@ import com.sk.domain.shared.entity.master.tmd.EventKeywordSetting;
 import java.util.List;
 import java.util.Optional;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
 
 public interface EventKeywordSettingRepository extends JpaRepository<EventKeywordSetting, Long> {
 
@@ -18,4 +19,18 @@ public interface EventKeywordSettingRepository extends JpaRepository<EventKeywor
     Optional<EventKeywordSetting> findByUser_UserNoAndKeywordName(Integer userNo, String keywordName);
 
     Optional<EventKeywordSetting> findByKeywordSettingIdAndUser_UserNoAndIsDeletedFalse(Long keywordSettingId, Integer userNo);
+
+    /**
+     * 키워드 알림 매칭 대상 설정: 키워드 활성 + 알림 ON, 사용자 활성 + 전체 알림 스위치 ON
+     */
+    @Query("""
+        SELECT s
+          FROM EventKeywordSetting s
+          JOIN FETCH s.user u
+         WHERE s.isDeleted = false
+           AND s.isNotificationUse = true
+           AND u.isDeleted = false
+           AND u.isUserNotificationSetting = true
+        """)
+    List<EventKeywordSetting> findAllMatchable();
 }

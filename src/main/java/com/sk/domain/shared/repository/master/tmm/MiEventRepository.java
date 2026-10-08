@@ -1,6 +1,9 @@
 package com.sk.domain.shared.repository.master.tmm;
 
+import java.time.LocalDateTime;
+import java.util.Collection;
 import java.util.List;
+import java.util.Optional;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -11,8 +14,55 @@ import com.sk.domain.shared.entity.master.tmm.MiEvent;
 import com.sk.domain.shared.repository.master.tmm.custom.CustomMiEventRepository;
 import com.sk.domain.shared.repository.master.tmm.projection.EventRecordMappingRow;
 import com.sk.domain.shared.repository.master.tmm.projection.EventRecordRow;
+import com.sk.domain.shared.repository.master.tmm.projection.KeywordAlertEventRow;
+import com.sk.domain.shared.repository.master.tmm.projection.KeywordAlertMailEventRow;
 
 public interface MiEventRepository extends JpaRepository<MiEvent, Long>, CustomMiEventRepository {
+
+    /**
+     * 키워드 알림 스캔 체크포인트 초기값 (기존 이벤트 무시용)
+     */
+    @Query("SELECT MAX(e.createDt) FROM MiEvent e")
+    Optional<LocalDateTime> findMaxCreateDt();
+
+    /**
+     * 키워드 알림 스캔 대상: 기준 시각 이후 생성된 활성 이벤트 (생성일시, ID 오름차순)
+     */
+    @Query("""
+        SELECT e.miEventId AS miEventId, e.oneLineSummary AS oneLineSummary, e.createDt AS createDt
+          FROM MiEvent e
+         WHERE e.createDt > :from
+           AND e.isDeleted = false
+         ORDER BY e.createDt ASC, e.miEventId ASC
+        """)
+    List<KeywordAlertEventRow> findKeywordAlertEventsCreatedAfter(@Param("from") LocalDateTime from);
+
+    /**
+     * 후보 이벤트 중 one_line_summary에 키워드 구문이 그대로 포함된 이벤트 ID
+     * - fulltext_match = MATCH(col) AGAINST(? IN BOOLEAN MODE) (ngram FULLTEXT)
+     * - phrase는 큰따옴표로 감싼 구문 검색어 (예: "호르무즈 해협")
+     */
+    @Query("""
+        SELECT e.miEventId
+          FROM MiEvent e
+         WHERE e.miEventId IN :eventIds
+           AND function('fulltext_match', e.oneLineSummary, :phrase) > 0
+        """)
+    List<Long> findEventIdsMatchingPhrase(@Param("eventIds") Collection<Long> eventIds, @Param("phrase") String phrase);
+
+    /**
+     * 키워드 알림 메일 카드용 이벤트 정보 (삭제된 이벤트 포함 — 알림은 이미 발생했으므로 메일은 보낸다)
+     */
+    @Query("""
+        SELECT e.isNew AS isNew,
+               l1.level1Label AS categoryLabel,
+               COALESCE(e.latestRecordFirstCreated, e.createDt) AS occurredAt
+          FROM MiEvent e
+          JOIN e.eventTypeL2 l2
+          JOIN l2.eventTypeL1 l1
+         WHERE e.miEventId = :miEventId
+        """)
+    Optional<KeywordAlertMailEventRow> findKeywordAlertMailEvent(@Param("miEventId") Long miEventId);
 
     @Query(
         value = """

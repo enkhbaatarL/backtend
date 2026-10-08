@@ -79,6 +79,11 @@ public class EventKeywordNotificationDelivery extends BaseEntity {
         return delivery;
     }
 
+    /** 선점(SENDING)한 디스패처만 결과를 기록한다. 그 사이 SENDING 타임아웃 복구로 상태가 바뀌었으면 false */
+    public boolean isSending() {
+        return this.status == NotificationSendStatus.SENDING;
+    }
+
     public void markSuccess() {
         recordAttempt();
         this.status = NotificationSendStatus.SUCCESS;
