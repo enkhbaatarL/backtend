@@ -81,7 +81,7 @@ class McpOpenApiTest {
     private CmeBenchmarkService cmeBenchmarkService;
 
     @Test
-    @DisplayName("MCP API 그룹에 GET 13건과 필수 문자열 X-User-Id만 노출한다")
+    @DisplayName("MCP API 그룹에 GET 13건, 필수 문자열 X-User-Id, Basic Auth 보안 요구를 노출한다")
     void exposesTwelveMcpOperationsWithOnlyUserDelegationHeader() throws Exception {
         JsonNode document = apiDocument("MCP API");
         JsonNode paths = document.path("paths");
@@ -103,15 +103,19 @@ class McpOpenApiTest {
             assertThat(userIdParameter.path("schema").path("example").asText())
                 .isEqualTo("mcp-user@sk.com");
             assertThat(findParameter(operation, "X-Company-No").isMissingNode()).isTrue();
-            assertThat(operation.path("security").isMissingNode()
-                || operation.path("security").isEmpty()).isTrue();
+            // [MCP 인증] 인증 없음 → Basic Auth 보안 요구와 403 응답 노출
+            assertThat(operation.path("security").get(0).has("McpBasicAuth")).as(pathEntry.getKey()).isTrue();
             assertErrorResponse(operation, "400", "REQ_INVALID_PARAMETER", ResultCode.Error.REQ_INVALID_PARAMETER);
             assertErrorResponse(operation, "401", "AUTH_REQUIRED", ResultCode.Error.AUTH_REQUIRED);
+            assertErrorResponse(operation, "403", "AUTH_ACCESS_DENIED", ResultCode.Error.AUTH_ACCESS_DENIED);
         });
 
         assertThat(document.toString()).doesNotContain("X-Company-No");
-        assertThat(document.path("security").isMissingNode() || document.path("security").isEmpty()).isTrue();
-        assertThat(document.path("components").path("securitySchemes").has("BearerAuth")).isFalse();
+        assertThat(document.path("security").get(0).has("McpBasicAuth")).isTrue();
+        JsonNode securitySchemes = document.path("components").path("securitySchemes");
+        assertThat(securitySchemes.has("BearerAuth")).isFalse();
+        assertThat(securitySchemes.path("McpBasicAuth").path("type").asText()).isEqualTo("http");
+        assertThat(securitySchemes.path("McpBasicAuth").path("scheme").asText()).isEqualTo("basic");
     }
 
     @Test

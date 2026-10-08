@@ -45,6 +45,8 @@ public class SwaggerConfig {
     private static final String APPLICATION_JSON = "application/json";
     private static final String BASE_RESPONSE_SCHEMA = "BaseResponse";
     private static final String BASE_RESPONSE_SCHEMA_REF = "#/components/schemas/" + BASE_RESPONSE_SCHEMA;
+    // [MCP 인증] MCP API 문서의 Basic Auth 보안 스킴 이름
+    private static final String MCP_SECURITY_SCHEME = "McpBasicAuth";
 
     // note: 안정화 후 투머치 문서 모두 삭제예정
     private static final String SW_VERSION_BASE = "v1.3.1";
@@ -442,11 +444,17 @@ public class SwaggerConfig {
     }
 
     private void customizeMcpOpenApi(OpenAPI openApi) {
-        openApi.setSecurity(List.of());
         if (openApi.getComponents() != null && openApi.getComponents().getSecuritySchemes() != null) {
             openApi.getComponents().getSecuritySchemes().remove("BearerAuth");
         }
         registerBaseResponseSchema(openApi);
+        // [MCP 인증] 인증 없음 → Basic Auth 를 MCP 문서 전체의 보안 요구로 등록
+        openApi.getComponents().addSecuritySchemes(MCP_SECURITY_SCHEME,
+            new SecurityScheme()
+                .type(Type.HTTP)
+                .scheme("basic")
+                .description("관리자 화면에서 발급한 MCP 인증 ID 와 시크릿"));
+        openApi.setSecurity(List.of(new SecurityRequirement().addList(MCP_SECURITY_SCHEME)));
         if (openApi.getPaths() == null) {
             return;
         }
@@ -454,7 +462,8 @@ public class SwaggerConfig {
         openApi.getPaths().values().stream()
             .flatMap(pathItem -> pathItem.readOperations().stream())
             .forEach(operation -> {
-                operation.setSecurity(List.of());
+                // [MCP 인증] operation 별 보안 요구도 Basic Auth
+                operation.setSecurity(List.of(new SecurityRequirement().addList(MCP_SECURITY_SCHEME)));
                 List<io.swagger.v3.oas.models.parameters.Parameter> parameters =
                     operation.getParameters() == null
                         ? new ArrayList<>()
@@ -482,11 +491,22 @@ public class SwaggerConfig {
                     "401",
                     new io.swagger.v3.oas.models.responses.ApiResponse()
                         .description(
-                            "X-User-Id가 누락·공백이거나 해당 로그인 ID의 유효 사용자가 없습니다. "
-                                + "BaseResponse의 code는 AUTH-001입니다.")
+                            "Basic Auth 인증정보가 없거나(AUTH-001) 틀렸습니다(AUTH-002). "
+                                + "X-User-Id 값의 문제는 401이 아니라 403으로 응답합니다.")
                         .content(mcpErrorContent(
                             ResultCode.Error.AUTH_REQUIRED,
                             "인증 컨텍스트 생성 실패")));
+                operation.getResponses().addApiResponse(
+                    // [MCP 인증] 401 = Basic Auth 문제, 403 = X-User-Id 위임 불가(누락·사용자 없음·회사 불일치)
+                    "403",
+                    new io.swagger.v3.oas.models.responses.ApiResponse()
+                        .description(
+                            "키 인증은 통과했으나 X-User-Id로 위임할 수 없습니다. "
+                                + "X-User-Id가 누락·공백이거나, 해당 로그인 ID의 유효 사용자가 없거나, "
+                                + "사용자의 회사가 인증 키의 회사와 다릅니다. BaseResponse의 code는 AUTH-007입니다.")
+                        .content(mcpErrorContent(
+                            ResultCode.Error.AUTH_ACCESS_DENIED,
+                            "사용자 위임 불가")));
             });
     }
 
