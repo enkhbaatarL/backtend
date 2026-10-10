@@ -59,6 +59,15 @@ public class PermissionStrategyFactory {
         // 현재 발급된 토근의 role
         Role role = authService.getCurrentRole();
 
+        if (matchesAnyRule(rules, role)) {
+            return true;
+        }
+
+        // [운영자 서비스 접속] 타사접속 가능 운영자는 USER 규칙(조건 포함)으로도 평가한다
+        return role == Role.OPERATOR && authService.isServiceAccessOperator() && matchesAnyRule(rules, Role.USER);
+    }
+
+    private boolean matchesAnyRule(PermissionRule[] rules, Role role) {
         return Arrays.stream(rules)
             .filter(rule -> rule.role() == role)
             .anyMatch(rule -> Arrays.stream(rule.conditions()).allMatch(condition -> isConditionSatisfied(role, condition)));

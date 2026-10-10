@@ -135,7 +135,9 @@ public class EventSnapshotServiceImpl implements EventSnapshotService {
 
         // isPermitted 는 기존 이벤트 연관 레코드 조회(EventServiceImpl#getEventRecords)와 같은 방식으로 계산한다.
         // [MCP Operator] 운영자는 상품 권한 정보가 없어 전부 isPermitted=false (EventServiceImpl#getEventRecords 와 동일)
+        // [운영자 서비스 접속] 타사접속 가능 운영자는 자기 회사 매핑 상품 기준, 불가 운영자만 전부 false
         Map<Integer, Boolean> goodsViewableMap = authorizationService.getCurrentRole() == Role.OPERATOR
+            && !authorizationService.isServiceAccessOperator()
             ? Map.of()
             : authorizationService.getPermissions().getGoodsViewableMap(authorizationService.getCompanyNoWithPriority());
 

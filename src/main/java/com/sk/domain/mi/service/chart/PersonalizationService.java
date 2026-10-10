@@ -31,7 +31,8 @@ public class PersonalizationService {
         EnumMap<ChartSettingConditionCd, List<String>> raw = initializeEmpty();
 
         // 로그인 안 한 경우(혹은 미개발 환경) → 빈 Preferences 반환
-        if (StringUtils.isBlank(userLoginId) || !List.of(Role.USER, Role.ADMIN).contains(role)) {
+        // [운영자 서비스 접속] 차트 개인화 대상에 OPERATOR 추가 (MI 접근은 타사접속 운영자만 가능)
+        if (StringUtils.isBlank(userLoginId) || !List.of(Role.USER, Role.ADMIN, Role.OPERATOR).contains(role)) {
             return new Preferences(raw);
         }
 

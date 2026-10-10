@@ -210,7 +210,9 @@ public class EventServiceImpl implements EventService {
     @Override
     public PaginationRes<EventRelatedRecordRes> getEventRecords(Long eventId, int page, int size) {
         // [MCP Operator] 운영자는 상품 권한 정보가 없어(getPermissions 미지원) 전부 isPermitted=false — OperatorPermissionStrategy 와 같은 기준
+        // [운영자 서비스 접속] 타사접속 가능 운영자는 USER 와 같이 자기 회사 매핑 상품 기준 (사용자 화면 이벤트 상세와 공용), 불가 운영자만 전부 false
         Map<Integer, Boolean> goodsViewableMap = authorizationService.getCurrentRole() == Role.OPERATOR
+            && !authorizationService.isServiceAccessOperator()
             ? Map.of()
             : authorizationService.getPermissions().getGoodsViewableMap(authorizationService.getCompanyNoWithPriority());
 
