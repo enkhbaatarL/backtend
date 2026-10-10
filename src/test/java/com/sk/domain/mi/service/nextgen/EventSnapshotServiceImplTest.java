@@ -268,7 +268,7 @@ class EventSnapshotServiceImplTest {
 
     @Test
     // [MCP Operator]
-    @DisplayName("운영자는 상품 권한 정보를 조회하지 않고 근거 Record 를 모두 isPermitted=false 로 반환한다")
+    @DisplayName("타사접속 불가 운영자는 상품 권한 정보를 조회하지 않고 근거 Record 를 모두 isPermitted=false 로 반환한다")
     void getsRecordsWithoutPermissionForOperator() {
         given(snapshotRepository.findByMiEventSnapshotIdAndMiEventIdAndIsDeletedFalse(12L, EVENT_ID))
             .willReturn(Optional.of(snapshot(12L, 4L, 11L).build()));
@@ -282,6 +282,28 @@ class EventSnapshotServiceImplTest {
 
         assertThat(result.detail()).singleElement().satisfies(record -> assertThat(record.isPermitted()).isFalse());
         then(authorizationService).should(never()).getPermissions();
+    }
+
+    @Test
+    // [운영자 서비스 접속]
+    @DisplayName("타사접속 가능 운영자는 USER 와 같이 자기 회사 매핑 상품 기준으로 isPermitted 를 계산한다")
+    void getsRecordsWithCompanyPermissionForServiceAccessOperator() {
+        given(snapshotRepository.findByMiEventSnapshotIdAndMiEventIdAndIsDeletedFalse(12L, EVENT_ID))
+            .willReturn(Optional.of(snapshot(12L, 4L, 11L).build()));
+        given(authorizationService.getCurrentRole()).willReturn(Role.OPERATOR);
+        given(authorizationService.isServiceAccessOperator()).willReturn(true);
+        PermissionRes permissions = mock(PermissionRes.class);
+        given(authorizationService.getPermissions()).willReturn(permissions);
+        given(authorizationService.getCompanyNoWithPriority()).willReturn(1);
+        given(permissions.getGoodsViewableMap(1)).willReturn(Map.of(100, true));
+        EventSnapshotRecordRow row = recordRow(1L, 100, 1);
+        given(recordMapRepository.findEventSnapshotRecords(eq(12L), isNull(), isNull(), isNull(), isNull(), any(Pageable.class)))
+            .willReturn(new PageImpl<>(List.of(row), PageRequest.of(0, 10), 1));
+
+        PaginationRes<EventSnapshotRecordRes> result = service.getEventSnapshotRecords(EVENT_ID, 12L,
+            new EventSnapshotRecordListReq(null, null, null, null, null, null));
+
+        assertThat(result.detail()).singleElement().satisfies(record -> assertThat(record.isPermitted()).isTrue());
     }
 
     @Test
