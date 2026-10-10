@@ -1,6 +1,13 @@
 package com.sk.domain.mi.controller.nextgen.mcp;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.BDDMockito.then;
+
+import com.sk.common.annotation.PermissionRule;
+import com.sk.common.annotation.RequiredPermissionRules;
+import com.sk.domain.shared.enums.Role;
+import java.lang.reflect.Method;
+import java.util.Arrays;
 
 import com.sk.domain.mi.dto.request.nextgen.EventListReq;
 import com.sk.domain.mi.dto.request.nextgen.ScenarioGroupListReq;
@@ -155,5 +162,24 @@ class McpControllerDelegationTest {
 
         then(commonService).should().createMcpUserFeedback(user, request);
         then(commonService).shouldHaveNoMoreInteractions();
+    }
+
+    @Test
+    // [MCP Operator] 운영자도 모든 MCP endpoint 를 호출할 수 있다 (회사는 인터셉터가 MCP 키 회사로 제한)
+    @DisplayName("MCP endpoint 20건 모두 USER·ADMIN·OPERATOR 권한 규칙을 가진다")
+    void allowsOperatorOnAllMcpEndpoints() {
+        Method[] endpoints = Arrays.stream(new Class<?>[] {
+                McpEventDedicatedController.class, McpScenarioGroupDedicatedController.class,
+                McpEventSnapshotDedicatedController.class, McpUserFeedbackDedicatedController.class})
+            .flatMap(controller -> Arrays.stream(controller.getDeclaredMethods()))
+            .filter(method -> method.isAnnotationPresent(RequiredPermissionRules.class))
+            .toArray(Method[]::new);
+
+        assertThat(endpoints).hasSize(20);
+        for (Method endpoint : endpoints) {
+            assertThat(Arrays.stream(endpoint.getAnnotation(RequiredPermissionRules.class).rules()).map(PermissionRule::role))
+                .as(endpoint.getName())
+                .containsExactlyInAnyOrder(Role.USER, Role.ADMIN, Role.OPERATOR);
+        }
     }
 }

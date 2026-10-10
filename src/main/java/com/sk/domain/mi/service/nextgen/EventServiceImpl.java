@@ -24,9 +24,9 @@ import com.sk.domain.mi.service.nextgen.support.FailedCreatingGroupResolver;
 import com.sk.domain.mi.service.nextgen.support.ScenarioDimensionMapper;
 import com.sk.domain.mi.service.nextgen.support.ScenarioDimensionMapper.GroupDimensionTemplate;
 import com.sk.domain.mi.service.nextgen.support.ScenarioProbabilityAllocator;
-import com.sk.domain.mi.dto.response.PermissionRes;
 import com.sk.domain.shared.entity.master.tmd.User;
 import com.sk.domain.shared.service.permissions.AuthorizationService;
+import com.sk.domain.shared.enums.Role;
 import com.sk.domain.shared.enums.nextgen.ScenarioDesignDisplayStatus;
 import com.sk.domain.shared.enums.nextgen.ScenarioGroupStatus;
 import com.sk.domain.shared.repository.master.tmd.UserRepository;
@@ -209,9 +209,10 @@ public class EventServiceImpl implements EventService {
      */
     @Override
     public PaginationRes<EventRelatedRecordRes> getEventRecords(Long eventId, int page, int size) {
-        PermissionRes permissions = authorizationService.getPermissions();
-
-        Map<Integer, Boolean> goodsViewableMap = permissions.getGoodsViewableMap(authorizationService.getCompanyNoWithPriority());
+        // [MCP Operator] 운영자는 상품 권한 정보가 없어(getPermissions 미지원) 전부 isPermitted=false — OperatorPermissionStrategy 와 같은 기준
+        Map<Integer, Boolean> goodsViewableMap = authorizationService.getCurrentRole() == Role.OPERATOR
+            ? Map.of()
+            : authorizationService.getPermissions().getGoodsViewableMap(authorizationService.getCompanyNoWithPriority());
 
         Page<EventRecordRow> records = miEventRepository.findEventRecords(eventId, PageRequest.of(page - 1, size));
         Map<Integer, EventRecordMappingRow> mappingByRecordId = loadRecordMappings(eventId, records.getContent());

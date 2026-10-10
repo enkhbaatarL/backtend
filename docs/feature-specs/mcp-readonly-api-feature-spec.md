@@ -101,6 +101,8 @@ MCP :  /api/v1/mcp/mi/next-gen/{...}
   - 키는 `tmd_mcpauthinfom` 에 있으며 관리자 화면(시스템 관리 > MCP API 인증관리)에서 **회사 단위**로 발급한다.
   - Secret 은 발급·재발행 응답에서 한 번만 보여주고 서버에는 단방향 해시(PBKDF2-HMAC-SHA256, 키별 솔트)만 남는다.
 - 키가 없거나 틀리면 `401` 이다 (5.1절).
+- 위임 사용자 역할: 20건 모두 `USER`(SK Gas 소속) · `ADMIN`(타사 접속 가능) · `OPERATOR`(조건 없음 — 회사는 아래 키 회사 일치 검사로 제한) (2026-10-11, D-10).
+  `OPERATOR` 는 상품 권한 정보가 없어 레코드 조회(4.1.4, 4.6 근거 Record)의 `isPermitted` 가 모두 `false` 다.
 - 키의 회사와 `X-User-Id` 사용자의 회사가 같아야 한다. 예외: ADMIN 사용자는 관리회사 키로 요청할 때만 회사가 달라도 허용한다. 위반은 `403` (5.1절).
 - 이전의 개발용 임시 인증 예외(`mcp.read-only-api.development-auth-bypass-enabled`)는 삭제됐다 (PR #595).
 
@@ -448,7 +450,7 @@ CME는 SK Gas 데이터이고 라우팅 키는 `midb-skgas`로 고정이다(변�
 | 배포 대상 | 결과 |
 |---|---|
 | **skgas** 전용 backend 만 | 19건 모두 의미 있게 동작. 추가 조치 없음 |
-| ske / skhy 전용 backend에도 배포 | 그곳의 CME endpoint는 무의미. 이벤트·시나리오·Snapshot 의 권한 규칙은 `SKGAS_COMPANY_USER_ONLY` 이므로 그 회사 사용자는 통과하지 못한다 |
+| ske / skhy 전용 backend에도 배포 | 그곳의 CME endpoint는 무의미. 이벤트·시나리오·Snapshot 의 권한 규칙은 `SKGAS_COMPANY_USER_ONLY` 이므로 그 회사 USER 는 통과하지 못한다. 단 `OPERATOR` 는 회사 조건이 없어 그 회사 키로 위임하면 통과한다 (D-10) |
 
 배포 범위로 통제되면 코드 변경은 없다.
 

@@ -47,7 +47,8 @@ public class McpEventDedicatedController {
     @GetMapping("/event-types/lv1")
     @RequiredPermissionRules(rules = {
         @PermissionRule(role = Role.USER, conditions = {PermissionCondition.SKGAS_COMPANY_USER_ONLY}),
-        @PermissionRule(role = Role.ADMIN, conditions = {PermissionCondition.THIRD_PARTY_ADMIN_ONLY})
+        @PermissionRule(role = Role.ADMIN, conditions = {PermissionCondition.THIRD_PARTY_ADMIN_ONLY}),
+        @PermissionRule(role = Role.OPERATOR) // [MCP Operator] 회사는 인터셉터의 MCP 키 회사 일치 검사로 제한
     })
     public BaseResponse<List<EventTypeL1Res>> getEventTypesL1() {
         return BaseResponseFactory.create(eventService.getEventTypesL1());
@@ -59,7 +60,8 @@ public class McpEventDedicatedController {
     @GetMapping
     @RequiredPermissionRules(rules = {
         @PermissionRule(role = Role.USER, conditions = {PermissionCondition.SKGAS_COMPANY_USER_ONLY}),
-        @PermissionRule(role = Role.ADMIN, conditions = {PermissionCondition.THIRD_PARTY_ADMIN_ONLY})
+        @PermissionRule(role = Role.ADMIN, conditions = {PermissionCondition.THIRD_PARTY_ADMIN_ONLY}),
+        @PermissionRule(role = Role.OPERATOR) // [MCP Operator] 회사는 인터셉터의 MCP 키 회사 일치 검사로 제한
     })
     public BaseResponse<EventListRes> getEvents(@Valid @ParameterObject EventListReq request) {
         return BaseResponseFactory.create(eventService.getEvents(request));
@@ -73,7 +75,8 @@ public class McpEventDedicatedController {
     @GetMapping("/{eventId}/scenario-groups")
     @RequiredPermissionRules(rules = {
         @PermissionRule(role = Role.USER, conditions = {PermissionCondition.SKGAS_COMPANY_USER_ONLY}),
-        @PermissionRule(role = Role.ADMIN, conditions = {PermissionCondition.THIRD_PARTY_ADMIN_ONLY})
+        @PermissionRule(role = Role.ADMIN, conditions = {PermissionCondition.THIRD_PARTY_ADMIN_ONLY}),
+        @PermissionRule(role = Role.OPERATOR) // [MCP Operator] 회사는 인터셉터의 MCP 키 회사 일치 검사로 제한
     })
     public BaseResponse<List<EventLinkedScenarioGroupRes>> getEventScenarioGroups(
         @Parameter(description = "이벤트 ID", example = "1523") @PathVariable Long eventId
@@ -87,7 +90,8 @@ public class McpEventDedicatedController {
     @GetMapping("/{eventId}")
     @RequiredPermissionRules(rules = {
         @PermissionRule(role = Role.USER, conditions = {PermissionCondition.SKGAS_COMPANY_USER_ONLY}),
-        @PermissionRule(role = Role.ADMIN, conditions = {PermissionCondition.THIRD_PARTY_ADMIN_ONLY})
+        @PermissionRule(role = Role.ADMIN, conditions = {PermissionCondition.THIRD_PARTY_ADMIN_ONLY}),
+        @PermissionRule(role = Role.OPERATOR) // [MCP Operator] 회사는 인터셉터의 MCP 키 회사 일치 검사로 제한
     })
     public BaseResponse<EventDetailRes> getEventDetail(
         @Parameter(description = "이벤트 ID", example = "1") @PathVariable Long eventId
@@ -101,7 +105,8 @@ public class McpEventDedicatedController {
     @GetMapping("/{eventId}/outlooks")
     @RequiredPermissionRules(rules = {
         @PermissionRule(role = Role.USER, conditions = {PermissionCondition.SKGAS_COMPANY_USER_ONLY}),
-        @PermissionRule(role = Role.ADMIN, conditions = {PermissionCondition.THIRD_PARTY_ADMIN_ONLY})
+        @PermissionRule(role = Role.ADMIN, conditions = {PermissionCondition.THIRD_PARTY_ADMIN_ONLY}),
+        @PermissionRule(role = Role.OPERATOR) // [MCP Operator] 회사는 인터셉터의 MCP 키 회사 일치 검사로 제한
     })
     public BaseResponse<PaginationRes<EventInstitutionOutlookRes>> getEventOutlooks(
         @Parameter(description = "이벤트 ID", example = "1") @PathVariable Long eventId,
@@ -119,7 +124,8 @@ public class McpEventDedicatedController {
     @GetMapping("/{eventId}/records")
     @RequiredPermissionRules(rules = {
         @PermissionRule(role = Role.USER, conditions = {PermissionCondition.SKGAS_COMPANY_USER_ONLY}),
-        @PermissionRule(role = Role.ADMIN, conditions = {PermissionCondition.THIRD_PARTY_ADMIN_ONLY})
+        @PermissionRule(role = Role.ADMIN, conditions = {PermissionCondition.THIRD_PARTY_ADMIN_ONLY}),
+        @PermissionRule(role = Role.OPERATOR) // [MCP Operator] 회사는 인터셉터의 MCP 키 회사 일치 검사로 제한
     })
     public BaseResponse<PaginationRes<EventRelatedRecordRes>> getEventRecords(
         @Parameter(description = "이벤트 ID", example = "1") @PathVariable Long eventId,

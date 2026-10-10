@@ -48,7 +48,8 @@ public class McpUserFeedbackDedicatedController {
     @PostMapping("/user-feedback")
     @RequiredPermissionRules(rules = {
         @PermissionRule(role = Role.USER, conditions = {PermissionCondition.SKGAS_COMPANY_USER_ONLY}),
-        @PermissionRule(role = Role.ADMIN, conditions = {PermissionCondition.THIRD_PARTY_ADMIN_ONLY})
+        @PermissionRule(role = Role.ADMIN, conditions = {PermissionCondition.THIRD_PARTY_ADMIN_ONLY}),
+        @PermissionRule(role = Role.OPERATOR) // [MCP Operator] 회사는 인터셉터의 MCP 키 회사 일치 검사로 제한
     })
     public BaseResponse<Long> createMcpUserFeedback(@UserResolve User user, @Valid @RequestBody McpUserFeedbackReq request) {
         return BaseResponseFactory.create(commonService.createMcpUserFeedback(user, request));

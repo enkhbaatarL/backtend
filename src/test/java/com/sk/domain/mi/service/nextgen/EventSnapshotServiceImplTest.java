@@ -24,6 +24,7 @@ import com.sk.domain.mi.dto.response.nextgen.snapshot.EventSnapshotLookupRes;
 import com.sk.domain.mi.dto.response.nextgen.snapshot.EventSnapshotRecordRes;
 import com.sk.domain.shared.entity.master.tmm.MiEvent;
 import com.sk.domain.shared.entity.master.tmm.MiEventSnapshot;
+import com.sk.domain.shared.enums.Role;
 import com.sk.domain.shared.enums.nextgen.EventSnapshotCompareTarget;
 import com.sk.domain.shared.repository.master.tmm.MiEventRepository;
 import com.sk.domain.shared.repository.master.tmm.MiEventSnapshotInstitutionViewRepository;
@@ -263,6 +264,24 @@ class EventSnapshotServiceImplTest {
         assertThat(result.detail().get(0).snapshotCreatedAt()).isEqualTo(LocalDateTime.of(2026, 9, 15, 14, 2, 53));
         assertThat(result.detail().get(1).isPermitted()).isFalse();
         assertThat(result.detail().get(1).isSourceAvailable()).isFalse();
+    }
+
+    @Test
+    // [MCP Operator]
+    @DisplayName("운영자는 상품 권한 정보를 조회하지 않고 근거 Record 를 모두 isPermitted=false 로 반환한다")
+    void getsRecordsWithoutPermissionForOperator() {
+        given(snapshotRepository.findByMiEventSnapshotIdAndMiEventIdAndIsDeletedFalse(12L, EVENT_ID))
+            .willReturn(Optional.of(snapshot(12L, 4L, 11L).build()));
+        given(authorizationService.getCurrentRole()).willReturn(Role.OPERATOR);
+        EventSnapshotRecordRow row = recordRow(1L, 100, 1);
+        given(recordMapRepository.findEventSnapshotRecords(eq(12L), isNull(), isNull(), isNull(), isNull(), any(Pageable.class)))
+            .willReturn(new PageImpl<>(List.of(row), PageRequest.of(0, 10), 1));
+
+        PaginationRes<EventSnapshotRecordRes> result = service.getEventSnapshotRecords(EVENT_ID, 12L,
+            new EventSnapshotRecordListReq(null, null, null, null, null, null));
+
+        assertThat(result.detail()).singleElement().satisfies(record -> assertThat(record.isPermitted()).isFalse());
+        then(authorizationService).should(never()).getPermissions();
     }
 
     @Test
