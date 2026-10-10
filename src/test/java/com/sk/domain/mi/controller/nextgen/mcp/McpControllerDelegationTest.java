@@ -13,6 +13,9 @@ import com.sk.domain.mi.service.nextgen.EventService;
 import com.sk.domain.mi.service.nextgen.EventSnapshotService;
 import com.sk.domain.mi.service.nextgen.PriceInterpretationService;
 import com.sk.domain.mi.service.nextgen.ScenarioGroupService;
+import com.sk.domain.shared.dto.request.common.McpUserFeedbackReq;
+import com.sk.domain.shared.entity.master.tmd.User;
+import com.sk.domain.shared.service.CommonService;
 import com.sk.domain.shared.enums.nextgen.EventSnapshotCompareTarget;
 import com.sk.domain.shared.enums.nextgen.EventSnapshotUpdateTrigger;
 import com.sk.domain.shared.enums.nextgen.GraphPeriodUnit;
@@ -24,6 +27,7 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
+import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 @DisplayName("MCP Controller 기존 Service 위임 테스트")
@@ -46,9 +50,14 @@ class McpControllerDelegationTest {
     // [MCP Snapshot] 이벤트 Snapshot 컨트롤러 위임 대상
     private EventSnapshotService eventSnapshotService;
 
+    @Mock
+    // [MCP Feedback] 피드백 등록 컨트롤러 위임 대상
+    private CommonService commonService;
+
     private McpEventDedicatedController eventController;
     private McpScenarioGroupDedicatedController scenarioGroupController;
     private McpEventSnapshotDedicatedController eventSnapshotController;
+    private McpUserFeedbackDedicatedController userFeedbackController;
 
     @BeforeEach
     void setUp() {
@@ -56,6 +65,7 @@ class McpControllerDelegationTest {
         scenarioGroupController = new McpScenarioGroupDedicatedController(
             scenarioGroupService, priceInterpretationService, cmeBenchmarkService);
         eventSnapshotController = new McpEventSnapshotDedicatedController(eventSnapshotService);
+        userFeedbackController = new McpUserFeedbackDedicatedController(commonService);
     }
 
     @Test
@@ -132,5 +142,18 @@ class McpControllerDelegationTest {
         then(eventSnapshotService).should().getEventSnapshotRecords(30L, 31L, recordRequest);
         then(eventSnapshotService).should().getEventSnapshotOutlooks(30L, 31L, outlookRequest);
         then(eventSnapshotService).shouldHaveNoMoreInteractions();
+    }
+
+    @Test
+    // [MCP Feedback]
+    @DisplayName("사용자 피드백 POST 1건은 위임 사용자와 요청을 CommonService.createMcpUserFeedback 에 그대로 넘긴다")
+    void delegatesUserFeedbackOperation() {
+        User user = Mockito.mock(User.class);
+        McpUserFeedbackReq request = new McpUserFeedbackReq("내용", "agent_output", "Event", "1269", "이벤트 제목");
+
+        userFeedbackController.createMcpUserFeedback(user, request);
+
+        then(commonService).should().createMcpUserFeedback(user, request);
+        then(commonService).shouldHaveNoMoreInteractions();
     }
 }

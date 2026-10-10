@@ -91,11 +91,17 @@ public class ApiAccessLog extends BaseEntity {
             errorMessageCnttString = errorMessageCnttString.substring(0, ERROR_STR_SIZE);
         }
 
+        // [MCP Feedback] 요청 body 도 text(64KB) 컬럼이라 같은 길이로 자른다 — 길이 제한 없는 MCP 피드백에서 로그 저장 실패 방지
+        String bodyString = body;
+        if (bodyString != null && bodyString.length() > ERROR_STR_SIZE) {
+            bodyString = bodyString.substring(0, ERROR_STR_SIZE);
+        }
+
         return ApiAccessLog.builder()
             .apiEndpointUrl(uri)
             .httpMethodNm(httpMethodNm)
             .userLoginId(subject)
-            .requestDataCntt(body)
+            .requestDataCntt(bodyString)
             .errorMessageCntt(errorMessageCnttString)
             .accessIpAddress(accessIpAddress)
             .userRoleCd(role.getCode())

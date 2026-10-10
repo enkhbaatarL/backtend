@@ -14,6 +14,7 @@ import com.sk.domain.shared.enums.UserAccessPageType;
 import com.sk.domain.shared.enums.UserRoleCd;
 import com.sk.domain.shared.repository.master.tam.AdminPermissionRepository;
 import com.sk.domain.shared.dto.request.common.IndividualInfoAgreementReq;
+import com.sk.domain.shared.dto.request.common.McpUserFeedbackReq;
 import com.sk.domain.shared.dto.request.common.UserFeedbackReq;
 import com.sk.domain.shared.entity.master.tcm.UserFeedback;
 import com.sk.domain.shared.repository.master.tcm.CommonCodeDetailRepository;
@@ -221,6 +222,19 @@ public class CommonService {
     @Transactional
     public Long createUserFeedback(User user, UserFeedbackReq request) {
         UserFeedback saved = userFeedbackRepository.save(UserFeedback.of(request, user));
+        return saved.getUserFeedbackNo();
+    }
+
+    /**
+     * [MCP Feedback] MCP 사용자 피드백 등록. 채널은 MCP, 내용 외의 값은 해석하지 못해도 그대로 저장한다.
+     *
+     * @param user X-User-Id 위임 사용자
+     * @param request 요청 객체
+     * @return 피드백 식별자
+     */
+    @Transactional
+    public Long createMcpUserFeedback(User user, McpUserFeedbackReq request) {
+        UserFeedback saved = userFeedbackRepository.save(UserFeedback.ofMcp(request, user));
         return saved.getUserFeedbackNo();
     }
 
