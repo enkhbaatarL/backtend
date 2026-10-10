@@ -491,6 +491,8 @@ Q9 는 운영 배포 전에 정한다.
 | 2026-10-09 | **D-4** 근거 Record 응답에 원본 Record 의 현재 제목·요약·상품 정보와 `isPermitted` 를 붙인다 (B군). 원본 조인은 LEFT JOIN 으로 원본 삭제 시에도 이력 행 유지 | Snapshot 사본에는 ID·유형·출처·발생 시각만 있어 LLM 이 근거 내용을 알 수 없다 |
 | 2026-10-09 | **D-5** Snapshot 관련 시각 컬럼은 모두 UTC 저장으로 보고 응답 KST 변환, 입력(`asOf`·날짜 필터)은 KST→UTC 변환 후 비교 | 사용자 확정. 기존 이벤트 API 의 `utcToKst` 와 일관 |
 | 2026-10-09 | **D-8** Snapshot 3개 테이블은 행 논리 삭제(`del_yn='N'`)만 거르고 저장 당시 Event 삭제 여부(`event_del_yn`)로는 거르지 않는다 | 실제 DB 에 문서에 없던 `del_yn` 이 있음 (2026-10-09 확인). 프로젝트 논리 삭제 관례 |
+| 2026-10-11 | **D-9** 사용자 피드백 등록 1건을 MCP 채널의 쓰기 예외로 신설 (`POST /api/v1/mcp/mi/next-gen/user-feedback`). 화면과 같은 `tcm_usrfedbl` 에 채널 코드 `MCP` 로 저장하고, 내용 외 입력은 거부하지 않는다 | 원본 화면 API 는 일반 서버 전용이다. insert only 이고 기존 데이터를 바꾸지 않는다. 인증이 `next-gen/**` prefix 에만 걸려 경로를 그 아래에 둔다. 계약은 Feature Spec 4.7절 |
+| 2026-10-11 | **D-10** MCP endpoint 20건 모두 `OPERATOR` 위임 허용 (회사 조건 없음). 레코드 조회의 `isPermitted` 는 운영자에게 모두 `false` | 운영자도 MCP 로 조회·피드백을 해야 한다 (사용자 요청). 회사는 인터셉터의 키 회사 일치 검사로 제한되므로 별도 조건을 두지 않는다. 운영자는 `getPermissions()` 미지원이라 `OperatorPermissionStrategy`(상품 권한 없음)와 같은 기준을 쓴다 |
 
 ---
 

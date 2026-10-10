@@ -51,7 +51,8 @@ public class McpScenarioGroupDedicatedController {
     @GetMapping
     @RequiredPermissionRules(rules = {
         @PermissionRule(role = Role.USER, conditions = {PermissionCondition.SKGAS_COMPANY_USER_ONLY}),
-        @PermissionRule(role = Role.ADMIN, conditions = {PermissionCondition.THIRD_PARTY_ADMIN_ONLY})
+        @PermissionRule(role = Role.ADMIN, conditions = {PermissionCondition.THIRD_PARTY_ADMIN_ONLY}),
+        @PermissionRule(role = Role.OPERATOR) // [MCP Operator] 회사는 인터셉터의 MCP 키 회사 일치 검사로 제한
     })
     public BaseResponse<ScenarioGroupListRes> getScenarioGroups(@Valid @ParameterObject ScenarioGroupListReq request) {
         return BaseResponseFactory.create(scenarioGroupService.getScenarioGroups(request));
@@ -63,7 +64,8 @@ public class McpScenarioGroupDedicatedController {
     @GetMapping("/scenarios")
     @RequiredPermissionRules(rules = {
         @PermissionRule(role = Role.USER, conditions = {PermissionCondition.SKGAS_COMPANY_USER_ONLY}),
-        @PermissionRule(role = Role.ADMIN, conditions = {PermissionCondition.THIRD_PARTY_ADMIN_ONLY})
+        @PermissionRule(role = Role.ADMIN, conditions = {PermissionCondition.THIRD_PARTY_ADMIN_ONLY}),
+        @PermissionRule(role = Role.OPERATOR) // [MCP Operator] 회사는 인터셉터의 MCP 키 회사 일치 검사로 제한
     })
     public BaseResponse<ScenarioIndividualListRes> getScenarioGroupScenarios(
         @Valid @ParameterObject ScenarioGroupListReq request
@@ -93,7 +95,8 @@ public class McpScenarioGroupDedicatedController {
     @GetMapping("/{scenarioGroupId}/graph")
     @RequiredPermissionRules(rules = {
         @PermissionRule(role = Role.USER, conditions = {PermissionCondition.SKGAS_COMPANY_USER_ONLY}),
-        @PermissionRule(role = Role.ADMIN, conditions = {PermissionCondition.THIRD_PARTY_ADMIN_ONLY})
+        @PermissionRule(role = Role.ADMIN, conditions = {PermissionCondition.THIRD_PARTY_ADMIN_ONLY}),
+        @PermissionRule(role = Role.OPERATOR) // [MCP Operator] 회사는 인터셉터의 MCP 키 회사 일치 검사로 제한
     })
     public BaseResponse<ScenarioGroupGraphRes> getScenarioGroupGraph(
         @Parameter(description = "시나리오 그룹 ID", example = "1") @PathVariable Long scenarioGroupId,
@@ -110,7 +113,8 @@ public class McpScenarioGroupDedicatedController {
     @GetMapping("/{scenarioGroupId}")
     @RequiredPermissionRules(rules = {
         @PermissionRule(role = Role.USER, conditions = {PermissionCondition.SKGAS_COMPANY_USER_ONLY}),
-        @PermissionRule(role = Role.ADMIN, conditions = {PermissionCondition.THIRD_PARTY_ADMIN_ONLY})
+        @PermissionRule(role = Role.ADMIN, conditions = {PermissionCondition.THIRD_PARTY_ADMIN_ONLY}),
+        @PermissionRule(role = Role.OPERATOR) // [MCP Operator] 회사는 인터셉터의 MCP 키 회사 일치 검사로 제한
     })
     public BaseResponse<ScenarioGroupDetailRes> getScenarioGroupDetail(
         @Parameter(description = "시나리오 그룹 ID", example = "1") @PathVariable Long scenarioGroupId
@@ -124,7 +128,8 @@ public class McpScenarioGroupDedicatedController {
     @GetMapping("/{scenarioGroupId}/scenarios/{scenarioId}")
     @RequiredPermissionRules(rules = {
         @PermissionRule(role = Role.USER, conditions = {PermissionCondition.SKGAS_COMPANY_USER_ONLY}),
-        @PermissionRule(role = Role.ADMIN, conditions = {PermissionCondition.THIRD_PARTY_ADMIN_ONLY})
+        @PermissionRule(role = Role.ADMIN, conditions = {PermissionCondition.THIRD_PARTY_ADMIN_ONLY}),
+        @PermissionRule(role = Role.OPERATOR) // [MCP Operator] 회사는 인터셉터의 MCP 키 회사 일치 검사로 제한
     })
     public BaseResponse<ScenarioDetailViewRes> getScenarioDetail(
         @Parameter(description = "시나리오 그룹 ID", example = "1") @PathVariable Long scenarioGroupId,
@@ -153,7 +158,8 @@ public class McpScenarioGroupDedicatedController {
     @GetMapping("/{scenarioGroupId}/price-interpretations")
     @RequiredPermissionRules(rules = {
         @PermissionRule(role = Role.USER, conditions = {PermissionCondition.SKGAS_COMPANY_USER_ONLY}),
-        @PermissionRule(role = Role.ADMIN, conditions = {PermissionCondition.THIRD_PARTY_ADMIN_ONLY})
+        @PermissionRule(role = Role.ADMIN, conditions = {PermissionCondition.THIRD_PARTY_ADMIN_ONLY}),
+        @PermissionRule(role = Role.OPERATOR) // [MCP Operator] 회사는 인터셉터의 MCP 키 회사 일치 검사로 제한
     })
     public BaseResponse<PriceInterpretationSectionRes> getPriceInterpretations(
         @Parameter(description = "시나리오 그룹 ID", example = "1") @PathVariable Long scenarioGroupId
@@ -174,7 +180,8 @@ public class McpScenarioGroupDedicatedController {
     @GetMapping("/graph/cme-benchmark")
     @RequiredPermissionRules(rules = {
         @PermissionRule(role = Role.USER, conditions = {PermissionCondition.SKGAS_COMPANY_USER_ONLY}),
-        @PermissionRule(role = Role.ADMIN, conditions = {PermissionCondition.THIRD_PARTY_ADMIN_ONLY})
+        @PermissionRule(role = Role.ADMIN, conditions = {PermissionCondition.THIRD_PARTY_ADMIN_ONLY}),
+        @PermissionRule(role = Role.OPERATOR) // [MCP Operator] 회사는 인터셉터의 MCP 키 회사 일치 검사로 제한
     })
     public BaseResponse<CmeBenchmarkGraphRes> getScenarioGroupGraphCmeBenchmark(
         @RequestParam(defaultValue = "JKM") IndexName indexName,

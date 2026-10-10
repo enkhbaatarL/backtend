@@ -14,6 +14,7 @@ import com.sk.domain.mi.service.nextgen.EventService;
 import com.sk.domain.mi.service.nextgen.EventSnapshotService;
 import com.sk.domain.mi.service.nextgen.PriceInterpretationService;
 import com.sk.domain.mi.service.nextgen.ScenarioGroupService;
+import com.sk.domain.shared.service.CommonService;
 import java.util.LinkedHashSet;
 import java.util.Set;
 import org.junit.jupiter.api.DisplayName;
@@ -48,6 +49,8 @@ class McpOpenApiTest {
     private static final String MCP_PREFIX = "/api/v1/mcp/mi/next-gen/";
     private static final String CME_PATH =
         "/api/v1/mcp/mi/next-gen/scenario-groups/graph/cme-benchmark";
+    // [MCP Feedback] MCP 채널의 유일한 쓰기(POST) 경로
+    private static final String USER_FEEDBACK_PATH = "/api/v1/mcp/mi/next-gen/user-feedback";
     private static final Set<String> EXPECTED_PATHS = Set.of(
         "/api/v1/mcp/mi/next-gen/events",
         "/api/v1/mcp/mi/next-gen/events/event-types/lv1",
@@ -68,7 +71,9 @@ class McpOpenApiTest {
         "/api/v1/mcp/mi/next-gen/events/{eventId}/snapshots/{snapshotId}",
         "/api/v1/mcp/mi/next-gen/events/{eventId}/snapshots/{snapshotId}/compare",
         "/api/v1/mcp/mi/next-gen/events/{eventId}/snapshots/{snapshotId}/records",
-        "/api/v1/mcp/mi/next-gen/events/{eventId}/snapshots/{snapshotId}/outlooks");
+        "/api/v1/mcp/mi/next-gen/events/{eventId}/snapshots/{snapshotId}/outlooks",
+        // [MCP Feedback] 사용자 피드백 등록 1건 추가 (19 → 20)
+        USER_FEEDBACK_PATH);
 
     @Autowired
     private MockMvc mockMvc;
@@ -92,8 +97,12 @@ class McpOpenApiTest {
     // [MCP Snapshot]
     private EventSnapshotService eventSnapshotService;
 
+    @MockitoBean
+    // [MCP Feedback]
+    private CommonService commonService;
+
     @Test
-    @DisplayName("MCP API 그룹에 GET 19건, 필수 문자열 X-User-Id, Basic Auth 보안 요구를 노출한다")
+    @DisplayName("MCP API 그룹에 GET 19건 + POST 1건, 필수 문자열 X-User-Id, Basic Auth 보안 요구를 노출한다")
     void exposesTwelveMcpOperationsWithOnlyUserDelegationHeader() throws Exception {
         JsonNode document = apiDocument("MCP API");
         JsonNode paths = document.path("paths");
@@ -101,9 +110,11 @@ class McpOpenApiTest {
         assertThat(fieldNames(paths)).containsExactlyInAnyOrderElementsOf(EXPECTED_PATHS);
         paths.fields().forEachRemaining(pathEntry -> {
             assertThat(pathEntry.getKey()).startsWith(MCP_PREFIX);
-            assertThat(fieldNames(pathEntry.getValue())).containsExactly("get");
+            // [MCP Feedback] 피드백 등록만 POST, 나머지는 GET 만
+            String method = USER_FEEDBACK_PATH.equals(pathEntry.getKey()) ? "post" : "get";
+            assertThat(fieldNames(pathEntry.getValue())).containsExactly(method);
 
-            JsonNode operation = pathEntry.getValue().path("get");
+            JsonNode operation = pathEntry.getValue().path(method);
             JsonNode userIdParameter = findParameter(operation, McpUserContextInterceptor.X_USER_ID);
             assertThat(userIdParameter.isMissingNode()).as(pathEntry.getKey()).isFalse();
             assertThat(userIdParameter.path("in").asText()).isEqualTo("header");
@@ -182,6 +193,35 @@ class McpOpenApiTest {
             .contains("RSC-001");
     }
 
+    @Test
+    // [MCP Feedback] requestBody 필드 설명·허용값 = MCP tool 인자 설명·선택지
+    @DisplayName("사용자 피드백 등록 operation은 내용만 필수이고 유형·대상 종류의 허용값과 선택 기준을 노출한다")
+    void exposesUserFeedbackGuidance() throws Exception {
+        JsonNode document = apiDocument("MCP API");
+        JsonNode operation = document.path("paths").path(USER_FEEDBACK_PATH).path("post");
+        assertThat(operation.path("operationId").asText()).isEqualTo("createMcpUserFeedback");
+        assertThat(operation.path("description").asText())
+            .contains("명시적으로 요청한 경우에만")
+            .contains("정확하지 않아도 등록됩니다");
+
+        String schemaRef = operation.path("requestBody").path("content").path("application/json").path("schema").path("$ref").asText();
+        JsonNode schema = document.path("components").path("schemas").path(schemaRef.substring(schemaRef.lastIndexOf('/') + 1));
+        assertThat(schema.path("required").toString()).isEqualTo("[\"feedbackContent\"]");
+
+        JsonNode properties = schema.path("properties");
+        assertThat(properties.path("feedbackTypeCd").path("enum").toString())
+            .isEqualTo("[\"agent_output\",\"ux_ui\",\"feature_suggestion\",\"etc\"]");
+        assertThat(properties.path("feedbackTypeCd").path("description").asText()).contains("내용·데이터 관련은 대부분 이것");
+        assertThat(properties.path("feedbackSectionNm").path("enum").toString())
+            .isEqualTo("[\"Event\",\"Scenario Group\",\"Scenario\"]");
+        assertThat(properties.path("targetId").path("type").asText()).isEqualTo("integer");
+        assertThat(properties.path("targetId").path("description").asText())
+            .contains("eventId")
+            .contains("scenarioGroupId")
+            .contains("scenarioId")
+            .contains("추측하지 말고 생략");
+    }
+
     private JsonNode operation(JsonNode paths, String path, String operationId) {
         JsonNode operation = paths.path(path).path("get");
         assertThat(operation.path("operationId").asText()).as(path).isEqualTo(operationId);
@@ -258,7 +298,9 @@ class McpOpenApiTest {
         McpEventDedicatedController.class,
         McpScenarioGroupDedicatedController.class,
         // [MCP Snapshot]
-        McpEventSnapshotDedicatedController.class
+        McpEventSnapshotDedicatedController.class,
+        // [MCP Feedback]
+        McpUserFeedbackDedicatedController.class
     })
     static class TestApplication {
     }
