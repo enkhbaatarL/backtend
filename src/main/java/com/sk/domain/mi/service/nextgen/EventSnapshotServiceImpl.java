@@ -18,6 +18,7 @@ import com.sk.domain.mi.dto.response.nextgen.snapshot.EventSnapshotSummaryRes;
 import com.sk.domain.mi.service.nextgen.support.EventSnapshotDiffCalculator;
 import com.sk.domain.shared.entity.master.tmm.MiEvent;
 import com.sk.domain.shared.entity.master.tmm.MiEventSnapshot;
+import com.sk.domain.shared.enums.Role;
 import com.sk.domain.shared.enums.nextgen.EventSnapshotCompareTarget;
 import com.sk.domain.shared.enums.nextgen.EventSnapshotUpdateTrigger;
 import com.sk.domain.shared.repository.master.tmm.MiEventRepository;
@@ -133,8 +134,10 @@ public class EventSnapshotServiceImpl implements EventSnapshotService {
         MiEventSnapshot snapshot = getOwnedSnapshot(eventId, snapshotId);
 
         // isPermitted 는 기존 이벤트 연관 레코드 조회(EventServiceImpl#getEventRecords)와 같은 방식으로 계산한다.
-        Map<Integer, Boolean> goodsViewableMap = authorizationService.getPermissions()
-            .getGoodsViewableMap(authorizationService.getCompanyNoWithPriority());
+        // [MCP Operator] 운영자는 상품 권한 정보가 없어 전부 isPermitted=false (EventServiceImpl#getEventRecords 와 동일)
+        Map<Integer, Boolean> goodsViewableMap = authorizationService.getCurrentRole() == Role.OPERATOR
+            ? Map.of()
+            : authorizationService.getPermissions().getGoodsViewableMap(authorizationService.getCompanyNoWithPriority());
 
         return PaginationRes.toRes(miEventSnapshotRecordMapRepository.findEventSnapshotRecords(
                 snapshotId,

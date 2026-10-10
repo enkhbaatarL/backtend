@@ -73,7 +73,7 @@
 
 ### 2.2 Out of scope
 
-- 쓰기 API (POST / PATCH / DELETE) 노출
+- 쓰기 API (POST / PATCH / DELETE) 노출 — 단 사용자 피드백 등록 1건(4.7절)은 예외 (D-9)
 - SSE 스트림 엔드포인트 노출 — MCP 호출 모델과 맞지 않는다
 - 서비스 / 레포지토리 계층 로직 변경 또는 복제 — 단 MCP 전용 endpoint(4.6절 이벤트 Snapshot)는 원본이 없으므로 전용 서비스·리포지토리를 신설한다 (D-1)
 - MCP 서버 자체 구현
@@ -101,6 +101,8 @@ MCP :  /api/v1/mcp/mi/next-gen/{...}
   - 키는 `tmd_mcpauthinfom` 에 있으며 관리자 화면(시스템 관리 > MCP API 인증관리)에서 **회사 단위**로 발급한다.
   - Secret 은 발급·재발행 응답에서 한 번만 보여주고 서버에는 단방향 해시(PBKDF2-HMAC-SHA256, 키별 솔트)만 남는다.
 - 키가 없거나 틀리면 `401` 이다 (5.1절).
+- 위임 사용자 역할: 20건 모두 `USER`(SK Gas 소속) · `ADMIN`(타사 접속 가능) · `OPERATOR`(조건 없음 — 회사는 아래 키 회사 일치 검사로 제한) (2026-10-11, D-10).
+  `OPERATOR` 는 상품 권한 정보가 없어 레코드 조회(4.1.4, 4.6 근거 Record)의 `isPermitted` 가 모두 `false` 다.
 - 키의 회사와 `X-User-Id` 사용자의 회사가 같아야 한다. 예외: ADMIN 사용자는 관리회사 키로 요청할 때만 회사가 달라도 허용한다. 위반은 `403` (5.1절).
 - 이전의 개발용 임시 인증 예외(`mcp.read-only-api.development-auth-bypass-enabled`)는 삭제됐다 (PR #595).
 
@@ -399,6 +401,7 @@ MCP :  /api/v1/mcp/mi/next-gen/{...}
 | `McpEventDedicatedController` | `dedicated` | 4.1 이벤트 **6건** |
 | `McpScenarioGroupDedicatedController` | `dedicated` | 4.2 시나리오 그룹 **6건** + 4.3 CME 벤치마크 **1건** |
 | `McpEventSnapshotDedicatedController` | `dedicated` | 4.6 이벤트 Snapshot **6건** (MCP 전용) |
+| `McpUserFeedbackDedicatedController` | `dedicated` | 4.7 사용자 피드백 등록 **1건** (MCP 전용 쓰기) |
 
 - 채널 인프라(인증 · 인터셉터 · Swagger 그룹)는 **prefix 단위로 걸리므로 그대로 재사용한다.** 컨트롤러를 추가해도 손댈 설정이 없다.
 - CME 의 OpenAPI `description` 에는 "SK Gas 전용 서버 전용 · 일반 서버의 응답은 신뢰할 수 없습니다" 경고가 남아 있다.
@@ -447,7 +450,7 @@ CME는 SK Gas 데이터이고 라우팅 키는 `midb-skgas`로 고정이다(변�
 | 배포 대상 | 결과 |
 |---|---|
 | **skgas** 전용 backend 만 | 19건 모두 의미 있게 동작. 추가 조치 없음 |
-| ske / skhy 전용 backend에도 배포 | 그곳의 CME endpoint는 무의미. 이벤트·시나리오·Snapshot 의 권한 규칙은 `SKGAS_COMPANY_USER_ONLY` 이므로 그 회사 사용자는 통과하지 못한다 |
+| ske / skhy 전용 backend에도 배포 | 그곳의 CME endpoint는 무의미. 이벤트·시나리오·Snapshot 의 권한 규칙은 `SKGAS_COMPANY_USER_ONLY` 이므로 그 회사 USER 는 통과하지 못한다. 단 `OPERATOR` 는 회사 조건이 없어 그 회사 키로 위임하면 통과한다 (D-10) |
 
 배포 범위로 통제되면 코드 변경은 없다.
 
@@ -482,6 +485,25 @@ CME는 SK Gas 데이터이고 라우팅 키는 `midb-skgas`로 고정이다(변�
 `lookup` 에 `versionNo` 와 `asOf` 를 같이 주면 `REQ-003`(HTTP 400). 목록이 비면 빈 페이지(200).
 
 **범위 밖 (P2, 별도 슬라이스)**: Record 반영 타임라인(`/snapshots/record-timeline`), 과거 내용 검색(`/events/snapshots/search`).
+
+### 4.7 사용자 피드백 등록 — **MCP 채널의 유일한 쓰기 API** (확정 — 2026-10-11)
+
+- `POST /api/v1/mcp/mi/next-gen/user-feedback` (`McpUserFeedbackDedicatedController.createMcpUserFeedback`) — 이 1건으로 MCP 채널은 20건(GET 19 + POST 1)
+- 원본 화면 API `POST /api/v1/common/user-feedback` 은 일반 서버(`!dedicated`) 전용이고 Bearer JWT 인증이라 MCP 경로에 따로 둔다 (원본 계약 무변경)
+- 저장: 화면과 같은 `tcm_usrfedbl`, `fedb_chnl_cd = 'MCP'` (화면 = `SCREEN`, DB 기본값). 권한 규칙은 4.1~4.6 과 동일
+- 요청 body (`McpUserFeedbackReq`, 전부 문자열)
+
+| 필드 | 필수 | 저장 컬럼 | 처리 |
+|---|---|---|---|
+| `feedbackContent` | Y | `fedb_cntt` (mediumtext) | 앞뒤 공백 제거. 길이 제한 없음 |
+| `feedbackTypeCd` | N | `fedb_type_cd` | `agent_output`/`ux_ui`/`feature_suggestion`/`etc`. 대소문자·별칭 허용, 모르면 `etc` |
+| `feedbackSectionNm` | N | `fedb_sectn_nm` | 대상 종류 `Event`/`Scenario Group`/`Scenario`. 별칭 허용, 모르면 원문(300자) |
+| `targetId` | N | `fedb_trgt_id` | 섹션값 종류의 ID(eventId/scenarioGroupId/scenarioId). 숫자가 아니면 NULL. 존재 확인 안 함 |
+| `feedbackPageNm` | N | `fedb_page_nm` | 대상 이름·주제. 300자에서 자름 |
+
+- **응답**: `data` = 등록된 피드백 번호. **오류**: 채널 공통 외에는 `feedbackContent` 공백일 때 `REQ-003`(400) 하나뿐 — 사용자는 시스템 값을 모르므로 나머지는 저장 후 운영자가 판단한다.
+- DB 변경(2026-10-11, DBA 적용): `fedb_chnl_cd`·`fedb_trgt_id` 추가, `fedb_cntt` → mediumtext. 새 컬럼을 매핑한 backend 는 **ALTER 적용 후 배포**해야 기동된다 (`ddl-auto: validate`).
+  설계·운영자 조회 SQL: 워크스페이스 `process_userfeedback.md`
 
 ---
 
@@ -574,7 +596,7 @@ MCP 호출은 기존 API 접근 로그에 **`SYSTEM`이 아니라 `X-User-Id`가
 4. **MCP 컨트롤러는 모두 `@Profile("dedicated")` 다** (`d60ebbc0`, 4.3.3절). 새 endpoint 도 기존 `Mcp*DedicatedController` 또는
    새 `Mcp*DedicatedController` 에 `@Profile("dedicated")` 로 둔다. 원본 컨트롤러가 일반 서버(`!dedicated`)용이어도 MCP 쪽은 전용 서버에 둔다.
    전용 DB 테넌트를 읽는 endpoint(CME 등)는 SK Gas 전용 backend 에서만 의미가 있으므로 description 에 그 사실을 적는다.
-5. **쓰기 API나 SSE**를 추가하려는 경우는 이 채널의 범위 밖이다. 별도 설계 검토가 필요하다.
+5. **쓰기 API나 SSE**를 추가하려는 경우는 이 채널의 범위 밖이다. 별도 설계 검토가 필요하다. (사용자 피드백 등록 4.7절이 검토를 거친 유일한 예외)
 
 ### 8.2 확장 후보 인벤토리 (Next Gen MI 조회 API 전수)
 
@@ -621,7 +643,7 @@ MCP 호출은 기존 API 접근 로그에 **`SYSTEM`이 아니라 `X-User-Id`가
 **대상 제외**
 
 - SSE 스트림 endpoint 전체 (`.../stream`) — MCP 호출 모델과 맞지 않음
-- 쓰기 API (POST / PATCH / DELETE) — 채널 범위 밖
+- 쓰기 API (POST / PATCH / DELETE) — 채널 범위 밖 (예외: 4.7절 사용자 피드백 등록)
 - **Deprecated 3종** — 원본 컨트롤러에 `@Deprecated`가 붙어 있다. nextgen의 `@Deprecated` GET endpoint 전부다.
   - `GET /events/design-availability` — 이벤트 조합 설계 상태 조회 API로 대체됨
   - `GET /scenario-groups/{id}/design` — v1 설계 세션 상태 조회 (2026-08-24 사용자 지정)

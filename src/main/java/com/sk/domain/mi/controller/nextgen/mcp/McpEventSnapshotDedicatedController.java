@@ -62,7 +62,8 @@ public class McpEventSnapshotDedicatedController {
     @GetMapping("/{eventId}/snapshots")
     @RequiredPermissionRules(rules = {
         @PermissionRule(role = Role.USER, conditions = {PermissionCondition.SKGAS_COMPANY_USER_ONLY}),
-        @PermissionRule(role = Role.ADMIN, conditions = {PermissionCondition.THIRD_PARTY_ADMIN_ONLY})
+        @PermissionRule(role = Role.ADMIN, conditions = {PermissionCondition.THIRD_PARTY_ADMIN_ONLY}),
+        @PermissionRule(role = Role.OPERATOR) // [MCP Operator] 회사는 인터셉터의 MCP 키 회사 일치 검사로 제한
     })
     public BaseResponse<PaginationRes<EventSnapshotSummaryRes>> getEventSnapshots(
         @Parameter(description = "이벤트 ID", example = "1269") @PathVariable Long eventId,
@@ -82,7 +83,8 @@ public class McpEventSnapshotDedicatedController {
     @GetMapping("/{eventId}/snapshots/lookup")
     @RequiredPermissionRules(rules = {
         @PermissionRule(role = Role.USER, conditions = {PermissionCondition.SKGAS_COMPANY_USER_ONLY}),
-        @PermissionRule(role = Role.ADMIN, conditions = {PermissionCondition.THIRD_PARTY_ADMIN_ONLY})
+        @PermissionRule(role = Role.ADMIN, conditions = {PermissionCondition.THIRD_PARTY_ADMIN_ONLY}),
+        @PermissionRule(role = Role.OPERATOR) // [MCP Operator] 회사는 인터셉터의 MCP 키 회사 일치 검사로 제한
     })
     public BaseResponse<EventSnapshotLookupRes> lookupEventSnapshot(
         @Parameter(description = "이벤트 ID", example = "1269") @PathVariable Long eventId,
@@ -101,7 +103,8 @@ public class McpEventSnapshotDedicatedController {
     @GetMapping("/{eventId}/snapshots/{snapshotId}")
     @RequiredPermissionRules(rules = {
         @PermissionRule(role = Role.USER, conditions = {PermissionCondition.SKGAS_COMPANY_USER_ONLY}),
-        @PermissionRule(role = Role.ADMIN, conditions = {PermissionCondition.THIRD_PARTY_ADMIN_ONLY})
+        @PermissionRule(role = Role.ADMIN, conditions = {PermissionCondition.THIRD_PARTY_ADMIN_ONLY}),
+        @PermissionRule(role = Role.OPERATOR) // [MCP Operator] 회사는 인터셉터의 MCP 키 회사 일치 검사로 제한
     })
     public BaseResponse<EventSnapshotDetailRes> getEventSnapshot(
         @Parameter(description = "이벤트 ID", example = "1269") @PathVariable Long eventId,
@@ -122,7 +125,8 @@ public class McpEventSnapshotDedicatedController {
     @GetMapping("/{eventId}/snapshots/{snapshotId}/compare")
     @RequiredPermissionRules(rules = {
         @PermissionRule(role = Role.USER, conditions = {PermissionCondition.SKGAS_COMPANY_USER_ONLY}),
-        @PermissionRule(role = Role.ADMIN, conditions = {PermissionCondition.THIRD_PARTY_ADMIN_ONLY})
+        @PermissionRule(role = Role.ADMIN, conditions = {PermissionCondition.THIRD_PARTY_ADMIN_ONLY}),
+        @PermissionRule(role = Role.OPERATOR) // [MCP Operator] 회사는 인터셉터의 MCP 키 회사 일치 검사로 제한
     })
     public BaseResponse<EventSnapshotCompareRes> compareEventSnapshot(
         @Parameter(description = "이벤트 ID", example = "1269") @PathVariable Long eventId,
@@ -145,7 +149,8 @@ public class McpEventSnapshotDedicatedController {
     @GetMapping("/{eventId}/snapshots/{snapshotId}/records")
     @RequiredPermissionRules(rules = {
         @PermissionRule(role = Role.USER, conditions = {PermissionCondition.SKGAS_COMPANY_USER_ONLY}),
-        @PermissionRule(role = Role.ADMIN, conditions = {PermissionCondition.THIRD_PARTY_ADMIN_ONLY})
+        @PermissionRule(role = Role.ADMIN, conditions = {PermissionCondition.THIRD_PARTY_ADMIN_ONLY}),
+        @PermissionRule(role = Role.OPERATOR) // [MCP Operator] 회사는 인터셉터의 MCP 키 회사 일치 검사로 제한
     })
     public BaseResponse<PaginationRes<EventSnapshotRecordRes>> getEventSnapshotRecords(
         @Parameter(description = "이벤트 ID", example = "1269") @PathVariable Long eventId,
@@ -165,7 +170,8 @@ public class McpEventSnapshotDedicatedController {
     @GetMapping("/{eventId}/snapshots/{snapshotId}/outlooks")
     @RequiredPermissionRules(rules = {
         @PermissionRule(role = Role.USER, conditions = {PermissionCondition.SKGAS_COMPANY_USER_ONLY}),
-        @PermissionRule(role = Role.ADMIN, conditions = {PermissionCondition.THIRD_PARTY_ADMIN_ONLY})
+        @PermissionRule(role = Role.ADMIN, conditions = {PermissionCondition.THIRD_PARTY_ADMIN_ONLY}),
+        @PermissionRule(role = Role.OPERATOR) // [MCP Operator] 회사는 인터셉터의 MCP 키 회사 일치 검사로 제한
     })
     public BaseResponse<PaginationRes<EventSnapshotOutlookRes>> getEventSnapshotOutlooks(
         @Parameter(description = "이벤트 ID", example = "1269") @PathVariable Long eventId,
