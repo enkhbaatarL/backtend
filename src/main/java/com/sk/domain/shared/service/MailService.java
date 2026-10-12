@@ -98,6 +98,32 @@ public class MailService {
     }
 
     /**
+     * 메일 발송 1회 (본문의 cid:logo에 서비스 로고 인라인 첨부, 발송 로그 미기록)
+     * - 대상: 발송 이력·재시도를 호출자가 관리하는 메일 (이벤트 키워드 알림: tmd_mi_evnt_keywdsendl, 디스패처 재시도)
+     * - 실패 시: AppErrorException → 호출자가 실패 기록
+     * @param to 받는 사람
+     * @param subject 메일 제목
+     * @param content 메일 내용(html)
+     */
+    public void sendMailWithInlineLogoNoAccessLog(String to, String subject, String content) {
+        try {
+            MimeMessage message = javaMailSender.createMimeMessage();
+            MimeMessageHelper helper = new MimeMessageHelper(message, true, "UTF-8");
+            helper.setFrom(mailProperties.getFrom());
+            helper.setTo(to);
+            helper.setSubject(subject);
+            helper.setText(content, true);
+            helper.addInline("logo", new ClassPathResource(NOTIFICATION_LOGO_PATH));
+
+            javaMailSender.send(message);
+            log.info("Mail sent successfully");
+        } catch (Exception e) {
+            log.warn("Mail sending failed: {}", e.getMessage());
+            throw AppErrorException.of(ResultCode.Error.API_RESPONSE_ERROR, "Mail sending failed: %s".formatted(e.getMessage()));
+        }
+    }
+
+    /**
      * 메일 발송
      * @param to 받는 사람
      * @param subject 메일 제목

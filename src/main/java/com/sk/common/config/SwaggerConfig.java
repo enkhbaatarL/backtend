@@ -49,7 +49,7 @@ public class SwaggerConfig {
     private static final String MCP_SECURITY_SCHEME = "McpBasicAuth";
 
     // note: 안정화 후 투머치 문서 모두 삭제예정
-    private static final String SW_VERSION_BASE = "v1.3.1";
+    private static final String SW_VERSION_BASE = "v1.3.2";
     private static final DateTimeFormatter SW_DEPLOY_DATE_FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
 
     @Bean
@@ -146,6 +146,18 @@ public class SwaggerConfig {
 
   ## 수정사항
   <details open>
+    <summary><strong>v1.3.2 (2026-10-08)</strong></summary>
+
+  - [Event Keyword Alert — 신규 도메인] (태그 01-1)
+    - 이벤트 키워드 알림 설정 API 추가 (Event List 툴바 알림 버튼 → 키워드 알림 설정 팝업)
+      - 목록 조회 `GET /api/v1/mi/next-gen/event-keywords` — `keywordCount`/`maxKeywordCount`(20)/`keywords`
+      - 등록 `POST /api/v1/mi/next-gen/event-keywords` — 정규화 후 2~30자, 사용자당 최대 20개, 중복 시 `RSC-003`
+      - 알림 ON/OFF `PATCH /api/v1/mi/next-gen/event-keywords/{keywordSettingId}/notification-use`
+      - 삭제 `DELETE /api/v1/mi/next-gen/event-keywords/{keywordSettingId}`
+
+  </details>
+
+  <details>
     <summary><strong>v1.3.1 (2026-10-05)</strong></summary>
 
   - [Scenario Design — 동일 조합 중복 생성 허용]

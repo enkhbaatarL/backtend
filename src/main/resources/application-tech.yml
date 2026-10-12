@@ -190,3 +190,13 @@ features:
   scheduling:
     prohibited-word:
       refresh-rate: 3600000 # 1 hour (1h * 1000ms * 60s * 60m)
+    event-keyword-alert-scan: # 키워드 알림 스캔
+      enabled: false
+      fixed-delay-ms: 60000 # 1분
+    event-keyword-alert-dispatch: # 키워드 알림 발송
+      enabled: false # 켜면 실제 메일 발송
+      fixed-delay-ms: 30000 # 30초
+      batch-size: 100
+      max-attempts: 3
+      retry-backoff-minutes: 5
+      sending-timeout-minutes: 10
