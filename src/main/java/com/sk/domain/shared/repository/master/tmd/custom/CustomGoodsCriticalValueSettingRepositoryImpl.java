@@ -125,4 +125,40 @@ public class CustomGoodsCriticalValueSettingRepositoryImpl implements CustomGood
 
         return PageableExecutionUtils.getPage(content, pageable, countQuery::fetchOne);
     }
+
+    @Override
+    public List<MiNotificationSettingGoodsDataSourceRes> findNotificationSettingGoodsDataSourceByGoodsDataSourceNos(List<Integer> goodsDataSourceNos,
+            User user) {
+        if (goodsDataSourceNos == null || goodsDataSourceNos.isEmpty()) {
+            return List.of();
+        }
+
+        BooleanBuilder builder = new BooleanBuilder();
+        builder.and(goodsDataSourceDetail.isDeleted.isFalse())
+                .and(goodsData.isDeleted.isFalse())
+                .and(goods.isDeleted.isFalse())
+                .and(goodsCriticalValueSetting.isDeleted.isFalse())
+                .and(goodsCriticalValueSetting.user.eq(user))
+                .and(goodsDataSourceDetail.goodsDataSourceNo.in(goodsDataSourceNos));
+
+        return queryFactory
+                .select(new QMiNotificationSettingGoodsDataSourceRes(
+                        goods.goodsNo,
+                        goodsData.goodsDataNo,
+                        goodsData.goodsDataNm,
+                        goodsDataSourceDetail.goodsDataSourceNo,
+                        goodsDataSourceDetail.goodsDataSourceNm,
+                        goodsCriticalValueSetting.count().intValue(),
+                        goodsDataSourceDetail.isPredictData))
+                .from(goodsDataSourceDetail)
+                .join(goodsDataSourceDetail.goodsData, goodsData)
+                .leftJoin(goodsData.goods, goods)
+                .leftJoin(goodsCriticalValueSetting)
+                .on(goodsCriticalValueSetting.goodsDataSourceDetail.eq(goodsDataSourceDetail)
+                        .and(goodsCriticalValueSetting.isDeleted.isFalse())
+                        .and(goodsCriticalValueSetting.user.eq(user)))
+                .where(builder)
+                .groupBy(goodsDataSourceDetail.goodsDataSourceNo, goodsData.goodsDataNo, goodsData.goodsDataNm)
+                .fetch();
+    }
 }

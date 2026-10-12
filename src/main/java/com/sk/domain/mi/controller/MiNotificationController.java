@@ -26,9 +26,15 @@ import com.sk.domain.mi.dto.response.notification.MiNotificationRes;
 import com.sk.domain.mi.dto.response.notification.MiNotificationSettingGoodsDataSourceRes;
 import com.sk.domain.mi.dto.response.notification.MiNotificationSettingRes;
 import com.sk.domain.mi.dto.response.notification.MiUserNotificationSettingRes;
+import com.sk.domain.mi.dto.response.notification.MyNotificationRes;
+import com.sk.domain.mi.dto.response.notification.BellNotificationRes;
+import com.sk.domain.mi.dto.response.notification.BellNotificationUnreadCountRes;
 import com.sk.domain.mi.service.MiNotificationService;
+import com.sk.domain.mi.service.notification.bell.BellNotificationService;
+import com.sk.domain.mi.service.notification.mynotification.MyNotificationService;
 import com.sk.domain.shared.entity.master.tmd.User;
 import com.sk.domain.shared.enums.Role;
+import com.sk.domain.shared.enums.notification.NotificationSourceType;
 
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
@@ -49,6 +55,8 @@ import lombok.extern.slf4j.Slf4j;
 public class MiNotificationController {
 
 	private final MiNotificationService miNotificationService;
+	private final BellNotificationService bellNotificationService;
+	private final MyNotificationService myNotificationService;
 
 	@RequiredPermission(roles = {Role.USER})
 	@ApiOrder(0)
@@ -209,4 +217,102 @@ public class MiNotificationController {
 		return BaseResponseFactory
 				.create(miNotificationService.inquiryNotification(emailSendSn, user));
 	}
+
+	@RequiredPermission(roles = {Role.USER})
+	@ApiOrder(9)
+	@Operation(summary = "알림벨 목록 조회", description = """
+			알림벨 알림 목록입니다. 최근 7일, 발생 일시 최신순입니다. <br>
+			상품 임계치 알림은 모든 사용자, 이벤트 키워드 알림은 SKGAS 사용자에게 함께 조회됩니다.
+
+			<br><br>
+			### 항목 필드
+			- `notificationType`: `GOODS_THRESHOLD`(상품 임계치) / `EVENT_KEYWORD`(이벤트 키워드)
+			- `notificationId`: 유형별 알림 ID — 읽음 처리 API에 `notificationType`과 함께 사용
+			- `notifiedAt` / `isRead`: 발생 일시 / 읽음 여부
+			- `goodsThreshold`: 상품 임계치 알림 — 기존 알림 발송 내역 목록 응답과 동일 (그 외 유형은 null)
+			- `eventKeyword`: 이벤트 키워드 알림 — `keywordSettingId`, `keywordName`, `eventId`, `eventName` (그 외 유형은 null)
+
+			<br><br>
+			### 대체 API
+			- 기존 `GET /notifications` (알림 발송 내역 리스트 조회)
+			- 기존 목록 항목은 `goodsThreshold`에 그대로 담김 (필드·값 동일, 7일 기준 동일)
+			""")
+	@ApiResponse(responseCode = "200", description = "알림벨 목록 조회 성공")
+	@GetMapping("/bell-notifications")
+	public BaseResponse<PaginationRes<BellNotificationRes>> getBellNotifications(
+			@UserResolve User user,
+			@Parameter(description = "페이지 번호", example = "1") @RequestParam(value = "page", required = false, defaultValue = "1") @Min(value = 1) int page,
+			@Parameter(description = "페이지 크기", example = "10") @RequestParam(value = "size", required = false, defaultValue = "10") @Min(value = 1) int size
+    ) {
+		return BaseResponseFactory.create(bellNotificationService.getBellNotifications(page, size, user));
+	}
+
+	@RequiredPermission(roles = {Role.USER})
+	@ApiOrder(10)
+	@Operation(summary = "알림벨 미조회 수 조회", description = """
+			알림벨의 최근 7일 미조회 알림 수입니다. (벨 아이콘 표시)
+
+			<br><br>
+			### 대체 API
+			- 신규 (기존 전용 API 없음)
+			- 상품 임계치는 기존 `GET /notifications` 목록의 `isEmailInquiry = false` 건수와 같음
+			""")
+	@ApiResponse(responseCode = "200", description = "알림벨 미조회 수 조회 성공")
+	@GetMapping("/bell-notifications/unread-count")
+	public BaseResponse<BellNotificationUnreadCountRes> getBellNotificationUnreadCount(@UserResolve User user) {
+		return BaseResponseFactory.create(bellNotificationService.getUnreadCount(user));
+	}
+
+	@RequiredPermission(roles = {Role.USER})
+	@ApiOrder(11)
+	@Operation(summary = "알림벨 읽음 처리", description = """
+			알림을 읽음 처리하고 해당 항목을 반환합니다. 본인 알림이 아니거나 없으면 400(RSC-001)입니다.
+
+			<br><br>
+			### 대체 API
+			- `GOODS_THRESHOLD`: 기존 `GET /notifications/{emailSendSn}/inquiry` (알림 내역 읽음 처리)
+			  - `notificationId` = `emailSendSn`, 같은 읽음 값을 갱신하므로 기존 API 조회 결과에도 반영됨
+			- `EVENT_KEYWORD`: 신규
+			""")
+	@ApiResponse(responseCode = "200", description = "알림벨 읽음 처리 성공")
+	@PatchMapping("/bell-notifications/{notificationType}/{notificationId}/read")
+	public BaseResponse<BellNotificationRes> readBellNotification(
+			@Parameter(description = "알림 유형", example = "EVENT_KEYWORD") @PathVariable(value = "notificationType") NotificationSourceType notificationType,
+			@Parameter(description = "알림 ID", example = "1234") @PathVariable(value = "notificationId") @Min(value = 1) Long notificationId,
+			@UserResolve User user
+    ) {
+		return BaseResponseFactory.create(bellNotificationService.markRead(notificationType, notificationId, user));
+	}
+
+	@RequiredPermission(roles = {Role.USER})
+	@ApiOrder(12)
+	@Operation(summary = "My Notifications 목록 조회", description = """
+			알림 설정한 정형 데이터와 이벤트 키워드 알림 목록입니다. 최근 등록·발생 일시 최신순입니다. <br>
+			상품 임계치는 모든 사용자, 이벤트 키워드는 SKGAS 사용자에게 함께 조회됩니다.
+
+			<br><br>
+			### 항목 필드
+			- `notificationType`: `GOODS_THRESHOLD`(상품 임계치) / `EVENT_KEYWORD`(이벤트 키워드)
+			- `goodsThreshold`: 알림 설정한 정형 데이터 목록 응답과 동일 (그 외 유형은 null)
+			- `eventKeyword`: `keywordSettingId`, `keywordName`, `eventId`, `eventName` (그 외 유형은 null)
+
+			<br><br>
+			### 대체 API
+			- 기존 `GET /notification-settings` (알림 설정한 정형 데이터 목록 조회)
+			- 기존 목록 항목은 `goodsThreshold`에 그대로 담김 (필드·값·검색 조건 동일). 정렬은 최근 설정 등록 일시 순
+			- 행 클릭 시 호출은 기존과 동일
+			  - `GOODS_THRESHOLD`: `GET /goodsdata/{goodsDataSourceNo}/notification-settings`, `GET /notification-setting`
+			  - `EVENT_KEYWORD`: 이벤트 상세 화면으로 이동 (`eventId`)
+			""")
+	@ApiResponse(responseCode = "200", description = "My Notifications 목록 조회 성공")
+	@GetMapping("/my-notifications")
+	public BaseResponse<PaginationRes<MyNotificationRes>> getMyNotifications(
+			@UserResolve User user,
+			@Parameter(description = "검색어 (상품: 데이터명, 키워드: 이벤트명)") @RequestParam(value = "search", required = false) String search,
+			@Parameter(description = "페이지 번호", example = "1") @RequestParam(value = "page", required = false, defaultValue = "1") @Min(value = 1) int page,
+			@Parameter(description = "페이지 크기", example = "10") @RequestParam(value = "size", required = false, defaultValue = "10") @Min(value = 1) int size
+    ) {
+		return BaseResponseFactory.create(myNotificationService.getMyNotifications(page, size, search, user));
+	}
+
 }
