@@ -300,7 +300,7 @@ public class MiNotificationController {
 			### 대체 API
 			- 기존 `GET /notification-settings` (알림 설정한 정형 데이터 목록 조회)
 			- 기존 목록 항목은 `goodsThreshold`에 그대로 담김 (필드·값·검색 조건 동일). 정렬은 최근 설정 등록 일시 순
-			- 행 클릭 시 호출은 기존과 동일
+			- 행 클릭 시 호출은 기존과 동일..
 			  - `GOODS_THRESHOLD`: `GET /goodsdata/{goodsDataSourceNo}/notification-settings`, `GET /notification-setting`
 			  - `EVENT_KEYWORD`: 이벤트 상세 화면으로 이동 (`eventId`)
 			""")
