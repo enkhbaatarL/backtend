@@ -30,7 +30,7 @@ class McpUserContextInterceptorTest {
 
     private final UserRepository userRepository = mock(UserRepository.class);
     private final CustomerCompanyRepository customerCompanyRepository = mock(CustomerCompanyRepository.class);
-    private final McpUserContextInterceptor interceptor = new McpUserContextInterceptor(userRepository, customerCompanyRepository);
+    private final McpUserContextInterceptor interceptor = new McpUserContextInterceptor(userRepository, customerCompanyRepository, "");
 
     @AfterEach
     void tearDown() {
@@ -89,6 +89,42 @@ class McpUserContextInterceptorTest {
         authenticateClient(COMPANY_A, false);
 
         assertForbidden("");
+    }
+
+    @Test
+    @DisplayName("X-User-Id 가 없으면 mcp.default-id 사용자로 처리한다")
+    void usesDefaultUserIdWhenHeaderMissing() {
+        McpUserContextInterceptor withDefault = new McpUserContextInterceptor(userRepository, customerCompanyRepository, "default@a.com");
+        authenticateClient(COMPANY_A, false);
+        givenUser("default@a.com", COMPANY_A, UserRoleCd.USER);
+
+        assertThat(withDefault.preHandle(new MockHttpServletRequest(), new MockHttpServletResponse(), new Object())).isTrue();
+        assertThat(((JwtAuthenticationToken) SecurityContextHolder.getContext().getAuthentication()).getName()).isEqualTo("default@a.com");
+    }
+
+    @Test
+    @DisplayName("X-User-Id 가 있으면 mcp.default-id 보다 헤더를 우선한다")
+    void prefersHeaderOverDefaultUserId() {
+        McpUserContextInterceptor withDefault = new McpUserContextInterceptor(userRepository, customerCompanyRepository, "default@a.com");
+        authenticateClient(COMPANY_A, false);
+        givenUser("user@a.com", COMPANY_A, UserRoleCd.USER);
+        MockHttpServletRequest request = new MockHttpServletRequest();
+        request.addHeader(McpUserContextInterceptor.X_USER_ID, "user@a.com");
+
+        assertThat(withDefault.preHandle(request, new MockHttpServletResponse(), new Object())).isTrue();
+        assertThat(SecurityContextHolder.getContext().getAuthentication().getName()).isEqualTo("user@a.com");
+    }
+
+    @Test
+    @DisplayName("mcp.default-id 사용자도 회사가 다르면 403")
+    void rejectsDefaultUserOfOtherCompany() {
+        McpUserContextInterceptor withDefault = new McpUserContextInterceptor(userRepository, customerCompanyRepository, "default@b.com");
+        authenticateClient(COMPANY_A, false);
+        givenUser("default@b.com", COMPANY_B, UserRoleCd.USER);
+
+        assertThatThrownBy(() -> withDefault.preHandle(new MockHttpServletRequest(), new MockHttpServletResponse(), new Object()))
+            .isInstanceOf(AppHttpStatusException.class)
+            .extracting("httpStatus").isEqualTo(HttpStatus.FORBIDDEN);
     }
 
     @Test
