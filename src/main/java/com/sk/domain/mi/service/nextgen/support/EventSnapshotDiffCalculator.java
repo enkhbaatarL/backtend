@@ -21,7 +21,6 @@ import java.util.function.Function;
 public final class EventSnapshotDiffCalculator {
 
     private static final List<Field> FIELDS = List.of(
-        new Field("eventName", "event_title", State::eventName),
         new Field("oneLineSummary", "one_line_summary", State::oneLineSummary),
         new Field("keySummaries", "key_bullets_json", State::keySummaries),
         new Field("detailedAnalysis", "detail_analysis", State::detailedAnalysis),
@@ -77,7 +76,6 @@ public final class EventSnapshotDiffCalculator {
      * 비교 한쪽의 상태. JSON 은 파싱한 값, 시각은 응답과 같은 KST 로 담는다.
      */
     public record State(
-        String eventName,
         String oneLineSummary,
         List<String> keySummaries,
         String detailedAnalysis,
@@ -99,7 +97,6 @@ public final class EventSnapshotDiffCalculator {
 
         public static State of(MiEventSnapshot snapshot) {
             return new State(
-                snapshot.getEventTitle(),
                 snapshot.getOneLineSummary(),
                 JsonUtil.parseWrappedStringList(snapshot.getKeyBulletsJson(), "bullets"),
                 snapshot.getDetailAnalysis(),
@@ -122,7 +119,6 @@ public final class EventSnapshotDiffCalculator {
         /** 현재 Event. eventTypeL2 는 LAZY 연관이라 id 만 꺼낸다. 삭제 여부는 원본 del_yn. */
         public static State of(MiEvent event) {
             return new State(
-                event.getEventTitle(),
                 event.getOneLineSummary(),
                 JsonUtil.parseWrappedStringList(event.getKeyBulletsJson(), "bullets"),
                 event.getDetailAnalysis(),

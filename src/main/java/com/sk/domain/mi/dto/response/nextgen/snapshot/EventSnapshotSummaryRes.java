@@ -41,10 +41,10 @@ public record EventSnapshotSummaryRes(
     @Schema(description = "갱신 사유. update_reason, 현재 파이프라인은 null", nullable = true)
     String updateReason,
 
-    @ArraySchema(schema = @Schema(description = "이번 갱신에서 파이프라인이 기록한 변경 본문 컬럼명. changed_fields_json (event_title, one_line_summary, key_bullets_json, detail_analysis 중). 두 버전 간 전체 차이가 아님", example = "event_title"))
+    @ArraySchema(schema = @Schema(description = "이번 갱신에서 파이프라인이 기록한 변경 본문 컬럼명. changed_fields_json (one_line_summary, key_bullets_json, detail_analysis 중). 두 버전 간 전체 차이가 아님", example = "one_line_summary"))
     List<String> changedFields,
 
-    @Schema(description = "당시 이벤트 제목. event_title")
+    @Schema(description = "당시 이벤트명. one_line_summary")
     String eventName,
 
     @Schema(description = "당시 한줄 요약. one_line_summary")
@@ -67,7 +67,7 @@ public record EventSnapshotSummaryRes(
             updateTriggerLabel(row.updateTriggerCd()),
             row.updateReason(),
             JsonUtil.parseStringList(row.changedFieldsJson()),
-            row.eventTitle(),
+            row.oneLineSummary(),
             row.oneLineSummary(),
             DateUtil.utcToKst(row.eventModifyDt()));
     }

@@ -99,7 +99,8 @@ class EventSnapshotServiceImplTest {
         assertThat(detail.createdAt()).isEqualTo(LocalDateTime.of(2026, 9, 25, 17, 26, 6));
         assertThat(detail.keySummaries()).containsExactly("b1", "b2");
         assertThat(detail.tags()).containsExactly("LNG", "JKM");
-        assertThat(detail.changedFields()).containsExactly("event_title");
+        assertThat(detail.eventName()).isEqualTo("요약");
+        assertThat(detail.changedFields()).containsExactly("one_line_summary");
     }
 
     @Test
@@ -185,15 +186,15 @@ class EventSnapshotServiceImplTest {
             assertThat(result.comparable()).isFalse();
             assertThat(result.compared()).isNull();
             assertThat(result.differences()).isEmpty();
-            assertThat(result.recordedChangedFields()).containsExactly("event_title");
+            assertThat(result.recordedChangedFields()).containsExactly("one_line_summary");
             then(snapshotRepository).should(never()).findByMiEventIdAndSnapshotVersionNoAndIsDeletedFalse(any(), any());
         }
 
         @Test
         @DisplayName("값이 다른 필드만 differences 에 담고, BigDecimal 0.5 와 0.5000 은 같다고 본다")
         void reportsOnlyDifferentFields() {
-            MiEventSnapshot base = snapshot(12L, 4L, 11L).eventTitle("새 제목").signalConfidence(new BigDecimal("0.5")).build();
-            MiEventSnapshot previous = snapshot(11L, 3L, 7L).eventTitle("옛 제목").signalConfidence(new BigDecimal("0.5000")).build();
+            MiEventSnapshot base = snapshot(12L, 4L, 11L).oneLineSummary("새 요약").signalConfidence(new BigDecimal("0.5")).build();
+            MiEventSnapshot previous = snapshot(11L, 3L, 7L).oneLineSummary("옛 요약").signalConfidence(new BigDecimal("0.5000")).build();
             given(snapshotRepository.findByMiEventSnapshotIdAndMiEventIdAndIsDeletedFalse(12L, EVENT_ID)).willReturn(Optional.of(base));
             given(snapshotRepository.findByMiEventSnapshotIdAndMiEventIdAndIsDeletedFalse(11L, EVENT_ID)).willReturn(Optional.of(previous));
 
@@ -202,13 +203,13 @@ class EventSnapshotServiceImplTest {
             assertThat(result.comparable()).isTrue();
             assertThat(result.compared().snapshotId()).isEqualTo(11L);
             assertThat(result.differences()).singleElement().satisfies(diff -> {
-                assertThat(diff.field()).isEqualTo("eventName");
-                assertThat(diff.column()).isEqualTo("event_title");
-                assertThat(diff.baseValue()).isEqualTo("새 제목");
-                assertThat(diff.comparedValue()).isEqualTo("옛 제목");
+                assertThat(diff.field()).isEqualTo("oneLineSummary");
+                assertThat(diff.column()).isEqualTo("one_line_summary");
+                assertThat(diff.baseValue()).isEqualTo("새 요약");
+                assertThat(diff.comparedValue()).isEqualTo("옛 요약");
             });
             assertThat(result.sameFields()).contains("signalConfidence", "keySummaries", "detailedAnalysis");
-            assertThat(result.recordedChangedFields()).containsExactly("event_title");
+            assertThat(result.recordedChangedFields()).containsExactly("one_line_summary");
         }
 
         @Test
@@ -222,7 +223,6 @@ class EventSnapshotServiceImplTest {
             assertThat(missing.comparable()).isFalse();
 
             MiEvent current = mock(MiEvent.class);
-            given(current.getEventTitle()).willReturn("현재 제목");
             given(current.getOneLineSummary()).willReturn("요약");
             given(current.getKeyBulletsJson()).willReturn("{\"bullets\": [\"b1\", \"b2\"]}");
             given(current.getDetailAnalysis()).willReturn("상세");
@@ -236,7 +236,7 @@ class EventSnapshotServiceImplTest {
             assertThat(result.comparable()).isTrue();
             assertThat(result.compared().snapshotId()).isNull();
             assertThat(result.differences()).extracting(EventSnapshotCompareRes.FieldDifference::field)
-                .contains("eventName", "isEventDeleted", "eventTypeL2Id")
+                .contains("isEventDeleted", "eventTypeL2Id")
                 .doesNotContain("oneLineSummary", "keySummaries", "detailedAnalysis");
         }
     }
@@ -325,9 +325,8 @@ class EventSnapshotServiceImplTest {
             .createDt(LocalDateTime.of(2026, 9, 15, 5, 0))
             .createUserId("system")
             .updateTriggerCd("RECORD_INGESTION")
-            .changedFieldsJson("[\"event_title\"]")
+            .changedFieldsJson("[\"one_line_summary\"]")
             .eventTypeL2Id(3L)
-            .eventTitle("제목")
             .oneLineSummary("요약")
             .keyBulletsJson("{\"bullets\": [\"b1\", \"b2\"]}")
             .detailAnalysis("상세")
