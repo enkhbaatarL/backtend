@@ -23,12 +23,12 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 /**
- * [MCP Feedback] 사용자 피드백 등록 — MCP 채널의 유일한 쓰기 API (읽기 전용 채널의 예외 1건).
+ * [MCP Feedback] 사용자 피드백 등록 — MCP 채널의 쓰기 API (읽기 전용 채널의 예외. 이벤트 생성과 함께 2건).
  * 원본 화면 API(POST /api/v1/common/user-feedback)는 일반 서버 전용이라 전용 서버에 MCP 경로로 둔다.
  * 저장은 화면과 같은 tcm_usrfedbl 이며 채널 코드(fedb_chnl_cd)만 MCP 로 다르다.
  */
 @Profile("dedicated")
-@Tag(name = "MCP Next Gen MI User Feedback API", description = "MCP client용 사용자 피드백 등록 API입니다. MCP 채널의 유일한 쓰기 API입니다.")
+@Tag(name = "MCP Next Gen MI User Feedback API", description = "MCP client용 사용자 피드백 등록 API입니다.")
 @RestController
 @RequestMapping("/api/v1/mcp/mi/next-gen")
 @RequiredArgsConstructor

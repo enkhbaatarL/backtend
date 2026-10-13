@@ -10,6 +10,7 @@ import com.sk.common.config.SwaggerConfig;
 import com.sk.common.enums.ResultCode;
 import com.sk.common.interceptor.McpUserContextInterceptor;
 import com.sk.domain.mi.service.nextgen.CmeBenchmarkService;
+import com.sk.domain.mi.service.nextgen.EventGenerationService;
 import com.sk.domain.mi.service.nextgen.EventService;
 import com.sk.domain.mi.service.nextgen.EventSnapshotService;
 import com.sk.domain.mi.service.nextgen.PriceInterpretationService;
@@ -49,8 +50,11 @@ class McpOpenApiTest {
     private static final String MCP_PREFIX = "/api/v1/mcp/mi/next-gen/";
     private static final String CME_PATH =
         "/api/v1/mcp/mi/next-gen/scenario-groups/graph/cme-benchmark";
-    // [MCP Feedback] MCP 채널의 유일한 쓰기(POST) 경로
+    // [MCP Feedback] MCP 채널의 쓰기(POST) 경로
     private static final String USER_FEEDBACK_PATH = "/api/v1/mcp/mi/next-gen/user-feedback";
+    // [MCP Event Generate] 이벤트 생성(POST) 경로
+    private static final String EVENT_GENERATION_PATH = "/api/v1/mcp/mi/next-gen/events/generations";
+    private static final Set<String> POST_PATHS = Set.of(USER_FEEDBACK_PATH, EVENT_GENERATION_PATH);
     private static final Set<String> EXPECTED_PATHS = Set.of(
         "/api/v1/mcp/mi/next-gen/events",
         "/api/v1/mcp/mi/next-gen/events/event-types/lv1",
@@ -73,7 +77,9 @@ class McpOpenApiTest {
         "/api/v1/mcp/mi/next-gen/events/{eventId}/snapshots/{snapshotId}/records",
         "/api/v1/mcp/mi/next-gen/events/{eventId}/snapshots/{snapshotId}/outlooks",
         // [MCP Feedback] 사용자 피드백 등록 1건 추가 (19 → 20)
-        USER_FEEDBACK_PATH);
+        USER_FEEDBACK_PATH,
+        // [MCP Event Generate] 이벤트 생성 1건 추가 (20 → 21)
+        EVENT_GENERATION_PATH);
 
     @Autowired
     private MockMvc mockMvc;
@@ -101,8 +107,12 @@ class McpOpenApiTest {
     // [MCP Feedback]
     private CommonService commonService;
 
+    @MockitoBean
+    // [MCP Event Generate]
+    private EventGenerationService eventGenerationService;
+
     @Test
-    @DisplayName("MCP API 그룹에 GET 19건 + POST 1건, 필수 문자열 X-User-Id, Basic Auth 보안 요구를 노출한다")
+    @DisplayName("MCP API 그룹에 GET 19건 + POST 2건, 필수 문자열 X-User-Id, Basic Auth 보안 요구를 노출한다")
     void exposesTwelveMcpOperationsWithOnlyUserDelegationHeader() throws Exception {
         JsonNode document = apiDocument("MCP API");
         JsonNode paths = document.path("paths");
@@ -110,8 +120,8 @@ class McpOpenApiTest {
         assertThat(fieldNames(paths)).containsExactlyInAnyOrderElementsOf(EXPECTED_PATHS);
         paths.fields().forEachRemaining(pathEntry -> {
             assertThat(pathEntry.getKey()).startsWith(MCP_PREFIX);
-            // [MCP Feedback] 피드백 등록만 POST, 나머지는 GET 만
-            String method = USER_FEEDBACK_PATH.equals(pathEntry.getKey()) ? "post" : "get";
+            // [MCP Feedback][MCP Event Generate] 피드백 등록·이벤트 생성만 POST, 나머지는 GET 만
+            String method = POST_PATHS.contains(pathEntry.getKey()) ? "post" : "get";
             assertThat(fieldNames(pathEntry.getValue())).containsExactly(method);
 
             JsonNode operation = pathEntry.getValue().path(method);
@@ -235,6 +245,25 @@ class McpOpenApiTest {
             .contains("게시 완료(PUBLISHED)", "RSC-001");
         assertThat(findParameter(list, "publishStatus").isMissingNode()).isTrue();
         assertThat(findParameter(list, "publish_status").isMissingNode()).isTrue();
+    }
+
+    @Test
+    // [MCP Event Generate] description·requestBody 설명 = MCP tool 설명·인자 설명
+    @DisplayName("이벤트 생성 operation은 명시적 요청 시에만 호출·즉시 저장·중복 생성 주의와 입력 문장 필수를 노출한다")
+    void exposesEventGenerationGuidance() throws Exception {
+        JsonNode document = apiDocument("MCP API");
+        JsonNode operation = document.path("paths").path(EVENT_GENERATION_PATH).path("post");
+        assertThat(operation.path("operationId").asText()).isEqualTo("generateEvents");
+        assertThat(operation.path("description").asText())
+            .contains("명시적으로 요청한 경우에만")
+            .contains("중복 생성됩니다")
+            .contains("miEventId");
+
+        String schemaRef = operation.path("requestBody").path("content").path("application/json").path("schema").path("$ref").asText();
+        JsonNode schema = document.path("components").path("schemas").path(schemaRef.substring(schemaRef.lastIndexOf('/') + 1));
+        assertThat(schema.path("required").toString()).isEqualTo("[\"userQuery\"]");
+        assertThat(fieldNames(schema.path("properties"))).containsExactlyInAnyOrder("userQuery", "dateFrom", "dateTo");
+        assertThat(schema.path("properties").path("dateFrom").path("description").asText()).contains("YYYY-MM-DD");
     }
 
     private JsonNode operation(JsonNode paths, String path, String operationId) {

@@ -73,7 +73,7 @@
 
 ### 2.2 Out of scope
 
-- 쓰기 API (POST / PATCH / DELETE) 노출 — 단 사용자 피드백 등록 1건(4.7절)은 예외 (D-9)
+- 쓰기 API (POST / PATCH / DELETE) 노출 — 단 사용자 피드백 등록(4.7절, D-9)과 이벤트 생성(4.8절, D-11) 2건은 예외
 - SSE 스트림 엔드포인트 노출 — MCP 호출 모델과 맞지 않는다
 - 서비스 / 레포지토리 계층 로직 변경 또는 복제 — 단 MCP 전용 endpoint(4.6절 이벤트 Snapshot)는 원본이 없으므로 전용 서비스·리포지토리를 신설한다 (D-1)
 - MCP 서버 자체 구현
@@ -486,7 +486,7 @@ CME는 SK Gas 데이터이고 라우팅 키는 `midb-skgas`로 고정이다(변�
 
 **범위 밖 (P2, 별도 슬라이스)**: Record 반영 타임라인(`/snapshots/record-timeline`), 과거 내용 검색(`/events/snapshots/search`).
 
-### 4.7 사용자 피드백 등록 — **MCP 채널의 유일한 쓰기 API** (확정 — 2026-10-11)
+### 4.7 사용자 피드백 등록 — **MCP 채널의 쓰기 API** (확정 — 2026-10-11)
 
 - `POST /api/v1/mcp/mi/next-gen/user-feedback` (`McpUserFeedbackDedicatedController.createMcpUserFeedback`) — 이 1건으로 MCP 채널은 20건(GET 19 + POST 1)
 - 원본 화면 API `POST /api/v1/common/user-feedback` 은 일반 서버(`!dedicated`) 전용이고 Bearer JWT 인증이라 MCP 경로에 따로 둔다 (원본 계약 무변경)
@@ -504,6 +504,30 @@ CME는 SK Gas 데이터이고 라우팅 키는 `midb-skgas`로 고정이다(변�
 - **응답**: `data` = 등록된 피드백 번호. **오류**: 채널 공통 외에는 `feedbackContent` 공백일 때 `REQ-003`(400) 하나뿐 — 사용자는 시스템 값을 모르므로 나머지는 저장 후 운영자가 판단한다.
 - DB 변경(2026-10-11, DBA 적용): `fedb_chnl_cd`·`fedb_trgt_id` 추가, `fedb_cntt` → mediumtext. 새 컬럼을 매핑한 backend 는 **ALTER 적용 후 배포**해야 기동된다 (`ddl-auto: validate`).
   설계·운영자 조회 SQL: 워크스페이스 `process_userfeedback.md`
+
+### 4.8 이벤트 생성 — **쓰기 API, 이벤트 생성 서버에 위임** (2026-10-12)
+
+- `POST /api/v1/mcp/mi/next-gen/events/generations` (`McpEventDedicatedController.generateEvents`) — 이 1건으로 MCP 채널은 21건(GET 19 + POST 2)
+- B.E 는 인증(채널 공통 3.2절·3.3절)만 하고 이벤트 생성 서버 `POST /events/generations`(스펙 `event_generate_v1`)에 요청을 그대로 넘긴다.
+  생성·저장(`tmm_mi_mievent_m`)은 생성 서버가 하며 B.E 는 DB 를 쓰지 않는다. 권한 규칙은 4.1~4.7 과 동일
+- 생성 서버 호출: 헤더 `X-User-ID` = effective user 의 `usr_no`(정수, 생성자·수정자 ID), body 는 요청 그대로 (`EventGenerationAgentApi`)
+- 주소 `api.event-generation-agent.url` → 없으면 환경변수 `EVENT_GENERATION_AGENT_URL` → 없으면 `http://localhost:8010`(skgas-test-mcp mock).
+  read-timeout 기본 300s (`api.event-generation-agent.read-timeout`) — 웹 검색·LLM 생성을 동기로 기다린다
+- 요청 body (`EventGenerationReq`)
+
+| 필드 | 필수 | 처리 |
+|---|---|---|
+| `userQuery` | Y | 공백이면 `REQ-003`(400) |
+| `dateFrom` / `dateTo` | N | `YYYY-MM-DD` 가 아니면 `REQ-003`(400) |
+
+- **응답**: `data` = 생성 서버 응답의 `data`(`meta`, `events`) 그대로 (`EventGenerationRes`). 생성된 이벤트는 이미 저장된 상태이며 다시 호출하면 중복 생성된다
+- **오류** (채널 공통 외)
+
+| 상황 | HTTP | `code` |
+|---|---|---|
+| 생성 서버가 `status = error` 응답 | `400` | `BIZ-001` (메시지에 생성 서버 message 포함) |
+| 생성 서버 연결 실패 / 타임아웃 | `500` | `API-003` / `API-002` |
+| 생성 서버 HTTP 오류(422 등) | `500` | `API-004` (공통 RestClient 빌더 처리) |
 
 ---
 
