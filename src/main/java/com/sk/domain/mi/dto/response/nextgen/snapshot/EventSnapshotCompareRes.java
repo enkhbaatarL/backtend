@@ -32,7 +32,7 @@ public record EventSnapshotCompareRes(
     @ArraySchema(schema = @Schema(description = "값이 같은 필드명", example = "eventTypeL2Id"))
     List<String> sameFields,
 
-    @ArraySchema(schema = @Schema(description = "선택 Snapshot 의 changed_fields_json 그대로. 파이프라인이 기록한 본문 4개 컬럼의 직전·직후 비교 결과이며 differences 와 다를 수 있음", example = "event_title"))
+    @ArraySchema(schema = @Schema(description = "선택 Snapshot 의 changed_fields_json 그대로. 파이프라인이 기록한 본문 4개 컬럼의 직전·직후 비교 결과이며 differences 와 다를 수 있음", example = "one_line_summary"))
     List<String> recordedChangedFields
 
 ) {
@@ -58,10 +58,10 @@ public record EventSnapshotCompareRes(
     @Schema(name = "EventSnapshotFieldDifference", description = "값이 다른 필드")
     public record FieldDifference(
 
-        @Schema(description = "응답 필드명 (Snapshot 상세 기준)", example = "eventName")
+        @Schema(description = "응답 필드명 (Snapshot 상세 기준)", example = "oneLineSummary")
         String field,
 
-        @Schema(description = "원본 컬럼명", example = "event_title")
+        @Schema(description = "원본 컬럼명", example = "one_line_summary")
         String column,
 
         @Schema(description = "선택 Snapshot 의 값", nullable = true)

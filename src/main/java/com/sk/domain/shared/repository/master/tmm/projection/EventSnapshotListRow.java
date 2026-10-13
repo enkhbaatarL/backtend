@@ -18,7 +18,6 @@ public record EventSnapshotListRow(
     String updateTriggerCd,
     String updateReason,
     String changedFieldsJson,
-    String eventTitle,
     String oneLineSummary,
     LocalDateTime eventModifyDt
 

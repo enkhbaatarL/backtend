@@ -67,10 +67,6 @@ public class MiEventSnapshot extends BaseEntity {
     @Comment("당시 이벤트 유형 L2 ID")
     private Long eventTypeL2Id;
 
-    @Column(name = "event_title", length = 500, nullable = false)
-    @Comment("이벤트 제목")
-    private String eventTitle;
-
     @Column(name = "one_line_summary", length = 300, nullable = false)
     @Comment("한줄 요약")
     private String oneLineSummary;
@@ -160,7 +156,7 @@ public class MiEventSnapshot extends BaseEntity {
     public MiEventSnapshot(LocalDateTime createDt, LocalDateTime modifyDt, String createUserId, String modifyUserId, Boolean isDeleted,
                            Long miEventSnapshotId, Long miEventId, Long snapshotVersionNo, Long previousMiEventSnapshotId,
                            String updateTriggerCd, String updateReason, String changedFieldsJson, Long eventTypeL2Id,
-                           String eventTitle, String oneLineSummary, String keyBulletsJson, String detailAnalysis, String tagsJson,
+                           String oneLineSummary, String keyBulletsJson, String detailAnalysis, String tagsJson,
                            LocalDateTime occurredAt, LocalDateTime latestRecordFirstCreated, String estimatedImpactId,
                            Boolean isSignal, BigDecimal signalConfidence, String signalReason,
                            Boolean isScenarioSuggested, String scenarioSuggestReason, Boolean isNew, Boolean isEventDeleted,
@@ -175,7 +171,6 @@ public class MiEventSnapshot extends BaseEntity {
         this.updateReason = updateReason;
         this.changedFieldsJson = changedFieldsJson;
         this.eventTypeL2Id = eventTypeL2Id;
-        this.eventTitle = eventTitle;
         this.oneLineSummary = oneLineSummary;
         this.keyBulletsJson = keyBulletsJson;
         this.detailAnalysis = detailAnalysis;
