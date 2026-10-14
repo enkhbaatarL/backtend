@@ -23,6 +23,8 @@ import com.sk.domain.shared.enums.news.SortType;
 import com.sk.domain.shared.service.permissions.AuthorizationService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.media.Content;
+import io.swagger.v3.oas.annotations.media.ExampleObject;
 import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -147,7 +149,8 @@ public class MiMarketNewsController {
     @Parameter(name = "category", description = "뉴스 시장 카테고리 코드", required = true, example = "CROIL")
     @Operation(
         summary = "마켓 리캡 조회 (날짜/카테고리)",
-        description = "기준일자와 카테고리 코드로 마켓 리캡을 조회합니다."
+        description = "기준일자와 카테고리 코드로 마켓 리캡을 조회합니다. "
+            + "해당 리캡이 없으면 빈 리캡 응답을 반환합니다."
     )
     @ApiResponse(responseCode = "200", description = "조회 성공")
     @GetMapping("/recap")
@@ -171,6 +174,12 @@ public class MiMarketNewsController {
         description = "마켓 리캡 ID로 상세 정보를 조회합니다."
     )
     @ApiResponse(responseCode = "200", description = "조회 성공")
+    @ApiResponse(responseCode = "400", description = "해당 ID의 리캡이 없음 (RSC-004)",
+        content = @Content(mediaType = "application/json",
+            schema = @Schema(implementation = BaseResponse.class),
+            examples = @ExampleObject(name = "RSC_DATA_NOT_FOUND", value = """
+                {"status":false,"code":"RSC-004","message":"The requested data could not be found.(MarketRecap not found for id: 999)","data":null}
+                """)))
     @GetMapping("/recaps/{mrktRcapId}")
     @RequiredPermission(roles = {Role.ADMIN, Role.USER, Role.API_PLUS_OPERATOR,
         Role.API_SUB_ADMIN}, condition = PermissionCondition.THIRD_PARTY_ADMIN_ONLY)
@@ -189,7 +198,8 @@ public class MiMarketNewsController {
     @Parameter(name = "category", description = "뉴스 시장 카테고리 코드 (기본값: CROIL)", required = true)
     @Operation(
         summary = "시장 뉴스 타임라인 조회",
-        description = "시장 뉴스를 특정 점수 이상 최대 10개의 뉴스를 조회합니다."
+        description = "기준일자와 시장 카테고리의 뉴스 Event를 "
+            + "대표 뉴스 발행시간 오름차순으로 최대 10건 조회합니다."
     )
     @ApiResponse(responseCode = "200", description = "조회 성공")
     @GetMapping("/timeline")

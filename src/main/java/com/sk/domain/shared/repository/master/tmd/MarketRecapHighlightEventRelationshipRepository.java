@@ -12,8 +12,12 @@ public interface MarketRecapHighlightEventRelationshipRepository extends JpaRepo
     /**
      * 하이라이트 이벤트에 속한 뉴스 이벤트 관계 조회
      */
+    @Query("SELECT mher FROM MarketRecapHighlightEventRelationship mher " +
+           "JOIN mher.newsEvent ne " +
+           "WHERE mher.marketRecapHighlightEvent = :marketRecapHighlightEvent " +
+           "AND mher.isDeleted = false AND ne.isDeleted = false")
     List<MarketRecapHighlightEventRelationship> findByMarketRecapHighlightEvent(
-        MarketRecapHighlightEvent marketRecapHighlightEvent
+        @Param("marketRecapHighlightEvent") MarketRecapHighlightEvent marketRecapHighlightEvent
     );
 
     /**
@@ -38,7 +42,8 @@ public interface MarketRecapHighlightEventRelationshipRepository extends JpaRepo
            "JOIN FETCH mher.newsEvent ne " +
            "JOIN FETCH ne.representativeNewsSummary ns " +
            "LEFT JOIN FETCH ns.refinitivNewsData " +
-           "WHERE mher.mrktRcapHlEvntId IN :highlightEventIds")
+           "WHERE mher.mrktRcapHlEvntId IN :highlightEventIds " +
+           "AND mher.isDeleted = false AND ne.isDeleted = false")
     List<MarketRecapHighlightEventRelationship> findByHighlightEventIds(
         @Param("highlightEventIds") List<Long> highlightEventIds
     );
