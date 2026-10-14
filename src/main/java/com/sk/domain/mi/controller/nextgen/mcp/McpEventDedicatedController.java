@@ -55,7 +55,7 @@ public class McpEventDedicatedController {
     }
 
     @ApiOrder(2)
-    @Operation(summary = "이벤트 목록 조회", description = "필터, 정렬, 페이징 조건으로 Next Gen MI 이벤트 목록을 조회합니다.")
+    @Operation(summary = "이벤트 목록 조회", description = "게시 완료(PUBLISHED)된 신호 이벤트만 필터, 정렬, 페이징 조건으로 조회합니다. 미게시(DRAFT) 및 게시 상태가 없는 이벤트는 제외합니다.")
     @ApiResponse(responseCode = "200", description = "조회 성공")
     @GetMapping
     @RequiredPermissionRules(rules = {
@@ -85,7 +85,7 @@ public class McpEventDedicatedController {
     }
 
     @ApiOrder(4)
-    @Operation(summary = "이벤트 상세 조회", description = "이벤트 상세와 영향 분석, AI 인사이트, 연결 시나리오 정보를 조회합니다.")
+    @Operation(summary = "이벤트 상세 조회", description = "게시 완료(PUBLISHED)된 이벤트의 상세와 영향 분석, AI 인사이트, 연결 시나리오 정보를 조회합니다. 이벤트가 없거나 게시 완료 상태가 아니면 RSC-001(이벤트 없음) 오류를 반환합니다.")
     @ApiResponse(responseCode = "200", description = "조회 성공")
     @GetMapping("/{eventId}")
     @RequiredPermissionRules(rules = {

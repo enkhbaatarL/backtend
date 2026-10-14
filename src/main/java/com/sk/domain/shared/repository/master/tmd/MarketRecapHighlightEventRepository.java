@@ -12,7 +12,9 @@ public interface MarketRecapHighlightEventRepository extends JpaRepository<Marke
     /**
      * 마켓 리캡의 하이라이트 이벤트 목록 조회
      */
-    List<MarketRecapHighlightEvent> findByMarketRecap(MarketRecap marketRecap);
+    @Query("SELECT mhe FROM MarketRecapHighlightEvent mhe " +
+           "WHERE mhe.marketRecap = :marketRecap AND mhe.isDeleted = false")
+    List<MarketRecapHighlightEvent> findByMarketRecap(@Param("marketRecap") MarketRecap marketRecap);
 
     /**
      * 마켓 리캡 ID로 하이라이트 이벤트 조회
@@ -25,7 +27,7 @@ public interface MarketRecapHighlightEventRepository extends JpaRepository<Marke
     );
 
     @Query("SELECT mhe FROM MarketRecapHighlightEvent mhe " +
-           "WHERE mhe.mrktRcapId IN :marketRecapIds " +
+           "WHERE mhe.mrktRcapId IN :marketRecapIds AND mhe.isDeleted = false " +
            "ORDER BY mhe.mrktRcapId, mhe.score DESC")
     List<MarketRecapHighlightEvent> findByMarketRecapIdInOrderByScoreDesc(
         @Param("marketRecapIds") List<Long> marketRecapIds

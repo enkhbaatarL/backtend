@@ -64,6 +64,7 @@ public interface NewsEventRepository extends JpaRepository<NewsEvent, Long> {
         LEFT JOIN tmd_nws_rgn_cls nrc ON nrc.nws_smry_id = ns.nws_smry_id
         WHERE ne.crtr_dt = :crtrDt
             AND ne.nws_mrkt_ctgr_cd = :newsMarketCategoryCode
+            AND ne.del_yn = 'N'
         GROUP BY
             ne.nws_evnt_id,
             ne.nm_kr,

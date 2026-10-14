@@ -566,7 +566,7 @@ public class MiMarketNewsService {
         String criteriaDate, String category) {
 
         return marketRecapRepository
-            .findByCrtrDtAndNwsMrktCtgrCd(criteriaDate, category)
+            .findByCrtrDtAndNwsMrktCtgrCdAndIsDeletedFalse(criteriaDate, category)
             .map(this::toMarketRecapRes)
             .orElseGet(MarketRecapRes::empty);
     }
@@ -575,7 +575,7 @@ public class MiMarketNewsService {
      * Market Recap 조회 (ID)
      */
     public MarketRecapRes getMarketRecapById(Long mrktRcapId) {
-        MarketRecap marketRecap = marketRecapRepository.findById(mrktRcapId)
+        MarketRecap marketRecap = marketRecapRepository.findByMrktRcapIdAndIsDeletedFalse(mrktRcapId)
             .orElseThrow(() -> AppErrorException.of(Error.RSC_DATA_NOT_FOUND,
                 "MarketRecap not found for id: %s".formatted(mrktRcapId)));
 

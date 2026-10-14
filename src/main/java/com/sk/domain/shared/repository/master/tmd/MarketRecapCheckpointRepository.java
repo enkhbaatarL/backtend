@@ -12,7 +12,9 @@ public interface MarketRecapCheckpointRepository extends JpaRepository<MarketRec
     /**
      * 마켓 리캡의 체크포인트 목록 조회
      */
-    List<MarketRecapCheckpoint> findByMarketRecap(MarketRecap marketRecap);
+    @Query("SELECT mc FROM MarketRecapCheckpoint mc " +
+           "WHERE mc.marketRecap = :marketRecap AND mc.isDeleted = false")
+    List<MarketRecapCheckpoint> findByMarketRecap(@Param("marketRecap") MarketRecap marketRecap);
 
     /**
      * 마켓 리캡 ID로 체크포인트 조회
@@ -25,7 +27,7 @@ public interface MarketRecapCheckpointRepository extends JpaRepository<MarketRec
     );
 
     @Query("SELECT mc FROM MarketRecapCheckpoint mc " +
-           "WHERE mc.mrktRcapId IN :marketRecapIds " +
+           "WHERE mc.mrktRcapId IN :marketRecapIds AND mc.isDeleted = false " +
            "ORDER BY mc.mrktRcapId, mc.mrktRcapCkptId")
     List<MarketRecapCheckpoint> findByMarketRecapIdInOrderById(
         @Param("marketRecapIds") List<Long> marketRecapIds

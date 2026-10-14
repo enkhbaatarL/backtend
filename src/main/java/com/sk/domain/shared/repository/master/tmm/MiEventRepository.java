@@ -26,13 +26,14 @@ public interface MiEventRepository extends JpaRepository<MiEvent, Long>, CustomM
     Optional<LocalDateTime> findMaxCreateDt();
 
     /**
-     * 키워드 알림 스캔 대상: 기준 시각 이후 생성된 활성 이벤트 (생성일시, ID 오름차순)
+     * 키워드 알림 스캔 대상: 기준 시각 이후 생성된 게시 완료 활성 이벤트 (생성일시, ID 오름차순)
      */
     @Query("""
         SELECT e.miEventId AS miEventId, e.oneLineSummary AS oneLineSummary, e.createDt AS createDt
           FROM MiEvent e
          WHERE e.createDt > :from
            AND e.isDeleted = false
+           AND e.publishStatus = 'PUBLISHED'
          ORDER BY e.createDt ASC, e.miEventId ASC
         """)
     List<KeywordAlertEventRow> findKeywordAlertEventsCreatedAfter(@Param("from") LocalDateTime from);

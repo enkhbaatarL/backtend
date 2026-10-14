@@ -222,6 +222,21 @@ class McpOpenApiTest {
             .contains("추측하지 말고 생략");
     }
 
+    @Test
+    @DisplayName("이벤트 목록·상세는 게시 완료 조회 범위와 기존 미존재 오류를 설명한다")
+    void exposesPublishedOnlyEventQueries() throws Exception {
+        JsonNode paths = apiDocument("MCP API").path("paths");
+        JsonNode list = paths.path(MCP_PREFIX + "events").path("get");
+        JsonNode detail = paths.path(MCP_PREFIX + "events/{eventId}").path("get");
+
+        assertThat(list.path("description").asText())
+            .contains("게시 완료(PUBLISHED)", "신호 이벤트", "미게시(DRAFT)", "게시 상태가 없는");
+        assertThat(detail.path("description").asText())
+            .contains("게시 완료(PUBLISHED)", "RSC-001");
+        assertThat(findParameter(list, "publishStatus").isMissingNode()).isTrue();
+        assertThat(findParameter(list, "publish_status").isMissingNode()).isTrue();
+    }
+
     private JsonNode operation(JsonNode paths, String path, String operationId) {
         JsonNode operation = paths.path(path).path("get");
         assertThat(operation.path("operationId").asText()).as(path).isEqualTo(operationId);
