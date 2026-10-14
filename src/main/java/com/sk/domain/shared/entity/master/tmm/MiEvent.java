@@ -104,13 +104,18 @@ public class MiEvent extends BaseEntity {
     @Comment("기관 전망 View 종합")
     private String institutionViewSynthesis;
 
+    @Column(name = "publish_status", length = 20)
+    @Comment("게시 상태(DRAFT/PUBLISHED), NULL은 v1 Event")
+    private String publishStatus;
+
     @Builder
     public MiEvent(Long miEventId, String oneLineSummary, String keyBulletsJson,
                    String detailAnalysis, String tagsJson,
                    MiEventTypeL2 eventTypeL2, String estimatedImpactId,
                    LocalDateTime occurredAt, LocalDateTime latestRecordFirstCreated, LocalDateTime oldestRecordFirstCreated,
                    Boolean isSignal, BigDecimal signalConfidence, String signalReason,
-                   Boolean isScenarioSuggested, String scenarioSuggestReason, Boolean isNew, String institutionViewSynthesis) {
+                   Boolean isScenarioSuggested, String scenarioSuggestReason, Boolean isNew, String institutionViewSynthesis,
+                   String publishStatus) {
         this.miEventId = miEventId;
         this.oneLineSummary = oneLineSummary;
         this.keyBulletsJson = keyBulletsJson;
@@ -128,6 +133,7 @@ public class MiEvent extends BaseEntity {
         this.scenarioSuggestReason = scenarioSuggestReason;
         this.isNew = isNew;
         this.institutionViewSynthesis = institutionViewSynthesis;
+        this.publishStatus = publishStatus;
     }
 
 }
