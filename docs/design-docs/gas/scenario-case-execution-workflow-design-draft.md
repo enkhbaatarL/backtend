@@ -3,7 +3,7 @@
 - domain: gas
 - status: implemented (base workflow); Review (MI Base rollout pending)
 - owner: platform BE
-- updated at: 2026-09-15 (상세 output/intermediate 다운로드 metadata 계약 동기화)
+- updated at: 2026-09-28 (`OUTPUT` input 및 `--output-excel-path` Job 계약 동기화)
 - role: Scenario Case 업로드, 비동기 실행, 상태 추적, timeout 처리의 backend workflow와 persistence를 정리하는 설계 문서
 - canonical for: shared Scenario Case/run lifecycle, callback idempotency, timeout and backend-forced terminal semantics
 - upstream sources: `mi-scenario-workbench-backend-feature-spec.md`, `mi-scenario-model-execution-workflow-design.md`
@@ -77,8 +77,8 @@ tcm_filel (공통 파일 내역)
 - 정상 완료 기준 제품 요구는 `case:execution = 1:1`이다. 모델 호출이 `FAILED`인 경우에만 같은 case로 재시도해 추가 execution history를 남길 수 있으므로 물리적으로는 1:N으로 분리한다.
 - `tmd_mdl_scnrcasem` 은 `case_id`를 primary identity로 갖는다. MI Fundamental Model row는 `scnr_id = NULL`이고, MI 수급모델 row는 nullable `scnr_id`에 scenario 식별자를 저장한다. `scnr_id`는 `tmm_mi_scenario_m.scenario_id`(INT UNSIGNED)에 대한 application-validated 논리 참조이며 물리 FK는 두지 않는다.
 - 실행유형은 `exec_type_cd VARCHAR(20) DEFAULT 'INDEPENDENT' NOT NULL` 명시 컬럼으로 구분한다. 값은 `INDEPENDENT`(독립실행, MI Fundamental Model), `SCENARIO`(MI 수급모델 시나리오 실행), `MI_BASE`(현재 MI Base) 3종이다. `INDEPENDENT`/`MI_BASE`는 둘 다 `scnr_id = NULL`이므로 명시 컬럼이 필요하고, `scnr_id`와의 정합은 `tmd_mdl_scnrcasem_ck01`이 강제한다. 2026-06-16의 "MI Base 별도 적재/admin 소유·case_id 최신값 선택" 설명은 아래 현재 운영 규칙으로 superseded된다. 물리 컬럼/제약/공통코드는 [scenario-case-execution-erd-ddl-draft.md](scenario-case-execution-erd-ddl-draft.md)가 canonical source다.
-- 2026-09-07 확정 운영 규칙: MI Base는 기존 완료 `INDEPENDENT` case 중 선택한 건을 `MI_BASE`로 지정한다. 새 지정 시 이전 current는 `INDEPENDENT`로 복귀한다. current는 전역 최대 1건이며 case/run/소유자/`SCNRCASE + caseId` input Excel 3개/결과를 보존한다. 과거 MI Base 지정 여부는 case type에 이력으로 남기지 않는다.
-- 지정 commit 이후 시작되는 수급모델 input 생성은 새 MI Base의 input 3개를 기준으로 한다. 한 input 생성은 시작 시 current `caseId`와 `DEMAND`, `SUPPLY`, `TRADE` file metadata를 한 번만 source snapshot으로 고정하므로 생성 도중 지정이 바뀌어도 case를 섞지 않는다. 이미 생성·staging·접수·완료된 실행의 input·결과·기준값은 소급 변경하지 않는다. MI Base가 없을 때만 기존 플랫폼 기본 template 3개 전체를 하나의 snapshot으로 사용하며, 지정된 MI Base 파일을 읽지 못하면 default로 조용히 fallback하지 않는다.
+- 2026-09-07 확정 운영 규칙: MI Base는 기존 완료 `INDEPENDENT` case 중 선택한 건을 `MI_BASE`로 지정한다. 새 지정 시 이전 current는 `INDEPENDENT`로 복귀한다. current는 전역 최대 1건이며 case/run/소유자/`SCNRCASE + caseId` input Excel 4개/결과를 보존한다. 과거 MI Base 지정 여부는 case type에 이력으로 남기지 않는다.
+- 지정 commit 이후 시작되는 수급모델 input 생성은 새 MI Base의 input 4개를 기준으로 한다. 한 input 생성은 시작 시 current `caseId`와 `DEMAND`, `SUPPLY`, `TRADE`, `OUTPUT` file metadata를 한 번만 source snapshot으로 고정하므로 생성 도중 지정이 바뀌어도 case를 섞지 않는다. 이미 생성·staging·접수·완료된 실행의 input·결과·기준값은 소급 변경하지 않는다. MI Base가 없을 때만 플랫폼 기본 template 4개 전체를 하나의 snapshot으로 사용하며, 지정된 MI Base 파일을 읽지 못하면 default로 조용히 fallback하지 않는다.
 - 기존 Scenario Case 목록 API는 current MI Base를 `miBase`, active `INDEPENDENT` 실행 건을 `cases`로 분리하도록 변경한다. 이전 MI Base는 새 지정 시 `INDEPENDENT`로 복귀해 `cases`에 포함된다. field·검색·정렬 계약은 [mi-fundamental-model-mi-base-designation-feature-spec.md](../../feature-specs/mi-fundamental-model-mi-base-designation-feature-spec.md)를 따른다.
 - 일반 case metadata 변경·실행·삭제의 ownership scope는 기존과 같이 `usr_no`(업로더/소유자)다. 반면 MI Base 지정은 권한 있는 사용자가 전체 독립실행 case 중 현재 기준을 선택하는 command이므로 대상에 `usr_no` 또는 소유 회사 predicate를 적용하지 않는다. 지정 actor는 기존 MI 수급모델 실행과 동일한 `USER + SKGAS_COMPANY_USER_ONLY`, `ADMIN + THIRD_PARTY_ADMIN_ONLY`이며, 대상에는 active/type/status와 run/input/Price 적격성만 검증한다. metadata 변경·삭제에는 기존 owner predicate와 함께 지정 경쟁을 막는 row-lock 또는 atomic `exec_type_cd = 'INDEPENDENT'` 조건을 적용한다. 실행은 `PENDING | FAILED`, 지정은 `COMPLETED`만 허용하므로 두 command의 적격 상태는 겹치지 않는다.
 - current `MI_BASE`는 상세·상태·Volumes filter-options·Volumes·Trade Flows·Price만 조회하는 읽기 전용 case다. FE는 상세의 `execType = MI_BASE`를 기준으로 결과 탭은 노출하되 수정·삭제·재실행 action을 노출하거나 호출하지 않는다. backend도 직접 호출에 대비해 mutation을 active `INDEPENDENT`로 제한한다.
@@ -86,7 +86,7 @@ tcm_filel (공통 파일 내역)
 
 ## Boundary Against Existing ScenarioModelExecution API
 
-기존 `ScenarioModelExecution` API는 Scenario Workbench의 parameter 기반 MI 수급모델 실행 리소스를 다룬다. 이 문서의 `Scenario Case` workflow는 파일 3개 업로드를 기준으로 생성되는 MI Fundamental Model aggregate와 실행 이력을 다루며, 기존 `model-executions` resource와 별개 기능이다.
+기존 `ScenarioModelExecution` API는 Scenario Workbench의 parameter 기반 MI 수급모델 실행 리소스를 다룬다. 이 문서의 `Scenario Case` workflow는 `DEMAND`, `SUPPLY`, `TRADE`, `OUTPUT` 파일 4개 업로드를 기준으로 생성되는 MI Fundamental Model aggregate와 실행 이력을 다루며, 기존 `model-executions` resource와 별개 기능이다.
 
 따라서 기존 Scenario Workbench API와 상태/실행 개념이 유사하더라도, 1차 mock canonical API는 `/api/v1/mi/fundamental-model/**` path family와 `caseId`/`runId` 식별 기준을 따른다.
 
@@ -133,7 +133,7 @@ tcm_filel (공통 파일 내역)
 
 - 업로드 단위 metadata와 실행 단위 status/history는 분리한다.
 - 이유:
-  - 파일 3개와 사용자 입력 제목/설명은 업로드 시점에 확정된다.
+  - 입력 파일 4개와 사용자 입력 제목/설명은 업로드 시점에 확정된다.
   - 실행은 `FAILED` 모델 호출 재시도 가능성이 있어 별도 lifecycle을 가진다.
 
 ### 2. 최신 상태의 이중 보관
@@ -161,7 +161,7 @@ tcm_filel (공통 파일 내역)
 - Job은 MI Fundamental Model 모델 이미지를 사용해 pod를 실행한다.
 - 모델 이미지는 모델팀이 Dockerfile 기반으로 제공하며, `engine/run_all_parallel.py` 실행 환경과 backend callback 호출 로직을 포함해야 한다.
 - pod 내부 command는 `python engine/run_all_parallel.py` 실행을 기본으로 한다.
-- backend는 Job 생성 요청에 `run_id`, `run_seq`, 입력 파일 storage path 3개, backend callback URL을 전달한다. callback URL은 `--callback-url` Job arg로 전달하며, run_id를 포함한 전체 URL을 backend가 생성해 주입한다. `run_seq`는 pod가 output 파일을 `tcm_filel`에 INSERT할 때 사용한다.
+- backend는 Job 생성 요청에 `run_id`, `run_seq`, 입력 파일 storage path 4개, backend callback URL을 전달한다. 역할별 경로 인자는 `--demand-excel-path`, `--supply-excel-path`, `--trade-excel-path`, `--output-excel-path`이며 마지막 인자도 실행 전에 소비하는 input workbook이다. callback URL은 `--callback-url` Job arg로 전달하며, run_id를 포함한 전체 URL을 backend가 생성해 주입한다. `run_seq`는 pod가 실행 결과 파일을 `tcm_filel`에 INSERT할 때 사용한다.
 - Job 생성 요청 성공은 모델 실행 완료가 아니라 dispatch 접수 성공으로만 판단한다.
 - Job 생성 요청이 실패하면 execution/case 상태를 `FAILED` 로 전환하고 클라이언트에는 실패 응답을 반환한다.
 - pod 내부 Python 실행이 완료되거나 실패하면 pod 또는 실행 프로세스가 backend callback API를 호출해 terminal 상태를 통보한다.
@@ -236,20 +236,20 @@ WHERE case_id = :case_id
 - `tcm_filel.file_rel_obj_dstg_no` 가 `INT UNSIGNED` 이므로 `tmd_mdl_scnrcasem.case_id` 도 `INT UNSIGNED` 로 맞추는 안을 기본으로 둔다.
 - `SCNRCASE` 코드는 `file_rel_obj_spt_cd` 공통코드에 등록해야 한다.
 - 2026-05-19 확인 기준으로 target 공통코드에는 `SCNRCASE` 중복 등록이 없다.
-- DB-backed `createCase()` 구현에서는 공용 `FileService`의 기본 `TEMP/0` 임시 업로드 흐름을 표준 경로로 사용하지 않는다. case row 생성으로 `case_id`를 먼저 확보한 뒤, 업로드 파일 3개를 `SCNRCASE + case_id` relation으로 직접 저장하는 전용 업로드 메서드를 사용한다.
-- 업로드 3개는 하나의 case aggregate를 구성하므로 all-or-nothing으로 처리한다. 3개 중 1개라도 실패하면 API 전체를 실패로 보고, 이미 성공한 업로드 분은 service 계층이 보상 삭제를 호출해 정리한다.
+- DB-backed `createCase()` 구현에서는 공용 `FileService`의 기본 `TEMP/0` 임시 업로드 흐름을 표준 경로로 사용하지 않는다. case row 생성으로 `case_id`를 먼저 확보한 뒤, 업로드 파일 4개를 `SCNRCASE + case_id` relation으로 직접 저장하는 전용 업로드 메서드를 사용한다.
+- 업로드 4개는 하나의 case aggregate를 구성하므로 all-or-nothing으로 처리한다. 4개 중 1개라도 실패하면 API 전체를 실패로 보고, 이미 성공한 업로드 분은 service 계층이 보상 삭제를 호출해 정리한다.
 - 보상 삭제 orchestration 책임은 `createCase()` application service에 둔다. `FileService`는 relation-aware upload/delete primitive만 제공하고, 어떤 업로드를 되돌릴지 판단하는 aggregate 문맥은 갖지 않는다.
 
 ## Backend Workflow
 
 ### Stage 1. 업로드
 
-1. 사용자가 파일 3개와 제목/설명을 입력한다.
-2. backend는 파일 3개의 파일명을 검증한다. `DEMAND`, `SUPPLY`, `TRADE` 키워드가 각각 정확히 1개씩 포함되어야 한다. 키워드 비교는 대소문자 무관. 조건 불충족 시 `400` 반환.
+1. 사용자가 파일 4개와 제목/설명을 입력한다.
+2. backend는 파일 4개의 파일명을 검증한다. `DEMAND`, `SUPPLY`, `TRADE`, `OUTPUT` 키워드가 각각 정확히 1개씩 포함되어야 한다. 키워드 비교는 대소문자 무관. 조건 불충족 시 `400` 반환.
 3. backend는 필요 시 파일 복호화를 수행한다.
 4. backend는 `tmd_mdl_scnrcasem` 에 `PENDING` case row를 먼저 생성해 `case_id`를 확보한다.
-5. 확보한 `case_id`를 사용해 파일 3개를 object storage와 `tcm_filel`에 업로드한다. 이때 각 file row는 생성 시점부터 `file_rel_obj_spt_cd = 'SCNRCASE'`, `file_rel_obj_dstg_no = case_id` 로 직접 저장한다.
-6. 파일 3개 중 하나라도 업로드 또는 `tcm_filel` 저장에 실패하면 API 전체를 실패로 처리한다. 이미 성공한 업로드가 있으면 `createCase()` service가 성공분 file primitive를 호출해 보상 삭제를 수행한 뒤 예외를 재던진다.
+5. 확보한 `case_id`를 사용해 파일 4개를 object storage와 `tcm_filel`에 업로드한다. 이때 각 file row는 생성 시점부터 `file_rel_obj_spt_cd = 'SCNRCASE'`, `file_rel_obj_dstg_no = case_id` 로 직접 저장한다.
+6. 파일 4개 중 하나라도 업로드 또는 `tcm_filel` 저장에 실패하면 API 전체를 실패로 처리한다. 이미 성공한 업로드가 있으면 `createCase()` service가 성공분 file primitive를 호출해 보상 삭제를 수행한 뒤 예외를 재던진다.
 7. 생성 직후 case 상태는 `PENDING` 이다.
 
 ### Stage 2. 실행 요청
@@ -262,7 +262,7 @@ WHERE case_id = :case_id
    - update 값: `case_stat_cd = 'RUNNING'`, `last_run_id = :run_id`
 5. affected row count가 `0` 이면 case 없음, 이미 `RUNNING`, 또는 재실행할 수 없는 `COMPLETED` 상태이므로 `caseId` 단독 재조회 후 `404` 또는 `409` 로 분기한다.
 6. affected row count가 `1` 이면 해당 요청이 실행을 선점한 것이므로 `tmd_mdl_scnrcaseh` 에 `RUNNING` 상태 row를 생성한다.
-7. `tcm_filel` 에서 case에 연결된 파일 정보를 조회하고, 파일명의 `DEMAND`/`SUPPLY`/`TRADE` 키워드로 각 파일 경로를 매핑한다.
+7. `tcm_filel` 에서 case에 연결된 파일 정보를 조회하고, 파일명의 `DEMAND`/`SUPPLY`/`TRADE`/`OUTPUT` 키워드로 각 파일 경로를 매핑한다. 네 경로 중 하나라도 없으면 Job을 생성하지 않고 실행 준비 실패로 처리한다.
 8. Kubernetes Job을 생성한다. Job pod의 기본 실행 command는 아래와 같다.
    ```
    python engine/run_all_parallel.py \
@@ -271,11 +271,12 @@ WHERE case_id = :case_id
      --demand-excel-path {demand 파일 경로} \
      --supply-excel-path {supply 파일 경로} \
      --trade-excel-path {trade 파일 경로} \
+     --output-excel-path {output 입력 파일 경로} \
      --callback-url {backend_host}/api/v1/mi/fundamental-model/runs/{run_id}/callback
    ```
    - callback URL은 `--callback-url` arg로 전달하며, backend가 `run_id`를 포함한 전체 URL을 생성해 Job 생성 시점에 주입한다.
    - `--run-seq`는 `tmd_mdl_scnrcaseh.run_seq` 값이다. pod가 실행 완료 후 output 파일을 S3에 업로드하고 `tcm_filel`에 직접 INSERT할 때 `file_rel_obj_spt_cd = 'SCNRCASEH'`, `file_rel_obj_dstg_no = run_seq`로 사용한다. pod는 이미 DB 접근 권한을 가지며, arg로 받아 추가 조회 없이 사용한다.
-   - 실행 중 생성되는 중간파일도 같은 `--run-seq`를 `file_rel_obj_dstg_no`로 사용하되 `file_rel_obj_spt_cd = 'SCNRCASEHI'`로 INSERT해 output과 구분한다 (2026-09-07). 추가 Job arg는 필요하지 않다. pod INSERT 필수 컬럼 계약은 [mi-fundamental-model-intermediate-file-design.md](mi-fundamental-model-intermediate-file-design.md) 가 canonical이다.
+   - 실행 중 생성되는 중간파일과 Trade Flow 결과파일도 같은 `--run-seq`를 `file_rel_obj_dstg_no`로 사용하되 각각 `file_rel_obj_spt_cd = 'SCNRCASEHI'`, `'SCNRCASEHTF'`로 INSERT해 output과 구분한다. 추가 Job arg는 필요하지 않다. pod INSERT 필수 컬럼 계약은 [mi-fundamental-model-intermediate-file-design.md](mi-fundamental-model-intermediate-file-design.md) 가 canonical이다.
    - 모델 이미지는 모델팀이 Dockerfile 기반으로 제공하며, 위 스크립트, 실행 의존성, backend callback 호출 로직을 포함해야 한다.
    - pod stdout/stderr는 Kubernetes log로 남기며 backend application log 직접 소비는 필수 전제가 아니다.
 8. Job 생성 요청에 성공하면 backend는 클라이언트에 `202 Accepted` 수준의 비동기 시작 응답을 반환한다.
@@ -295,16 +296,16 @@ WHERE case_id = :case_id
 1. 프론트는 canonical 1차 mock API 기준으로 `caseId` 상태 조회 endpoint를 폴링한다.
 2. backend는 case 최신 상태와 latest run projection을 조회해 상태/시작/종료 시각을 반환한다.
 3. 결과 파일 자체는 model pod가 S3/object storage에 저장/관리한다.
-4. backend는 case/run 테이블에 결과 파일 download URL 또는 별도 pointer/reference 컬럼을 저장하지 않는다. output/intermediate 파일은 `tcm_filel` 관계로 조회하며 상세 응답 metadata 계약은 feature spec을 따른다. 결과 데이터 조회(Volumes/Price 수치 데이터)는 `GET /cases/{caseId}/volumes`, `GET /cases/{caseId}/price` API로 분리되어 제공한다. 1차 mock 단계에서는 json seed 기반 고정 데이터를 반환했으나, 2026-06-15 real DB 구현 완료로 현재는 `mi-fundamental-model-output-result-persistence-design.md`의 테이블에서 조회한다.
+4. backend는 case/run 테이블에 결과 파일 download URL 또는 별도 pointer/reference 컬럼을 저장하지 않는다. output/intermediate/tradeOutput 파일은 `tcm_filel` 관계로 조회하며 상세 응답 metadata 계약은 feature spec을 따른다. 결과 데이터 조회(Volumes/Price 수치 데이터)는 `GET /cases/{caseId}/volumes`, `GET /cases/{caseId}/price` API로 분리되어 제공한다. 1차 mock 단계에서는 json seed 기반 고정 데이터를 반환했으나, 2026-06-15 real DB 구현 완료로 현재는 `mi-fundamental-model-output-result-persistence-design.md`의 테이블에서 조회한다.
 5. `runId` 단독 조회는 후속 이력 조회 계약에서 별도로 검토한다.
 
 ### Stage 4a. 상세 조회
 
 1. 프론트가 case 상세 화면에 진입하면 `caseId` 기준 상세 조회 endpoint를 호출한다.
-2. backend는 active `exec_type_cd IN ('INDEPENDENT', 'MI_BASE')` case의 metadata, `execType`, 업로드 파일 metadata, latest run projection을 한 번에 반환한다. 파일 metadata는 input(`SCNRCASE + case_id`), output(`SCNRCASEH + run_seq`), 중간파일(`SCNRCASEHI + run_seq`)로 구분해 반환하며, output/중간파일은 최신 실행의 `run_seq` 기준이다. 응답 필드 계약은 feature spec이 canonical이다.
+2. backend는 active `exec_type_cd IN ('INDEPENDENT', 'MI_BASE')` case의 metadata, `execType`, 업로드 파일 metadata, latest run projection을 한 번에 반환한다. 파일 metadata는 input(`SCNRCASE + case_id`), output(`SCNRCASEH + run_seq`), 중간파일(`SCNRCASEHI + run_seq`), Trade Flow 결과파일(`SCNRCASEHTF + run_seq`)로 구분해 반환하며, 세 실행 파생파일 목록은 최신 실행의 동일한 `run_seq` 기준이다. 응답 필드 계약은 feature spec이 canonical이다.
 3. 상세 조회는 화면 rendering용 aggregate snapshot이다. FE polling loop는 `GET /cases/{caseId}/status`를 사용하고, 상세 조회를 polling용 API로 반복 호출하지 않는다.
 4. 상세 조회는 full run history를 반환하지 않는다. case의 전체 실행 이력은 별도 runs API가 정의될 때까지 이 workflow의 phase-1 범위에 포함하지 않는다.
-5. 상세 조회는 result payload와 download URL/path를 반환하지 않는다. input은 파일명만 반환하고 output/intermediate는 기존 공통 File API 요청용 `fileNo`, `fileNm`, `fileSize`를 반환한다. 필드 계약은 feature spec이 canonical이다. 결과 수치 데이터(Volumes/Price)는 `GET /cases/{caseId}/volumes`, `GET /cases/{caseId}/price` API로 분리 제공한다.
+5. 상세 조회는 result payload와 download URL/path를 반환하지 않는다. input은 파일명만 반환하고 output/intermediate/tradeOutput은 기존 공통 File API 요청용 `fileNo`, `fileNm`, `fileSize`를 반환한다. 필드 계약은 feature spec이 canonical이다. 결과 수치 데이터(Volumes/Price)는 `GET /cases/{caseId}/volumes`, `GET /cases/{caseId}/price` API로 분리 제공한다.
 6. phase-1 mock 구현은 기존 in-memory case aggregate와 run store의 `latestRunId` pointer를 사용해 이 projection을 만들었다. real DB 구현 완료 후에는 master case, `tcm_filel`, latest execution row를 같은 ownership/permission scope에서 조회한다.
 7. `SCENARIO`와 soft-deleted case는 active resource가 아니므로 상세 조회에서 `404 RSC_NOT_FOUND`로 처리한다.
 8. current `MI_BASE` 상세에서는 결과 탭을 노출한다. 상태·Volumes filter-options·Volumes·Trade Flows·Price read는 active `INDEPENDENT | MI_BASE`를 허용하고 기존 result query/response 계약을 그대로 사용한다.
@@ -368,11 +369,11 @@ affected row count가 `0`이면 case 없음, ownership 불일치, 또는 이미 
 
 1. 권한 있는 사용자가 완료된 독립실행 case를 MI Base로 지정한다.
 2. backend는 대상이 active이고 `scnr_id IS NULL`, `COMPLETED`, `INDEPENDENT`인지 확인한다. 단, 현재 MI Base와 같은 `caseId`의 반복 요청은 `MI_BASE` type을 멱등 예외로 허용하고 나머지 적격성을 다시 확인한 뒤 성공으로 처리한다.
-3. 대상의 `last_run_id`와 completed run history 정합, `SCNRCASE + caseId` input 3개의 `DEMAND`/`SUPPLY`/`TRADE` 역할, MI Base 그래프에 필요한 Price 결과 존재를 확인한다. 하나라도 실패하면 기존 MI Base를 변경하지 않는다.
+3. 대상의 `last_run_id`와 completed run history 정합, `SCNRCASE + caseId` input 4개의 `DEMAND`/`SUPPLY`/`TRADE`/`OUTPUT` 역할, MI Base 그래프에 필요한 Price 결과 존재를 확인한다. 하나라도 실패하면 기존 MI Base를 변경하지 않는다.
 4. 같은 transaction에서 current MI Base를 write lock으로 조회한다. 기존 current type을 `INDEPENDENT`로 되돌린 UPDATE를 DB에 flush한 뒤 대상 type을 `MI_BASE`로 변경한다. generated unique가 있는 상태에서 UPDATE 순서가 뒤집히지 않도록 JPA 자동 flush 순서에 맡기지 않는다. case/run/file/result 식별자와 데이터는 보존한다.
 5. `exec_type_cd`와 `del_yn`에서 파생되는 generated `actv_base_yn` unique constraint가 application lock 밖의 경합에서도 active `MI_BASE` 2건 생성을 막는다. application은 helper 값을 직접 쓰지 않는다. unique 충돌은 현재 옵션을 재조회할 수 있는 `409`로 매핑한다.
    current가 없는 상태에서 서로 다른 두 대상을 최초 지정하면 공통 current row lock이 없으므로 한 요청이 unique 충돌로 `409`가 될 수 있다. current가 있는 교체 경합은 공통 current row lock으로 직렬화한다.
-6. 교체 commit 이후 시작되는 수급모델 input 생성은 대상 case의 input 3개를 기준으로 한다. 이미 생성·접수·완료된 실행에는 소급 적용하지 않는다.
+6. 교체 commit 이후 시작되는 수급모델 input 생성은 대상 case의 input 4개를 기준으로 한다. 이미 생성·접수·완료된 실행에는 소급 적용하지 않는다.
 7. 현재 MI Base가 없을 때는 기존 플랫폼 기본 template을 사용한다. 현재 MI Base가 있는데 해당 input을 읽을 수 없으면 이전/default 기준으로 자동 fallback하지 않고 실행 준비를 실패시킨다.
 8. 별도 지정 해제 API는 제공하지 않는다. current 변경은 새 완료 `INDEPENDENT` case 지정으로만 수행하고 이전 current는 같은 transaction에서 `INDEPENDENT`로 복귀한다.
 
@@ -463,9 +464,9 @@ sequenceDiagram
 
     Note over User,POD: 1단계 - 업로드
 
-    User->>FE: 파일 3개 + 제목 + 설명 입력
+    User->>FE: 파일 4개 + 제목 + 설명 입력
     FE->>BE: POST /upload
-    BE->>BE: 파일명 검증 (DEMAND/SUPPLY/TRADE)
+    BE->>BE: 파일명 검증 (DEMAND/SUPPLY/TRADE/OUTPUT)
     BE->>BE: 파일 복호화
     BE->>DB: case INSERT (PENDING)
     DB-->>BE: case_id 반환
@@ -485,8 +486,8 @@ sequenceDiagram
         BE-->>FE: 404 또는 409
     else affected row = 1
         BE->>DB: execution INSERT (RUNNING)
-        BE->>DB: tcm_filel 조회 + DEMAND/SUPPLY/TRADE 매핑
-        BE->>K8S: Job 생성 요청 (run_id + 파일 경로 3개 + callback URL)
+        BE->>DB: tcm_filel 조회 + DEMAND/SUPPLY/TRADE/OUTPUT 매핑
+        BE->>K8S: Job 생성 요청 (run_id + 파일 경로 4개 + callback URL)
         K8S-->>BE: Job 생성 접수
         BE-->>FE: run_id 반환
         K8S->>POD: 모델 이미지 pod 실행
@@ -548,9 +549,10 @@ workflow 구현자는 아래 역할/연결 규칙만 참고하고, 물리 스키
 
 | 구분 | `file_rel_obj_spt_cd` | `file_rel_obj_dstg_no` | 설명 |
 |---|---|---|---|
-| 업로드 입력 파일 | `SCNRCASE` | `tmd_mdl_scnrcasem.case_id` | DEMAND/SUPPLY/TRADE 파일 3개 |
+| 업로드 입력 파일 | `SCNRCASE` | `tmd_mdl_scnrcasem.case_id` | DEMAND/SUPPLY/TRADE/OUTPUT 파일 4개 |
 | 모델 실행 output 파일 | `SCNRCASEH` | `tmd_mdl_scnrcaseh.run_seq` | run 단위 결과 파일, pod/python script가 직접 insert |
 | 모델 실행 중간파일 | `SCNRCASEHI` | `tmd_mdl_scnrcaseh.run_seq` | run 단위 중간 산출물 n개, pod/python script가 직접 insert (2026-09-07 추가) |
+| Trade Flow 결과파일 | `SCNRCASEHTF` | `tmd_mdl_scnrcaseh.run_seq` | run 단위 Trade Flow 결과파일, pod/python script가 직접 insert (2026-09-17 추가) |
 
 ```sql
 -- 업로드 입력 파일 조회
@@ -573,6 +575,13 @@ FROM tcm_filel
 WHERE del_yn = 'N'
   AND file_rel_obj_spt_cd = 'SCNRCASEHI'
   AND file_rel_obj_dstg_no = :run_seq;
+
+-- 특정 run의 Trade Flow 결과파일 조회
+SELECT *
+FROM tcm_filel
+WHERE del_yn = 'N'
+  AND file_rel_obj_spt_cd = 'SCNRCASEHTF'
+  AND file_rel_obj_dstg_no = :run_seq;
 ```
 
 - output 파일은 model pod가 S3에 저장한 뒤 pod/python script가 `tcm_filel`에 직접 insert한다.
@@ -580,6 +589,7 @@ WHERE del_yn = 'N'
 - output 파일은 `run_seq`에 귀속되므로 실패 재시도 시 이전 run의 output 파일과 독립적으로 존재한다. soft-delete 없이 run별로 결과 파일 추적이 가능하다.
 - 중간파일은 output과 같은 `run_seq`에 귀속되므로 관계 코드(`SCNRCASEHI`)만으로 구분한다. backend와 pod가 서로 다른 문자열을 쓰면 오류 없이 목록만 비어 보이므로 연동 시 리터럴 일치를 확인한다.
 - 중간파일은 개수를 고정하지 않는다(n개). 실행 중 순차 업로드를 허용하므로 `RUNNING` 중 상세 조회에 부분 목록이 보일 수 있다.
+- Trade Flow 결과파일도 output/intermediate와 같은 `run_seq`에 귀속되고 관계 코드(`SCNRCASEHTF`)만 다르다. 상세 응답에서는 `files.tradeOutput` 별도 배열로 반환한다.
 - `run_seq`는 `file_rel_obj_dstg_no`(`INT UNSIGNED` 계열) 저장 요건을 충족하기 위한 surrogate key다. `run_id`(`VARCHAR(20)`)는 model pod 연동 키로 그대로 유지한다.
 
 공통코드 등록 초안:
@@ -606,14 +616,14 @@ VALUES (
 );
 ```
 
-중간파일 코드(`SCNRCASEHI`)의 등록/verify/rollback SQL은 canonical DDL draft가 소유한다. 이 문서에 중복 정의하지 않는다.
+중간파일 코드(`SCNRCASEHI`)와 Trade Flow 결과파일 코드(`SCNRCASEHTF`)의 등록/verify/rollback SQL은 canonical DDL draft가 소유한다. `SCNRCASEHTF`는 사용자 확인 기준 모든 대상 DB에 적용됐고 `cd_rnk = 8` 중복이 없다. 이 문서에 SQL을 중복 정의하지 않는다.
 
 ## Validation / 운영 정책 초안
 
 | 구분 | 규칙 | 메모 |
 |---|---|---|
-| 필수 파일 수 | 현재 UI는 3개 기준 | 파일 수 검증은 `tcm_filel` 연결 row 수로 판단 |
-| 파일명 규칙 | `DEMAND`, `SUPPLY`, `TRADE` 키워드 각 1개씩 포함 | 업로드 시점 검증. 대소문자 무관(`toUpperCase` 비교). 조건 불충족 시 `400` 반환 |
+| 필수 파일 수 | 현재 UI는 4개 기준 | 파일 수 검증은 `tcm_filel` 연결 row 수와 역할별 정확히 1개로 판단 |
+| 파일명 규칙 | `DEMAND`, `SUPPLY`, `TRADE`, `OUTPUT` 키워드 각 1개씩 포함 | 업로드 시점 검증. 대소문자 무관(`toUpperCase` 비교). 조건 불충족 시 `400` 반환 |
 | 파일 저장 | `tcm_filel` 재사용 | `file_rel_obj_spt_cd = 'SCNRCASE'`, `file_rel_obj_dstg_no = case_id` |
 | 중복 실행 | 동일 case의 `RUNNING` 차단 + 동일 scenario의 active 실행 1건 제한 | case 단위: conditional master update + affected-row check. scenario 단위(수급모델): `actv_scnr_id` generated column + `tmd_mdl_scnrcasem_uq01 UNIQUE (actv_scnr_id)` 로 INSERT 충돌 시 409 매핑. `last_run_id` 는 차단 조건이 아닌 latest pointer 용도다 |
 | 상태 정합성 | execution 완료/실패 시 case 최신 상태도 동기화 | callback 대상이 latest/active execution (`last_run_id = :run_id`) 일 때만 case 최신 상태 갱신 |
@@ -656,9 +666,10 @@ mi:
 
 ### Closed Decisions
 
-- 결과 payload/pointer 저장 (2026-05-19, 2026-09-15 metadata 계약 동기화): `req_param_json`, `rslt_ref_json` 컬럼은 도입하지 않는다. 요청 정보는 case metadata + `tcm_filel`, 결과 payload/파일은 model pod가 DB와 S3/object storage에 저장·관리한다. 상세 응답은 `tcm_filel`의 output/intermediate 다운로드 metadata를 반환하며 필드 계약은 feature spec이 canonical이다.
+- 결과 payload/pointer 저장 (2026-05-19, 2026-09-17 metadata 계약 동기화): `req_param_json`, `rslt_ref_json` 컬럼은 도입하지 않는다. 요청 정보는 case metadata + `tcm_filel`, 결과 payload/파일은 model pod가 DB와 S3/object storage에 저장·관리한다. 상세 응답은 `tcm_filel`의 output/intermediate/tradeOutput 다운로드 metadata를 반환하며 필드 계약은 feature spec이 canonical이다.
 - run_id format (2026-05-21): backend 생성 포맷은 `yyyymmdd_hhmmss_XXXX` 로 확정한다. `tmd_mdl_scnrcaseh.run_id` 는 `VARCHAR(20) PRIMARY KEY` 로 사용하며, `tmd_mdl_scnrcasem.last_run_id` 는 `VARCHAR(20)` 기준으로 설계한다.
 - run_seq surrogate key (2026-05-22, type fixed 2026-06-11): `tmd_mdl_scnrcaseh`에 `run_seq INT UNSIGNED AUTO_INCREMENT UNIQUE` 를 추가한다. `file_rel_obj_dstg_no`가 `INT UNSIGNED` 계열이므로 `run_id`(`VARCHAR(20)`)를 직접 저장할 수 없는 제약을 해결하기 위한 surrogate key다. output 파일은 `SCNRCASEH` / `run_seq` 로 `tcm_filel`에 연결한다. `run_id`는 model pod 연동 키로 그대로 유지한다. Java/JPA는 insert 직후 엔티티 필드 자동 반영을 가정하지 않고, flush 후 `run_id` 기준으로 `run_seq`를 재조회해 Kubernetes Job arg로 사용한다. 이전 "surrogate key를 두지 않는다" 결정과 `BIGINT UNSIGNED` 후보는 superseded된다.
+- Trade Flow 결과파일 연결 (2026-09-17): `SCNRCASEHTF + run_seq`로 `tcm_filel`에 연결하고, 상세 응답 `files.tradeOutput`으로 output/intermediate와 분리한다. 추가 table/column/index와 Job arg는 필요하지 않다.
 - latest execution pointer (2026-05-19, 2026-05-21 length updated): `tmd_mdl_scnrcasem.last_run_id VARCHAR(20) NULL` 컬럼으로 도입. `tmd_mdl_scnrcaseh.run_id` 에 대한 logical reference 이며 물리 FK 는 걸지 않고 애플리케이션이 갱신 순서와 invariant 를 보장한다.
 - `run_id` callback 전달 방식 (2026-05-21): callback URL path에 `runId` 를 포함하는 방식으로 확정 (`POST /api/v1/mi/fundamental-model/runs/{runId}/callback`). payload에 별도로 포함하지 않는다.
 - 실행 방식 (2026-05-21): 외부 model API 호출에서 Python `ProcessBuilder` 직접 실행으로 변경. 이 결정은 2026-05-22 k8s Job 방식으로 superseded 되었다.

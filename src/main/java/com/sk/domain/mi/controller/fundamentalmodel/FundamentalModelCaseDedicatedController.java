@@ -44,9 +44,19 @@ public class FundamentalModelCaseDedicatedController {
     @ApiOrder(2)
     @Operation(
         summary = "MI Fundamental Model Scenario Case 업로드 API",
-        description = "파일 3개와 metadata를 업로드해 PENDING 상태의 Fundamental Model case를 생성합니다."
+        description = "`DEMAND`, `SUPPLY`, `TRADE`, `OUTPUT` 입력 파일을 각각 정확히 1개씩 업로드해 "
+            + "PENDING 상태의 Fundamental Model case를 생성합니다. `OUTPUT`은 실행 결과가 아니라 모델 실행 입력입니다. "
+            + "파일 하나라도 업로드에 실패하면 먼저 업로드된 파일을 보상 삭제하고 Case 생성 요청 전체를 실패 처리합니다."
     )
     @ApiResponse(responseCode = "201", description = "생성 성공")
+    @ApiResponse(
+        responseCode = "400",
+        description = "REQ_INVALID_PARAMETER: 파일이 정확히 4개가 아니거나 입력 역할이 누락·중복됨; FILE_INVALID: 빈 파일이 포함됨",
+        content = @Content(
+            mediaType = MediaType.APPLICATION_JSON_VALUE,
+            schema = @Schema(implementation = BaseResponse.class)
+        )
+    )
     @PostMapping(consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     @RequiredPermissionRules(rules = {
         @PermissionRule(role = Role.USER, conditions = {PermissionCondition.SKGAS_COMPANY_USER_ONLY}),
@@ -56,7 +66,8 @@ public class FundamentalModelCaseDedicatedController {
         @Parameter(description = "Scenario Case 제목", example = "JKM price upside case") @RequestParam("title") String title,
         @Parameter(description = "Scenario Case 설명", example = "May demand shock scenario case")
         @RequestParam(value = "description", required = false) String description,
-        @Parameter(description = "모델 실행 입력 파일 3개") @RequestPart("files") List<MultipartFile> files
+        @Parameter(description = "모델 실행 입력 파일 4개. 파일명에 DEMAND, SUPPLY, TRADE, OUTPUT 역할을 각각 정확히 1개 포함")
+        @RequestPart("files") List<MultipartFile> files
     ) {
         FundamentalModelCaseCreateRes response = fundamentalModelCaseService.createCase(
             title,
@@ -71,9 +82,18 @@ public class FundamentalModelCaseDedicatedController {
         summary = "MI Fundamental Model Scenario Case 실행 요청 API",
         description = "active `INDEPENDENT`의 PENDING 상태 case를 최초 실행하거나 FAILED 상태의 모델 호출을 재시도합니다. "
             + "대상 case를 RUNNING 상태로 전이하고 새 runId를 발급하며, COMPLETED 상태의 case는 재실행할 수 없습니다. "
+            + "Case의 DEMAND, SUPPLY, TRADE, OUTPUT 입력 경로를 모델 Job에 전달하며, 하나라도 없으면 Job을 생성하지 않습니다. "
             + "`MI_BASE | SCENARIO`는 resource hiding 규칙에 따라 조회되지 않습니다."
     )
     @ApiResponse(responseCode = "202", description = "비동기 실행 접수 성공")
+    @ApiResponse(
+        responseCode = "400",
+        description = "BIZ_RULE_VIOLATION: DEMAND, SUPPLY, TRADE, OUTPUT input storage path 중 하나 이상이 누락되어 Job을 생성할 수 없음",
+        content = @Content(
+            mediaType = MediaType.APPLICATION_JSON_VALUE,
+            schema = @Schema(implementation = BaseResponse.class)
+        )
+    )
     @ApiResponse(
         responseCode = "404",
         description = "RSC_NOT_FOUND: active INDEPENDENT가 아니거나 소유하지 않은 case",

@@ -6,7 +6,6 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.sk.domain.mi.dto.response.fundamentalmodel.FundamentalModelCaseFilesRes;
 import com.sk.domain.mi.dto.response.fundamentalmodel.FundamentalModelDownloadFileRes;
-import com.sk.domain.mi.dto.response.fundamentalmodel.FundamentalModelFileNameRes;
 import io.swagger.v3.core.converter.ModelConverters;
 import io.swagger.v3.oas.models.media.Schema;
 import java.util.List;
@@ -17,9 +16,9 @@ class FundamentalModelDownloadFileResContractTest {
     private final ObjectMapper objectMapper = new ObjectMapper();
 
     @Test
-    void serializesRoleSpecificCaseFileMetadata() {
+    void serializesDownloadMetadataForAllCaseFileRoles() {
         FundamentalModelCaseFilesRes response = new FundamentalModelCaseFilesRes(
-            List.of(new FundamentalModelFileNameRes("input_1.xlsx")),
+            List.of(new FundamentalModelDownloadFileRes(1001L, "input_1.xlsx", 12345L)),
             List.of(new FundamentalModelDownloadFileRes(2001L, "output.xlsx", 54321L)),
             List.of(new FundamentalModelDownloadFileRes(3001L, "step1_demand_curve.csv", 1234L)),
             List.of(new FundamentalModelDownloadFileRes(4001L, "trade_flow_result.xlsx", 67890L))
@@ -27,7 +26,7 @@ class FundamentalModelDownloadFileResContractTest {
 
         JsonNode json = objectMapper.valueToTree(response);
 
-        assertFileNameOnly(json.path("input").path(0), "input_1.xlsx");
+        assertDownloadMetadata(json.path("input").path(0), 1001L, "input_1.xlsx", 12345L);
         assertDownloadMetadata(json.path("output").path(0), 2001L, "output.xlsx", 54321L);
         assertDownloadMetadata(
             json.path("intermediate").path(0),
@@ -44,17 +43,11 @@ class FundamentalModelDownloadFileResContractTest {
     }
 
     @Test
-    void exposesRoleSpecificFileSchemas() {
-        var fileNameSchemas = ModelConverters.getInstance()
-            .read(FundamentalModelFileNameRes.class);
-        Schema<?> fileNameSchema = fileNameSchemas.get("FundamentalModelFileNameRes");
+    void exposesDownloadFileSchema() {
         var schemas = ModelConverters.getInstance()
             .read(FundamentalModelDownloadFileRes.class);
         Schema<?> schema = schemas.get("FundamentalModelDownloadFileRes");
 
-        assertThat(fileNameSchemas).containsKey("FundamentalModelFileNameRes");
-        assertThat(fileNameSchema.getProperties())
-            .containsOnlyKeys("fileNm");
         assertThat(schemas).containsKey("FundamentalModelDownloadFileRes");
         assertThat(schema.getProperties())
             .containsOnlyKeys("fileNo", "fileNm", "fileSize");
@@ -75,7 +68,7 @@ class FundamentalModelDownloadFileResContractTest {
             .containsKeys("input", "output", "intermediate", "tradeOutput");
         assertThat(schema.getRequired()).contains("tradeOutput");
         assertThat(inputSchema.getItems().get$ref())
-            .isEqualTo("#/components/schemas/FundamentalModelFileNameRes");
+            .isEqualTo("#/components/schemas/FundamentalModelDownloadFileRes");
         assertThat(outputSchema.getItems().get$ref())
             .isEqualTo("#/components/schemas/FundamentalModelDownloadFileRes");
         assertThat(intermediateSchema.getItems().get$ref())
@@ -84,13 +77,6 @@ class FundamentalModelDownloadFileResContractTest {
             .isEqualTo("#/components/schemas/FundamentalModelDownloadFileRes");
         assertThat(tradeOutputSchema.getDescription())
             .contains("Trade Flow", "같은 run_seq", "빈 배열");
-    }
-
-    private static void assertFileNameOnly(JsonNode file, String expectedFileName) {
-        assertThat(file.path("fileNm").asText()).isEqualTo(expectedFileName);
-        assertThat(file.has("fileNo")).isFalse();
-        assertThat(file.has("fileSize")).isFalse();
-        assertThat(file.size()).isEqualTo(1);
     }
 
     private static void assertDownloadMetadata(

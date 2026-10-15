@@ -61,6 +61,7 @@ class KubernetesJobLifecycleTest {
         service.createFundamentalModelJob(FundamentalModelJobArgs.builder()
             .caseId(1L).scenarioId(2L).runId(runId).runSeq(3L)
             .demandExcelPath("d").supplyExcelPath("s").tradeExcelPath("t")
+            .outputExcelPath("o")
             .callbackUrl("http://callback").build());
 
         ArgumentCaptor<Job> captor = ArgumentCaptor.forClass(Job.class);
@@ -70,6 +71,27 @@ class KubernetesJobLifecycleTest {
         assertThat(job.getMetadata().getLabels()).containsEntry("mi.sk.com/run-id", runId);
         assertThat(job.getMetadata().getAnnotations()).containsEntry("mi.sk.com/original-run-id", runId);
         assertThat(job.getSpec().getTtlSecondsAfterFinished()).isEqualTo(3600);
+        assertThat(job.getSpec().getTemplate().getSpec().getContainers().get(0).getArgs())
+            .containsSubsequence(
+                "--trade-excel-path", "t",
+                "--output-excel-path", "o",
+                "--callback-url", "http://callback"
+            );
+    }
+
+    @Test
+    void createdJobOmitsOutputInputArgumentWhenSharedScenarioContractDoesNotProvideIt() {
+        given(namespacedJobs.resource(any(Job.class))).willReturn(resource);
+
+        service.createFundamentalModelJob(FundamentalModelJobArgs.builder()
+            .scenarioId(2L).runId("20260706_120000_A1B2").runSeq(3L)
+            .demandExcelPath("d").supplyExcelPath("s").tradeExcelPath("t")
+            .callbackUrl("http://callback").build());
+
+        ArgumentCaptor<Job> captor = ArgumentCaptor.forClass(Job.class);
+        then(namespacedJobs).should().resource(captor.capture());
+        assertThat(captor.getValue().getSpec().getTemplate().getSpec().getContainers().get(0).getArgs())
+            .doesNotContain("--output-excel-path");
     }
 
     @Test
