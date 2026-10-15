@@ -6,7 +6,7 @@
 - status: Review
 - owner: BE (platform)
 - created at: 2026-07-03
-- updated at: 2026-09-17
+- updated at: 2026-10-15
 - canonical for: frontend-facing API contract, Backend callback endpoint/minimum compatibility contract, proposed Agent integration questions
 - canonical design reference: `docs/design-docs/gas/mi-model-parameter-proposal-design.md`
 - price interpretation rerun reference: `docs/design-docs/gas/price-forecast-interpretation-domain-design.md`
@@ -26,7 +26,7 @@
   - `docs/design-docs/gas/mi-model-parameter-proposal-design.md`
   - `docs/conventions/source-of-truth-governance.md`
 - supersedes: 없음
-- last synced: 2026-09-17
+- last synced: 2026-10-13
 - open questions: 13절 및 duplicate-slot Agent payload의 A6/Excel 실행 좌표 호환성 참조
 - 2026-08-27 오류 계약 정정: 생성 `status=error`는 `REQUEST_FAILED → PROPOSAL_FAILED`로 처리한다(§5.2.1). `REQUEST_NO_CHANGES/PROPOSAL_NO_CHANGES`는 과거 데이터 읽기 호환만 유지한다. 운영 데이터/배포는 변경하지 않는다.
 - integration model: callback = 완료 신호. Backend가 Agent proposal 테이블을 read-only 직접 조회해 결과 서빙(proposal payload hash/snapshot 없음, Backend 상태 조건부 갱신 유지). 공유 DB read 및 read 권한은 확정(조회 가능). callback path `scenarioId`는 proposal identity가 아니라 현재 in-flight execution-preparation을 찾는 scope key다.
@@ -43,19 +43,28 @@ Frontend가 기존 Scenario의 기반 Event에 따라 두 가지 수급모델 �
 2. 팝업 진입 또는 SSE 완료 신호 수신 후 Scenario 기준 current-state 조회
 3. `values[].proposedValue`만 표에 표시하고 필요 시 수정
 4. 사용자 확정값으로 Agent confirmation
-5. Backend 원본 Excel 3개 생성·병합
+5. Backend 실행 input 4개 준비(세 역할만 병합, OUTPUT 원본 포함)
 6. 기존 Scenario Model Execution 비동기 실행 접수
 
 이 흐름에서 사용자는 Excel 파일을 업로드하지 않는다.
 
 ### B. 파라미터 제안 비대상 Event 기반 Scenario
 
-1. 사용자가 기존 방식대로 `DEMAND`/`SUPPLY`/`TRADE` Excel 파일 3개를 업로드한다.
+1. 사용자가 기존 방식대로 `DEMAND`/`SUPPLY`/`TRADE`/`OUTPUT` Excel 파일 4개를 업로드한다.
 2. 기존 Scenario Model Execution 비동기 실행을 접수한다.
 
 기존 multipart 파일 업로드 실행 계약은 계속 지원하며 제거·deprecated하지 않는다.
 
 두 실행 흐름 모두 최종 실행 등록 transaction에서 해당 시나리오의 active 가격전망해석 row를 조회한다. row가 있으면 soft delete한 뒤 같은 transaction에서 Case/Run을 생성하며, 없으면 기존 실행 등록을 그대로 진행한다. 이를 위한 별도 request/response field나 사전 확인 API는 추가하지 않는다.
+
+### C. 4파일 실행 계약 — 2026-10-07 사용자 확정, 2026-10-15 구현
+
+- A6 JSON 실행은 request 파라미터 구조를 유지한다. `modelTarget.modelFile`은 `DEMAND|SUPPLY|TRADE`만 허용하며 OUTPUT 제안을 받지 않는다. Backend가 준비하는 실행 input set은 네 역할이고 OUTPUT 원본 보존은 canonical domain §1A를 따른다.
+- 기존 multipart 실행의 `files`는 `DEMAND/SUPPLY/TRADE/OUTPUT` 각 1개, 총 4개를 요구한다. 상세 검증/오류는 Scenario Workbench feature spec F4를 따른다.
+- A4a `executionInputFiles`의 필수 role 집합과 순서는 `DEMAND/SUPPLY/TRADE/OUTPUT`이다. 정상 set은 `complete=true`와 4개 files이고, 누락 시 기존 HTTP 200 partial projection을 유지하며 OUTPUT도 `missingFileRoles` 판정에 포함한다. 제안 표시용 `modelFiles`와 실행 파일 목록을 혼동하지 않는다.
+- 두 mode의 Case 연결과 Job 전달도 네 역할을 요구한다. 한 역할이라도 준비/저장/경로 검증에 실패하면 정상 실행 set으로 처리하지 않는다.
+- 전환 전 3파일 실행(2026-10-13 사용자 결정): 4파일 cutover 전에 3파일 `SCENARIO` Case를 연결 실행이력·실행준비(`tmd_mi_model_execpreph`)·해당 시나리오의 active 가격전망해석과 함께 soft delete한다. 판별·pre-check·보존 범위는 canonical domain(model input design 규칙 36~38, parameter proposal design 규칙 32)을 따른다. 정리 후 A4a·A8/A9의 응답 계약은 바꾸지 않으며 남은 non-deleted row 기준으로 판정한다(§5.7).
+- 현재 Scenario 코드는 3파일이며 이 계약의 적용과 generated OpenAPI/원본 불변/누락 거절 검증은 미완료다. 과거 Change Log 및 날짜가 붙은 구현 slice는 당시 이력이다.
 
 ## 3. Canonical References
 
@@ -140,7 +149,7 @@ Agent `status`는 proposal 계산 상태이고 `callback_status`는 Agent→Back
 | `GET` | `/api/v1/mi/next-gen/scenarios/{scenarioId}/model-param-proposals/{modelParamProposalId}` | 상태 및 proposal 결과 조회 |
 | `GET` | `/api/v1/mi/next-gen/scenarios/{scenarioId}/model-param-proposals/stream` | proposal 완료/실패 SSE 신호 구독 |
 | `POST` | `/api/v1/mi/next-gen/scenarios/{scenarioId}/model-executions/from-parameters` (`application/json`) | 제안 대상: 파라미터 확정 후 Excel 생성·실행 접수 |
-| `POST` | `/api/v1/mi/next-gen/scenarios/{scenarioId}/model-executions` (`multipart/form-data`) | 비대상: 사용자 Excel 3개 업로드 후 기존 실행 접수 |
+| `POST` | `/api/v1/mi/next-gen/scenarios/{scenarioId}/model-executions` (`multipart/form-data`) | 비대상: 사용자 Excel 4개 업로드 후 기존 실행 접수 |
 | `GET` | `/api/v1/mi/next-gen/scenarios/{scenarioId}/model-executions/latest/model-param-proposal/confirmed-parameters` | 가장 최근 수급모델 실행과 연결된 proposal의 현재 확정 파라미터 조회 |
 | `GET` | `/api/v1/mi/next-gen/scenarios/{scenarioId}/model-executions/latest/model-param-proposal/proposed-parameters` | 가장 최근 수급모델 실행의 원 Agent 제안 파라미터 조회 |
 
@@ -176,7 +185,7 @@ callback path는 `{scenarioId}`를 경로에 둔다. `scenarioId`는 proposal id
 `inputMode`:
 
 - `PARAMETER_PROPOSAL`: 제안 생성/수정 UI 표시, JSON execution 사용
-- `FILE_UPLOAD`: 기존 파일 3개 업로드 UI 표시, multipart execution 사용
+- `FILE_UPLOAD`: 기존 파일 4개 업로드 UI 표시, multipart execution 사용
 
 - mode는 Backend가 `Scenario -> ScenarioGroup -> eventTypeL2Id` 관계로 도출한다.
 - FE request로 mode를 변경할 수 없다.
@@ -566,7 +575,8 @@ Response data examples:
     "files": [
       {"fileRole": "DEMAND", "fileNo": 991001, "fileNm": "DEMAND_88001.xlsx", "fileSize": 1048576},
       {"fileRole": "SUPPLY", "fileNo": 991002, "fileNm": "SUPPLY_88001.xlsx", "fileSize": 1048576},
-      {"fileRole": "TRADE", "fileNo": 991003, "fileNm": "TRADE_88001.xlsx", "fileSize": 1048576}
+      {"fileRole": "TRADE", "fileNo": 991003, "fileNm": "TRADE_88001.xlsx", "fileSize": 1048576},
+      {"fileRole": "OUTPUT", "fileNo": 991004, "fileNm": "OUTPUT_88001.xlsx", "fileSize": 1048576}
     ]
   },
   "modelFiles": [
@@ -969,9 +979,9 @@ Request:
 4. 같은 Scenario에 `RUNNING` Case가 없는지 기존 active-run guard로 확인
 5. Agent proposal 상태를 재조회한다. `PROPOSED`면 Agent confirmation API를 호출한다. `CONFIRMED`이고 request `confirmationParameters`가 Agent `confirmation_parameters`와 동일하면 호출을 생략한다. `CONFIRMED`이지만 값이 다르면 같은 proposal 재확정(Option A)을 위해 Agent confirmation API를 재호출해 Agent `confirmation_parameters`를 최신 확정값으로 갱신한다.
 6. Agent `CONFIRMED` 응답 확인
-7. 협의된 원본 `DEMAND`/`SUPPLY`/`TRADE` 파일 3개 로드
-8. 확정값을 지정 file/sheet/table/slot에 merge
-9. 기존 Scenario Case/Run 생성과 Kubernetes Job dispatch를 재사용한다. 파일 3개는 Scenario lock/Case transaction 전에 직렬로 Object Storage의 최종 `SCNRCASE/{uuid}` key에 업로드하고, `tcm_filel`에는 Case 미연결 `TEMP/0` staged row로 기록한다. 최종 짧은 transaction에서 Scenario lock/active guard 뒤 해당 시나리오의 active 가격전망해석 row를 write lock으로 조회한다. row가 있으면 `del_yn='Y'`로 soft delete하고 없으면 no-op으로 처리한 뒤, Case INSERT·staged row 3건의 `SCNRCASE + case_id` metadata-only attachment·Run INSERT·Case `lastRunId`·`execprep.case_id + EXECUTING`을 함께 commit한다. 이 transaction에는 Object Storage copy/move/delete를 넣지 않으며 K8s dispatch는 commit 이후 수행한다(Domain Design 규칙 29~30). 최종 lock/unique conflict는 기존 정책대로 처리하고 staged file 즉시 삭제 비용을 수용한다. commit 이후 dispatch 실패는 Case/Run을 `FAILED`, 연결 preparation을 `EXECUTION_FAILED`로 처리하며 soft delete한 기존 가격전망해석은 복원하지 않는다. Run에는 `failureReasonCode=JOB_SUBMIT_FAILED`, `errorMessage=Model execution dispatch failed.`만 저장하고 실제 exception stack/root cause는 실행 식별자와 함께 server log에만 기록한다.
+7. 협의된 원본 `DEMAND`/`SUPPLY`/`TRADE`/`OUTPUT` 파일 4개 로드
+8. 확정값을 DEMAND/SUPPLY/TRADE의 지정 file/sheet/table/slot에 merge하고 OUTPUT은 domain §1A에 따라 원본 그대로 포함
+9. 기존 Scenario Case/Run 생성과 Kubernetes Job dispatch를 재사용한다. 파일 4개는 Scenario lock/Case transaction 전에 직렬로 Object Storage의 최종 `SCNRCASE/{uuid}` key에 업로드하고, `tcm_filel`에는 Case 미연결 `TEMP/0` staged row로 기록한다. 최종 짧은 transaction에서 Scenario lock/active guard 뒤 해당 시나리오의 active 가격전망해석 row를 write lock으로 조회한다. row가 있으면 `del_yn='Y'`로 soft delete하고 없으면 no-op으로 처리한 뒤, Case INSERT·staged row 4건의 `SCNRCASE + case_id` metadata-only attachment·Run INSERT·Case `lastRunId`·`execprep.case_id + EXECUTING`을 함께 commit한다. 이 transaction에는 Object Storage copy/move/delete를 넣지 않으며 K8s dispatch는 commit 이후 수행한다(Domain Design 규칙 29~30). 최종 lock/unique conflict는 기존 정책대로 처리하고 staged file 즉시 삭제 비용을 수용한다. commit 이후 dispatch 실패는 Case/Run을 `FAILED`, 연결 preparation을 `EXECUTION_FAILED`로 처리하며 soft delete한 기존 가격전망해석은 복원하지 않는다. Run에는 `failureReasonCode=JOB_SUBMIT_FAILED`, `errorMessage=Model execution dispatch failed.`만 저장하고 실제 exception stack/root cause는 실행 식별자와 함께 server log에만 기록한다.
 10. 기존 `ModelExecutionAcceptRes` 반환
 
 Proposal requester access rule:
@@ -983,7 +993,7 @@ Proposal requester access rule:
 Staging lifecycle:
 
 - JSON과 multipart 실행 모두 같은 staging/registrar 경계를 사용한다.
-- 3개 업로드는 이번 단계에서 직렬 처리하며, bounded parallelism은 transaction 분리 효과 측정 후 별도 변경으로 검토한다.
+- 4개 업로드는 이번 단계에서 직렬 처리하며, bounded parallelism은 transaction 분리 효과 측정 후 별도 변경으로 검토한다.
 - final transaction 전에 실패하면 성공한 staged file을 즉시 보상 삭제한다.
 - process crash로 남은 `TEMP/0 + SCNRCASE storage path` row/object는 생성 후 24시간 TTL이 지나면 bounded cleanup 대상이다.
 - staged `file_no`는 final Case attachment가 성공하기 전 API 응답에 포함하지 않는다.
@@ -1052,7 +1062,7 @@ confirmed endpoint(A8) 의미:
 
 - A8은 최신 A6-linked Case와 연결된 proposal의 **조회 시점 현재값**인 Agent `confirmation_parameters`를 반환한다.
 - 같은 proposal을 재확정하면 Agent row가 갱신되므로, A8은 해당 `caseId` 실행 시점에 실제 사용된 immutable parameter snapshot을 보장하지 않는다. 이 동작은 직전 실행 화면에서 연결 proposal의 현재 confirmation 값을 보여주는 현행 요구사항으로 수용한다.
-- 해당 Case가 실제 사용한 input은 `SCNRCASE + caseId` 파일 3개가 source of truth다. A4a는 자신의 최신 execution-preparation이 `EXECUTED_CONFIRMED`일 때 그 row의 `caseId` 파일을 `executionInputFiles`로 노출한다. A8의 현재 confirmation 값과 Case input 파일의 값이 항상 동일하다고 가정하지 않는다.
+- 해당 Case가 실제 사용한 input은 `SCNRCASE + caseId` 파일 4개가 source of truth다. A4a는 자신의 최신 execution-preparation이 `EXECUTED_CONFIRMED`일 때 그 row의 `caseId` 파일을 `executionInputFiles`로 노출한다. A8의 현재 confirmation 값과 Case input 파일의 값이 항상 동일하다고 가정하지 않는다.
 - 실행별 exact confirmed parameter 복원은 현행 범위가 아니며, `tmd_mi_model_execpreph`에 confirmed JSON snapshot을 추가하지 않는다.
 
 Response data:
@@ -1151,9 +1161,10 @@ Content-Type: application/json
 조회 기준:
 
 1. A4a가 선택한 최신 non-deleted execution-preparation row와 연결 Case/Run으로 `currentState`를 판정한다.
-2. `currentState=EXECUTED_CONFIRMED`이면 같은 row의 `caseId` 기준으로 기존 실행 파일 저장 규칙(`tcm_filel`, `SCNRCASE + case_id`)에서 input Excel 3개 파일을 조회한다.
-3. 파일 role은 기존 저장 metadata 또는 filename convention으로 `DEMAND`/`SUPPLY`/`TRADE`를 식별한다.
+2. `currentState=EXECUTED_CONFIRMED`이면 같은 row의 `caseId` 기준으로 기존 실행 파일 저장 규칙(`tcm_filel`, `SCNRCASE + case_id`)에서 input Excel 4개 파일을 조회한다.
+3. 파일 role은 기존 저장 metadata 또는 filename convention으로 `DEMAND`/`SUPPLY`/`TRADE`/`OUTPUT`을 식별한다.
 4. 그 외 상태에서는 파일을 조회하지 않고 `executionInputFiles=null`을 반환한다.
+5. 전환 전 3파일 Case(2026-10-13 사용자 결정): cutover 정리에서 Case와 그 Case에 연결된 execution-preparation row를 함께 soft delete한다(§2 C). 따라서 A4a는 별도 분기 없이 남은 non-deleted 최신 execution-preparation으로 1번 판정을 한다. 실행하지 않은 제안 row는 남아 4파일로 이어서 실행할 수 있고, 남은 row가 없으면 제안 없음 상태다. 정리가 적용되지 않은 3파일 Case가 남아 있으면 아래 partial projection 규칙(`missingFileRoles=["OUTPUT"]`)으로 드러난다.
 
 Response data:
 
@@ -1180,18 +1191,24 @@ Response data:
         "fileNo": 991003,
         "fileNm": "TRADE_88001.xlsx",
         "fileSize": 1048576
+      },
+      {
+        "fileRole": "OUTPUT",
+        "fileNo": 991004,
+        "fileNm": "OUTPUT_88001.xlsx",
+        "fileSize": 1048576
       }
     ]
   }
 }
 ```
 
-- `complete`는 `DEMAND`/`SUPPLY`/`TRADE` 파일이 각각 정확히 1개씩 존재할 때만 `true`다.
-- `missingFileRoles`와 `files`는 항상 array이며 `null`을 반환하지 않는다. 두 array의 role 순서는 `DEMAND`, `SUPPLY`, `TRADE`로 고정한다.
-- 정상 3개 세트는 `complete=true`, `missingFileRoles=[]`, `files` 3건으로 반환한다.
-- 3개 파일 중 일부가 없으면 HTTP `200`을 유지하고 `complete=false`, 누락 role을 `missingFileRoles`에 담으며, `files`에는 실제 존재하는 파일만 반환한다. 누락 상태는 데이터 불완전으로 로깅한다. `409 BIZ_RULE_VIOLATION` 또는 `500`으로 변환하지 않는다.
-- 파일이 모두 없으면 `complete=false`, `missingFileRoles=["DEMAND","SUPPLY","TRADE"]`, `files=[]`를 반환한다.
-- A6 정상 실행은 3개 role을 원자적으로 연결하는 것이 invariant다. 불완전 응답은 legacy/운영 데이터 이상을 FE가 안전하게 처리하기 위한 read projection이며 정상 write 결과로 간주하지 않는다.
+- `complete`는 `DEMAND`/`SUPPLY`/`TRADE`/`OUTPUT` 파일이 각각 정확히 1개씩 존재할 때만 `true`다.
+- `missingFileRoles`와 `files`는 항상 array이며 `null`을 반환하지 않는다. 두 array의 role 순서는 `DEMAND`, `SUPPLY`, `TRADE`, `OUTPUT`으로 고정한다.
+- 정상 4개 세트는 `complete=true`, `missingFileRoles=[]`, `files` 4건으로 반환한다.
+- 4개 파일 중 일부가 없으면 HTTP `200`을 유지하고 `complete=false`, 누락 role을 `missingFileRoles`에 담으며, `files`에는 실제 존재하는 파일만 반환한다. 누락 상태는 데이터 불완전으로 로깅한다. `409 BIZ_RULE_VIOLATION` 또는 `500`으로 변환하지 않는다.
+- 파일이 모두 없으면 `complete=false`, `missingFileRoles=["DEMAND","SUPPLY","TRADE","OUTPUT"]`, `files=[]`를 반환한다.
+- A6 정상 실행은 4개 role을 원자적으로 연결하는 것이 invariant다. 불완전 응답은 legacy/운영 데이터 이상을 FE가 안전하게 처리하기 위한 read projection이며 정상 write 결과로 간주하지 않는다.
 - 파일 binary를 A4a에서 직접 stream하지 않는다. 공통 파일 다운로드 정책/권한/감사를 재사용한다.
 
 ### 5.8 기존 파일 업로드 Model Execution 접수
@@ -1200,7 +1217,7 @@ Response data:
 
 - `Content-Type: multipart/form-data`
 - `FILE_UPLOAD` mode에서만 허용
-- 기존 `files` request part에 `DEMAND`/`SUPPLY`/`TRADE` 파일 3개를 전달한다.
+- 기존 `files` request part에 `DEMAND`/`SUPPLY`/`TRADE`/`OUTPUT` 파일 4개를 전달한다.
 - 최종 실행 등록 transaction에서 해당 시나리오의 active 가격전망해석 row를 조회한다. row가 있으면 soft delete하고 없으면 no-op으로 처리한 뒤 Case/Run 생성을 같은 transaction으로 commit한다.
 - 기존 validation, Case/Run 생성, Job dispatch, `ModelExecutionAcceptRes` 계약을 유지한다. 내부 storage 경계는 5.5와 동일하게 최종 `SCNRCASE/{uuid}` 선업로드 → `TEMP/0` staged metadata → 짧은 transaction의 metadata-only Case attachment를 사용한다.
 - 파라미터 제안 기능 도입으로 제거하거나 deprecated하지 않는다.
@@ -1349,12 +1366,12 @@ LatestModelParamProposalParametersRes
   List<CurrentModelParamFileRes> modelFiles required, non-null; 5.2.1과 동일한 tree
 
 ModelExecutionInputFilesRes
-  boolean complete                    required; DEMAND/SUPPLY/TRADE 각각 1개면 true
-  List<String> missingFileRoles       required, non-null; DEMAND|SUPPLY|TRADE 고정 순서
-  List<ModelExecutionInputFileRes> files required, non-null; 존재하는 role만 DEMAND|SUPPLY|TRADE 고정 순서
+  boolean complete                    required; DEMAND/SUPPLY/TRADE/OUTPUT 각각 1개면 true
+  List<String> missingFileRoles       required, non-null; DEMAND|SUPPLY|TRADE|OUTPUT 고정 순서
+  List<ModelExecutionInputFileRes> files required, non-null; 존재하는 role만 DEMAND|SUPPLY|TRADE|OUTPUT 고정 순서
 
 ModelExecutionInputFileRes
-  String fileRole                    DEMAND|SUPPLY|TRADE
+  String fileRole                    DEMAND|SUPPLY|TRADE|OUTPUT
   Long fileNo
   String fileNm
   Long fileSize
@@ -1429,8 +1446,7 @@ FE가 반드시 처리해야 하는 최소 상태는 `PROCESSING`, `PROPOSED`, `
 | commit 이후 Kubernetes Job dispatch 실패 | 202 접수 후 비동기 `FAILED` 수렴 | `JOB_SUBMIT_FAILED` | Case/Run/preparation 실패 전이. API/DB에는 고정 public message만 사용하고 root cause는 server log에만 기록 |
 | 동일 proposal로 실행 재요청 | 200/202 기존 실행 접수 응답 | 기존 정책 | RUNNING이 없으면 새 `case_id` 실행 접수 |
 | 같은 Scenario에 RUNNING 실행 존재 | 409 | `RSC_ALREADY_EXISTS` | 기존 `ScenarioCase.actv_scnr_id` guard |
-| A4a `EXECUTED_CONFIRMED` Case의 input file role 일부/전체 누락 | 200 | `SUC-000` | `executionInputFiles.complete=false`, `missingFileRoles`, partial/empty `files` 반환 후 데이터 불완전 로그 |
-| A4a `parameterSource`가 non-`NONE`인데 payload가 null/blank/non-array/empty/invalid JSON | 409 | `BIZ_RULE_VIOLATION` | 정상 empty tree로 숨기지 않고 고정 public message로 실패 |
+| A4a `EXECUTED_CONFIRMED` Case의 input file role 일부/전체 누락 | 200 | `SUC-000` | `executionInputFiles.complete=false`, `missingFileRoles`, partial/empty `files` 반환 후 데이터 불완전 로그 || A4a `parameterSource`가 non-`NONE`인데 payload가 null/blank/non-array/empty/invalid JSON | 409 | `BIZ_RULE_VIOLATION` | 정상 empty tree로 숨기지 않고 고정 public message로 실패 |
 | A4a grouped projection에 필요한 slot-axis/rationale field 누락 또는 타입 불일치 | 409 | `BIZ_RULE_VIOLATION` | 해당 value row를 제외하거나 빈 grouped array로 숨기지 않고 기존 current-state 데이터 불일치 정책으로 실패 |
 | A4a parameter composite identity 중복 | 409 | `BIZ_RULE_VIOLATION` | 임의 중복 제거 금지 |
 | A4a rendering master 누락 또는 중복 | 409 | `BIZ_RULE_VIOLATION` | parameter leaf 누락 또는 임의 선택 금지 |
@@ -1466,7 +1482,7 @@ FE가 반드시 처리해야 하는 최소 상태는 `PROCESSING`, `PROPOSED`, `
   - Agent proposal 테이블 read-only 직접 조회로 결과 서빙 (기존 Backend DB/schema에 Agent 테이블 추가, 별도 view/synonym 불필요, runtime table visibility/권한/type 확인 필요)
   - thin Backend execution-preparation persistence(`tmd_mi_model_execpreph`: 제안 기반 실행 준비 상태, Agent proposal ID, 실행 Case 연결; proposal 데이터·hash 없음)
   - 실제 수급모델 실행 master/history는 기존 `tmd_mdl_scnrcasem` / `tmd_mdl_scnrcaseh`가 계속 source of truth다.
-  - `tmd_mi_model_execpreph` row 1건은 input Excel 3개 세트 생성과 수급모델 실행 접수 1회를 나타낸다. 같은 `scnr_id + agnt_prpsl_id`로 여러 번 실행할 수 있으므로 매 실행마다 새 `tmd_mi_model_execpreph` row와 새 `case_id`를 만든다.
+  - `tmd_mi_model_execpreph` row 1건은 input Excel 4개 세트 생성과 수급모델 실행 접수 1회를 나타낸다. 같은 `scnr_id + agnt_prpsl_id`로 여러 번 실행할 수 있으므로 매 실행마다 새 `tmd_mi_model_execpreph` row와 새 `case_id`를 만든다.
   - `tmd_mi_model_execpreph.case_id`는 nullable + UNIQUE 포인터다. 실행 접수 전에는 null이고, 실행 접수 후에는 해당 row가 만든 단일 Case를 가리킨다. 한 Case가 여러 execution-preparation row에 붙으면 안 된다.
   - `agnt_prpsl_id`는 unique가 아니다. 반복 실행 이력과 callback 후보 검색을 위해 `(agnt_prpsl_id, exec_prep_stat_cd, exec_prep_id DESC)` 일반 index를 둔다.
   - A8/A9의 최근 실행 선택은 5.5.1 `LatestModelParamProposalExecutionContext`를 단일 계약으로 사용한다. physical join/index/EXPLAIN은 canonical execprep DDL draft를 따른다.
@@ -1556,13 +1572,14 @@ FE가 반드시 처리해야 하는 최소 상태는 `PROCESSING`, `PROPOSED`, `
 
 1. proposal table read 계약은 확정(2026-07-07 DB DDL 수령, 컬럼 매핑 5.2 반영). Agent proposal table은 기존 Backend DB/schema에 추가되는 직접 read 대상이며 별도 view/synonym 경로는 사용하지 않는다. **잔여**: (a) runtime table visibility/SELECT 권한/key type 정합 확인, (b) dimension_map ERD blocker #2(nullable UNIQUE)/#3(조건부 CHECK) 정정 — Backend 런타임 미의존, `erd-change-review`로 분리 처리.
 2. Agent callback/confirmation payload에 master의 `model_table`을 `tableName`으로 반영하는 배포 시점(required shape는 확정).
-3. 원본 Excel 3개 위치와 version 선택 규칙.
+3. 원본 Excel 4개 위치와 version 선택 규칙.
 4. (resolved) Backend execution-preparation 저장안은 채택됐고 `tmd_mi_model_execpreph` DBA DDL은 적용 완료됐다. application 구현은 착수 가능하며, real runtime 배포 전에는 entity mapping 기준 `ddl-auto=validate` 및 핵심 index/constraint 확인만 수행한다.
 5. (null 정책 resolved) `basecaseValue`는 required key + nullable numeric, `proposedValue`는 required numeric으로 확정. 숫자 precision/최대·최소 범위는 잔여.
 6. parameter/value row 최대 건수와 JSON column size 한도(컬럼 타입은 native `JSON`+`JSON_TYPE=ARRAY` CHECK로 확정).
 7. callback 신호 유실 시 폴백 폴링 interval/timeout.
 8. `schemaVersion`, `completedAt`, `errorCode` 확장 필요 여부 — `completedAt`(`proposal_completed_dtm`)·`error_code`는 Agent 테이블에 **이미 컬럼 존재**, `schemaVersion`만 미존재. `errorMessage`는 wrapper `message`와 중복됨.
 9. duplicate-slot Agent payload의 A6/Excel 실행 좌표 의미. A4a/A4/A8/A9 read response는 duplicate value row를 보존하고 rationale만 별도 그룹핑한다. A6 validator는 현재 duplicate slot identity를 거절하며, 서로 다른 `basecaseValue`/`proposedValue`가 같은 Excel 좌표를 가리키는 경우 first/last 선택·row 병합·writer overwrite를 허용하지 않는다. 대표/실제 payload 감사 후 실행 계약을 별도 확정한다.
+10. (resolved 2026-10-13 사용자 결정) 4파일 전환 전에 3파일로 접수된 Scenario 실행의 A4a 표시. legacy 3파일 정리(model input domain 규칙 36, `INPUT-11`)를 `SCENARIO` Case로 넓힌다. 파일 구성(OUTPUT 없이 DEMAND/SUPPLY/TRADE 각 1개)으로 판별한 Case를 연결 실행이력·실행준비·해당 시나리오의 active 가격전망해석과 함께 soft delete한다. A4a/A8/A9 응답 계약은 바꾸지 않고 남은 non-deleted row로 판정한다(§2 C, §5.7 조회 기준 5번).
 
 ### P1
 
@@ -1574,12 +1591,14 @@ FE가 반드시 처리해야 하는 최소 상태는 `PROCESSING`, `PROPOSED`, `
 
 1. Option A 재확정과 A8 조회 의미: Agent confirmation API는 이미 `CONFIRMED`인 proposal의 재확정을 허용한다. 같은 Agent proposal로 값 변경 재실행을 지원하고 Agent `confirmation_parameters` 현재값을 갱신한다. A8은 최신 A6-linked Case가 가리키는 proposal의 조회 시점 현재 `confirmation_parameters`를 반환하며, 해당 Case의 실행 시점 immutable snapshot을 보장하지 않는다. 실행별 exact 복원은 현행 요구사항이 아니므로 `tmd_mi_model_execpreph`에 confirmed JSON snapshot을 추가하지 않는다.
 2. SSE scope: endpoint는 scenario scope 신규 채널로 둔다. `GET /api/v1/mi/next-gen/scenarios/{scenarioId}/model-param-proposals/stream`을 사용하며 기존 scenario-group SSE channel에 event type을 추가하지 않는다.
-3. Model execution staging: 기존 `tcm_filel TEMP/0` marker, 최종 `SCNRCASE/{uuid}` object key, 최종 lock conflict 409 후 staged file 삭제, crash orphan TTL 24시간, JSON/multipart 공통 적용, 업로드 3개 직렬 처리를 사용한다. API field와 DDL은 변경하지 않는다.
+3. Model execution staging: 기존 `tcm_filel TEMP/0` marker, 최종 `SCNRCASE/{uuid}` object key, 최종 lock conflict 409 후 staged file 삭제, crash orphan TTL 24시간, JSON/multipart 공통 적용, 업로드 4개 직렬 처리를 사용한다. API field와 DDL은 변경하지 않는다.
 3. Agent proposal read path: Agent proposal table은 기존 Backend DB/schema에 추가된 테이블을 직접 read한다. 별도 view/synonym 또는 우회 경로는 만들지 않는다.
 4. Proposal generation retry: proposal 생성이 `REQUEST_FAILED`/`REQUEST_NO_CHANGES` 또는 Agent `FAILED`로 terminal 수렴한 뒤에는 새 proposal 생성 요청을 허용한다. 실패 row는 재사용하지 않고 audit/history로 보존하며, 새 요청은 새 execution-preparation row와 새 Agent proposal request를 만든다. 신규 거절 경로의 callback 안전성은 위 P0 조건을 따른다.
 
 ## 14. Change Log / Sync Note
 
+- 2026-10-13: **전환 전 3파일 Scenario 실행 정리.** 정합성 검토에서 발견한 P0 #10을 사용자 결정으로 해소했다. 3파일 `SCENARIO` Case를 cutover 정리 대상에 넣고 연결 실행이력·실행준비·active 가격전망해석을 함께 soft delete한다(그룹 삭제 선례). A4a/A8/A9 응답 계약은 바꾸지 않고 남은 non-deleted row로 판정한다(§2 C, §5.7). 같은 날 잠시 기록한 "A4a 입력 파일만 null" 안은 이 결정으로 대체했다. 현재 Scenario 코드는 3파일이며 정리 DML·구현은 4파일 전환(`INPUT-11`)과 함께 한다.
+- 2026-10-07: **Scenario 실행 입력 4파일 목표 계약.** 사용자 확정에 따라 두 mode와 A4a `executionInputFiles`의 필수 role을 `DEMAND/SUPPLY/TRADE/OUTPUT`으로 바꾸고 OUTPUT 제안 제외·원본 포함은 domain §1A를 따르도록 했다(§2 C). 현재 Scenario 코드는 3파일이며 구현·검증은 대기다.
 - 2026-09-17: **생성 POST 즉시 실패 사유 추가.** 명시적 `status=error`를 `REQUEST_FAILED`로 commit한 경우 기존 HTTP 500/`API-004`/표준 message를 유지하면서, GET과 동일한 Backend 승인 문구를 `data.failureReason`으로 반환한다. Agent 원문 전체·숫자 코드는 공개하지 않으며 실패 미확정 오류는 `data=null`을 유지한다. DB/schema/lifecycle 변화는 없다.
 - 2026-08-27 후속 정정: **명시적 오류 일반 실패 저장.** Notion HTTP wrapper와 사용자 최종 결정에 따라 `status=error`는 숫자 코드 유무/값과 무관하게 `REQUEST_FAILED → PROPOSAL_FAILED`로 처리한다. 아래 같은 날 전용 상태 도입/FE 문구 기록은 이력이며 새 쓰기 계약을 뜻하지 않는다. 과거 enum/조회는 유지하고 불확정 응답은 실패로 확정하지 않는다. API shape/DB/callback/confirmation 변경은 없다.
 - 2026-08-27: **전용 Backend 실패 상태 설계 통합.** `REQUEST_NO_CHANGES` 저장 → A4a `PROPOSAL_NO_CHANGES` 조회로 정리하고 사유 코드 컬럼 대안을 이번 범위에서 제외했다. 생성 오류의 실제 `ApiErrorException` 경로, 안전한 사유 저장, 실패 우선 조회, FE 실패 분기, canonical DDL 배포 절차를 연결했다. 저장 방식 미정은 해소했지만 요청 간 callback과 호환 배포 확인은 남아 있으며 미구현/미배포다.

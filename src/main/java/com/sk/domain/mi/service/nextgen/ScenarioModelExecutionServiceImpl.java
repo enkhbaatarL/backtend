@@ -56,10 +56,15 @@ import org.springframework.web.multipart.MultipartFile;
 @Transactional(readOnly = true)
 public class ScenarioModelExecutionServiceImpl implements ScenarioModelExecutionService {
 
-    private static final int REQUIRED_FILE_COUNT = 3;
-    private static final List<String> REQUIRED_INPUT_FILE_ROLE_KEYWORDS = List.of("DEMAND", "SUPPLY", "TRADE");
+    private static final int REQUIRED_FILE_COUNT = 4;
+    private static final List<String> REQUIRED_INPUT_FILE_ROLE_KEYWORDS = List.of(
+        "DEMAND",
+        "SUPPLY",
+        "TRADE",
+        "OUTPUT"
+    );
     private static final String REQUIRED_INPUT_FILE_ROLE_MESSAGE =
-        "files는 파일명에 DEMAND, SUPPLY, TRADE 키워드를 각각 정확히 1개씩 포함해야 합니다.";
+        "files는 파일명에 DEMAND, SUPPLY, TRADE, OUTPUT 키워드를 각각 정확히 1개씩 포함해야 합니다.";
     private static final String FILE_RELATION_SCENARIO_CASE = "SCNRCASE";
 
     private final MiScenarioRepository miScenarioRepository;
@@ -287,7 +292,7 @@ public class ScenarioModelExecutionServiceImpl implements ScenarioModelExecution
         if (files == null || files.size() != REQUIRED_FILE_COUNT) {
             throw AppErrorException.of(
                 ResultCode.Error.REQ_INVALID_PARAMETER,
-                "files는 정확히 3개여야 합니다."
+                "files는 정확히 4개여야 합니다."
             );
         }
         boolean hasEmptyFile = files.stream().anyMatch(file -> file == null || file.isEmpty());

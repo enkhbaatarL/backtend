@@ -20,7 +20,7 @@ import org.springframework.stereotype.Component;
 public class ModelExecutionInputFilesProjector {
 
     private static final String FILE_RELATION_SCENARIO_CASE = "SCNRCASE";
-    private static final List<String> REQUIRED_FILE_ROLES = List.of("DEMAND", "SUPPLY", "TRADE");
+    private static final List<String> REQUIRED_FILE_ROLES = List.of("DEMAND", "SUPPLY", "TRADE", "OUTPUT");
 
     private final UploadedFileRepository uploadedFileRepository;
 

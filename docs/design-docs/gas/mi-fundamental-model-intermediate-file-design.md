@@ -1,9 +1,9 @@
-# MI Fundamental Model 실행 중간파일 연결·노출 설계
+# MI Fundamental Model 실행 파생파일 연결·노출 설계
 
 ## Document Control
 
 - status: Approved
-- canonical for: 수급모델 실행 중간파일의 식별/연결 규칙, 상세 조회 노출 범위, 모델(pod) 적재 계약
+- canonical for: 수급모델 실행 중간파일·Trade Flow 결과파일의 식별/연결 규칙, 상세 조회 노출 범위, 모델(pod) 적재 계약
 - owner: BE
 - source documents:
   - `docs/design-docs/gas/scenario-case-execution-workflow-design-draft.md`
@@ -11,30 +11,32 @@
   - `docs/design-docs/gas/mi-fundamental-model-output-result-persistence-design.md`
   - `docs/design-docs/gas/mi-fundamental-model-agent-model-interface-draft.md`
   - `docs/feature-specs/mi-fundamental-model-mock-api-feature-spec.md`
+  - `docs/work-notes/2026/2026-09-17-fundamental-model-trade-output-file-contract-review.md`
 - depends on:
   - `tmd_mdl_scnrcaseh.run_seq`
   - `tcm_filel.file_rel_obj_spt_cd`, `tcm_filel.file_rel_obj_dstg_no`
   - 공통 파일 다운로드 API (`POST /api/v1/file-management/download/file`, `POST /api/v1/file-management/download`)
 - supersedes:
   - `docs/feature-specs/mi-fundamental-model-mock-api-feature-spec.md` §Detail Query Recommendation 의 "제외 범위: intermediate file metadata" 문장 (이 설계가 확정되면 supersede)
-- last synced: 2026-09-15
+- last synced: 2026-09-28
 - open questions: 아래 §9 참조
 
 ## 1. 목적과 범위
 
 ### 목적
 
-수급모델 실행 중 모델 측이 생성·업로드하는 **중간파일(n개)** 을 기존 output 파일과 구분해 저장하고,
+수급모델 실행 중 모델 측이 생성·업로드하는 **중간파일(n개)** 과 **Trade Flow 결과파일**을 기존 output 파일과 구분해 저장하고,
 `GET /api/v1/mi/fundamental-model/cases/{caseId}` 상세 조회에서 **다운로드 가능한 파일 목록으로** 제공하는 식별 규칙·계약·변경 범위를 확정한다.
 
-2026-09-15 후속 정책으로 input은 `fileNm`만 유지하고 output/intermediate는 기존 공통 File API 다운로드에 필요한
+2026-09-28 후속 정책으로 input을 포함한 네 파일 목록 모두 기존 공통 File API 다운로드에 필요한
 `fileNo`, `fileNm`, `fileSize`를 제공한다. 공통 다운로드 API 자체의 인가 변경은 이 설계 범위에 포함하지 않는다.
 
 ### 범위 안
 
 - 중간파일을 output 파일과 구분하는 식별 방식 결정
+- Trade Flow 결과파일을 output·중간파일과 구분하는 식별 방식 결정
 - 공통코드/스키마 변경 범위(delta)
-- 상세 조회 응답 계약 변경 (input 파일명, output/intermediate 다운로드 metadata)
+- 상세 조회 응답 계약 변경 (input/output/intermediate/tradeOutput 다운로드 metadata)
 - 모델(pod)이 `tcm_filel` 에 직접 INSERT 할 때 지켜야 하는 필수 컬럼 계약
 - 영향받는 canonical 문서와 코드 변경 목록
 
@@ -47,7 +49,7 @@
 - object storage 보존/정리 배치
 - nextgen scenario workbench 실행 경로
 
-## 2. 현재 상태 (계약 확인 기준, 2026-09-15 / `feature/gas2`)
+## 2. 현재 상태 (계약 확인 기준, 2026-09-17 / `feature/gas2`)
 
 ### 2.1 파일 연결 구조
 
@@ -56,43 +58,46 @@
 | 업로드 입력 파일 | `SCNRCASE` | `tmd_mdl_scnrcasem.case_id` | backend 업로드 API |
 | 모델 실행 output 파일 | `SCNRCASEH` | `tmd_mdl_scnrcaseh.run_seq` | model pod 직접 INSERT |
 | **모델 실행 중간파일 (신규)** | **`SCNRCASEHI`** (2026-09-07 확정) | `tmd_mdl_scnrcaseh.run_seq` | model pod 직접 INSERT |
+| **Trade Flow 결과파일 (신규)** | **`SCNRCASEHTF`** (2026-09-17 확정) | `tmd_mdl_scnrcaseh.run_seq` | model pod 직접 INSERT |
 
 ```text
 tmd_mdl_scnrcasem (case_id)
   └─ tcm_filel  (SCNRCASE  + case_id)     : input  3개 (DEMAND/SUPPLY/TRADE)
   └─ tmd_mdl_scnrcaseh (run_id PK, run_seq UNIQUE)
        ├─ tcm_filel (SCNRCASEH + run_seq) : output 파일
-       └─ tcm_filel (SCNRCASEHI + run_seq) : 중간파일 n개   ← 이번 변경
+       ├─ tcm_filel (SCNRCASEHI + run_seq) : 중간파일 n개
+       └─ tcm_filel (SCNRCASEHTF + run_seq): Trade Flow 결과파일 ← 2026-09-17 추가
 ```
 
 ### 2.2 확인된 구현 사실
 
 - 상세 조회 조립: `FundamentalModelCaseServiceImpl.getCaseDetailInternal`
-  - input: `findInputFiles(caseId)` → `FundamentalModelFileNameRes(fileNm)`
+  - input: `findDownloadFiles(caseId, "SCNRCASE")`
   - output: `findOutputFiles(latestRunHistory)` → `findDownloadFiles(runSeq, "SCNRCASEH")`
   - intermediate: `findIntermediateFiles(latestRunHistory)` → `findDownloadFiles(runSeq, "SCNRCASEHI")`
   - 조회 repository: `UploadedFileRepository.findActiveRelationshipFilesOrderByFileNoAsc` (`del_yn = 'N'` + 유효종료일자 필터 + `file_no ASC`)
-- 응답 DTO: input은 파일명-only DTO, output/intermediate는 `FundamentalModelDownloadFileRes(fileNo, fileNm, fileSize)`를 사용한다.
+- 응답 DTO: input/output/intermediate/tradeOutput 모두 `FundamentalModelDownloadFileRes(fileNo, fileNm, fileSize)`를 사용한다.
 - 계약 고정 테스트 존재: `src/test/java/com/sk/domain/mi/service/fundamentalmodel/FundamentalModelDownloadFileResContractTest.java`
-  - input은 `fileNm`만, output/intermediate는 세 다운로드 필드를 갖는지 JSON/OpenAPI shape를 단정한다.
+  - 네 파일 목록 모두 `fileNo`, `fileNm`, `fileSize`를 갖는지 JSON/OpenAPI shape를 단정한다.
 - 상세 조회 controller 설명과 예시는 역할별 metadata 차이를 명시한다.
 - 공통 단건 다운로드는 `FileDownloadReq(fileNo, fileNm, fileSize)` 3개를 모두 요구하고, 3개가 DB 값과 일치해야 통과한다 (`FileService.downloadFile`, `FileService.java:423`)
 - `run_seq` 는 `INT UNSIGNED` 이고 `file_rel_obj_dstg_no` 와 타입 호환된다
+- `tradeOutput`은 승인된 계약이며 Java 구현 전 상태다. 구현 시 `findDownloadFiles(runSeq, "SCNRCASEHTF")` 형태로 기존 query primitive를 재사용한다.
 
 ### 2.3 결론
 
-중간파일은 output 과 `file_rel_obj_dstg_no`(= `run_seq`) 가 동일하므로 **구분 축이 하나 더 필요**하다. 이것이 이번 설계의 핵심 결정 항목이다.
+중간파일과 Trade Flow 결과파일은 output 과 `file_rel_obj_dstg_no`(= `run_seq`) 가 동일하므로 **관계 코드로 역할을 구분**한다.
 
-다운로드에 필요한 식별자(`fileNo`, `fileSize`)는 output/intermediate에만 노출한다.
-input은 화면 표시용 `fileNm`만 유지한다.
+다운로드에 필요한 식별자(`fileNo`, `fileSize`)를 input/output/intermediate/tradeOutput에 모두 노출한다.
 
 ## 3. 요구사항
 
 - R1. 모델이 실행 중 생성하는 중간파일을 object storage 에 올리고 `tcm_filel` 에 기록한다. (모델 측 책임)
 - R2. 중간파일은 `run_seq` 로 실행 단위에 귀속되지만 output 파일과 명확히 구분된다.
-- R3. `GET /api/v1/mi/fundamental-model/cases/{caseId}` 상세 조회 응답에 중간파일 목록이 포함된다.
-- R4. 사용자가 output/intermediate 목록의 `fileNo`, `fileNm`, `fileSize`를 기존 공통 File API에 전달해 다운로드할 수 있다.
+- R3. `GET /api/v1/mi/fundamental-model/cases/{caseId}` 상세 조회 응답에 중간파일과 Trade Flow 결과파일 목록이 각각 포함된다.
+- R4. 사용자가 input/output/intermediate/tradeOutput 목록의 `fileNo`, `fileNm`, `fileSize`를 기존 공통 File API에 전달해 다운로드할 수 있다.
 - R5. 중간파일 개수는 고정 3개가 아니라 n개다. 개수 검증을 두지 않는다.
+- R6. Trade Flow 결과파일은 `files.tradeOutput` 별도 배열이며 output/intermediate와 같은 최신 `run_seq`를 사용하고 관계 코드만 `SCNRCASEHTF`로 다르다.
 
 ## 4. 결정 1 — 중간파일 식별 방식
 
@@ -110,6 +115,8 @@ input은 화면 표시용 `fileNm`만 유지한다.
 **A안 채택**. 사용자 결정으로 신규 `file_rel_obj_spt_cd` 코드를 추가한다. B/C/D 안은 채택하지 않는다.
 현재 요구는 "run 단위 파일을 종류별로 목록 조회한다" 하나이고, 기존 input/output 이 이미 같은 메커니즘으로 동작한다.
 파일 종류가 3종 이상으로 늘거나 파일별 표시 메타(설명, 정렬, 단계명)가 필요해지면 그 시점에 C안을 재검토한다.
+
+2026-09-17에 Trade Flow 결과파일 역할이 추가되어 파일 종류는 늘었지만, 새 요구는 기존과 같은 run 단위 목록·다운로드 metadata뿐이다. 별도 표시 메타·정렬·페이징이 없어 매핑 테이블은 여전히 과설계이며, 신규 관계 코드 1건을 추가하는 A안을 유지한다.
 
 ### 코드 값 (2026-09-07 확정)
 
@@ -172,6 +179,19 @@ trade-off 인정: `SCNRCASEHI` 의 `HI` 접미사는 코드값만으로 뜻이 �
 남은 절차: 공통코드 담당/DBA 등록과 **모델팀의 INSERT 리터럴 반영**.
 backend 상수와 pod INSERT 문자열이 다르면 오류 없이 목록만 비어 보이므로 양쪽이 같은 값을 쓰는지 연동 시 확인한다.
 
+### Trade Flow 결과파일 코드 값 (2026-09-17 확정)
+
+| 항목 | 값 |
+|---|---|
+| `cd_grp_id` | `file_rel_obj_spt_cd` |
+| `cd_id` | `SCNRCASEHTF` |
+| `cd_nm` | 시나리오 케이스 실행 결과 Trade Flow |
+| `cd_expn` | 시나리오 케이스 모델 실행 결과 Trade Flow 파일 연결 코드 |
+| `cd_rnk` | `8` |
+| `file_rel_obj_dstg_no` | `tmd_mdl_scnrcaseh.run_seq` |
+
+사용자 확인 기준 모든 대상 DB에 등록 완료됐고 `cd_rnk = 8` 중복은 없다. backend와 model pod는 대소문자를 포함해 `SCNRCASEHTF`를 동일하게 사용한다.
+
 ## 5. 결정 2 — 상세 조회 노출 형태
 
 ### 5.1 노출 위치
@@ -181,9 +201,11 @@ backend 상수와 pod INSERT 문자열이 다르면 오류 없이 목록만 비�
 | **A. `files.intermediate` 배열 추가** (권장) | `FundamentalModelCaseFilesRes(input, output, intermediate)` | 요청이 "상세 조회에 추가"이고 FE 가 1회 호출로 화면을 구성한다 |
 | B. 별도 endpoint | `GET /cases/{caseId}/files/intermediate` | n 이 커져 상세 응답이 비대해지거나 페이징이 필요할 때 재검토 |
 
+2026-09-17 확장 계약은 같은 판단을 적용해 `files.tradeOutput` 배열을 추가한다. `output`, `intermediate`, `tradeOutput`은 서로 합치지 않는다.
+
 ### 5.2 대상 run
 
-- output 과 동일하게 **최신 실행(`tmd_mdl_scnrcasem.last_run_id` 가 가리키는 run)의 `run_seq`** 기준으로 조회한다.
+- output/intermediate/tradeOutput 모두 **최신 실행(`tmd_mdl_scnrcasem.last_run_id` 가 가리키는 run)의 동일한 `run_seq`** 기준으로 조회한다.
 - 최신 실행이 없거나 `run_seq` 가 없으면 빈 배열을 반환한다 (현재 `findOutputFiles` 와 동일한 처리).
 - 과거 run 의 중간파일 조회는 별도 runs API 계약이 생길 때 다룬다. 이번 범위 밖.
 
@@ -194,15 +216,12 @@ backend 상수와 pod INSERT 문자열이 다르면 오류 없이 목록만 비�
 
 ## 6. 결정 3 — 다운로드 metadata
 
-### 결정 (2026-09-15 확정)
+### 결정 (2026-09-28 확정)
 
-**input은 `fileNm`만 반환하고 output/intermediate는 `fileNo`, `fileNm`, `fileSize`를 반환한다.**
+**input/output/intermediate/tradeOutput은 모두 `fileNo`, `fileNm`, `fileSize`를 반환한다.**
 
-output/intermediate는 다운로드 대상이고 기존 공통 File API의 `FileDownloadReq`가 세 필드를 요구한다.
-input은 다운로드 대상이 아니므로 상세 projection에서 파일명만 제공한다.
-
-세 배열을 같은 DTO로 유지하면 input에도 다운로드 metadata가 노출되므로 input filename DTO와
-output/intermediate 다운로드 DTO를 분리한다. 다운로드 endpoint, binary response, DRM 및 인가 로직은 변경하지 않는다.
+네 목록은 모두 다운로드 대상이고 기존 공통 File API의 `FileDownloadReq`가 세 필드를 요구한다.
+동일한 `FundamentalModelDownloadFileRes`를 사용하며 다운로드 endpoint, binary response, DRM 및 인가 로직은 변경하지 않는다.
 
 응답 예시:
 
@@ -210,12 +229,13 @@ output/intermediate 다운로드 DTO를 분리한다. 다운로드 endpoint, bin
 {
   "caseId": 101,
   "files": {
-    "input":        [{ "fileNm": "DEMAND.xlsx" }],
+    "input":        [{ "fileNo": 1001, "fileNm": "DEMAND.xlsx", "fileSize": 12345 }],
     "output":       [{ "fileNo": 2011, "fileNm": "output.xlsx", "fileSize": 54321 }],
     "intermediate": [
       { "fileNo": 3011, "fileNm": "step1_demand_curve.csv", "fileSize": 1234 },
       { "fileNo": 3012, "fileNm": "step2_supply_stack.csv", "fileSize": 2345 }
-    ]
+    ],
+    "tradeOutput": [{ "fileNo": 4011, "fileNm": "trade_flow_result.xlsx", "fileSize": 67890 }]
   }
 }
 ```
@@ -227,6 +247,8 @@ output/intermediate 다운로드 DTO를 분리한다. 다운로드 endpoint, bin
 
 - 테이블 변경 **없음**. `tcm_filel`, `tmd_mdl_scnrcaseh` 모두 그대로 사용한다.
 - 공통코드 detail 1건만 추가한다 (`file_rel_obj_spt_cd` 그룹은 이미 존재).
+
+2026-09-17 추가된 `SCNRCASEHTF`도 테이블·컬럼·인덱스 변경 없이 같은 공통코드 그룹 detail 1건을 사용한다. 사용자 확인 기준 모든 대상 DB 적용과 `cd_rnk = 8` 무충돌이 확인됐다. 신규 환경용 apply/verify/rollback SQL과 적용 기록은 canonical DDL draft가 소유한다.
 
 ```sql
 -- 모델 실행 중간 파일 코드
@@ -279,12 +301,12 @@ DELETE FROM tcm_commcdd WHERE cd_grp_id = 'file_rel_obj_spt_cd' AND cd_id = 'SCN
 
 ## 8. 모델(pod) 측 적재 계약
 
-중간파일은 output 과 동일하게 **pod 가 `tcm_filel` 에 직접 INSERT** 한다. backend 는 쓰기에 관여하지 않는다.
+중간파일과 Trade Flow 결과파일은 output 과 동일하게 **pod 가 `tcm_filel` 에 직접 INSERT** 한다. backend 는 쓰기에 관여하지 않는다.
 아래 항목은 하나라도 어긋나면 상세 조회에서 파일이 **조용히 누락**되므로 모델팀과 문서로 고정해야 한다.
 
 | 컬럼 | 요구값 | 어겼을 때 |
 |---|---|---|
-| `file_rel_obj_spt_cd` | `'SCNRCASEHI'` (대소문자 포함 정확히 일치) | 목록에 나오지 않거나 output 에 섞임 |
+| `file_rel_obj_spt_cd` | 중간파일은 `'SCNRCASEHI'`, Trade Flow 결과파일은 `'SCNRCASEHTF'` (대소문자 포함 정확히 일치) | 해당 목록에 나오지 않거나 다른 역할에 섞임 |
 | `file_rel_obj_dstg_no` | Job arg `--run-seq` 값 | 다른 run 에 붙거나 조회 불가 |
 | `del_yn` | `'N'` | 조회 제외 |
 | `file_vald_end_dt` | `NULL` 또는 `'99991231'` | 과거 일자면 조회 쿼리에서 즉시 제외 |
@@ -298,19 +320,21 @@ DELETE FROM tcm_commcdd WHERE cd_grp_id = 'file_rel_obj_spt_cd' AND cd_id = 'SCN
 추가 계약 사항:
 
 - INSERT 시점은 자유(실행 중 순차 업로드 허용). 다만 `RUNNING` 중에도 상세 조회에 부분 목록이 보일 수 있다(§9 Q3).
-- 재실행 시 이전 run 의 중간파일은 다른 `run_seq` 에 붙으므로 덮어쓰지 않는다.
-- 실패한 run 이 남긴 중간파일도 그대로 남는다. 삭제 책임은 정의하지 않는다(§9 Q5).
+- 재실행 시 이전 run 의 중간파일/Trade Flow 결과파일은 다른 `run_seq` 에 붙으므로 덮어쓰지 않는다.
+- 실패한 run 이 남긴 중간파일/Trade Flow 결과파일도 그대로 남는다. 삭제 책임은 정의하지 않는다(§9 Q5).
 - Job args 는 변경 불필요. pod 는 이미 `--run-seq` 를 받는다.
 
 ## 9. Open Questions
 
 - ~~Q1. 관계 코드 값 최종 확정~~ → **해소 (2026-09-07)**: `SCNRCASEHI`. 남은 것은 공통코드 등록과 모델팀 리터럴 반영뿐이다.
-- ~~Q2. 다운로드 활성화 방식과 응답 metadata~~ → **해소 (2026-09-15)**: output/intermediate에 공통 File API 요청용 세 필드를 제공하고 input은 파일명만 유지한다.
+- ~~Q2. 다운로드 활성화 방식과 응답 metadata~~ → **해소 (2026-09-28 input 확장)**: input/output/intermediate/tradeOutput에 공통 File API 요청용 세 필드를 제공한다.
 - Q3. `RUNNING` 중 부분 업로드된 중간파일을 상세 조회에 노출할지. 현재 가정: **노출**(실패 원인 분석에 유용하고 조회 조건을 추가하지 않는 쪽이 단순하다). 숨기려면 run 상태가 terminal 일 때만 조회하도록 조건을 추가한다.
 - Q4. 중간파일 개수/총 용량 상한을 둘지. 초안 권장: 상한 없음(R5). 단 n 이 수십 개 이상이면 §5.1-B(별도 endpoint + 페이징)로 재검토.
 - Q5. 보존/정리 정책. output 파일도 동일하게 미정 상태이며(`mi-fundamental-model-output-result-persistence-design.md` open question), 이번 범위 밖으로 둔다.
 - ~~Q7. 공통코드 `cd_id` 값 확정~~ → **해소 (2026-09-07)**: `SCNRCASEHI` 로 확정한다. 공통코드 등록은 필요하며, §7 의 `tcm_commcdd` INSERT 문을 DBA/공통코드 담당 rollout 입력으로 사용한다.
 - Q6. DRM 정책: 중간파일 확장자가 암호화 대상(`FileDownloadEncryptor` 정책)에 포함되면 기존 공통 다운로드 경로에서 재암호화되어 내려간다. 이 변경은 DRM 정책을 바꾸지 않는다.
+- ~~Q8. Trade Flow 결과파일 역할/코드/run 연결~~ → **해소 (2026-09-17)**: `files.tradeOutput`, `SCNRCASEHTF + latest run_seq`, output/intermediate와 별도 배열로 확정한다.
+- ~~Q9. `SCNRCASEHTF` 공통코드 적용/rank 충돌~~ → **해소 (2026-09-17 사용자 확인)**: 모든 대상 DB 적용 완료, `cd_rnk = 8` 중복 없음.
 
 ## 10. 영향 범위
 
@@ -320,10 +344,12 @@ DELETE FROM tcm_commcdd WHERE cd_grp_id = 'file_rel_obj_spt_cd' AND cd_id = 'SCN
 |---|---|
 | `src/main/java/com/sk/domain/mi/service/fundamentalmodel/FundamentalModelCaseServiceImpl.java` | 신규 관계코드 상수 추가, `findIntermediateFiles(latestRunHistory)` 추가(`findOutputFiles` 와 동일 형태), `getCaseDetailInternal` 조립부 수정 |
 | `src/main/java/com/sk/domain/mi/dto/response/fundamentalmodel/FundamentalModelCaseFilesRes.java` | `intermediate` 필드 추가 |
-| `src/main/java/com/sk/domain/mi/controller/fundamentalmodel/FundamentalModelCaseController.java` | 상세 조회 설명과 예시에 input/output/intermediate의 역할별 metadata 명시 |
-| `src/test/java/com/sk/domain/mi/service/fundamentalmodel/FundamentalModelDownloadFileResContractTest.java` | input filename-only와 output/intermediate 다운로드 metadata shape 단정 |
+| `src/main/java/com/sk/domain/mi/controller/fundamentalmodel/FundamentalModelCaseController.java` | 상세 조회 설명과 예시에 input/output/intermediate/tradeOutput의 역할별 metadata 명시 |
+| `src/test/java/com/sk/domain/mi/service/fundamentalmodel/FundamentalModelDownloadFileResContractTest.java` | 네 파일 목록의 공통 다운로드 metadata shape 단정 |
 
-- input filename DTO를 추가하고 `FundamentalModelDownloadFileRes`에 `fileNo`/`fileSize`를 복구한다.
+2026-09-17 구현 delta는 위 패턴에 `FILE_RELATION_SCENARIO_CASE_HISTORY_TRADE_FLOW = "SCNRCASEHTF"`, `findTradeOutputFiles(latestRunHistory)`, `FundamentalModelCaseFilesRes.tradeOutput`, service/OpenAPI 계약 테스트를 추가하는 최소 변경이다.
+
+- input도 `FundamentalModelDownloadFileRes`를 재사용하고 별도 filename DTO를 제거한다.
 - 신규 repository 메서드는 필요 없다. `findActiveRelationshipFilesOrderByFileNoAsc` 를 코드 값만 바꿔 재사용한다.
 - `FileRelationshipObjectSeparateCode` enum 에는 현재 `SCNRCASE`/`SCNRCASEH` 가 없고 서비스 로컬 상수로 관리된다. 이번 변경도 로컬 상수 패턴을 따르고, enum 승격은 선택 권고로만 남긴다(필수 아님).
 
@@ -333,39 +359,41 @@ DELETE FROM tcm_commcdd WHERE cd_grp_id = 'file_rel_obj_spt_cd' AND cd_id = 'SCN
 |---|---|
 | `docs/design-docs/gas/scenario-case-execution-erd-ddl-draft.md` | 공통코드 INSERT/pre-check/verify/rollback 에 신규 코드 추가 (canonical) |
 | `docs/design-docs/gas/scenario-case-execution-workflow-design-draft.md` | `tcm_filel` 연결 방식 표에 중간파일 행 추가, Stage 4a 상세 조회 범위 갱신 |
-| `docs/feature-specs/mi-fundamental-model-mock-api-feature-spec.md` | input filename-only와 output/intermediate 다운로드 metadata 계약 반영 (canonical API 계약) |
+| `docs/feature-specs/mi-fundamental-model-mock-api-feature-spec.md` | 네 파일 목록의 공통 다운로드 metadata 계약 반영 (canonical API 계약) |
 | `docs/design-docs/gas/mi-fundamental-model-agent-model-interface-draft.md` | 모델 책임에 중간파일 업로드/INSERT 계약 추가 |
 | `docs/design-docs/gas/mi-fundamental-model-output-result-persistence-design.md` | `SCNRCASEH` 가 run 단위 파일의 유일한 연결이라는 서술 보완 |
 
 ### 10.3 보안 영향
 
-- 이번 변경은 output/intermediate의 파일 식별자와 크기를 새로 노출한다. input 상세 항목은 파일명만 유지한다.
+- 상세 응답은 input/output/intermediate/tradeOutput의 파일 식별자와 크기를 노출한다.
 - 파일명 자체도 노출 정보다. 모델팀이 중간파일명에 민감 정보(고객사명, 내부 경로 등)를 넣지 않도록 인터페이스 문서에 반영한다.
 - 상세 조회 자체의 권한(`SKGAS_COMPANY_USER_ONLY` USER, `THIRD_PARTY_ADMIN_ONLY` ADMIN)은 변경하지 않는다.
-- 공통 다운로드 인가 개선은 사용자 지시에 따라 이번 응답 변경 범위에서 제외한다.
+- 공통 다운로드 객체 단위 인가 개선은 기존 intermediate 결정과 동일하게 사용자 지시에 따라 이번 응답 변경 범위에서 제외한다.
 
 ## 11. 검증 계획
 
-- focused test: 중간파일 목록 projection(최신 run 있음 / 최신 run 없음 / 파일 0건), input filename-only와 output/intermediate 다운로드 metadata 계약 단정
+- focused test: Trade Flow 결과파일 목록 projection(최신 run 있음 / 최신 run 없음 / 파일 0건), 네 파일 목록의 공통 다운로드 metadata 계약 단정
   - `./gradlew test -PforceTest --tests 'com.sk.domain.mi.service.fundamentalmodel.*'`
-  - `FundamentalModelDownloadFileResContractTest`에서 각 배열의 서로 다른 item shape를 확인한다.
+  - `FundamentalModelDownloadFileResContractTest`에서 네 배열이 같은 다운로드 item shape를 사용하는지 확인한다.
 - 컴파일: `./gradlew compileJava -x test` (동작 검증 아님을 명시)
-- generated OpenAPI 에서 input과 output/intermediate item schema가 올바르게 분리되는지 확인
+- generated OpenAPI 에서 네 파일 목록이 동일한 다운로드 item schema를 사용하는지 확인
 - DB: §7 verify SQL 로 코드 등록과 run 별 조회 확인
-- 모델 연동: 모델팀이 `SCNRCASEHI` 로 INSERT 한 뒤 상세 조회에 파일명이 나오는지 1건 end-to-end 확인
+- 모델 연동: 모델팀이 `SCNRCASEHTF + run_seq`로 INSERT 한 뒤 상세 조회 `files.tradeOutput`에 metadata가 나오는지 1건 end-to-end 확인
 
 ## 12. Fixed Decisions / 확정 대기
 
-### 확정 (Fixed, 2026-09-07, 다운로드 metadata는 2026-09-15 후속 확정)
+### 확정 (Fixed, 2026-09-07, 다운로드 metadata는 2026-09-15, tradeOutput은 2026-09-17 후속 확정)
 
 - D1. 식별 방식: 신규 `file_rel_obj_spt_cd` 코드 + `file_rel_obj_dstg_no = run_seq` (§4-A). 테이블 변경 없이 공통코드 detail 1건만 추가한다.
 - D1-1. 코드 값: `SCNRCASEHI` (§4 코드 값)
 - D2. 노출 형태: 상세 조회 `files.intermediate` 배열, 최신 run 기준 (§5)
-- D3. 다운로드 metadata: input은 `fileNm`만, output/intermediate는 `fileNo`, `fileNm`, `fileSize`를 제공하고 기존 공통 File API를 사용한다 (§6).
+- D3. 다운로드 metadata: input/output/intermediate/tradeOutput은 모두 `fileNo`, `fileNm`, `fileSize`를 제공하고 기존 공통 File API를 사용한다 (§6).
 - D4. 적재 주체: model pod 직접 INSERT, backend 쓰기 없음 (§8)
+- D5. Trade Flow 결과파일: `files.tradeOutput`, `SCNRCASEHTF + latest run_seq`, output/intermediate와 별도 배열, 동일 다운로드 metadata shape (§5~§8).
 
 ### 남은 진행 조건
 
 - 공통코드 `SCNRCASEHI` 등록 (DBA/공통코드 담당)
 - 모델팀이 동일 리터럴로 INSERT 하도록 인터페이스 문서 반영
+- `SCNRCASEHTF` 공통코드는 모든 대상 DB에 적용 완료됐고 `cd_rnk = 8` 충돌이 없으므로 별도 DBA 선행 작업이 없다.
 - Q3~Q6 은 구현을 막지 않는 운영/정책 항목이다. Q7 은 코드값 확정으로 해소되었다

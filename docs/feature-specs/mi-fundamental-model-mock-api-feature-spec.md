@@ -13,7 +13,7 @@
   - `docs/conventions/openapi-documentation-conventions.md`
 - supersedes:
   - 이 문서의 1차 mock runtime 구성·reset API·in-memory store 구현 handoff
-- last synced: 2026-09-22
+- last synced: 2026-09-28
 - open questions:
   - 현재 구현된 API와 Region/Country 필터 확장 계약에는 없음
   - callback 인증/서명, 필터 저장은 별도 후속 계약에서 확정
@@ -55,7 +55,7 @@ Work note와 외부 문서가 이 feature spec 또는 canonical design draft와 
 
 ## 1. Feature Goal
 
-MI Fundamental Model Case API는 사용자가 Scenario Case와 input Excel 3개를 등록하고, 특정 case의
+MI Fundamental Model Case API는 사용자가 Scenario Case와 input Excel 4개를 등록하고, 특정 case의
 모델 실행을 비동기로 요청하며, 실행 상태와 real-DB에 적재된 Volumes/Trade Flows/Price 결과를
 조회할 수 있게 한다. 모델 callback은 run/case 상태를 terminal 상태로 전이한다.
 
@@ -67,7 +67,7 @@ SQL은 각각 source code와 canonical DDL/design 문서가 소유한다.
 ### Current Scope
 
 - Scenario Case 업로드
-  - 파일 3개
+  - `DEMAND`, `SUPPLY`, `TRADE`, `OUTPUT` 입력 파일 4개
   - 제목
   - 설명
   - 생성 직후 상태 `PENDING`
@@ -82,7 +82,7 @@ SQL은 각각 source code와 canonical DDL/design 문서가 소유한다.
 - Scenario Case 상세 조회
   - case metadata
   - 실행 유형 `execType` (`INDEPENDENT | MI_BASE`)
-  - input 파일명과 output/intermediate/tradeOutput 다운로드 metadata
+  - input/output/intermediate/tradeOutput 다운로드 metadata
   - latestRun projection
 - Scenario Case metadata 수정
   - `title`, `description`만 허용
@@ -126,7 +126,7 @@ SQL은 각각 source code와 canonical DDL/design 문서가 소유한다.
 
 ### Boundary Against Existing ScenarioModelExecution API
 
-기존 `ScenarioModelExecution` API는 Next Gen의 parameter 기반 MI 수급모델 실행 리소스를 다룬다. 이 spec의 `FundamentalModelCase`는 파일 3개 업로드를 기준으로 생성되는 Scenario Case aggregate이며, 기존 `model-executions` resource와 별개 기능으로 구현한다.
+기존 `ScenarioModelExecution` API는 Next Gen의 parameter 기반 MI 수급모델 실행 리소스를 다룬다. 이 spec의 `FundamentalModelCase`는 `DEMAND`, `SUPPLY`, `TRADE`, `OUTPUT` 파일 4개 업로드를 기준으로 생성되는 Scenario Case aggregate이며, 기존 `model-executions` resource와 별개 기능으로 구현한다.
 
 구현 시 controller/DTO/service 명명도 다음처럼 분리한다.
 
@@ -183,7 +183,7 @@ input 내용 제공 endpoint와 응답 형식은 아직 이 표에 추가하지 
 
 | 항목 | 현재 상태 | 필요한 후속 source of truth |
 |---|---|---|
-| output/intermediate/tradeOutput 파일 다운로드 metadata | 상세 응답 계약 확정 | 이 feature spec의 `FundamentalModelCaseFilesRes`; 다운로드는 기존 공통 File API 사용 |
+| input/output/intermediate/tradeOutput 파일 다운로드 metadata | 상세 응답 계약 확정 | 이 feature spec의 `FundamentalModelCaseFilesRes`; 다운로드는 기존 공통 File API 사용 |
 | 운영 Kubernetes Job dispatch | 구현 완료 (2026-06-12, 재시도 정책 no-retry 확정 2026-06-21) | external model interface spec + workflow design |
 | callback 인증/서명 | 재시도 정책은 확정, 인증/서명 세부는 별도 운영 정책 | security/integration design + feature spec update |
 | DB persistence / DDL (volumes/trade flows/price 포함) | 구현 완료 (2026-06-15 real DB rollout) | case/run DDL은 `scenario-case-execution-erd-ddl-draft.md`, output result data persistence는 `mi-fundamental-model-output-result-persistence-design.md` |
@@ -235,8 +235,8 @@ input 내용 제공 endpoint와 응답 형식은 아직 이 표에 추가하지 
 각 목록은 서로 독립적으로 `fileNm`을 대소문자 구분 없이 일반 문자열 오름차순으로 정렬하며, 숫자 자연정렬은 적용하지 않는다.
 파일명 비교 결과가 같으면 원본 row의 `file_no ASC`를 보조 기준으로 사용한다. 최신 실행이나 해당 파일이 없으면 빈 배열이다.
 
-`files.input` 항목은 화면 표시용 `fileNm`만 반환한다. `files.output`, `files.intermediate`, `files.tradeOutput` 항목은 기존 공통
-File API 다운로드 요청에 전달할 `fileNo`, `fileNm`, `fileSize`를 반환한다. 이 역할별 차이는 상세 조회와 같은
+`files.input`, `files.output`, `files.intermediate`, `files.tradeOutput` 항목은 기존 공통 File API 다운로드 요청에 전달할
+`fileNo`, `fileNm`, `fileSize`를 반환한다. 이 계약은 상세 조회와 같은
 projection을 반환하는 수정 응답에도 동일하게 적용한다. 업로드 응답 `FundamentalModelCaseFileRes`는 기존 계약을 유지한다.
 중간파일/Trade Flow 결과파일 식별 방식과 pod 적재 계약은
 [mi-fundamental-model-intermediate-file-design.md](../design-docs/gas/mi-fundamental-model-intermediate-file-design.md)가 canonical이다.
@@ -306,7 +306,7 @@ Acceptance criteria:
 |---|---|---|---|---|
 | `title` | `String` | Y | trim 후 1-200자 | Scenario Case 제목 |
 | `description` | `String` | N | 최대 2000자 권장 | Scenario Case 설명 |
-| `files` | `MultipartFile[]` | Y | 정확히 3개, 각 파일 non-empty, 파일명 역할 키워드 검증 | 모델 실행에 필요한 입력 파일 3개 |
+| `files` | `MultipartFile[]` | Y | 정확히 4개, 각 파일 non-empty, 파일명 역할 키워드 검증 | 모델 실행에 필요한 `DEMAND`, `SUPPLY`, `TRADE`, `OUTPUT` 입력 파일 |
 
 권장 DTO/handler 형태:
 
@@ -321,11 +321,12 @@ createCase(
 
 검증 규칙:
 
-- `files.size() == 3` 이 아니면 거절한다.
+- `files.size() == 4` 가 아니면 거절한다.
 - 파일 중 하나라도 비어 있으면 거절한다.
-- 파일명에는 `DEMAND`, `SUPPLY`, `TRADE` 키워드가 각각 정확히 1개씩 포함되어야 한다. 비교는 대소문자 무관이며, 하나의 파일명이 여러 역할 키워드를 동시에 포함하거나 특정 역할 키워드가 누락/중복되면 `400 REQ_INVALID_PARAMETER`로 거절한다.
+- 파일명에는 `DEMAND`, `SUPPLY`, `TRADE`, `OUTPUT` 키워드가 각각 정확히 1개씩 포함되어야 한다. 비교는 대소문자 무관이며, 하나의 파일명이 여러 역할 키워드를 동시에 포함하거나 특정 역할 키워드가 누락/중복되면 `400 REQ_INVALID_PARAMETER`로 거절한다. 여기서 `OUTPUT`은 실행 결과 파일이 아니라 모델 실행에 먼저 전달하는 네 번째 입력 파일 역할이다.
 - 확장자/MIME/크기 검증은 기존 `FileService` 정책을 재사용하고 해당 오류를 `FILE_FORMAT_ERROR`, `FILE_SIZE_ERROR`로 매핑한다.
-- 같은 파일명 자체는 허용하지만 `DEMAND`, `SUPPLY`, `TRADE` 역할 키워드는 각각 정확히 1개여야 한다.
+- 네 파일은 하나의 Case aggregate로 업로드한다. 하나라도 업로드 또는 file metadata 저장에 실패하면 API 전체를 실패시키고, 그 전에 성공한 파일은 기존 보상 삭제 흐름으로 정리한다.
+- 같은 파일명 자체는 허용하지만 `DEMAND`, `SUPPLY`, `TRADE`, `OUTPUT` 역할 키워드는 각각 정확히 1개여야 한다.
 
 ### 3.3 Scenario Case 실행 요청
 
@@ -344,7 +345,7 @@ createCase(
 
 실행 가능한 case 상태는 최초 실행의 `PENDING`과 모델 호출 실패 후 재시도의 `FAILED`다. `COMPLETED`는 성공 종료 상태이므로 같은 case를 다시 실행할 수 없다. 새로운 정상 실행은 파일 업로드 API로 별도 `INDEPENDENT` case를 생성한다. `FAILED` 재시도는 기존 case를 유지하면서 새 `runId`와 `tmd_mdl_scnrcaseh` 이력만 생성한다.
 
-실제 연동에서는 backend가 Kubernetes Job을 생성할 때 `runId`, 입력 파일 storage path 3개, output storage prefix, callback URL/auth 정보를 함께 전달한다. Kubernetes API의 Job 생성 성공은 장시간 실행 결과가 아니라 dispatch 접수 성공 여부만 표현한다. 접수 성공이면 backend는 case/run 상태를 `RUNNING`으로 유지하고 클라이언트에 `202 Accepted`를 반환한다. pod 내부 실행 완료 또는 실패는 pod 또는 실행 프로세스가 backend callback API를 호출해 terminal 상태로 전이한다. backend가 pod 내부 Python 완료 여부를 주기적으로 polling 하는 방식은 채택하지 않는다.
+backend는 Kubernetes Job을 생성할 때 `runId`, `runSeq`, `DEMAND`/`SUPPLY`/`TRADE`/`OUTPUT` storage path 4개와 callback URL을 전달한다. 역할별 CLI 인자는 각각 `--demand-excel-path`, `--supply-excel-path`, `--trade-excel-path`, `--output-excel-path`다. `--output-excel-path`는 모델 실행 전에 소비하는 `OUTPUT` 역할 input workbook 경로이며, 모델 실행 결과 저장 위치를 뜻하지 않는다. 결과 파일 적재는 기존 `runSeq`와 `SCNRCASEH` 관계 계약을 유지한다. Kubernetes API의 Job 생성 성공은 장시간 실행 결과가 아니라 dispatch 접수 성공 여부만 표현한다. 접수 성공이면 backend는 case/run 상태를 `RUNNING`으로 유지하고 클라이언트에 `202 Accepted`를 반환한다. pod 내부 실행 완료 또는 실패는 pod 또는 실행 프로세스가 backend callback API를 호출해 terminal 상태로 전이한다. backend가 pod 내부 Python 완료 여부를 주기적으로 polling 하는 방식은 채택하지 않는다.
 
 실행 요청은 case 상태를 변경하고 새 run을 생성하는 owner-scoped mutation이다. DB-backed 구현은 `case_id + usr_no ownership + del_yn = 'N' + exec_type_cd = 'INDEPENDENT'` 기준으로 active owned 독립실행 case인지 확인한 뒤 실행 선점/상태 전이를 수행한다. 소유자가 아니거나 `MI_BASE | SCENARIO`인 case의 실행 요청은 active resource hiding 규칙에 따라 `RSC_NOT_FOUND`로 처리한다.
 
@@ -361,17 +362,17 @@ createCase(
 
 규칙:
 
-- active `execType = INDEPENDENT | MI_BASE` case이면 case metadata, `execType`, input 파일명, output/intermediate/tradeOutput 다운로드 metadata, latest run projection을 반환한다. `SCENARIO`는 이 API의 active resource가 아니므로 `404 RSC_NOT_FOUND`로 처리한다.
+- active `execType = INDEPENDENT | MI_BASE` case이면 case metadata, `execType`, input/output/intermediate/tradeOutput 다운로드 metadata, latest run projection을 반환한다. `SCENARIO`는 이 API의 active resource가 아니므로 `404 RSC_NOT_FOUND`로 처리한다.
 - `latestRunId`가 없거나 아직 실행되지 않은 `PENDING` case이면 `latestRun = null`이다.
 - full run history는 반환하지 않는다.
-- result payload, result reference, download URL은 반환하지 않는다. `files.input[]`은 `fileNm`만 반환하고,
-  `files.output[]`, `files.intermediate[]`, `files.tradeOutput[]`은 공통 File API 다운로드 요청용 `fileNo`, `fileNm`, `fileSize`를 반환한다.
+- result payload, result reference, presigned download URL은 반환하지 않는다. `files.input[]`, `files.output[]`, `files.intermediate[]`,
+  `files.tradeOutput[]`은 공통 File API 다운로드 요청용 `fileNo`, `fileNm`, `fileSize`를 반환한다.
 - case가 없으면 `404 RSC_NOT_FOUND`로 응답한다.
 
 Acceptance criteria:
 
 - Given active case ID, when 상세 조회하면, then case metadata, files, latestRun을 반환한다.
-- Given 업로드 직후 case, when 상세 조회하면, then `status = PENDING`, files 3개, `latestRun = null`을 반환한다.
+- Given 업로드 직후 case, when 상세 조회하면, then `status = PENDING`, input files 4개, `latestRun = null`을 반환한다.
 - Given 실행 요청 후 case, when 상세 조회하면, then `status = RUNNING`, latestRun 정보를 반환한다.
 - Given 목록의 current MI Base case ID, when 상세 조회하면, then 기존 상세 정보와 `execType = MI_BASE`를 반환한다.
 - Given active INDEPENDENT case ID, when 상세 조회하면, then `execType = INDEPENDENT`를 반환한다.
@@ -680,7 +681,9 @@ Acceptance criteria:
   "files": {
     "input": [
       {
-        "fileNm": "input_1.xlsx"
+        "fileNo": 1001,
+        "fileNm": "input_1.xlsx",
+        "fileSize": 12345
       }
     ],
     "output": [
@@ -733,30 +736,24 @@ Acceptance criteria:
 | `execType` | `FundamentalModelExecType` | 실행 유형. 상세 조회에서는 `INDEPENDENT \| MI_BASE`, non-null |
 | `assigneeName` | `String` | `tmd_mdl_scnrcasem.usr_no`로 연결된 사용자 이름 |
 | `assigneeUserNo` | `Integer` | case를 업로드한 사용자 번호. `tmd_mdl_scnrcasem.usr_no` |
-| `files` | `FundamentalModelCaseFilesRes` | input 파일명과 output/intermediate/tradeOutput 다운로드 metadata |
+| `files` | `FundamentalModelCaseFilesRes` | input/output/intermediate/tradeOutput 다운로드 metadata |
 | `latestRun` | `FundamentalModelRunStatusRes` | 최신 실행 정보. `PENDING`이면 `null` |
 | `createdAt` | `LocalDateTime` | case 생성 시각 |
 | `updatedAt` | `LocalDateTime` | case 최종 변경 시각 |
 
 상세 응답은 active `INDEPENDENT | MI_BASE` case를 지원하고 최신 실행 1건만 포함한다. 전체 실행 이력은 별도 runs API가 정의되기 전까지 이 응답에 포함하지 않는다.
 상세 `GET` 허용 범위는 수정·삭제·실행 범위를 넓히지 않으며, 이 mutation들은 active `INDEPENDENT`만 허용한다. MI Base 지정 actor/time은 별도 계약 전까지 응답하지 않는다.
-result payload는 포함하지 않는다. input 파일은 `fileNm`만 제공하고, output/intermediate/tradeOutput 파일은 기존 공통 File API에
-전달할 `fileNo`, `fileNm`, `fileSize`를 제공한다.
+result payload는 포함하지 않는다. input/output/intermediate/tradeOutput 파일은 기존 공통 File API에 전달할
+`fileNo`, `fileNm`, `fileSize`를 제공한다.
 
 #### `FundamentalModelCaseFilesRes`
 
 | 필드 | 타입 | 설명 |
 |---|---|---|
-| `input` | `List<FundamentalModelFileNameRes>` | `SCNRCASE + case_id`로 연결된 입력 파일명 목록. 업로드 기준 3개 |
+| `input` | `List<FundamentalModelDownloadFileRes>` | `SCNRCASE + case_id`로 연결된 입력 파일 다운로드 metadata 목록. 업로드 기준 4개 |
 | `output` | `List<FundamentalModelDownloadFileRes>` | 최신 실행 `SCNRCASEH + run_seq`로 연결된 output 파일 목록. 최신 실행 또는 output 파일이 없으면 빈 배열 |
 | `intermediate` | `List<FundamentalModelDownloadFileRes>` | 최신 실행 `SCNRCASEHI + run_seq`로 연결된 모델 실행 중간파일 목록(n개). 최신 실행 또는 중간파일이 없으면 빈 배열 |
 | `tradeOutput` | `List<FundamentalModelDownloadFileRes>` | 최신 실행 `SCNRCASEHTF + run_seq`로 연결된 Trade Flow 결과파일 목록. 최신 실행 또는 Trade Flow 결과파일이 없으면 빈 배열 |
-
-#### `FundamentalModelFileNameRes`
-
-| 필드 | 타입 | 설명 |
-|---|---|---|
-| `fileNm` | `String` | 화면에 표시할 input 파일명(`tcm_filel.org_file_nm`) |
 
 #### `FundamentalModelDownloadFileRes`
 
@@ -766,7 +763,7 @@ result payload는 포함하지 않는다. input 파일은 `fileNm`만 제공하�
 | `fileNm` | `String` | 공통 File API 다운로드 요청의 `fileNm` (`tcm_filel.org_file_nm`) |
 | `fileSize` | `Long` | 공통 File API 다운로드 요청의 `fileSize` (byte) |
 
-`input`은 파일명-only shape이고, `output`, `intermediate`, `tradeOutput`은 동일한 다운로드 metadata shape다.
+`input`, `output`, `intermediate`, `tradeOutput`은 모두 `fileNo`, `fileNm`, `fileSize`의 동일한 다운로드 metadata shape다.
 
 ### 4.4 `FundamentalModelCaseCreateRes`
 
@@ -796,7 +793,7 @@ result payload는 포함하지 않는다. input 파일은 `fileNm`만 제공하�
 | `title` | `String` | 제목 |
 | `description` | `String` | 설명. 입력 없으면 `null`. `tmd_mdl_scnrcasem.case_expn`에 매핑 |
 | `status` | `FundamentalModelCaseStatus` | 생성 직후 `PENDING` |
-| `files` | `List<FundamentalModelCaseFileRes>` | 업로드 파일 3개 metadata |
+| `files` | `List<FundamentalModelCaseFileRes>` | 업로드한 `DEMAND`, `SUPPLY`, `TRADE`, `OUTPUT` 파일 4개 metadata |
 | `createdAt` | `LocalDateTime` | case 생성 시각 |
 | `statusEndpoint` | `String` | case 기준 상태 조회 endpoint |
 
@@ -1390,10 +1387,11 @@ FE는 `latestRun.startedAt`과 `latestRun.finishedAt`으로 소요시간을 계�
 | title 누락 또는 blank | `400` | `REQ_INVALID_PARAMETER` | Bean Validation 또는 수동 검증 |
 | title 200자 초과 | `400` | `REQ_INVALID_PARAMETER` | `case_titl_nm VARCHAR(200)` 정합성 |
 | 파일 part 누락 | `400` | `REQ_MISSING_PARAMETER` 또는 `REQ_INVALID_PARAMETER` | handler가 missing part를 잡으면 공통 handler는 `REQ_INVALID_PARAMETER` 가능 |
-| 파일 개수가 3개가 아님 | `400` | `REQ_INVALID_PARAMETER` | 메시지에 expected/actual count 포함 |
+| 파일 개수가 4개가 아님 | `400` | `REQ_INVALID_PARAMETER` | 정확히 4개가 필요함을 안내 |
 | 빈 파일 포함 | `400` | `FILE_INVALID` | 각 file `isEmpty()` 검증 |
 | 파일 크기 제한 초과 | `400` | `FILE_SIZE_ERROR` | 제한값은 구현 설정 확인 필요 |
 | 허용하지 않는 파일 형식 | `400` | `FILE_FORMAT_ERROR` | allowlist 확정 후 적용 |
+| Run 요청 대상 Case의 `DEMAND`/`SUPPLY`/`TRADE`/`OUTPUT` input storage path 중 하나 이상 누락 | `400` | `BIZ_RULE_VIOLATION` | Job을 생성하지 않고 요청 실패 |
 | 이미 `RUNNING`인 case 실행 요청 | `409` 권장 | `BIZ_RULE_VIOLATION` 1차 후보, 후속 `BIZ_STATE_CONFLICT` 재활성화 검토 | 중복 실행 차단 |
 | 이미 `COMPLETED`인 case 실행 요청 | `409` 권장 | `BIZ_RULE_VIOLATION` | 완료 case 재사용 금지. 새 실행은 새 case로 생성 |
 | Volumes 조회 시 `segment` 누락 | `400` | `REQ_INVALID_PARAMETER` | Volumes는 segment 필수 |
@@ -1478,9 +1476,9 @@ Swagger 문서에는 다음을 명시한다.
 
 - 목록 조회 API의 canonical contract는 `non-blank keyword requires searchType`이다. `keyword`가 null 또는 blank이면 `searchType`이 있어도 검색 조건 없음으로 처리한다.
 - 업로드 API는 `multipart/form-data` 전용이다.
-- `files` part는 정확히 3개가 필수다.
-- 상세 조회는 case metadata, input 파일명, output/intermediate/tradeOutput 다운로드 metadata, latestRun을 반환한다. input에는 `fileNm`만,
-  output/intermediate/tradeOutput에는 `fileNo`, `fileNm`, `fileSize`를 제공하며 full run history/result payload는 포함하지 않는다.
+- `files` part는 정확히 4개가 필수이며 `DEMAND`, `SUPPLY`, `TRADE`, `OUTPUT` 역할이 각각 1개여야 한다.
+- 상세 조회는 case metadata, input/output/intermediate/tradeOutput 다운로드 metadata, latestRun을 반환한다. 네 파일 목록 모두
+  `fileNo`, `fileNm`, `fileSize`를 제공하며 full run history/result payload는 포함하지 않는다.
 - 수정 API는 `title`, `description`만 받으며 응답은 최신 `FundamentalModelCaseDetailRes`다.
 - 삭제 API는 physical delete가 아니라 soft delete이며, 삭제된 case는 이후 active-resource API에서 `404 RSC_NOT_FOUND`로 취급한다.
 - 실행 요청은 `PENDING` 최초 실행과 `FAILED` 모델 호출 재시도만 허용한다. `RUNNING` 중복 접수와 `COMPLETED` case 재실행은 차단한다.
@@ -1721,7 +1719,7 @@ callback payload에는 결과 payload/pointer를 포함하지 않는다. parsed 
 | Persistence | `ScenarioCaseRepository`, `ScenarioCaseRunHistoryRepository`, `UploadedFileRepository`, Volumes/Trade/Price result repositories |
 | Request DTO | `FundamentalModelCaseListReq`, `FundamentalModelCaseUpdateReq`, `FundamentalModelVolumesReq`, `FundamentalModelTradeFlowsReq` |
 | Callback DTO | `FundamentalModelRunCallbackReq` |
-| Response DTO | `FundamentalModelCaseListRes`, `FundamentalModelCaseListItemRes`, `FundamentalModelCaseDetailRes`, `FundamentalModelCaseFilesRes`, `FundamentalModelFileNameRes`, `FundamentalModelDownloadFileRes`, `FundamentalModelCaseCreateRes`, `FundamentalModelCaseFileRes`, `FundamentalModelRunAcceptRes`, `FundamentalModelCaseStatusRes`, `FundamentalModelRunStatusRes`, `FundamentalModelRunCallbackRes`, `FundamentalModelVolumesRes`, `FundamentalModelTradeFlowsRes`, `FundamentalModelPriceRes` |
+| Response DTO | `FundamentalModelCaseListRes`, `FundamentalModelCaseListItemRes`, `FundamentalModelCaseDetailRes`, `FundamentalModelCaseFilesRes`, `FundamentalModelDownloadFileRes`, `FundamentalModelCaseCreateRes`, `FundamentalModelCaseFileRes`, `FundamentalModelRunAcceptRes`, `FundamentalModelCaseStatusRes`, `FundamentalModelRunStatusRes`, `FundamentalModelRunCallbackRes`, `FundamentalModelVolumesRes`, `FundamentalModelTradeFlowsRes`, `FundamentalModelPriceRes` |
 | Enum | `FundamentalModelCaseStatus`, `FundamentalModelRunStatus`, `FundamentalModelCaseSearchType`, `FundamentalModelSegment`, `FundamentalModelDataType`, `FundamentalModelRegion`, `FundamentalModelGranularity`, `VolumesRowKind`, `PriceSeriesType`, `TradeFlowSelector`, `TradeFlowUnit`, `TradeFlowDirection`, `TradeCountryHeaderKind` |
 
 package는 현재 `com.sk.domain.mi.*.fundamentalmodel` 경계를 사용한다.
@@ -1777,18 +1775,19 @@ callback endpoint는 현재 별도 permission annotation 없이 dedicated deploy
 ### Upload
 
 1. `title`, `description`, `files`를 받는다.
-2. `files`가 정확히 3개인지 검증한다.
+2. `files`가 정확히 4개이고 파일명에 `DEMAND`, `SUPPLY`, `TRADE`, `OUTPUT` 역할이 각각 정확히 1개인지 검증한다.
 3. 각 파일이 비어 있지 않은지 검증한다.
 4. case를 `tmd_mdl_scnrcasem`에 저장하고 DB가 `caseId`를 발급한다.
 5. 파일 binary는 기존 storage 흐름으로 저장하고 metadata는 `tcm_filel`에 `SCNRCASE + case_id`로 연결한다.
-6. case 상태는 `PENDING`으로 저장한다.
-7. `FundamentalModelCaseCreateRes`를 반환한다.
+6. 파일 하나라도 업로드에 실패하면 먼저 성공한 파일을 보상 삭제하고 요청 전체를 실패시킨다.
+7. case 상태는 `PENDING`으로 저장한다.
+8. `FundamentalModelCaseCreateRes`를 반환한다.
 
 ### Detail Query
 
 1. `caseId`로 active case를 찾는다.
 2. case가 없거나 `delYn = Y`이면 `RSC_NOT_FOUND`.
-3. case metadata와 `SCNRCASE + case_id` 기준 input 파일명 metadata를 반환한다.
+3. case metadata와 `SCNRCASE + case_id` 기준 input 파일의 `fileNo`, `fileNm`, `fileSize` metadata를 반환한다.
 4. `latestRunId`가 null이면 `latestRun = null`, `files.output = []`, `files.intermediate = []`, `files.tradeOutput = []`로 반환한다.
 5. `latestRunId`가 있으면 `tmd_mdl_scnrcaseh`에서 최신 run 1건을 찾아 `latestRun`으로 반환하고, 해당 run의 같은 `run_seq` 기준 `SCNRCASEH` output 파일, `SCNRCASEHI` 중간파일, `SCNRCASEHTF` Trade Flow 결과파일 metadata를 각각 반환한다.
 6. full run history와 result payload는 반환하지 않는다.
@@ -1927,7 +1926,7 @@ callback endpoint는 현재 별도 permission annotation 없이 dedicated deploy
 - Volumes 필터 Save 토글은 현재 제외한다. 후속 구현 시 user preference API/schema 설계가 필요하다.
 - 삭제는 case active-resource 제외를 위한 soft delete다. 보존 기간, audit 조회, 복구 정책은 후속 정책 범위다.
 - timeout scheduler는 구현됐고 10분 임계값/30초 polling을 사용한다. 운영 활성화 조건은 workflow design의 feature flag와 DBA index 검증 상태를 따른다.
-- 운영 입력 파일명에는 `DEMAND`/`SUPPLY`/`TRADE` 키워드가 포함되어야 하며, backend는 `SCNRCASE + caseId` 파일 목록에서 역할을 매핑한다.
+- 운영 입력 파일명에는 `DEMAND`/`SUPPLY`/`TRADE`/`OUTPUT` 키워드가 각각 포함되어야 하며, backend는 `SCNRCASE + caseId` 파일 목록에서 역할을 매핑한다. 모델 이미지는 네 번째 입력을 `--output-excel-path`로 받아야 한다.
 - `caseId` 접근 정책은 mutation의 `usr_no` ownership과 shared result read를 구분한다.
 - update/delete predicate는 `case_id + usr_no ownership + del_yn = 'N'`을 포함한다.
 - `scenarioId` 비노출과 `scnr_id` 저장 의미는 §7.2 Current real-DB Mapping을 따른다.
@@ -1954,7 +1953,7 @@ Region/Country 필터 확장 implementation readiness: `ready`.
 - Kubernetes Job 실제 dispatch 연동 및 재시도 정책 확정(no-retry, 2026-06-12/06-21)
 - Volumes/Trade Flows/Price DB persistence implementation (canonical table/key/partition/index design은 `mi-fundamental-model-output-result-persistence-design.md`에 확정, 2026-06-15 rollout 완료)
 - 목록/상세/status와 owner-scoped update/delete/run, active-resource hiding
-- `SCNRCASE` input 파일명과 `SCNRCASEH` output/`SCNRCASEHI` intermediate/`SCNRCASEHTF` Trade Flow 결과파일 다운로드 metadata 조회
+- `SCNRCASE` input과 `SCNRCASEH` output/`SCNRCASEHI` intermediate/`SCNRCASEHTF` Trade Flow 결과파일 다운로드 metadata 조회
 - callback과 timeout/reconciliation의 terminal 상태 전이
 - `BaseResponse<T>` 응답 wrapper
 
@@ -1997,7 +1996,7 @@ Region/Country 필터 확장 implementation readiness: `ready`.
 
 - Controller path family: `FundamentalModelCaseController` → `/api/v1/mi/fundamental-model/cases` (list/detail/update/delete/status/volumes/volumes-trade/price), `FundamentalModelCaseDedicatedController` → 같은 base path의 upload/run, `FundamentalModelRunDedicatedController` → `/api/v1/mi/fundamental-model/runs` callback.
 - List: `GET`, query params `searchType` (enum `TITLE`|`ASSIGNEE_NAME`) + `keyword` (`keyword` null/blank이면 검색 없음, non-blank이면 `searchType` 필수). 변경된 `miBase + cases`, `execType`, `totalCount`, 검색 범위는 enhancement feature spec §3을 따른다.
-- Upload: `POST`, multipart, `title`, `description`, `files` exactly 3
+- Upload: `POST`, multipart, `title`, `description`, `files` exactly 4. 파일명 역할은 `DEMAND`, `SUPPLY`, `TRADE`, `OUTPUT`이 각각 정확히 1개이며, 일부 업로드 실패 시 기존 보상 삭제를 수행한다.
 - Detail: `GET /{caseId}`, active `INDEPENDENT | MI_BASE`, returns non-null `execType`을 포함한 `FundamentalModelCaseDetailRes`
 - Update: `PATCH /{caseId}`, active `INDEPENDENT`만 허용. request `FundamentalModelCaseUpdateReq(title, description)`, returns latest `FundamentalModelCaseDetailRes`
 - Delete: `DELETE /{caseId}`, active `INDEPENDENT`만 soft delete, returns `BaseResponse<Void>` 200 OK

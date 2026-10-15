@@ -18,7 +18,7 @@ import org.springframework.stereotype.Component;
 
 /**
  * 시나리오 파라미터 비교 팝업의 인풋 파일 일괄(zip) 조립기.
- * 실행 완료 시나리오별 폴더(표시순서_시나리오명) 아래에 role명 파일(demand/supply/trade + 원본 확장자)로 담는다.
+ * 실행 완료 시나리오별 폴더(표시순서_시나리오명) 아래에 role명 파일(demand/supply/trade/output + 원본 확장자)로 담는다.
  * 외부 클라이언트 전달 경계이므로 공통 단건 다운로드와 동일한 재암호화 정책을 zip entry 단위로 적용한다.
  */
 @Slf4j

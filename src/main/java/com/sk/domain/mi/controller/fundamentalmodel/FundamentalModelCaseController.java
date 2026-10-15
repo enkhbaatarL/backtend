@@ -130,8 +130,8 @@ public class FundamentalModelCaseController {
     @ApiOrder(3)
     @Operation(
         summary = "MI Fundamental Model Scenario Case 상세 조회 API",
-        description = "active `INDEPENDENT`와 current `MI_BASE`의 case metadata, input 파일명, output/intermediate/tradeOutput 다운로드 metadata, latestRun만 조회합니다. "
-            + "input은 fileNm만 반환하고 output/intermediate/tradeOutput은 공통 File API 요청용 fileNo, fileNm, fileSize를 반환합니다. "
+        description = "active `INDEPENDENT`와 current `MI_BASE`의 case metadata, input/output/intermediate/tradeOutput 다운로드 metadata, latestRun만 조회합니다. "
+            + "모든 파일 목록은 공통 File API 요청용 fileNo, fileNm, fileSize를 반환합니다. "
             + "네 파일 목록은 각각 fileNm을 대소문자 구분 없이 일반 문자열 오름차순으로 정렬하고, 동률이면 fileNo 오름차순으로 반환합니다. "
             + "output/intermediate/tradeOutput은 최신 실행의 같은 run_seq 기준이며, 최신 실행, run_seq 또는 파일이 없으면 빈 배열입니다. full run history와 result payload는 포함하지 않습니다. "
             + "`MI_BASE`는 결과 조회만 허용되며 상세 조회가 수정·삭제·재실행 권한을 넓히지 않습니다. `SCENARIO`와 soft-deleted case는 조회되지 않습니다."
@@ -158,7 +158,11 @@ public class FundamentalModelCaseController {
                         "assigneeName": "홍길동",
                         "assigneeUserNo": 1,
                         "files": {
-                          "input": [{"fileNm": "DEMAND.xlsm"}, {"fileNm": "SUPPLY.xlsm"}, {"fileNm": "TRADE.xlsm"}],
+                          "input": [
+                            {"fileNo": 1001, "fileNm": "DEMAND.xlsm", "fileSize": 12345},
+                            {"fileNo": 1002, "fileNm": "SUPPLY.xlsm", "fileSize": 23456},
+                            {"fileNo": 1003, "fileNm": "TRADE.xlsm", "fileSize": 34567}
+                          ],
                           "output": [{"fileNo": 2011, "fileNm": "result.xlsx", "fileSize": 54321}],
                           "intermediate": [{"fileNo": 3011, "fileNm": "step1_demand_curve.csv", "fileSize": 1234}],
                           "tradeOutput": [{"fileNo": 4011, "fileNm": "trade_flow_result.xlsx", "fileSize": 67890}]
@@ -461,7 +465,7 @@ public class FundamentalModelCaseController {
         description = """
             완료된 active `INDEPENDENT` case를 전역 current MI Base로 지정합니다. 기존 current MI Base는 같은 transaction에서 `INDEPENDENT`로 복귀합니다.
 
-            같은 current case를 다시 지정하면 latest completed run, input 3종, Price 결과 적격성을 다시 검증한 뒤 멱등하게 변경 없이 `200 OK`를 반환합니다. 지정 성공은 이후 새로 시작하는 수급모델 input 생성부터 적용되며 기존 실행에는 소급 적용되지 않습니다. 성공 또는 지정 경쟁 충돌 뒤에는 `GET /cases`로 current를 다시 조회합니다.
+            같은 current case를 다시 지정하면 latest completed run, input 4종(`DEMAND/SUPPLY/TRADE/OUTPUT`), Price 결과 적격성을 다시 검증한 뒤 멱등하게 변경 없이 `200 OK`를 반환합니다. 지정 성공은 이후 새로 시작하는 수급모델 input 생성부터 적용되며 기존 실행에는 소급 적용되지 않습니다. 성공 또는 지정 경쟁 충돌 뒤에는 `GET /cases`로 current를 다시 조회합니다.
 
             이 기능은 DBA가 `actv_base_yn` generated column과 `tmd_mdl_scnrcasem_uq02` unique constraint를 먼저 적용한 환경에서만 활성화해야 합니다.
             """

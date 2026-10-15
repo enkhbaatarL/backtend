@@ -168,7 +168,8 @@ public class ScenarioExecutionRegistrar {
         String demandExcelPath = findInputFileStoragePath(inputFiles, "DEMAND");
         String supplyExcelPath = findInputFileStoragePath(inputFiles, "SUPPLY");
         String tradeExcelPath = findInputFileStoragePath(inputFiles, "TRADE");
-        validateRequiredInputFilePaths(demandExcelPath, supplyExcelPath, tradeExcelPath);
+        String outputExcelPath = findInputFileStoragePath(inputFiles, "OUTPUT");
+        validateRequiredInputFilePaths(demandExcelPath, supplyExcelPath, tradeExcelPath, outputExcelPath);
 
         return FundamentalModelJobArgs.builder()
             .caseId(caseId)
@@ -178,6 +179,7 @@ public class ScenarioExecutionRegistrar {
             .demandExcelPath(demandExcelPath)
             .supplyExcelPath(supplyExcelPath)
             .tradeExcelPath(tradeExcelPath)
+            .outputExcelPath(outputExcelPath)
             .callbackUrl(buildCallbackUrl(runId))
             .build();
     }
@@ -194,11 +196,19 @@ public class ScenarioExecutionRegistrar {
             .orElse(null);
     }
 
-    private void validateRequiredInputFilePaths(String demandExcelPath, String supplyExcelPath, String tradeExcelPath) {
-        if (isBlank(demandExcelPath) || isBlank(supplyExcelPath) || isBlank(tradeExcelPath)) {
+    private void validateRequiredInputFilePaths(
+        String demandExcelPath,
+        String supplyExcelPath,
+        String tradeExcelPath,
+        String outputExcelPath
+    ) {
+        if (isBlank(demandExcelPath)
+            || isBlank(supplyExcelPath)
+            || isBlank(tradeExcelPath)
+            || isBlank(outputExcelPath)) {
             throw AppErrorException.of(
                 ResultCode.Error.BIZ_RULE_VIOLATION,
-                "case input files must include DEMAND, SUPPLY, and TRADE storage paths."
+                "case input files must include DEMAND, SUPPLY, TRADE, and OUTPUT storage paths."
             );
         }
     }
