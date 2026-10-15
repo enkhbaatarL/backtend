@@ -6,7 +6,7 @@
 - status: Review
 - owner: BE (platform)
 - created at: 2026-07-03
-- updated at: 2026-10-13
+- updated at: 2026-10-15
 - canonical for: 파라미터 제안의 business concept, access scope, lifecycle, 상태 전이, Excel 생성 및 기존 수급모델 실행 연결 경계
 - not canonical for:
   - endpoint, request/response, HTTP error contract: `docs/feature-specs/mi-model-parameter-proposal-backend-feature-spec.md`
@@ -52,7 +52,7 @@
 - 두 mode 모두 네 파일을 같은 실행의 Case에 연결하고 모델 Job에 전달한다. 물리 file relation은 기존 `SCNRCASE + case_id`를 사용한다.
 - Agent proposal/confirmation의 `modelTarget.modelFile` 허용값은 계속 `DEMAND|SUPPLY|TRADE`다. 실행 파일 역할이 네 개라는 이유로 OUTPUT을 제안 대상으로 추가하지 않는다.
 - 전환 전 3파일 실행(2026-10-13 사용자 결정): 이미 3파일로 실행한 Scenario Case에 OUTPUT을 보완하지 않는다. 4파일 cutover 전에 그 Case와 연결 실행이력·execution-preparation·해당 시나리오의 active 가격전망해석을 soft delete한다. 판별·pre-check·보존 범위는 `mi-model-input-template-catalog-domain-model-design.md` 규칙 36~38, 팝업 판정은 §6 규칙 32를 따른다.
-- 구현 상태: 현재 Scenario의 파일 준비·접수·Job 전달 코드는 3파일이다. 위 4파일 목표는 추가 구현·검증이 필요하며, 아래 Existing Structure Reviewed 및 과거 sync note는 당시 코드/결정 이력이다.
+- 구현 상태(2026-10-15): Scenario의 파일 준비·접수·Job 전달은 4파일로 구현됐다. 확정값 병합은 DEMAND/SUPPLY/TRADE에만 적용하고 OUTPUT은 basecase 원본을 그대로 포함하며, `modelFile=OUTPUT`은 확정 검증·병합에서 거절한다. 기준본 선택은 아직 Object Storage `input_template`(실패 시 파일별 classpath 폴백)이며 current MI Base source snapshot 규칙은 구현되지 않았다. 아래 Existing Structure Reviewed 및 과거 sync note는 당시 코드/결정 이력이다.
 
 ## 2. Existing Structure Reviewed
 

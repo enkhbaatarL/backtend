@@ -3,19 +3,19 @@
 - domain: gas
 - status: implemented (real DB rollout complete; scenario lifecycle cancellation/reconciliation pending)
 - owner: platform BE
-- updated at: 2026-10-07
+- updated at: 2026-10-15
 - role: 시나리오 그룹 상세 화면의 `MI 수급모델 실행` workflow에 대해 backend aggregate, persistence 책임, latest status/source-of-truth 규칙을 정리하는 설계 문서
 - canonical for: MI 수급모델 실행의 scenario-linked lifecycle, Kubernetes Job orchestration, latest execution 규칙
 - upstream sources: `mi-scenario-workbench-backend-feature-spec.md`, `scenario-case-execution-workflow-design-draft.md`
 - dependencies: scheduler-enabled dedicated deployment, Kubernetes jobs get/list/delete RBAC
-- last sync date: 2026-10-07
+- last sync date: 2026-10-15
 
 ## 실행 입력 4파일 전환 — 2026-10-07 사용자 확정
 
 - Scenario의 `PARAMETER_PROPOSAL`과 `FILE_UPLOAD` 모두 4파일 실행으로 전환한다. 파일 set과 OUTPUT 제안 제외·원본 보존 business rule은 `mi-model-parameter-proposal-design.md` §1A를 따른다.
 - 같은 실행의 네 파일을 기존 `SCNRCASE + case_id`로 연결하고 `ScenarioExecutionRegistrar`가 네 input path를 검증·Job에 전달해야 한다. Case/Run lifecycle과 기존 transaction/보상 삭제 책임은 유지한다.
 - 2026-10-13 사용자 결정: 전환 전에 3파일로 실행한 `SCENARIO` Case는 4파일 cutover 정리에서 연결 run history·execution-preparation·해당 시나리오의 active 가격전망해석과 함께 soft delete한다. 정리 후 해당 시나리오는 남은 non-deleted 실행 기준으로 보이며, 남은 실행이 없으면 미실행 상태로 다시 실행할 수 있다. 대상 판별·pre-check·보존은 `mi-model-input-template-catalog-domain-model-design.md` 규칙 36~38을 따른다.
-- 현재 코드는 3파일이며 추가 구현 대기다. 아래 기존 3파일 서술은 종전 흐름의 이력이고 4파일 목표의 근거로 사용하지 않는다. multipart API 계약은 `mi-scenario-workbench-backend-feature-spec.md` F4, JSON 계약은 parameter proposal feature spec을 따른다.
+- 구현 상태(2026-10-15): multipart·JSON 실행 모두 4파일 검증·준비·`SCNRCASE` 연결·Job 전달(`--output-excel-path`)을 적용했다. 3파일 Case cutover 정리와 모델 이미지 E2E는 별도다. 아래 기존 3파일 서술은 종전 흐름의 이력이고 4파일 목표의 근거로 사용하지 않는다. multipart API 계약은 `mi-scenario-workbench-backend-feature-spec.md` F4, JSON 계약은 parameter proposal feature spec을 따른다.
 
 > ## 변경 메모 (2026-06-09) — SUPERSEDED BY 2026-06-10 통합 메모
 >

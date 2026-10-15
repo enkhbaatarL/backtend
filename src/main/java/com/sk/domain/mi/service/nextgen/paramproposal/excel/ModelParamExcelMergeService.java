@@ -23,7 +23,8 @@ import org.springframework.stereotype.Service;
 
 /**
  * 수급모델 파라미터 확정값 Excel 병합 서비스
- * 확정된 제안 파라미터(proposedValue = 최종 입력값)를 basecase 원본 xlsm 3개에 병합해 실행용 입력 파일 3개를 만든다.
+ * 확정된 제안 파라미터(proposedValue = 최종 입력값)를 basecase 원본 xlsm(DEMAND/SUPPLY/TRADE)에 병합하고,
+ * 제안 대상이 아닌 OUTPUT 원본을 그대로 더해 실행용 입력 파일 4개를 만든다.
  *
  * 메모리 정책(OOM 대응): POI DOM을 만들지 않는다 — XlsmStreamMerger가 zip/XML을 스트리밍으로 직접 조작해
  * 파일 크기와 무관하게 수십 MB 수준으로 동작한다. 파일 단위 순차 처리에 원본·산출물 모두 임시 파일 기반이며,
@@ -38,8 +39,8 @@ public class ModelParamExcelMergeService {
     private final MiModelParamRepository modelParamRepository;
 
     /**
-     * 확정 파라미터 전체를 병합해 수급모델 입력 파일 3개를 만든다.
-     * 병합 대상이 없는 파일도 원본 그대로 포함해 항상 3개를 반환한다.
+     * 확정 파라미터 전체를 병합해 수급모델 입력 파일 4개를 만든다.
+     * 병합 대상이 없는 파일과 OUTPUT은 원본 그대로 포함해 항상 4개를 반환한다.
      * 산출물은 임시 파일로 반환되며, 호출 측이 사용 후 cleanup()으로 삭제해야 한다.
      */
     public MergedModelInputFiles merge(List<ModelParamAdjustment> adjustments) {
@@ -105,7 +106,7 @@ public class ModelParamExcelMergeService {
         Map<ModelInputFile, List<ModelParamAdjustment>> grouped = new EnumMap<>(ModelInputFile.class);
         for (ModelParamAdjustment adjustment : adjustments) {
             MiModelParam param = masters.get(adjustment.parameterName());
-            grouped.computeIfAbsent(ModelInputFile.from(param.getModelFile()), key -> new ArrayList<>())
+            grouped.computeIfAbsent(ModelInputFile.proposalTargetFrom(param.getModelFile()), key -> new ArrayList<>())
                 .add(adjustment);
         }
         return grouped;

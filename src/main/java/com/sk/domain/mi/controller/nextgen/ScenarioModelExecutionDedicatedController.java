@@ -12,6 +12,8 @@ import com.sk.domain.shared.enums.PermissionCondition;
 import com.sk.domain.shared.enums.Role;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.media.Content;
+import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
@@ -41,9 +43,18 @@ public class ScenarioModelExecutionDedicatedController {
     @ApiOrder(4)
     @Operation(
         summary = "MI 수급모델 실행 접수 API",
-        description = "사용자가 업로드한 입력 파일 3개로 MI 수급모델 실행 비동기 리소스 생성을 요청합니다."
+        description = "사용자가 업로드한 `DEMAND`, `SUPPLY`, `TRADE`, `OUTPUT` 입력 파일 4개로 MI 수급모델 실행 비동기 리소스 생성을 요청합니다. "
+            + "네 역할 파일을 각각 정확히 1개씩 업로드해야 하며, `OUTPUT`은 실행 결과가 아니라 모델 실행 입력입니다."
     )
     @ApiResponse(responseCode = "202", description = "비동기 실행 접수 성공")
+    @ApiResponse(
+        responseCode = "400",
+        description = "REQ_INVALID_PARAMETER: 파일이 정확히 4개가 아니거나 입력 역할이 누락·중복됨; FILE_INVALID: 빈 파일이 포함됨",
+        content = @Content(
+            mediaType = MediaType.APPLICATION_JSON_VALUE,
+            schema = @Schema(implementation = BaseResponse.class)
+        )
+    )
     @PostMapping(value = "/model-executions", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     @RequiredPermissionRules(rules = {
         @PermissionRule(role = Role.USER, conditions = {PermissionCondition.SKGAS_COMPANY_USER_ONLY}),
@@ -51,7 +62,8 @@ public class ScenarioModelExecutionDedicatedController {
     })
     public ResponseEntity<BaseResponse<ModelExecutionAcceptRes>> submitModelExecution(
         @Parameter(description = "시나리오 ID", example = "1") @PathVariable Long scenarioId,
-        @Parameter(description = "모델 실행 입력 파일 3개") @RequestPart("files") List<MultipartFile> files
+        @Parameter(description = "모델 실행 입력 파일 4개. 파일명에 DEMAND, SUPPLY, TRADE, OUTPUT 역할을 각각 정확히 1개 포함")
+        @RequestPart("files") List<MultipartFile> files
     ) {
         ModelExecutionAcceptRes response = scenarioModelExecutionService.submitModelExecution(scenarioId, files);
         return ResponseEntity.status(HttpStatus.ACCEPTED)
@@ -67,7 +79,7 @@ public class ScenarioModelExecutionDedicatedController {
             deprecated - 시나리오 파라미터 비교 팝업 전환 후 그룹 일괄 실행 API(POST /scenario-groups/{scenarioGroupId}/model-executions)를 사용하세요.
             구 단건 팝업 호환을 위해 유지되며 FE 전환 완료 후 제거 예정입니다. 내부 파이프라인은 그룹 일괄 실행이 동일하게 재사용합니다.
 
-            Agent 확정값으로 입력 Excel 3개를 생성한 뒤 MI 수급모델 실행을 비동기로 접수합니다.
+            Agent 확정값을 DEMAND, SUPPLY, TRADE에 병합하고 OUTPUT 기준 원본을 더한 입력 Excel 4개로 MI 수급모델 실행을 비동기로 접수합니다.
             """
     )
     @ApiResponse(responseCode = "202", description = "비동기 실행 접수 성공")

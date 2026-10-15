@@ -6,7 +6,7 @@
 - status: Review
 - owner: BE (platform)
 - created at: 2026-07-03
-- updated at: 2026-10-13
+- updated at: 2026-10-15
 - canonical for: frontend-facing API contract, Backend callback endpoint/minimum compatibility contract, proposed Agent integration questions
 - canonical design reference: `docs/design-docs/gas/mi-model-parameter-proposal-design.md`
 - price interpretation rerun reference: `docs/design-docs/gas/price-forecast-interpretation-domain-design.md`
@@ -57,7 +57,7 @@ Frontend가 기존 Scenario의 기반 Event에 따라 두 가지 수급모델 �
 
 두 실행 흐름 모두 최종 실행 등록 transaction에서 해당 시나리오의 active 가격전망해석 row를 조회한다. row가 있으면 soft delete한 뒤 같은 transaction에서 Case/Run을 생성하며, 없으면 기존 실행 등록을 그대로 진행한다. 이를 위한 별도 request/response field나 사전 확인 API는 추가하지 않는다.
 
-### C. 4파일 실행 계약 — 2026-10-07 사용자 확정, 구현 대기
+### C. 4파일 실행 계약 — 2026-10-07 사용자 확정, 2026-10-15 구현
 
 - A6 JSON 실행은 request 파라미터 구조를 유지한다. `modelTarget.modelFile`은 `DEMAND|SUPPLY|TRADE`만 허용하며 OUTPUT 제안을 받지 않는다. Backend가 준비하는 실행 input set은 네 역할이고 OUTPUT 원본 보존은 canonical domain §1A를 따른다.
 - 기존 multipart 실행의 `files`는 `DEMAND/SUPPLY/TRADE/OUTPUT` 각 1개, 총 4개를 요구한다. 상세 검증/오류는 Scenario Workbench feature spec F4를 따른다.

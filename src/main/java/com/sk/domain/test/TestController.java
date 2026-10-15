@@ -261,7 +261,7 @@ public class TestController {
     @Operation(
             summary = "확정 파라미터 병합 결과 다운로드 테스트",
             description = """
-                    확정 파라미터(confirmation_parameters) JSON array를 그대로 body로 보내면 병합 컴포넌트를 태워 결과 입력 파일 3개(Demand/Supply/Trade)를 zip으로 내려받습니다. <br>
+                    확정 파라미터(confirmation_parameters) JSON array를 그대로 body로 보내면 병합 컴포넌트를 태워 결과 입력 파일 4개(Demand/Supply/Trade 병합본 + Output 원본)를 zip으로 내려받습니다. <br>
                     body는 tmm_mi_model_param_proposal_m.confirmation_parameters 컬럼 값을 그대로 붙여넣으면 됩니다. <br>
                     응답: `merged-model-input-{오늘날짜}.zip` (병합 대상 없는 파일은 원본 그대로 포함). <br>
                     좌표 결함이 있으면 400 (`수급모델 입력 병합 실패 [파라미터 | 파일>시트] — 사유`).

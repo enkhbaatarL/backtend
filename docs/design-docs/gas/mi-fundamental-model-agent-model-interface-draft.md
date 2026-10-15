@@ -3,7 +3,7 @@
 - domain: gas
 - status: draft (Platform → Model Job argument 계약은 2026-09-28 확정)
 - owner: platform BE
-- updated at: 2026-10-07 (독립실행·Scenario 4파일 목표 계약, Scenario OUTPUT 원본 전달 규칙 동기화)
+- updated at: 2026-10-15 (Scenario 4파일 구현 상태 반영)
 - role: MI Fundamental Model 기능에서 platform과 model 파트 사이에 사전 합의가 필요한 연동 포인트를 정리하는 인터페이스 협의 초안
 
 ## 문서 목적
@@ -76,7 +76,7 @@ flowchart LR
 | `--case-id` | `caseId` | 조건부 | 호출 경로가 값을 제공할 때 전달하는 Case 식별자 |
 | `--scenario-id` | `scenarioId` | 조건부 | Scenario 실행 경로가 값을 제공할 때 전달하는 Scenario 식별자 |
 
-독립실행과 Scenario 실행 모두 네 input path를 요구하며 하나라도 없으면 Job을 생성하지 않는 것이 목표 계약이다. Scenario OUTPUT의 제안 제외·원본 전달은 `mi-model-parameter-proposal-design.md` §1A를 따른다. 구현 상태: 독립실행은 4파일 전달이 구현됐고 Scenario는 아직 3파일이다. 공유 DTO의 `outputExcelPath` nullable 및 CLI 조건부 추가는 현재 코드 호환 상태이며, Scenario 전환 완료 후 네 경로의 필수 검증과 `--output-excel-path` 전달을 확인해야 한다.
+독립실행과 Scenario 실행 모두 네 input path를 요구하며 하나라도 없으면 Job을 생성하지 않는 것이 목표 계약이다. Scenario OUTPUT의 제안 제외·원본 전달은 `mi-model-parameter-proposal-design.md` §1A를 따른다. 구현 상태: 독립실행과 Scenario(2026-10-15) 모두 네 경로를 Job 생성 전에 필수 검증하고 `--output-excel-path`를 전달한다. 공유 DTO의 `outputExcelPath` nullable 및 CLI 조건부 추가는 코드에 남아 있지만 두 호출부 모두 값을 채운다. 모델 이미지의 수용 여부는 실제 Job smoke/E2E로 확인해야 한다.
 
 ### 실행 중간파일 적재 계약 (2026-09-07 확정)
 

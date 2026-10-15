@@ -4,7 +4,7 @@ import io.swagger.v3.oas.annotations.media.Schema;
 
 public record ModelExecutionInputFileRes(
 
-    @Schema(description = "입력 파일 role", allowableValues = {"DEMAND", "SUPPLY", "TRADE"}, example = "DEMAND")
+    @Schema(description = "입력 파일 role", allowableValues = {"DEMAND", "SUPPLY", "TRADE", "OUTPUT"}, example = "DEMAND")
     String fileRole,
 
     @Schema(description = "파일 번호", example = "991001")

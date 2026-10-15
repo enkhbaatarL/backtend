@@ -9,9 +9,9 @@
   - `docs/design-docs/gas/mi-scenario-model-execution-workflow-design.md`
   - `docs/design-docs/gas/scenario-case-execution-workflow-design-draft.md`
   - `docs/design-docs/gas/price-forecast-interpretation-domain-design.md`
-- F4 4파일 목표 구현 상태: 추가 구현 대기 — 현재 Scenario 코드는 3파일이며 아래 변경 계약과 별도로 구분한다.
+- F4 4파일 구현 상태: 2026-10-15 구현 — multipart 4역할 검증, 네 input path Job 전달, OpenAPI 반영. 3파일 Case cutover 정리는 별도다.
 - dependencies: Kubernetes Job get/list/delete RBAC and scheduler-enabled dedicated deployment
-- last sync date: 2026-10-07
+- last sync date: 2026-10-15
 
 > 목적
 > - MI Scenario Workbench를 endpoint 목록이 아니라 backend 기능 단위로 정리한다.
@@ -1078,7 +1078,7 @@ Dispatch accept response:
 
 - `scenarioId` path variable
 - `files` (`@RequestPart`) — 입력 파일 4개
-- 2026-10-07 목표 계약: 네 역할 각 1개를 요구한다. OUTPUT은 제안·병합 대상이 아닌 실행 input이며 원본 보존 규칙은 `mi-model-parameter-proposal-design.md` §1A를 따른다. 현재 3파일 검증·OpenAPI annotation의 구현 갱신은 대기다.
+- 2026-10-07 목표 계약: 네 역할 각 1개를 요구한다. OUTPUT은 제안·병합 대상이 아닌 실행 input이며 원본 보존 규칙은 `mi-model-parameter-proposal-design.md` §1A를 따른다.
 - `requestedBy` 는 인증 컨텍스트에서 추출
 
 #### Validation
