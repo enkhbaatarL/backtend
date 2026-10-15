@@ -1,22 +1,21 @@
 # Scenario Case Execution ERD / DDL Draft
 
 - domain: gas
-- status: Implemented (base schema rolled out to production); Review (MI Base extension DBA rollout pending)
+- status: Implemented (base schema and MI Base extension rolled out); Review (post-rollout concurrency verification pending)
 - owner: platform BE
-- updated at: 2026-09-07 (MI Base current-only generated marker 확정, 실행 중간파일 코드 `SCNRCASEHI` 추가)
+- updated at: 2026-10-08 (MI Base 현재 4파일 검증 설명 정렬; 기존 DB 적용 이력·SQL 유지)
 - canonical for: Scenario Case/run physical schema, constraints, migration, rollback, verify SQL
 - canonical design input: [scenario-case-execution-workflow-design-draft.md](scenario-case-execution-workflow-design-draft.md)
 - related canonical output result persistence: [mi-fundamental-model-output-result-persistence-design.md](mi-fundamental-model-output-result-persistence-design.md)
 - open questions:
-  - 운영 DB의 active `MI_BASE` 실제 건수와 legacy backfill 대상은 DBA pre-check에서 확인해야 한다.
-  - `actv_base_yn` column/unique 추가의 운영 허용 lock 시간과 실행 창은 DBA가 확정해야 한다.
+  - 적용된 DB에서 current 유/무 동시 지정과 지정-vs-mutation 경쟁의 실제 MySQL 동작을 검증해야 한다.
   - `SCNRCASEHI` 공통코드의 `cd_rnk = '7'` 충돌 여부와 등록 시점은 DBA/공통코드 담당이 확인해야 한다.
 
 ## Purpose
 
 This document is the canonical home for the DB-backed rollout SQL for Scenario Case execution.
 
-Current status: the base DDL through the existing case/run and result persistence has been applied to production, and MI Fundamental Model case/run persistence, Volumes/Trade Flows/Price real-DB result storage, and MI 수급모델 실행 depend on those tables (see `docs/work-notes/2026/2026-06-05-fundamental-model-create-case-real-db-implementation.md` and later 2026-06 real-DB work notes for rollout evidence). The `actv_base_yn`/`uq02` extension is not applied. The 2026-09-07 lifecycle decision fixed `actv_base_yn` as a generated current-only helper; DBA pre-check and rollout approval remain. Below sections that describe "future DB-backed" query shapes and "phase-1 mock" behavior document the pre-rollout design rationale and remain the physical schema/migration/rollback reference; they are historical framing, not the current state.
+Current status: the base DDL through the existing case/run and result persistence has been applied to production, and MI Fundamental Model case/run persistence, Volumes/Trade Flows/Price real-DB result storage, and MI 수급모델 실행 depend on those tables (see `docs/work-notes/2026/2026-06-05-fundamental-model-create-case-real-db-implementation.md` and later 2026-06 real-DB work notes for rollout evidence). 사용자 확인(2026-09-15)에 따라 generated `actv_base_yn` column과 `tmd_mdl_scnrcasem_uq02` unique extension도 testdb, 고객사 개발 DB, 운영 DB에 적용됐다. 사용자 확인(2026-09-17)에 따라 `SCNRCASEHTF` 공통코드도 모든 대상 DB에 적용됐고 `cd_rnk = 8` 중복이 없다. 이 세션에서는 DB metadata를 직접 조회하지 않았으며 적용된 MySQL의 동시 지정·지정-vs-mutation 경쟁 검증은 남아 있다. 아래 pre-check/apply/rollback/verify SQL은 적용 이력과 재현·복구 기준으로 유지한다.
 
 MI Fundamental Model 1차 mock API의 endpoint/path/request/response canonical source는 [mi-fundamental-model-mock-api-feature-spec.md](../../feature-specs/mi-fundamental-model-mock-api-feature-spec.md) 이다. 이 ERD/DDL draft는 DB rollout draft이며, API 계약을 재정의하지 않는다.
 
@@ -59,13 +58,14 @@ Volumes / Trade Flows / Price parsed output result table, key, index, partition-
 ### In Scope
 
 - Future physical table/column DDL for `tmd_mdl_scnrcasem` and `tmd_mdl_scnrcaseh`
-- Future common-code rollout for `SCNRCASE`, `SCNRCASEH`, and `SCNRCASEHI`
+- Common-code rollout/reference SQL for `SCNRCASE`, `SCNRCASEH`, `SCNRCASEHI`, and `SCNRCASEHTF`
 - Future index and verification SQL for DB-backed duplicate-run guard and timeout scheduler
 - Future DB-backed query shape for case detail lookup
 - Future DB-backed update/delete predicate shape for active case metadata update and soft delete
 - Current MI Base 지정을 위한 generated current marker·unique와 legacy migration
 - Raw output file linkage via `SCNRCASEH + run_seq`
 - Model execution intermediate file linkage via `SCNRCASEHI + run_seq`
+- Trade Flow output file linkage via `SCNRCASEHTF + run_seq`
 
 ### Out of Scope
 
@@ -82,8 +82,8 @@ Volumes / Trade Flows / Price parsed output result table, key, index, partition-
 - no new table
 - no new column
 - no index change
-- common-code detail insert required: `SCNRCASEHI` in `tcm_commcdd`
-- DBA/common-code owner rollout action required for the `SCNRCASEHI` insert
+- common-code detail: `SCNRCASEHI` and `SCNRCASEHTF` in `tcm_commcdd`
+- `SCNRCASEHTF`는 사용자 확인 기준 모든 대상 DB 적용 완료, `cd_rnk = 8` 무충돌
 
 상세 응답은 case metadata, uploaded file metadata, latest run projection만 반환한다. full run history, result file reference, result download path/URL은 이 API와 schema impact 범위에서 제외한다.
 
@@ -144,12 +144,14 @@ WHERE case_id = :case_id
 - `SCNRCASE` target duplicate status was confirmed clear on 2026-05-19. Draft metadata is `cd_nm = '시나리오 케이스 입력 파일'`, `cd_expn = '시나리오 케이스 입력 파일 연결 코드'`. Final registration still requires DBA/common-code owner confirmation.
 - `SCNRCASEH` common-code (output file linkage via `run_seq`) must also be registered. Target duplicate status confirmed clear on 2026-05-26. Draft metadata is `cd_nm = '시나리오 케이스 실행 결과 파일'`, `cd_expn = '시나리오 케이스 모델 실행 결과 파일 연결 코드'`. Final registration still requires DBA/common-code owner confirmation.
 - `SCNRCASEHI` common-code (model execution intermediate file linkage via `run_seq`) must be registered. Metadata is `cd_nm = '시나리오 케이스 실행 중간 파일'`, `cd_expn = '시나리오 케이스 모델 실행 중간 파일 연결 코드'`, `cd_rnk = '7'`. Target duplicate status and `cd_rnk` collision must be checked with Pre-Check 2 before registration. Final registration requires DBA/common-code owner confirmation.
+- `SCNRCASEHTF` common-code (Trade Flow result file linkage via `run_seq`) is registered in every target DB per user confirmation on 2026-09-17. Metadata is `cd_nm = '시나리오 케이스 실행 결과 Trade Flow'`, `cd_expn = '시나리오 케이스 모델 실행 결과 Trade Flow 파일 연결 코드'`, `cd_rnk = '8'`, `use_bgn_dt = '20260907'`; rank duplication was confirmed absent.
 
 ## Closed Decisions
 
 - `run_id` format and PK (2026-05-21): backend-generated `run_id` format is `yyyymmdd_hhmmss_XXXX`. `tmd_mdl_scnrcaseh.run_id` is `VARCHAR(20) PRIMARY KEY`. `tmd_mdl_scnrcasem.last_run_id` is `VARCHAR(20)`.
 - `run_seq` surrogate key (2026-05-22, type fixed 2026-06-11): `tmd_mdl_scnrcaseh`에 `run_seq INT UNSIGNED AUTO_INCREMENT UNIQUE`를 추가한다. `file_rel_obj_dstg_no`가 `INT UNSIGNED` 계열이어서 `run_id`(`VARCHAR(20)`)를 직접 저장할 수 없는 제약을 해결하기 위한 surrogate key다. output 파일은 `SCNRCASEH` / `run_seq`로 `tcm_filel`에 연결한다. `run_id`는 model pod 연동 키로 그대로 유지한다. Java 타입은 unsigned 범위를 보존하기 위해 `Long`을 사용한다. 이전 "no separate surrogate key" 결정과 `BIGINT UNSIGNED` 후보는 이 결정으로 superseded된다.
 - 모델 실행 중간파일 연결 (2026-09-07): 모델이 실행 중 생성해 업로드하는 중간파일 n개는 output 파일과 동일하게 `file_rel_obj_dstg_no = tmd_mdl_scnrcaseh.run_seq` 에 귀속되지만, `file_rel_obj_spt_cd = 'SCNRCASEHI'` 로 output(`SCNRCASEH`)과 구분한다. 테이블/컬럼 변경은 없고 `tcm_commcdd` detail 1건만 추가한다. 매핑 테이블 신설, `tcm_filel` 컬럼 추가, 파일명/경로 규칙 구분 대안은 검토 후 채택하지 않았다. 적재 주체는 output 과 동일하게 model pod 직접 INSERT 이며 backend 는 쓰기에 관여하지 않는다. 설계 근거와 pod INSERT 컬럼 계약은 [mi-fundamental-model-intermediate-file-design.md](mi-fundamental-model-intermediate-file-design.md) 가 canonical 이다.
+- Trade Flow 결과파일 연결 (2026-09-17): 모델이 저장하는 Trade Flow 결과파일은 output/intermediate와 동일한 `file_rel_obj_dstg_no = tmd_mdl_scnrcaseh.run_seq`에 귀속되고 `file_rel_obj_spt_cd = 'SCNRCASEHTF'`로 구분한다. 추가 table/column/index는 없으며, 상세 응답에서는 `files.tradeOutput` 별도 배열로 제공한다. 적재 주체는 model pod다.
 - `last_run_id` column (2026-05-19, 2026-05-21 length updated): added to `tmd_mdl_scnrcasem` as `VARCHAR(20) NULL`, an application-validated latest execution pointer. No physical FK to `tmd_mdl_scnrcaseh.run_id`. Update order and the `case_stat_cd` / `last_run_id` invariant are enforced by the application within a single transaction. See workflow design draft §2 and §5.
 - Fundamental Model input file linkage strategy (2026-06-05): DB-backed `POST /api/v1/mi/fundamental-model/cases`는 `TEMP/0` 임시 relation을 거치지 않고 `case_id` 확보 후 `SCNRCASE + case_id` relation으로 직접 업로드한다. 파일 3개 중 하나라도 실패하면 API 전체를 실패로 처리하며, 이미 성공한 업로드 분은 `createCase()` service가 file delete primitive를 호출해 보상 삭제한다. 아래 Next Gen Scenario model-execution staging 결정과 endpoint 범위가 다르다.
 - model-execution staging persistence (2026-07-10): 장기 transaction 개선을 위한 staged upload는 별도 table/column/status를 만들지 않고 기존 `tcm_filel`의 `file_rel_obj_spt_cd = 'TEMP'`, `file_rel_obj_dstg_no = 0` relation을 durable marker로 재사용한다. object key는 처음부터 최종 `SCNRCASE/{uuid}` prefix를 사용한다. 최종 Case transaction은 marker row를 `SCNRCASE + case_id`로 attach하는 metadata update만 수행하고 Object Storage copy/move/delete를 포함하지 않는다. 따라서 기존 `FileService.updateFile()`의 TEMP move 동작을 staging finalization에 재사용하지 않고 internal metadata-only attach primitive를 사용한다. crash orphan 식별자는 `TEMP/0 + SCNRCASE storage path`, TTL은 24시간이며 cleanup은 bounded batch와 실제 `EXPLAIN`으로 기존 `tcm_filel_ix01` 사용성을 검증한다. 이 결정은 no new table, no new column, no new common-code, no immediate index/DBA rollout action으로 분류한다.
@@ -192,7 +194,7 @@ WHERE del_yn = 'N'
 SELECT cd_grp_id, cd_id, cd_nm, cd_rnk, cd_expn, use_yn
 FROM tcm_commcdd
 WHERE cd_grp_id = 'file_rel_obj_spt_cd'
-  AND cd_id IN ('SCNRCASE', 'SCNRCASEH', 'SCNRCASEHI');
+  AND cd_id IN ('SCNRCASE', 'SCNRCASEH', 'SCNRCASEHI', 'SCNRCASEHTF');
 
 -- 2a) cd_rnk collision check for the new intermediate-file code
 SELECT cd_id, cd_nm, cd_rnk, use_yn
@@ -229,7 +231,7 @@ Pre-check review points:
 
 - Confirm `tcm_filel.file_rel_obj_dstg_no` is compatible with `tmd_mdl_scnrcasem.case_id INT UNSIGNED`.
 - Confirm `SCNRCASE + case_id` file lookup uses `key = tcm_filel_ix01`, `type = ref`, and no full scan.
-- Confirm no active duplicate rows already exist for `SCNRCASE` / `SCNRCASEH` / `SCNRCASEHI` in `file_rel_obj_spt_cd`.
+- Confirm no active duplicate rows already exist for `SCNRCASE` / `SCNRCASEH` / `SCNRCASEHI` / `SCNRCASEHTF` in `file_rel_obj_spt_cd`. `SCNRCASEHTF`와 `cd_rnk = 8`은 2026-09-17 사용자 확인 기준 모든 대상 DB에서 적용·무충돌 상태다.
 - Confirm `cd_rnk = '7'` does not collide within the `file_rel_obj_spt_cd` group. If it does, assign the next free rank and record the applied value here.
 - Confirm `tmd_mdl_scnrcasem_ix01 (del_yn, crt_dtm)` is the retained list index and `tmd_mdl_scnrcasem_ix02 (scnr_id, case_stat_cd, case_id)` backs the per-scenario active-run existence lookup for `MI 수급모델 실행` (2026-06-10).
 - Confirm `tmd_mdl_scnrcasem_ix03 (last_run_id, del_yn)` backs callback latest-case status sync (`WHERE last_run_id = :run_id AND del_yn = 'N'`) without a full scan.
@@ -241,7 +243,7 @@ Pre-check review points:
 
 ## Apply
 
-아래 전체 CREATE TABLE의 `actv_base_yn` generated 정의가 확정 schema다. base schema는 적용 완료됐지만 이 MI Base column/constraint는 아직 적용되지 않았으므로 전체 DDL을 재실행하지 말고 아래 incremental extension을 DBA 승인 후 적용한다.
+아래 전체 CREATE TABLE의 `actv_base_yn` generated 정의가 확정 schema다. base schema와 MI Base column/constraint는 적용 완료됐으므로 전체 DDL이나 incremental extension을 재실행하지 않는다. 아래 SQL은 적용 이력과 신규 환경 rollout/rollback 기준으로 유지한다.
 
 Current draft finalizes `tmd_mdl_scnrcasem`, `tmd_mdl_scnrcaseh`, and common-code registration wording.
 
@@ -335,6 +337,17 @@ VALUES (
     '배포실행일자(YYYYMMDD)', '99991231', 'Y', NULL, NULL
 );
 
+-- Trade Flow 결과파일 코드. 2026-09-17 사용자 확인 기준 모든 대상 DB 적용 완료.
+INSERT INTO tcm_commcdd (
+    cd_grp_id, cd_id, cd_nm, cd_rnk, cd_expn,
+    use_bgn_dt, use_end_dt, use_yn, high_cd_grp_id, high_cd_id
+)
+VALUES (
+    'file_rel_obj_spt_cd', 'SCNRCASEHTF', '시나리오 케이스 실행 결과 Trade Flow', '8',
+    '시나리오 케이스 모델 실행 결과 Trade Flow 파일 연결 코드',
+    '20260907', '99991231', 'Y', NULL, NULL
+);
+
 -- 실행유형코드 공통코드 그룹 (신규 그룹이므로 detail 보다 먼저 등록)
 INSERT INTO tcm_commcdm (
     cd_grp_id, cd_grp_nm, cd_grp_expn,
@@ -367,8 +380,9 @@ Apply ordering:
 7. Register `SCNRCASE` (existing `file_rel_obj_spt_cd` group — `tcm_commcdd` only).
 8. Register `SCNRCASEH` (existing `file_rel_obj_spt_cd` group — `tcm_commcdd` only).
 9. Register `SCNRCASEHI` (existing `file_rel_obj_spt_cd` group — `tcm_commcdd` only). Independent of the table DDL; can be applied on its own in a later release.
-10. Register `mdl_exec_type_cd` group in `tcm_commcdm` (new group — must precede its detail codes).
-11. Register `mdl_exec_type_cd` codes in `tcm_commcdd` (`INDEPENDENT` / `SCENARIO` / `MI_BASE`).
+10. Register `SCNRCASEHTF` (existing `file_rel_obj_spt_cd` group — `tcm_commcdd` only). 2026-09-17 사용자 확인 기준 모든 대상 DB 적용 완료.
+11. Register `mdl_exec_type_cd` group in `tcm_commcdm` (new group — must precede its detail codes).
+12. Register `mdl_exec_type_cd` codes in `tcm_commcdd` (`INDEPENDENT` / `SCENARIO` / `MI_BASE`).
 
 ### 기존 배포 환경 마이그레이션 (옛 이름 테이블이 이미 있는 경우)
 
@@ -411,7 +425,7 @@ Apply guardrails:
 - `tmd_mdl_scnrcasem_uq02 UNIQUE (actv_base_yn)`가 active `MI_BASE`를 최대 1건으로 제한한다.
 - 과거 MI Base 지정 여부는 case type에 보존하지 않는다. 별도 이력 table도 이번 schema 범위에 추가하지 않는다.
 
-### Incremental MI Base extension — current-only (2026-09-07 확정, DBA 승인 전 실행 금지)
+### Incremental MI Base extension — current-only (2026-09-07 확정, 2026-09-15 적용 확인)
 
 기본 schema가 이미 배포된 환경은 아래 순서로 적용한다. `actv_base_yn`은 `exec_type_cd`와 `del_yn`에서만 파생되므로 application이 직접 값을 쓰지 않는다. 2026-09-07 기준 기존 application 코드와 운영 적재 SQL·배치에는 새 `MI_BASE` row를 계속 생성하는 writer가 없음을 확인했다. 다만 pre-check 시작부터 unique 생성 완료까지 임시 운영 SQL을 포함한 `exec_type_cd = 'MI_BASE'` 변경은 금지한다.
 
@@ -560,7 +574,7 @@ Rollback must be executed only after checking that no live references remain in 
 -- 1) reference safety check before common-code rollback
 SELECT file_rel_obj_spt_cd, COUNT(*) AS ref_cnt
 FROM tcm_filel
-WHERE file_rel_obj_spt_cd IN ('SCNRCASE', 'SCNRCASEH', 'SCNRCASEHI')
+WHERE file_rel_obj_spt_cd IN ('SCNRCASE', 'SCNRCASEH', 'SCNRCASEHI', 'SCNRCASEHTF')
 GROUP BY file_rel_obj_spt_cd;
 
 -- 2) common-code rollback: execute only when reference count is zero
@@ -575,6 +589,10 @@ WHERE cd_grp_id = 'file_rel_obj_spt_cd'
 DELETE FROM tcm_commcdd
 WHERE cd_grp_id = 'file_rel_obj_spt_cd'
   AND cd_id = 'SCNRCASEHI';
+
+DELETE FROM tcm_commcdd
+WHERE cd_grp_id = 'file_rel_obj_spt_cd'
+  AND cd_id = 'SCNRCASEHTF';
 
 -- 3) child/history rollback first
 -- DROP TABLE 이 종속 제약(tmd_mdl_scnrcaseh_uq01, fk01)을 함께 제거하므로 DROP INDEX 불필요
@@ -599,7 +617,7 @@ DROP TABLE tmd_mdl_scnrcasem;
 
 Rollback rules:
 
-- Do not delete `SCNRCASE`, `SCNRCASEH`, or `SCNRCASEHI` common-code rows if any `tcm_filel` rows still reference them.
+- Do not delete `SCNRCASE`, `SCNRCASEH`, `SCNRCASEHI`, or `SCNRCASEHTF` common-code rows if any `tcm_filel` rows still reference them.
 - Roll back child/history objects (`tmd_mdl_scnrcaseh`) before the master table (`tmd_mdl_scnrcasem`).
 - Do not delete S3 objects automatically without explicit storage/DBA approval.
 - If any application release already depends on `tmd_mdl_scnrcasem`, prefer forward-fix over table drop.
@@ -609,6 +627,23 @@ Rollback rules:
 Pre-rollout evidence already confirmed:
 
 - `SCNRCASE + case_id` file lookup on production DB used `key = tcm_filel_ix01`, `type = ref`, `rows` small, and no full scan under `del_yn = 'N'`.
+- 사용자 확인(2026-09-17): 모든 대상 DB에 `SCNRCASEHTF`가 등록됐고 `cd_rnk = 8` 중복이 없다. 이 세션에서 DB metadata를 직접 조회한 결과는 아니다.
+
+```sql
+-- 공통코드 적용값 확인
+SELECT cd_grp_id, cd_id, cd_nm, cd_rnk, cd_expn, use_bgn_dt, use_end_dt, use_yn
+FROM tcm_commcdd
+WHERE cd_grp_id = 'file_rel_obj_spt_cd'
+  AND cd_id = 'SCNRCASEHTF';
+
+-- 특정 run의 Trade Flow 결과파일 연결 확인
+SELECT file_no, org_file_nm, file_size, del_yn, file_vald_end_dt
+FROM tcm_filel
+WHERE del_yn = 'N'
+  AND file_rel_obj_spt_cd = 'SCNRCASEHTF'
+  AND file_rel_obj_dstg_no = :run_seq
+ORDER BY file_no;
+```
 
 ### Timeout scheduler rollout pre-check and EXPLAIN
 
@@ -658,16 +693,18 @@ Expected future checks:
 - Verify duplicate-run guard under concurrent transaction simulation. The conditional `tmd_mdl_scnrcasem` update must report `affected rows = 1` for exactly one of two concurrent requests on the same case.
 - Verify per-scenario active-run guard under concurrent insert simulation. 같은 `scnr_id` 로 `case_stat_cd = 'RUNNING'` row 2건을 동시에 INSERT 하면 generated `actv_scnr_id` 가 동일 값이 되어 정확히 1건만 성공하고 나머지는 `tmd_mdl_scnrcasem_uq01` unique 충돌이어야 한다. `scnr_id = NULL` (fundamental) row 는 RUNNING 이어도 `actv_scnr_id = NULL` 이라 다건이 허용되어야 한다. 추가로 RUNNING → terminal 전이 시 `actv_scnr_id` 가 자동으로 NULL 로 풀려(별도 UPDATE 없이) 같은 scenario 의 다음 실행 INSERT 가 허용되는지 확인한다.
 - Verify `tmd_mdl_scnrcasem_ck01` invariant: an INSERT/UPDATE with `exec_type_cd = 'SCENARIO'` and `scnr_id IS NULL`, or with `exec_type_cd IN ('INDEPENDENT','MI_BASE')` and `scnr_id IS NOT NULL`, must be rejected by the CHECK constraint.
-- Verify legacy 보존 후보의 case/latest run/정확한 input 3종/Price 적격성이 모두 통과하며, 부적격 후보에서는 rollout이 no-go로 중단되는지 확인한다.
+- Historical verification (2026-09-15 migration): legacy 보존 후보의 case/latest run/당시 input 3종/Price 적격성 검사는 적용 이력으로 유지한다. 현재 MI Base 지정의 적격 기준으로 사용하지 않는다.
+- Verify current MI Base designation: case/latest completed run, 정확히 4개 input의 `DEMAND`/`SUPPLY`/`TRADE`/`OUTPUT` 역할별 1개와 Price 적격성을 검증하며 부적격이면 기존 current를 변경하지 않는다. 정확한 API 적격 계약은 `mi-fundamental-model-mi-base-designation-feature-spec.md`를 따른다.
 - Verify `actv_base_yn` expression and `tmd_mdl_scnrcasem_uq02`: active `MI_BASE` row만 `Y`, 나머지는 `NULL`이며 서로 다른 두 active case를 동시에 지정해도 최종 active는 최대 1건이다. current가 있는 교체 경합에서 직렬화된 두 요청이 모두 성공하면 마지막 commit 대상이 current다. current 0건 최초 지정 경합에서는 한 요청이 unique 충돌로 실패할 수 있다.
 - Verify designation-vs-run race: `claimRun`의 atomic predicate에 `exec_type_cd = 'INDEPENDENT'`가 포함되어 지정된 MI Base를 `RUNNING`으로 변경하지 않는다. update/delete도 같은 row-lock 또는 atomic exec-type predicate로 MI Base 변경을 차단한다.
-- Verify one input-generation source snapshot pins one current `case_id` and its exact `DEMAND`/`SUPPLY`/`TRADE` file metadata; designation during generation must not mix files from two bases.
+- Verify one input-generation source snapshot pins one current `case_id` and its exact `DEMAND`/`SUPPLY`/`TRADE`/`OUTPUT` file metadata; designation during generation must not mix files from two bases.
 - Verify changed `GET /cases` returns the current row in `miBase`, active `INDEPENDENT` rows in `cases`, excludes `SCENARIO`, and returns non-null `execType` for every item. 이전 MI Base는 새 지정 시 `INDEPENDENT`로 복귀해 `cases`에 포함된다. `totalCount`는 `miBase` 0|1 + filtered `cases.size()`이며 검색은 pinned `miBase`를 제외한 `cases`에만 적용한다.
 - Verify `run_id` uniqueness on `tmd_mdl_scnrcaseh`.
 - Verify `run_seq` UNIQUE constraint on `tmd_mdl_scnrcaseh`.
 - Verify `SCNRCASE + case_id` file lookup (upload input files).
 - Verify `SCNRCASEH + run_seq` file lookup (model execution output files).
 - Verify `SCNRCASEHI + run_seq` file lookup (model execution intermediate files). 같은 `run_seq` 로 조회했을 때 output(`SCNRCASEH`)과 중간파일(`SCNRCASEHI`)이 서로 섞이지 않아야 한다.
+- Verify `SCNRCASEHTF + run_seq` file lookup (Trade Flow result files). 같은 `run_seq`로 조회했을 때 output(`SCNRCASEH`), intermediate(`SCNRCASEHI`), tradeOutput(`SCNRCASEHTF`)이 서로 섞이지 않아야 한다.
 - Verify `last_run_id` invariant: for every `tmd_mdl_scnrcasem` row with `last_run_id IS NOT NULL`, the referenced `tmd_mdl_scnrcaseh` row exists and its `exec_stat_cd` matches `case_stat_cd` in the terminal/RUNNING semantics defined by the workflow draft.
 - Run `EXPLAIN` for callback latest-case sync SQL (`WHERE last_run_id = :run_id AND del_yn = 'N'`) and confirm `key = tmd_mdl_scnrcasem_ix03`.
 - `tmd_mdl_scnrcaseh_ix01 (exec_stat_cd, exec_bgn_dtm, case_id)` supports the timeout scheduler. The scheduler queries `exec_stat_cd = 'RUNNING' AND exec_bgn_dtm < NOW() - INTERVAL 10 MINUTE`, joins the case row to limit `exec_type_cd IN ('SCENARIO', 'INDEPENDENT')`, and uses `case_id` as the join/covering tail; `MI_BASE` is excluded. Before production rollout, run `EXPLAIN` against the actual limited query and confirm `key = tmd_mdl_scnrcaseh_ix01`.
@@ -677,7 +714,7 @@ Expected future checks:
 
 ## DBA Deployment Notes
 
-- The base schema in this document has been reviewed with DBA/common-code owner and applied to production. The 2026-09-07 generated `actv_base_yn`/`uq02` extension은 current-only로 확정됐지만 DBA evidence 전에는 applied로 보고하지 않는다.
+- The base schema in this document has been reviewed with DBA/common-code owner and applied to production. 사용자 확인(2026-09-15)에 따라 generated `actv_base_yn`/`uq02` current-only extension은 testdb, 고객사 개발 DB, 운영 DB에 적용됐다. 사용자 확인(2026-09-17)에 따라 `SCNRCASEHTF`/`cd_rnk = 8`도 모든 대상 DB에 적용됐고 rank 충돌이 없다. 직접 DB metadata 조회와 경쟁 시나리오 검증은 별도 evidence로 남긴다.
 - 기존 환경의 `mdl_exec_type_cd`/`MI_BASE` 설명이 `MI Base 적재` 의미로 남아 있으면 공통코드 owner 승인 후 `현재 MI Base로 지정된 독립실행` 의미로 동기화한다. 코드값은 변경하지 않는다.
 - Phase-1 API is now DB-backed against this DDL, not the in-memory mock store.
 - 과거 `scenario_id` 컬럼명과 물리 FK 전제는 제거되었다. 현재 proposed model은 `tmd_mdl_scnrcasem.scnr_id` nullable 논리 참조를 사용하며, MI Fundamental Model row는 `NULL`, MI 수급모델 row는 scenario 식별자를 저장한다. rollout 전에는 `scnr_id` 기반 active-run guard(존재 확인 query + `tmd_mdl_scnrcasem_uq01` unique), list index 선택, JOIN query 실행계획을 DBA review로 확정해야 한다.
