@@ -25,6 +25,7 @@ import org.springframework.stereotype.Service;
  * 수급모델 파라미터 확정값 Excel 병합 서비스
  * 확정된 제안 파라미터(proposedValue = 최종 입력값)를 basecase 원본 xlsm(DEMAND/SUPPLY/TRADE)에 병합하고,
  * 제안 대상이 아닌 OUTPUT 원본을 그대로 더해 실행용 입력 파일 4개를 만든다.
+ * basecase 4파일은 병합 시작 시 한 번 고정한 source snapshot(current MI Base 또는 플랫폼 기본 template 세트)에서 받는다.
  *
  * 메모리 정책(OOM 대응): POI DOM을 만들지 않는다 — XlsmStreamMerger가 zip/XML을 스트리밍으로 직접 조작해
  * 파일 크기와 무관하게 수십 MB 수준으로 동작한다. 파일 단위 순차 처리에 원본·산출물 모두 임시 파일 기반이며,
@@ -38,12 +39,19 @@ public class ModelParamExcelMergeService {
     private final BasecaseWorkbookProvider workbookProvider;
     private final MiModelParamRepository modelParamRepository;
 
+    /** 병합 시작 시점의 기준본(current MI Base 또는 플랫폼 기본 template)으로 병합한다. */
+    public MergedModelInputFiles merge(List<ModelParamAdjustment> adjustments) {
+        return merge(adjustments, null);
+    }
+
     /**
      * 확정 파라미터 전체를 병합해 수급모델 입력 파일 4개를 만든다.
      * 병합 대상이 없는 파일과 OUTPUT은 원본 그대로 포함해 항상 4개를 반환한다.
      * 산출물은 임시 파일로 반환되며, 호출 측이 사용 후 cleanup()으로 삭제해야 한다.
+     *
+     * @param miBaseCaseId 제안 생성 때 고정한 MI Base case. null이면(이 변경 이전에 생성된 제안) 병합 시작 시점의 기준본을 고른다.
      */
-    public MergedModelInputFiles merge(List<ModelParamAdjustment> adjustments) {
+    public MergedModelInputFiles merge(List<ModelParamAdjustment> adjustments, Long miBaseCaseId) {
 
         if (adjustments == null || adjustments.isEmpty()) {
             throw AppErrorException.of(ResultCode.Error.BIZ_RULE_VIOLATION, "수급모델 입력 병합 실패 — 병합할 확정 파라미터가 없습니다");
@@ -52,13 +60,18 @@ public class ModelParamExcelMergeService {
         Map<String, MiModelParam> masters = loadMasters(adjustments);
         Map<ModelInputFile, List<ModelParamAdjustment>> adjustmentsByFile = groupByFile(masters, adjustments);
 
+        // 기준본 고정 — 이후 MI Base 지정이 바뀌어도 이 병합의 4파일은 같은 snapshot에서 받는다
+        BasecaseWorkbookProvider.BasecaseSourceSnapshot snapshot = miBaseCaseId == null
+            ? workbookProvider.selectSourceSnapshot()
+            : workbookProvider.selectSourceSnapshot(miBaseCaseId);
+
         Map<ModelInputFile, Path> outputs = new EnumMap<>(ModelInputFile.class);
         WriteSummary total = new WriteSummary(0, 0);
         List<String> details = new ArrayList<>();
 
         try {
             for (ModelInputFile file : ModelInputFile.values()) {
-                Path source = workbookProvider.materialize(file);
+                Path source = workbookProvider.materialize(snapshot, file);
                 List<ModelParamAdjustment> fileAdjustments = adjustmentsByFile.getOrDefault(file, List.of());
 
                 if (fileAdjustments.isEmpty()) {
@@ -68,10 +81,11 @@ public class ModelParamExcelMergeService {
                     continue;
                 }
 
-                try (XlsmStreamMerger merger = new XlsmStreamMerger(source, file.getBasecaseFileName())) {
+                String sourceLabel = snapshot.labelOf(file);
+                try (XlsmStreamMerger merger = new XlsmStreamMerger(source, sourceLabel)) {
                     for (ModelParamAdjustment adjustment : fileAdjustments) {
                         MiModelParam param = masters.get(adjustment.parameterName());
-                        WriteSummary summary = apply(merger, file, param, adjustment);
+                        WriteSummary summary = apply(merger, sourceLabel, param, adjustment);
                         total = WriteSummary.sum(total, summary);
                         details.add(describe(param, summary));
                     }
@@ -89,8 +103,8 @@ public class ModelParamExcelMergeService {
             throw e;
         }
 
-        log.info("[ModelInput Merge] - DONE - parameters={}, cells(write={}, append={}) — {}",
-            adjustments.size(), total.writeCount(), total.appendCount(), String.join(" / ", details));
+        log.info("[ModelInput Merge] - DONE - source={}, parameters={}, cells(write={}, append={}) — {}",
+            snapshot.describe(), adjustments.size(), total.writeCount(), total.appendCount(), String.join(" / ", details));
 
         return MergedModelInputFiles.of(outputs);
 
@@ -117,7 +131,7 @@ public class ModelParamExcelMergeService {
      * read mode에 따라 기입 전략이 다름.
      * 제안 미대상(use_yn=N)이어도 사용자 확정에 포함되었으면 기입한다 — 단 경고 흔적을 반드시 남긴다.
      */
-    private WriteSummary apply(XlsmStreamMerger merger, ModelInputFile file, MiModelParam param, ModelParamAdjustment adjustment) {
+    private WriteSummary apply(XlsmStreamMerger merger, String sourceLabel, MiModelParam param, ModelParamAdjustment adjustment) {
         String context = ValueRows.context(param);
 
         if (!Boolean.TRUE.equals(param.getIsUsed())) {
@@ -131,8 +145,8 @@ public class ModelParamExcelMergeService {
         MergeSheet sheet = merger.sheet(param.getModelSheet());
 
         if (sheet == null) {
-            log.error("[ModelInput Merge] - SHEET-MISSING [{}] Basecase 원본({})에 시트가 없습니다 — 마스터(tmm_mi_model_param_m)-원본 정합 확인 필요", context, file.getBasecaseFileName());
-            throw SystemErrorException.of(ResultCode.Error.SYS_INTERNAL_ERROR, "수급모델 입력 병합 실패 [%s] — Basecase 원본(%s)에 시트가 없습니다 (마스터-원본 정합 확인 필요)".formatted(context, file.getBasecaseFileName()));
+            log.error("[ModelInput Merge] - SHEET-MISSING [{}] Basecase 원본({})에 시트가 없습니다 — 마스터(tmm_mi_model_param_m)-원본 정합 확인 필요", context, sourceLabel);
+            throw SystemErrorException.of(ResultCode.Error.SYS_INTERNAL_ERROR, "수급모델 입력 병합 실패 [%s] — Basecase 원본(%s)에 시트가 없습니다 (마스터-원본 정합 확인 필요)".formatted(context, sourceLabel));
         }
 
         ColumnRoleMap roles = ColumnRoleMap.parse(context, param.getBasecaseColumnRoles());

@@ -154,13 +154,15 @@ public class ModelParamExecutionCoordinator {
             );
         }
 
-        String confirmationParametersJson = confirmPreparationAndReadFreshAgentSnapshot(
+        FreshAgentSnapshot freshSnapshot = confirmPreparationAndReadFreshAgentSnapshot(
             scenarioId,
             request,
             context.execPrepId()
         );
+        // 제안 생성 때 Agent에 보낸 MI Base case로 병합한다 — 그 사이 MI Base 지정이 바뀌어도 제안과 같은 원본을 쓴다
         return modelParamExcelMergeService.merge(
-            ModelParamAdjustment.listFromJson(confirmationParametersJson)
+            ModelParamAdjustment.listFromJson(freshSnapshot.confirmationParametersJson()),
+            freshSnapshot.miBaseCaseId()
         );
     }
 
@@ -200,12 +202,12 @@ public class ModelParamExecutionCoordinator {
         }
     }
 
-    private String confirmPreparationAndReadFreshAgentSnapshot(
+    private FreshAgentSnapshot confirmPreparationAndReadFreshAgentSnapshot(
         Long scenarioId,
         ModelParamProposalExecutionReq request,
         Long execPrepId
     ) {
-        String confirmationParametersJson = transactionOperations.execute(status -> {
+        FreshAgentSnapshot freshSnapshot = transactionOperations.execute(status -> {
             entityManager.clear();
             AgentModelParamProposal freshProposal = findAgentProposal(scenarioId, request.modelParamProposalId());
             if (freshProposal.getStatus() != AgentModelParamProposalStatus.CONFIRMED
@@ -238,16 +240,22 @@ public class ModelParamExecutionCoordinator {
                         .formatted(execPrepId)
                 );
             }
-            return freshProposal.getConfirmationParameters();
+            return new FreshAgentSnapshot(freshProposal.getConfirmationParameters(), freshProposal.getMiBaseCaseId());
         });
-        if (confirmationParametersJson == null || confirmationParametersJson.isBlank()) {
+        if (freshSnapshot == null
+            || freshSnapshot.confirmationParametersJson() == null
+            || freshSnapshot.confirmationParametersJson().isBlank()) {
             throw AppErrorException.of(
                 ResultCode.Error.API_RESPONSE_ERROR,
                 "Agent confirmation snapshot is empty. modelParamProposalId: %d"
                     .formatted(request.modelParamProposalId())
             );
         }
-        return confirmationParametersJson;
+        return freshSnapshot;
+    }
+
+    /** miBaseCaseId: 제안 생성 때 고정한 MI Base case. 이 변경 이전에 생성된 제안은 null. */
+    private record FreshAgentSnapshot(String confirmationParametersJson, Long miBaseCaseId) {
     }
 
     private AgentModelParamProposal findAgentProposal(Long scenarioId, Long modelParamProposalId) {

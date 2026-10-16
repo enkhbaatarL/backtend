@@ -266,6 +266,25 @@ class McpOpenApiTest {
         assertThat(findParameter(list, "publish_status").isMissingNode()).isTrue();
     }
 
+    @Test
+    // [MCP Event Generate] description·requestBody 설명 = MCP tool 설명·인자 설명
+    @DisplayName("이벤트 생성 operation은 명시적 요청 시에만 호출·즉시 저장·중복 생성 주의와 입력 문장 필수를 노출한다")
+    void exposesEventGenerationGuidance() throws Exception {
+        JsonNode document = apiDocument("MCP API");
+        JsonNode operation = document.path("paths").path(EVENT_GENERATION_PATH).path("post");
+        assertThat(operation.path("operationId").asText()).isEqualTo("generateEvents");
+        assertThat(operation.path("description").asText())
+            .contains("명시적으로 요청한 경우에만")
+            .contains("중복 생성됩니다")
+            .contains("miEventId");
+
+        String schemaRef = operation.path("requestBody").path("content").path("application/json").path("schema").path("$ref").asText();
+        JsonNode schema = document.path("components").path("schemas").path(schemaRef.substring(schemaRef.lastIndexOf('/') + 1));
+        assertThat(schema.path("required").toString()).isEqualTo("[\"userQuery\"]");
+        assertThat(fieldNames(schema.path("properties"))).containsExactlyInAnyOrder("userQuery", "dateFrom", "dateTo");
+        assertThat(schema.path("properties").path("dateFrom").path("description").asText()).contains("YYYY-MM-DD");
+    }
+
     private JsonNode operation(JsonNode paths, String path, String operationId) {
         JsonNode operation = paths.path(path).path("get");
         assertThat(operation.path("operationId").asText()).as(path).isEqualTo(operationId);
