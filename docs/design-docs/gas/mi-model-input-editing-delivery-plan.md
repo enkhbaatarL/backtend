@@ -6,6 +6,7 @@
 - canonical for: 배포 일정, 로컬 delivery 순서, 티켓 경계, 의존성, 상태와 agent coordination
 - owner: BE
 - source documents:
+  - 2026-10-16 사용자 결정: 공통 요청 처리 → Draft 생성·재개·조회를 첫 구현 묶음으로 계획한다. 이번 요청은 정본/기존 작업 노트의 계획 반영이며 구현·DB 접속/적용은 하지 않는다. §7A를 따른다.
   - `docs/work-notes/2026/2026-09-03-model-input-transfer-format.md`
   - `docs/design-docs/gas/mi-model-input-template-catalog-domain-model-design.md`
   - `docs/feature-specs/mi-fundamental-model-input-provision-feature-spec.md`
@@ -18,9 +19,9 @@
   - `docs/conventions/source-of-truth-governance.md`
   - `docs/design-docs/gas/mi-model-input-template-catalog-erd-ddl-draft.md`
 - supersedes: 없음
-- last synced: 2026-10-13
+- last synced: 2026-10-16 (공통 BE 1·2 첫 구현 계획 채택; 구현/DB 적용 미착수)
 - open questions:
-  - 계산 방식은 2026-10-13 사용자 결정으로 POI 부분 계산이다(domain design §1A.4 Q7). 판별대장의 표별 정책을 적용한 계산 allowlist와 실행 격리·동기/비동기 경계가 미확정이다. 이전 `GDP`·`PIPELINE` 후보는 최신 함수 조사의 오탐이고, `_XLFN.UNIQUE` 5셀은 domain 규칙 57에 따라 원본 보존이다. UNIQUE는 정책이 바뀌어 계산 경로에 들어올 때만 다시 검증한다.
+  - F-S-06 제외 INPUT-02A는 §6A의 `DONE (CONDITIONAL)`이다. 계산/격리 비동기·운영 기준은 domain Q7·규칙63/64를 따른다. 공통 저장 구조/최종저장·복구 계약은 domain §3.4·§5.1~5.3/DDL §6.3·편집 API §9로 문서 범위 완료다. 표별 정책·DBA 적용 준비/제품 구현·INPUT-10의 API 전체 저장 응답 검증은 후속이다. 지정 사례 밖 계산 allowlist를 자동 승인하지 않는다. GDP/PIPELINE 오탐·UNIQUE 5셀 보존 판정은 유지한다.
 
 ## 1. Purpose and source-of-truth boundary
 
@@ -108,15 +109,15 @@
 | `INPUT-01A` | 개발본 XLSM 4개 재조사 | 기존 3역할 변경과 신규 OUTPUT sheet/table/formula/package 구조, 개발 전용 시트, 화면 후보, 4파일 영향 | 01 | `DONE` |
 | `INPUT-02` | Backend Excel 호환 계산 엔진 PoC | 실제 XLSM의 수식/cached value/매크로/서식/외부 link 보존 결과와 엔진 선택 근거 | 없음 | `DONE` (`NO-GO`) |
 | `INPUT-02B` | 시트·테이블별 계산 호환성 목록 | 이전 65개 시트·60개 표·335 family 조사 완료; 현재 검증 계획은 계산 호환성 reference의 2026-10-07 판별대장 반영 절 | 01, 02 | `DONE` |
-| `INPUT-02A` | 계산 엔진·격리 실행 후속 PoC | 표별 계산 허용 수식(규칙 54의 외부 캐시 계산 예외 포함)으로 정확도·fidelity·성능·라이선스와 동기/비동기 경계를 판정 | 02, 02B, 후보 승인 | `IN_PROGRESS` |
-| `INPUT-03` | 카탈로그·Draft domain/ERD 확정 | field/option/dependency/구조 정책, Draft/change/revision/finalized Case의 logical·physical model과 DBA 검토 입력 | 01A, 02A, 02B | `BLOCKED` |
-| `INPUT-04` | 조회·임시저장·최종저장 API 계약 | endpoint, DTO, 오류, 권한, 4파일 snapshot/revision/idempotency, payload/DRM 및 구조 변경 요청·검증 계약 | 01A, 02A, 02B | `BLOCKED` |
+| `INPUT-02A` | 계산 엔진·격리 실행 후속 PoC | F-S-06 제외 선정19사례·승인 POI 부분 계산/보존·제한환경/격리/정리 근거에 한정, §6A 조건과 후속 검증 전달 | 02, 02B, 후보 승인 | `DONE` (`CONDITIONAL`) |
+| `INPUT-03` | 카탈로그·Draft domain/ERD 확정 | field/option/dependency/구조 정책, Draft/change/revision/finalized Case의 logical·physical model과 DBA 검토 입력 | 01A, 02A, 02B | `READY` (설계) |
+| `INPUT-04` | 조회·임시저장·최종저장 API 계약 | endpoint, DTO, 오류, 권한, 4파일 snapshot/revision/idempotency, payload/DRM 및 구조 변경 요청·검증 계약 | 01A, 02A, 02B | `READY` (계약) |
 | `INPUT-05` | 카탈로그 seed와 화면 조회 API | Case의 XLSM 4개를 `file → sheet → table → field/row` projection으로 조회 | 03, 04 | `BLOCKED` |
 | `INPUT-06` | Draft 생성·조회 persistence | 사용자 Draft, source snapshot, template version, revision 생성·조회 | 03, 04 | `BLOCKED` |
 | `INPUT-07` | 값 적용·재계산·XLSM materialization | `SET/CLEAR`와 승인된 구조 변경을 반영하고 계산 허용 영향 수식만 재계산해 role별 XLSM bytes 4개 생성 | 02A, 03, 04 | `BLOCKED` |
 | `INPUT-08` | 값·구조 변경 임시저장 | catalog validation, optimistic revision, 변경 저장, 영향 table 값 반환/재조회 | 05, 06, 07, STRUCT-02~04 | `BLOCKED` |
 | `INPUT-09` | 최종저장·Case 생성 | XLSM bytes를 `MultipartFile`로 변환, 이미 구현된 독립실행 4파일 Case 생성 서비스에 전달, 중복 Case 방지, `caseId` 반환 | 06, 07, 08 | `BLOCKED` |
-| `INPUT-10` | 실파일 E2E·DBA rollout 검증 | 조회→수정→임시저장→최종저장→Case→별도 Run과 DBA 적용 검증 | 05~09, STRUCT-05 | `BLOCKED` |
+| `INPUT-10` | 실파일 E2E·DBA rollout 검증 | 조회→수정→임시저장→최종저장→Case→별도 Run, API 전체 저장 응답/운영 시간 기준과 DBA 적용 검증 | 05~09, STRUCT-05 | `BLOCKED` |
 | `INPUT-11` | legacy 3파일 Case cutover 정리 | 대상 snapshot(`INDEPENDENT/MI_BASE/SCENARIO`), `RUNNING` 0건·MI Base 영향 확인, case master soft delete(`SCENARIO`는 연결 row 포함), 목록/API 미노출 검증, rollback 증거 | 10, 운영 승인 | `BLOCKED` |
 
 ### Dependency waves
@@ -125,7 +126,7 @@
 Wave 1: INPUT-01 (DONE) → INPUT-01A (DONE: latest 4-file set)
         INPUT-02 (DONE: NO-GO) → INPUT-02B (DONE)
                     │
-Gate 1A:        INPUT-02A (IN_PROGRESS: POI 부분 계산 승인, 실행 경계 판정 중)
+Gate 1A:        INPUT-02A (DONE: CONDITIONAL, F-S-06 제외)
                     │
 Wave 2:        INPUT-03 + INPUT-04 + STRUCT-01
 
@@ -140,8 +141,7 @@ Wave 6:               STRUCT-05 → INPUT-10
 Wave 7:               INPUT-11 (destructive rollout approval required)
 ```
 
-Wave 1은 완료됐다. 현재는 Gate 1A만 다음 실행 후보이며, 후속 wave의 병렬 가능 여부는
-`INPUT-02A`의 실제 계산·운영 경계 판정을 보고 coordinating agent가 다시 판단한다.
+Wave 1과 Gate 1A는 완료됐다. 다음은 INPUT-03/04의 설계·계약 착수다. 두 티켓의 선행01A/02A/02B는 DONE이며, READY는 제품 구현 승인이 아니다. 공용 canonical/DDL의 변경 순서는 coordinating agent가 조정하며 이번 종료 정리로 병렬 실행을 시작하지 않는다. STRUCT-01은 표별 일반 계약 정리 전 BLOCKED를 유지한다. INPUT-07은 INPUT-03/04 완료 전 배정하지 않는다.
 
 ## 5. Completed Ticket — INPUT-01
 
@@ -291,7 +291,7 @@ Coordination:
 - headless LibreOffice는 cached value를 갱신하지 못했고, 처리 시간이 길며 XLSM package fidelity를 훼손했다.
 - 상세 실행 증거는 `docs/references/mi-model-input-calculation-engine-spike.md`와 stable work note가 소유한다.
 
-## 6A. In-progress Ticket — INPUT-02A
+## 6A. Completed Ticket — INPUT-02A (`CONDITIONAL`, F-S-06 제외)
 
 ### Ticket Goal
 
@@ -301,9 +301,10 @@ Coordination:
 ### Start condition
 
 - 2026-10-13 후보 승인: POI 부분 계산(domain design §1A.4 Q7). 이미 쓰는 의존성이라 라이선스·반입 승인이 필요 없고, 상용 엔진은 평가하지 않는다. 후보 승인은 아래 Done Criteria 충족이나 `GO`가 아니다.
+- 2026-10-15 운영 기준 사용자 승인: domain 규칙64의 격리 worker/동시성/비동기·자원·저장 목표/전체 상한을 따른다. 우선 실제 자원 제한에서 대표 승인 경로를 재측정하며 승인 자체를 제한환경 성능 검증이나 최종 판정으로 사용하지 않는다.
 - 후보가 상용 엔진이면 평가 라이선스와 의존성 반입 승인을 확보한다. 상용 엔진을 전제로 고정하지 않는다.
 - 외부 workbook 원본은 계산 선행조건이 아니며 업무담당자에게 요청하지 않는다. 외부 참조의 계산/보존 구분은 domain design §6 규칙 33·54를 따른다.
-- DRM 복호화 표본 또는 검증 가능한 대체 절차를 준비한다.
+- 2026-10-15 사용자 후속 결정: 로컬 DRM 복호화 시험은 불가하고 이미 적용된 암복호화 기능을 재사용하므로 이번 INPUT-02A의 실제 DRM 재검증은 제외한다(domain 규칙63). DRM 표본/시험 설정·원격 재검증 증거를 착수 선행조건으로 요구하지 않는다. 로컬 worker 평문 임시 파일의 수명·삭제 검증은 아래 완료 기준으로 유지한다.
 - `mi-model-input-sheet-calculation-compatibility.md`의 현재 검증 기준으로 표별 계산·보존·구조 변경 fixture를 선정한다. 이전 category 기반 oracle/254 family 목록을 그대로 실행하지 않는다.
 
 ### Done Criteria
@@ -311,14 +312,34 @@ Coordination:
 - 승인된 source 값·구조 변경 후 계산 allowlist의 same-sheet/cross-sheet 결과가 golden과 일치하고, 계산 제외 수식·cached value는 보존된다.
 - 승인 정규화 source의 계산 제외 formula·cached value와 externalLink, macro, style, merged cell, validation, named range를 보존한다. domain 규칙 54의 계산 결과 및 구조 변경 승인 영역만 계약대로 갱신한다. 이전 42,394셀을 최신 4파일 전체의 확정 합계로 사용하지 않는다.
 - 실제 4개 파일의 wall time과 peak memory를 측정하고 승인 계산 경로와 OUTPUT의 값/구조 변경·미표시 A 보존 검증을 포함한다. OUTPUT의 최신 정책·검증 경로는 domain 규칙 50/§6.1과 compatibility의 V-OUTPUT 항목을 따른다. 과거 Helper 포함 817셀을 계산 allowlist로 사용하지 않으며 최신 family·cell 수는 source hash·표별 계산 범위 확정 후 재집계한다.
-- web request JVM 내 동기 처리와 격리 worker/비동기 처리 중 안전한 경계를 판정한다.
-- 라이선스, DRM 임시 파일 수명·삭제, timeout/kill, 외부 link 비갱신·보존 정책을 기록한다.
+- domain 규칙64의 승인된 격리 worker/비동기 실행 경계에서 자원 제한 강제·대표 경로 실측 근거를 기록하고, 제품/API·전체 저장 응답 미검증 범위를 최종 판정/후속 티켓에 연결한다.
+- 라이선스, 로컬 worker 평문 임시 파일 수명·삭제(domain 규칙63), timeout/kill, 외부 link 비갱신·보존 정책을 기록한다. 실제 DRM 암복호화 시험은 위 사용자 제외 결정으로 해당 없음이며 Pass와 구분한다.
 - `GO / CONDITIONAL / NO-GO`와 `INPUT-03`, `INPUT-04`, `INPUT-07`에 넘길 제약을 확정한다.
 
 ### Stable outputs
 
-- Work note: 티켓 착수일에 `docs/work-notes/YYYY/YYYY-MM-DD-model-input-calculation-engine-followup.md` 생성
-- Evidence artifact: 기존 `docs/references/mi-model-input-calculation-engine-spike.md` update
+- Work note: [기존 stable work note](../../work-notes/2026/2026-09-03-model-input-transfer-format.md) **update**. 별도 새 note를 만들지 않는다. 초기 stage1 note는 당시 이력으로 유지한다.
+- Evidence artifacts: [engine spike](../../references/mi-model-input-calculation-engine-spike.md)·[compatibility](../../references/mi-model-input-sheet-calculation-compatibility.md) update. 과거 XLSM/golden/도구/실행 기록은 수정하지 않는다.
+
+### Final verdict — 2026-10-15 사용자 승인
+
+**`DONE (CONDITIONAL)` — F-S-06 제외.** 조건부 완료는 고정 source와 아래 선정 경로에서 POI 부분 계산/원본 보존 및 규칙63·64의 실행 기준을 채택한다는 뜻이다. 모든 표/입력 조합·모델 결과·제품/API·운영 배포의 검증 완료를 뜻하지 않는다. 이전 전체 workbook POI/LibreOffice `NO-GO`는 유지한다.
+
+- 기준본: [2026-10-07 manifest](../../references/mi-model-input-baseline-2026-10-07-manifest.json)의 v8/v6 정규화4파일. 입력/보존19 Pass, 승인 계산/동일변경 Excel9 Pass, 명시적 추가 계산 제외10은 해당 없음(PRESERVE), 기록한 범위의 읽기 전용 native19 Pass다. 새 계산 범위나 기존 오류의 허용을 추론하지 않는다.
+- 운영 채택: domain **규칙64**의 worker/자원·순차/비동기·저장 목표/전체 상한, **규칙63**의 평문 임시 파일 수명·정리를 따른다. 기준값은 해당 정본에서만 변경한다. 기존 암복호화 기능을 재사용하며 실제 DRM 재검증은 **해당 없음(사용자 제외)**이다.
+- 실증: 승인7경로×3 자원21회, 동시/중단 정리6시험·14요청, 평문 수명/실제 프로세스 복구10시험, 실제2vCPU/2GiB 대표4경로×3 인정12회가 완료됐다. 제한환경 최대 파일 처리14.564초·worker kernel peak666.5MiB·OOM0, 승인 결과 hash/보존 동일이다. 준비 manifest mount 누락1회는 수정/정리한 환경 오류로 별도 보존했다(총13시도/12인정). [종료 기록](../../../temp/input-02a-engine/2026-10-15-input-02a-conditional-closeout-c2mlcayi/final-summary.json)의 기존 증거 링크와 stable note를 따른다.
+- 한계: 각 경로3회·통제하지 않은 warm cache, Linux/tmpfs/JDK 환경의 로컬 파일 처리 구간이다. 각 역할 중앙값 합은 같은4파일 저장 요청의 실측이 아니다. API/대기열·기동/DB/storage upload·저장 확정/fsync를 포함한 전체 응답, 제품의 상태/부분 실패, OS reboot/정전·접근 불가 사용자 핸들/물리 매체 삭제는 검증하지 않았다. native Pass는 기록 범위의 읽기/무저장 확인이며 전수 수식 계산·native 저장/매크로 인증이 아니다.
+- 제외/후속: F-S-06은 종료 대상에서 제외한다. CLEAR3(F-O-03/F-D-04/F-T-03)는 빈 값 금지 결정이므로 허용 파일 시험이 아니며 거부/기본값의 제품 검증은 INPUT-07/08→10으로 전달한다. 지정 밖 계산·구조는 해당 계약과 근거를 확보한 범위만 연다. 선정19파일의 정책/Excel/native를 다시 요청하거나 전체 조사·DRM 원격 증거를 새 INPUT-02A 선행조건으로 추가하지 않는다.
+
+### INPUT-03/04/07 handoff constraints
+
+| 전달 티켓 | 반드시 이어받을 제약 | 후속 완료 경계 |
+| --- | --- | --- |
+| INPUT-03 | 고정 source/template와 안정적인 row identity, 승인된 입력·계산·PRESERVE·구조 경계를 구분한다. 연결 설비의 행 변경/원본 cache 동반 이동과 규칙15·60·61의 성공 Draft/실패 요청 경계를 유지한다. worksheet 행 번호·설비명만으로 영속 identity를 정하지 않는다 | domain/ERD·저장 소유권·revision 및 실패 경계를 확정. 규칙63/64를 임의 변경하지 않고 API/DDL 정본과 연결 |
+| INPUT-04 | 규칙64의 비동기 접수와 실제 저장 완료를 구분한다. Q8의 revision/idempotency·요청 취소/직전 성공 Draft 보존·부분 업로드/Case 연결 실패를 계약으로 구체화한다. PoC 시간을 전체 저장 응답 보장으로 표현하지 않는다 | feature spec/OpenAPI에서 상태·완료/실패·timeout 경계 확정. 실제 응답/저장 시간 검증은 아래 INPUT-10 후속 항목으로 전달 |
+| INPUT-07 | source 전체 복제 후 승인 셀/구조만 변경. POI는 승인된 source-only 부분 계산만 실행하고 golden은 비교용이다. 명시적 계산 제외10, A/UNIQUE·원본 오류/외부 cache·hidden/package를 보존하며 링크 갱신/매크로 실행을 하지 않는다. 구조의 참조/shared/chain·서식/validation/names 변경은 승인 기대값만 반영 | 규칙63/64의 자원 격리·동시1·작업별 정리/복구를 실제 제품에 적용하고 실패 파일을 성공으로 게시하지 않음. 기존 공용 @Async pool을 workbook 동시성 근거로 쓰지 않음. INPUT-03/04 완료 후 구현·제품 보존/계산 검증 |
+
+**후속 티켓: INPUT-10 — API 전체 저장 응답 검증 (`PENDING`, 현재 티켓 상태 `BLOCKED`).** INPUT-04 계약과 INPUT-07~09 구현 후, 실제 동일4파일 저장 요청의 접수→대기→처리→DB/storage 저장 확정→완료 응답을 측정한다. 규칙64의30초 목표/전체120초 상한 충족 여부, 접수/미완성 파일을 성공으로 오인하지 않는지, timeout/부분 실패 시 취소·직전 성공 Draft·중복 Case 방지·규칙63 정리를 확인한다. 구체 API 필드/오류는 INPUT-04 정본을 따른다. 이 제품 검증을 INPUT-02A의 미완료 시험으로 남기지 않으며 운영 배포 전 INPUT-10에서 판정한다.
 
 ## 7. Remaining Epic 1 ticket boundaries
 
@@ -328,13 +349,16 @@ Coordination:
 
 - field/options/dependency/구조 정책과 Draft/change/finalized Case의 책임·lifecycle을 canonical domain design에 확정한다.
 - physical table/JSON 경계, key/index, revision uniqueness, active Draft cardinality와 DBA rollout을 DDL draft에 확정한다.
-- `new-domain-model-design`과 `erd-change-review`를 적용한다.
+- §6A의 INPUT-03 전달 제약을 반영한다. READY는 설계 착수 가능이며 물리 모델/업무 정책 확정이나 제품 구현 완료가 아니다.
+- 공통 저장 구조는 domain §3.4·§5.1~5.3/DDL §6.3의 정의로 문서 범위 완료. 남은 표별 field/구조 정책은 해당 표/동작 쓰기를 열 때 처리하며 공통 설계의 선행조건이 아니다. 실제 DBA 적용 준비·구현/검증은 별도다.
+- `new-domain-model-design`과 `erd-change-review`를 필요한 미결에 적용한다.
 
 ### INPUT-04 — 조회·임시저장·최종저장 API 계약
 
 - 조회 projection, Draft 생성/조회, 값·구조 변경 임시저장, 최종저장 endpoint와 DTO/error/OpenAPI 계약을 확정한다.
-- 계산 시간에 따른 동기/비동기, 임시저장 계산 실패, DRM/payload/snapshot/idempotency를 포함한다.
-- `backend-feature-spec`을 적용한다.
+- domain 규칙64로 승인된 격리 비동기 실행의 접수/완료·timeout, 임시저장 계산 실패, DRM/payload/snapshot/idempotency를 포함한다. §6A의 INPUT-04 제약과 INPUT-10 API 전체 저장 응답 후속 검증을 계약에 연결한다.
+- EDT-01~07·최종저장/실패 복구의 공통 계약은 [편집 API](../../feature-specs/mi-fundamental-model-input-draft-editing-api-proposal.md) §3~6·§9로 문서 범위 완료. 표별 정책·실제 generated OpenAPI/제품 검증은 후속이다.
+- `backend-feature-spec`을 필요한 계약 범위에 적용한다.
 
 ### INPUT-05 — 카탈로그 seed와 화면 조회 API
 
@@ -344,6 +368,8 @@ Coordination:
 
 ### INPUT-06 — Draft 생성·조회 persistence
 
+- 2026-10-16 채택한 첫 구현 묶음은 아래 §7A다. 공통 요청 처리와 EDT-01~03에 필요한 조회 연결을 포함하며 전체 INPUT-05/07~09 실행이나 즉시 구현 착수를 뜻하지 않는다.
+
 - source case/files/template version을 고정한 사용자 Draft와 optimistic revision을 생성·조회한다.
 - 값 변경 적용, XLSM 생성, Case 생성은 포함하지 않는다.
 
@@ -352,6 +378,7 @@ Coordination:
 - 고정 source snapshot의 원본 workbook 파일 전체를 먼저 복제하고 catalog가 허용한 sheet/cell만 변경한다.
 - catalog가 허용한 기존 field의 `SET/CLEAR`와 `STRUCT-02~04`에서 확정한 구조 변경을 반영한다.
 - Backend 계산 경계에서 계산 허용 수식/cached value만 갱신한다.
+- §6A의 INPUT-07 전달 제약과 domain 규칙63/64를 구현·검증한다. 선정 PoC 통과를 미검증 표/조건의 계산 허용으로 확대하지 않는다.
 - 외부 참조의 계산/보존 구분은 domain design §6 규칙 33·54를 따른다. 계산 예외의 결과 외 formula·외부 데이터 캐시·externalLink/package는 보존하고 외부 파일을 열거나 갱신하지 않는다.
 - TRADE `4.5 PriceModelInput`의 T-183/T-184는 domain 규칙 44의 승인 값/구조 변경을 반영하고 그 밖 원본 영역은 보존한다. 이 편집 허용만으로 계산 엔진 적용이나 외부 참조 갱신을 허용하지 않는다.
 - 파라미터 제안 파일 생성 로직과 model container를 사용하지 않는다.
@@ -368,12 +395,13 @@ Coordination:
 - source snapshot의 원본 workbook 파일 전체를 먼저 복제하고 catalog가 허용한 sheet/cell만 변경한다.
 - hidden sheet는 계산 엔진에 전달하지 않고 worksheet/package 내용을 수정하지 않는다.
 - TRADE `4.5 PriceModelInput`의 T-183/T-184는 domain 규칙 44에 따라 입력값 편집과 각 표의 마지막 데이터 행 아래 행 추가를 최종 XLSM에 반영하고, 승인 변경 밖 원본 영역은 보존한다. 이 편집 허용만으로 계산 엔진 적용이나 외부 참조 갱신을 허용하지 않는다.
-- role별 bytes를 `MultipartFile`로 변환해 이미 4파일을 받는 Fundamental Model Case application service에 전달한다. Case 생성 서비스의 4파일 계약을 다시 구현하지 않는다.
+- 후속 최종저장 연결은 domain §5.2/§5.4를 따른다. 기존4파일 검증/저장 책임을 재사용하되, 준비 참조→비공개 업로드→Case/파일/양식/Draft 동시 확정을 지킨다. 기존 createCase/staged API 그대로 호출하는 것으로 원자성/복구가 충족됐다고 보지 않는다.
 - 같은 Draft 재시도에 Case를 중복 생성하지 않고 `caseId`를 반환한다. Run은 호출하지 않는다.
 
 ### INPUT-10 — 실파일 E2E·DBA rollout 검증
 
 - 실제 파일 조회부터 별도 Run까지 전체 흐름과 원본 불변성을 검증한다.
+- **후속 API 전체 저장 응답 검증: PENDING.** §6A의 동일4파일 요청/비동기 접수→저장 확정·완료 응답, 규칙64 시간 기준과 timeout/부분 실패·정리를 실제 API/DB/storage로 검증한다. INPUT-04 계약 및 INPUT-07~09 구현 이후 수행하며 INPUT-02A 조건부 완료를 이 제품 검증의 Pass로 사용하지 않는다.
 - DB pre-check/apply/rollback/verify와 고객사 환경 적용 증거를 기록한다.
 - 계산 허용 cached value 갱신, 계산 제외 외부 참조 formula/cached/link 및 계산 예외의 원본 수식·외부 데이터 캐시·link 불변, macro/style/validation, Case 파일 연결, 모델 결과 반영을 확인한다.
 - source와 결과의 hidden sheet 집합·순서·상태와 hidden worksheet part 불변을 확인하고, hidden sheet가
@@ -392,6 +420,44 @@ Coordination:
 - 목록 미노출과 detail/status/result/input/run의 `404 RSC_NOT_FOUND`를 검증한다. `SCENARIO`는 정리 후 파라미터 팝업·최근 실행 파라미터·시나리오 결과가 남은 non-deleted row로 판정되고 데이터 불일치 오류가 없는지 검증한다.
 - Scenario 4파일 전환 배포가 이 티켓보다 먼저 나가면, 정리 전까지 3파일 Scenario 건은 팝업 입력 파일에서 `OUTPUT` 누락(`complete=false`)으로 보인다. 두 작업의 실행 순서는 배포 계획에서 맞춘다.
 - 실제 데이터 변경을 시작할 때 별도 stable work note와 DBA 승인 절차를 사용한다.
+
+## 7A. 공통 BE 1·2 첫 구현 계획 — 2026-10-16 사용자 채택
+
+- 2026-10-16 table prefix 변경: 현재 물리명은 [DDL §6.6](mi-model-input-template-catalog-erd-ddl-draft.md)의 tmd_mdl_inpt...다. 이미 적용한 testdb는 [rename SQL](../../model-input-draft-table-prefix-rename-draft.sql)을 사용자가 실행/검증한 뒤 새 이름 코드·테스트 등록 SQL로 이어간다. 코드 변경/로컬 검증과 실제 DB rename/API 통과는 구분하며 DB 직접 실행·표별 정책 확장·PriceModel/Regas 추가 추천 승인은 포함하지 않는다.
+
+**첫 구현 In Progress.** 계획 채택 이후 사용자가 ① 공통 요청 처리와 ② Draft 생성·재개·조회 구현을 승인했다. ③ 임시저장/작업 복구 → ④ 최종저장/파일 복구는 후속이다. 최소 sourceVersion 진입 QRY-01과 EDT-01~03/revision0 코드·테스트를 준비했으며 전체 완료/배포는 아니다. 구현 범위는 편집 API §1.2, 사용자 검토·수동 적용 SQL은 DDL §6.5다. 실제 testdb/Case103 연동·DDL 적용은 미완료다. 추가 DB 접속 확인은 사용자 보류를 유지한다. 검토3건 수정은 후속 승인으로 최소 수정·회귀32개/독립 후속 검토를 통과했다(stable note 참조). 이 범위의 결함 해결과 실제 DB 연동/전체 목표 완료는 구분한다. 실행/검증 결과는 기존 stable note를 update한다. 표별 정책/PriceModel·Regas 미승인은 유지한다.
+
+### 범위·정본 연결
+
+- 2026-10-16 FE 구간 로딩 방식은 [QRY 상세 §5.1](../../feature-specs/mi-fundamental-model-input-query-api-proposal.md)의 사용자 확정 계약을 따른다. Draft EDT-03도 편집 API §2의 참조로 연결한다. FE 구현/화면·실제 API 연동 검증은 후속이며 이번 문서 반영으로 완료 상태를 올리지 않는다. DB 접속·DDL 적용은 계속 사용자 보류다.
+
+- 첫 endpoint 범위는 [편집 API](../../feature-specs/mi-fundamental-model-input-draft-editing-api-proposal.md) §3의 **EDT-01~03**(생성/재개·구조 조회·선택 표 조회)이다. 공개 DTO/validation/오류·ID/revision/페이지·editing 표현은 같은 spec §2~3·§6, source 식별/원본 조회 표현은 [QRY 상세](../../feature-specs/mi-fundamental-model-input-query-api-proposal.md)의 확정 계약을 참조한다. 이 계획에서 계약을 다시 정의하지 않는다.
+- 저장/행 identity·lifecycle과 재사용 경계는 [domain](mi-model-input-template-catalog-domain-model-design.md) §3.2~3.4·§5.1·§5.4, 물리 정의/코드 호환은 [DDL](mi-model-input-template-catalog-erd-ddl-draft.md) §6.3~6.4를 따른다. 아직 sourceVersion/Case-template·개인 Draft persistence가 기존 코드에 구현돼 있다는 전제로 시작하지 않는다.
+- INPUT-06을 중심으로, EDT에 필요한 **원본4파일·발행 참조/구조·선택 표를 읽는 최소 조회 연결**만 INPUT-05 책임에서 포함한다. QRY 공개 API 전체·운영 catalog 발행/목록·seed 구축을 이 첫 묶음에 추가하지 않는다. 이미 확정한 읽기 정의/실제 등록이 필요한 사실은 연결 입력으로 확인하고, 원천이 없으면 정본 오류로 차단한다. 임의 catalog/다른 양식·원본/fallback/mock 성공으로 대체하지 않는다.
+
+### 내부 진행 순서·완료 기준
+
+| 순서 | 앞으로 구현할 범위 | 확인할 결과 |
+| --- | --- | --- |
+| 1. 공통 요청·응답/안전 처리 | EDT-01~03의 인증된 회사/사용자·source 접근/개인 소유, ID/body/query·수치/크기 검사, 공통 안전 오류·본문/MDC 비로깅. 기존 resolver/응답 패턴을 필요한 범위에서 재사용 | 타회사/타인 Draft·잘못된 입력을 정본대로 거부. 숫자/정수·응답 값 손실 없음. DTO·오류/OpenAPI와 계약 일치. EDT-04 이후 전용 명령 처리·범용 validator/공통 handler 전체 개편을 선제 구현하지 않음 |
+| 2. 고정 원본과 Draft 생성·재개 | 접근 가능한 원본4파일/발행 기준 고정, 개인 진행 Draft1건, revision0·원본 논리 행ID/위치의 최소 저장, 기존 Draft 재개. 이번 API에 필요한 master 저장/조회만 준비 | 생성 중 실패는 부분 Draft 없음. 재개 시 ID·기준·성공 상태/진행 참조 보존. 원본 기준 불일치와 중복 생성을 계약대로 처리. 동일 진행 Draft를 중복 생성하지 않고, 생성/재개만으로 Case/Run을 만들지 않음 |
+| 3. Draft 구조·선택 표 조회 | EDT-02/03에 필요한 구조/표·안정 행 대응/현재 성공 revision·editing metadata를 연결. 생성 직후 revision0은 고정 원본 기준으로 읽음 | 구조 조회 최초 표 미선택, 선택 표만 조회, 페이지/revision 불일치 거부. 저장된 성공 이력이 있으면 그 기준으로 읽고 임의 revision0/원본으로 되돌리지 않음. 조회로 계산/성공 이력을 생성하지 않음 |
+| 4. 첫 범위 검증·정본 동기화 | DB 없이 가능한 핵심 로직/요청·응답 테스트와 OpenAPI 대조, 변경 diff/권한·로그·수치/제한 검증. 실제 DB 의존 검증은 아래 분리 | 통과한 코드/계약 검증과 미실행 DB/실파일 검증을 구분해 같은 stable work note에 기록. compile 성공이나 mock 응답만으로 저장 동시성/복원·실제 연동 Pass를 보고하지 않음 |
+
+미결 표별 정책은 해당 동작만 미완비로 표현하고 읽기/공통 작업의 선행조건으로 확대하지 않는다. editing metadata의 READY/INCOMPLETE/NOT_ALLOWED/UNSUPPORTED는 승인/준비된 실제 근거로 판정하며, **PriceModel/Regas 추가 추천은 미승인·후속**으로 유지한다. 기존에 승인한 다른 표의 정책은 변경하지 않는다.
+
+### 지금 준비할 것과 DBA 확인 뒤 검증할 것
+
+- **먼저 준비 가능:** 공통 API/로직·최소 저장 코드의 정본 기준 초안과 DB 독립 테스트. 실제 DB 컬럼에 결합되는 최종 매핑은 실물 확인 결과에 맞춘다. 새 테이블 전체/미사용 처리 계층을 먼저 만들 필요는 없다.
+- **DBA 후속 유지:** DDL §13 DBA-01~05(실제 schema/ID, 제약·경합 환경, packet/크기 설정, 감사 표준, SQL/rollout)는 PENDING이다. 실제 catalog/Case-template 등록·조회 입력도 DB 대조로 확인한다. 이 확인을 표별 목록/seed 설계로 확대하지 않는다.
+- **DB 연동/배포 완료 기준:** 실제 연결에서 생성·재개/조회·원자성·동시 생성1건·수치 왕복/row 대응을 검증하고 DBA 결과와 최종 매핑을 일치시킨 뒤 판단한다. 앱은 ddl-auto:validate/Flyway disabled이므로 필요한 테이블/매핑을 확인·적용하기 전에 새 entity를 포함한 앱을 배포하지 않는다. DB 독립 검증 완료와 실제 저장 API 사용 가능을 별도 상태로 보고한다.
+
+### 후속 경계·실행 상태
+
+EDT-04~07 접수/처리, 변경 적용·계산/구조 명령·XLSM 생성, 격리 worker/재시작·timeout 처리, 업로드/최종 Case·파일 복구/Run은 다음 묶음이다. 첫 범위에서는 진행/완료 참조를 읽을 수 있도록 계약을 보존할 뿐 이 작업들을 시작하거나 가짜 성공으로 응답하지 않는다. 표별 정책·추가 목록/seed 설계, 실제 DB 접속·SQL 실행/적용·배포는 이번 계획 반영 요청에서 진행하지 않는다.
+
+- 계획 반영 완료 기준: 첫 범위·진행 순서/검증/DBA 경계와 미승인 유지가 정본/기존 note에 일치. **이 문서 작업만 Complete**다.
+- 첫 제품 구현 상태: **계획 채택·미착수**. 전체 INPUT-03/04·INPUT-05/06 DONE/READY 또는 INPUT-07 배정으로 승격하지 않는다. 실제 구현을 요청받을 때 이 범위로 착수하며 [기존 stable work note](../../work-notes/2026/2026-09-03-model-input-transfer-format.md)를 **update**한다.
 
 ## 8. 이번 release의 구조 변경 작업 — STRUCT 티켓
 
@@ -413,16 +479,44 @@ Coordination:
 | `INPUT-01A` | Done — 개발본 76개, runtime 70개 시트, OUTPUT 5개 business sheet/6개 편집 table 후보 | `docs/work-notes/2026/2026-09-03-model-input-transfer-format.md` |
 | `INPUT-02` | Done — `NO-GO` | `docs/work-notes/2026/2026-09-16-model-input-calculation-engine-spike.md` |
 | `INPUT-02B` | Done — 당시 3파일 기준 외부 참조 42,394셀 계산 제외·보존. 현재 외부 참조 정책은 domain 규칙 33·54 | `docs/work-notes/2026/2026-09-16-model-input-sheet-calculation-compatibility.md` |
-| `INPUT-02A` | In progress — POI 부분 계산 승인(2026-10-13). 실행 경계·남은 fixture 비교 진행 | `docs/work-notes/2026/2026-10-07-input-02a-stage1-no-commercial-engine.md` (10-08 표본 준비·10-12 4사례 결과는 `2026-09-03-model-input-transfer-format.md`) |
+| `INPUT-02A` | Done — `CONDITIONAL`, F-S-06 제외. 2026-10-15 사용자 승인·조건/한계/전달은 §6A | `docs/work-notes/2026/2026-09-03-model-input-transfer-format.md` (초기 stage1 note는 당시 이력) |
+| `INPUT-03` | 공통 저장 구조/코드 연결 대조 완료 — domain §5.4·DDL §6.3~6.4. 실제 DB는 DDL §13 DBA-01~05 PENDING, 표별 정책·제품 구현/검증 후속 | `docs/work-notes/2026/2026-09-03-model-input-transfer-format.md` update |
+| `INPUT-04` | 공통 EDT-01~07/최종저장·실패 복구 계약 문서 완료 — [편집 API Draft](../../feature-specs/mi-fundamental-model-input-draft-editing-api-proposal.md) §3~6·§9. 기존 코드 연동 대조 완료(§10), 표별 정책·EDT 구현/OpenAPI·제품 검증 후속 | `docs/work-notes/2026/2026-09-03-model-input-transfer-format.md` update |
+| `INPUT-06` / 공통 BE 1·2 | 첫 구현 계획 채택·미착수 — §7A의 공통 요청/EDT-01~03·최소 원본/발행 조회. 지금 구현/DB 적용 실행 안 함, 실제 DB는 DBA 후속 | `docs/work-notes/2026/2026-09-03-model-input-transfer-format.md` update |
+| `INPUT-07` | Do not dispatch — INPUT-03/04 완료 필요 | 선행 완료 후 지정 |
+| `INPUT-10` | Do not dispatch — 제품 구현/STRUCT-05 후 E2E. API 전체 저장 응답 검증 PENDING 포함 | 선행 완료 후 지정 |
 | `INPUT-11` | Do not dispatch — 4파일 E2E 완료와 운영 승인 필요 | 착수 시 별도 생성 |
 | 나머지 | Do not dispatch | 선행 티켓 완료 후 지정 |
 
-다음 coordinator action은 승인된 POI 부분 계산으로 동기/비동기 판정 근거(4파일 시간·메모리·동시 요청)와
-남은 fixture의 Excel 비교를 확보하는 것이다. 검증 범위는 계산 호환성 reference의 최신 표별 계산·보존·구조 변경 목록을 따른다. `GDP`·`PIPELINE`은 오탐이라 검증 대상이 아니며, `_XLFN.UNIQUE` 5셀은 원본 보존 검증만 한다(domain 규칙 57). `INPUT-03`, `INPUT-04`는 계산이 web request 안에서 끝나는지,
-격리 worker와 계산 상태가 필요한지 확정된 뒤 배정한다.
+2026-10-16 공통 BE 추천 묶음과 Sector H/J·I 음수 금지, 연월 범위·신규/기존 수정 중복 금지는 사용자 채택한 기준이다. 국가/하위부문은 같은 날 최종적으로 필수 자유입력으로 변경했으며 목록 선택·option snapshot/seed 연결안은 철회했다. 이전 inventory §6.3은 조사 이력이며 허용 목록/발행 근거가 아니다. 이 입력 방식의 후속은 모델의 명칭 인식 제약 확인만 남긴다. 다른 표 정책/명칭 인식은 표별 후속이다. 공통 저장 물리 정의/최종저장·복구 계약은 이번 후속에서 마쳤으며 DBA 적용 준비·INPUT-10의 API 전체 저장 응답 검증은 남았다. 구현/배포와 전체 INPUT-03/04 완료로 승격하지 않는다.
+
+2026-10-16 후속으로 수요 입력·해제와 BCPrices 기존 수정의 두 묶음을 사용자 채택했다. 업무 기준은 domain 규칙45·§6.1, 공개 검증은 편집 API §4.1~4.3이다. 해당 업무 미결은 제거했고 다른 표 정책·전체 구조/계산·물리/제품 검증 및 기존 발행 불변/원본 보존은 유지한다. 정책 문서 반영 완료이며 INPUT-03/04 전체 완료·구현/DB 적용은 아니다.
+
+2026-10-16 현재 작업 전환: **표별 정책은 후속**, PriceModel 비계약 물량/Regas 신규 설비 추천은 **미승인**으로 남긴다. 공통 저장7개 책임·성공 이력/행 위치·요청 중복/진행 제한·JSON 정밀도/복원과 최종저장 접수/조회·4파일/Case/양식/Draft 동시 확정·실패/응답 유실/재시작 복구의 문서 범위는 완료했다. 공통 설계 완료를 위해 표마다 모든 정책을 먼저 정할 필요는 없다. 미완비 동작만 차단하는 원칙을 유지한다. 구현/DB/seed 적용은 없고 전체 INPUT-03/04·제품/DBA 완료 또는 INPUT-07 배정으로 승격하지 않는다.
+
+2026-10-16 BE·DBA 필수 확인 결과: 코드/문서 기준 대조를 완료했다. 재사용할 master/Case·4파일·권한과 구현이 필요한 Draft/worker·JSON/비로깅·업로드 준비/UNKNOWN 경계를 domain §5.4·DDL §6.4에 기록했다. 실제 DB 확인은 DDL §13 DBA-01~05로 분리해 PENDING이다. 기존 staged 파일 기능/모델 Run 복구를 Draft 계약 충족으로 보지 않는다. 기존 계약·표별 후속/PriceModel·Regas 미승인 및 구현/DB 미적용을 유지한다.
+
+현재 첫 실행 계획은 **§7A의 공통 BE 1·2**다. 위 INPUT-03/04의 전체 후속/이전 Do not dispatch를 표별 모든 정책을 먼저 정해야 한다는 의미로 확대하지 않는다. 사용자 승인은 계획 채택이고 제품 구현은 아직 미착수이며 DBA 실제 확인·표별 정책 후속 및 PriceModel/Regas 미승인을 유지한다.
 
 ## 10. Change Log
 
+- 2026-10-16 사용자 채택으로 공통 요청 처리와 Draft 생성·재개·조회(EDT-01~03)를 첫 구현 계획 §7A/INPUT-06 dispatch에 반영했다. 필요한 최소 원본/발행 조회와 코드·DB독립 검증/실제 DB 연동·배포의 완료 경계를 분리했다. 후속 INPUT-09의 파일 서비스 연결 설명은 domain §5.2/§5.4의 기존 원자성/복구 경계 참조로 정렬했다. 계약/정책 변경·구현/DB 적용은 없다.
+
+- 2026-10-16 기존 코드·문서 기준의 공통 BE 필수 확인을 완료하고 실제 DB 실물 확인5개를 DBA 후속으로 분리했다. 현재 제안 병합 결과 타입은4파일임을 정정했고, staged API/UNKNOWN 정리·JSON 정밀도/본문 로깅의 보완 경계를 기록했다. 코드/DB 변경은 없다.
+
+- 2026-10-16 공통 저장 구조와 EDT-06/07 최종저장·실패 복구 계약을 기존 정본에 마무리했다. 표별 정책은 후속으로 분리하고 PriceModel/Regas 추가 추천은 미승인 유지. 구현/DB 적용/제품 검증은 별도다.
+
+- 2026-10-16: Sector/Monthly 수요 입력·해제 및 BCPrices 기존 연도/가격 수정 두 묶음 채택을 정본/API 검증·예시·현재 미결에 반영했다. 전체 티켓/제품/DBA 준비도는 승격하지 않았다.
+
+- 2026-10-16 최종: Sector 국가/하위부문을 필수 자유입력으로 전환하고 앞선 목록 선택·발행/seed 연결안을 철회했다. 모델의 명칭 인식 제약만 이 입력 방식의 후속으로 남기며 연월·중복·I/H/J 정책은 유지했다. 아래 목록 선택 채택은 이 결정 전 이력이다.
+
+- 2026-10-16: Sector 목록/연월/신규·기존 수정 중복 금지의 사용자 채택을 domain 규칙45·편집 API §4.1·DDL 후속에 연결했다. 업무 미결과 실제 목록/정의·seed/저장 검증을 구분하며 전체 티켓 완료로 승격하지 않았다.
+
+- 2026-10-16: 공통 BE 추천 묶음과 Sector 정책 채택을 §9의 정본 연결에 반영했다. 물리 DDL/최종저장 상세·제품 검증은 후속이며 전체 티켓 완료로 승격하지 않았다.
+
+- 2026-10-16: INPUT-03/04의 부분 공통 초안과 기존 stable note를 §9에 연결했다. 전체 티켓 DONE·STRUCT/제품 구현 승인으로 승격하지 않으며 §6A 조건부 완료·INPUT-10 PENDING은 유지한다.
+
+- 2026-10-15: 사용자 승인으로 F-S-06 제외 INPUT-02A를 `DONE (CONDITIONAL)`로 완료했다. 규칙63/64·선정19사례/실제 제한 실측·검증 한계·INPUT-03/04/07 전달 제약을 §6A에 기록했다. INPUT-03/04는 설계/계약 READY, INPUT-07과 제품 검증은 BLOCKED를 유지하며 API 전체 저장 응답은 INPUT-10 후속 PENDING으로 등록했다. 전체 기능/조사·구현/배포 완료 판정은 하지 않았다.
 - 2026-10-13: 사용자 결정으로 `INPUT-11` 정리 대상에 3파일 `SCENARIO` case를 추가했다. 연결 run history·execution-preparation·active 가격전망해석을 함께 soft delete하고 Scenario 화면 판정 검증과 배포 순서 주의를 적었다. 티켓 상태·선행조건은 유지한다.
 - 2026-10-13: 미커밋 문서 정합성 검토에 따라 open question과 §9의 `GDP`/`PIPELINE`/`_XLFN.UNIQUE` 검증 문구를 최신 함수 조사(오탐 정정)와 domain 규칙 57(UNIQUE 5셀 원본 보존)에 맞췄다. §9 `INPUT-02B`의 42,394셀은 당시 3파일 수치로 표시했다. 티켓 상태·선행조건은 유지한다.
 - 2026-10-13: 사용자 결정으로 INPUT-02A 계산 후보를 POI 부분 계산으로 승인하고(domain Q7) 상태를 `IN_PROGRESS`로 바꿨다. INPUT-03/04 배정 조건(동기/비동기 판정 후)과 다른 티켓 상태는 유지한다.

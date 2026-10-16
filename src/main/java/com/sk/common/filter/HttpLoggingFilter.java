@@ -73,7 +73,7 @@ public class HttpLoggingFilter extends OncePerRequestFilter implements Ordered {
             String contentType = request.getContentType();
             String requestUri = request.getRequestURI();
 
-            if (isMultipartRequest(contentType) || isDownloadResponse(requestUri)) {
+            if (isMultipartRequest(contentType) || isDownloadResponse(requestUri) || isModelInputRequest(requestUri)) {
                 doFilterWithoutCaching(request, response, filterChain);
                 return;
             }
@@ -116,6 +116,12 @@ public class HttpLoggingFilter extends OncePerRequestFilter implements Ordered {
             DataSourceContextHolder.clearDataSourceKey();
         }
 
+    }
+
+    // 셀 값과 수식은 본문 캐시·로그·MDC에 남기지 않는다. 캐시 wrapper 생성 전에 판별한다.
+    private static boolean isModelInputRequest(String uri) {
+        return uri.startsWith("/api/v1/mi/fundamental-model/input-drafts/")
+            || uri.matches("/api/v1/mi/fundamental-model/cases/[^/]+/(input-drafts|inputs/structure)/?");
     }
 
     /**

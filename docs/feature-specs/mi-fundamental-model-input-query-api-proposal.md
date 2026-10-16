@@ -3,7 +3,7 @@
 ## Document Control
 
 - status: Draft
-- canonical for: API contract proposal — 저장 Case 조회의 상세 제안과 §1.1의 사용자 확정 범위를 소유한다. 기존 feature spec의 확정 계약을 대체하지 않으며 새 확정 사항의 공용 정본 통합은 대기한다.
+- canonical for: API contract proposal — 저장 Case 조회의 상세 제안과 §1.1의 사용자 확정 범위를 소유한다. 숫자 표시 정책과 JSON DRM 비적용은 기존 feature spec §3.2·§5가 정본이며 이 문서는 참조한다. 그 밖의 새 확정 사항의 공용 정본 통합은 대기한다.
 - owner: Shared (BE / FE)
 - source documents:
   - [기존 조회 명세](mi-fundamental-model-input-provision-feature-spec.md) §2~8
@@ -14,10 +14,10 @@
   - [Delivery Plan](../design-docs/gas/mi-model-input-editing-delivery-plan.md) §3·§6A·§7
   - [문서 소유권](../conventions/source-of-truth-governance.md), [OpenAPI 규칙](../conventions/openapi-documentation-conventions.md), [보안 정책](../../SECURITY.md)
 - supersedes: 없음
-- last synced: 2026-10-15
-- open questions: §9 Q2~Q6의 남은 기술·검증 항목. 항목 JSON/좌표·새 월 열 생성 계약과 삭제 후 Year/Month/Period 보존·수식 참조 원칙은 확정됐다. 실제 원본 고정/catalog revision 연결은 Q2, 판독기/표본은 Q3, 실제 원본/catalog 대조·이벤트 연결·삭제 범위/보정 수식/계산 여부·파일/FE 검증과 추가 의존/규칙은 Q5의 후속이다. 물리 DB 구조는 기존 DDL 후속이다.
+- last synced: 2026-10-16
+- open questions: §9 Q2~Q6의 남은기술·검증 항목. Q2의 불변 파일 등록은 §4.4, 양식/catalog 발행 묶음·기존 DDL/Case 연결과 내부 버전 구성은 domain §3.3·DDL §6.2/§10B·이 문서 §4.6에 구체화했다. 실제 table/GET 정의·seed/발행·관계 등록·제품 연결/검증은 후속이다. 내용 hash/새 revision 컬럼을 요구하지 않는다. 숫자 표시 정책·JSON DRM 비적용과 기존 항목 JSON/월 생성/삭제 원칙은 확정됐고 제품 적용·실제 원본/catalog·이벤트/삭제/파일·FE/접근 검증은 Q3~Q6의 기존 후속이다.
 
-이 문서는 INPUT-02A와 분리한 **상세 제안이며 §1.1의 사용자 확정 범위를 반영**한다. 문서 전체의 승인이나 INPUT-03/04의 BLOCKED 해제를 뜻하지 않는다. 사용자의 파일 비중첩 지시에 따라 이번 확정도 이 문서와 전용 work note에만 반영했다. 공용 정본에 통합할 때 기존 조회 명세를 갱신하고 이 문서는 참조 이력으로 전환한다. 두 문서를 각각 승인 계약으로 유지하지 않는다.
+이 문서는 INPUT-02A와 분리한 **상세 제안이며 §1.1의 사용자 확정 범위를 반영**한다. 문서 전체의 승인이나 INPUT-03/04의 BLOCKED 해제를 뜻하지 않는다. 앞선 확정은 이 문서와 전용 work note에만 반영했으며, 2026-10-15 사용자 승인으로 숫자 표시 정책과 JSON DRM 비적용을 기존 조회 명세 §3.2·§5에 통합했다. 나머지 공용 정본 통합 시 기존 조회 명세를 갱신하고 이 문서는 참조 이력으로 전환한다. 같은 사실의 승인 계약을 두 문서에 중복 정의하지 않는다.
 
 ## 1. 목표와 범위
 
@@ -28,26 +28,34 @@
 
 기존 합의는 [조회 명세 §2~3.2](mi-fundamental-model-input-provision-feature-spec.md#2-fixed-decisions)를 참조한다. 아래 상세에서 사용자 확정 사항은 §1.1, 원본 고정·실제 catalog/규칙·판독 등의 남은 검증 사항은 §9로 구분한다. 기존 공통 셀/control 타입과 업무 권한은 유지하고 화면 갱신 규칙의 별도 응답 목록은 §5.4에서 추가한다.
 
-### 1.1 사용자 확정 범위 — 2026-10-14~15
+### 현재 첫 구현 연결 — 2026-10-16
 
-사용자는 조회 기준과 새 월 열 생성 계약에 이어 2026-10-15에 월 열 삭제 후 남은 Year/Month/Period 보존과 수식 참조 처리 원칙을 채택했다. 각 결정의 동작은 아래 연결된 절이 소유하며 제안서와 전용 work note만 갱신한다. 실제 삭제 범위·보정 수식·계산 여부·파일/FE 검증과 기존 원본/catalog·이벤트/DB/revision 연결 등은 후속이다. 계약 원칙의 채택은 실제 삭제/연동/계산 검증 완료를 뜻하지 않는다.
+Draft 생성에 필요한 QRY-01 sourceVersion 진입점은 편집 API §1.2의 첫 구현에 포함한다. QRY-02 공개 endpoint 전체는 후속이다. source hash의 tenantKey는 인증된 회사 번호의 선행0 없는 10진 문자열을 사용한다. 발행 조회 정의/Case 연결은 DDL §6.5, 현재 코드·검증/한계는 편집 API §1.2와 stable note를 따른다. 이 변경은 표별 업무 정책/목록·seed를 확정하지 않는다.
+
+### 1.1 사용자 확정 범위 — 2026-10-14~16
+
+사용자는 조회 기준과 새 월 열 생성 계약에 이어 2026-10-15에 월 열 삭제 후 남은 Year/Month/Period 보존과 수식 참조 처리 원칙, 애플리케이션 원본 기준 관리 방향을 채택했다. 각 결정의 정본은 아래 연결된 절을 따른다. 실제 삭제 범위·보정 수식·계산 여부·파일/FE 검증과 기존 원본/catalog·이벤트/DB/revision 연결 등은 후속이다. 계약 원칙의 채택은 실제 삭제/연동/계산 검증 완료를 뜻하지 않는다.
 
 | 관련 항목 | 확정된 결정 | 상세 위치 |
 | --- | --- | --- |
 | Q1 일부 | 최초 표 미선택 | §3.1 단계2 |
 | Q3 판독 정책 | 정상 빈 결과·저장된 오류·결과 부재/판독 불가를 구분. 현재 응답 범위의 부재/판독 불가는 해당 조회 요청 실패 | §5.3·§7 |
+| Q3 숫자 표시 정책 — 2026-10-15 | 기존 조회 명세 §3.2의 사용자 확정 정책을 적용. 제품 구현·승인 표시 범위 대조·HTTP/FE 검증은 후속 | §5.3의 숫자 표시 정책 참조 |
+| Q6 JSON DRM — 2026-10-15 | 기존 조회 명세 §5의 사용자 확정 DRM 비적용 경계를 따름. 기존 접근/로그/자원의 제품 적용·검증은 후속 | 기존 조회 명세 §5·이 문서 §9 Q6 |
 | Q5 일부 | LNG 모드 오타는 표시명만 수정하고 저장값 유지 | §5의 LNG 모드 표시 |
 | Q4 조회 단위·페이지 계약 | 큰 표 본문 최대 2,000행, 작은 표 전체 조회. 2 MiB 목표를 성공 응답 상한으로 적용하고 다음 페이지·종료·초과 처리를 구체화 | §5.1·§6.6·§7 |
+| Q4 FE 조회 시점 — 2026-10-16 | 표 선택 시 첫 구간 표시, 불러온 구간 아래쪽으로 스크롤할 때 남은 구간 추가 조회 | §5.1의 FE 구간 로딩 방식 |
 | Q1 호출 구성 | 구조 조회와 선택 표/페이지 데이터 조회를 두 GET으로 분리 | §3 |
 | Q2 생성 규칙 | tenant·Case·고정 순서의 4파일 식별/내용 버전·양식/카탈로그 기준을 묶어 동일 조합에 동일한 SHA-256 기반 sourceVersion 생성 | §4.3 |
 | Q2 출처·역할 식별자 | sourceKey는 tenant·Case의 고정 키, inputId는 해당 역할의 파일·내용 버전·양식/catalog 기준을 구별하는 키 | §4.5 |
+| Q2 원본 관리 방향 — 2026-10-15 | 애플리케이션이 불변 파일 등록을 기준으로 관리. 업로드마다 새 row/UUID 객체이며 등록된 경로/내용은 불변. 별도 내용 해시/재등록·버킷 특수 기능을 필수화하지 않음 | domain §3.2·DDL §6.1·§10A, 이 문서 §4.4 |
 | Q1 응답 필드 | 구조/표 응답의 필수·null·생략 조건, sections 안의 inputId와 공통 표·셀 타입 공유 | §5 |
 | Q5 표시·선택지·화면 규칙 기준 | 승인된 양식 version별 표시 catalog 사용, catalog 선택지와 파일 현재 값 분리, QRY-02의 displayUpdateRules 목록·논리 필수 정보·적용 순서. 실제 목록/계산식/DB·revision/FE 검증은 후속 | §5.4 |
 | Q5 규칙 항목 JSON — 2026-10-15 | 필수 5필드·CellRef 3종과 해당 동작의 함께 성공/실패 기준. 이후 채택한 3연산과 순서는 다음 행을 따름 | §5.4의 항목 JSON·좌표·코드 |
 | Q5 새 월 열 생성 — 2026-10-15 | NEXT_MONTH → YEAR_FROM_PREVIOUS_YEAR_AND_MONTH → INCREMENT_INTEGER 순서로 새 Month/Year/Period 생성. 세 규칙 모두 MONTHLY_COLUMN_APPENDED에 연결하는 계약. 실제 원본 대조·카탈로그/기존 이벤트 연결 구현·FE 검증·DB/revision은 후속 | §5.4의 월 열 생성 규칙 |
 | Q5 월 열 삭제 원칙 — 2026-10-15 | 남은 Year/Month/Period·월/본문 연결 보존. 남은 참조는 해당 월의 새 저장 좌표에 대응하고 삭제된 월 참조는 별도 보정 대상으로 구분. 실제 범위/수식/계산/파일·FE 검증은 후속 | §5.5 |
 
-실제 파일 내용 고정·template/catalog revision의 물리 연결·판독기 구현/표본 검증·미확인 표시 목록/선택지·수식/규칙·DB 저장 구조·FE 검증·DRM까지 완료한 것으로 확대하지 않는다. 실제 내용 버전과 metadata 기준의 확보는 §4.4/Q2, 판독기와 표본 검증은 Q3, 표시/선택지/화면 규칙의 실제 대응은 Q5의 후속이다.
+실제 파일 내용 고정·template/catalog revision의 물리 연결·판독기 구현/표본 검증·미확인 표시 목록/선택지·수식/규칙·DB 저장 구조·FE·보안 경로의 검증까지 완료한 것으로 확대하지 않는다. 실제 내용 버전과 metadata 기준의 확보는 §4.4/Q2, 판독기와 표본 검증은 Q3, 표시/선택지/화면 규칙의 실제 대응은 Q5의 후속이다.
 
 ## 2. 확인한 코드와 FE 연결 지점
 
@@ -100,7 +108,7 @@ GET /api/v1/mi/fundamental-model/cases/101/inputs/table-data?sourceVersion=sv1_2
 
 ## 4. 출처·버전과 응답 적용
 
-`sourceKey`를 버전이나 접근 권한 토큰으로 재해석하지 않는다. 동일 출처 안의 파일/metadata 교체는 같은 sourceKey만 비교해서 판별할 수 없으므로 **`sourceVersion`으로 원본 조합을 대조**한다. 생성 규칙은 사용자 확정이며 실제 원본 고정 수단은 Q2의 잔여 항목이다.
+`sourceKey`를 버전이나 접근 권한 토큰으로 재해석하지 않는다. 동일 출처 안의 파일 연결/catalog 교체는 같은 sourceKey만 비교해서 판별할 수 없으므로 **`sourceVersion`으로 원본 조합을 대조**한다. 생성 규칙과 불변 원본 등록 전제는 확정이며 현재 등록 참조/catalogRevision의 제품 연결·검증은 Q2의 잔여 항목이다.
 
 | 식별자 | 책임 |
 | --- | --- |
@@ -148,9 +156,13 @@ sourceVersion = "sv1_" + lowercaseHex(SHA-256(위 내부 JSON의 UTF-8 bytes))
 - 파일/객체 참조·내용 버전·양식/카탈로그 기준 중 하나가 바뀌면 조합도 바뀐다. 파일 크기·수정 시각·파일 번호만으로 내용 버전을 대신하지 않는다. source byte hash, 양식 구조 hash, 이 조합 해시는 서로 다른 책임이다.
 - 페이지마다 네 파일 전체를 다시 읽어 해시하는 방식을 기본 경로로 요구하지 않는다. 이미 검증된 파일 버전 참조로 조합을 계산한다. 그 참조를 확보할 실제 고정 수단·카탈로그 revision의 물리 결합은 Q2에 남는다. 미확정 값을 빈 값/임의 상수로 채워 제품 sourceVersion을 발급하지 않는다.
 
-### 4.4 기존 코드에서 확인한 원본 고정의 경계 — 2026-10-14
+### 4.4 원본 기준의 현재 코드와 채택 방향 — 2026-10-14~15
 
 아래는 코드 관측이다. 배포된 bucket의 versioning/덮어쓰기 금지 정책이나 운영 도구의 쓰기 경로까지 검증한 결과가 아니다.
+
+**2026-10-15 제공자 확인:** 운영 저장소는 사용자 확인에 따른 **NCP Object Storage**다. 코드의 `AmazonS3`는 사용한 SDK이며 AWS S3 운영을 뜻하지 않는다. [NCP Object Storage 공식 버킷 가이드](https://guide.ncloud-docs.com/docs/objectstorage-use-bucket)는 버전 관리를 일본 리전 제공 기능으로 구분하므로, 현재 버킷의 리전·활성화·기존 객체를 확인하기 전에 versionId 지정 읽기를 채택 가능한 기본안으로 가정하지 않는다. 별도 Ncloud Storage 문서의 지원 기능도 이 서비스의 지원 근거로 대신하지 않는다.
+
+[NCP HeadObject](https://api.ncloud-docs.com/docs/storage-objectstorage-headobject)와 [GetObject](https://api.ncloud-docs.com/docs/storage-objectstorage-getobject)의 `if-match`는 조건부 읽기의 참고 기능이다. 이번에는 사용자 확인 불변 파일 등록을 사용하므로 ETag·버킷 버전 관리/잠금을 필수 수단이나 추가 착수 조건으로 두지 않는다.
 
 | 코드 근거 | 확인한 사실 | 이 사실로 보장하지 못하는 것 |
 | --- | --- | --- |
@@ -159,9 +171,19 @@ sourceVersion = "sv1_" + lowercaseHex(SHA-256(위 내부 JSON의 UTF-8 bytes))
 | [ObjectStorageService](../../src/main/java/com/sk/domain/shared/service/ObjectStorageService.java) `uploadFile/getObject/getObjectContent/copyFile` | 쓰기는 일반 `putObject`, 읽기는 bucket/key의 `getObject`, 복사는 대상 key로 `copyObject`. 검사한 호출에서 객체 versionId 고정이나 덮어쓰기 방지 조건을 확인하지 못함 | 저장소가 versioning을 지원/사용하는지, 동일 key 쓰기가 운영에서 차단되는지, 특정 과거 bytes를 다시 읽을 수 있는지 |
 | [UploadedFile](../../src/main/java/com/sk/domain/shared/entity/master/tcm/UploadedFile.java) | `fileHashVal`은 길이 20인 문자열이며 위 Case 업로드 경로에서 내용 해시 계산·객체 버전 저장을 확인하지 못함 | SHA-256 내용 digest나 저장소 객체 버전이 이미 보관된다는 주장 |
 
-**현재 결론은 새 저장 식별자 생성까지 확인, 원본 내용 고정 수단은 미확정이다.** 확인 대상 Java main/test에서 `versionId/withVersionId/ObjectLock/IfMatch/IfNoneMatch` 계열 사용도 찾지 못했지만, 검색 결과 부재를 운영 설정의 부재로 확대하지 않는다.
+**현재 Case 업로드는 새 UUID 객체와 새 파일 row를 등록하며, 사용자는 등록된 원본 경로/내용이 바뀌지 않는다고 확인했다.** 이 불변 등록을 내용 버전으로 사용한다. 제품 조회 API의 식별자 생성/검증 연결은 미구현이며 versionId/If-Match 미사용을 이 방향의 결함이나 차단 근거로 취급하지 않는다.
 
-실제 고정 수단은 Q2에서 저장소의 특정 객체 버전 지정 읽기 또는 검증된 덮어쓰기 금지 참조가 가능한지 확인한다. 채택한 수단이 요청 중/페이지 사이에도 같은 bytes를 가리키는지, 파일 교체·삭제와 catalog 변경을 어떻게 탐지하는지 확인해야 한다. 둘 다 확인되지 않은 현재 상태에서 `fileNo + metadata` 해시만으로 완료 처리하지 않는다. 이 확인은 INPUT-02A의 계산 검증과 별개이며 이번에는 저장소 설정·제품 코드·DDL을 변경하지 않는다.
+**2026-10-15 사용자 확인 반영:** 원본 소유/성공 경계·기존 파일 처리는 [domain §3.2](../design-docs/gas/mi-model-input-template-catalog-domain-model-design.md#32-저장-case-조회의-원본-기준-등록--2026-10-15-구체화), 기존 보관 위치와 추가 스키마/재등록 불필요 판단은 [DDL §6.1·§10A](../design-docs/gas/mi-model-input-template-catalog-erd-ddl-draft.md#61-q2-내용-식별값의-보관-위치)가 소유한다.
+
+이 전제에서 `contentRevision`은 바이트 hash 대신 서버가 확인한 **불변 파일 등록 버전 참조**를 사용한다.
+
+```text
+contentRevision = "file-reg-v1:" + file_no의 선행 0 없는 양의 10진 문자열
+```
+
+이는 단순 파일 번호만으로 원본 불변을 추측하는 규칙이 아니다. **새 업로드 = 새 파일 등록/UUID 객체, 등록된 객체 내용은 불변**이라는 확인된 lifecycle과 정확한 `fileId/objectRef` 대응을 함께 사용한다. 새 내용 업로드는 새 등록 버전이며 네 파일의 참조를 서버가 확인해 §4.3·§4.5의 기존 조합에 넣는다. 새 DB 컬럼이나 공개 필드를 추가하지 않고 sourceVersion/sourceKey/inputId의 생성·직렬화/형식은 유지한다.
+
+기존 유효 4파일도 같은 등록 참조를 사용한다. 내용 해시가 없다는 이유로 미등록 409를 만들거나 전체 재해시/재등록하지 않는다. Case·역할/파일 연결·양식/catalog 변경, 객체 누락/읽기 실패는 기존 §7을 따른다. 양식/catalog 보관·표현/연결안은 §4.6·domain §3.3·DDL §6.2/§10B에 구체화했으며 실제 정의/seed/관계 등록·제품 조회 검증은 후속이다. 제품 코드·운영 DB/저장소를 변경하거나 조회 제품 완료를 선언하지 않는다.
 
 ### 4.5 sourceKey·inputId 생성 규칙 — 사용자 확정
 
@@ -180,7 +202,29 @@ sourceVersion = "sv1_" + lowercaseHex(SHA-256(위 내부 JSON의 UTF-8 bytes))
 - 발급 시각·난수·사용자 ID·tableId·startRow·전체 sourceVersion을 위 두 생성 입력에 추가하지 않는다. 별도 발급 이력 DB/세션은 요구하지 않는다. 두 키는 비교 식별자이며 권한이나 원본 보존을 증명하지 않는다. 조회 요청은 §3.2를 유지하고 sourceKey/inputId로 원본을 직접 선택하는 파라미터를 추가하지 않는다.
 - 같은 inputId라는 이유로 409 이전 페이지를 새 sourceVersion에 자동 적용하지 않는다. §4.2의 구조/페이지 무효화와 재조회 조건은 유지한다.
 
-**생성 규칙은 확정됐지만 실제 원본 고정 수단과 catalog revision 연결은 미확정이다.** sourceKey는 확인한 tenant·Case만으로 구성할 수 있다. inputId와 sourceVersion의 실제 발급에는 Q2의 검증된 내용 버전·양식/catalog 결합이 필요하다. 이를 빈 값/임의 상수·UUID 파일명만으로 대신하지 않는다. 이 결정은 업로드 inputId의 보존/유효기간·후속 write/Run 계약을 확정하지 않는다.
+**생성 규칙과 불변 파일 등록을 사용하는 방향은 확정됐고, 현재 파일 등록/객체 참조·양식/catalogRevision의 제품 연결은 남았다.** sourceKey는 확인한 tenant·Case로 구성하고 inputId/sourceVersion은 §4.4의 불변 등록 참조를 정확한 양식/catalog 기준과 결합한다. 빈 값/임의 상수·불변식이 확인되지 않은 UUID만으로 대신하지 않는다. 이 결정은 업로드 inputId의 보존/유효기간·후속 write/Run 계약을 확정하지 않는다.
+
+### 4.6 templateVersion·catalogRevision 연결 — 기존 DDL 재사용
+
+두 값은 §4.3·§4.5의 내부 해시 입력이며 새 공개 요청/응답 필드가 아니다. 발행/불변·Case 연결/기존 Case 정책은 [domain §3.3](../design-docs/gas/mi-model-input-template-catalog-domain-model-design.md#33-q2-양식catalog-발행-묶음과-case-연결--2026-10-15-구체화), 물리 보관/등록·조회 SQL은 [DDL §6.2·§10B](../design-docs/gas/mi-model-input-template-catalog-erd-ddl-draft.md#62-q2-templateversioncatalogrevision의-물리-연결)가 소유한다.
+
+서버가 해당 Case에 저장한 양식 연결에서 다음을 구성한다. decimal은 DB unsigned 정수를 선행 0 없는 10진 문자열로 표현한다는 뜻이다.
+
+```text
+templateVersion = "template-v1:" + decimal(tmplt_id) + ":" + decimal(tmplt_ver_no)
+catalogRevision = "catalog-v1:" + decimal(tmplt_id)
+```
+
+현재 최소안은 양식과 catalog가 같은 불변 발행 묶음을 사용한다. catalogRevision의 root ID가 실제 고정된 정의 묶음과 대응해야 하며 단순히 빈 값 대신 아무 ID를 채우는 규칙이 아니다. catalog만 수정해도 domain 규칙3대로 새 발행 묶음을 만들기 때문에 두 참조가 함께 바뀐다. 기존 Case는 원래 연결을 유지하므로 새 ACTIVE 발행만으로 기존 sourceVersion이 달라지지 않는다. 기존 Case 일괄 재연결/독립 catalog revision 기능은 추가하지 않는다.
+
+#### 요청별 연결 순서
+
+1. 기존 인증·tenant/role·유효 Case 접근을 검사한다. Case 없음/삭제/비대상과 양식 관계 없음/해석 불가를 구별해 기존 §7의 404/409를 유지한다.
+2. 현재 네 불변 파일/객체 참조와 Case에 저장된 양식 연결을 읽는다. 연결된 ACTIVE 또는 지원 가능한 DEPRECATED의 모델 구분·실제 네 파일 대응·요청 표/규칙의 소속을 확인한다. GET에서 관계를 INSERT하거나 현재 ACTIVE/MAX를 임의로 연결하지 않는다.
+3. 위 두 값과 §4.4의 contentRevision으로 기존 고정 직렬화/해시를 생성한다. QRY-01은 이 기준의 구조를 반환하고 QRY-02는 요청 sourceVersion과 대조한다. 서로 다른 양식/catalog의 좌표/선택지/규칙을 같은 응답에 섞지 않는다.
+4. 현재 선택 응답을 읽은 뒤 기준이 유지되는지 확인한다. 긴 파일 읽기 동안 DB lock을 유지하는 것을 기본안으로 삼지 않으며 최종 대조가 실제 현재 DB 상태를 읽는지 제품 검증한다. 바뀐 기준/누락/읽기 실패는 기존 실패 계약을 따르고 새 기준으로 자동 성공시키지 않는다.
+
+필요한 조회 정의/선택지/규칙·버전별 표시 해석이 없으면 root ID만으로 성공시키지 않는다. 지금의 6개 table 초안에 아직 없는 정의 저장/seed는 Q5·기존 DDL 후속이다. 실제 Case-template 등록과 제품 projection/HTTP/FE 검증도 미완료이며 이 표현 결정으로 INPUT 상태를 변경하지 않는다. 파일 내용 hash/재등록·별도 revision 컬럼·공개 DTO 필드를 추가하지 않는다.
 
 ## 5. operation별 응답 필드 — 사용자 확정
 
@@ -250,6 +294,17 @@ sourceVersion = "sv1_" + lowercaseHex(SHA-256(위 내부 JSON의 UTF-8 bytes))
 
 `hasNext: false`는 해당 위치 뒤의 종료만 뜻한다. FE는 첫 요청에서 시작해 모든 `nextStartRow`를 빠짐없이 연결하고 누적 본문 행 수가 `totalBodyRows`와 일치한 경우에만 표 전체 조회 완료로 표시한다. 중간부터 조회한 마지막 페이지, 실패 뒤 남은 일부 페이지를 전체 완료로 취급하지 않는다.
 
+#### FE 구간 로딩 방식 — 2026-10-16 사용자 확정
+
+FE는 **표 선택 시 첫 구간을 표시하고, 스크롤할 때 남은 구간을 추가 조회**한다. 여기서 구간/페이지는 같은 표의 행을 나눠 받는 API 단위다. 화면 페이지 전환을 뜻하지 않는다.
+
+- 표를 선택하면 `startRow`를 생략한 첫 요청을 보내고, 성공한 첫 구간부터 표시한다. 첫 응답에 전체가 들어오면 추가 요청 없이 표시를 끝낸다.
+- `hasNext: true`이고 사용자가 불러온 구간 아래쪽으로 스크롤하면, 서버의 `nextStartRow`를 사용해 다음 구간을 순서대로 조회·이어 표시한다. 표 선택만으로 모든 구간을 자동 연속 조회하지 않는다. 같은 다음 구간의 중복 스크롤 이벤트로 요청/행을 중복 누적하지 않는다.
+- 추가 조회 중에는 이미 받은 행을 계속 표시하고 나머지는 미조회 범위로 둔다. `hasNext: false`가 되면 더 요청하지 않으며, 표 전체 조회 완료 판단은 위의 연속 구간/전체 행 수 조건을 그대로 적용한다.
+- 표/버전이 바뀐 뒤 늦게 도착한 응답, 구간 병합·반복 헤더/control 중복 제거, 추가 조회 실패는 §4.2·§7을 따른다. 실패 구간을 건너뛰거나 일부 조회를 전체 완료로 표시하지 않는다. 자동 재시도/폴링을 추가하지 않는다.
+
+이 방식은 원본 QRY-02와, 이 페이지 계약을 재사용하는 Draft EDT-03에 동일하게 적용한다. Draft는 해당 API의 `draftId/revision` 대조를 유지한다. 기존 endpoint/DTO·크기 상한·읽기/실패 계약은 바꾸지 않는다. **조회 방식의 채택이며 FE 코드 구현/화면 검증 완료를 뜻하지 않는다.**
+
 #### 2 MiB 목표와 초과 처리
 
 QRY-02 성공 응답은 **압축 전 UTF-8 JSON 본문 전체가 2 MiB(2,097,152 bytes) 이하**가 되도록 한다. `BaseResponse`·`data.page`·헤더·열·control·inputGuideRules·displayUpdateRules까지 포함하고 HTTP header/TLS·압축 후 크기는 포함하지 않는다. 이 예산은 QRY-01 구조 응답의 상한을 정의하지 않는다.
@@ -292,7 +347,11 @@ cache는 수식과 함께 파일에 저장된 계산 결과를 뜻한다. 판독
 
 검사는 현재 응답에 포함할 본문·반복 헤더·연결 control의 값 범위에 적용한다. 결과 부재/판독 불가를 발견하면 일부 tableData를 섞은 200을 보내지 않는다. 행을 건너뛰거나 반환 행 수를 줄여 실패를 숨기지 않는다. 먼저 읽은 페이지도 전체 완료로 표시하지 않으며 §4.2의 부분 조회/실패 처리를 유지한다. 다른 표나 표시 제외 범위까지 일괄 실패시키지 않고, 아직 읽지 않은 페이지의 정상 여부를 보장하지 않는다. 기존 권한/원본/구조 검사와 공통 타입은 유지하고 새 셀 상태 응답 필드나 계산 API를 추가하지 않는다.
 
-구현 인계 시 [XlsmStreamMerger.normalizeCellValue](../../src/main/java/com/sk/domain/mi/service/nextgen/paramproposal/excel/XlsmStreamMerger.java)의 병합용 규칙을 조회에 그대로 적용하지 않는다. 이 코드는 결과 없는 숫자 수식을 0.0으로, 오류를 null로 바꾸고 문자열을 trim해 빈 결과 구분을 잃는다. 이번 작업은 그 코드를 변경하지 않는다. **실제 판독기 구현·합성 XML 및 실파일 표본 검증은 후속 Q3**이며, 아래 응답 예시/문서 정합성 검사나 이전 성능 실측의 cache 부재 0건으로 대신하지 않는다.
+구현 인계 시 [XlsmStreamMerger.normalizeCellValue](../../src/main/java/com/sk/domain/mi/service/nextgen/paramproposal/excel/XlsmStreamMerger.java)의 병합용 규칙을 조회에 그대로 적용하지 않는다. 이 코드는 결과 없는 숫자 수식을 0.0으로, 오류를 null로 바꾸고 문자열을 trim해 빈 결과 구분을 잃는다. 이번 작업은 그 코드를 변경하지 않는다. **제품 판독기 구현과 제품 경로의 합성 XML/실파일·HTTP/FE 검증은 후속 Q3**다. 기존 [Q3 독립 검증](../work-notes/2026/2026-10-15-model-input-query-q3-stored-value-verification.md)은 재사용하되 독립 도구·아래 응답 예시/문서 검사·과거 성능 실측을 제품 완료 증거로 대신하지 않는다.
+
+#### 숫자 표시 정책 — 2026-10-15 사용자 확정
+
+존재·타입 판독 뒤 적용할 저장 Case 숫자 표시의 규칙·지원 범위·FE 책임은 [기존 조회 명세 §3.2의 숫자 표시 정책](mi-fundamental-model-input-provision-feature-spec.md#32-단일-표-값의-경계)이 소유한다. 이 표시 정책의 채택은 완료됐으며 판독/실패 계약을 다시 결정하지 않는다. 제품 reader/응답/FE의 실제 적용과 승인 catalog에 필요한 타입·서식·숫자 범위 대조는 아래 Q3 검증에 남긴다.
 
 ### 5.4 표시 카탈로그·control 선택지·화면 갱신 규칙 — 사용자 확정
 
@@ -629,6 +688,8 @@ control 값의 원본은 같은 DEMAND/Example 시트의 `C1`이다. 값 소유 
 
 §5.3의 정상 빈 결과·저장된 오류는 200, 결과 부재/판독 불가는 500임을 operation 설명/예시에 반영한다. 저장값 판독이 계산 정답·최신성 보장을 뜻하지 않는다는 한계도 설명한다. XML 내부 판독 절차는 이 명세의 구현 인계에 두고 공개 API에 수식 원문/새 셀 상태 필드를 추가하지 않는다.
 
+숫자 표시와 FE의 문자열 보존 책임은 기존 조회 명세 §3.2를 참조해 소비자 설명에 반영한다. 표시 string의 직렬화와 실제 응답을 generated OpenAPI/예시에 맞추며, 정책 채택 문서만으로 DTO/응답 동기화를 완료 처리하지 않는다.
+
 §5.4의 필수 5필드·CellRef 3종을 required/non-null 및 type별 schema로 표현한다. trigger.type은 MONTHLY_COLUMN_APPENDED, operation.code는 세 enum으로 맞추고 입력 개수 1/2/1·행/열 범위를 문서화한다. Month → Year → Period 순서, Year가 앞선 새 Month를 참조하는 의미, 10진 문자열 결과·월 범위와 세 규칙 전체의 함께 성공/실패를 설명한다. §5.4는 displayUpdateRules 배열 부분 예시이며 operation 전체 성공 예시로 대신 등록하지 않는다. 규칙 없음 전체 응답은 §6을 사용한다. 실제 원본 대조·기존 이벤트 연결 구현·추가 규칙·DB/revision 연결·FE 검증은 후속이며 합성 JSON/문서 검사를 실제 DTO/FE 검증으로 보고하지 않는다.
 
 §5.5의 삭제 후 Year/Month/Period 보존과 추가 규칙 미발동을 소비자 설명에 연결한다. 수식 참조 원칙과 실제 보정 수식/계산/파일·FE 검증 후속을 구분하며 삭제 원칙만으로 새 조회 필드·연산/발동 코드·HTTP 오류를 추가하지 않는다.
@@ -666,7 +727,7 @@ control 값의 원본은 같은 DEMAND/Example 시트의 `C1`이다. 값 소유 
 | 동일한 원본 조합 / 반복 구조 조회·표 전환·다음 페이지·다른 권한 있는 사용자 | §4.3 고정 직렬화의 sourceVersion 일치. 발급 시각·사용자·tableId·startRow에 따라 바뀌지 않음 |
 | tenant·Case·한 역할의 파일/객체·내용 버전·양식/카탈로그 기준 중 하나 변경 | sourceVersion 달라짐. 4역할 정렬을 바꿔 받은 동일 조합은 정규 순서로 결합해 동일 값 |
 | sourceVersion 누락·형식 위반 또는 형식은 맞지만 현재 조합과 다름 | 전자는 400/REQ-003, 후자는 409/BIZ-001. 접근 권한 검사를 생략하지 않음 |
-| 채택할 원본 고정 수단 / 교체·동일 key 쓰기·삭제·요청 중 및 페이지 사이 변경 | 같은 bytes 읽기/변경 탐지·거부를 실제 경로로 검증. UUID/fileNo·metadata 또는 합성 해시 시험만으로 이 조건의 Pass를 주장하지 않음 |
+| 불변 파일 등록 / 반복 업로드·연결/catalog 교체·요청 중 및 페이지 사이 기준 변경 | 새 업로드는 새 file_no/UUID 객체이고 이전 원본 참조 유지. 서버가 확인한 불변 등록을 사용해 동일 조합/다른 조합의 식별자와 기존 409/500 처리 검증. 원본 내용을 덮어쓰는 실제 경로가 있다는 가정의 전체 재해시 시험을 필수화하지 않음 |
 | 본문 0/1/1,999/2,000/2,001/4,000행, 떨어진 본문 범위 / 첫 요청부터 nextStartRow 연결 | 페이지별 본문 최대 2,000행, 반복 헤더 제외·원본 번호 유지. 누락/중복 없이 전 본문 수와 일치, 마지막 false/null에서 추가 요청 없이 종료 |
 | 작은 표 또는 control 전용 / 첫 요청 | 예산 안이면 전체 응답·다음 없음. 본문 0이면 시작/끝/다음 null, 필요한 헤더/control 유지 |
 | 최종 JSON이 2,097,152 bytes 또는 1 byte 초과 / 크기 판정 | 같으면 허용. 초과면 행 단위 축소, 실제 page metadata 포함 상한 이내·정확한 다음 행. 열/문자열/편집 위치를 잘라 맞추지 않음 |
@@ -678,6 +739,10 @@ control 값의 원본은 같은 DEMAND/Example 시트의 `C1`이다. 값 소유 
 | 수식 결과 v 부재, 숫자형 빈 v·잘못된 타입/값/문자열 참조 | 현재 표/페이지 요청 500/SYS-001/data null. 빈 성공·0/null 대체·재계산·오류 행 건너뛰기 없음 |
 | 본문·반복 헤더·연결 control 중 판독 실패 또는 아직 읽지 않은 페이지 | 현재 응답 범위의 실패 처리와 부분 조회 표시 유지. 다른 표/미조회 페이지까지 검증 성공/전체 완료로 표시하지 않음 |
 | 공유수식·지원 저장 타입·문자열 참조·표시 서식 표본 | §5.3 정책대로 실제 판독기를 구현한 뒤 합성 XML 및 읽기 전용 실파일로 증명. 이번 문서 검사를 해당 검증 Pass로 취급하지 않음 |
+| 승인 표시 범위의 관측 회계 서식 / 양수·음수·0 표시 | 기존 조회 명세 §3.2의 내용 표시와 일치하고 셀 좌표/custom 서식 ID에 의존하지 않음. 배치 공백 제외를 문자열·다른 서식에 확대하지 않음 |
+| 승인 표시 범위의 General / 소수·지수 전환과 정밀도·반올림 경계 | 같은 정본의 표시 규칙과 고정 기대값에 일치. 요청/브라우저 지역 설정·열 폭에 따라 표시 문자열이 달라지지 않음. 전체 숫자/locale 지원으로 확대하지 않음 |
+| 형식화한 grid 값 / HTTP 직렬화와 FE 표시·복사 | string 보존·재서식/trim 없음. 원본 좌표·편집 위치와 control 저장값 타입/소유권 유지 |
+| 승인 catalog의 실제 타입·서식·숫자 범위 / 후보 지원 범위 대조 | 지원/미지원/미노출 대응과 필요한 추가 표본을 식별. 실제 필요한 항목만 보완하고 독립 기술 표본을 승인 catalog로 간주하지 않음 |
 | LNG 모드 저장값이 Dynamaic | label은 Dynamic, options value와 현재 control value는 Dynamaic. 원본 셀/파일 불변 |
 | 표와 공유 control 또는 control 전용 영역 | 소유 영역/같은 sheet 연결, 원본 값 중복 없음, 동일 source의 control 값·선택지 일치 |
 | 구조 조회 후 파일/양식 변경 또는 처리 중 변경 | 혼합 200 대신 409. 원본을 재선택해 조용히 대체하지 않음 |
@@ -689,20 +754,22 @@ control 값의 원본은 같은 DEMAND/Example 시트의 `C1`이다. 값 소유 
 
 ## 9. Open Questions — 사용자 확정 후 남은 협의·검증
 
+Q2 §4.6 연결안의 제품 검증에는 같은 Case/발행 묶음의 반복·페이지 요청에서 두 내부 값 유지, 새 ACTIVE 발행에도 기존 Case/DEPRECATED 연결 유지, 다른 발행 묶음을 입력한 조합 식별자 변경을 포함한다. 미연결/모호/정의 미완비는 기존 409이고 Case 없음은 기존 404인지, GET의 관계 INSERT/최신 버전 fallback이 없는지 확인한다. 실제 DB 읽기/1차 cache 경계와 기준 변경 경합은 합성 식별자 검사만으로 완료 처리하지 않는다.
+
 §1.1의 확정 사항은 재승인 대상으로 취급하지 않는다. Q1의 호출/필드 결정과 §5.3 판독, §5.4 규칙 JSON/새 월 생성, §5.5 삭제 후 표시값 보존·수식 참조 원칙은 확정됐다. 실제 원본/catalog 대조·이벤트 연결과 삭제 범위/보정 수식/계산 여부/파일·FE 검증은 이 확정과 구별한다. 아래에는 Q2~Q6의 남은 기술·검증 항목만 둔다.
 
 | ID | 결정·확인할 항목 | 추천 또는 필요한 근거 | 구현에 미치는 영향 |
 | --- | --- | --- | --- |
-| Q2 | fileId/objectRef/contentRevision의 실제 결합·원본 고정 수단과 template/catalog revision 연결 | §4.3·§4.5의 세 식별자 생성/형식은 확정. §4.4의 코드 관측만으로 내용 불변은 확인되지 않았다. 저장소 객체 버전 지정 읽기 또는 덮어쓰기 금지의 실제 보장·참조/수명, 카탈로그 변경의 revision 반영·조회 결합을 확인. 임의 상수로 대체하지 않음 | 원본/동시 변경·stale 보장의 제품 구현 조건. INPUT-02A와 별개이며 물리 표현은 INPUT-03·domain Q9/DDL과 맞춤. 식별자 계산 선택을 재질문하지 않고 실제 입력의 보장/결합을 확인 |
-| Q3 | 실제 수식 저장값 판독기 구현·지원 형식/표시 서식·표본 검증 | §5.3의 분류·반환·현재 요청 범위의 실패 기준은 사용자 확정. 실제 판독기와 합성 XML/읽기 전용 실파일 표본은 후속. 빈 결과/저장 오류/결과 부재·0/FALSE·잘못된 타입/참조·공유수식·서식 경계를 증명 | 판독 정책을 재질문하지 않고 구현·cell fidelity 검증을 수행. 기존 병합용 null/0 정규화나 성능 표본으로 검증 완료를 대신하지 않음 |
-| Q4 | 채택한 §5.1을 최종 표시 projection·catalog/규칙과 결합한 구현 검증 | 로컬 실측 후 큰 표2,000행·작은 표 전체 방향을 채택했고 이번에 페이지/종료/2 MiB/초과 처리를 구체화했다. 같은 단위 결정을 재질문하지 않고 실제 metadata 포함 bytes·행 연결·메모리를 구현에서 확인 | 공용 정본 통합과 endpoint 검증이 남음. 운영 HTTP/DRM·동시 요청·브라우저 렌더링은 미검증. cache/worker를 필수화하지 않음 |
+| Q2 | 기존 불변 파일·발행 양식/catalog의 실제 seed/Case 연결 등록·제품 조회 검증 | §4.3·§4.5 생성 규칙·§4.4 불변 등록은 유지. 양식/catalog 묶음과 내부 값은 domain §3.3·DDL §6.2/§10B·§4.6에 구체화했으며 새 revision 컬럼 없이 기존 master/Case-template 관계를 사용. 실제 GET 정의/seed·발행/관계 등록과 정확한 네 파일/객체·기준 결합/실패 처리를 검증 | 설계 표현과 실제 적용/등록/조회 시험을 구별. 미완비 정의 저장은 Q5/INPUT-03의 기존 후속. 원본 불변성/식별자 계약 재질문이나 내용 hash·버킷 특수 기능의 새 선행조건 없음 |
+| Q3 | 제품 판독기·채택 표시 정책의 적용과 승인 표시 범위 대조/검증 | §5.3 판독/실패와 기존 조회 명세 §3.2 숫자 표시 정책은 확정. 독립 검증 근거는 위 작업 노트를 재사용하고 실제 catalog의 타입/서식/숫자 범위와 제품 reader·서비스·HTTP/FE에서 증명. 빈 결과/저장 오류/결과 부재·0/FALSE·잘못된 타입/참조·공유수식·표시 경계 확인 | 판독·표시 정책을 재질문하지 않고 실제 필요한 지원 범위만 적용/검증. 병합용 null/0 정규화·성능 표본·독립 도구 또는 정책 채택만으로 제품 완료를 대신하지 않음 |
+| Q4 | 채택한 §5.1을 최종 표시 projection·catalog/규칙과 결합한 구현 검증 | 로컬 실측 후 큰 표2,000행·작은 표 전체 방향을 채택했고 이번에 페이지/종료/2 MiB/초과 처리를 구체화했다. 같은 단위 결정을 재질문하지 않고 실제 metadata 포함 bytes·행 연결·메모리를 구현에서 확인 | 공용 정본 통합과 endpoint 검증이 남음. 운영 HTTP/보안 경로·동시 요청·브라우저 렌더링은 미검증. cache/worker를 필수화하지 않음 |
 | Q5 | 실제 원본/catalog 대조·이벤트 연결·삭제 범위/보정 수식/계산 여부·파일/FE 검증과 추가 규칙 | §5.4의 규칙 JSON/좌표·생성 순서/코드/연결과 §5.5의 삭제 후 Year/Month/Period 보존·수식 참조 원칙은 확정. 실제 월 열/행·선택지/catalog binding·기존 이벤트 연결을 검증하고 실제 삭제 조건의 좌표 대응·경계 보정 수식/범위·계산 여부·파일/FE 결과를 확인. 첫 월/1월/여러 연도/마지막 월 및 전체 월 삭제 허용·초기화는 구분. 추가 의존과 DB/revision은 Q2·domain Q9/기존 DDL/write와 후속 정렬 | 승인 원칙을 재질문하지 않고 구체 삭제 조건·수식/계산·실제 연동/검증을 확정. 형식/논리 예시는 운영 seed·삭제 fixture나 검증 증거가 아님 |
-| Q6 | JSON의 DRM 적용과 실제 데이터 경로의 접근/로그/자원 제한 검증 | 기존 보안 요구 재사용. JSON DRM 제외 승인을 이 문서로 대신하지 않음. 현재 filter의 본문 로깅 제외 공백은 새 조회 경로 구현 시 해소·검증 | 안전한 제공/릴리스 조건. 문서 작성은 보안 예외·공용 코드 수정 승인이 아님 |
+| Q6 | 실제 데이터 경로의 접근/로그/자원 제한 검증 | JSON DRM 비적용은 [기존 조회 명세 §5](mi-fundamental-model-input-provision-feature-spec.md#5-response-and-access-boundary)의 사용자 확정 사항으로 재승인하지 않음. 기존 보안 요구는 유지하며 현재 filter의 본문 로깅 제외 공백은 새 조회 경로 구현 시 해소·검증 | 남은 것은 안전한 제공을 위한 제품 보안 적용/검증. JSON DRM 적용 여부는 차단 항목에서 제거하며 다른 파일 암복호화나 보안 요구의 해제·제품 코드 수정 승인으로 확대하지 않음 |
 
 ## 10. 완료 경계와 후속 통합
 
-이번 독립 준비 산출물은 요청·응답·빈 값·오류·대표 예시·남은 결정의 연결과 §1.1의 사용자 확정 반영까지다. INPUT-02A의 계산 검증/운영 판정과 INPUT-03/04의 전체 완료를 뜻하지 않는다. 기존 계산/설계 정본을 이 세션에서 변경하지 않는다.
+초기 독립 준비 산출물은 요청·응답·빈 값·오류·대표 예시·남은 결정의 연결과 §1.1의 사용자 확정 반영이다. Q2의 애플리케이션 관리와 사용자 확인 불변 파일 등록은 domain §3.2·DDL §6.1/§10A·이 문서 §4.4에 반영했다. 앞선 내용 해시 컬럼/기존 파일 재등록안은 철회했다. INPUT-02A의 계산 검증/운영 판정과 INPUT-03/04의 전체 완료나 제품 조회 구현/검증을 뜻하지 않는다.
 
-제안 채택 후 기존 조회 feature spec의 Open Questions와 §3/§6/§7을 한 번에 통합하고, 관련 카탈로그·identity 물리 설계가 준비된 조회 slice부터 구현한다. 별도 운영 snapshot/worker가 필요한지는 근거가 확보된 뒤 정한다. INPUT-02A가 수정 중인 파일에 지금 병합하거나 티켓 상태를 변경하지 않는다.
+숫자 표시 정책과 JSON DRM 비적용은 기존 조회 feature spec §3.2·§5에 통합했다. 그 밖의 Open Questions와 §3/§6/§7 통합 및 관련 카탈로그·identity 물리 설계가 준비된 조회 slice의 구현은 후속이다. 별도 운영 snapshot/worker가 필요한지는 근거가 확보된 뒤 정한다. 이 문서 반영으로 INPUT-02A 작업이나 티켓 상태를 변경하지 않는다.
 
-- implementation readiness: `blocked by open questions` — 기존 조회·판독·표시/control·새 월 열 생성 계약과 삭제 후 Year/Month/Period 보존·수식 참조 원칙은 확정됐다. 실제 원본 고정/catalog·DB/revision 연결, 판독기/표본, 실제 삭제 범위·보정 수식·계산 여부·파일/FE 검증과 기존 이벤트 연동/추가 규칙·DRM 등은 남았다. 수식 읽기/문서 검사는 실제 삭제/계산·catalog/FE 검증이 아니며 INPUT-02A/03/04나 제품 구현 완료를 뜻하지 않는다.
+- implementation readiness: `blocked by open questions` — 기존 조회·판독·표시/control·월 생성/삭제 원칙과 JSON DRM 비적용은 확정됐고 Q2의 불변 등록/양식·catalog 연결안도 구체화했다. 실제 catalog/정의 저장·seed/발행/Case 관계 등록·제품 projection/판독기/표본과 삭제/파일/FE/접근 검증은 남았다. 이번 문서 구체화는 실제 DB 적용/조회 행동·INPUT-02A/03/04나 제품 구현 완료를 뜻하지 않는다.

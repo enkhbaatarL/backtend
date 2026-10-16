@@ -3,7 +3,7 @@
 ## Document Control
 
 - status: Draft
-- canonical for: MI Fundamental Model input 조회·업로드 파싱 API의 요청 식별 경계, 응답 범위와 검토 중인 endpoint/field/error 계약
+- canonical for: MI Fundamental Model input 조회·업로드 파싱 API의 요청 식별 경계, 응답 범위와 검토 중인 endpoint/field/error 계약. 저장 Case 숫자 표시 정책은 §3.2, QRY-01/02의 추출 표시 JSON에 대한 DRM 비적용은 §5가 소유한다.
 - owner: Shared (BE / FE / Security·DRM)
 - source documents:
   - `docs/feature-specs/mi-fundamental-model-mock-api-feature-spec.md`
@@ -18,9 +18,8 @@
   - `SECURITY.md`
 - supersedes:
   - `docs/feature-specs/mi-fundamental-model-mi-base-designation-feature-spec.md`의 기존 `API Slice C — Input 내용 제공` 초안
-- last synced: 2026-10-13
+- last synced: 2026-10-16
 - open questions:
-  - 구조화 데이터(JSON)가 조직의 DRM 적용 대상에서 제외되는지 Security·DRM 담당자의 확인이 필요하다.
   - sheet/table projection의 원본 수식은 셀 표시 데이터로 전달하지 않는다. 별도 화면 갱신 규칙의 JSON 필드 이름·타입, 참조/대상 표현, 지원 계산 방식과 적용 순서를 확정해야 한다. 구체 범위는 §3.1C를 따른다.
   - 전체 구조와 선택 표 값을 같은 응답에 동봉할지, 초기 구조 조회와 후속 표 값 조회를 별도 operation으로 나눌지 확정해야 한다.
   - endpoint path/method, 표 선택 request와 최초 선택 표 정책, operation별 필드 필수/nullable 및 version 표현을 확정해야 한다. §3의 응답 필드 이름과 셀 표현은 이번 사용자 결정에 따른다.
@@ -33,6 +32,8 @@
   - POST /input-uploads의 full prefix, 최초 표 선택/표 선택 request와 tableData null 여부, 지원 workbook 형식/용량·압축 해제 상한 및 구체 오류 HTTP/ResultCode를 확정해야 한다. FE의 .xls/.xlsx/.xlsm·50 MiB는 아직 승인된 BE 수치가 아니다.
 
 ## 1. Feature Goal
+
+계약 탐색 경계: 저장 Case의 사용자 확정 QRY-01/02는 [조회 상세 §1.1·§3~5](mi-fundamental-model-input-query-api-proposal.md)가 소유한다. 이 문서의 그 범위에 대한 과거 미결 문구는 재질문 대상이 아닌 통합 대기 이력이다. 신규 Draft 생성/재개·조회·임시저장 접수/결과의 BE 추천 계약은 [공통 편집 API 초안](mi-fundamental-model-input-draft-editing-api-proposal.md)이 소유한다. 공통 BE 묶음은 2026-10-16 사용자 채택했으며 해당 문서 전체는 Draft다. Sector의 채택 정책은 domain 규칙45, 공개 검증은 편집 API §4.1이 소유한다. 최종저장 전체 계약은 그 초안 §9의 다음 slice다. 아래 조회/업로드 계약을 Draft 쓰기 계약으로 확대하지 않는다.
 
 선택한 Fundamental Model `caseId`의 `DEMAND`, `SUPPLY`, `TRADE`, `OUTPUT` input에 대해 화면의 `파일 → 시트 → 테이블` 구조를 그리는 정보는 네 파일 전체를 제공하고, 헤더와 실제 입력값은 선택한 논리 입력 영역 하나 및 명시적으로 연결된 부속 control만 제공한다. 원본 파일은 FE 응답으로 전달하지 않는다.
 
@@ -229,6 +230,17 @@ BaseResponse.data
 
 공개 식별자는 source case와 서버가 발급한 snapshot 및 안정적인 table 식별자를 기준으로 정하며 저장소 식별자를 노출하지 않는다. snapshot의 발급/수명과 구체 request 표현은 Open Questions에 남긴다.
 
+#### 저장 Case 숫자 표시 정책 — 2026-10-15 사용자 확정
+
+이 절은 저장 Case 입력 조회의 숫자 표시 정책 정본이다. [조회 상세 §5.3](mi-fundamental-model-input-query-api-proposal.md#53-수식-저장값-판독-기준--사용자-확정)의 확정된 존재·타입 판독 이후 적용하며 그 판독/실패 계약을 바꾸지 않는다. 지원 범위는 승인된 양식 version별 표시 catalog에 필요한 숫자·서식으로 한정한다. 정책 채택은 실제 catalog 대응, 제품 구현 또는 HTTP/FE 검증 완료를 뜻하지 않는다.
+
+- **회계 폭 독립 표시:** 관측한 회계 서식의 배치 공백만 제외한다. 숫자·부호·쉼표·소수 2자리와 0의 `-` 표시는 유지하고 정렬은 FE의 화면 배치로 처리한다. 적용 대상은 `_-* #,##0.00_-;-* #,##0.00_-;_-* "-"??_-;_-@_-` 서식 계열이며, 같은 코드의 custom numFmtId 및 `\-`/`-` 동등 표현을 포함한다. 내용 서식 `#,##0.00;-#,##0.00;"-";@`에 해당하는 표시를 제공하며 P22 등 셀 좌표를 판정 조건으로 쓰지 않는다. 일반 문자열·다른 서식에 trim이나 공백 제거를 확대하지 않는다.
+- **General 기준:** US 표기를 고정한다. 소수점은 `.`, 지수는 대문자 `E`와 부호·최소 2자리 지수로 표현하며 요청/브라우저의 지역 설정으로 재서식하지 않는다. 열 폭·폰트에 따른 축약은 제외하고 같은 저장 숫자·서식에는 같은 표시 문자열을 제공한다. 저장 숫자를 변경하지 않고 표시용으로만 반올림한다.
+- **General 소수/지수·정밀도:** 검증 후보의 Excel 호환 십진수 변환(`NumberToTextConverter.toText`와 동등한 변환)을 기준으로 0은 `0`으로 표시한다. 0이 아닌 수는 절댓값이 `100000000000` 미만이고, `0.0001` 이상이거나 불필요한 끝의 0을 제외한 소수 자릿수가 9 이하이면 소수 표기 후보로 처리한다. 정수부 자릿수를 최소 1로 세어 소수 자릿수를 `max(0, 10 - 정수부 자릿수)`로 반올림하고 끝의 불필요한 0을 제거한다. 11자리 정수는 유지하며, 반올림 결과의 절댓값이 위 상한에 도달하면 지수 표기로 전환한다. 나머지는 유효숫자 6자리 지수 표기와 불필요한 끝의 0 제거를 적용한다. 반올림은 HALF_UP(정확히 중간이면 절댓값이 커지는 방향)이다. 모든 숫자에 소수 9자리를 일괄 적용하지 않는다.
+- **응답/FE 경계:** 형식화한 grid 값은 기존 `columnN: string | number` 중 string으로 보존하고 FE는 표시·복사 시 다시 숫자로 변환하거나 재서식/trim하지 않는다. `controls.value/options`의 저장값 타입·의미, 원본 좌표·편집 위치·grid/control 소유권은 §3.1~3.2를 유지한다. 문자열·날짜·다른 명시 서식은 기존 지원 동작을 유지하며 새 셀 객체/응답 필드·DB 구조를 추가하지 않는다.
+
+[Q3 독립 검증 기록](../work-notes/2026/2026-10-15-model-input-query-q3-stored-value-verification.md)과 [표시 후보·지원 한계](../../temp/model-input-query-q3/2026-10-15-stored-values-g01xpf_b/display-refinement/README.md)는 이 정책의 근거이며 제품 실행 의존이 아니다. 모든 숫자·지역 설정·Excel 버전이나 원래 화면의 공백/픽셀 일치를 보장하지 않는다. 승인 표시 범위와 후보의 타입/서식/숫자 범위를 대조하고 부족한 검증은 실제 필요한 항목만 추가한다. 미확인 범위를 지원 완료로 간주하거나 표시 문자열을 임의로 잘라 맞추지 않는다.
+
 ### 3.3 POST /input-uploads — kind별 저장 양식으로 파싱
 
 2026-10-01 사용자 결정: 업로드 파일의 `kind`에 대응하는 미리 저장된 포맷으로 파싱하고 입력값 조회와 같은 응답 표현을 사용한다. 포맷은 §2의 백엔드 양식 카탈로그를 뜻하며 시트·논리 입력 영역·헤더·셀 좌표·control binding·수정/행열 정책을 template version별로 정의한다. 파일마다 화면 포맷을 새로 추론하지 않는다.
@@ -286,7 +298,8 @@ FE는 성공한 업로드의 해당 kind 구조/데이터만 교체한다. 다�
 - 현재 공유 조회 정책에서는 case 소유자 `usr_no`가 현재 사용자와 달라도 input 접근을 허용한다.
 - 저장 출처에서는 서버가 case와 연결된 정확한 파일을 선택한다. 업로드 출처에서는 사용자가 전송한 파일을 처리하며 클라이언트가 서버 file/storage 식별자를 지정하지 않는다. 후속 업로드 inputId는 권한 검사 없이 다른 사용자의 원본을 선택하는 수단으로 사용하지 않는다.
 - input request/response body는 대용량·업무 민감 데이터일 수 있으므로 HTTP 본문 로깅 대상에서 제외한다.
-- DRM 비적용이 승인되더라도 HTTPS와 인증·role/condition 검사는 유지한다.
+- **2026-10-15 사용자 확정 — JSON DRM 비적용:** QRY-01/02가 엑셀에서 추출해 웹 화면에 제공하는 구조·저장값 JSON에는 회사 DRM 정책을 적용하지 않는다. 이 적용 여부는 미결정/추가 승인 항목에서 제외한다.
+- HTTPS·인증·role/condition 및 tenant/Case/file 접근 검사와 위 본문 로깅 제외는 유지한다. 원본 파일의 기존 암복호화 정책도 유지하며 JSON 비적용을 파일 DRM의 전역 해제로 확대하지 않는다.
 
 ## 6. Representative Errors — Draft
 
@@ -356,7 +369,7 @@ FE는 성공한 업로드의 해당 kind 구조/데이터만 교체한다. 다�
 - Given 해당 Trade Draft에 승인 입력 편집·아래 행 추가가 있을 때, when 최종저장하면, then domain 규칙 44에 따라 해당 표의 변경을 반영하고 열/기간은 고정한다. 다른 표의 범위·값을 함께 변경하지 않으며 T-177~T-182 및 승인 변경 밖 원본 영역은 보존한다. 상세 write 계약·실파일 검증 완료를 이 수용 기준 정의로 대신하지 않는다.
 - 공개 요청이 `fileNo`나 object key를 받지 않으므로 다른 case의 파일을 선택할 수 없다.
 - 구조화 데이터 응답에는 원본 Excel binary·Base64·object storage 경로를 포함하지 않는다.
-- 전달 방식별 status, DRM, 부분 실패와 재시도 acceptance criteria는 계약 확정 후 추가한다.
+- 전달 방식별 status, 부분 실패와 재시도 acceptance criteria는 계약 확정 후 추가한다. QRY-01/02의 JSON DRM 비적용은 §5의 확정 사항을 따른다.
 
 ## 10. Scope Boundary
 
@@ -366,7 +379,7 @@ FE는 성공한 업로드의 해당 kind 구조/데이터만 교체한다. 다�
 - `DEMAND`, `SUPPLY`, `TRADE`, `OUTPUT` 역할 검증
 - 네 파일 전체 화면 구조와 선택 표 하나의 값이라는 응답 범위
 - kind별 등록 양식으로 단일 업로드 파일 검증·파싱 및 조회와 공통 응답 표현
-- DRM·응답 크기·snapshot·부분 실패 결정
+- 응답 크기·snapshot·부분 실패 결정과 §5의 JSON DRM 비적용 경계
 - 확정 후 endpoint와 request/response/error/OpenAPI 계약
 
 ### Excluded
@@ -380,11 +393,15 @@ FE는 성공한 업로드의 해당 kind 구조/데이터만 교체한다. 다�
 ## 11. Implementation Readiness
 
 - status: `blocked by open questions`
-- implementation: endpoint/표 선택·최초 선택, response fidelity, DRM, 단일 표 크기/paging·snapshot 및 업로드 보존/접근/후속 조회 계약 확정 전에는 착수하지 않는다.
-- next decision: `INPUT-03`의 표시 catalog/표 경계/row identity와 field fidelity·Security/DRM 정책을 확정하고 §3의 응답 범위에 맞춰 endpoint/DTO/error/OpenAPI 계약을 갱신한다.
+- implementation: endpoint/표 선택·최초 선택, response fidelity, 단일 표 크기/paging·snapshot 및 업로드 보존/접근/후속 조회 계약 확정 전에는 착수하지 않는다. QRY-01/02의 JSON DRM 비적용은 §5에서 확정됐으며 기존 접근/로그 보안의 제품 적용·검증은 남는다.
+- next decision: `INPUT-03`의 표시 catalog/표 경계/row identity와 field fidelity를 확정하고 §3의 응답 범위에 맞춰 endpoint/DTO/error/OpenAPI 계약을 갱신한다. 이미 사용자 확정된 조회 상세 계약은 재결정하지 않고 정본 통합 대상으로 구분한다.
 
 ## 12. Change Log
 
+- 2026-10-16: 기존 QRY 확정 범위의 소유 문서와 새 공통 편집 API Draft를 연결했다. 기존 조회/업로드 endpoint·필드·오류는 변경하지 않았으며 최종저장 상세/제품 구현·INPUT-03/04 전체 완료로 승격하지 않았다.
+
+- 2026-10-15: 사용자 확인으로 QRY-01/02의 엑셀 추출 표시 JSON에 회사 DRM을 적용하지 않음을 §5에 확정했다. 해당 미결정/승인 선행조건을 제거했으며 HTTPS·인증/권한·본문 로깅 제외와 기존 파일 암복호화는 유지한다. 제품 보안 검증 완료나 티켓 상태 변경을 뜻하지 않는다.
+- 2026-10-15: 사용자 승인으로 저장 Case 숫자 표시 정책을 §3.2에 채택했다. 회계 배치 공백만 제외하고 General은 US 기준·열 폭 축약 제외·승인 표시 범위 한정으로 제공한다. 표시 규칙은 §3.2가 소유하며 기존 판독/실패 계약·응답 구조·제품 코드·INPUT 상태는 변경하지 않는다.
 - 2026-10-13: domain 규칙 36에 3파일 `SCENARIO` 정리가 추가돼, §2의 "case master만 변경" 문구가 `INDEPENDENT | MI_BASE` 정리에만 해당함을 명시했다. 이 문서의 조회 계약은 바꾸지 않았다.
 - 2026-10-13: 미커밋 문서 정합성 검토에서 아래 세 변경의 Change Log 누락을 보완했다. 본문 계약은 바꾸지 않았다.
 - 2026-10-08: domain 규칙 44에 맞춰 TRADE `4.5 PriceModelInput`의 시트 전체 read-only·최종 XLSM 미변경 계약을 T-183/T-184 입력 편집·아래 행 추가 제공으로 바꿨다(§2, §9). 미표시 T-177~T-182와 U열의 화면 제외는 유지한다.
