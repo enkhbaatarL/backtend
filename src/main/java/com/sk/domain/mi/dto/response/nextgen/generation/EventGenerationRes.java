@@ -39,9 +39,6 @@ public record EventGenerationRes(
     @Schema(description = "생성된 이벤트 1건(저장 값) + 기존 이벤트 편집 정보·참고 근거 + 저장 ID")
     public record GeneratedEvent(
 
-        @Schema(description = "이벤트 제목")
-        String eventTitleKo,
-
         @Schema(description = "한 줄 요약")
         String oneLineSummary,
 

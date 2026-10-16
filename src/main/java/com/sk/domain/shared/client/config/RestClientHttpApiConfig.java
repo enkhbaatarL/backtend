@@ -105,10 +105,10 @@ public class RestClientHttpApiConfig {
 
     /**
      * [MCP Event Generate] 이벤트 생성 서버. 웹 검색·LLM 생성을 동기로 기다리므로 read-timeout 을 길게 둔다.
-     * 주소는 api.event-generation-agent.url, 없으면 환경변수 EVENT_GENERATION_AGENT_URL (로컬 기본값은 skgas-test-mcp mock).
+     * 주소는 api.event-generation-agent.url (local/tech/testdb 는 yml 에 설정), 없으면 환경변수 EVENT_GENERATION_AGENT_URL.
      */
     @Bean
-    public EventGenerationAgentApi eventGenerationAgentApi(@Value("${api.event-generation-agent.url:${EVENT_GENERATION_AGENT_URL:http://localhost:8010}}") String url,
+    public EventGenerationAgentApi eventGenerationAgentApi(@Value("${api.event-generation-agent.url:${EVENT_GENERATION_AGENT_URL:}}") String url,
                                                            @Value("${api.event-generation-agent.connection-timeout:1s}") Duration connectTimeout,
                                                            @Value("${api.event-generation-agent.read-timeout:300s}") Duration readTimeout) {
 
