@@ -17,7 +17,7 @@ import org.springframework.web.client.RestClientException;
 
 /**
  * [MCP Event Generate] 사용자 입력 문장 기반 이벤트 생성.
- * 생성·저장 로직은 이벤트 생성 서버가 맡고, B.E 는 인증된 사용자 번호를 붙여 요청·응답을 그대로 전달만 한다.
+ * 생성·저장 로직은 이벤트 생성 서버가 맡고, B.E 는 인증된 사용자 로그인 ID 를 붙여 요청·응답을 그대로 전달만 한다.
  */
 @Slf4j
 @Service
@@ -28,7 +28,7 @@ public class EventGenerationService {
 
     public EventGenerationRes generateEvents(User user, EventGenerationReq request) {
 
-        EventGenerationAgentRes res = callAgent(user.getUserNo(), request);
+        EventGenerationAgentRes res = callAgent(user.getUserLoginId(), request);
 
         if (!res.isSuccess()) {
             throw AppErrorException.of(ResultCode.Error.BIZ_RULE_VIOLATION, "event generation failed: %s".formatted(res.message()));
@@ -40,9 +40,9 @@ public class EventGenerationService {
      * 통신 예외(호스트 다운/타임아웃/역직렬화 실패)를 통제된 외부 API 에러(500)로 변환한다.
      * HTTP 오류 status 는 공통 RestClient 빌더가 이미 ApiErrorException 으로 던진다 (PriceInterpretationServiceImpl 과 같은 방식).
      */
-    private EventGenerationAgentRes callAgent(Integer userNo, EventGenerationReq request) {
+    private EventGenerationAgentRes callAgent(String userLoginId, EventGenerationReq request) {
         try {
-            return eventGenerationAgentApi.generate(userNo, request);
+            return eventGenerationAgentApi.generate(userLoginId, request);
         } catch (ResourceAccessException e) {
             ResultCode.Error code = e.getCause() instanceof SocketTimeoutException ? ResultCode.Error.API_TIMEOUT : ResultCode.Error.API_SERVICE_UNAVAILABLE;
             log.error("[Event Generate Agent] 통신 오류: {}", e.getMessage(), e);

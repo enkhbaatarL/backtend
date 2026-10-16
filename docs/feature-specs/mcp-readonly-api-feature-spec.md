@@ -510,7 +510,7 @@ CME는 SK Gas 데이터이고 라우팅 키는 `midb-skgas`로 고정이다(변�
 - `POST /api/v1/mcp/mi/next-gen/events/generations` (`McpEventDedicatedController.generateEvents`) — 이 1건으로 MCP 채널은 21건(GET 19 + POST 2)
 - B.E 는 인증(채널 공통 3.2절·3.3절)만 하고 이벤트 생성 서버 `POST /events/generations`(스펙 `event_generate_v1`)에 요청을 그대로 넘긴다.
   생성·저장(`tmm_mi_mievent_m`)은 생성 서버가 하며 B.E 는 DB 를 쓰지 않는다. 권한 규칙은 4.1~4.7 과 동일
-- 생성 서버 호출: 헤더 `X-User-ID` = effective user 의 `usr_no`(정수, 생성자·수정자 ID), body 는 요청 그대로 (`EventGenerationAgentApi`)
+- 생성 서버 호출: 헤더 `X-User-ID` = effective user 의 `usr_logn_id`(로그인 ID 문자열, 생성자·수정자 ID), body 는 요청 그대로 (`EventGenerationAgentApi`)
 - 주소 `api.event-generation-agent.url` → 없으면 환경변수 `EVENT_GENERATION_AGENT_URL`. local/tech/testdb 는 `http://40.82.137.178:8004`(2026-10-16 실 서버 연결, mock 제거). dev/prod 주소는 미정.
   read-timeout 기본 300s (`api.event-generation-agent.read-timeout`) — 웹 검색·LLM 생성을 동기로 기다린다
 - 요청 body (`EventGenerationReq`)

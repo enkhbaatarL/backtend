@@ -22,21 +22,22 @@ public interface MiEventRepository extends JpaRepository<MiEvent, Long>, CustomM
     /**
      * 키워드 알림 스캔 체크포인트 초기값 (기존 이벤트 무시용)
      */
-    @Query("SELECT MAX(e.createDt) FROM MiEvent e")
-    Optional<LocalDateTime> findMaxCreateDt();
+    @Query("SELECT MAX(e.modifyDt) FROM MiEvent e")
+    Optional<LocalDateTime> findMaxModifyDt();
 
     /**
-     * 키워드 알림 스캔 대상: 기준 시각 이후 생성된 게시 완료 활성 이벤트 (생성일시, ID 오름차순)
+     * 키워드 알림 스캔 대상: 기준 시각 이후 생성·갱신된 게시 완료 활성 이벤트 (수정일시, ID 오름차순)
+     * - 생성 시에도 mod_dtm이 채워지므로 신규·갱신을 mod_dtm 하나로 판단
      */
     @Query("""
-        SELECT e.miEventId AS miEventId, e.oneLineSummary AS oneLineSummary, e.createDt AS createDt
+        SELECT e.miEventId AS miEventId, e.oneLineSummary AS oneLineSummary, e.modifyDt AS modifyDt
           FROM MiEvent e
-         WHERE e.createDt > :from
+         WHERE e.modifyDt > :from
            AND e.isDeleted = false
            AND e.publishStatus = 'PUBLISHED'
-         ORDER BY e.createDt ASC, e.miEventId ASC
+         ORDER BY e.modifyDt ASC, e.miEventId ASC
         """)
-    List<KeywordAlertEventRow> findKeywordAlertEventsCreatedAfter(@Param("from") LocalDateTime from);
+    List<KeywordAlertEventRow> findKeywordAlertEventsModifiedAfter(@Param("from") LocalDateTime from);
 
     /**
      * 후보 이벤트 중 one_line_summary에 키워드 구문이 그대로 포함된 이벤트 ID
