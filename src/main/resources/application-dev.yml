@@ -134,6 +134,10 @@ api:
     url: http://agent-parameter-skgas-app-dev.mi-skgas-dev.svc.cluster.local:8000
     connection-timeout: 1s
     read-timeout: 60s
+  event-generation-agent:
+    url: http://skmip-skgas-agent-event-app-dev.mi-skgas-dev.svc.cluster.local:8004
+    connection-timeout: 1s
+    read-timeout: 300s
 
 mail:
   except-company-no: 2013
