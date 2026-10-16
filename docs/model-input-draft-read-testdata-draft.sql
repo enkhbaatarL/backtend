@@ -26,10 +26,15 @@
 -- 실행 순서 (같은 연결, 다른 API/등록 작업과 동시에 실행하지 않는다):
 -- 1. 아래 START TRANSACTION부터 마지막 SELECT까지 실행한다. 자동 COMMIT은 없다.
 -- 2. PRECHECK_OK와 마지막 READY_TO_COMMIT/역할4/시트1/표1/범위1/연결1을 확인한다.
--- 3. 모두 맞으면 같은 연결에서 COMMIT; 을 직접 실행한다. 이후 마지막 SELECT만 재실행한다.
+-- 3. 모두 맞으면 같은 연결에서 주석 없는 COMMIT; 을 별도로 직접 실행한다.
+--    파일 끝의 -- COMMIT; 줄은 안내 주석이므로 파일 전체 실행만으로 저장 확정되지 않는다.
+--    확정 후 새 DB 연결에서 마지막 VERIFY SELECT만 재실행해 다른 연결에도 보이는지 확인한다.
 -- 4. 오류/STOP/NOT_READY이면 남은 문장을 중단하고 같은 연결에서 ROLLBACK; 을 실행한 뒤 결과를 공유한다.
 -- 트랜잭션을 열린 채로 두지 않는다. 마지막 SELECT의 READY_TO_COMMIT은 COMMIT 전에는 미확정 값이다.
--- 이 파일 전체를 다시 실행하지 않는다. 발행된 정의는 수정하지 않으며 재실행은 선행조건에서 STOP된다.
+-- 등록 완료 후에는 이 파일 전체를 다시 실행하지 않는다. 기존 ACTIVE 정의는 수정하지 않는다.
+-- 미확정 등록 연결이 남아 있으면 그 연결의 VERIFY/COMMIT 또는 ROLLBACK을 먼저 마친다.
+-- 이전 작업 종료 후 새 조회에서 양식1/DRAFT/N/파일0/연결0/관련Draft0을 다시 확인한 경우에만
+-- 선행조건을 재검사하는 이 보완 SQL을1회 재실행할 수 있다. 다른 상태면 재등록하지 않는다.
 -- ROW_COUNT()/LAST_INSERT_ID() 없이 실제 DB 행으로 부모 ID/정의를 조회한다.
 USE midb;
 START TRANSACTION;
@@ -214,5 +219,6 @@ FROM (
 -- COMMIT;
 -- 오류/STOP_AND_ROLLBACK/NOT_READY이면 같은 연결에서 다음 문장 하나를 직접 실행한다:
 -- ROLLBACK;
--- COMMIT 후 위 VERIFY SELECT만 다시 실행하고 결과를 전달한다. 재조회 READY_TO_COMMIT은 데이터 준비 상태 표시이며 재COMMIT 요청이 아니다.
+-- COMMIT 후 새 DB 연결에서 위 VERIFY SELECT만 다시 실행하고 결과를 전달한다.
+-- 재조회 READY_TO_COMMIT은 데이터 준비 상태 표시이며 재COMMIT 요청이 아니다.
 -- 실제 저장소 읽기·API 생성/재개/조회 성공은 이후 API 시험으로 확인한다.
