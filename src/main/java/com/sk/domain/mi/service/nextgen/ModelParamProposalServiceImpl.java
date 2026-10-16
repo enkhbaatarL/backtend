@@ -583,7 +583,7 @@ public class ModelParamProposalServiceImpl implements ModelParamProposalService 
         }
         String modelFile = target.modelFile();
         if (modelFile != null && !modelFile.isBlank()) {
-            modelFile = ModelInputFile.from(modelFile).getCode();
+            modelFile = ModelInputFile.proposalTargetFrom(modelFile).getCode();
         }
         return new ModelParamTarget(
             modelFile,

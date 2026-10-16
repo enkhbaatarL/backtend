@@ -86,6 +86,25 @@ public class JsonUtil {
         }
     }
 
+    // [MCP Snapshot] 문자열 배열 JSON(예: ["a","b"])을 파싱. 실패하면 빈 목록 + warn (parseWrappedStringList 와 같은 태도)
+    public static List<String> parseStringList(String json) {
+        if (json == null || json.isBlank()) {
+            return Collections.emptyList();
+        }
+        try {
+            JsonNode node = objectMapper.readTree(json);
+            if (node == null || !node.isArray()) {
+                return Collections.emptyList();
+            }
+            List<String> result = new ArrayList<>(node.size());
+            node.forEach(item -> result.add(item.asText()));
+            return result;
+        } catch (Exception e) {
+            log.warn("JSON string list 파싱 실패: {}", e.getMessage());
+            return Collections.emptyList();
+        }
+    }
+
     public static ObjectNode createNode() {
         return objectMapper.createObjectNode();
     }

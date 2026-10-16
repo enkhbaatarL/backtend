@@ -1,0 +1,4908 @@
+{
+  "documentControl": {
+    "status": "Complete",
+    "canonicalFor": "Reference only",
+    "date": "2026-10-07",
+    "baselineId": "2026-10-07-delivery-261006-v8-v6"
+  },
+  "scope": {
+    "rawCellValuesEmitted": false,
+    "rawFormulaTextEmitted": false,
+    "policyInference": false,
+    "workbookEvaluation": false,
+    "sharedFollowersIncluded": true,
+    "extraFormulaLocationsIncluded": true
+  },
+  "poi": {
+    "version": "5.4.0",
+    "method": "WorkbookEvaluator runtime registry; no evaluation",
+    "supported": [
+      "ABS",
+      "ACOS",
+      "ACOSH",
+      "ADDRESS",
+      "AND",
+      "AREAS",
+      "ASIN",
+      "ASINH",
+      "ATAN",
+      "ATAN2",
+      "ATANH",
+      "AVEDEV",
+      "AVERAGE",
+      "AVERAGEA",
+      "AVERAGEIF",
+      "AVERAGEIFS",
+      "BESSELJ",
+      "BIN2DEC",
+      "CEILING",
+      "CEILING.MATH",
+      "CEILING.PRECISE",
+      "CHAR",
+      "CHOOSE",
+      "CLEAN",
+      "CODE",
+      "COLUMN",
+      "COLUMNS",
+      "COMBIN",
+      "COMPLEX",
+      "CONCAT",
+      "CONCATENATE",
+      "CORREL",
+      "COS",
+      "COSH",
+      "COUNT",
+      "COUNTA",
+      "COUNTBLANK",
+      "COUNTIF",
+      "COUNTIFS",
+      "COVAR",
+      "COVARIANCE.P",
+      "COVARIANCE.S",
+      "DATE",
+      "DATEVALUE",
+      "DAVERAGE",
+      "DAY",
+      "DAYS",
+      "DAYS360",
+      "DCOUNT",
+      "DCOUNTA",
+      "DEC2BIN",
+      "DEC2HEX",
+      "DEGREES",
+      "DELTA",
+      "DEVSQ",
+      "DGET",
+      "DMAX",
+      "DMIN",
+      "DOLLAR",
+      "DOLLARDE",
+      "DOLLARFR",
+      "DPRODUCT",
+      "DSTDEV",
+      "DSTDEVP",
+      "DSUM",
+      "DVAR",
+      "DVARP",
+      "EDATE",
+      "EOMONTH",
+      "ERROR.TYPE",
+      "EVEN",
+      "EXACT",
+      "EXP",
+      "FACT",
+      "FACTDOUBLE",
+      "FALSE",
+      "FIND",
+      "FIXED",
+      "FLOOR",
+      "FLOOR.MATH",
+      "FLOOR.PRECISE",
+      "FORECAST",
+      "FORECAST.LINEAR",
+      "FREQUENCY",
+      "FV",
+      "GCD",
+      "GEOMEAN",
+      "HEX2DEC",
+      "HLOOKUP",
+      "HOUR",
+      "HYPERLINK",
+      "IF",
+      "IFERROR",
+      "IFNA",
+      "IFS",
+      "IMAGINARY",
+      "IMREAL",
+      "INDEX",
+      "INDIRECT",
+      "INT",
+      "INTERCEPT",
+      "IPMT",
+      "IRR",
+      "ISBLANK",
+      "ISERR",
+      "ISERROR",
+      "ISEVEN",
+      "ISLOGICAL",
+      "ISNA",
+      "ISNONTEXT",
+      "ISNUMBER",
+      "ISODD",
+      "ISREF",
+      "ISTEXT",
+      "LARGE",
+      "LCM",
+      "LEFT",
+      "LEN",
+      "LN",
+      "LOG",
+      "LOG10",
+      "LOOKUP",
+      "LOWER",
+      "MATCH",
+      "MAX",
+      "MAXA",
+      "MAXIFS",
+      "MDETERM",
+      "MEDIAN",
+      "MID",
+      "MIN",
+      "MINA",
+      "MINIFS",
+      "MINUTE",
+      "MINVERSE",
+      "MIRR",
+      "MMULT",
+      "MOD",
+      "MODE",
+      "MONTH",
+      "MROUND",
+      "NA",
+      "NETWORKDAYS",
+      "NORM.DIST",
+      "NORM.INV",
+      "NORM.S.DIST",
+      "NORM.S.INV",
+      "NORMDIST",
+      "NORMINV",
+      "NORMSDIST",
+      "NORMSINV",
+      "NOT",
+      "NOW",
+      "NPER",
+      "NPV",
+      "NUMBERVALUE",
+      "OCT2DEC",
+      "ODD",
+      "OFFSET",
+      "OR",
+      "PEARSON",
+      "PERCENTILE",
+      "PERCENTRANK",
+      "PERCENTRANK.EXC",
+      "PERCENTRANK.INC",
+      "PI",
+      "PMT",
+      "POISSON",
+      "POISSON.DIST",
+      "POWER",
+      "PPMT",
+      "PRODUCT",
+      "PROPER",
+      "PV",
+      "QUOTIENT",
+      "RADIANS",
+      "RAND",
+      "RANDBETWEEN",
+      "RANK",
+      "RATE",
+      "REPLACE",
+      "REPT",
+      "RIGHT",
+      "ROMAN",
+      "ROUND",
+      "ROUNDDOWN",
+      "ROUNDUP",
+      "ROW",
+      "ROWS",
+      "SEARCH",
+      "SECOND",
+      "SIGN",
+      "SIN",
+      "SINGLE",
+      "SINH",
+      "SLOPE",
+      "SMALL",
+      "SQRT",
+      "SQRTPI",
+      "STANDARDIZE",
+      "STDEV",
+      "STDEV.P",
+      "STDEV.S",
+      "STDEVA",
+      "STDEVP",
+      "STDEVPA",
+      "SUBSTITUTE",
+      "SUBTOTAL",
+      "SUM",
+      "SUMIF",
+      "SUMIFS",
+      "SUMPRODUCT",
+      "SUMSQ",
+      "SUMX2MY2",
+      "SUMX2PY2",
+      "SUMXMY2",
+      "SWITCH",
+      "T",
+      "T.DIST",
+      "T.DIST.2T",
+      "T.DIST.RT",
+      "TAN",
+      "TANH",
+      "TDIST",
+      "TEXT",
+      "TEXTJOIN",
+      "TIME",
+      "TIMEVALUE",
+      "TODAY",
+      "TRANSPOSE",
+      "TREND",
+      "TRIM",
+      "TRUE",
+      "TRUNC",
+      "UPPER",
+      "VALUE",
+      "VAR",
+      "VAR.P",
+      "VAR.S",
+      "VARA",
+      "VARP",
+      "VARPA",
+      "VLOOKUP",
+      "WEEKDAY",
+      "WEEKNUM",
+      "WORKDAY",
+      "WORKDAY.INTL",
+      "XLOOKUP",
+      "XMATCH",
+      "YEAR",
+      "YEARFRAC"
+    ],
+    "unsupported": [
+      "ABSREF",
+      "ACCRINT",
+      "ACCRINTM",
+      "AMORDEGRC",
+      "AMORLINC",
+      "APP.TITLE",
+      "ARGUMENT",
+      "ASC",
+      "BAHTTEXT",
+      "BESSELI",
+      "BESSELK",
+      "BESSELY",
+      "BETADIST",
+      "BETAINV",
+      "BIN2HEX",
+      "BIN2OCT",
+      "BINOMDIST",
+      "CALL",
+      "CELL",
+      "CHIDIST",
+      "CHIINV",
+      "CHITEST",
+      "CONFIDENCE",
+      "CONVERT",
+      "COUPDAYBS",
+      "COUPDAYS",
+      "COUPDAYSNC",
+      "COUPNCD",
+      "COUPNUM",
+      "COUPPCD",
+      "CRITBINOM",
+      "CUBEKPIMEMBER",
+      "CUBEMEMBER",
+      "CUBEMEMBERPROPERTY",
+      "CUBERANKEDMEMBER",
+      "CUBESET",
+      "CUBESETCOUNT",
+      "CUBEVALUE",
+      "CUMIPMT",
+      "CUMPRINC",
+      "DATEDIF",
+      "DATESTRING",
+      "DB",
+      "DBCS",
+      "DDB",
+      "DEC2OCT",
+      "DISC",
+      "DURATION",
+      "EFFECT",
+      "ENABLE.TOOL",
+      "END.IF",
+      "ERF",
+      "ERFC",
+      "ERROR",
+      "EVALUATE",
+      "EXEC",
+      "EXPONDIST",
+      "FDIST",
+      "FINDB",
+      "FINV",
+      "FISHER",
+      "FISHERINV",
+      "FTEST",
+      "FVSCHEDULE",
+      "GAMMADIST",
+      "GAMMAINV",
+      "GAMMALN",
+      "GESTEP",
+      "GET.CELL",
+      "GET.DOCUMENT",
+      "GET.WINDOW",
+      "GET.WORKBOOK",
+      "GET.WORKSPACE",
+      "GETPIVOTDATA",
+      "GOTO",
+      "GROWTH",
+      "HARMEAN",
+      "HEX2BIN",
+      "HEX2OCT",
+      "HYPGEOMDIST",
+      "IMABS",
+      "IMARGUMENT",
+      "IMCONJUGATE",
+      "IMCOS",
+      "IMDIV",
+      "IMEXP",
+      "IMLN",
+      "IMLOG10",
+      "IMLOG2",
+      "IMPOWER",
+      "IMPRODUCT",
+      "IMSIN",
+      "IMSQRT",
+      "IMSUB",
+      "IMSUM",
+      "INFO",
+      "INTRATE",
+      "ISPMT",
+      "JIS",
+      "KURT",
+      "LAST.ERROR",
+      "LEFTB",
+      "LENB",
+      "LINEST",
+      "LOGEST",
+      "LOGINV",
+      "LOGNORMDIST",
+      "MDURATION",
+      "MIDB",
+      "MULTINOMIAL",
+      "N",
+      "NEGBINOMDIST",
+      "NOMINAL",
+      "NUMBERSTRING",
+      "OCT2BIN",
+      "OCT2HEX",
+      "ODDFPRICE",
+      "ODDFYIELD",
+      "ODDLPRICE",
+      "ODDLYIELD",
+      "PERMUT",
+      "PHONETIC",
+      "PRESS.TOOL",
+      "PRICE",
+      "PRICEDISC",
+      "PRICEMAT",
+      "PROB",
+      "QUARTILE",
+      "RECEIVED",
+      "REGISTER.ID",
+      "RELREF",
+      "REPLACEB",
+      "RETURN",
+      "RIGHTB",
+      "RSQ",
+      "RTD",
+      "SAVE.TOOLBAR",
+      "SEARCHB",
+      "SERIESSUM",
+      "SKEW",
+      "SLN",
+      "STEP",
+      "STEYX",
+      "SYD",
+      "TBILLEQ",
+      "TBILLPRICE",
+      "TBILLYIELD",
+      "TINV",
+      "TRIMMEAN",
+      "TTEST",
+      "TYPE",
+      "USDOLLAR",
+      "VDB",
+      "WEIBULL",
+      "WINDOW.TITLE",
+      "XIRR",
+      "XNPV",
+      "YIELD",
+      "YIELDDISC",
+      "YIELDMAT",
+      "ZTEST"
+    ],
+    "jarHashes": {
+      "poi-5.4.0.jar": "ace71e79873059e273036674560b50c3d6b945b7ca168b0d4962ad7650ae1eec",
+      "poi-ooxml-5.4.0.jar": "98693442ed7d44791de4a57962b6c820ae678e0eba9cf854681b62ff62c9611d",
+      "poi-ooxml-lite-5.4.0.jar": "bb5a8a6c833279ced51afb6042aa15ae5d5ca312ee682e570e23917b522b079e",
+      "xmlbeans-5.3.0.jar": "6cc69da3b4d35b83c5e477cd4daba204e44109833e34af2b9a8a2c8788289917",
+      "commons-collections4-4.4.jar": "1df8b9430b5c8ed143d7815e403e33ef5371b2400aadbe9bda0883762e0846d1",
+      "commons-math3-3.6.1.jar": "1e56d7b058d28b65abd256b8458e3885b674c1d588fa43cd7d1cbb9c7ef2b308",
+      "commons-compress-1.27.1.jar": "293d80f54b536b74095dcd7ea3cf0a29bbfc3402519281332495f4420d370d16",
+      "commons-codec-1.17.2.jar": "4148332728490cef12b29dac4c385f46982f04285132c6fa51ad7267d7dc7a8b",
+      "commons-io-2.18.0.jar": "f3ca0f8d63c40e23a56d54101c60d5edee136b42d84bfb85bc7963093109cf8b",
+      "log4j-api-2.24.3.jar": "5b4a0a0cd0e751ded431c162442bdbdd53328d1f8bb2bae5fc1bbeee0f66d80f",
+      "SparseBitSet-1.3.jar": "f76b85adb0c00721ae267b7cfde4da7f71d3121cc2160c9fc00c0c89f8c53c8a",
+      "curvesapi-1.08.jar": "ad95b08b8bbf9d7d17e5e00814898fa23324f32bc5b62f1a37801e6a56ce0079"
+    },
+    "runtimeMessages": [
+      "2026-10-07T12:33:20.814886Z main ERROR Log4j API could not find a logging provider."
+    ]
+  },
+  "workbooks": [
+    {
+      "role": "DEMAND",
+      "sha256": "ef516b6de2a829c891dbd991ba9f9d626f104dcae2e5ecd8128b1f0ae31c23bd",
+      "sheetCount": 25,
+      "formulaCells": 699298,
+      "sheets": [
+        {
+          "name": "Input Adjustment ->",
+          "state": "visible",
+          "formulaCells": 0,
+          "cachedFormulaCells": 0,
+          "nonemptyCachedFormulaCells": 0,
+          "errorCachedFormulaCells": 0,
+          "noFunctionFormulaCells": 0,
+          "sharedFollowerCells": 0,
+          "externalReferenceFormulaCells": 0,
+          "functionCalls": {},
+          "sharedMasterCount": 0
+        },
+        {
+          "name": "GDPPopulationAdjustment",
+          "state": "visible",
+          "formulaCells": 12001,
+          "cachedFormulaCells": 12001,
+          "nonemptyCachedFormulaCells": 6127,
+          "errorCachedFormulaCells": 2148,
+          "noFunctionFormulaCells": 3988,
+          "sharedFollowerCells": 5881,
+          "externalReferenceFormulaCells": 0,
+          "type:normal": 6024,
+          "type:shared": 5977,
+          "functionCalls": {
+            "AND": 13923,
+            "COUNTIF": 2,
+            "IF": 19946,
+            "INDEX": 5967,
+            "ISBLANK": 55,
+            "MATCH": 7956
+          },
+          "sharedMasterCount": 96
+        },
+        {
+          "name": "ElectrificationRateAdjustment",
+          "state": "visible",
+          "formulaCells": 6003,
+          "cachedFormulaCells": 6003,
+          "nonemptyCachedFormulaCells": 2025,
+          "errorCachedFormulaCells": 35,
+          "noFunctionFormulaCells": 1994,
+          "sharedFollowerCells": 3919,
+          "externalReferenceFormulaCells": 0,
+          "type:normal": 2020,
+          "type:shared": 3983,
+          "functionCalls": {
+            "AND": 3978,
+            "COUNTIF": 1,
+            "IF": 5997,
+            "INDEX": 1989,
+            "ISBLANK": 30,
+            "MATCH": 1989
+          },
+          "sharedMasterCount": 64
+        },
+        {
+          "name": "PowerMixAdjustment",
+          "state": "visible",
+          "formulaCells": 39906,
+          "cachedFormulaCells": 39906,
+          "nonemptyCachedFormulaCells": 16046,
+          "errorCachedFormulaCells": 91,
+          "noFunctionFormulaCells": 7983,
+          "sharedFollowerCells": 23546,
+          "externalReferenceFormulaCells": 0,
+          "type:normal": 15985,
+          "type:shared": 23921,
+          "functionCalls": {
+            "AND": 31892,
+            "COUNTIF": 1,
+            "IF": 63798,
+            "INDEX": 15954,
+            "ISBLANK": 30,
+            "MATCH": 31908
+          },
+          "sharedMasterCount": 375
+        },
+        {
+          "name": "CoalGasAdjustment",
+          "state": "visible",
+          "formulaCells": 11995,
+          "cachedFormulaCells": 11995,
+          "nonemptyCachedFormulaCells": 4039,
+          "errorCachedFormulaCells": 60,
+          "noFunctionFormulaCells": 0,
+          "sharedFollowerCells": 7836,
+          "externalReferenceFormulaCells": 0,
+          "type:normal": 4031,
+          "type:shared": 7964,
+          "functionCalls": {
+            "AND": 7956,
+            "COUNTIF": 2,
+            "IF": 19950,
+            "INDEX": 7956,
+            "ISBLANK": 50,
+            "MATCH": 7956,
+            "TEXT": 3988
+          },
+          "sharedMasterCount": 128
+        },
+        {
+          "name": "WeatherAdjustment",
+          "state": "visible",
+          "formulaCells": 79984,
+          "cachedFormulaCells": 79984,
+          "nonemptyCachedFormulaCells": 440,
+          "errorCachedFormulaCells": 289,
+          "noFunctionFormulaCells": 31960,
+          "sharedFollowerCells": 62886,
+          "externalReferenceFormulaCells": 0,
+          "type:normal": 16094,
+          "type:shared": 63890,
+          "functionCalls": {
+            "AND": 55893,
+            "COUNTIF": 2,
+            "IF": 56008,
+            "INDEX": 23959,
+            "ISBLANK": 115,
+            "MATCH": 47918
+          },
+          "sharedMasterCount": 1004
+        },
+        {
+          "name": "PMIAdjustment",
+          "state": "visible",
+          "formulaCells": 32164,
+          "cachedFormulaCells": 32164,
+          "nonemptyCachedFormulaCells": 187,
+          "errorCachedFormulaCells": 138,
+          "noFunctionFormulaCells": 0,
+          "sharedFollowerCells": 23676,
+          "externalReferenceFormulaCells": 0,
+          "type:normal": 8108,
+          "type:shared": 24056,
+          "functionCalls": {
+            "AND": 16046,
+            "COUNTIF": 1,
+            "IF": 32163,
+            "INDEX": 8069,
+            "ISBLANK": 35,
+            "MATCH": 16044
+          },
+          "sharedMasterCount": 380
+        },
+        {
+          "name": "HydrogenAdjustment",
+          "state": "visible",
+          "formulaCells": 23998,
+          "cachedFormulaCells": 23998,
+          "nonemptyCachedFormulaCells": 31,
+          "errorCachedFormulaCells": 30,
+          "noFunctionFormulaCells": 7994,
+          "sharedFollowerCells": 15733,
+          "externalReferenceFormulaCells": 0,
+          "type:normal": 8015,
+          "type:shared": 15983,
+          "functionCalls": {
+            "AND": 15978,
+            "COUNTIF": 1,
+            "IF": 16003,
+            "INDEX": 7989,
+            "ISBLANK": 25,
+            "MATCH": 7989
+          },
+          "sharedMasterCount": 250
+        },
+        {
+          "name": "LNGBunkeringAdjustment",
+          "state": "visible",
+          "formulaCells": 319,
+          "cachedFormulaCells": 319,
+          "nonemptyCachedFormulaCells": 147,
+          "errorCachedFormulaCells": 60,
+          "noFunctionFormulaCells": 96,
+          "sharedFollowerCells": 178,
+          "externalReferenceFormulaCells": 0,
+          "type:normal": 137,
+          "type:shared": 182,
+          "functionCalls": {
+            "AND": 172,
+            "COUNTIF": 2,
+            "IF": 308,
+            "INDEX": 86,
+            "ISBLANK": 50,
+            "MATCH": 86
+          },
+          "sharedMasterCount": 4
+        },
+        {
+          "name": "Scenario Tracker",
+          "state": "hidden",
+          "formulaCells": 0,
+          "cachedFormulaCells": 0,
+          "nonemptyCachedFormulaCells": 0,
+          "errorCachedFormulaCells": 0,
+          "noFunctionFormulaCells": 0,
+          "sharedFollowerCells": 0,
+          "externalReferenceFormulaCells": 0,
+          "functionCalls": {},
+          "sharedMasterCount": 0
+        },
+        {
+          "name": "DemandOutputOverwrite",
+          "state": "visible",
+          "formulaCells": 1000,
+          "cachedFormulaCells": 1000,
+          "nonemptyCachedFormulaCells": 12,
+          "errorCachedFormulaCells": 0,
+          "noFunctionFormulaCells": 1000,
+          "sharedFollowerCells": 982,
+          "externalReferenceFormulaCells": 0,
+          "type:normal": 1,
+          "type:shared": 999,
+          "functionCalls": {},
+          "sharedMasterCount": 17
+        },
+        {
+          "name": "기준정보 ->",
+          "state": "visible",
+          "formulaCells": 0,
+          "cachedFormulaCells": 0,
+          "nonemptyCachedFormulaCells": 0,
+          "errorCachedFormulaCells": 0,
+          "noFunctionFormulaCells": 0,
+          "sharedFollowerCells": 0,
+          "externalReferenceFormulaCells": 0,
+          "functionCalls": {},
+          "sharedMasterCount": 0
+        },
+        {
+          "name": "BCInput",
+          "state": "visible",
+          "formulaCells": 304766,
+          "cachedFormulaCells": 304766,
+          "nonemptyCachedFormulaCells": 304766,
+          "errorCachedFormulaCells": 240,
+          "noFunctionFormulaCells": 103166,
+          "sharedFollowerCells": 300000,
+          "externalReferenceFormulaCells": 0,
+          "type:shared": 304762,
+          "type:normal": 4,
+          "functionCalls": {
+            "SUMIFS": 201600
+          },
+          "sharedMasterCount": 4762
+        },
+        {
+          "name": "MacroParametersLogicInput",
+          "state": "visible",
+          "formulaCells": 168,
+          "cachedFormulaCells": 168,
+          "nonemptyCachedFormulaCells": 168,
+          "errorCachedFormulaCells": 0,
+          "noFunctionFormulaCells": 168,
+          "sharedFollowerCells": 165,
+          "externalReferenceFormulaCells": 0,
+          "type:shared": 168,
+          "functionCalls": {},
+          "sharedMasterCount": 3
+        },
+        {
+          "name": "PMIInput",
+          "state": "visible",
+          "formulaCells": 25878,
+          "cachedFormulaCells": 25878,
+          "nonemptyCachedFormulaCells": 19243,
+          "errorCachedFormulaCells": 0,
+          "noFunctionFormulaCells": 9659,
+          "sharedFollowerCells": 17469,
+          "externalReferenceFormulaCells": 0,
+          "type:normal": 8156,
+          "type:shared": 17722,
+          "functionCalls": {
+            "IFERROR": 8155,
+            "INDEX": 16219,
+            "MATCH": 24283
+          },
+          "sharedMasterCount": 253
+        },
+        {
+          "name": "PMILogicInput",
+          "state": "visible",
+          "formulaCells": 84,
+          "cachedFormulaCells": 84,
+          "nonemptyCachedFormulaCells": 84,
+          "errorCachedFormulaCells": 0,
+          "noFunctionFormulaCells": 0,
+          "sharedFollowerCells": 82,
+          "externalReferenceFormulaCells": 0,
+          "type:shared": 84,
+          "functionCalls": {
+            "SUMIFS": 84
+          },
+          "sharedMasterCount": 2
+        },
+        {
+          "name": "WeatherLogicInput",
+          "state": "visible",
+          "formulaCells": 1176,
+          "cachedFormulaCells": 1176,
+          "nonemptyCachedFormulaCells": 1176,
+          "errorCachedFormulaCells": 0,
+          "noFunctionFormulaCells": 168,
+          "sharedFollowerCells": 164,
+          "externalReferenceFormulaCells": 0,
+          "type:normal": 1008,
+          "type:shared": 168,
+          "functionCalls": {
+            "INDEX": 1008,
+            "MATCH": 1008
+          },
+          "sharedMasterCount": 4
+        },
+        {
+          "name": "WeatherInput",
+          "state": "visible",
+          "formulaCells": 144760,
+          "cachedFormulaCells": 144760,
+          "nonemptyCachedFormulaCells": 104160,
+          "errorCachedFormulaCells": 27552,
+          "noFunctionFormulaCells": 10080,
+          "sharedFollowerCells": 81733,
+          "externalReferenceFormulaCells": 0,
+          "type:normal": 62337,
+          "type:shared": 82423,
+          "functionCalls": {
+            "IF": 225464,
+            "IFERROR": 64512,
+            "INDEX": 98784,
+            "ISNUMBER": 62528,
+            "MATCH": 131040
+          },
+          "sharedMasterCount": 690
+        },
+        {
+          "name": "LNGBunkeringInput",
+          "state": "visible",
+          "formulaCells": 527,
+          "cachedFormulaCells": 527,
+          "nonemptyCachedFormulaCells": 527,
+          "errorCachedFormulaCells": 0,
+          "noFunctionFormulaCells": 431,
+          "sharedFollowerCells": 275,
+          "externalReferenceFormulaCells": 0,
+          "type:normal": 246,
+          "type:shared": 281,
+          "functionCalls": {
+            "IFERROR": 96,
+            "INDEX": 96,
+            "MATCH": 96
+          },
+          "sharedMasterCount": 6
+        },
+        {
+          "name": "LNGBunkeringLogicInput",
+          "state": "visible",
+          "formulaCells": 0,
+          "cachedFormulaCells": 0,
+          "nonemptyCachedFormulaCells": 0,
+          "errorCachedFormulaCells": 0,
+          "noFunctionFormulaCells": 0,
+          "sharedFollowerCells": 0,
+          "externalReferenceFormulaCells": 0,
+          "functionCalls": {},
+          "sharedMasterCount": 0
+        },
+        {
+          "name": "HydrogenInput",
+          "state": "visible",
+          "formulaCells": 14437,
+          "cachedFormulaCells": 14437,
+          "nonemptyCachedFormulaCells": 5096,
+          "errorCachedFormulaCells": 0,
+          "noFunctionFormulaCells": 13709,
+          "sharedFollowerCells": 13487,
+          "externalReferenceFormulaCells": 0,
+          "type:normal": 732,
+          "type:shared": 13705,
+          "functionCalls": {
+            "IFERROR": 728,
+            "INDEX": 728,
+            "MATCH": 728
+          },
+          "sharedMasterCount": 218
+        },
+        {
+          "name": "LNG Demand",
+          "state": "visible",
+          "formulaCells": 130,
+          "cachedFormulaCells": 130,
+          "nonemptyCachedFormulaCells": 130,
+          "errorCachedFormulaCells": 0,
+          "noFunctionFormulaCells": 0,
+          "sharedFollowerCells": 104,
+          "externalReferenceFormulaCells": 0,
+          "type:normal": 13,
+          "type:shared": 117,
+          "functionCalls": {
+            "SUM": 130
+          },
+          "sharedMasterCount": 13
+        },
+        {
+          "name": "General",
+          "state": "visible",
+          "formulaCells": 2,
+          "cachedFormulaCells": 2,
+          "nonemptyCachedFormulaCells": 2,
+          "errorCachedFormulaCells": 0,
+          "noFunctionFormulaCells": 2,
+          "sharedFollowerCells": 0,
+          "externalReferenceFormulaCells": 0,
+          "type:normal": 2,
+          "functionCalls": {},
+          "sharedMasterCount": 0
+        },
+        {
+          "name": "Sheet2_DISCARDAFTUSE",
+          "state": "hidden",
+          "formulaCells": 0,
+          "cachedFormulaCells": 0,
+          "nonemptyCachedFormulaCells": 0,
+          "errorCachedFormulaCells": 0,
+          "noFunctionFormulaCells": 0,
+          "sharedFollowerCells": 0,
+          "externalReferenceFormulaCells": 0,
+          "functionCalls": {},
+          "sharedMasterCount": 0
+        },
+        {
+          "name": "CubeDump_DISCARDAFTUSE",
+          "state": "hidden",
+          "formulaCells": 0,
+          "cachedFormulaCells": 0,
+          "nonemptyCachedFormulaCells": 0,
+          "errorCachedFormulaCells": 0,
+          "noFunctionFormulaCells": 0,
+          "sharedFollowerCells": 0,
+          "externalReferenceFormulaCells": 0,
+          "functionCalls": {},
+          "sharedMasterCount": 0
+        }
+      ]
+    },
+    {
+      "role": "OUTPUT",
+      "sha256": "69742cc9c6fba170324c09c21986574a390c741ba26d371acdce570aeaac28ce",
+      "sheetCount": 5,
+      "formulaCells": 889,
+      "sheets": [
+        {
+          "name": "USCostofSupply",
+          "state": "visible",
+          "formulaCells": 817,
+          "cachedFormulaCells": 817,
+          "nonemptyCachedFormulaCells": 817,
+          "errorCachedFormulaCells": 0,
+          "noFunctionFormulaCells": 817,
+          "sharedFollowerCells": 802,
+          "externalReferenceFormulaCells": 0,
+          "type:shared": 816,
+          "type:normal": 1,
+          "functionCalls": {},
+          "sharedMasterCount": 14
+        },
+        {
+          "name": "BCPrices",
+          "state": "visible",
+          "formulaCells": 0,
+          "cachedFormulaCells": 0,
+          "nonemptyCachedFormulaCells": 0,
+          "errorCachedFormulaCells": 0,
+          "noFunctionFormulaCells": 0,
+          "sharedFollowerCells": 0,
+          "externalReferenceFormulaCells": 0,
+          "functionCalls": {},
+          "sharedMasterCount": 0
+        },
+        {
+          "name": "PremiumCalc",
+          "state": "visible",
+          "formulaCells": 64,
+          "cachedFormulaCells": 64,
+          "nonemptyCachedFormulaCells": 64,
+          "errorCachedFormulaCells": 0,
+          "noFunctionFormulaCells": 64,
+          "sharedFollowerCells": 49,
+          "externalReferenceFormulaCells": 0,
+          "type:shared": 64,
+          "functionCalls": {},
+          "sharedMasterCount": 15
+        },
+        {
+          "name": "AnnualPriceCalc",
+          "state": "visible",
+          "formulaCells": 8,
+          "cachedFormulaCells": 8,
+          "nonemptyCachedFormulaCells": 8,
+          "errorCachedFormulaCells": 0,
+          "noFunctionFormulaCells": 8,
+          "sharedFollowerCells": 7,
+          "externalReferenceFormulaCells": 0,
+          "type:shared": 8,
+          "functionCalls": {},
+          "sharedMasterCount": 1
+        },
+        {
+          "name": "PriceSeasonality",
+          "state": "visible",
+          "formulaCells": 0,
+          "cachedFormulaCells": 0,
+          "nonemptyCachedFormulaCells": 0,
+          "errorCachedFormulaCells": 0,
+          "noFunctionFormulaCells": 0,
+          "sharedFollowerCells": 0,
+          "externalReferenceFormulaCells": 0,
+          "functionCalls": {},
+          "sharedMasterCount": 0
+        }
+      ]
+    },
+    {
+      "role": "SUPPLY",
+      "sha256": "eefbcde6e6a5baeb3491bc2d37abe79a0e9a0ff511d1673ddee39f46ea64bd36",
+      "sheetCount": 23,
+      "formulaCells": 460803,
+      "sheets": [
+        {
+          "name": "Input Upstream ->",
+          "state": "visible",
+          "formulaCells": 0,
+          "cachedFormulaCells": 0,
+          "nonemptyCachedFormulaCells": 0,
+          "errorCachedFormulaCells": 0,
+          "noFunctionFormulaCells": 0,
+          "sharedFollowerCells": 0,
+          "externalReferenceFormulaCells": 0,
+          "functionCalls": {},
+          "sharedMasterCount": 0
+        },
+        {
+          "name": "ProductionAdjustment",
+          "state": "visible",
+          "formulaCells": 1374,
+          "cachedFormulaCells": 1374,
+          "nonemptyCachedFormulaCells": 605,
+          "errorCachedFormulaCells": 604,
+          "noFunctionFormulaCells": 391,
+          "sharedFollowerCells": 752,
+          "externalReferenceFormulaCells": 0,
+          "type:normal": 603,
+          "type:shared": 771,
+          "functionCalls": {
+            "AND": 946,
+            "COUNTIFS": 2,
+            "IF": 1165,
+            "ISBLANK": 25,
+            "SUMIFS": 381
+          },
+          "sharedMasterCount": 19
+        },
+        {
+          "name": "Input Midstream ->",
+          "state": "visible",
+          "formulaCells": 0,
+          "cachedFormulaCells": 0,
+          "nonemptyCachedFormulaCells": 0,
+          "errorCachedFormulaCells": 0,
+          "noFunctionFormulaCells": 0,
+          "sharedFollowerCells": 0,
+          "externalReferenceFormulaCells": 0,
+          "functionCalls": {},
+          "sharedMasterCount": 0
+        },
+        {
+          "name": "{USA}Hurricanes",
+          "state": "visible",
+          "formulaCells": 209,
+          "cachedFormulaCells": 209,
+          "nonemptyCachedFormulaCells": 209,
+          "errorCachedFormulaCells": 20,
+          "noFunctionFormulaCells": 0,
+          "sharedFollowerCells": 183,
+          "externalReferenceFormulaCells": 0,
+          "type:normal": 23,
+          "type:shared": 186,
+          "functionCalls": {
+            "AND": 188,
+            "COUNTIFS": 1,
+            "IF": 208,
+            "ISBLANK": 20
+          },
+          "sharedMasterCount": 3
+        },
+        {
+          "name": "LiqUtilAdjustment",
+          "state": "visible",
+          "formulaCells": 83,
+          "cachedFormulaCells": 83,
+          "nonemptyCachedFormulaCells": 83,
+          "errorCachedFormulaCells": 0,
+          "noFunctionFormulaCells": 0,
+          "sharedFollowerCells": 80,
+          "externalReferenceFormulaCells": 0,
+          "type:normal": 1,
+          "type:shared": 82,
+          "functionCalls": {
+            "IF": 83
+          },
+          "sharedMasterCount": 2
+        },
+        {
+          "name": "LiqProdAdjustment",
+          "state": "visible",
+          "formulaCells": 480,
+          "cachedFormulaCells": 480,
+          "nonemptyCachedFormulaCells": 480,
+          "errorCachedFormulaCells": 397,
+          "noFunctionFormulaCells": 0,
+          "sharedFollowerCells": 79,
+          "externalReferenceFormulaCells": 0,
+          "type:normal": 398,
+          "type:shared": 82,
+          "functionCalls": {
+            "COUNTBLANK": 397,
+            "IF": 877,
+            "ISBLANK": 397
+          },
+          "sharedMasterCount": 3
+        },
+        {
+          "name": "RegasAdjustment",
+          "state": "visible",
+          "formulaCells": 43464,
+          "cachedFormulaCells": 43464,
+          "nonemptyCachedFormulaCells": 43464,
+          "errorCachedFormulaCells": 0,
+          "noFunctionFormulaCells": 2232,
+          "sharedFollowerCells": 9892,
+          "externalReferenceFormulaCells": 0,
+          "type:normal": 33482,
+          "type:shared": 9982,
+          "functionCalls": {
+            "INDEX": 31248,
+            "MATCH": 62496,
+            "SUMIFS": 9612,
+            "VLOOKUP": 372
+          },
+          "sharedMasterCount": 90
+        },
+        {
+          "name": "PipelineAdjustment",
+          "state": "visible",
+          "formulaCells": 788,
+          "cachedFormulaCells": 788,
+          "nonemptyCachedFormulaCells": 640,
+          "errorCachedFormulaCells": 0,
+          "noFunctionFormulaCells": 193,
+          "sharedFollowerCells": 378,
+          "externalReferenceFormulaCells": 0,
+          "type:normal": 404,
+          "type:shared": 384,
+          "functionCalls": {
+            "AND": 193,
+            "COUNTIFS": 1,
+            "IF": 193,
+            "IFERROR": 401,
+            "INDEX": 15,
+            "ISBLANK": 193,
+            "MATCH": 15,
+            "VLOOKUP": 386
+          },
+          "sharedMasterCount": 6
+        },
+        {
+          "name": "BCProduction",
+          "state": "visible",
+          "formulaCells": 74378,
+          "cachedFormulaCells": 74378,
+          "nonemptyCachedFormulaCells": 74378,
+          "errorCachedFormulaCells": 0,
+          "noFunctionFormulaCells": 24834,
+          "sharedFollowerCells": 73201,
+          "externalReferenceFormulaCells": 0,
+          "type:shared": 74367,
+          "type:normal": 11,
+          "functionCalls": {
+            "IF": 49544,
+            "LEFT": 24772,
+            "LEN": 24772
+          },
+          "sharedMasterCount": 1166
+        },
+        {
+          "name": "BCHurricanes",
+          "state": "visible",
+          "formulaCells": 8,
+          "cachedFormulaCells": 8,
+          "nonemptyCachedFormulaCells": 8,
+          "errorCachedFormulaCells": 0,
+          "noFunctionFormulaCells": 0,
+          "sharedFollowerCells": 0,
+          "externalReferenceFormulaCells": 8,
+          "type:normal": 8,
+          "functionCalls": {
+            "VLOOKUP": 16
+          },
+          "sharedMasterCount": 0
+        },
+        {
+          "name": "BCLiquefaction",
+          "state": "visible",
+          "formulaCells": 104808,
+          "cachedFormulaCells": 104808,
+          "nonemptyCachedFormulaCells": 104808,
+          "errorCachedFormulaCells": 0,
+          "noFunctionFormulaCells": 104808,
+          "sharedFollowerCells": 103168,
+          "externalReferenceFormulaCells": 0,
+          "type:normal": 2,
+          "type:shared": 104806,
+          "functionCalls": {},
+          "sharedMasterCount": 1638
+        },
+        {
+          "name": "BCRegasification",
+          "state": "visible",
+          "formulaCells": 754,
+          "cachedFormulaCells": 754,
+          "nonemptyCachedFormulaCells": 744,
+          "errorCachedFormulaCells": 0,
+          "noFunctionFormulaCells": 382,
+          "sharedFollowerCells": 738,
+          "externalReferenceFormulaCells": 0,
+          "type:normal": 4,
+          "type:shared": 750,
+          "functionCalls": {
+            "MAX": 372
+          },
+          "sharedMasterCount": 12
+        },
+        {
+          "name": "BCPipeline",
+          "state": "visible",
+          "formulaCells": 0,
+          "cachedFormulaCells": 0,
+          "nonemptyCachedFormulaCells": 0,
+          "errorCachedFormulaCells": 0,
+          "noFunctionFormulaCells": 0,
+          "sharedFollowerCells": 0,
+          "externalReferenceFormulaCells": 0,
+          "functionCalls": {},
+          "sharedMasterCount": 0
+        },
+        {
+          "name": "LNG Summary",
+          "state": "visible",
+          "formulaCells": 0,
+          "cachedFormulaCells": 0,
+          "nonemptyCachedFormulaCells": 0,
+          "errorCachedFormulaCells": 0,
+          "noFunctionFormulaCells": 0,
+          "sharedFollowerCells": 0,
+          "externalReferenceFormulaCells": 0,
+          "functionCalls": {},
+          "sharedMasterCount": 0
+        },
+        {
+          "name": "LiqUtilAdjustment_backup",
+          "state": "visible",
+          "formulaCells": 47279,
+          "cachedFormulaCells": 47279,
+          "nonemptyCachedFormulaCells": 34660,
+          "errorCachedFormulaCells": 0,
+          "noFunctionFormulaCells": 12,
+          "sharedFollowerCells": 196,
+          "externalReferenceFormulaCells": 0,
+          "type:normal": 47074,
+          "type:shared": 205,
+          "functionCalls": {
+            "IF": 196,
+            "IFERROR": 47071,
+            "INDEX": 47071,
+            "MATCH": 47071
+          },
+          "sharedMasterCount": 9
+        },
+        {
+          "name": "LiqProdAdjustment_backup",
+          "state": "visible",
+          "formulaCells": 69449,
+          "cachedFormulaCells": 69449,
+          "nonemptyCachedFormulaCells": 34997,
+          "errorCachedFormulaCells": 0,
+          "noFunctionFormulaCells": 0,
+          "sharedFollowerCells": 192,
+          "externalReferenceFormulaCells": 0,
+          "type:normal": 69252,
+          "type:shared": 196,
+          "type:array": 1,
+          "functionCalls": {
+            "COUNTBLANK": 348,
+            "COUNTIFS": 1,
+            "IF": 892,
+            "IFERROR": 68904,
+            "INDEX": 68904,
+            "ISBLANK": 348,
+            "MATCH": 68904
+          },
+          "sharedMasterCount": 4
+        },
+        {
+          "name": "BCLiquefaction_backup",
+          "state": "visible",
+          "formulaCells": 117729,
+          "cachedFormulaCells": 117729,
+          "nonemptyCachedFormulaCells": 117729,
+          "errorCachedFormulaCells": 35091,
+          "noFunctionFormulaCells": 82638,
+          "sharedFollowerCells": 81321,
+          "externalReferenceFormulaCells": 35091,
+          "type:normal": 35109,
+          "type:shared": 82620,
+          "functionCalls": {
+            "SUMIFS": 35091
+          },
+          "sharedMasterCount": 1299
+        },
+        {
+          "name": "{USA}RigsLogic",
+          "state": "hidden",
+          "formulaCells": 0,
+          "cachedFormulaCells": 0,
+          "nonemptyCachedFormulaCells": 0,
+          "errorCachedFormulaCells": 0,
+          "noFunctionFormulaCells": 0,
+          "sharedFollowerCells": 0,
+          "externalReferenceFormulaCells": 0,
+          "functionCalls": {},
+          "sharedMasterCount": 0
+        },
+        {
+          "name": "{China}PolicyLogic",
+          "state": "hidden",
+          "formulaCells": 0,
+          "cachedFormulaCells": 0,
+          "nonemptyCachedFormulaCells": 0,
+          "errorCachedFormulaCells": 0,
+          "noFunctionFormulaCells": 0,
+          "sharedFollowerCells": 0,
+          "externalReferenceFormulaCells": 0,
+          "functionCalls": {},
+          "sharedMasterCount": 0
+        },
+        {
+          "name": "{USA}HurricanesLogic",
+          "state": "hidden",
+          "formulaCells": 0,
+          "cachedFormulaCells": 0,
+          "nonemptyCachedFormulaCells": 0,
+          "errorCachedFormulaCells": 0,
+          "noFunctionFormulaCells": 0,
+          "sharedFollowerCells": 0,
+          "externalReferenceFormulaCells": 0,
+          "functionCalls": {},
+          "sharedMasterCount": 0
+        },
+        {
+          "name": "RegasLogic",
+          "state": "hidden",
+          "formulaCells": 0,
+          "cachedFormulaCells": 0,
+          "nonemptyCachedFormulaCells": 0,
+          "errorCachedFormulaCells": 0,
+          "noFunctionFormulaCells": 0,
+          "sharedFollowerCells": 0,
+          "externalReferenceFormulaCells": 0,
+          "functionCalls": {},
+          "sharedMasterCount": 0
+        },
+        {
+          "name": "PipelineLogic",
+          "state": "hidden",
+          "formulaCells": 0,
+          "cachedFormulaCells": 0,
+          "nonemptyCachedFormulaCells": 0,
+          "errorCachedFormulaCells": 0,
+          "noFunctionFormulaCells": 0,
+          "sharedFollowerCells": 0,
+          "externalReferenceFormulaCells": 0,
+          "functionCalls": {},
+          "sharedMasterCount": 0
+        },
+        {
+          "name": "MonthlyAdjProduction",
+          "state": "hidden",
+          "formulaCells": 0,
+          "cachedFormulaCells": 0,
+          "nonemptyCachedFormulaCells": 0,
+          "errorCachedFormulaCells": 0,
+          "noFunctionFormulaCells": 0,
+          "sharedFollowerCells": 0,
+          "externalReferenceFormulaCells": 0,
+          "functionCalls": {},
+          "sharedMasterCount": 0
+        }
+      ]
+    },
+    {
+      "role": "TRADE",
+      "sha256": "b1211662aa00d49d9f03c1d732acd495cf99446ede69abde34565007b3819a31",
+      "sheetCount": 17,
+      "formulaCells": 702776,
+      "sheets": [
+        {
+          "name": "LNG_TradeRestrictionInput",
+          "state": "visible",
+          "formulaCells": 0,
+          "cachedFormulaCells": 0,
+          "nonemptyCachedFormulaCells": 0,
+          "errorCachedFormulaCells": 0,
+          "noFunctionFormulaCells": 0,
+          "sharedFollowerCells": 0,
+          "externalReferenceFormulaCells": 0,
+          "functionCalls": {},
+          "sharedMasterCount": 0
+        },
+        {
+          "name": "PNG_TradeRestrictionInput",
+          "state": "visible",
+          "formulaCells": 0,
+          "cachedFormulaCells": 0,
+          "nonemptyCachedFormulaCells": 0,
+          "errorCachedFormulaCells": 0,
+          "noFunctionFormulaCells": 0,
+          "sharedFollowerCells": 0,
+          "externalReferenceFormulaCells": 0,
+          "functionCalls": {},
+          "sharedMasterCount": 0
+        },
+        {
+          "name": "Sheet1",
+          "state": "hidden",
+          "formulaCells": 88,
+          "cachedFormulaCells": 88,
+          "nonemptyCachedFormulaCells": 88,
+          "errorCachedFormulaCells": 0,
+          "noFunctionFormulaCells": 88,
+          "sharedFollowerCells": 40,
+          "externalReferenceFormulaCells": 0,
+          "type:normal": 47,
+          "type:shared": 41,
+          "functionCalls": {},
+          "sharedMasterCount": 1
+        },
+        {
+          "name": "MidstreamContractInput",
+          "state": "visible",
+          "formulaCells": 166271,
+          "cachedFormulaCells": 166271,
+          "nonemptyCachedFormulaCells": 55417,
+          "errorCachedFormulaCells": 23023,
+          "noFunctionFormulaCells": 14683,
+          "sharedFollowerCells": 108981,
+          "externalReferenceFormulaCells": 0,
+          "type:array": 2,
+          "type:normal": 55513,
+          "type:shared": 110756,
+          "functionCalls": {
+            "CHOOSE": 2,
+            "IF": 126855,
+            "IFERROR": 74837,
+            "INDEX": 44186,
+            "ISBLANK": 81810,
+            "MATCH": 55588,
+            "MIN": 1996,
+            "OR": 1996,
+            "SUMIFS": 54656,
+            "_XLFN.UNIQUE": 2
+          },
+          "sharedMasterCount": 1775
+        },
+        {
+          "name": "ShippingCostInput",
+          "state": "visible",
+          "formulaCells": 342696,
+          "cachedFormulaCells": 342696,
+          "nonemptyCachedFormulaCells": 342696,
+          "errorCachedFormulaCells": 264124,
+          "noFunctionFormulaCells": 19394,
+          "sharedFollowerCells": 337290,
+          "externalReferenceFormulaCells": 0,
+          "type:shared": 342674,
+          "type:normal": 22,
+          "functionCalls": {
+            "AND": 94629,
+            "IF": 304455,
+            "IFERROR": 37887,
+            "INDEX": 492076,
+            "ISBLANK": 80,
+            "ISNUMBER": 77192,
+            "MATCH": 492076,
+            "SEARCH": 77192,
+            "SUM": 37852
+          },
+          "sharedMasterCount": 5384
+        },
+        {
+          "name": "MidstreamCapacityInput",
+          "state": "visible",
+          "formulaCells": 62236,
+          "cachedFormulaCells": 62236,
+          "nonemptyCachedFormulaCells": 48938,
+          "errorCachedFormulaCells": 3485,
+          "noFunctionFormulaCells": 26819,
+          "sharedFollowerCells": 56158,
+          "externalReferenceFormulaCells": 5167,
+          "type:normal": 5195,
+          "type:shared": 57041,
+          "functionCalls": {
+            "AND": 544,
+            "AVERAGEIFS": 336,
+            "IF": 25249,
+            "IFERROR": 10242,
+            "INDEX": 2991,
+            "MATCH": 3175,
+            "MAX": 704,
+            "MIN": 2008,
+            "OR": 183,
+            "SUMIFS": 13739
+          },
+          "sharedMasterCount": 883
+        },
+        {
+          "name": "UpstreamAdjLogicInput",
+          "state": "visible",
+          "formulaCells": 3361,
+          "cachedFormulaCells": 3361,
+          "nonemptyCachedFormulaCells": 3361,
+          "errorCachedFormulaCells": 0,
+          "noFunctionFormulaCells": 672,
+          "sharedFollowerCells": 1980,
+          "externalReferenceFormulaCells": 1344,
+          "type:normal": 1348,
+          "type:shared": 2013,
+          "functionCalls": {
+            "COUNTA": 1,
+            "IF": 2016,
+            "IFERROR": 1344,
+            "INDEX": 1344,
+            "ISNUMBER": 1344,
+            "MATCH": 1344,
+            "MAX": 672
+          },
+          "sharedMasterCount": 33
+        },
+        {
+          "name": "DemandAdjLogicInput",
+          "state": "visible",
+          "formulaCells": 15,
+          "cachedFormulaCells": 15,
+          "nonemptyCachedFormulaCells": 15,
+          "errorCachedFormulaCells": 0,
+          "noFunctionFormulaCells": 7,
+          "sharedFollowerCells": 0,
+          "externalReferenceFormulaCells": 0,
+          "type:normal": 15,
+          "functionCalls": {
+            "MAX": 8
+          },
+          "sharedMasterCount": 0
+        },
+        {
+          "name": "CostInput",
+          "state": "visible",
+          "formulaCells": 9871,
+          "cachedFormulaCells": 9871,
+          "nonemptyCachedFormulaCells": 8598,
+          "errorCachedFormulaCells": 0,
+          "noFunctionFormulaCells": 4788,
+          "sharedFollowerCells": 8577,
+          "externalReferenceFormulaCells": 517,
+          "type:shared": 8721,
+          "type:normal": 1150,
+          "functionCalls": {
+            "COUNTIFS": 1551,
+            "IF": 4049,
+            "ISNUMBER": 517,
+            "MATCH": 517,
+            "OR": 3015
+          },
+          "sharedMasterCount": 144
+        },
+        {
+          "name": "4.5 PriceModelInput",
+          "state": "visible",
+          "formulaCells": 267,
+          "cachedFormulaCells": 267,
+          "nonemptyCachedFormulaCells": 267,
+          "errorCachedFormulaCells": 163,
+          "noFunctionFormulaCells": 0,
+          "sharedFollowerCells": 0,
+          "externalReferenceFormulaCells": 267,
+          "type:normal": 267,
+          "functionCalls": {
+            "IFERROR": 104,
+            "INDEX": 400,
+            "MATCH": 400,
+            "SUMIF": 171
+          },
+          "sharedMasterCount": 0
+        },
+        {
+          "name": "LNGExportRestictionInput",
+          "state": "visible",
+          "formulaCells": 0,
+          "cachedFormulaCells": 0,
+          "nonemptyCachedFormulaCells": 0,
+          "errorCachedFormulaCells": 0,
+          "noFunctionFormulaCells": 0,
+          "sharedFollowerCells": 0,
+          "externalReferenceFormulaCells": 0,
+          "functionCalls": {},
+          "sharedMasterCount": 0
+        },
+        {
+          "name": "backupLNG_TradeRestrictionInput",
+          "state": "visible",
+          "formulaCells": 0,
+          "cachedFormulaCells": 0,
+          "nonemptyCachedFormulaCells": 0,
+          "errorCachedFormulaCells": 0,
+          "noFunctionFormulaCells": 0,
+          "sharedFollowerCells": 0,
+          "externalReferenceFormulaCells": 0,
+          "functionCalls": {},
+          "sharedMasterCount": 0
+        },
+        {
+          "name": "backup_MidstreamContractInput",
+          "state": "visible",
+          "formulaCells": 117970,
+          "cachedFormulaCells": 117970,
+          "nonemptyCachedFormulaCells": 66318,
+          "errorCachedFormulaCells": 25913,
+          "noFunctionFormulaCells": 11463,
+          "sharedFollowerCells": 77445,
+          "externalReferenceFormulaCells": 0,
+          "type:array": 2,
+          "type:normal": 39419,
+          "type:shared": 78549,
+          "functionCalls": {
+            "CHOOSE": 2,
+            "IF": 70633,
+            "IFERROR": 52296,
+            "INDEX": 24865,
+            "ISBLANK": 35248,
+            "MATCH": 29827,
+            "MIN": 1996,
+            "OR": 1996,
+            "SUMIFS": 41776,
+            "_XLFN.UNIQUE": 2
+          },
+          "sharedMasterCount": 1104
+        },
+        {
+          "name": "Industry research",
+          "state": "hidden",
+          "formulaCells": 1,
+          "cachedFormulaCells": 1,
+          "nonemptyCachedFormulaCells": 1,
+          "errorCachedFormulaCells": 1,
+          "noFunctionFormulaCells": 0,
+          "sharedFollowerCells": 0,
+          "externalReferenceFormulaCells": 0,
+          "type:array": 1,
+          "functionCalls": {
+            "_XLFN.UNIQUE": 1
+          },
+          "sharedMasterCount": 0
+        },
+        {
+          "name": "net exporter",
+          "state": "hidden",
+          "formulaCells": 0,
+          "cachedFormulaCells": 0,
+          "nonemptyCachedFormulaCells": 0,
+          "errorCachedFormulaCells": 0,
+          "noFunctionFormulaCells": 0,
+          "sharedFollowerCells": 0,
+          "externalReferenceFormulaCells": 0,
+          "functionCalls": {},
+          "sharedMasterCount": 0
+        },
+        {
+          "name": "pipeline cap",
+          "state": "hidden",
+          "formulaCells": 0,
+          "cachedFormulaCells": 0,
+          "nonemptyCachedFormulaCells": 0,
+          "errorCachedFormulaCells": 0,
+          "noFunctionFormulaCells": 0,
+          "sharedFollowerCells": 0,
+          "externalReferenceFormulaCells": 0,
+          "functionCalls": {},
+          "sharedMasterCount": 0
+        },
+        {
+          "name": "pipeline contract",
+          "state": "hidden",
+          "formulaCells": 0,
+          "cachedFormulaCells": 0,
+          "nonemptyCachedFormulaCells": 0,
+          "errorCachedFormulaCells": 0,
+          "noFunctionFormulaCells": 0,
+          "sharedFollowerCells": 0,
+          "externalReferenceFormulaCells": 0,
+          "functionCalls": {},
+          "sharedMasterCount": 0
+        }
+      ]
+    }
+  ],
+  "functions": [
+    {
+      "name": "AND",
+      "poi": {
+        "status": "REGISTERED_SUPPORTED",
+        "canonicalName": "AND",
+        "canonicalRegistered": true,
+        "formulaExecutionVerified": false
+      },
+      "cellCount": 189698,
+      "cellCallCount": 242338,
+      "uses": [
+        {
+          "role": "DEMAND",
+          "sheet": "CoalGasAdjustment",
+          "kind": "cell",
+          "expressionCount": 7956,
+          "callCount": 7956,
+          "samples": [
+            "D12",
+            "F12",
+            "J12",
+            "L12",
+            "D13"
+          ]
+        },
+        {
+          "role": "DEMAND",
+          "sheet": "ElectrificationRateAdjustment",
+          "kind": "cell",
+          "expressionCount": 3978,
+          "callCount": 3978,
+          "samples": [
+            "E12",
+            "G12",
+            "E13",
+            "G13",
+            "E14"
+          ]
+        },
+        {
+          "role": "DEMAND",
+          "sheet": "GDPPopulationAdjustment",
+          "kind": "cell",
+          "expressionCount": 7956,
+          "callCount": 13923,
+          "samples": [
+            "D12",
+            "G12",
+            "L12",
+            "N12",
+            "D13"
+          ]
+        },
+        {
+          "role": "DEMAND",
+          "sheet": "HydrogenAdjustment",
+          "kind": "cell",
+          "expressionCount": 15978,
+          "callCount": 15978,
+          "samples": [
+            "D12",
+            "F12",
+            "D13",
+            "F13",
+            "D14"
+          ]
+        },
+        {
+          "role": "DEMAND",
+          "sheet": "LNGBunkeringAdjustment",
+          "kind": "cell",
+          "expressionCount": 172,
+          "callCount": 172,
+          "samples": [
+            "D12",
+            "F12",
+            "J12",
+            "L12",
+            "D13"
+          ]
+        },
+        {
+          "role": "DEMAND",
+          "sheet": "PMIAdjustment",
+          "kind": "cell",
+          "expressionCount": 16046,
+          "callCount": 16046,
+          "samples": [
+            "M7",
+            "M8",
+            "M9",
+            "M10",
+            "M11"
+          ]
+        },
+        {
+          "role": "DEMAND",
+          "sheet": "PowerMixAdjustment",
+          "kind": "cell",
+          "expressionCount": 31892,
+          "callCount": 31892,
+          "samples": [
+            "E12",
+            "E13",
+            "E14",
+            "N14",
+            "E15"
+          ]
+        },
+        {
+          "role": "DEMAND",
+          "sheet": "WeatherAdjustment",
+          "kind": "cell",
+          "expressionCount": 47908,
+          "callCount": 55893,
+          "samples": [
+            "N7",
+            "N8",
+            "N9",
+            "N10",
+            "N11"
+          ]
+        },
+        {
+          "role": "SUPPLY",
+          "sheet": "BCRegasification",
+          "kind": "conditionalFormatting",
+          "expressionCount": 1,
+          "callCount": 1,
+          "samples": [
+            "G8:XFD1048576"
+          ]
+        },
+        {
+          "role": "SUPPLY",
+          "sheet": "LiqProdAdjustment",
+          "kind": "conditionalFormatting",
+          "expressionCount": 4,
+          "callCount": 4,
+          "samples": [
+            "B11:C1048576",
+            "D11:F1048576",
+            "G7:XFD8",
+            "G11:XFD1048576"
+          ]
+        },
+        {
+          "role": "SUPPLY",
+          "sheet": "LiqUtilAdjustment",
+          "kind": "conditionalFormatting",
+          "expressionCount": 4,
+          "callCount": 4,
+          "samples": [
+            "B11:C1048576",
+            "D11:F1048576",
+            "G7:XFD8",
+            "G11:XFD1048576"
+          ]
+        },
+        {
+          "role": "SUPPLY",
+          "sheet": "PipelineAdjustment",
+          "kind": "cell",
+          "expressionCount": 193,
+          "callCount": 193,
+          "samples": [
+            "I8",
+            "I9",
+            "I10",
+            "I11",
+            "I12"
+          ]
+        },
+        {
+          "role": "SUPPLY",
+          "sheet": "ProductionAdjustment",
+          "kind": "cell",
+          "expressionCount": 382,
+          "callCount": 946,
+          "samples": [
+            "O8",
+            "O9",
+            "O10",
+            "O11",
+            "O12"
+          ]
+        },
+        {
+          "role": "SUPPLY",
+          "sheet": "ProductionAdjustment",
+          "kind": "conditionalFormatting",
+          "expressionCount": 2,
+          "callCount": 2,
+          "samples": [
+            "I8:K1048576",
+            "M8:M1048576"
+          ]
+        },
+        {
+          "role": "SUPPLY",
+          "sheet": "RegasAdjustment",
+          "kind": "conditionalFormatting",
+          "expressionCount": 2,
+          "callCount": 2,
+          "samples": [
+            "H9:XFD10",
+            "H11:XFD1048576"
+          ]
+        },
+        {
+          "role": "SUPPLY",
+          "sheet": "{USA}Hurricanes",
+          "kind": "cell",
+          "expressionCount": 188,
+          "callCount": 188,
+          "samples": [
+            "E13",
+            "E14",
+            "E15",
+            "E16",
+            "E17"
+          ]
+        },
+        {
+          "role": "SUPPLY",
+          "sheet": "{USA}Hurricanes",
+          "kind": "conditionalFormatting",
+          "expressionCount": 1,
+          "callCount": 1,
+          "samples": [
+            "B13:D1048576"
+          ]
+        },
+        {
+          "role": "TRADE",
+          "sheet": "LNG_TradeRestrictionInput",
+          "kind": "conditionalFormatting",
+          "expressionCount": 1,
+          "callCount": 1,
+          "samples": [
+            "B6:J1048576"
+          ]
+        },
+        {
+          "role": "TRADE",
+          "sheet": "MidstreamCapacityInput",
+          "kind": "cell",
+          "expressionCount": 272,
+          "callCount": 544,
+          "samples": [
+            "DP4",
+            "DQ4",
+            "DP5",
+            "DQ5",
+            "DP6"
+          ]
+        },
+        {
+          "role": "TRADE",
+          "sheet": "PNG_TradeRestrictionInput",
+          "kind": "conditionalFormatting",
+          "expressionCount": 1,
+          "callCount": 1,
+          "samples": [
+            "B6:I1048576"
+          ]
+        },
+        {
+          "role": "TRADE",
+          "sheet": "ShippingCostInput",
+          "kind": "cell",
+          "expressionCount": 56777,
+          "callCount": 94629,
+          "samples": [
+            "R4",
+            "T4",
+            "L5",
+            "R5",
+            "T5"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "AVERAGEIFS",
+      "poi": {
+        "status": "REGISTERED_SUPPORTED",
+        "canonicalName": "AVERAGEIFS",
+        "canonicalRegistered": true,
+        "formulaExecutionVerified": false
+      },
+      "cellCount": 304,
+      "cellCallCount": 336,
+      "uses": [
+        {
+          "role": "TRADE",
+          "sheet": "MidstreamCapacityInput",
+          "kind": "cell",
+          "expressionCount": 304,
+          "callCount": 336,
+          "samples": [
+            "DT4",
+            "EU4",
+            "EV4",
+            "FI4",
+            "FL4"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "CHOOSE",
+      "poi": {
+        "status": "REGISTERED_SUPPORTED",
+        "canonicalName": "CHOOSE",
+        "canonicalRegistered": true,
+        "formulaExecutionVerified": false
+      },
+      "cellCount": 4,
+      "cellCallCount": 4,
+      "uses": [
+        {
+          "role": "TRADE",
+          "sheet": "MidstreamContractInput",
+          "kind": "cell",
+          "expressionCount": 2,
+          "callCount": 2,
+          "samples": [
+            "CK4",
+            "CQ4"
+          ]
+        },
+        {
+          "role": "TRADE",
+          "sheet": "backup_MidstreamContractInput",
+          "kind": "cell",
+          "expressionCount": 2,
+          "callCount": 2,
+          "samples": [
+            "CK4",
+            "CQ4"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "COUNTA",
+      "poi": {
+        "status": "REGISTERED_SUPPORTED",
+        "canonicalName": "COUNTA",
+        "canonicalRegistered": true,
+        "formulaExecutionVerified": false
+      },
+      "cellCount": 1,
+      "cellCallCount": 1,
+      "uses": [
+        {
+          "role": "TRADE",
+          "sheet": "UpstreamAdjLogicInput",
+          "kind": "cell",
+          "expressionCount": 1,
+          "callCount": 1,
+          "samples": [
+            "U2"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "COUNTBLANK",
+      "poi": {
+        "status": "REGISTERED_SUPPORTED",
+        "canonicalName": "COUNTBLANK",
+        "canonicalRegistered": true,
+        "formulaExecutionVerified": false
+      },
+      "cellCount": 745,
+      "cellCallCount": 745,
+      "uses": [
+        {
+          "role": "SUPPLY",
+          "sheet": "LiqProdAdjustment",
+          "kind": "cell",
+          "expressionCount": 397,
+          "callCount": 397,
+          "samples": [
+            "CM11",
+            "CM12",
+            "CM13",
+            "CM14",
+            "CM15"
+          ]
+        },
+        {
+          "role": "SUPPLY",
+          "sheet": "LiqProdAdjustment_backup",
+          "kind": "cell",
+          "expressionCount": 348,
+          "callCount": 348,
+          "samples": [
+            "DB11",
+            "DB12",
+            "DB13",
+            "DB14",
+            "DB15"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "COUNTIF",
+      "poi": {
+        "status": "REGISTERED_SUPPORTED",
+        "canonicalName": "COUNTIF",
+        "canonicalRegistered": true,
+        "formulaExecutionVerified": false
+      },
+      "cellCount": 8,
+      "cellCallCount": 12,
+      "uses": [
+        {
+          "role": "DEMAND",
+          "sheet": "CoalGasAdjustment",
+          "kind": "cell",
+          "expressionCount": 1,
+          "callCount": 2,
+          "samples": [
+            "N2"
+          ]
+        },
+        {
+          "role": "DEMAND",
+          "sheet": "ElectrificationRateAdjustment",
+          "kind": "cell",
+          "expressionCount": 1,
+          "callCount": 1,
+          "samples": [
+            "N2"
+          ]
+        },
+        {
+          "role": "DEMAND",
+          "sheet": "GDPPopulationAdjustment",
+          "kind": "cell",
+          "expressionCount": 1,
+          "callCount": 2,
+          "samples": [
+            "N2"
+          ]
+        },
+        {
+          "role": "DEMAND",
+          "sheet": "HydrogenAdjustment",
+          "kind": "cell",
+          "expressionCount": 1,
+          "callCount": 1,
+          "samples": [
+            "N2"
+          ]
+        },
+        {
+          "role": "DEMAND",
+          "sheet": "LNGBunkeringAdjustment",
+          "kind": "cell",
+          "expressionCount": 1,
+          "callCount": 2,
+          "samples": [
+            "N2"
+          ]
+        },
+        {
+          "role": "DEMAND",
+          "sheet": "PMIAdjustment",
+          "kind": "cell",
+          "expressionCount": 1,
+          "callCount": 1,
+          "samples": [
+            "N2"
+          ]
+        },
+        {
+          "role": "DEMAND",
+          "sheet": "PowerMixAdjustment",
+          "kind": "cell",
+          "expressionCount": 1,
+          "callCount": 1,
+          "samples": [
+            "O2"
+          ]
+        },
+        {
+          "role": "DEMAND",
+          "sheet": "WeatherAdjustment",
+          "kind": "cell",
+          "expressionCount": 1,
+          "callCount": 2,
+          "samples": [
+            "N2"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "COUNTIFS",
+      "poi": {
+        "status": "REGISTERED_SUPPORTED",
+        "canonicalName": "COUNTIFS",
+        "canonicalRegistered": true,
+        "formulaExecutionVerified": false
+      },
+      "cellCount": 1555,
+      "cellCallCount": 1556,
+      "uses": [
+        {
+          "role": "SUPPLY",
+          "sheet": "LiqProdAdjustment_backup",
+          "kind": "cell",
+          "expressionCount": 1,
+          "callCount": 1,
+          "samples": [
+            "J3"
+          ]
+        },
+        {
+          "role": "SUPPLY",
+          "sheet": "PipelineAdjustment",
+          "kind": "cell",
+          "expressionCount": 1,
+          "callCount": 1,
+          "samples": [
+            "I3"
+          ]
+        },
+        {
+          "role": "SUPPLY",
+          "sheet": "ProductionAdjustment",
+          "kind": "cell",
+          "expressionCount": 1,
+          "callCount": 2,
+          "samples": [
+            "M3"
+          ]
+        },
+        {
+          "role": "SUPPLY",
+          "sheet": "{USA}Hurricanes",
+          "kind": "cell",
+          "expressionCount": 1,
+          "callCount": 1,
+          "samples": [
+            "I3"
+          ]
+        },
+        {
+          "role": "TRADE",
+          "sheet": "CostInput",
+          "kind": "cell",
+          "expressionCount": 1551,
+          "callCount": 1551,
+          "samples": [
+            "AO3",
+            "AP3",
+            "AQ3",
+            "AO4",
+            "AP4"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "IF",
+      "poi": {
+        "status": "REGISTERED_SUPPORTED",
+        "canonicalName": "IF",
+        "canonicalRegistered": true,
+        "formulaExecutionVerified": false
+      },
+      "cellCount": 641737,
+      "cellCallCount": 1026052,
+      "uses": [
+        {
+          "role": "DEMAND",
+          "sheet": "CoalGasAdjustment",
+          "kind": "cell",
+          "expressionCount": 11994,
+          "callCount": 19950,
+          "samples": [
+            "B7",
+            "C7",
+            "D7",
+            "E7",
+            "F7"
+          ]
+        },
+        {
+          "role": "DEMAND",
+          "sheet": "ElectrificationRateAdjustment",
+          "kind": "cell",
+          "expressionCount": 4008,
+          "callCount": 5997,
+          "samples": [
+            "B7",
+            "C7",
+            "D7",
+            "E7",
+            "F7"
+          ]
+        },
+        {
+          "role": "DEMAND",
+          "sheet": "GDPPopulationAdjustment",
+          "kind": "cell",
+          "expressionCount": 8012,
+          "callCount": 19946,
+          "samples": [
+            "D6",
+            "B7",
+            "C7",
+            "D7",
+            "E7"
+          ]
+        },
+        {
+          "role": "DEMAND",
+          "sheet": "HydrogenAdjustment",
+          "kind": "cell",
+          "expressionCount": 16003,
+          "callCount": 16003,
+          "samples": [
+            "B7",
+            "C7",
+            "D7",
+            "E7",
+            "F7"
+          ]
+        },
+        {
+          "role": "DEMAND",
+          "sheet": "LNGBunkeringAdjustment",
+          "kind": "cell",
+          "expressionCount": 222,
+          "callCount": 308,
+          "samples": [
+            "B7",
+            "C7",
+            "D7",
+            "E7",
+            "F7"
+          ]
+        },
+        {
+          "role": "DEMAND",
+          "sheet": "PMIAdjustment",
+          "kind": "cell",
+          "expressionCount": 32163,
+          "callCount": 32163,
+          "samples": [
+            "B7",
+            "C7",
+            "D7",
+            "E7",
+            "F7"
+          ]
+        },
+        {
+          "role": "DEMAND",
+          "sheet": "PowerMixAdjustment",
+          "kind": "cell",
+          "expressionCount": 31922,
+          "callCount": 63798,
+          "samples": [
+            "B7",
+            "C7",
+            "D7",
+            "E7",
+            "F7"
+          ]
+        },
+        {
+          "role": "DEMAND",
+          "sheet": "WeatherAdjustment",
+          "kind": "cell",
+          "expressionCount": 48023,
+          "callCount": 56008,
+          "samples": [
+            "B7",
+            "C7",
+            "D7",
+            "E7",
+            "F7"
+          ]
+        },
+        {
+          "role": "DEMAND",
+          "sheet": "WeatherInput",
+          "kind": "cell",
+          "expressionCount": 100408,
+          "callCount": 225464,
+          "samples": [
+            "AP9",
+            "AQ9",
+            "AR9",
+            "AS9",
+            "AT9"
+          ]
+        },
+        {
+          "role": "SUPPLY",
+          "sheet": "BCProduction",
+          "kind": "cell",
+          "expressionCount": 24772,
+          "callCount": 49544,
+          "samples": [
+            "B8",
+            "B9",
+            "B10",
+            "B11",
+            "B12"
+          ]
+        },
+        {
+          "role": "SUPPLY",
+          "sheet": "LiqProdAdjustment",
+          "kind": "cell",
+          "expressionCount": 480,
+          "callCount": 877,
+          "samples": [
+            "H7",
+            "I7",
+            "J7",
+            "K7",
+            "L7"
+          ]
+        },
+        {
+          "role": "SUPPLY",
+          "sheet": "LiqProdAdjustment_backup",
+          "kind": "cell",
+          "expressionCount": 544,
+          "callCount": 892,
+          "samples": [
+            "H7",
+            "I7",
+            "J7",
+            "K7",
+            "L7"
+          ]
+        },
+        {
+          "role": "SUPPLY",
+          "sheet": "LiqUtilAdjustment",
+          "kind": "cell",
+          "expressionCount": 83,
+          "callCount": 83,
+          "samples": [
+            "H7",
+            "I7",
+            "J7",
+            "K7",
+            "L7"
+          ]
+        },
+        {
+          "role": "SUPPLY",
+          "sheet": "LiqUtilAdjustment_backup",
+          "kind": "cell",
+          "expressionCount": 196,
+          "callCount": 196,
+          "samples": [
+            "H7",
+            "I7",
+            "J7",
+            "K7",
+            "L7"
+          ]
+        },
+        {
+          "role": "SUPPLY",
+          "sheet": "PipelineAdjustment",
+          "kind": "cell",
+          "expressionCount": 193,
+          "callCount": 193,
+          "samples": [
+            "I8",
+            "I9",
+            "I10",
+            "I11",
+            "I12"
+          ]
+        },
+        {
+          "role": "SUPPLY",
+          "sheet": "ProductionAdjustment",
+          "kind": "cell",
+          "expressionCount": 601,
+          "callCount": 1165,
+          "samples": [
+            "B8",
+            "C8",
+            "E8",
+            "F8",
+            "G8"
+          ]
+        },
+        {
+          "role": "SUPPLY",
+          "sheet": "{USA}Hurricanes",
+          "kind": "cell",
+          "expressionCount": 208,
+          "callCount": 208,
+          "samples": [
+            "B8",
+            "C8",
+            "D8",
+            "E8",
+            "B9"
+          ]
+        },
+        {
+          "role": "TRADE",
+          "sheet": "CostInput",
+          "kind": "cell",
+          "expressionCount": 4049,
+          "callCount": 4049,
+          "samples": [
+            "E3",
+            "L3",
+            "S3",
+            "Z3",
+            "AH3"
+          ]
+        },
+        {
+          "role": "TRADE",
+          "sheet": "MidstreamCapacityInput",
+          "kind": "cell",
+          "expressionCount": 24976,
+          "callCount": 25249,
+          "samples": [
+            "AG1",
+            "E4",
+            "F4",
+            "H4",
+            "I4"
+          ]
+        },
+        {
+          "role": "TRADE",
+          "sheet": "MidstreamContractInput",
+          "kind": "cell",
+          "expressionCount": 102766,
+          "callCount": 126855,
+          "samples": [
+            "E5",
+            "F5",
+            "G5",
+            "H5",
+            "I5"
+          ]
+        },
+        {
+          "role": "TRADE",
+          "sheet": "ShippingCostInput",
+          "kind": "cell",
+          "expressionCount": 171894,
+          "callCount": 304455,
+          "samples": [
+            "R4",
+            "T4",
+            "U4",
+            "V4",
+            "W4"
+          ]
+        },
+        {
+          "role": "TRADE",
+          "sheet": "UpstreamAdjLogicInput",
+          "kind": "cell",
+          "expressionCount": 2016,
+          "callCount": 2016,
+          "samples": [
+            "M3",
+            "O3",
+            "Q3",
+            "M4",
+            "O4"
+          ]
+        },
+        {
+          "role": "TRADE",
+          "sheet": "backup_MidstreamContractInput",
+          "kind": "cell",
+          "expressionCount": 56204,
+          "callCount": 70633,
+          "samples": [
+            "E5",
+            "F5",
+            "G5",
+            "H5",
+            "I5"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "IFERROR",
+      "poi": {
+        "status": "REGISTERED_SUPPORTED",
+        "canonicalName": "IFERROR",
+        "canonicalRegistered": true,
+        "formulaExecutionVerified": false
+      },
+      "cellCount": 330329,
+      "cellCallCount": 366577,
+      "uses": [
+        {
+          "role": "DEMAND",
+          "sheet": "HydrogenInput",
+          "kind": "cell",
+          "expressionCount": 728,
+          "callCount": 728,
+          "samples": [
+            "D9",
+            "D10",
+            "D11",
+            "D12",
+            "D13"
+          ]
+        },
+        {
+          "role": "DEMAND",
+          "sheet": "LNGBunkeringInput",
+          "kind": "cell",
+          "expressionCount": 96,
+          "callCount": 96,
+          "samples": [
+            "D9",
+            "E9",
+            "D10",
+            "E10",
+            "D11"
+          ]
+        },
+        {
+          "role": "DEMAND",
+          "sheet": "PMIInput",
+          "kind": "cell",
+          "expressionCount": 8155,
+          "callCount": 8155,
+          "samples": [
+            "L9",
+            "M9",
+            "N9",
+            "O9",
+            "P9"
+          ]
+        },
+        {
+          "role": "DEMAND",
+          "sheet": "WeatherInput",
+          "kind": "cell",
+          "expressionCount": 32256,
+          "callCount": 64512,
+          "samples": [
+            "F9",
+            "G9",
+            "H9",
+            "I9",
+            "J9"
+          ]
+        },
+        {
+          "role": "SUPPLY",
+          "sheet": "LiqProdAdjustment_backup",
+          "kind": "cell",
+          "expressionCount": 68904,
+          "callCount": 68904,
+          "samples": [
+            "G11",
+            "H11",
+            "I11",
+            "J11",
+            "K11"
+          ]
+        },
+        {
+          "role": "SUPPLY",
+          "sheet": "LiqUtilAdjustment_backup",
+          "kind": "cell",
+          "expressionCount": 47071,
+          "callCount": 47071,
+          "samples": [
+            "H11",
+            "I11",
+            "DH11",
+            "DI11",
+            "DJ11"
+          ]
+        },
+        {
+          "role": "SUPPLY",
+          "sheet": "PipelineAdjustment",
+          "kind": "cell",
+          "expressionCount": 401,
+          "callCount": 401,
+          "samples": [
+            "B8",
+            "C8",
+            "D8",
+            "E8",
+            "F8"
+          ]
+        },
+        {
+          "role": "TRADE",
+          "sheet": "4.5 PriceModelInput",
+          "kind": "cell",
+          "expressionCount": 104,
+          "callCount": 104,
+          "samples": [
+            "T4",
+            "X4",
+            "T5",
+            "X5",
+            "T6"
+          ]
+        },
+        {
+          "role": "TRADE",
+          "sheet": "MidstreamCapacityInput",
+          "kind": "cell",
+          "expressionCount": 10242,
+          "callCount": 10242,
+          "samples": [
+            "AG1",
+            "AF4",
+            "CM4",
+            "CN4",
+            "CO4"
+          ]
+        },
+        {
+          "role": "TRADE",
+          "sheet": "MidstreamContractInput",
+          "kind": "cell",
+          "expressionCount": 72841,
+          "callCount": 74837,
+          "samples": [
+            "G5",
+            "H5",
+            "I5",
+            "J5",
+            "X5"
+          ]
+        },
+        {
+          "role": "TRADE",
+          "sheet": "ShippingCostInput",
+          "kind": "cell",
+          "expressionCount": 37887,
+          "callCount": 37887,
+          "samples": [
+            "V4",
+            "X4",
+            "V5",
+            "X5",
+            "V6"
+          ]
+        },
+        {
+          "role": "TRADE",
+          "sheet": "UpstreamAdjLogicInput",
+          "kind": "cell",
+          "expressionCount": 1344,
+          "callCount": 1344,
+          "samples": [
+            "M3",
+            "O3",
+            "M4",
+            "O4",
+            "M5"
+          ]
+        },
+        {
+          "role": "TRADE",
+          "sheet": "backup_MidstreamContractInput",
+          "kind": "cell",
+          "expressionCount": 50300,
+          "callCount": 52296,
+          "samples": [
+            "G5",
+            "H5",
+            "I5",
+            "J5",
+            "X5"
+          ]
+        },
+        {
+          "role": "TRADE",
+          "sheet": "package:xl/tables/table6.xml",
+          "kind": "calculatedColumnFormula",
+          "expressionCount": 2,
+          "callCount": 2,
+          "samples": [
+            "xl/tables/table6.xml"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "INDEX",
+      "poi": {
+        "status": "REGISTERED_SUPPORTED",
+        "canonicalName": "INDEX",
+        "canonicalRegistered": true,
+        "formulaExecutionVerified": false
+      },
+      "cellCount": 570412,
+      "cellCallCount": 901904,
+      "uses": [
+        {
+          "role": "DEMAND",
+          "sheet": "CoalGasAdjustment",
+          "kind": "cell",
+          "expressionCount": 3978,
+          "callCount": 7956,
+          "samples": [
+            "D12",
+            "J12",
+            "D13",
+            "J13",
+            "D14"
+          ]
+        },
+        {
+          "role": "DEMAND",
+          "sheet": "ElectrificationRateAdjustment",
+          "kind": "cell",
+          "expressionCount": 1989,
+          "callCount": 1989,
+          "samples": [
+            "E12",
+            "E13",
+            "E14",
+            "E15",
+            "E16"
+          ]
+        },
+        {
+          "role": "DEMAND",
+          "sheet": "GDPPopulationAdjustment",
+          "kind": "cell",
+          "expressionCount": 3978,
+          "callCount": 5967,
+          "samples": [
+            "D12",
+            "L12",
+            "D13",
+            "L13",
+            "D14"
+          ]
+        },
+        {
+          "role": "DEMAND",
+          "sheet": "HydrogenAdjustment",
+          "kind": "cell",
+          "expressionCount": 7989,
+          "callCount": 7989,
+          "samples": [
+            "D12",
+            "D13",
+            "D14",
+            "D15",
+            "D16"
+          ]
+        },
+        {
+          "role": "DEMAND",
+          "sheet": "HydrogenInput",
+          "kind": "cell",
+          "expressionCount": 728,
+          "callCount": 728,
+          "samples": [
+            "D9",
+            "D10",
+            "D11",
+            "D12",
+            "D13"
+          ]
+        },
+        {
+          "role": "DEMAND",
+          "sheet": "LNGBunkeringAdjustment",
+          "kind": "cell",
+          "expressionCount": 86,
+          "callCount": 86,
+          "samples": [
+            "D12",
+            "J12",
+            "D13",
+            "J13",
+            "D14"
+          ]
+        },
+        {
+          "role": "DEMAND",
+          "sheet": "LNGBunkeringInput",
+          "kind": "cell",
+          "expressionCount": 96,
+          "callCount": 96,
+          "samples": [
+            "D9",
+            "E9",
+            "D10",
+            "E10",
+            "D11"
+          ]
+        },
+        {
+          "role": "DEMAND",
+          "sheet": "PMIAdjustment",
+          "kind": "cell",
+          "expressionCount": 8069,
+          "callCount": 8069,
+          "samples": [
+            "K7",
+            "K8",
+            "K9",
+            "K10",
+            "K11"
+          ]
+        },
+        {
+          "role": "DEMAND",
+          "sheet": "PMIInput",
+          "kind": "cell",
+          "expressionCount": 16219,
+          "callCount": 16219,
+          "samples": [
+            "L9",
+            "M9",
+            "N9",
+            "O9",
+            "P9"
+          ]
+        },
+        {
+          "role": "DEMAND",
+          "sheet": "PowerMixAdjustment",
+          "kind": "cell",
+          "expressionCount": 15954,
+          "callCount": 15954,
+          "samples": [
+            "E12",
+            "E13",
+            "E14",
+            "N14",
+            "E15"
+          ]
+        },
+        {
+          "role": "DEMAND",
+          "sheet": "WeatherAdjustment",
+          "kind": "cell",
+          "expressionCount": 15974,
+          "callCount": 23959,
+          "samples": [
+            "N7",
+            "N8",
+            "N9",
+            "N10",
+            "N11"
+          ]
+        },
+        {
+          "role": "DEMAND",
+          "sheet": "WeatherInput",
+          "kind": "cell",
+          "expressionCount": 50400,
+          "callCount": 98784,
+          "samples": [
+            "B9",
+            "C9",
+            "F9",
+            "G9",
+            "H9"
+          ]
+        },
+        {
+          "role": "DEMAND",
+          "sheet": "WeatherLogicInput",
+          "kind": "cell",
+          "expressionCount": 1008,
+          "callCount": 1008,
+          "samples": [
+            "B9",
+            "C9",
+            "G9",
+            "H9",
+            "L9"
+          ]
+        },
+        {
+          "role": "SUPPLY",
+          "sheet": "LiqProdAdjustment_backup",
+          "kind": "cell",
+          "expressionCount": 68904,
+          "callCount": 68904,
+          "samples": [
+            "G11",
+            "H11",
+            "I11",
+            "J11",
+            "K11"
+          ]
+        },
+        {
+          "role": "SUPPLY",
+          "sheet": "LiqUtilAdjustment_backup",
+          "kind": "cell",
+          "expressionCount": 47071,
+          "callCount": 47071,
+          "samples": [
+            "H11",
+            "I11",
+            "DH11",
+            "DI11",
+            "DJ11"
+          ]
+        },
+        {
+          "role": "SUPPLY",
+          "sheet": "PipelineAdjustment",
+          "kind": "cell",
+          "expressionCount": 15,
+          "callCount": 15,
+          "samples": [
+            "B8",
+            "C8",
+            "D8",
+            "B9",
+            "C9"
+          ]
+        },
+        {
+          "role": "SUPPLY",
+          "sheet": "RegasAdjustment",
+          "kind": "cell",
+          "expressionCount": 31248,
+          "callCount": 31248,
+          "samples": [
+            "AF11",
+            "AG11",
+            "AH11",
+            "AI11",
+            "AJ11"
+          ]
+        },
+        {
+          "role": "TRADE",
+          "sheet": "4.5 PriceModelInput",
+          "kind": "cell",
+          "expressionCount": 200,
+          "callCount": 400,
+          "samples": [
+            "D4",
+            "I4",
+            "T4",
+            "X4",
+            "D5"
+          ]
+        },
+        {
+          "role": "TRADE",
+          "sheet": "MidstreamCapacityInput",
+          "kind": "cell",
+          "expressionCount": 2991,
+          "callCount": 2991,
+          "samples": [
+            "AG1",
+            "E4",
+            "F4",
+            "H4",
+            "I4"
+          ]
+        },
+        {
+          "role": "TRADE",
+          "sheet": "MidstreamContractInput",
+          "kind": "cell",
+          "expressionCount": 42190,
+          "callCount": 44186,
+          "samples": [
+            "E5",
+            "F5",
+            "H5",
+            "V5",
+            "W5"
+          ]
+        },
+        {
+          "role": "TRADE",
+          "sheet": "ShippingCostInput",
+          "kind": "cell",
+          "expressionCount": 227112,
+          "callCount": 492076,
+          "samples": [
+            "K4",
+            "M4",
+            "N4",
+            "Q4",
+            "R4"
+          ]
+        },
+        {
+          "role": "TRADE",
+          "sheet": "UpstreamAdjLogicInput",
+          "kind": "cell",
+          "expressionCount": 1344,
+          "callCount": 1344,
+          "samples": [
+            "K3",
+            "M3",
+            "K4",
+            "M4",
+            "K5"
+          ]
+        },
+        {
+          "role": "TRADE",
+          "sheet": "backup_MidstreamContractInput",
+          "kind": "cell",
+          "expressionCount": 22869,
+          "callCount": 24865,
+          "samples": [
+            "E5",
+            "F5",
+            "H5",
+            "V5",
+            "W5"
+          ]
+        },
+        {
+          "role": "TRADE",
+          "sheet": "package:xl/tables/table10.xml",
+          "kind": "calculatedColumnFormula",
+          "expressionCount": 1,
+          "callCount": 4,
+          "samples": [
+            "xl/tables/table10.xml"
+          ]
+        },
+        {
+          "role": "TRADE",
+          "sheet": "package:xl/tables/table6.xml",
+          "kind": "calculatedColumnFormula",
+          "expressionCount": 2,
+          "callCount": 2,
+          "samples": [
+            "xl/tables/table6.xml"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "ISBLANK",
+      "poi": {
+        "status": "REGISTERED_SUPPORTED",
+        "canonicalName": "ISBLANK",
+        "canonicalRegistered": true,
+        "formulaExecutionVerified": false
+      },
+      "cellCount": 118471,
+      "cellCallCount": 118511,
+      "uses": [
+        {
+          "role": "DEMAND",
+          "sheet": "CoalGasAdjustment",
+          "kind": "cell",
+          "expressionCount": 50,
+          "callCount": 50,
+          "samples": [
+            "B7",
+            "C7",
+            "D7",
+            "E7",
+            "F7"
+          ]
+        },
+        {
+          "role": "DEMAND",
+          "sheet": "ElectrificationRateAdjustment",
+          "kind": "cell",
+          "expressionCount": 30,
+          "callCount": 30,
+          "samples": [
+            "B7",
+            "C7",
+            "D7",
+            "E7",
+            "F7"
+          ]
+        },
+        {
+          "role": "DEMAND",
+          "sheet": "GDPPopulationAdjustment",
+          "kind": "cell",
+          "expressionCount": 55,
+          "callCount": 55,
+          "samples": [
+            "B7",
+            "C7",
+            "D7",
+            "E7",
+            "F7"
+          ]
+        },
+        {
+          "role": "DEMAND",
+          "sheet": "HydrogenAdjustment",
+          "kind": "cell",
+          "expressionCount": 25,
+          "callCount": 25,
+          "samples": [
+            "B7",
+            "C7",
+            "D7",
+            "E7",
+            "F7"
+          ]
+        },
+        {
+          "role": "DEMAND",
+          "sheet": "LNGBunkeringAdjustment",
+          "kind": "cell",
+          "expressionCount": 50,
+          "callCount": 50,
+          "samples": [
+            "B7",
+            "C7",
+            "D7",
+            "E7",
+            "F7"
+          ]
+        },
+        {
+          "role": "DEMAND",
+          "sheet": "PMIAdjustment",
+          "kind": "cell",
+          "expressionCount": 35,
+          "callCount": 35,
+          "samples": [
+            "B7",
+            "C7",
+            "D7",
+            "E7",
+            "F7"
+          ]
+        },
+        {
+          "role": "DEMAND",
+          "sheet": "PowerMixAdjustment",
+          "kind": "cell",
+          "expressionCount": 30,
+          "callCount": 30,
+          "samples": [
+            "B7",
+            "C7",
+            "D7",
+            "E7",
+            "F7"
+          ]
+        },
+        {
+          "role": "DEMAND",
+          "sheet": "WeatherAdjustment",
+          "kind": "cell",
+          "expressionCount": 115,
+          "callCount": 115,
+          "samples": [
+            "B7",
+            "C7",
+            "D7",
+            "E7",
+            "F7"
+          ]
+        },
+        {
+          "role": "SUPPLY",
+          "sheet": "LiqProdAdjustment",
+          "kind": "cell",
+          "expressionCount": 397,
+          "callCount": 397,
+          "samples": [
+            "CM11",
+            "CM12",
+            "CM13",
+            "CM14",
+            "CM15"
+          ]
+        },
+        {
+          "role": "SUPPLY",
+          "sheet": "LiqProdAdjustment_backup",
+          "kind": "cell",
+          "expressionCount": 348,
+          "callCount": 348,
+          "samples": [
+            "DB11",
+            "DB12",
+            "DB13",
+            "DB14",
+            "DB15"
+          ]
+        },
+        {
+          "role": "SUPPLY",
+          "sheet": "PipelineAdjustment",
+          "kind": "cell",
+          "expressionCount": 193,
+          "callCount": 193,
+          "samples": [
+            "I8",
+            "I9",
+            "I10",
+            "I11",
+            "I12"
+          ]
+        },
+        {
+          "role": "SUPPLY",
+          "sheet": "ProductionAdjustment",
+          "kind": "cell",
+          "expressionCount": 25,
+          "callCount": 25,
+          "samples": [
+            "B8",
+            "C8",
+            "E8",
+            "F8",
+            "G8"
+          ]
+        },
+        {
+          "role": "SUPPLY",
+          "sheet": "{USA}Hurricanes",
+          "kind": "cell",
+          "expressionCount": 20,
+          "callCount": 20,
+          "samples": [
+            "B8",
+            "C8",
+            "D8",
+            "E8",
+            "B9"
+          ]
+        },
+        {
+          "role": "TRADE",
+          "sheet": "MidstreamContractInput",
+          "kind": "cell",
+          "expressionCount": 81810,
+          "callCount": 81810,
+          "samples": [
+            "V5",
+            "W5",
+            "X5",
+            "Y5",
+            "Z5"
+          ]
+        },
+        {
+          "role": "TRADE",
+          "sheet": "ShippingCostInput",
+          "kind": "cell",
+          "expressionCount": 40,
+          "callCount": 80,
+          "samples": [
+            "G6",
+            "G7",
+            "G8",
+            "G9",
+            "G10"
+          ]
+        },
+        {
+          "role": "TRADE",
+          "sheet": "backup_MidstreamContractInput",
+          "kind": "cell",
+          "expressionCount": 35248,
+          "callCount": 35248,
+          "samples": [
+            "V5",
+            "W5",
+            "X5",
+            "Y5",
+            "Z5"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "ISERROR",
+      "poi": {
+        "status": "REGISTERED_SUPPORTED",
+        "canonicalName": "ISERROR",
+        "canonicalRegistered": true,
+        "formulaExecutionVerified": false
+      },
+      "cellCount": 0,
+      "cellCallCount": 0,
+      "uses": [
+        {
+          "role": "DEMAND",
+          "sheet": "WeatherInput",
+          "kind": "conditionalFormatting",
+          "expressionCount": 2,
+          "callCount": 2,
+          "samples": [
+            "AY9:AY1016"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "ISNUMBER",
+      "poi": {
+        "status": "REGISTERED_SUPPORTED",
+        "canonicalName": "ISNUMBER",
+        "canonicalRegistered": true,
+        "formulaExecutionVerified": false
+      },
+      "cellCount": 141581,
+      "cellCallCount": 141581,
+      "uses": [
+        {
+          "role": "DEMAND",
+          "sheet": "WeatherInput",
+          "kind": "cell",
+          "expressionCount": 62528,
+          "callCount": 62528,
+          "samples": [
+            "AP9",
+            "AQ9",
+            "AR9",
+            "AS9",
+            "AT9"
+          ]
+        },
+        {
+          "role": "SUPPLY",
+          "sheet": "BCRegasification",
+          "kind": "conditionalFormatting",
+          "expressionCount": 1,
+          "callCount": 1,
+          "samples": [
+            "G8:XFD1048576"
+          ]
+        },
+        {
+          "role": "SUPPLY",
+          "sheet": "LiqProdAdjustment",
+          "kind": "conditionalFormatting",
+          "expressionCount": 2,
+          "callCount": 4,
+          "samples": [
+            "G7:XFD8",
+            "G11:XFD1048576"
+          ]
+        },
+        {
+          "role": "SUPPLY",
+          "sheet": "LiqUtilAdjustment",
+          "kind": "conditionalFormatting",
+          "expressionCount": 2,
+          "callCount": 4,
+          "samples": [
+            "G7:XFD8",
+            "G11:XFD1048576"
+          ]
+        },
+        {
+          "role": "SUPPLY",
+          "sheet": "ProductionAdjustment",
+          "kind": "conditionalFormatting",
+          "expressionCount": 2,
+          "callCount": 2,
+          "samples": [
+            "I8:K1048576",
+            "M8:M1048576"
+          ]
+        },
+        {
+          "role": "SUPPLY",
+          "sheet": "RegasAdjustment",
+          "kind": "conditionalFormatting",
+          "expressionCount": 2,
+          "callCount": 4,
+          "samples": [
+            "H9:XFD10",
+            "H11:XFD1048576"
+          ]
+        },
+        {
+          "role": "SUPPLY",
+          "sheet": "{USA}Hurricanes",
+          "kind": "conditionalFormatting",
+          "expressionCount": 1,
+          "callCount": 1,
+          "samples": [
+            "B13:D1048576"
+          ]
+        },
+        {
+          "role": "TRADE",
+          "sheet": "CostInput",
+          "kind": "cell",
+          "expressionCount": 517,
+          "callCount": 517,
+          "samples": [
+            "AS3",
+            "AS4",
+            "AS5",
+            "AS6",
+            "AS7"
+          ]
+        },
+        {
+          "role": "TRADE",
+          "sheet": "LNG_TradeRestrictionInput",
+          "kind": "conditionalFormatting",
+          "expressionCount": 1,
+          "callCount": 1,
+          "samples": [
+            "B6:J1048576"
+          ]
+        },
+        {
+          "role": "TRADE",
+          "sheet": "PNG_TradeRestrictionInput",
+          "kind": "conditionalFormatting",
+          "expressionCount": 1,
+          "callCount": 1,
+          "samples": [
+            "B6:I1048576"
+          ]
+        },
+        {
+          "role": "TRADE",
+          "sheet": "ShippingCostInput",
+          "kind": "cell",
+          "expressionCount": 77192,
+          "callCount": 77192,
+          "samples": [
+            "U4",
+            "V4",
+            "W4",
+            "X4",
+            "AF4"
+          ]
+        },
+        {
+          "role": "TRADE",
+          "sheet": "UpstreamAdjLogicInput",
+          "kind": "cell",
+          "expressionCount": 1344,
+          "callCount": 1344,
+          "samples": [
+            "O3",
+            "Q3",
+            "O4",
+            "Q4",
+            "O5"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "LEFT",
+      "poi": {
+        "status": "REGISTERED_SUPPORTED",
+        "canonicalName": "LEFT",
+        "canonicalRegistered": true,
+        "formulaExecutionVerified": false
+      },
+      "cellCount": 24772,
+      "cellCallCount": 24772,
+      "uses": [
+        {
+          "role": "SUPPLY",
+          "sheet": "BCProduction",
+          "kind": "cell",
+          "expressionCount": 24772,
+          "callCount": 24772,
+          "samples": [
+            "G8",
+            "G9",
+            "G10",
+            "G11",
+            "G12"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "LEN",
+      "poi": {
+        "status": "REGISTERED_SUPPORTED",
+        "canonicalName": "LEN",
+        "canonicalRegistered": true,
+        "formulaExecutionVerified": false
+      },
+      "cellCount": 24772,
+      "cellCallCount": 24772,
+      "uses": [
+        {
+          "role": "SUPPLY",
+          "sheet": "BCProduction",
+          "kind": "cell",
+          "expressionCount": 24772,
+          "callCount": 24772,
+          "samples": [
+            "G8",
+            "G9",
+            "G10",
+            "G11",
+            "G12"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "MATCH",
+      "poi": {
+        "status": "REGISTERED_SUPPORTED",
+        "canonicalName": "MATCH",
+        "canonicalRegistered": true,
+        "formulaExecutionVerified": false
+      },
+      "cellCount": 570929,
+      "cellCallCount": 1040414,
+      "uses": [
+        {
+          "role": "DEMAND",
+          "sheet": "CoalGasAdjustment",
+          "kind": "cell",
+          "expressionCount": 3978,
+          "callCount": 7956,
+          "samples": [
+            "D12",
+            "J12",
+            "D13",
+            "J13",
+            "D14"
+          ]
+        },
+        {
+          "role": "DEMAND",
+          "sheet": "ElectrificationRateAdjustment",
+          "kind": "cell",
+          "expressionCount": 1989,
+          "callCount": 1989,
+          "samples": [
+            "E12",
+            "E13",
+            "E14",
+            "E15",
+            "E16"
+          ]
+        },
+        {
+          "role": "DEMAND",
+          "sheet": "GDPPopulationAdjustment",
+          "kind": "cell",
+          "expressionCount": 3978,
+          "callCount": 7956,
+          "samples": [
+            "D12",
+            "L12",
+            "D13",
+            "L13",
+            "D14"
+          ]
+        },
+        {
+          "role": "DEMAND",
+          "sheet": "HydrogenAdjustment",
+          "kind": "cell",
+          "expressionCount": 7989,
+          "callCount": 7989,
+          "samples": [
+            "D12",
+            "D13",
+            "D14",
+            "D15",
+            "D16"
+          ]
+        },
+        {
+          "role": "DEMAND",
+          "sheet": "HydrogenInput",
+          "kind": "cell",
+          "expressionCount": 728,
+          "callCount": 728,
+          "samples": [
+            "D9",
+            "D10",
+            "D11",
+            "D12",
+            "D13"
+          ]
+        },
+        {
+          "role": "DEMAND",
+          "sheet": "LNGBunkeringAdjustment",
+          "kind": "cell",
+          "expressionCount": 86,
+          "callCount": 86,
+          "samples": [
+            "D12",
+            "J12",
+            "D13",
+            "J13",
+            "D14"
+          ]
+        },
+        {
+          "role": "DEMAND",
+          "sheet": "LNGBunkeringInput",
+          "kind": "cell",
+          "expressionCount": 96,
+          "callCount": 96,
+          "samples": [
+            "D9",
+            "E9",
+            "D10",
+            "E10",
+            "D11"
+          ]
+        },
+        {
+          "role": "DEMAND",
+          "sheet": "PMIAdjustment",
+          "kind": "cell",
+          "expressionCount": 8069,
+          "callCount": 16044,
+          "samples": [
+            "K7",
+            "K8",
+            "K9",
+            "K10",
+            "K11"
+          ]
+        },
+        {
+          "role": "DEMAND",
+          "sheet": "PMIInput",
+          "kind": "cell",
+          "expressionCount": 16219,
+          "callCount": 24283,
+          "samples": [
+            "L9",
+            "M9",
+            "N9",
+            "O9",
+            "P9"
+          ]
+        },
+        {
+          "role": "DEMAND",
+          "sheet": "PowerMixAdjustment",
+          "kind": "cell",
+          "expressionCount": 15954,
+          "callCount": 31908,
+          "samples": [
+            "E12",
+            "E13",
+            "E14",
+            "N14",
+            "E15"
+          ]
+        },
+        {
+          "role": "DEMAND",
+          "sheet": "WeatherAdjustment",
+          "kind": "cell",
+          "expressionCount": 15974,
+          "callCount": 47918,
+          "samples": [
+            "N7",
+            "N8",
+            "N9",
+            "N10",
+            "N11"
+          ]
+        },
+        {
+          "role": "DEMAND",
+          "sheet": "WeatherInput",
+          "kind": "cell",
+          "expressionCount": 50400,
+          "callCount": 131040,
+          "samples": [
+            "B9",
+            "C9",
+            "F9",
+            "G9",
+            "H9"
+          ]
+        },
+        {
+          "role": "DEMAND",
+          "sheet": "WeatherLogicInput",
+          "kind": "cell",
+          "expressionCount": 1008,
+          "callCount": 1008,
+          "samples": [
+            "B9",
+            "C9",
+            "G9",
+            "H9",
+            "L9"
+          ]
+        },
+        {
+          "role": "SUPPLY",
+          "sheet": "LiqProdAdjustment_backup",
+          "kind": "cell",
+          "expressionCount": 68904,
+          "callCount": 68904,
+          "samples": [
+            "G11",
+            "H11",
+            "I11",
+            "J11",
+            "K11"
+          ]
+        },
+        {
+          "role": "SUPPLY",
+          "sheet": "LiqUtilAdjustment_backup",
+          "kind": "cell",
+          "expressionCount": 47071,
+          "callCount": 47071,
+          "samples": [
+            "H11",
+            "I11",
+            "DH11",
+            "DI11",
+            "DJ11"
+          ]
+        },
+        {
+          "role": "SUPPLY",
+          "sheet": "PipelineAdjustment",
+          "kind": "cell",
+          "expressionCount": 15,
+          "callCount": 15,
+          "samples": [
+            "B8",
+            "C8",
+            "D8",
+            "B9",
+            "C9"
+          ]
+        },
+        {
+          "role": "SUPPLY",
+          "sheet": "RegasAdjustment",
+          "kind": "cell",
+          "expressionCount": 31248,
+          "callCount": 62496,
+          "samples": [
+            "AF11",
+            "AG11",
+            "AH11",
+            "AI11",
+            "AJ11"
+          ]
+        },
+        {
+          "role": "TRADE",
+          "sheet": "4.5 PriceModelInput",
+          "kind": "cell",
+          "expressionCount": 200,
+          "callCount": 400,
+          "samples": [
+            "D4",
+            "I4",
+            "T4",
+            "X4",
+            "D5"
+          ]
+        },
+        {
+          "role": "TRADE",
+          "sheet": "CostInput",
+          "kind": "cell",
+          "expressionCount": 517,
+          "callCount": 517,
+          "samples": [
+            "AS3",
+            "AS4",
+            "AS5",
+            "AS6",
+            "AS7"
+          ]
+        },
+        {
+          "role": "TRADE",
+          "sheet": "MidstreamCapacityInput",
+          "kind": "cell",
+          "expressionCount": 2991,
+          "callCount": 3175,
+          "samples": [
+            "AG1",
+            "E4",
+            "F4",
+            "H4",
+            "I4"
+          ]
+        },
+        {
+          "role": "TRADE",
+          "sheet": "MidstreamContractInput",
+          "kind": "cell",
+          "expressionCount": 42190,
+          "callCount": 55588,
+          "samples": [
+            "E5",
+            "F5",
+            "H5",
+            "V5",
+            "W5"
+          ]
+        },
+        {
+          "role": "TRADE",
+          "sheet": "ShippingCostInput",
+          "kind": "cell",
+          "expressionCount": 227112,
+          "callCount": 492076,
+          "samples": [
+            "K4",
+            "M4",
+            "N4",
+            "Q4",
+            "R4"
+          ]
+        },
+        {
+          "role": "TRADE",
+          "sheet": "UpstreamAdjLogicInput",
+          "kind": "cell",
+          "expressionCount": 1344,
+          "callCount": 1344,
+          "samples": [
+            "K3",
+            "M3",
+            "K4",
+            "M4",
+            "K5"
+          ]
+        },
+        {
+          "role": "TRADE",
+          "sheet": "backup_MidstreamContractInput",
+          "kind": "cell",
+          "expressionCount": 22869,
+          "callCount": 29827,
+          "samples": [
+            "E5",
+            "F5",
+            "H5",
+            "V5",
+            "W5"
+          ]
+        },
+        {
+          "role": "TRADE",
+          "sheet": "package:xl/tables/table10.xml",
+          "kind": "calculatedColumnFormula",
+          "expressionCount": 1,
+          "callCount": 4,
+          "samples": [
+            "xl/tables/table10.xml"
+          ]
+        },
+        {
+          "role": "TRADE",
+          "sheet": "package:xl/tables/table6.xml",
+          "kind": "calculatedColumnFormula",
+          "expressionCount": 2,
+          "callCount": 2,
+          "samples": [
+            "xl/tables/table6.xml"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "MAX",
+      "poi": {
+        "status": "REGISTERED_SUPPORTED",
+        "canonicalName": "MAX",
+        "canonicalRegistered": true,
+        "formulaExecutionVerified": false
+      },
+      "cellCount": 1756,
+      "cellCallCount": 1756,
+      "uses": [
+        {
+          "role": "SUPPLY",
+          "sheet": "BCRegasification",
+          "kind": "cell",
+          "expressionCount": 372,
+          "callCount": 372,
+          "samples": [
+            "R8",
+            "R9",
+            "R10",
+            "R11",
+            "R12"
+          ]
+        },
+        {
+          "role": "TRADE",
+          "sheet": "DemandAdjLogicInput",
+          "kind": "cell",
+          "expressionCount": 8,
+          "callCount": 8,
+          "samples": [
+            "L3",
+            "M3",
+            "L4",
+            "M4",
+            "L6"
+          ]
+        },
+        {
+          "role": "TRADE",
+          "sheet": "MidstreamCapacityInput",
+          "kind": "cell",
+          "expressionCount": 704,
+          "callCount": 704,
+          "samples": [
+            "DI4",
+            "EW4",
+            "DI5",
+            "EW5",
+            "DI6"
+          ]
+        },
+        {
+          "role": "TRADE",
+          "sheet": "UpstreamAdjLogicInput",
+          "kind": "cell",
+          "expressionCount": 672,
+          "callCount": 672,
+          "samples": [
+            "O3",
+            "O4",
+            "O5",
+            "O6",
+            "O7"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "MIN",
+      "poi": {
+        "status": "REGISTERED_SUPPORTED",
+        "canonicalName": "MIN",
+        "canonicalRegistered": true,
+        "formulaExecutionVerified": false
+      },
+      "cellCount": 5728,
+      "cellCallCount": 6000,
+      "uses": [
+        {
+          "role": "TRADE",
+          "sheet": "MidstreamCapacityInput",
+          "kind": "cell",
+          "expressionCount": 1736,
+          "callCount": 2008,
+          "samples": [
+            "BB4",
+            "BC4",
+            "BD4",
+            "BE4",
+            "BF4"
+          ]
+        },
+        {
+          "role": "TRADE",
+          "sheet": "MidstreamContractInput",
+          "kind": "cell",
+          "expressionCount": 1996,
+          "callCount": 1996,
+          "samples": [
+            "I5",
+            "I6",
+            "I7",
+            "I8",
+            "I9"
+          ]
+        },
+        {
+          "role": "TRADE",
+          "sheet": "backup_MidstreamContractInput",
+          "kind": "cell",
+          "expressionCount": 1996,
+          "callCount": 1996,
+          "samples": [
+            "I5",
+            "I6",
+            "I7",
+            "I8",
+            "I9"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "NOT",
+      "poi": {
+        "status": "REGISTERED_SUPPORTED",
+        "canonicalName": "NOT",
+        "canonicalRegistered": true,
+        "formulaExecutionVerified": false
+      },
+      "cellCount": 0,
+      "cellCallCount": 0,
+      "uses": [
+        {
+          "role": "DEMAND",
+          "sheet": "WeatherInput",
+          "kind": "conditionalFormatting",
+          "expressionCount": 2,
+          "callCount": 2,
+          "samples": [
+            "AY9:AY1016"
+          ]
+        },
+        {
+          "role": "SUPPLY",
+          "sheet": "BCRegasification",
+          "kind": "conditionalFormatting",
+          "expressionCount": 1,
+          "callCount": 1,
+          "samples": [
+            "G8:XFD1048576"
+          ]
+        },
+        {
+          "role": "SUPPLY",
+          "sheet": "LiqProdAdjustment",
+          "kind": "conditionalFormatting",
+          "expressionCount": 4,
+          "callCount": 4,
+          "samples": [
+            "B11:C1048576",
+            "D11:F1048576",
+            "G7:XFD8",
+            "G11:XFD1048576"
+          ]
+        },
+        {
+          "role": "SUPPLY",
+          "sheet": "LiqUtilAdjustment",
+          "kind": "conditionalFormatting",
+          "expressionCount": 4,
+          "callCount": 4,
+          "samples": [
+            "B11:C1048576",
+            "D11:F1048576",
+            "G7:XFD8",
+            "G11:XFD1048576"
+          ]
+        },
+        {
+          "role": "SUPPLY",
+          "sheet": "ProductionAdjustment",
+          "kind": "conditionalFormatting",
+          "expressionCount": 2,
+          "callCount": 2,
+          "samples": [
+            "I8:K1048576",
+            "M8:M1048576"
+          ]
+        },
+        {
+          "role": "SUPPLY",
+          "sheet": "RegasAdjustment",
+          "kind": "conditionalFormatting",
+          "expressionCount": 2,
+          "callCount": 2,
+          "samples": [
+            "H9:XFD10",
+            "H11:XFD1048576"
+          ]
+        },
+        {
+          "role": "SUPPLY",
+          "sheet": "{USA}Hurricanes",
+          "kind": "conditionalFormatting",
+          "expressionCount": 1,
+          "callCount": 1,
+          "samples": [
+            "B13:D1048576"
+          ]
+        },
+        {
+          "role": "TRADE",
+          "sheet": "LNG_TradeRestrictionInput",
+          "kind": "conditionalFormatting",
+          "expressionCount": 1,
+          "callCount": 1,
+          "samples": [
+            "B6:J1048576"
+          ]
+        },
+        {
+          "role": "TRADE",
+          "sheet": "PNG_TradeRestrictionInput",
+          "kind": "conditionalFormatting",
+          "expressionCount": 1,
+          "callCount": 1,
+          "samples": [
+            "B6:I1048576"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "OR",
+      "poi": {
+        "status": "REGISTERED_SUPPORTED",
+        "canonicalName": "OR",
+        "canonicalRegistered": true,
+        "formulaExecutionVerified": false
+      },
+      "cellCount": 7190,
+      "cellCallCount": 7190,
+      "uses": [
+        {
+          "role": "SUPPLY",
+          "sheet": "LiqProdAdjustment",
+          "kind": "conditionalFormatting",
+          "expressionCount": 1,
+          "callCount": 1,
+          "samples": [
+            "B11:C1048576"
+          ]
+        },
+        {
+          "role": "SUPPLY",
+          "sheet": "LiqUtilAdjustment",
+          "kind": "conditionalFormatting",
+          "expressionCount": 1,
+          "callCount": 1,
+          "samples": [
+            "B11:C1048576"
+          ]
+        },
+        {
+          "role": "SUPPLY",
+          "sheet": "ProductionAdjustment",
+          "kind": "conditionalFormatting",
+          "expressionCount": 2,
+          "callCount": 2,
+          "samples": [
+            "I8:K1048576",
+            "M8:M1048576"
+          ]
+        },
+        {
+          "role": "SUPPLY",
+          "sheet": "{USA}Hurricanes",
+          "kind": "conditionalFormatting",
+          "expressionCount": 1,
+          "callCount": 1,
+          "samples": [
+            "B13:D1048576"
+          ]
+        },
+        {
+          "role": "TRADE",
+          "sheet": "CostInput",
+          "kind": "cell",
+          "expressionCount": 3015,
+          "callCount": 3015,
+          "samples": [
+            "E3",
+            "L3",
+            "S3",
+            "Z3",
+            "AH3"
+          ]
+        },
+        {
+          "role": "TRADE",
+          "sheet": "LNG_TradeRestrictionInput",
+          "kind": "conditionalFormatting",
+          "expressionCount": 1,
+          "callCount": 1,
+          "samples": [
+            "B6:J1048576"
+          ]
+        },
+        {
+          "role": "TRADE",
+          "sheet": "MidstreamCapacityInput",
+          "kind": "cell",
+          "expressionCount": 183,
+          "callCount": 183,
+          "samples": [
+            "EC4",
+            "EC5",
+            "EC6",
+            "EC7",
+            "EC8"
+          ]
+        },
+        {
+          "role": "TRADE",
+          "sheet": "MidstreamContractInput",
+          "kind": "cell",
+          "expressionCount": 1996,
+          "callCount": 1996,
+          "samples": [
+            "G5",
+            "G6",
+            "G7",
+            "G8",
+            "G9"
+          ]
+        },
+        {
+          "role": "TRADE",
+          "sheet": "PNG_TradeRestrictionInput",
+          "kind": "conditionalFormatting",
+          "expressionCount": 1,
+          "callCount": 1,
+          "samples": [
+            "B6:I1048576"
+          ]
+        },
+        {
+          "role": "TRADE",
+          "sheet": "backup_MidstreamContractInput",
+          "kind": "cell",
+          "expressionCount": 1996,
+          "callCount": 1996,
+          "samples": [
+            "G5",
+            "G6",
+            "G7",
+            "G8",
+            "G9"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "ROW",
+      "poi": {
+        "status": "REGISTERED_SUPPORTED",
+        "canonicalName": "ROW",
+        "canonicalRegistered": true,
+        "formulaExecutionVerified": false
+      },
+      "cellCount": 0,
+      "cellCallCount": 0,
+      "uses": [
+        {
+          "role": "SUPPLY",
+          "sheet": "ProductionAdjustment",
+          "kind": "conditionalFormatting",
+          "expressionCount": 2,
+          "callCount": 2,
+          "samples": [
+            "I8:K1048576",
+            "M8:M1048576"
+          ]
+        },
+        {
+          "role": "SUPPLY",
+          "sheet": "{USA}Hurricanes",
+          "kind": "conditionalFormatting",
+          "expressionCount": 1,
+          "callCount": 1,
+          "samples": [
+            "B13:D1048576"
+          ]
+        },
+        {
+          "role": "TRADE",
+          "sheet": "LNG_TradeRestrictionInput",
+          "kind": "conditionalFormatting",
+          "expressionCount": 1,
+          "callCount": 1,
+          "samples": [
+            "B6:J1048576"
+          ]
+        },
+        {
+          "role": "TRADE",
+          "sheet": "PNG_TradeRestrictionInput",
+          "kind": "conditionalFormatting",
+          "expressionCount": 1,
+          "callCount": 1,
+          "samples": [
+            "B6:I1048576"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "SEARCH",
+      "poi": {
+        "status": "REGISTERED_SUPPORTED",
+        "canonicalName": "SEARCH",
+        "canonicalRegistered": true,
+        "formulaExecutionVerified": false
+      },
+      "cellCount": 77192,
+      "cellCallCount": 77192,
+      "uses": [
+        {
+          "role": "DEMAND",
+          "sheet": "WeatherInput",
+          "kind": "conditionalFormatting",
+          "expressionCount": 2,
+          "callCount": 2,
+          "samples": [
+            "AY9:AY1016"
+          ]
+        },
+        {
+          "role": "TRADE",
+          "sheet": "ShippingCostInput",
+          "kind": "cell",
+          "expressionCount": 77192,
+          "callCount": 77192,
+          "samples": [
+            "U4",
+            "V4",
+            "W4",
+            "X4",
+            "AF4"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "SUM",
+      "poi": {
+        "status": "REGISTERED_SUPPORTED",
+        "canonicalName": "SUM",
+        "canonicalRegistered": true,
+        "formulaExecutionVerified": false
+      },
+      "cellCount": 37982,
+      "cellCallCount": 37982,
+      "uses": [
+        {
+          "role": "DEMAND",
+          "sheet": "LNG Demand",
+          "kind": "cell",
+          "expressionCount": 130,
+          "callCount": 130,
+          "samples": [
+            "E4",
+            "F4",
+            "G4",
+            "H4",
+            "I4"
+          ]
+        },
+        {
+          "role": "TRADE",
+          "sheet": "ShippingCostInput",
+          "kind": "cell",
+          "expressionCount": 37852,
+          "callCount": 37852,
+          "samples": [
+            "O4",
+            "P4",
+            "O5",
+            "P5",
+            "O6"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "SUMIF",
+      "poi": {
+        "status": "REGISTERED_SUPPORTED",
+        "canonicalName": "SUMIF",
+        "canonicalRegistered": true,
+        "formulaExecutionVerified": false
+      },
+      "cellCount": 163,
+      "cellCallCount": 171,
+      "uses": [
+        {
+          "role": "TRADE",
+          "sheet": "4.5 PriceModelInput",
+          "kind": "cell",
+          "expressionCount": 163,
+          "callCount": 171,
+          "samples": [
+            "T4",
+            "U4",
+            "X4",
+            "T5",
+            "U5"
+          ]
+        },
+        {
+          "role": "TRADE",
+          "sheet": "package:xl/tables/table6.xml",
+          "kind": "calculatedColumnFormula",
+          "expressionCount": 1,
+          "callCount": 2,
+          "samples": [
+            "xl/tables/table6.xml"
+          ]
+        },
+        {
+          "role": "TRADE",
+          "sheet": "package:xl/tables/table7.xml",
+          "kind": "calculatedColumnFormula",
+          "expressionCount": 1,
+          "callCount": 1,
+          "samples": [
+            "xl/tables/table7.xml"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "SUMIFS",
+      "poi": {
+        "status": "REGISTERED_SUPPORTED",
+        "canonicalName": "SUMIFS",
+        "canonicalRegistered": true,
+        "formulaExecutionVerified": false
+      },
+      "cellCount": 347355,
+      "cellCallCount": 356939,
+      "uses": [
+        {
+          "role": "DEMAND",
+          "sheet": "BCInput",
+          "kind": "cell",
+          "expressionCount": 201600,
+          "callCount": 201600,
+          "samples": [
+            "AE4",
+            "AF4",
+            "AE5",
+            "AF5",
+            "AE6"
+          ]
+        },
+        {
+          "role": "DEMAND",
+          "sheet": "PMILogicInput",
+          "kind": "cell",
+          "expressionCount": 84,
+          "callCount": 84,
+          "samples": [
+            "O9",
+            "O10",
+            "O11",
+            "O12",
+            "O13"
+          ]
+        },
+        {
+          "role": "SUPPLY",
+          "sheet": "BCLiquefaction_backup",
+          "kind": "cell",
+          "expressionCount": 35091,
+          "callCount": 35091,
+          "samples": [
+            "D8",
+            "D9",
+            "D10",
+            "D11",
+            "D12"
+          ]
+        },
+        {
+          "role": "SUPPLY",
+          "sheet": "ProductionAdjustment",
+          "kind": "cell",
+          "expressionCount": 381,
+          "callCount": 381,
+          "samples": [
+            "L8",
+            "L9",
+            "L10",
+            "L11",
+            "L12"
+          ]
+        },
+        {
+          "role": "SUPPLY",
+          "sheet": "RegasAdjustment",
+          "kind": "cell",
+          "expressionCount": 9612,
+          "callCount": 9612,
+          "samples": [
+            "DN11",
+            "DO11",
+            "DP11",
+            "DQ11",
+            "DR11"
+          ]
+        },
+        {
+          "role": "TRADE",
+          "sheet": "MidstreamCapacityInput",
+          "kind": "cell",
+          "expressionCount": 12139,
+          "callCount": 13739,
+          "samples": [
+            "J4",
+            "K4",
+            "L4",
+            "M4",
+            "N4"
+          ]
+        },
+        {
+          "role": "TRADE",
+          "sheet": "MidstreamContractInput",
+          "kind": "cell",
+          "expressionCount": 50664,
+          "callCount": 54656,
+          "samples": [
+            "G5",
+            "J5",
+            "L5",
+            "Y5",
+            "AB5"
+          ]
+        },
+        {
+          "role": "TRADE",
+          "sheet": "backup_MidstreamContractInput",
+          "kind": "cell",
+          "expressionCount": 37784,
+          "callCount": 41776,
+          "samples": [
+            "G5",
+            "J5",
+            "L5",
+            "Y5",
+            "AB5"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "TEXT",
+      "poi": {
+        "status": "REGISTERED_SUPPORTED",
+        "canonicalName": "TEXT",
+        "canonicalRegistered": true,
+        "formulaExecutionVerified": false
+      },
+      "cellCount": 3988,
+      "cellCallCount": 3988,
+      "uses": [
+        {
+          "role": "DEMAND",
+          "sheet": "CoalGasAdjustment",
+          "kind": "cell",
+          "expressionCount": 3988,
+          "callCount": 3988,
+          "samples": [
+            "G7",
+            "M7",
+            "G8",
+            "M8",
+            "G9"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "VLOOKUP",
+      "poi": {
+        "status": "REGISTERED_SUPPORTED",
+        "canonicalName": "VLOOKUP",
+        "canonicalRegistered": true,
+        "formulaExecutionVerified": false
+      },
+      "cellCount": 766,
+      "cellCallCount": 774,
+      "uses": [
+        {
+          "role": "SUPPLY",
+          "sheet": "BCHurricanes",
+          "kind": "cell",
+          "expressionCount": 8,
+          "callCount": 16,
+          "samples": [
+            "G8",
+            "G9",
+            "G10",
+            "G11",
+            "G16"
+          ]
+        },
+        {
+          "role": "SUPPLY",
+          "sheet": "PipelineAdjustment",
+          "kind": "cell",
+          "expressionCount": 386,
+          "callCount": 386,
+          "samples": [
+            "E8",
+            "F8",
+            "E9",
+            "F9",
+            "E10"
+          ]
+        },
+        {
+          "role": "SUPPLY",
+          "sheet": "RegasAdjustment",
+          "kind": "cell",
+          "expressionCount": 372,
+          "callCount": 372,
+          "samples": [
+            "G11",
+            "G12",
+            "G13",
+            "G14",
+            "G15"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "_XLFN.UNIQUE",
+      "poi": {
+        "status": "NO_DEFAULT_REGISTRATION",
+        "canonicalName": "UNIQUE",
+        "canonicalRegistered": false,
+        "formulaExecutionVerified": false
+      },
+      "cellCount": 5,
+      "cellCallCount": 5,
+      "uses": [
+        {
+          "role": "TRADE",
+          "sheet": "Industry research",
+          "kind": "cell",
+          "expressionCount": 1,
+          "callCount": 1,
+          "samples": [
+            "A3"
+          ]
+        },
+        {
+          "role": "TRADE",
+          "sheet": "MidstreamContractInput",
+          "kind": "cell",
+          "expressionCount": 2,
+          "callCount": 2,
+          "samples": [
+            "CK4",
+            "CQ4"
+          ]
+        },
+        {
+          "role": "TRADE",
+          "sheet": "backup_MidstreamContractInput",
+          "kind": "cell",
+          "expressionCount": 2,
+          "callCount": 2,
+          "samples": [
+            "CK4",
+            "CQ4"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "_XLUDF.ISFORMULA",
+      "poi": {
+        "status": "NO_DEFAULT_REGISTRATION",
+        "canonicalName": "ISFORMULA",
+        "canonicalRegistered": false,
+        "formulaExecutionVerified": false
+      },
+      "cellCount": 0,
+      "cellCallCount": 0,
+      "uses": [
+        {
+          "role": "SUPPLY",
+          "sheet": "BCRegasification",
+          "kind": "conditionalFormatting",
+          "expressionCount": 1,
+          "callCount": 1,
+          "samples": [
+            "G8:XFD1048576"
+          ]
+        },
+        {
+          "role": "SUPPLY",
+          "sheet": "LiqProdAdjustment",
+          "kind": "conditionalFormatting",
+          "expressionCount": 4,
+          "callCount": 4,
+          "samples": [
+            "B11:C1048576",
+            "D11:F1048576",
+            "G7:XFD8",
+            "G11:XFD1048576"
+          ]
+        },
+        {
+          "role": "SUPPLY",
+          "sheet": "LiqUtilAdjustment",
+          "kind": "conditionalFormatting",
+          "expressionCount": 4,
+          "callCount": 4,
+          "samples": [
+            "B11:C1048576",
+            "D11:F1048576",
+            "G7:XFD8",
+            "G11:XFD1048576"
+          ]
+        },
+        {
+          "role": "SUPPLY",
+          "sheet": "ProductionAdjustment",
+          "kind": "conditionalFormatting",
+          "expressionCount": 2,
+          "callCount": 2,
+          "samples": [
+            "I8:K1048576",
+            "M8:M1048576"
+          ]
+        },
+        {
+          "role": "SUPPLY",
+          "sheet": "RegasAdjustment",
+          "kind": "conditionalFormatting",
+          "expressionCount": 2,
+          "callCount": 2,
+          "samples": [
+            "H9:XFD10",
+            "H11:XFD1048576"
+          ]
+        },
+        {
+          "role": "SUPPLY",
+          "sheet": "{USA}Hurricanes",
+          "kind": "conditionalFormatting",
+          "expressionCount": 1,
+          "callCount": 1,
+          "samples": [
+            "B13:D1048576"
+          ]
+        },
+        {
+          "role": "TRADE",
+          "sheet": "LNG_TradeRestrictionInput",
+          "kind": "conditionalFormatting",
+          "expressionCount": 1,
+          "callCount": 1,
+          "samples": [
+            "B6:J1048576"
+          ]
+        },
+        {
+          "role": "TRADE",
+          "sheet": "PNG_TradeRestrictionInput",
+          "kind": "conditionalFormatting",
+          "expressionCount": 1,
+          "callCount": 1,
+          "samples": [
+            "B6:I1048576"
+          ]
+        }
+      ]
+    }
+  ],
+  "totals": {
+    "workbooks": 4,
+    "sheets": 70,
+    "formulaCells": 1863766,
+    "rawFunctionNames": 29,
+    "canonicalFunctionNames": 29,
+    "extraFormulaExpressions": {
+      "dataValidation": 14,
+      "conditionalFormatting": 37,
+      "definedName": 94,
+      "calculatedColumnFormula": 4
+    },
+    "rejectedLiteralFunctionMatches": {
+      "AND": 1,
+      "GDP": 1,
+      "GROWTH": 1,
+      "ISFORMULA": 1,
+      "ISNUMBER": 1,
+      "NOT": 1,
+      "OR": 1,
+      "PIPELINE": 24,
+      "ROW": 1
+    }
+  }
+}

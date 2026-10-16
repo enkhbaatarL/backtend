@@ -35,7 +35,7 @@ public record FundamentalModelCaseDetailRes(
     @Schema(description = "case 업로더 사용자 번호", example = "1")
     Integer assigneeUserNo,
 
-    @Schema(description = "input 파일명과 output/intermediate/tradeOutput 다운로드 metadata", implementation = FundamentalModelCaseFilesRes.class)
+    @Schema(description = "input/output/intermediate/tradeOutput 다운로드 metadata", implementation = FundamentalModelCaseFilesRes.class)
     FundamentalModelCaseFilesRes files,
 
     @Schema(description = "최신 실행 정보. PENDING이면 null입니다.", implementation = FundamentalModelRunStatusRes.class)

@@ -7,21 +7,26 @@
 - owner: BE / DBA
 - source documents:
   - `docs/work-notes/2026/2026-09-03-model-input-transfer-format.md`
+  - `docs/references/mi-model-input-catalog-inventory-2026-09-28.md`
 - depends on:
   - `docs/design-docs/gas/mi-model-input-template-catalog-domain-model-design.md`
   - `docs/conventions/db-object-naming-rules.md`
   - `docs/conventions/db-term-dictionary-sheet2.csv`
 - supersedes:
   - 이 문서의 2026-09-04 `양식 → 테이블` 2단계 초안
-- last synced: 2026-09-07
+- last synced: 2026-10-13 (legacy 3파일 정리에 `SCENARIO` 추가, domain 규칙 36)
 - open questions:
-  - 행·열 추가의 append/insert 방식과 수식·서식 복제 규칙이 미정이다.
+  - 3파일 `SCENARIO` legacy cleanup의 apply/verify/rollback DML(case master + run history + 연결 execution-preparation + active 가격전망해석)은 미작성이다. `INPUT-11` 착수 시 작성해 DBA 검토를 받는다.
+  - domain 규칙 47의 LiqUtilAdjustment 행·열 삭제 허용 정책을 카탈로그에 저장할 물리 표현을 확정해야 한다. 현재 SQL의 행·열 추가 플래그만으로 삭제 허용을 표현하지 않는다.
+  - domain 규칙 46에서 확정한 별도 화면 갱신 규칙의 DB 저장 단위, 양식 version/표/필드 연결, 물리 테이블·컬럼·키는 후속 설계 대상이다. 아래 기존 6개 table DDL은 아직 이 저장 구조를 포함하지 않는다.
+  - 이번 release의 구조 변경 포함과 마지막 행·열 추가 중심 원칙은 domain 규칙 13·26에서 확정했다. 표별 추가 경계와 중간 삽입·삭제 예외를 저장할 물리 표현, 신규 셀의 수식·서식 복제 규칙은 미정이다.
   - `BaseEntity`의 `crt_*` 감사 컬럼과 DB 명명 문서의 `reg_*` 표준 충돌을 DBA/데이터 표준 담당자가 확인해야 한다.
   - 운영 DB의 `tmm_mi_model_param_m` 현재 값은 확인되지 않았다. 이 문서의 대조는 저장소 DDL/seed 기준이다.
+  - 개발 전용 시트가 없는 실제 운영 승인본 4개를 아직 계측하지 않았다. seed 수와 구조 hash는 승인본 검증 후 확정해야 한다.
 
 ## Purpose
 
-독립수급모델 고도화 화면에서 input Excel 3개를 시트/테이블 단위로 표시·편집하려면
+독립수급모델 고도화 화면에서 input Excel 4개를 시트/테이블 단위로 표시·편집하려면
 "어느 파일에 무슨 시트가 있고, 그 안에 어떤 표가 어떤 형태로 있는지"를 서버가 알아야 한다.
 이 문서는 그 카탈로그와 **양식 버전**의 물리 스키마를 소유한다.
 
@@ -37,6 +42,10 @@ API 계약은 이 문서가 정의하지 않는다. 실행/케이스 스키마�
 | demand | 13 | 25 |
 | supply | 14 | 23 |
 | trade | 8 | 17 |
+| output | 신규 | 5 (운영 예상) |
+
+2026-09-28 첨부 개발본의 output은 7개 시트지만 `SUMMARY`, `플랫폼 입력 안내` 2개는
+실제 운영 인풋에 없다. 다른 3역할도 같은 개발 전용 시트를 합계 4개 포함한다.
 
 그리고 기존 파라미터 마스터(`tmm_mi_model_param_m`)의 시드 값이 실제 파일과 이미 어긋나 있다.
 
@@ -54,14 +63,19 @@ supply.xlsm의 `LiqUtilAdjustment_backup`(60,216셀)은 basecase의 `LiqUtilAdju
 
 ## 배경 — 왜 편집 대상 지정이 필요한가
 
-실제 파일 3개의 전체 규모다.
+2026-09-28 첨부 개발본 4파일의 규모와 개발 전용 시트를 제외한 운영 예상 규모는 아래와 같다.
+역할별 상세와 기존 3파일 대비 변화는
+`docs/references/mi-model-input-catalog-inventory-2026-09-28.md`가 소유한다.
 
-| 항목 | 값 |
-| --- | ---: |
-| 시트 | 65 |
-| 값 보유 셀 | 4,201,142 |
-| 수식 셀 | 1,862,877 (전부 계산 완료) |
-| celldata JSON 환산 | 341MB (gzip 20.6MB) |
+| 항목 | 첨부 개발본 | 운영 예상 |
+| --- | ---: | ---: |
+| 시트 | 76 | 70 |
+| 값 보유 셀 | 4,212,857 | 4,210,446 |
+| 수식 셀 | 1,863,766 | 1,863,766 |
+| 외부 workbook 참조 수식 셀 | 42,394 | 42,394 |
+
+운영 예상값은 첨부본에서 개발 전용 6개 시트만 제외하고 나머지는 같다는 가정이다.
+실제 운영 승인본을 아직 직접 계측하지 않았으므로 template seed/hash 확정 전에 재검증한다.
 
 이 중 편집 대상으로 추정되는 `*Adjustment` 계열은 **123,890셀(2.9%)** 이고,
 `_backup` / `_DISCARDAFTUSE` 시트가 **886,709셀(21.1%)** 를 차지한다.
@@ -98,7 +112,8 @@ supply.xlsm의 `LiqUtilAdjustment_backup`(60,216셀)은 basecase의 `LiqUtilAdju
 
 ## 5. Fixed schema decisions
 
-- 한 양식 version은 서로 호환되는 `DEMAND/SUPPLY/TRADE` 파일 set이다.
+- 한 양식 version은 서로 호환되는 `DEMAND/SUPPLY/TRADE/OUTPUT` 파일 set이다.
+- `SUMMARY`와 `플랫폼 입력 안내`는 개발 전용이므로 runtime sheet definition과 구조 hash 대상에 포함하지 않는다.
 - 파일·시트·테이블·수정범위를 각각 별도 detail table로 정규화한다.
 - 좌표는 1-based 숫자이며 행은 `INT UNSIGNED`, 열은 `SMALLINT UNSIGNED`다.
 - 사용자 수정 가능 범위는 여러 직사각형 row로 저장한다. 임의 JSON 좌표는 사용하지 않는다.
@@ -106,6 +121,8 @@ supply.xlsm의 `LiqUtilAdjustment_backup`(60,216셀)은 basecase의 `LiqUtilAdju
 - case는 사용한 template set 한 건을 relation table로 고정한다.
 
 ## 6. Proposed schema change
+
+별도 화면 갱신 규칙의 DB 저장 요구와 소유권은 domain 규칙 46을 따른다. 아래 SQL은 기존 6개 catalog table 초안이며, 갱신 규칙의 저장 단위·테이블·컬럼·키를 확정하기 전에는 해당 요구를 지원하는 완성된 DDL로 취급하지 않는다.
 
 명명은 [db-object-naming-rules.md](../../conventions/db-object-naming-rules.md)와
 [db-term-dictionary-sheet2.csv](../../conventions/db-term-dictionary-sheet2.csv)를 따른다.
@@ -148,7 +165,7 @@ CREATE TABLE tmm_mdlinptfiled
                             ON UPDATE CURRENT_TIMESTAMP(6) COMMENT '수정일시',
     del_yn              CHAR(1) DEFAULT 'N' NOT NULL COMMENT '삭제여부',
     tmplt_id            INT UNSIGNED NOT NULL COMMENT '입력템플릿ID',
-    mdl_file_cd         VARCHAR(20) NOT NULL COMMENT '모델파일코드 (DEMAND/SUPPLY/TRADE)',
+    mdl_file_cd         VARCHAR(20) NOT NULL COMMENT '모델파일코드 (DEMAND/SUPPLY/TRADE/OUTPUT)',
     file_nm             VARCHAR(255) NOT NULL COMMENT '기준파일명',
     file_ord            SMALLINT UNSIGNED NOT NULL COMMENT '파일순서',
     file_type_cd        VARCHAR(20) NOT NULL COMMENT '파일유형코드 (XLSX/XLSM)',
@@ -157,7 +174,7 @@ CREATE TABLE tmm_mdlinptfiled
     CONSTRAINT tmm_mdlinptfiled_ux02 UNIQUE (tmplt_id, file_ord),
     CONSTRAINT tmm_mdlinptfiled_fk01 FOREIGN KEY (tmplt_id)
         REFERENCES tmm_mdlinpttmpltm (tmplt_id),
-    CONSTRAINT tmm_mdlinptfiled_ck01 CHECK (mdl_file_cd IN ('DEMAND', 'SUPPLY', 'TRADE')),
+    CONSTRAINT tmm_mdlinptfiled_ck01 CHECK (mdl_file_cd IN ('DEMAND', 'SUPPLY', 'TRADE', 'OUTPUT')),
     CONSTRAINT tmm_mdlinptfiled_ck02 CHECK (file_type_cd IN ('XLSX', 'XLSM')),
     CONSTRAINT tmm_mdlinptfiled_ck03 CHECK (del_yn IN ('Y', 'N'))
 ) COMMENT 'TMM_모델입력파일상세';
@@ -292,20 +309,25 @@ CREATE INDEX tmd_mdl_scnrcasetmpltd_ix01
 - QueryDSL: template hierarchy projection 한 번으로 조회하거나 단계별 batch 조회해 N+1을 피한다.
 - MyBatis: 필수 아님. 초기 seed가 크면 DBA SQL/batch에만 사용한다.
 - DTO/API: file/sheet/table/scope hierarchy와 1-based 좌표, add flags가 추가된다.
-- service: ACTIVE 전환, 3개 역할 완전성, 범위 포함/비중첩, case mapping 검증이 필요하다.
+- service: ACTIVE 전환, 4개 역할 완전성, 범위 포함/비중첩, case mapping 검증이 필요하다.
+- legacy cleanup: 3파일 `INDEPENDENT | MI_BASE` case는 신규 template에 mapping하지 않고 cutover DML로
+  `tmd_mdl_scnrcasem.del_yn = 'Y'` 처리한다. file/run/result row는 물리 삭제하지 않는다.
+  2026-10-13 사용자 결정으로 3파일 `SCENARIO` case도 대상이며, case master와 함께 `tmd_mdl_scnrcaseh`,
+  연결 `tmd_mi_model_execpreph`, 해당 시나리오의 active `tmm_mi_scenario_prc_interp_m`의 `del_yn`도 `Y`로 바꾼다(domain 규칙 36).
 - `tmm_mi_model_param_m`: 이번 change set에서는 수정하지 않는다.
 
 ## 9. Rollout / compatibility review
 
 1. 6개 신규 table을 생성한다. 기존 application은 참조하지 않아 DDL 선행 배포와 호환된다.
 2. `DRAFT` template과 file/sheet/table/scope seed를 적재한다.
-3. hierarchy와 실제 3개 workbook 구조를 검증한다.
+3. hierarchy와 실제 4개 workbook 구조를 검증한다.
 4. 검증된 template만 `ACTIVE`로 전환한다.
-5. legacy case는 자동 추측 backfill하지 않고 구조 검증된 case만 mapping한다.
-6. 새 application은 mapping 없는 legacy case의 동작을 feature spec에 정의한 뒤 배포한다.
+5. 아래 pre-check로 active legacy 3파일 `INDEPENDENT | MI_BASE | SCENARIO` case와 `RUNNING`/current `MI_BASE` 포함 여부를 확정한다.
+6. 대상 `case_id` snapshot을 보관한 뒤 승인된 cutover DML로 soft delete한다. `INDEPENDENT | MI_BASE`는 case master만, `SCENARIO`는 case master와 위 연결 row를 바꾼다. file/result row와 object는 보존한다.
+7. legacy case가 active resource 조회에서 제외된 것을 검증한 뒤 4파일 application을 배포한다.
 
-기존 데이터 column 변경이 없어 일반 backfill은 없다. 초기 catalog seed와 선택적 case mapping은
-신규 데이터 등록 작업이다.
+기존 데이터 column 변경이 없어 일반 backfill은 없다. 초기 catalog seed는 신규 데이터 등록 작업이고,
+legacy 3파일 case는 mapping하지 않고 별도 cutover DML로 soft delete한다.
 
 ## 10. DDL draft structure recommendation
 
@@ -321,9 +343,40 @@ WHERE table_schema = DATABASE()
   );
 
 SHOW CREATE TABLE tmd_mdl_scnrcasem;
+
+-- legacy 3파일 INDEPENDENT/MI_BASE/SCENARIO 후보: 실행 전 case_id 목록과 건수를 저장한다.
+WITH legacy_case AS (
+    SELECT c.case_id,
+           c.exec_type_cd,
+           c.case_stat_cd,
+           COUNT(f.file_no) AS active_file_cnt,
+           SUM(UPPER(f.org_file_nm) LIKE '%DEMAND%') AS demand_cnt,
+           SUM(UPPER(f.org_file_nm) LIKE '%SUPPLY%') AS supply_cnt,
+           SUM(UPPER(f.org_file_nm) LIKE '%TRADE%') AS trade_cnt,
+           SUM(UPPER(f.org_file_nm) LIKE '%OUTPUT%') AS output_cnt
+    FROM tmd_mdl_scnrcasem c
+    JOIN tcm_filel f
+      ON f.file_rel_obj_spt_cd = 'SCNRCASE'
+     AND f.file_rel_obj_dstg_no = c.case_id
+     AND f.del_yn = 'N'
+    WHERE c.del_yn = 'N'
+      AND c.exec_type_cd IN ('INDEPENDENT', 'MI_BASE', 'SCENARIO')
+    GROUP BY c.case_id, c.exec_type_cd, c.case_stat_cd
+)
+SELECT *
+FROM legacy_case
+WHERE active_file_cnt = 3
+  AND demand_cnt = 1
+  AND supply_cnt = 1
+  AND trade_cnt = 1
+  AND output_cnt = 0
+ORDER BY case_id;
 ```
 
 Expected: 신규 table은 0건이고, `tmd_mdl_scnrcasem.case_id`는 `INT UNSIGNED` PK다.
+legacy 후보의 `RUNNING`은 0건이어야 하며 `MI_BASE` 포함 여부를 운영자가 확인해야 한다.
+`SCENARIO` 후보는 연결 run history·execution-preparation·active 가격전망해석 건수도 함께 기록한다.
+파일명 판별 결과가 모호한 case는 자동 대상에 넣지 않고 수동 검토한다.
 
 ### Apply
 
@@ -333,7 +386,12 @@ Expected: 신규 table은 0건이고, `tmd_mdl_scnrcasem.case_id`는 `INT UNSIGN
 
 - 기존 table column backfill: 필요 없음.
 - initial catalog seed: 별도 승인된 seed SQL 필요.
-- legacy case mapping: 실제 파일 구조 hash/수동 검증을 통과한 case만 insert한다.
+- legacy case mapping/`OUTPUT` 보완: 수행하지 않는다.
+- legacy case cleanup: 별도 승인된 DML로 `INDEPENDENT | MI_BASE`는 `tmd_mdl_scnrcasem.del_yn = 'Y'`만 갱신한다.
+  대상 ID snapshot, `RUNNING` 0건, current `MI_BASE` 포함 여부 확인이 선행돼야 한다.
+- `SCENARIO` legacy cleanup DML(case master + `tmd_mdl_scnrcaseh` + 연결 `tmd_mi_model_execpreph` + 해당 시나리오 active
+  `tmm_mi_scenario_prc_interp_m`)은 아직 작성하지 않았다. `INPUT-11` 착수 시 대상 snapshot·건수 검증·rollback DML과 함께
+  작성해 DBA 검토를 받는다.
 
 ### Rollback
 
@@ -367,13 +425,13 @@ WHERE tmplt_stat_cd = 'ACTIVE' AND del_yn = 'N'
 GROUP BY mdl_spt_cd
 HAVING COUNT(*) > 1;
 
--- ACTIVE template의 파일 역할 완전성: 각 row가 role_cnt=3
+-- ACTIVE template의 파일 역할 완전성: 각 row가 role_cnt=4
 SELECT t.tmplt_id, COUNT(DISTINCT f.mdl_file_cd) AS role_cnt
 FROM tmm_mdlinpttmpltm t
 LEFT JOIN tmm_mdlinptfiled f ON f.tmplt_id = t.tmplt_id AND f.del_yn = 'N'
 WHERE t.tmplt_stat_cd = 'ACTIVE' AND t.del_yn = 'N'
 GROUP BY t.tmplt_id
-HAVING role_cnt <> 3;
+HAVING role_cnt <> 4;
 
 -- 수정범위가 부모 table 밖인 경우: 결과 0건
 SELECT s.mod_scop_id
@@ -391,14 +449,23 @@ JOIN tmm_mdlinptmodscopd b
 WHERE a.del_yn = 'N' AND b.del_yn = 'N'
   AND a.bgn_row_no <= b.end_row_no AND b.bgn_row_no <= a.end_row_no
   AND a.bgn_col_no <= b.end_col_no AND b.bgn_col_no <= a.end_col_no;
+
+-- 개발 전용 시트가 ACTIVE runtime catalog에 등록된 경우: 결과 0건
+SELECT s.inpt_sht_id, s.sht_nm
+FROM tmm_mdlinptshtd s
+JOIN tmm_mdlinptfiled f ON f.inpt_file_id = s.inpt_file_id
+JOIN tmm_mdlinpttmpltm t ON t.tmplt_id = f.tmplt_id
+WHERE t.tmplt_stat_cd = 'ACTIVE'
+  AND t.del_yn = 'N' AND f.del_yn = 'N' AND s.del_yn = 'N'
+  AND s.sht_nm IN ('SUMMARY', '플랫폼 입력 안내');
 ```
 
 ### DBA action / deployment note
 
 - `crt_*` 대 `reg_*` 감사 컬럼 표준을 확정한다.
 - generated column/unique 지원과 이름 충돌을 확인한다.
-- seed SQL과 3개 실제 workbook 검증 결과를 함께 승인한다.
-- catalog read application 배포 전 ACTIVE seed와 legacy mapping 정책을 확인한다.
+- seed SQL과 개발 전용 시트가 없는 운영 승인본 4개 workbook 검증 결과를 함께 승인한다.
+- catalog read application 배포 전 ACTIVE seed와 legacy soft-delete 대상 snapshot·DML·rollback 절차를 확인한다.
 
 ## 11. Recommendation
 
@@ -410,15 +477,17 @@ WHERE a.del_yn = 'N' AND b.del_yn = 'N'
 
 - 위 DDL은 draft이며 DBA 승인 전 적용하지 않는다.
 - initial seed SQL은 실제 편집 대상 table 경계를 확정한 뒤 별도로 작성한다.
-- case mapping backfill은 자동 파일명 매칭만으로 실행하지 않는다.
+- 기존 3파일 case에는 template mapping을 만들지 않는다.
+- legacy cleanup은 hard delete SQL이 아니라 case master soft-delete DML로 작성하고 DBA 승인 전 실행하지 않는다.
 
 ## 13. Risks / open questions
 
-- 행/열 append와 중간 insert 중 어느 동작을 허용할지 미정이다.
+- 구조 변경 허용 범위는 domain 규칙 13·26·45·47을 따른다. 마지막 행·열 추가와 개별 중간 삽입·삭제 예외를 구분할 정책 저장 구조·검증 계약은 미정이며, 현재 추가 가능 플래그만으로 전체 정책을 표현하지 않는다.
 - 새 행/열의 수식·서식·validation 복제 규칙이 미정이다.
 - 구조 hash의 정규화/판별 방식이 미정이다.
 - `BaseEntity`와 DB 명명 문서의 감사 컬럼 표준이 충돌한다.
 - ACTIVE child soft delete 및 version activation을 수행할 운영 주체/API가 미정이다.
+- legacy 3파일 case soft-delete의 대상 ID/건수, `RUNNING` 0건, current `MI_BASE` 영향은 운영 DB pre-check가 필요하다.
 
 ## 14. Normalization assessment
 
@@ -435,7 +504,7 @@ WHERE a.del_yn = 'N' AND b.del_yn = 'N'
 - hierarchy FK는 sibling UK의 첫 column이므로 별도 중복 index를 만들지 않는다.
 - 구조 판별은 selectivity가 높은 hash를 선두로 둔 `(file_strt_hash_val, mdl_file_cd, del_yn)`을 사용한다.
 - case template 역조회는 `(tmplt_id, del_yn)`을 사용한다.
-- 실제 데이터가 65 sheets 수준이므로 covering index를 선제 추가하지 않는다.
+- 운영 데이터가 약 70 sheets 수준이므로 covering index를 선제 추가하지 않는다.
 - nullable hash도 MySQL index에 포함되지만 조회는 non-null hash equality로 제한한다.
 
 ## 16. Query optimization notes
@@ -447,10 +516,9 @@ WHERE a.del_yn = 'N' AND b.del_yn = 'N'
 
 ## 17. Dictionary updates
 
-- added: `시트 / SHT / 단일단어`
-- reason: Excel file-sheet-table 계층의 필수 business term이다.
-- path: `docs/conventions/db-term-dictionary-sheet2.csv`
-- append: 385번 row, 기존 row 변경 없음.
+- 기존 설계에서 `시트 / SHT / 단일단어`를 385번 row에 등록했다.
+- 이번 `OUTPUT` 역할 추가에는 신규 용어가 필요하지 않다. 기존 등록어 `출력(OUTP)`,
+  `파일(FILE)`, `역할(ROLE)`로 표현 가능하므로 사전 변경은 없다.
 - 미등록 `편집`, `규칙`은 사용하지 않고 등록 용어 `수정(MOD)`, `범위(SCOP)`로 대체했다.
 
 ## 18. Implementation readiness

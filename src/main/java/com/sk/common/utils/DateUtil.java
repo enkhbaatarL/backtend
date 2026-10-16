@@ -46,6 +46,13 @@ public final class DateUtil {
     }
 
     /**
+     * [MCP Snapshot] KST(Asia/Seoul) 기준 LocalDateTime을 UTC 저장값과 비교할 수 있도록 UTC LocalDateTime으로 변환한다. utcToKst 의 역변환.
+     */
+    public static LocalDateTime kstToUtc(LocalDateTime kst) {
+        return kst == null ? null : kst.atZone(KST_ZONE).withZoneSameInstant(ZoneOffset.UTC).toLocalDateTime();
+    }
+
+    /**
      * LocalDate를 "yyyyMMdd" 문자열로 변환
      */
     public static String toYmd(LocalDate date) {

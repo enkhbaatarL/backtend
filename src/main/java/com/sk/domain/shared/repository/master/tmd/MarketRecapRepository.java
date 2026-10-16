@@ -10,7 +10,10 @@ import org.springframework.data.repository.query.Param;
 
 public interface MarketRecapRepository extends JpaRepository<MarketRecap, Long> {
 
-    Optional<MarketRecap> findByCrtrDtAndNwsMrktCtgrCd(String crtrDt, String nwsMrktCtgrCd);
+    Optional<MarketRecap> findByCrtrDtAndNwsMrktCtgrCdAndIsDeletedFalse(
+        String crtrDt, String nwsMrktCtgrCd);
+
+    Optional<MarketRecap> findByMrktRcapIdAndIsDeletedFalse(Long mrktRcapId);
 
     /**
      * 마켓 리캡 목록 조회 (날짜 범위, 키워드 검색, 페이징)

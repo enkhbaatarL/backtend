@@ -66,8 +66,8 @@ public class ScenarioGroupModelExecutionDedicatedController {
     @Operation(
         summary = "그룹 INPUT 파일 일괄 다운로드 API",
         description = """
-            그룹 내 실행 완료(EXECUTED_CONFIRMED) 시나리오들의 실행 입력 엑셀(확정 파라미터가 병합된 파일 3개)을 zip으로 내립니다.
-            zip 구조: 인풋파일_{그룹명}_{일시}.zip > {표시순서}_{시나리오명}/ > demand.xlsm, supply.xlsm, trade.xlsm
+            그룹 내 실행 완료(EXECUTED_CONFIRMED) 시나리오들의 실행 입력 엑셀 4개(확정 파라미터가 병합된 DEMAND·SUPPLY·TRADE와 OUTPUT 원본)를 zip으로 내립니다.
+            zip 구조: 인풋파일_{그룹명}_{일시}.zip > {표시순서}_{시나리오명}/ > demand.xlsm, supply.xlsm, trade.xlsm, output.xlsm
             실행 완료 시나리오가 없으면 404, 파일 메타가 불완전한 시나리오는 제외됩니다.
             """
     )

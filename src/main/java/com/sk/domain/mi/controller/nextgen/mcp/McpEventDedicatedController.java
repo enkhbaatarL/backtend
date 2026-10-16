@@ -32,7 +32,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
-@Profile("dedicated")
+@Profile(value = {"dedicated","testdb"})
 @Tag(name = "MCP Next Gen MI Event API", description = "MCP client용 Next Gen MI 이벤트 조회 API입니다.")
 @RestController
 @RequestMapping("/api/v1/mcp/mi/next-gen/events")
@@ -47,19 +47,21 @@ public class McpEventDedicatedController {
     @GetMapping("/event-types/lv1")
     @RequiredPermissionRules(rules = {
         @PermissionRule(role = Role.USER, conditions = {PermissionCondition.SKGAS_COMPANY_USER_ONLY}),
-        @PermissionRule(role = Role.ADMIN, conditions = {PermissionCondition.THIRD_PARTY_ADMIN_ONLY})
+        @PermissionRule(role = Role.ADMIN, conditions = {PermissionCondition.THIRD_PARTY_ADMIN_ONLY}),
+        @PermissionRule(role = Role.OPERATOR) // [MCP Operator] 회사는 인터셉터의 MCP 키 회사 일치 검사로 제한
     })
     public BaseResponse<List<EventTypeL1Res>> getEventTypesL1() {
         return BaseResponseFactory.create(eventService.getEventTypesL1());
     }
 
     @ApiOrder(2)
-    @Operation(summary = "이벤트 목록 조회", description = "필터, 정렬, 페이징 조건으로 Next Gen MI 이벤트 목록을 조회합니다.")
+    @Operation(summary = "이벤트 목록 조회", description = "게시 완료(PUBLISHED)된 신호 이벤트만 필터, 정렬, 페이징 조건으로 조회합니다. 미게시(DRAFT) 및 게시 상태가 없는 이벤트는 제외합니다.")
     @ApiResponse(responseCode = "200", description = "조회 성공")
     @GetMapping
     @RequiredPermissionRules(rules = {
         @PermissionRule(role = Role.USER, conditions = {PermissionCondition.SKGAS_COMPANY_USER_ONLY}),
-        @PermissionRule(role = Role.ADMIN, conditions = {PermissionCondition.THIRD_PARTY_ADMIN_ONLY})
+        @PermissionRule(role = Role.ADMIN, conditions = {PermissionCondition.THIRD_PARTY_ADMIN_ONLY}),
+        @PermissionRule(role = Role.OPERATOR) // [MCP Operator] 회사는 인터셉터의 MCP 키 회사 일치 검사로 제한
     })
     public BaseResponse<EventListRes> getEvents(@Valid @ParameterObject EventListReq request) {
         return BaseResponseFactory.create(eventService.getEvents(request));
@@ -73,7 +75,8 @@ public class McpEventDedicatedController {
     @GetMapping("/{eventId}/scenario-groups")
     @RequiredPermissionRules(rules = {
         @PermissionRule(role = Role.USER, conditions = {PermissionCondition.SKGAS_COMPANY_USER_ONLY}),
-        @PermissionRule(role = Role.ADMIN, conditions = {PermissionCondition.THIRD_PARTY_ADMIN_ONLY})
+        @PermissionRule(role = Role.ADMIN, conditions = {PermissionCondition.THIRD_PARTY_ADMIN_ONLY}),
+        @PermissionRule(role = Role.OPERATOR) // [MCP Operator] 회사는 인터셉터의 MCP 키 회사 일치 검사로 제한
     })
     public BaseResponse<List<EventLinkedScenarioGroupRes>> getEventScenarioGroups(
         @Parameter(description = "이벤트 ID", example = "1523") @PathVariable Long eventId
@@ -82,12 +85,13 @@ public class McpEventDedicatedController {
     }
 
     @ApiOrder(4)
-    @Operation(summary = "이벤트 상세 조회", description = "이벤트 상세와 영향 분석, AI 인사이트, 연결 시나리오 정보를 조회합니다.")
+    @Operation(summary = "이벤트 상세 조회", description = "게시 완료(PUBLISHED)된 이벤트의 상세와 영향 분석, AI 인사이트, 연결 시나리오 정보를 조회합니다. 이벤트가 없거나 게시 완료 상태가 아니면 RSC-001(이벤트 없음) 오류를 반환합니다.")
     @ApiResponse(responseCode = "200", description = "조회 성공")
     @GetMapping("/{eventId}")
     @RequiredPermissionRules(rules = {
         @PermissionRule(role = Role.USER, conditions = {PermissionCondition.SKGAS_COMPANY_USER_ONLY}),
-        @PermissionRule(role = Role.ADMIN, conditions = {PermissionCondition.THIRD_PARTY_ADMIN_ONLY})
+        @PermissionRule(role = Role.ADMIN, conditions = {PermissionCondition.THIRD_PARTY_ADMIN_ONLY}),
+        @PermissionRule(role = Role.OPERATOR) // [MCP Operator] 회사는 인터셉터의 MCP 키 회사 일치 검사로 제한
     })
     public BaseResponse<EventDetailRes> getEventDetail(
         @Parameter(description = "이벤트 ID", example = "1") @PathVariable Long eventId
@@ -101,7 +105,8 @@ public class McpEventDedicatedController {
     @GetMapping("/{eventId}/outlooks")
     @RequiredPermissionRules(rules = {
         @PermissionRule(role = Role.USER, conditions = {PermissionCondition.SKGAS_COMPANY_USER_ONLY}),
-        @PermissionRule(role = Role.ADMIN, conditions = {PermissionCondition.THIRD_PARTY_ADMIN_ONLY})
+        @PermissionRule(role = Role.ADMIN, conditions = {PermissionCondition.THIRD_PARTY_ADMIN_ONLY}),
+        @PermissionRule(role = Role.OPERATOR) // [MCP Operator] 회사는 인터셉터의 MCP 키 회사 일치 검사로 제한
     })
     public BaseResponse<PaginationRes<EventInstitutionOutlookRes>> getEventOutlooks(
         @Parameter(description = "이벤트 ID", example = "1") @PathVariable Long eventId,
@@ -119,7 +124,8 @@ public class McpEventDedicatedController {
     @GetMapping("/{eventId}/records")
     @RequiredPermissionRules(rules = {
         @PermissionRule(role = Role.USER, conditions = {PermissionCondition.SKGAS_COMPANY_USER_ONLY}),
-        @PermissionRule(role = Role.ADMIN, conditions = {PermissionCondition.THIRD_PARTY_ADMIN_ONLY})
+        @PermissionRule(role = Role.ADMIN, conditions = {PermissionCondition.THIRD_PARTY_ADMIN_ONLY}),
+        @PermissionRule(role = Role.OPERATOR) // [MCP Operator] 회사는 인터셉터의 MCP 키 회사 일치 검사로 제한
     })
     public BaseResponse<PaginationRes<EventRelatedRecordRes>> getEventRecords(
         @Parameter(description = "이벤트 ID", example = "1") @PathVariable Long eventId,

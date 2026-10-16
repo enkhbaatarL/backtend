@@ -11,8 +11,10 @@ import com.sk.common.enums.ResultCode;
 import com.sk.common.interceptor.McpUserContextInterceptor;
 import com.sk.domain.mi.service.nextgen.CmeBenchmarkService;
 import com.sk.domain.mi.service.nextgen.EventService;
+import com.sk.domain.mi.service.nextgen.EventSnapshotService;
 import com.sk.domain.mi.service.nextgen.PriceInterpretationService;
 import com.sk.domain.mi.service.nextgen.ScenarioGroupService;
+import com.sk.domain.shared.service.CommonService;
 import java.util.LinkedHashSet;
 import java.util.Set;
 import org.junit.jupiter.api.DisplayName;
@@ -47,6 +49,8 @@ class McpOpenApiTest {
     private static final String MCP_PREFIX = "/api/v1/mcp/mi/next-gen/";
     private static final String CME_PATH =
         "/api/v1/mcp/mi/next-gen/scenario-groups/graph/cme-benchmark";
+    // [MCP Feedback] MCP 채널의 유일한 쓰기(POST) 경로
+    private static final String USER_FEEDBACK_PATH = "/api/v1/mcp/mi/next-gen/user-feedback";
     private static final Set<String> EXPECTED_PATHS = Set.of(
         "/api/v1/mcp/mi/next-gen/events",
         "/api/v1/mcp/mi/next-gen/events/event-types/lv1",
@@ -60,7 +64,16 @@ class McpOpenApiTest {
         "/api/v1/mcp/mi/next-gen/scenario-groups/{scenarioGroupId}/price-interpretations",
         "/api/v1/mcp/mi/next-gen/scenario-groups/{scenarioGroupId}/scenarios/{scenarioId}",
         "/api/v1/mcp/mi/next-gen/events/{eventId}/scenario-groups",
-        CME_PATH);
+        CME_PATH,
+        // [MCP Snapshot] 이벤트 Snapshot 6건 추가 (13 → 19)
+        "/api/v1/mcp/mi/next-gen/events/{eventId}/snapshots",
+        "/api/v1/mcp/mi/next-gen/events/{eventId}/snapshots/lookup",
+        "/api/v1/mcp/mi/next-gen/events/{eventId}/snapshots/{snapshotId}",
+        "/api/v1/mcp/mi/next-gen/events/{eventId}/snapshots/{snapshotId}/compare",
+        "/api/v1/mcp/mi/next-gen/events/{eventId}/snapshots/{snapshotId}/records",
+        "/api/v1/mcp/mi/next-gen/events/{eventId}/snapshots/{snapshotId}/outlooks",
+        // [MCP Feedback] 사용자 피드백 등록 1건 추가 (19 → 20)
+        USER_FEEDBACK_PATH);
 
     @Autowired
     private MockMvc mockMvc;
@@ -80,8 +93,16 @@ class McpOpenApiTest {
     @MockitoBean
     private CmeBenchmarkService cmeBenchmarkService;
 
+    @MockitoBean
+    // [MCP Snapshot]
+    private EventSnapshotService eventSnapshotService;
+
+    @MockitoBean
+    // [MCP Feedback]
+    private CommonService commonService;
+
     @Test
-    @DisplayName("MCP API 그룹에 GET 13건과 필수 문자열 X-User-Id만 노출한다")
+    @DisplayName("MCP API 그룹에 GET 19건 + POST 1건, 필수 문자열 X-User-Id, Basic Auth 보안 요구를 노출한다")
     void exposesTwelveMcpOperationsWithOnlyUserDelegationHeader() throws Exception {
         JsonNode document = apiDocument("MCP API");
         JsonNode paths = document.path("paths");
@@ -89,9 +110,11 @@ class McpOpenApiTest {
         assertThat(fieldNames(paths)).containsExactlyInAnyOrderElementsOf(EXPECTED_PATHS);
         paths.fields().forEachRemaining(pathEntry -> {
             assertThat(pathEntry.getKey()).startsWith(MCP_PREFIX);
-            assertThat(fieldNames(pathEntry.getValue())).containsExactly("get");
+            // [MCP Feedback] 피드백 등록만 POST, 나머지는 GET 만
+            String method = USER_FEEDBACK_PATH.equals(pathEntry.getKey()) ? "post" : "get";
+            assertThat(fieldNames(pathEntry.getValue())).containsExactly(method);
 
-            JsonNode operation = pathEntry.getValue().path("get");
+            JsonNode operation = pathEntry.getValue().path(method);
             JsonNode userIdParameter = findParameter(operation, McpUserContextInterceptor.X_USER_ID);
             assertThat(userIdParameter.isMissingNode()).as(pathEntry.getKey()).isFalse();
             assertThat(userIdParameter.path("in").asText()).isEqualTo("header");
@@ -103,15 +126,19 @@ class McpOpenApiTest {
             assertThat(userIdParameter.path("schema").path("example").asText())
                 .isEqualTo("mcp-user@sk.com");
             assertThat(findParameter(operation, "X-Company-No").isMissingNode()).isTrue();
-            assertThat(operation.path("security").isMissingNode()
-                || operation.path("security").isEmpty()).isTrue();
+            // [MCP 인증] 인증 없음 → Basic Auth 보안 요구와 403 응답 노출
+            assertThat(operation.path("security").get(0).has("McpBasicAuth")).as(pathEntry.getKey()).isTrue();
             assertErrorResponse(operation, "400", "REQ_INVALID_PARAMETER", ResultCode.Error.REQ_INVALID_PARAMETER);
             assertErrorResponse(operation, "401", "AUTH_REQUIRED", ResultCode.Error.AUTH_REQUIRED);
+            assertErrorResponse(operation, "403", "AUTH_ACCESS_DENIED", ResultCode.Error.AUTH_ACCESS_DENIED);
         });
 
         assertThat(document.toString()).doesNotContain("X-Company-No");
-        assertThat(document.path("security").isMissingNode() || document.path("security").isEmpty()).isTrue();
-        assertThat(document.path("components").path("securitySchemes").has("BearerAuth")).isFalse();
+        assertThat(document.path("security").get(0).has("McpBasicAuth")).isTrue();
+        JsonNode securitySchemes = document.path("components").path("securitySchemes");
+        assertThat(securitySchemes.has("BearerAuth")).isFalse();
+        assertThat(securitySchemes.path("McpBasicAuth").path("type").asText()).isEqualTo("http");
+        assertThat(securitySchemes.path("McpBasicAuth").path("scheme").asText()).isEqualTo("basic");
     }
 
     @Test
@@ -138,6 +165,82 @@ class McpOpenApiTest {
         assertThat(paths.path(MCP_PREFIX + "scenario-groups/{scenarioGroupId}/price-interpretations").path("get").path("description").asText())
             .contains("generatable = false, interpretations = []")
             .contains("scenarioSeries[].executed");
+    }
+
+    @Test
+    // [MCP Snapshot] OpenAPI description = MCP tool 설명이므로 조회 주의사항 노출을 고정
+    @DisplayName("이벤트 Snapshot operation은 조회 시 주의사항(갱신 후 상태·changedFields·사본 기준)을 노출한다")
+    void exposesSnapshotGuidance() throws Exception {
+        JsonNode paths = apiDocument("MCP API").path("paths");
+        String snapshots = MCP_PREFIX + "events/{eventId}/snapshots";
+
+        assertThat(operation(paths, snapshots, "getEventSnapshots").path("description").asText())
+            .contains("최신 Snapshot 과 현재 Event(이벤트 상세 조회)가 다를 수 있습니다")
+            .contains("changedFields")
+            .contains("isEventDeleted 는 저장 당시 Event 상태");
+        assertThat(operation(paths, snapshots + "/lookup", "lookupEventSnapshot").path("description").asText())
+            .contains("versionNo 와 asOf 는 동시에 줄 수 없습니다")
+            .contains("found=false");
+        assertThat(operation(paths, snapshots + "/{snapshotId}/compare", "compareEventSnapshot").path("description").asText())
+            .contains("recordedChangedFields 는 파이프라인이 기록한 값")
+            .contains("comparable=false");
+        assertThat(operation(paths, snapshots + "/{snapshotId}/records", "getEventSnapshotRecords").path("description").asText())
+            .contains("LLM 에 전달된 근거 Record")
+            .contains("snapshotCreatedAt");
+        assertThat(operation(paths, snapshots + "/{snapshotId}/outlooks", "getEventSnapshotOutlooks").path("description").asText())
+            .contains("활성 기관 전망 전체의 사본");
+        assertThat(operation(paths, snapshots + "/{snapshotId}", "getEventSnapshot").path("description").asText())
+            .contains("RSC-001");
+    }
+
+    @Test
+    // [MCP Feedback] requestBody 필드 설명·허용값 = MCP tool 인자 설명·선택지
+    @DisplayName("사용자 피드백 등록 operation은 내용만 필수이고 유형·대상 종류의 허용값과 선택 기준을 노출한다")
+    void exposesUserFeedbackGuidance() throws Exception {
+        JsonNode document = apiDocument("MCP API");
+        JsonNode operation = document.path("paths").path(USER_FEEDBACK_PATH).path("post");
+        assertThat(operation.path("operationId").asText()).isEqualTo("createMcpUserFeedback");
+        assertThat(operation.path("description").asText())
+            .contains("명시적으로 요청한 경우에만")
+            .contains("정확하지 않아도 등록됩니다");
+
+        String schemaRef = operation.path("requestBody").path("content").path("application/json").path("schema").path("$ref").asText();
+        JsonNode schema = document.path("components").path("schemas").path(schemaRef.substring(schemaRef.lastIndexOf('/') + 1));
+        assertThat(schema.path("required").toString()).isEqualTo("[\"feedbackContent\"]");
+
+        JsonNode properties = schema.path("properties");
+        assertThat(properties.path("feedbackTypeCd").path("enum").toString())
+            .isEqualTo("[\"agent_output\",\"ux_ui\",\"feature_suggestion\",\"etc\"]");
+        assertThat(properties.path("feedbackTypeCd").path("description").asText()).contains("내용·데이터 관련은 대부분 이것");
+        assertThat(properties.path("feedbackSectionNm").path("enum").toString())
+            .isEqualTo("[\"Event\",\"Scenario Group\",\"Scenario\"]");
+        assertThat(properties.path("targetId").path("type").asText()).isEqualTo("integer");
+        assertThat(properties.path("targetId").path("description").asText())
+            .contains("eventId")
+            .contains("scenarioGroupId")
+            .contains("scenarioId")
+            .contains("추측하지 말고 생략");
+    }
+
+    @Test
+    @DisplayName("이벤트 목록·상세는 게시 완료 조회 범위와 기존 미존재 오류를 설명한다")
+    void exposesPublishedOnlyEventQueries() throws Exception {
+        JsonNode paths = apiDocument("MCP API").path("paths");
+        JsonNode list = paths.path(MCP_PREFIX + "events").path("get");
+        JsonNode detail = paths.path(MCP_PREFIX + "events/{eventId}").path("get");
+
+        assertThat(list.path("description").asText())
+            .contains("게시 완료(PUBLISHED)", "신호 이벤트", "미게시(DRAFT)", "게시 상태가 없는");
+        assertThat(detail.path("description").asText())
+            .contains("게시 완료(PUBLISHED)", "RSC-001");
+        assertThat(findParameter(list, "publishStatus").isMissingNode()).isTrue();
+        assertThat(findParameter(list, "publish_status").isMissingNode()).isTrue();
+    }
+
+    private JsonNode operation(JsonNode paths, String path, String operationId) {
+        JsonNode operation = paths.path(path).path("get");
+        assertThat(operation.path("operationId").asText()).as(path).isEqualTo(operationId);
+        return operation;
     }
 
     @Test
@@ -208,7 +311,11 @@ class McpOpenApiTest {
     @Import({
         SwaggerConfig.class,
         McpEventDedicatedController.class,
-        McpScenarioGroupDedicatedController.class
+        McpScenarioGroupDedicatedController.class,
+        // [MCP Snapshot]
+        McpEventSnapshotDedicatedController.class,
+        // [MCP Feedback]
+        McpUserFeedbackDedicatedController.class
     })
     static class TestApplication {
     }

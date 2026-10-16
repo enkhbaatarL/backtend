@@ -46,7 +46,8 @@ public class FileDownloadEncryptor {
             return skipEncryption(fileName, plainData, decision, startedAt);
         }
 
-        Role role = authorizationService.getCurrentRole();
+        // [운영자 서비스 접속] 서비스 접속 운영자는 USER 와 같은 다운로드 암호화 정책을 적용한다
+        Role role = authorizationService.isServiceAccessOperator() ? Role.USER : authorizationService.getCurrentRole();
         String companyCd = Role.USER == role
                 ? authorizationService.getCompanyCdWithPriority()
                 : null;

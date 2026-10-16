@@ -103,7 +103,7 @@ public class ModelParamConfirmationValidator {
 
         String modelFile;
         try {
-            modelFile = ModelInputFile.from(target.modelFile()).name();
+            modelFile = ModelInputFile.proposalTargetFrom(target.modelFile()).name();
         } catch (IllegalArgumentException e) {
             throw invalid(source, "modelTarget.modelFile must be DEMAND, SUPPLY, or TRADE.");
         }

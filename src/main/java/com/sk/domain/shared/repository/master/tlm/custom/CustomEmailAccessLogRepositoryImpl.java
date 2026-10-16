@@ -19,6 +19,7 @@ import org.springframework.data.support.PageableExecutionUtils;
 import org.springframework.stereotype.Repository;
 
 import com.querydsl.core.BooleanBuilder;
+import com.querydsl.core.types.dsl.BooleanExpression;
 import com.querydsl.core.types.dsl.Expressions;
 import com.querydsl.core.types.dsl.NumberTemplate;
 import com.querydsl.jpa.JPQLQuery;
@@ -81,11 +82,14 @@ public class CustomEmailAccessLogRepositoryImpl implements CustomEmailAccessLogR
 				emailAccessLog.modifyUserId,
 				emailAccessLog.modifyDt))
 				.from(emailAccessLog)
+				.leftJoin(emailAccessLog.goodsCriticalValueSetting, goodsCriticalValueSetting)
 				.leftJoin(user)
 				.on(emailAccessLog.emailReceiveUserLoginId.eq(user.userLoginId).and(user.isDeleted.isFalse())
-						.and(user.userRoleCd.eq(UserRoleCd.USER))) // 현재 정책으로 알람 받는 이용자는 USER만 가능
+						// [운영자 서비스 접속] 알림 설정이 있으면 설정 소유자만 매칭 (같은 로그인ID 의 USER·OPERATOR 계정 중복 방지)
+						.and(user.eq(goodsCriticalValueSetting.user).and(isNotificationReceiver())
+								// 설정이 없는 과거 이력은 기존 정책대로 USER 만 매칭
+								.or(goodsCriticalValueSetting.isNull().and(user.userRoleCd.eq(UserRoleCd.USER)))))
 				.leftJoin(user.customerCompany, customerCompany)
-				.leftJoin(emailAccessLog.goodsCriticalValueSetting, goodsCriticalValueSetting)
 				.leftJoin(goodsCriticalValueSetting.goodsDataSourceDetail, goodsDataSourceDetail)
 				.offset(pageable.getOffset())
 				.limit(pageable.getPageSize())
@@ -98,6 +102,14 @@ public class CustomEmailAccessLogRepositoryImpl implements CustomEmailAccessLogR
 				.where(builder);
 
 		return PageableExecutionUtils.getPage(content, pageable, countQuery::fetchOne);
+	}
+
+	/**
+	 * [운영자 서비스 접속] 알람을 받는 이용자: USER, 그리고 USER 와 같은 권한으로 서비스에 접속하는 타사접속 가능 OPERATOR
+	 */
+	private BooleanExpression isNotificationReceiver() {
+		return user.userRoleCd.eq(UserRoleCd.USER)
+				.or(user.userRoleCd.eq(UserRoleCd.OPERATOR).and(user.isOtherServiceAccessPossible.isTrue()));
 	}
 
 	@Override
@@ -142,6 +154,40 @@ public class CustomEmailAccessLogRepositoryImpl implements CustomEmailAccessLogR
 				.where(builder);
 
 		return PageableExecutionUtils.getPage(content, pageable, countQuery::fetchOne);
+	}
+
+	@Override
+	public List<MiNotificationRes> findNotificationsByEmailSendSns(List<Integer> emailSendSns, String userLoginId) {
+		if (emailSendSns == null || emailSendSns.isEmpty()) {
+			return List.of();
+		}
+		return queryFactory.select(notificationProjection())
+				.from(emailAccessLog)
+				.leftJoin(emailAccessLog.goodsCriticalValueSetting, goodsCriticalValueSetting)
+				.leftJoin(goodsCriticalValueSetting.goodsDataSourceDetail, goodsDataSourceDetail)
+				.leftJoin(goodsDataSourceDetail.goodsData, goodsData)
+				.leftJoin(goodsData.goods, goods)
+				.where(emailAccessLog.emailSendSn.in(emailSendSns),
+						emailAccessLog.emailReceiveUserLoginId.eq(userLoginId),
+						emailAccessLog.isDeleted.isFalse())
+				.fetch();
+	}
+
+	/** 알림벨 상세 응답 프로젝션 (기존 목록 findNotificationsWithinSevenDays와 동일 필드) */
+	private QMiNotificationRes notificationProjection() {
+		return new QMiNotificationRes(
+				emailAccessLog.emailSendSn,
+				emailAccessLog.emailTitleNm,
+				emailAccessLog.emailCntt,
+				emailAccessLog.emailSendDtm,
+				emailAccessLog.isEmailInquiry,
+				goodsCriticalValueSetting.notificationCriticalValueSeparateCd,
+				goodsCriticalValueSetting.criticalValueSettingVol,
+				goodsDataSourceDetail.goodsDataSourceUnitNm,
+				goodsDataSourceDetail.goodsDataSourceNm,
+				goodsDataSourceDetail.goodsDataSourceNo,
+				goodsData.goodsDataNo,
+				goods.goodsNo);
 	}
 
 	@Override

@@ -156,6 +156,14 @@ public class AuthorizationService {
     }
 
     /**
+     * [운영자 서비스 접속] 서비스(MI) 화면 접속 운영자 여부.
+     * 타사접속 가능 운영자는 자기 회사(token claim)의 USER 와 같은 권한으로 서비스를 이용한다.
+     */
+    public boolean isServiceAccessOperator() {
+        return getCurrentRole() == Role.OPERATOR && isThirdPartyAccessAllowed();
+    }
+
+    /**
      * 타사접속 가능여부 조회
      */
     public boolean isThirdPartyAccessAllowed() {
@@ -206,6 +214,8 @@ public class AuthorizationService {
             case USER -> goodsPermissionService.getUserGoodsPermissions(getUserNo());
             case ADMIN -> goodsPermissionService.getAccessAdminGoodsPermissions();
             case API_PLUS_OPERATOR -> goodsPermissionService.getPlusOperatorGoodsPermissions(getCompanyNo());
+            // [운영자 서비스 접속] 운영자: 자기 회사에 매핑된 상품 전체
+            case OPERATOR -> goodsPermissionService.getPlusOperatorGoodsPermissions(getCompanyNo());
             default -> throw AppErrorException.of(ResultCode.Error.REQ_INVALID, "role is not supported");
         };
     }

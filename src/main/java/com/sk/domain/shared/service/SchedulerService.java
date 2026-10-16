@@ -19,6 +19,7 @@ import com.sk.domain.shared.entity.master.tmd.User;
 import com.sk.domain.shared.entity.master.tmd.UserHistory;
 import com.sk.domain.shared.enums.Extension;
 import com.sk.domain.shared.enums.FileRelationshipObjectSeparateCode;
+import com.sk.domain.shared.enums.UserRoleCd;
 import com.sk.domain.shared.repository.master.tcm.UploadedFileRepository;
 import com.sk.domain.shared.repository.master.tif.FuturesRepository;
 import com.sk.domain.shared.repository.master.tif.FuturesSpreadRepository;
@@ -132,6 +133,11 @@ public class SchedulerService {
         return Boolean.TRUE;
     }
 
+    // [운영자 서비스 접속] 타사접속 불가 운영자 여부 (알람 발송 제외 대상)
+    private boolean isOperatorWithoutServiceAccess(User user) {
+        return user.getUserRoleCd() == UserRoleCd.OPERATOR && !Boolean.TRUE.equals(user.getIsOtherServiceAccessPossible());
+    }
+
     /**
      * 임계치를 확인하고 알림을 발송한다.
      *
@@ -147,6 +153,11 @@ public class SchedulerService {
          * 임계치 설정별 데이터 리스트 조회
          */
         for (GoodsCriticalValueSetting goodsCriticalValueSettingData : goodsCriticalValueSettings) {
+            // [운영자 서비스 접속] 운영자는 타사접속 가능(서비스 접속)인 경우에만 USER 와 같이 발송한다
+            if (isOperatorWithoutServiceAccess(goodsCriticalValueSettingData.getUser())) {
+                continue;
+            }
+
             // 공통 서버에서는 제외 리스트 확인 ( dedi 서비스에서는 처리 안함 )
             if(schedulerConfig.getExceptCompanyNoList() != null
                 && schedulerConfig.getExceptCompanyNoList().contains(goodsCriticalValueSettingData.getUser().getCustomerCompany().getCustomerCompanyNo())){

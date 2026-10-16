@@ -22,7 +22,6 @@ import com.sk.domain.mi.dto.response.fundamentalmodel.FundamentalModelCaseListIt
 import com.sk.domain.mi.dto.response.fundamentalmodel.FundamentalModelCaseListRes;
 import com.sk.domain.mi.dto.response.fundamentalmodel.FundamentalModelCaseStatusRes;
 import com.sk.domain.mi.dto.response.fundamentalmodel.FundamentalModelDownloadFileRes;
-import com.sk.domain.mi.dto.response.fundamentalmodel.FundamentalModelFileNameRes;
 import com.sk.domain.mi.dto.response.fundamentalmodel.FundamentalModelFiveScaleTruncatingNumberSerializer;
 import com.sk.domain.mi.dto.response.fundamentalmodel.FundamentalModelPeriodFilterOptions;
 import com.sk.domain.mi.dto.response.fundamentalmodel.FundamentalModelPriceRes;
@@ -110,11 +109,16 @@ import org.springframework.web.multipart.MultipartFile;
 @RequiredArgsConstructor
 public class FundamentalModelCaseServiceImpl implements FundamentalModelCaseService {
 
-    private static final int REQUIRED_FILE_COUNT = 3;
+    private static final int REQUIRED_FILE_COUNT = 4;
     private static final int TITLE_MAX_LENGTH = 200;
-    private static final List<String> REQUIRED_INPUT_FILE_ROLE_KEYWORDS = List.of("DEMAND", "SUPPLY", "TRADE");
+    private static final List<String> REQUIRED_INPUT_FILE_ROLE_KEYWORDS = List.of(
+        "DEMAND",
+        "SUPPLY",
+        "TRADE",
+        "OUTPUT"
+    );
     private static final String REQUIRED_INPUT_FILE_ROLE_MESSAGE =
-        "files는 파일명에 DEMAND, SUPPLY, TRADE 키워드를 각각 정확히 1개씩 포함해야 합니다.";
+        "files는 파일명에 DEMAND, SUPPLY, TRADE, OUTPUT 키워드를 각각 정확히 1개씩 포함해야 합니다.";
     private static final String FILE_RELATION_SCENARIO_CASE = "SCNRCASE";
     private static final String FILE_RELATION_SCENARIO_CASE_HISTORY = "SCNRCASEH";
     private static final String FILE_RELATION_SCENARIO_CASE_HISTORY_INTERMEDIATE = "SCNRCASEHI";
@@ -256,7 +260,10 @@ public class FundamentalModelCaseServiceImpl implements FundamentalModelCaseServ
         ScenarioCaseDetailRow caseRow = scenarioCaseRepository.findDetailRow(caseId)
             .orElseThrow(() -> caseNotFound(caseId));
 
-        List<FundamentalModelFileNameRes> inputFiles = findInputFiles(caseId);
+        List<FundamentalModelDownloadFileRes> inputFiles = findDownloadFiles(
+            caseId,
+            FILE_RELATION_SCENARIO_CASE
+        );
         ScenarioCaseRunHistory latestRunHistory = findLatestRunHistory(caseRow.lastRunId()).orElse(null);
         List<FundamentalModelDownloadFileRes> outputFiles = findOutputFiles(latestRunHistory);
         List<FundamentalModelDownloadFileRes> intermediateFiles = findIntermediateFiles(latestRunHistory);
@@ -2332,7 +2339,7 @@ public class FundamentalModelCaseServiceImpl implements FundamentalModelCaseServ
             FILE_RELATION_SCENARIO_CASE
         );
         if (inputFiles.size() != REQUIRED_FILE_COUNT) {
-            throw miBaseDesignationConflict(caseId, "input file count must be exactly 3");
+            throw miBaseDesignationConflict(caseId, "input file count must be exactly 4");
         }
 
         Map<String, Integer> roleCounts = new LinkedHashMap<>();
@@ -2392,7 +2399,7 @@ public class FundamentalModelCaseServiceImpl implements FundamentalModelCaseServ
         if (files == null || files.size() != REQUIRED_FILE_COUNT) {
             throw AppErrorException.of(
                 ResultCode.Error.REQ_INVALID_PARAMETER,
-                "files는 정확히 3개여야 합니다."
+                "files는 정확히 4개여야 합니다."
             );
         }
         boolean hasEmptyFile = files.stream().anyMatch(file -> file == null || file.isEmpty());
@@ -2489,16 +2496,6 @@ public class FundamentalModelCaseServiceImpl implements FundamentalModelCaseServ
         );
     }
 
-    private List<FundamentalModelFileNameRes> findInputFiles(Long caseId) {
-        return uploadedFileRepository.findActiveRelationshipFilesOrderByFileNoAsc(
-            Math.toIntExact(caseId),
-            FILE_RELATION_SCENARIO_CASE
-        ).stream()
-            .sorted(FILE_NAME_ORDER)
-            .map(uploadedFile -> new FundamentalModelFileNameRes(uploadedFile.getOriginalFileNm()))
-            .toList();
-    }
-
     private List<FundamentalModelDownloadFileRes> findDownloadFiles(
         Long relationshipObjectDistinguishNo,
         String relationshipObjectSeparateCd
@@ -2526,7 +2523,8 @@ public class FundamentalModelCaseServiceImpl implements FundamentalModelCaseServ
         String demandExcelPath = findInputFileStoragePath(inputFiles, "DEMAND");
         String supplyExcelPath = findInputFileStoragePath(inputFiles, "SUPPLY");
         String tradeExcelPath = findInputFileStoragePath(inputFiles, "TRADE");
-        validateRequiredInputFilePaths(demandExcelPath, supplyExcelPath, tradeExcelPath);
+        String outputExcelPath = findInputFileStoragePath(inputFiles, "OUTPUT");
+        validateRequiredInputFilePaths(demandExcelPath, supplyExcelPath, tradeExcelPath, outputExcelPath);
 
         return FundamentalModelJobArgs.builder()
             .runId(runId)
@@ -2534,6 +2532,7 @@ public class FundamentalModelCaseServiceImpl implements FundamentalModelCaseServ
             .demandExcelPath(demandExcelPath)
             .supplyExcelPath(supplyExcelPath)
             .tradeExcelPath(tradeExcelPath)
+            .outputExcelPath(outputExcelPath)
             .callbackUrl(buildCallbackUrl(runId))
             .build();
     }
@@ -2553,11 +2552,19 @@ public class FundamentalModelCaseServiceImpl implements FundamentalModelCaseServ
         return normalized;
     }
 
-    private void validateRequiredInputFilePaths(String demandExcelPath, String supplyExcelPath, String tradeExcelPath) {
-        if (isBlank(demandExcelPath) || isBlank(supplyExcelPath) || isBlank(tradeExcelPath)) {
+    private void validateRequiredInputFilePaths(
+        String demandExcelPath,
+        String supplyExcelPath,
+        String tradeExcelPath,
+        String outputExcelPath
+    ) {
+        if (isBlank(demandExcelPath)
+            || isBlank(supplyExcelPath)
+            || isBlank(tradeExcelPath)
+            || isBlank(outputExcelPath)) {
             throw AppErrorException.of(
                 ResultCode.Error.BIZ_RULE_VIOLATION,
-                "case input files must include DEMAND, SUPPLY, and TRADE storage paths."
+                "case input files must include DEMAND, SUPPLY, TRADE, and OUTPUT storage paths."
             );
         }
     }

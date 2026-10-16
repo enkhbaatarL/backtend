@@ -16,13 +16,14 @@
   - `tmd_mdl_scnrcaseh.run_id`
   - `tmd_mdl_scnrcaseh.run_seq`
   - `tcm_filel.file_rel_obj_spt_cd = 'SCNRCASEH'`
+  - `tcm_filel.file_rel_obj_spt_cd = 'SCNRCASEHTF'`
   - API response DTO contract in `docs/feature-specs/mi-fundamental-model-mock-api-feature-spec.md`
 - supersedes:
   - `docs/design-docs/gas/mi-fundamental-model-volumes-erd-ddl-draft.md` as canonical Volumes persistence design
   - `docs/design-docs/gas/mi-fundamental-model-volumes-region-bucket-json-plan-b.md` as a separate Plan B candidate; the approved `tmd_mdl_scnrcasevolrgnl` decision is folded into this canonical document
   - `docs/design-docs/gas/mi-fundamental-model-trade-flow-erd-ddl-draft.md` as canonical Trade Flow persistence design
   - "DB-backed 전환 시 별도 ERD review 필요" notes for Volumes/Trade Flows/Price result data in older drafts
-- last synced: 2026-09-15
+- last synced: 2026-09-17
 - implementation status: physical rollout complete (real DB implementation shipped 2026-06-15 for Volumes/Trade Flows/Price; see `docs/work-notes/2026/2026-06-15-*-real-db-implementation.md`). Remaining open questions below are follow-up DBA policy items, not rollout blockers.
 - open questions:
   - result retention policy: keep latest N runs per case, keep runs for M months, or archive by explicit DBA operation
@@ -47,6 +48,7 @@ API path, request/response field, validation, error mapping은 feature spec이 c
 | Output result data tables, keys, indexes, partition/readiness | this document |
 | Raw output file metadata linkage | `tcm_filel` via `file_rel_obj_spt_cd = 'SCNRCASEH'`, documented in the case execution DDL draft |
 | Model execution intermediate file linkage | `tcm_filel` via `file_rel_obj_spt_cd = 'SCNRCASEHI'` (same `run_seq`), canonical in `docs/design-docs/gas/mi-fundamental-model-intermediate-file-design.md`. Intermediate files are not parsed into result tables |
+| Trade Flow result file metadata linkage | `tcm_filel` via `file_rel_obj_spt_cd = 'SCNRCASEHTF'` (same `run_seq`), canonical in `docs/design-docs/gas/mi-fundamental-model-intermediate-file-design.md`. File metadata linkage is separate from the parsed Trade Flow table contract in this document |
 
 ## Fixed Decisions
 
@@ -57,6 +59,7 @@ API path, request/response field, validation, error mapping은 feature spec이 c
 
 2. raw output file과 parsed result data를 분리한다.
    - raw output file metadata: `tcm_filel(file_rel_obj_spt_cd = 'SCNRCASEH', file_rel_obj_dstg_no = run_seq)`
+   - Trade Flow result file metadata: `tcm_filel(file_rel_obj_spt_cd = 'SCNRCASEHTF', file_rel_obj_dstg_no = run_seq)`
    - parsed Volumes region-bucket rows: `tmd_mdl_scnrcasevolrgnl`
    - parsed Trade Flow header axis rows: `tmd_mdl_scnrcasetrdehdrl`
    - parsed Trade Flow sparse flow rows: `tmd_mdl_scnrcasetrdeflwl`
@@ -292,7 +295,7 @@ CREATE INDEX tmd_mdl_scnrcasetrdeflwl_ix03
 Rules:
 
 - Store MTPA only. API `unit=BCM` conversion is query/service logic.
-- Store only non-zero val[04_incremental_apply_v2.sql](../../../../../../Downloads/04_incremental_apply_v2.sql)ues. Missing cells are interpreted as `0` by the API/FE contract.
+- Store only non-zero values. Missing cells are interpreted as `0` by the API/FE contract.
 - `from_hdr_key` and `to_hdr_key` must exist in `tmd_mdl_scnrcasetrdehdrl` for the same `run_seq`, `selector_cd`, and `base_year`. Enforce by application validation or by DBA-approved composite FK if rollout complexity is acceptable.
 - Region columns are duplicated for filter performance and operational inspection. Header rows remain canonical for display label/order.
 
@@ -665,6 +668,7 @@ DB-backed real (current state):
 - Java/backend does not set `exec_stat_cd = 'COMPLETED'` unless callback validation and result row existence checks pass.
 - `tcm_filel(SCNRCASEH + run_seq)` remains the source for raw output file metadata, not for chart/table API rows.
 - `tcm_filel(SCNRCASEHI + run_seq)` holds model execution intermediate files (2026-09-07). The detail API exposes output/intermediate download metadata according to the canonical feature spec; intermediate files are never parsed into the result tables in this document.
+- `tcm_filel(SCNRCASEHTF + run_seq)` holds Trade Flow result file metadata (2026-09-17). The detail API exposes it as `files.tradeOutput`; parsed Trade Flow headers/flows remain in the result tables defined by this document.
 - mock seed files are kept only for local/demo mode.
 
 Transition checklist (all complete):

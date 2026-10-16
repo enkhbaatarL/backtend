@@ -9,8 +9,9 @@
   - `docs/design-docs/gas/mi-scenario-model-execution-workflow-design.md`
   - `docs/design-docs/gas/scenario-case-execution-workflow-design-draft.md`
   - `docs/design-docs/gas/price-forecast-interpretation-domain-design.md`
+- F4 4파일 구현 상태: 2026-10-15 구현 — multipart 4역할 검증, 네 input path Job 전달, OpenAPI 반영. 3파일 Case cutover 정리는 별도다.
 - dependencies: Kubernetes Job get/list/delete RBAC and scheduler-enabled dedicated deployment
-- last sync date: 2026-07-14
+- last sync date: 2026-10-15
 
 > 목적
 > - MI Scenario Workbench를 endpoint 목록이 아니라 backend 기능 단위로 정리한다.
@@ -87,7 +88,7 @@
 
 - 사용자는 `Events` 와 `Scenarios` 화면에서 시장 이벤트와 시나리오를 탐색한다.
 - 사용자는 선택한 event를 기반으로 scenario를 생성할 수 있다.
-- 사용자는 scenario 상세 화면에서 `MI 수급모델 실행` 버튼을 눌러 `MI 수급모델 실행 팝업`을 열고, baseline 파라미터를 참조로 확인한 뒤 입력 파일 3개를 업로드해 실행을 접수할 수 있다.
+- 사용자는 scenario 상세 화면에서 `MI 수급모델 실행` 버튼을 눌러 `MI 수급모델 실행 팝업`을 열고, baseline 파라미터를 참조로 확인한 뒤 입력 파일 4개를 업로드해 실행을 접수할 수 있다.
 - backend는 이 흐름을 `기능 단위`로 나누어 계약을 제공한다. 하나의 기능은 1개 이상의 endpoint 호출로 구성될 수 있다.
 
 ## 2. Functional Slice
@@ -182,7 +183,7 @@ flowchart LR
 - `Event` 는 read-only aggregate로 본다.
 - `Scenario` 는 생성 가능한 top-level aggregate로 본다.
 - 현재 범위에서 `scenario 수정`은 범용 metadata update API를 의미하지 않는다.
-- 현재 범위의 수정 행위는 `MI 수급모델 실행 전 입력 파일 3개 업로드 및 실행 접수` workflow로 한정한다.
+- 현재 범위의 수정 행위는 `MI 수급모델 실행 전 입력 파일 4개 업로드 및 실행 접수` workflow로 한정한다.
 - 별도 `PATCH /scenarios/{scenarioId}` 가 필요한 일반 수정 기능은 이번 범위에 포함하지 않는다.
 
 ## 3. Common Contract Rules
@@ -947,7 +948,7 @@ Dispatch accept response:
 
 ## 7.1 Feature Goal
 
-- 사용자는 시나리오 그룹 상세 화면에서 시나리오 1개를 선택하고 입력 파일 3개를 업로드해 `MI 수급모델 실행`을 접수한다.
+- 사용자는 시나리오 그룹 상세 화면에서 시나리오 1개를 선택하고 입력 파일 4개를 업로드해 `MI 수급모델 실행`을 접수한다.
 - 이 API는 `POST /api/v1/mi/fundamental-model/cases` 와 `POST /api/v1/mi/fundamental-model/cases/{caseId}/runs` 의 통합 흐름으로 본다.
 - 차이는 `scenarioId` 가 path로 들어오고, 생성되는 `tmd_mdl_scnrcasem` row가 `exec_type_cd = 'SCENARIO'`, `scnr_id = :scenarioId` 를 가진다는 점이다.
 - 실행 접수는 새 case row와 run history row를 생성하고 즉시 `RUNNING` 상태로 시작한다. 별도 `PENDING` 단계는 두지 않는다.
@@ -959,11 +960,11 @@ Dispatch accept response:
 
 ### Flow A. MI 수급모델 실행 접수
 
-1. 사용자가 시나리오 1개와 입력 파일 3개를 선택한다.
+1. 사용자가 시나리오 1개와 입력 파일 4개를 선택한다.
 2. `POST /api/v1/mi/next-gen/scenarios/{scenarioId}/model-executions`를 `multipart/form-data`로 호출한다. 파라미터 제안 방식은 `POST .../model-executions/from-parameters`를 사용한다.
 3. backend는 `scenarioId` 존재 여부, 실행 가능 여부와 입력 mode를 확인한다.
 4. backend는 동일 `scnr_id` 기준 `RUNNING` case가 있으면 중복 실행으로 거절한다.
-5. backend는 입력 파일 3개를 검증하고 storage(S3)에 업로드한다. 업로드 실패 시 이미 올라간 파일을 보상 삭제한다.
+5. backend는 입력 파일 4개를 검증하고 storage(S3)에 업로드한다. 업로드 실패 시 이미 올라간 파일을 보상 삭제한다.
 6. 최종 실행 등록 transaction에서 대상 시나리오의 active 가격전망해석 row를 write lock으로 조회한다. row가 있으면 `del_yn='Y'`로 soft delete하고 없으면 no-op으로 처리한다.
 7. 같은 transaction에서 `tmd_mdl_scnrcasem`에 `exec_type_cd = 'SCENARIO'`, `scnr_id = :scenarioId`, `case_stat_cd = 'RUNNING'` row를 생성한다.
 8. backend는 입력 파일을 `tcm_filel(file_rel_obj_spt_cd = 'SCNRCASE', file_rel_obj_dstg_no = case_id)`로 연결한다.
@@ -1006,7 +1007,7 @@ Dispatch accept response:
 - scenario 기준 active execution은 최대 1건만 허용한다.
 - `scnr_id` 기준 `RUNNING` row가 있으면 새 접수를 거절한다.
 - latest case가 `COMPLETED` 또는 `FAILED` 이면 새 접수를 허용한다.
-- 재접수는 기존 row update가 아니라 새 입력 파일 3개 업로드 + 새 `tmd_mdl_scnrcasem` row + 새 `tmd_mdl_scnrcaseh` row insert다.
+- 재접수는 기존 row update가 아니라 새 입력 파일 4개 업로드 + 새 `tmd_mdl_scnrcasem` row + 새 `tmd_mdl_scnrcaseh` row insert다.
 - 동시성 최후 방어선은 `actv_scnr_id` generated column + `UNIQUE (actv_scnr_id)` 이다.
 - 두 실행 POST의 request/response 계약은 변경하지 않는다. 가격전망해석 존재 여부를 options API에 추가하지 않고 사용자 확인값도 받지 않는다.
 - 최종 실행 등록 transaction에서 해당 `scenarioId`의 active 가격전망해석 row를 조회한다. row가 있으면 soft delete하고 없으면 no-op으로 처리한 뒤 새 Case/Run을 생성하며, 실패 시 모두 rollback한다.
@@ -1071,19 +1072,20 @@ Dispatch accept response:
 - Method: `POST`
 - Path: `/api/v1/mi/next-gen/scenarios/{scenarioId}/model-executions`
 - Content-Type: `multipart/form-data`
-- Purpose: 선택한 scenario에 대해 입력 파일 3개를 업로드하고 통합 case/run 실행을 `RUNNING` 으로 접수한다.
+- Purpose: 선택한 scenario에 대해 입력 파일 4개를 업로드하고 통합 case/run 실행을 `RUNNING` 으로 접수한다.
 
 #### Request DTO draft
 
 - `scenarioId` path variable
-- `files` (`@RequestPart`) — 입력 파일 3개
+- `files` (`@RequestPart`) — 입력 파일 4개
+- 2026-10-07 목표 계약: 네 역할 각 1개를 요구한다. OUTPUT은 제안·병합 대상이 아닌 실행 input이며 원본 보존 규칙은 `mi-model-parameter-proposal-design.md` §1A를 따른다.
 - `requestedBy` 는 인증 컨텍스트에서 추출
 
 #### Validation
 
 - `scenarioId` 는 존재해야 한다.
-- `files` 는 정확히 3개이고 각 파일은 비어 있지 않아야 한다.
-- 파일명은 `DEMAND`, `SUPPLY`, `TRADE` 역할을 각각 1개씩 식별할 수 있어야 한다.
+- `files` 는 정확히 4개이고 각 파일은 비어 있지 않아야 한다.
+- 파일명은 `DEMAND`, `SUPPLY`, `TRADE`, `OUTPUT` 역할을 각각 1개씩 식별할 수 있어야 한다.
 - 동일 `scnr_id` 기준 `RUNNING` row가 있으면 중복 접수로 거절한다.
 - 업로드 실패 시 이미 올라간 파일을 보상 삭제한다.
 - 동일 scenario의 active execution 중복 차단은 application validation과 DB unique helper로 함께 보장한다.
@@ -1101,7 +1103,8 @@ Dispatch accept response:
   "inputFiles": [
     { "fileNo": 1, "fileName": "DEMAND.xlsx", "storagePath": "s3://.../DEMAND.xlsx" },
     { "fileNo": 2, "fileName": "SUPPLY.xlsx", "storagePath": "s3://.../SUPPLY.xlsx" },
-    { "fileNo": 3, "fileName": "TRADE.xlsx", "storagePath": "s3://.../TRADE.xlsx" }
+    { "fileNo": 3, "fileName": "TRADE.xlsx", "storagePath": "s3://.../TRADE.xlsx" },
+    { "fileNo": 4, "fileName": "OUTPUT.xlsx", "storagePath": "s3://.../OUTPUT.xlsx" }
   ]
 }
 ```
@@ -1162,9 +1165,9 @@ Dispatch accept response:
 
 - 존재하지 않는 `scenarioId`
 - `MI 수급모델 실행` 비활성 scenario
-- 입력 파일 누락 또는 개수 불일치(3개 아님)
+- 입력 파일 누락 또는 개수 불일치(4개 아님)
 - 빈 파일 업로드
-- 파일 역할(`DEMAND`/`SUPPLY`/`TRADE`) 식별 실패
+- 파일 역할(`DEMAND`/`SUPPLY`/`TRADE`/`OUTPUT`) 식별 실패
 - latest execution이 `RUNNING` 인 상태에서의 실행 중복 요청
 - 존재하지 않는 `runId`
 - path `scenarioId` 와 `runId` 의 case/scenario 연결 불일치
@@ -1173,7 +1176,7 @@ Dispatch accept response:
 ## 7.5 Swagger Annotation Recommendation
 
 - `summary`: `MI 수급모델 실행 접수`
-- `description`: `선택한 scenario에 입력 파일 3개를 업로드하고 통합 case/run 실행을 RUNNING 상태로 접수합니다.`
+- `description`: `선택한 scenario에 입력 파일 4개를 업로드하고 통합 case/run 실행을 RUNNING 상태로 접수합니다.`
 - 실행 접수 description에는 기존 가격전망해석이 있으면 접수 transaction에서 해당 시나리오의 Agent 원본/현재 수정본 row를 soft delete한다는 내용을 포함한다.
 - `summary`: `MI 수급모델 실행 상태 조회`
 - `description`: `runId 기준으로 MI 수급모델 실행 상태를 polling 용도로 조회합니다.`
@@ -1185,7 +1188,7 @@ Dispatch accept response:
 - `MI 수급모델 실행`은 별도 execution table을 만들지 않고 `tmd_mdl_scnrcasem` + `tmd_mdl_scnrcaseh` 를 재사용한다.
 - submit 시 `tmd_mdl_scnrcasem.exec_type_cd = 'SCENARIO'`, `tmd_mdl_scnrcasem.scnr_id = :scenarioId`, `case_stat_cd = 'RUNNING'` 을 저장한다.
 - `tmd_mdl_scnrcaseh.run_id` 는 backend가 발급한 `yyyymmdd_hhmmss_XXXX` 형식의 canonical run identifier다.
-- 입력 파일 3개는 `tcm_filel` 의 `SCNRCASE + case_id` 관계로 보관한다.
+- 입력 파일 4개는 `tcm_filel` 의 `SCNRCASE + case_id` 관계로 보관한다.
 - 공유 callback은 `tmd_mdl_scnrcaseh.exec_stat_cd` 와 latest run일 때 `tmd_mdl_scnrcasem.case_stat_cd` 를 terminal 상태로 갱신한다.
 - scenario 상세조회용 결과 데이터는 execution status row와 분리된 read source를 가진다.
 - 가격전망해석은 `tmm_mi_scenario_prc_interp_m` 한 row에 Agent 원본과 현재 공유 수정본을 함께 보관한다. 재실행 접수 시 대상 시나리오의 active row 전체를 soft delete하므로 별도 수정 history table 삭제는 없다.

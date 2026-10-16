@@ -36,7 +36,7 @@ public record CurrentModelParamProposalRes(
     @Schema(description = "기존 수급모델 실행 상태. 실행 연결 전에는 null", implementation = ModelExecutionStatus.class, example = "COMPLETED", nullable = true)
     ModelExecutionStatus modelExecutionStatus,
 
-    @Schema(description = "성공한 실행의 DEMAND/SUPPLY/TRADE input 파일 projection. EXECUTED_CONFIRMED 외 상태에서는 null", nullable = true)
+    @Schema(description = "성공한 실행의 DEMAND/SUPPLY/TRADE/OUTPUT input 파일 projection. EXECUTED_CONFIRMED 외 상태에서는 null", nullable = true)
     ModelExecutionInputFilesRes executionInputFiles,
 
     @Schema(

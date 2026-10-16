@@ -14,11 +14,11 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.web.multipart.MultipartFile;
 
 /**
- * 병합 컴포넌트의 산출물 — 확정값이 반영된 수급모델 입력 파일 3개.
+ * 병합 컴포넌트의 산출물 — 확정값이 반영된 수급모델 입력 파일 4개.
  *
- * 병합 대상이 없던 파일도 원본 그대로 포함해 항상 3개 완비 상태다.
+ * 병합 대상이 없던 파일과 OUTPUT도 원본 그대로 포함해 항상 4개 완비 상태다.
  * 산출물은 힙이 아니라 임시 파일로 보관한다(메모리 절감) — 사용이 끝나면 호출 측이 cleanup()으로 삭제해야 한다.
- * toMultipartFiles()로 기존 실행 접수 파이프라인(파일 3개 업로드)에 바로 태울 수 있다.
+ * toMultipartFiles()로 기존 실행 접수 파이프라인(파일 4개 업로드)에 바로 태울 수 있다.
  */
 @Slf4j
 public final class MergedModelInputFiles {
@@ -46,7 +46,7 @@ public final class MergedModelInputFiles {
     }
 
     /**
-     * 기존 수급모델 실행 접수 계약(DEMAND/SUPPLY/TRADE 파일 3개)에 맞는 MultipartFile 목록으로 변환한다.
+     * 기존 수급모델 실행 접수 계약(DEMAND/SUPPLY/TRADE/OUTPUT 파일 4개)에 맞는 MultipartFile 목록으로 변환한다.
      * 파일 기반이라 업로드 시 스트림으로 읽힌다 — cleanup() 전까지만 유효하다.
      */
     public List<MultipartFile> toMultipartFiles() {

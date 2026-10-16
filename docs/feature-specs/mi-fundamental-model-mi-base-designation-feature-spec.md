@@ -12,7 +12,7 @@
   - `docs/design-docs/gas/scenario-case-execution-erd-ddl-draft.md`
   - `SECURITY.md`
 - supersedes: 없음
-- last synced: 2026-09-14
+- last synced: 2026-09-28
 - open questions: 없음. 상세 화면의 지정 actor/time 표시와 input 내용 제공은 별도 후속 계약에서 다룬다.
 
 ## 1. Feature Goal
@@ -23,14 +23,14 @@
 
 MI Base의 lifecycle·보존·source snapshot 의미는 `scenario-case-execution-workflow-design-draft.md`, 물리 제약·migration은 `scenario-case-execution-erd-ddl-draft.md`가 canonical source다. 아래 항목은 API 요청·응답과 검증에 직접 필요한 참조 요약이며, 충돌 시 각 canonical design을 따른다.
 
-- `caseId`는 input 파일 3개가 귀속된 실행 case의 식별자다.
+- `caseId`는 input 파일 4개가 귀속된 실행 case의 식별자다.
 - `runId`는 case 아래 실행 이력 식별자이며 input 파일 제공 대상 식별자로 사용하지 않는다.
 - `execType` 코드는 `INDEPENDENT | SCENARIO | MI_BASE`를 유지한다.
 - MI Base는 별도 case/run/file 세트를 신규 적재한 건이 아니라, 기존 독립실행 case 1건을 권한 있는 사용자가 `execType = MI_BASE`로 지정한 건이다.
-- MI Base 지정은 case의 `caseId`, 소유자, 실행 이력, 결과, `SCNRCASE + caseId`로 연결된 input Excel 3개를 변경하지 않는다.
+- MI Base 지정은 case의 `caseId`, 소유자, 실행 이력, 결과, `SCNRCASE + caseId`로 연결된 input Excel 4개를 변경하지 않는다.
 - 현재 MI Base는 전역에서 정확히 0~1건이다. active `MI_BASE` row 자체를 최대 1건으로 제한하며, 새 대상을 지정하면 이전 MI Base는 `INDEPENDENT`로 복귀한다.
-- 지정 이후 시작하는 수급모델 input 생성은 새 MI Base case의 `DEMAND`, `SUPPLY`, `TRADE` input을 기준으로 한다. 이미 생성·접수·완료된 실행의 input, 결과, 기준값은 소급 변경하지 않는다.
-- 한 번의 수급모델 input 생성은 시작 시 현재 MI Base `caseId`와 정확한 3개 파일 metadata를 한 번만 선택해 source snapshot으로 고정한다. 생성 중 MI Base가 바뀌어도 세 역할을 다른 case에서 섞지 않는다.
+- 지정 이후 시작하는 수급모델 input 생성은 새 MI Base case의 `DEMAND`, `SUPPLY`, `TRADE`, `OUTPUT` input을 기준으로 한다. 이미 생성·접수·완료된 실행의 input, 결과, 기준값은 소급 변경하지 않는다.
+- 한 번의 수급모델 input 생성은 시작 시 현재 MI Base `caseId`와 정확한 4개 파일 metadata를 한 번만 선택해 source snapshot으로 고정한다. 생성 중 MI Base가 바뀌어도 네 역할을 다른 case에서 섞지 않는다.
 - 물리 스키마 및 DBA rollout은 `scenario-case-execution-erd-ddl-draft.md`를 따른다. current MI Base 단건 불변식은 `exec_type_cd`와 `del_yn`에서 파생되는 generated `actv_base_yn` unique로 보장한다.
 
 ### Fixed MI Base Lifecycle
@@ -40,6 +40,7 @@ MI Base의 lifecycle·보존·source snapshot 의미는 `scenario-case-execution
 - current는 유일한 active `exec_type_cd = MI_BASE` row다. `MAX(case_id)`나 일반 `mod_dtm`으로 계산하지 않는다.
 - `actv_base_yn`은 `del_yn = 'N' AND exec_type_cd = 'MI_BASE'`일 때만 `Y`, 그 외에는 `NULL`인 STORED generated column이다. `UNIQUE (actv_base_yn)`이 current 최대 1건을 강제한다.
 - current MI Base는 상세·상태·Volumes filter-options·Volumes·Trade Flows·Price 조회만 허용하는 읽기 전용 case다. metadata 수정, soft delete, 동일 case 재실행은 허용하지 않는다.
+- 위 soft-delete 금지는 일반 사용자/API 계약이다. 4파일 기능 cutover의 DBA 승인 DML은 예외적으로 legacy 3파일 current `MI_BASE`를 soft delete할 수 있다. 이 예외는 API 권한을 넓히지 않으며 파일·run history·결과를 physical delete하지 않는다.
 - FE는 상세 응답의 `execType = MI_BASE`를 기준으로 수정·삭제·재실행 action을 노출하거나 관련 API를 호출하지 않는다. backend도 직접 호출을 막기 위해 mutation 대상의 `INDEPENDENT` 제한을 유지한다.
 - current가 필요 없어진다는 의미의 별도 지정 해제 command는 제공하지 않는다. 기준 교체는 새 완료 `INDEPENDENT` case를 지정하는 API만 사용한다.
 - 이전 MI Base는 `INDEPENDENT`로 복귀하므로 기존 `cases` 목록과 기존 독립실행 read/mutation 규칙을 다시 따른다.
@@ -184,7 +185,7 @@ MI Base 상세의 결과 탭은 기존 응답 형식과 필터 계약을 그대�
 PUT /api/v1/mi/fundamental-model/cases/{caseId}/mi-base
 ```
 
-`caseId`가 가리키는 완료 실행을 전역 현재 MI Base로 지정하는 idempotent command다. 같은 현재 MI Base를 다시 지정해도 authorization과 latest run/input 3종/Price 적격성을 먼저 다시 검증하며, 모두 통과하면 row를 변경하지 않고 `200`으로 현재값을 반환한다. MI Base 해제만 수행하는 endpoint는 이번 슬라이스에 포함하지 않는다.
+`caseId`가 가리키는 완료 실행을 전역 현재 MI Base로 지정하는 idempotent command다. 같은 현재 MI Base를 다시 지정해도 authorization과 latest run/input 4종/Price 적격성을 먼저 다시 검증하며, 모두 통과하면 row를 변경하지 않고 `200`으로 현재값을 반환한다. MI Base 해제만 수행하는 endpoint는 이번 슬라이스에 포함하지 않는다.
 
 ### Request
 
@@ -196,12 +197,12 @@ PUT /api/v1/mi/fundamental-model/cases/{caseId}/mi-base
 
 1. 공통 대상은 `del_yn = 'N'`, `scnr_id IS NULL`, `case_stat_cd = 'COMPLETED'`이고 `exec_type_cd = 'INDEPENDENT'`여야 한다. 단, 요청 `caseId`가 현재 MI Base와 같으면 `exec_type_cd = 'MI_BASE'`를 멱등 예외로 허용하며, 2~4의 적격성을 다시 검증한 뒤에만 변경 없는 `200`을 반환한다. 그 밖의 `MI_BASE`나 `SCENARIO`는 대상이 될 수 없다.
 2. `last_run_id`가 대상 case의 active `COMPLETED` run history를 가리켜야 한다.
-3. `SCNRCASE + caseId`에 active input 파일이 정확히 3개이고 파일명의 `DEMAND`, `SUPPLY`, `TRADE` 역할이 각각 1개여야 한다.
+3. `SCNRCASE + caseId`에 active input 파일이 정확히 4개이고 파일명의 `DEMAND`, `SUPPLY`, `TRADE`, `OUTPUT` 역할이 각각 1개여야 한다.
 4. 최신 완료 run에는 MI Base 그래프에 필요한 Price 결과가 존재해야 한다.
 5. 한 transaction에서 기존 current `MI_BASE`를 `INDEPENDENT`로 되돌리고 그 UPDATE를 DB에 flush한 뒤 대상을 `MI_BASE`로 변경한다. JPA 변경 감지의 자동 UPDATE 순서에 맡기지 않는다. `actv_base_yn`은 application이 직접 쓰지 않고 DB가 두 row의 `exec_type_cd`와 `del_yn`에서 자동 계산한다. 변경 row의 `mod_usr_logn_id`, `mod_dtm`은 요청 actor와 변경 시각으로 갱신한다.
 6. case/run/file/result row를 생성·삭제하지 않고 `case_id`, `usr_no`, `case_stat_cd`, `last_run_id`, 실행 이력과 결과를 보존한다.
 7. `exec_type_cd`와 `del_yn`에서 파생한 generated `actv_base_yn` unique constraint가 current MI Base 2건 생성을 차단한다. constraint 충돌은 `409 BIZ_RULE_VIOLATION`으로 매핑한다.
-8. transaction commit 이후 시작되는 수급모델 input 생성만 새 MI Base input 3개를 사용한다. input 생성 시작 시 현재 MI Base `caseId`와 `DEMAND`, `SUPPLY`, `TRADE` 파일 metadata를 한 번에 source snapshot으로 고정하고, 세 workbook open은 그 snapshot만 사용한다. 기존에 생성·staging·접수·완료된 실행은 변경하지 않는다.
+8. transaction commit 이후 시작되는 수급모델 input 생성만 새 MI Base input 4개를 사용한다. input 생성 시작 시 현재 MI Base `caseId`와 `DEMAND`, `SUPPLY`, `TRADE`, `OUTPUT` 파일 metadata를 한 번에 source snapshot으로 고정하고, 네 workbook open은 그 snapshot만 사용한다. 기존에 생성·staging·접수·완료된 실행은 변경하지 않는다.
 9. MI Base 지정은 `COMPLETED` case만 허용하고 실행 API는 `PENDING | FAILED`만 허용하므로 지정과 실행의 적격 상태는 겹치지 않는다. metadata 수정·soft delete는 지정과 교차할 수 있으므로 write lock 또는 atomic exec-type predicate로 직렬화하며, 지정이 먼저 commit되면 해당 mutation은 MI Base를 변경하지 않고 실패한다.
 10. current가 있는 상태의 서로 다른 대상 동시 지정은 current/target row lock으로 직렬화한다. 두 요청이 순차 성공하면 최종 current는 마지막 commit 대상이다. current가 0건인 최초 지정 두 건은 공통 current row가 없어 완전 직렬화되지 않을 수 있으므로 unique guard가 한 요청을 거부할 수 있다. unique 충돌·deadlock·lock timeout처럼 실제 DB 경쟁 오류가 발생한 요청은 `409`로 종료하고, 성공·충돌 후 클라이언트는 `/cases`를 재조회한다.
 
@@ -297,7 +298,7 @@ PUT /api/v1/mi/fundamental-model/cases/{caseId}/mi-base
 - MI Base 지정: JPA transaction에서 대상과 current MI Base를 write lock으로 확인한다. 기존 current type을 `INDEPENDENT`로 복귀시키고 flush한 뒤 대상 type을 `MI_BASE`로 변경한다. DB unique는 current 2건 방어선이다. current가 있으면 교체 command가 해당 row lock으로 직렬화되고, current 0건 최초 지정 경합에서는 한 요청이 unique 충돌로 `409`가 될 수 있다.
 - 기존 실행 정책 정합: `POST /cases/{caseId}/runs`의 conditional update는 `PENDING | FAILED`만 허용한다. `COMPLETED` 요청은 `409 BIZ_RULE_VIOLATION`으로 거부한다.
 - 기존 mutation: update/delete는 지정과 같은 lock 또는 atomic `execType = INDEPENDENT` predicate를 적용한다.
-- 이후 input 생성: merge 시작 시 현재 MI Base case와 그 case의 `SCNRCASE + caseId` input 3개 metadata를 한 번만 조회해 immutable source snapshot으로 고정한다. `BasecaseWorkbookProvider`는 세 역할을 snapshot에서만 열어야 한다. MI Base가 없을 때만 기존 플랫폼 기본 template 3개 전체를 snapshot으로 선택하며, 지정된 MI Base 파일을 읽지 못한 경우 이전/default 기준으로 조용히 fallback하지 않고 실행 준비를 실패시킨다.
+- 이후 input 생성: merge 시작 시 현재 MI Base case와 그 case의 `SCNRCASE + caseId` input 4개 metadata를 한 번만 조회해 immutable source snapshot으로 고정한다. `BasecaseWorkbookProvider`는 네 역할을 snapshot에서만 열어야 한다. MI Base가 없을 때만 플랫폼 기본 template 4개 전체를 snapshot으로 선택하며, 지정된 MI Base 파일을 읽지 못한 경우 이전/default 기준으로 조용히 fallback하지 않고 실행 준비를 실패시킨다.
 - input 파일 metadata: 기존 `UploadedFileRepository.findActiveRelationshipFilesOrderByFileNoAsc` 재사용.
 
 ### Expected Touch Points
@@ -329,6 +330,7 @@ PUT /api/v1/mi/fundamental-model/cases/{caseId}/mi-base
 - Given 목록의 current `miBase.caseId`일 때, when `GET /cases/{caseId}`를 호출하면, then 기존 상세 metadata/files/latestRun과 `execType=MI_BASE`를 반환한다.
 - Given active `INDEPENDENT` case일 때, when 상세 조회하면, then 기존 상세 내용과 `execType=INDEPENDENT`를 반환한다.
 - Given `SCENARIO` 또는 soft-deleted case일 때, when 상세 조회하면, then `404 RSC_NOT_FOUND`를 반환한다.
+- Given legacy 3파일 `INDEPENDENT | MI_BASE`가 cutover DML로 soft delete됐을 때, then 목록에서 제외되고 상세·상태·결과 조회는 `404 RSC_NOT_FOUND`를 반환한다.
 - Given current `MI_BASE`일 때, when 수정·삭제·실행을 요청하면, then 기존 resource hiding 규칙에 따라 `404 RSC_NOT_FOUND`를 반환한다.
 - Given current `MI_BASE` 상세 화면일 때, then FE는 결과 탭을 노출하고 수정·삭제·재실행 action은 노출하거나 관련 API를 호출하지 않는다.
 
@@ -341,15 +343,15 @@ PUT /api/v1/mi/fundamental-model/cases/{caseId}/mi-base
 ### MI Base 지정
 
 - Given 완료된 active INDEPENDENT case와 current MI Base가 있을 때, when 대상 case를 지정하면, then 같은 transaction에서 대상이 current MI Base가 되고 응답은 대상 option을 반환한다. 이전 case는 `INDEPENDENT`로 복귀한다.
-- Given 현재 MI Base와 같은 `caseId`를 다시 지정할 때, when authorization과 latest run/input 3개/Price 적격성이 모두 유효하면, then 추가 row 변경 없이 동일한 성공 응답을 반환한다. 적격성이 깨졌으면 기존 row를 바꾸지 않고 409를 반환한다.
+- Given 현재 MI Base와 같은 `caseId`를 다시 지정할 때, when authorization과 latest run/input 4개/Price 적격성이 모두 유효하면, then 추가 row 변경 없이 동일한 성공 응답을 반환한다. 적격성이 깨졌으면 기존 row를 바꾸지 않고 409를 반환한다.
 - Given 더 작은 `caseId`의 과거 독립실행을 지정할 때, then `caseId` 크기와 무관하게 그 대상이 현재 MI Base가 된다.
 - Given current가 있는 상태에서 두 사용자가 서로 다른 case를 동시에 지정할 때, then 요청은 공통 current/target lock으로 직렬화되고 DB에는 active `MI_BASE`가 최대 1건만 남는다. 둘 다 순차 성공하면 마지막 commit 대상이 current다. Given current가 0건인 최초 지정 경합일 때, then 한 요청은 성공하고 unique 충돌이 난 요청은 409가 될 수 있다.
-- Given 대상이 미완료이거나 latest run/input 3개/Price 결과가 불완전할 때, then 409를 반환하고 기존 MI Base는 변경하지 않는다.
+- Given 대상이 미완료이거나 latest run/input 4개/Price 결과가 불완전할 때, then 409를 반환하고 기존 MI Base는 변경하지 않는다.
 - Given 허용 actor가 다른 사용자가 생성한 완료 독립실행을 지정할 때, then 소유자 또는 소유 회사 조건 없이 현재 MI Base로 교체된다.
 - Given `COMPLETED` INDEPENDENT case일 때, when 실행을 다시 요청하면, then 409로 거부한다. 새 정상 실행은 새 case를 생성해야 하며 `FAILED`일 때만 같은 case로 모델 호출을 재시도한다.
 - Given metadata 수정 또는 soft delete가 지정과 경쟁할 때, then 같은 row-lock/atomic predicate 경계로 직렬화되어 MI Base row를 변경하지 않는다.
-- Given 지정 transaction이 commit된 뒤 새 수급모델 input을 생성할 때, then 대상 case의 `DEMAND`, `SUPPLY`, `TRADE`를 기준으로 사용한다.
-- Given input 생성이 source snapshot을 선택한 뒤 MI Base가 교체될 때, then 진행 중 생성은 선택한 한 case의 세 파일만 사용하고 다음 생성부터 새 MI Base를 사용한다.
+- Given 지정 transaction이 commit된 뒤 새 수급모델 input을 생성할 때, then 대상 case의 `DEMAND`, `SUPPLY`, `TRADE`, `OUTPUT`을 기준으로 사용한다.
+- Given input 생성이 source snapshot을 선택한 뒤 MI Base가 교체될 때, then 진행 중 생성은 선택한 한 case의 네 파일만 사용하고 다음 생성부터 새 MI Base를 사용한다.
 - Given 지정 전에 이미 생성·접수·완료된 실행이 있을 때, then 해당 input·결과·기준값은 변경되지 않는다.
 
 ## 8. API Slice Boundary
@@ -417,3 +419,4 @@ PUT /api/v1/mi/fundamental-model/cases/{caseId}/mi-base
 - 2026-09-10: 미확정 Input 제공 계약을 `mi-fundamental-model-input-provision-feature-spec.md`로 분리하고 이 문서를 MI Base 목록·상세·지정 계약으로 축소했다.
 - 2026-09-10: `COMPLETED` INDEPENDENT는 재사용하지 않고 새 정상 실행마다 새 case를 생성하는 정책을 반영했다. 같은 case의 `/runs` 재호출은 모델 호출이 `FAILED`일 때만 허용하므로 지정-vs-run 경쟁 요구를 제거했다.
 - 2026-09-14: MI Base 상세 화면의 결과 탭 제공을 확정해 status/Volumes filter-options/Volumes/Trade Flows/Price read를 active `MI_BASE`에 열었다. MI Base는 읽기 전용으로 유지해 FE가 수정·삭제·재실행 action을 노출·호출하지 않고 backend도 mutation을 계속 차단한다. current 교체는 지정 API로만 수행하며 별도 지정 해제 API는 만들지 않는다.
+- 2026-09-28: MI Base 적격 input을 `DEMAND/SUPPLY/TRADE/OUTPUT` 4개로 변경했다. legacy 3파일 current `MI_BASE`는 일반 API가 아니라 DBA 승인 cutover DML에서만 soft delete할 수 있으며 파일·실행이력·결과는 보존한다.

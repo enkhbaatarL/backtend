@@ -1,5 +1,6 @@
 package com.sk.common.interceptor;
 
+import com.sk.common.config.security.mcp.McpClientAuthenticationToken;
 import com.sk.common.enums.ResultCode;
 import com.sk.common.exception.AppHttpStatusException;
 import com.sk.common.utils.DateUtil;
@@ -15,10 +16,12 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import java.time.Instant;
 import java.util.List;
-import lombok.RequiredArgsConstructor;
+import java.util.Objects;
 import org.apache.commons.lang3.BooleanUtils;
 import org.apache.commons.lang3.StringUtils;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
+import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContext;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.oauth2.jwt.Jwt;
@@ -27,22 +30,39 @@ import org.springframework.stereotype.Component;
 import org.springframework.web.servlet.HandlerInterceptor;
 
 @Component
-@RequiredArgsConstructor
 public class McpUserContextInterceptor implements HandlerInterceptor {
 
     public static final String X_USER_ID = "X-User-Id";
 
     private static final String MCP_TOKEN_VALUE = "mcp-effective-user";
+    // [MCP 인증] X-User-Id 위임 불가 시 403 메시지 (사용자 없음·회사 불일치는 같은 메시지)
+    private static final String USER_ID_REQUIRED = "X-User-Id header is required.";
+    private static final String USER_ID_NOT_ALLOWED = "X-User-Id is not allowed for this MCP key.";
 
     private final UserRepository userRepository;
     private final CustomerCompanyRepository customerCompanyRepository;
+    // [MCP 인증] X-User-Id 헤더가 없을 때 대신 쓸 로그인 ID (mcp.default-id). 비어 있으면 헤더 필수
+    private final String defaultUserId;
+
+    public McpUserContextInterceptor(
+        UserRepository userRepository,
+        CustomerCompanyRepository customerCompanyRepository,
+        @Value("${mcp.default-id:}") String defaultUserId
+    ) {
+        this.userRepository = userRepository;
+        this.customerCompanyRepository = customerCompanyRepository;
+        this.defaultUserId = StringUtils.trimToNull(defaultUserId);
+    }
 
     @Override
     public boolean preHandle(HttpServletRequest request, HttpServletResponse response, Object handler) {
         removeOwnedMdcValues();
 
         try {
-            User user = findEffectiveUser(request.getHeader(X_USER_ID));
+            // [MCP 인증] Basic Auth 클라이언트 확인 → X-User-Id 사용자 조회 → 회사 일치 검사
+            McpClientAuthenticationToken client = findAuthenticatedClient();
+            User user = findEffectiveUser(resolveUserId(request));
+            validateCompanyAccess(client, user);
             JwtAuthenticationToken authentication = createAuthentication(user);
 
             MDCUtil.setValue(MDCUtil.REQUEST_USER_ID, user.getUserNo().toString());
@@ -71,19 +91,59 @@ public class McpUserContextInterceptor implements HandlerInterceptor {
         clearOwnedContext();
     }
 
+    /**
+     * [MCP 인증] X-User-Id 헤더가 없거나 공백이면 mcp.default-id 를 X-User-Id 로 받은 것처럼 사용합니다.
+     * 기본 ID 사용자도 헤더로 받은 사용자와 같은 검사(사용자 존재·회사 일치)를 거칩니다.
+     */
+    private String resolveUserId(HttpServletRequest request) {
+        String userIdHeader = request.getHeader(X_USER_ID);
+        return StringUtils.isBlank(userIdHeader) ? defaultUserId : userIdHeader;
+    }
+
     private User findEffectiveUser(String userIdHeader) {
         if (StringUtils.isBlank(userIdHeader)) {
-            throw authenticationRequired();
+            throw userContextDenied(USER_ID_REQUIRED);
         }
 
         List<User> users = userRepository.findByUserLoginIdAndIsDeletedFalse(userIdHeader);
         if (users.isEmpty()) {
-            throw authenticationRequired();
+            throw userContextDenied(USER_ID_NOT_ALLOWED);
         }
 
         User user = users.get(0);
         validateRequiredUserContext(user);
         return user;
+    }
+
+    /**
+     * [MCP 인증] Basic Auth 로 인증된 MCP 클라이언트를 가져옵니다. 보안 체인을 거치지 않은 요청은 거부합니다(fail-closed).
+     */
+    private McpClientAuthenticationToken findAuthenticatedClient() {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        if (authentication instanceof McpClientAuthenticationToken client && client.isAuthenticated()) {
+            return client;
+        }
+        throw authenticationRequired();
+    }
+
+    /**
+     * [MCP 인증] X-User-Id 사용자의 회사와 키의 회사가 같아야 합니다.
+     * 예외: ADMIN 사용자는 관리회사 키로 요청할 때만 회사가 달라도 허용합니다.
+     */
+    private void validateCompanyAccess(McpClientAuthenticationToken client, User user) {
+        Integer userCompanyNo = user.getCustomerCompany().getCustomerCompanyNo();
+        if (Objects.equals(userCompanyNo, client.getCustomerCompanyNo())) {
+            return;
+        }
+        if (isAdmin(user) && client.isManagementCompany()) {
+            return;
+        }
+        throw userContextDenied(USER_ID_NOT_ALLOWED);
+    }
+
+    // [MCP 인증] isThirdPartyAccessAdmin 의 ADMIN 판정을 추출해 회사 검사와 공유
+    private boolean isAdmin(User user) {
+        return Role.ADMIN.getCode().equals(user.getUserRoleCd().getCode());
     }
 
     private void validateRequiredUserContext(User user) {
@@ -94,7 +154,7 @@ public class McpUserContextInterceptor implements HandlerInterceptor {
             || company.getCustomerCompanyNo() == null
             || StringUtils.isBlank(company.getCustomerCompanyCd())
             || !isActiveCompany(company)) {
-            throw authenticationRequired();
+            throw userContextDenied(USER_ID_NOT_ALLOWED);
         }
     }
 
@@ -132,7 +192,7 @@ public class McpUserContextInterceptor implements HandlerInterceptor {
     }
 
     private boolean isThirdPartyAccessAdmin(User user) {
-        return Role.ADMIN.getCode().equals(user.getUserRoleCd().getCode())
+        return isAdmin(user)
             && BooleanUtils.isTrue(user.getIsOtherServiceAccessPossible());
     }
 
@@ -146,6 +206,14 @@ public class McpUserContextInterceptor implements HandlerInterceptor {
 
     private AppHttpStatusException authenticationRequired() {
         return AppHttpStatusException.of(HttpStatus.UNAUTHORIZED, ResultCode.Error.AUTH_REQUIRED, null);
+    }
+
+    /**
+     * [MCP 인증] 키 인증은 통과했으나 X-User-Id 로 위임할 수 없는 경우(403).
+     * 사용자 없음·비활성·회사 불일치를 같은 메시지로 응답해 다른 회사의 사용자 ID 존재 여부가 드러나지 않게 합니다.
+     */
+    private AppHttpStatusException userContextDenied(String reason) {
+        return AppHttpStatusException.of(HttpStatus.FORBIDDEN, ResultCode.Error.AUTH_ACCESS_DENIED, reason);
     }
 
     private void clearOwnedContext() {
