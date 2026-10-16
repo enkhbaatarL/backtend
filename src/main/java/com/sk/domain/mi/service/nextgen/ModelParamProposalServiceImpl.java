@@ -11,6 +11,9 @@ import com.sk.common.exception.AppErrorException;
 import com.sk.common.exception.AppHttpStatusException;
 import com.sk.domain.mi.dto.response.nextgen.*;
 import com.sk.domain.mi.exception.ModelParamProposalCreateRejectedException;
+import com.sk.domain.mi.service.nextgen.paramproposal.MiBaseInputSetResolver;
+import com.sk.domain.mi.service.nextgen.paramproposal.MiBaseInputSetResolver.InvalidMiBaseInputSetException;
+import com.sk.domain.mi.service.nextgen.paramproposal.MiBaseInputSetResolver.MiBaseInputSet;
 import com.sk.domain.mi.service.nextgen.paramproposal.ModelParamSlotAxisResolver;
 import com.sk.domain.mi.service.nextgen.paramproposal.ModelParamSlotAxisResolver.InvalidSlotAxisMetadataException;
 import com.sk.domain.mi.service.nextgen.paramproposal.ModelParameterResponseProjector;
@@ -21,6 +24,7 @@ import com.sk.domain.mi.service.nextgen.paramproposal.excel.ModelInputFile;
 import com.sk.domain.mi.service.nextgen.query.ModelExecutionInputFilesProjector;
 import com.sk.domain.shared.client.ModelParamProposalAgentApi;
 import com.sk.domain.shared.client.dto.request.AgentModelParamConfirmationReq;
+import com.sk.domain.shared.client.dto.request.AgentModelParamProposalCreateReq;
 import com.sk.domain.shared.client.dto.request.ModelParamPayloadItem;
 import com.sk.domain.shared.client.dto.request.ModelParamTarget;
 import com.sk.domain.shared.client.dto.response.AgentModelParamConfirmationRes;
@@ -114,15 +118,18 @@ public class ModelParamProposalServiceImpl implements ModelParamProposalService 
     private final ModelParamSlotAxisResolver modelParamSlotAxisResolver;
     private final ModelParameterTreeProjector modelParameterTreeProjector;
     private final ModelExecutionInputFilesProjector modelExecutionInputFilesProjector;
+    private final MiBaseInputSetResolver miBaseInputSetResolver;
 
     @Override
     @Transactional(propagation = Propagation.NOT_SUPPORTED)
     public ModelParamProposalAcceptRes createProposal(Long scenarioId) {
-        ModelExecutionPreparation preparation = createRequestingPreparation(scenarioId);
+        RequestingPreparation requesting = createRequestingPreparation(scenarioId);
+        ModelExecutionPreparation preparation = requesting.preparation();
+        AgentModelParamProposalCreateReq agentRequest = toAgentCreateRequest(requesting.miBaseInputSet());
 
         String responseBody;
         try {
-            responseBody = callAgent(() -> modelParamProposalAgentApi.createProposal(scenarioId), "create model parameter proposal");
+            responseBody = callAgent(() -> modelParamProposalAgentApi.createProposal(scenarioId, agentRequest), "create model parameter proposal");
         } catch (ApiErrorException e) {
             if (e.getStatusCode() >= 400 && e.getStatusCode() < 600) {
                 Optional<JsonNode> errorBody = readCreateEnvelope(e.getMessage()).filter(this::isCreateError);
@@ -594,24 +601,59 @@ public class ModelParamProposalServiceImpl implements ModelParamProposalService 
         );
     }
 
-    private ModelExecutionPreparation createRequestingPreparation(Long scenarioId) {
+    private RequestingPreparation createRequestingPreparation(Long scenarioId) {
         return transactionOperations.execute(status -> {
             MiScenario scenario = findScenarioForUpdate(scenarioId);
             rejectDiscardedScenario(scenario);
             rejectIfActiveExecutionExists(scenarioId);
             rejectIfActivePreparationExists(scenarioId);
+            MiBaseInputSet miBaseInputSet = resolveProposalMiBaseInputSet(scenarioId);
             supersedeInterruptedPreparation(scenarioId);
 
             Integer actorUserNo = authorizationService.getUserNo();
             try {
-                return modelExecutionPreparationRepository.saveAndFlush(
+                ModelExecutionPreparation preparation = modelExecutionPreparationRepository.saveAndFlush(
                     ModelExecutionPreparation.createRequesting(scenarioId, actorUserNo)
                 );
+                return new RequestingPreparation(preparation, miBaseInputSet);
             } catch (DataIntegrityViolationException e) {
                 log.info("Active model parameter proposal preparation unique guard rejected create. scenarioId={}", scenarioId, e);
                 throw activePreparationConflict(scenarioId);
             }
         });
+    }
+
+    /**
+     * 제안 기준 묶음 — Agent가 basecase를 읽고 확정 실행이 병합할 current MI Base input 4파일.
+     * MI Base가 없거나 유효하지 않으면 실행 준비 행을 만들기 전에 거절하며, 기본 template으로 넘어가지 않는다.
+     */
+    private MiBaseInputSet resolveProposalMiBaseInputSet(Long scenarioId) {
+        try {
+            return miBaseInputSetResolver.findCurrent()
+                .orElseThrow(() -> AppHttpStatusException.of(
+                    HttpStatus.CONFLICT,
+                    ResultCode.Error.BIZ_RULE_VIOLATION,
+                    "current MI Base가 없어 파라미터 제안을 생성할 수 없습니다. scenarioId: %d".formatted(scenarioId)
+                ));
+        } catch (InvalidMiBaseInputSetException e) {
+            log.warn("Current MI Base input set rejected model parameter proposal. scenarioId={}, caseId={}, reason={}",
+                scenarioId, e.getCaseId(), e.getReason());
+            throw AppHttpStatusException.of(
+                HttpStatus.CONFLICT,
+                ResultCode.Error.BIZ_RULE_VIOLATION,
+                "current MI Base 입력 파일이 유효하지 않아 파라미터 제안을 생성할 수 없습니다. caseId: %d".formatted(e.getCaseId())
+            );
+        }
+    }
+
+    private AgentModelParamProposalCreateReq toAgentCreateRequest(MiBaseInputSet miBaseInputSet) {
+        List<AgentModelParamProposalCreateReq.InputFile> inputFiles = miBaseInputSet.files().entrySet().stream()
+            .map(entry -> new AgentModelParamProposalCreateReq.InputFile(entry.getKey().getCode(), entry.getValue().storagePath()))
+            .toList();
+        return AgentModelParamProposalCreateReq.of(miBaseInputSet.caseId(), inputFiles);
+    }
+
+    private record RequestingPreparation(ModelExecutionPreparation preparation, MiBaseInputSet miBaseInputSet) {
     }
 
     private ModelExecutionPreparation attachAgentProposalIdAndMarkPending(Long execPrepId, Long modelParamProposalId) {

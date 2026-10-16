@@ -112,7 +112,7 @@ Agent 팀이 로컬 연동 테스트용으로 제공한 VM 배포 endpoint다. �
 
 | # | 대상 | 목적 | 신규/기존 | 트리거 API | 주요 payload | 근거 문서 | 이슈 |
 |---|---|---|---|---|---|---|---|
-| X1 | Agent `POST /model-parameters/scenarios/{scenarioId}/proposals` | 제안 생성 요청 | **신규 client 메서드** | A3 | req: **body 없음** / res wrapper `data.{modelParamProposalId, status=PROCESSING}` | spec 3.2, 5.1 | callback URL은 Backend 결정→Agent 배포설정 등록. 로컬 테스트 base URL은 0.1절 참조 |
+| X1 | Agent `POST /model-parameters/scenarios/{scenarioId}/proposals` | 제안 생성 요청 | **신규 client 메서드** | A3 | req: `data.{miBaseCaseId, inputFiles[4]}` (2026-10-15 결정, Backend 구현·Agent 합의 대기) / res wrapper `data.{modelParamProposalId, status=PROCESSING}` | spec 3.2, 5.1, 5.1.1 | callback URL은 Backend 결정→Agent 배포설정 등록. 로컬 테스트 base URL은 0.1절 참조 |
 | X2 | Agent `POST /model-parameters/proposals/{modelParamProposalId}/confirmation` | 사용자 확정값 전송 | **신규 client 메서드** | A6 | req: `{data:{confirmationParameters:[...]}}`, `modelFile`을 `Demand\|Supply\|Trade`로 역변환 | spec 5.5, 6; Agent doc 3 | **Option A 설계 결정 확정(O1 Resolved)** → 같은 id 재호출로 `confirmation_parameters` 갱신. 실제 연동 전 Agent 배포/검증 gate 필요. 로컬 테스트 base URL은 0.1절 참조 |
 | R1 | Agent 테이블 `tmm_mi_model_param_proposal_m` **read-only 조회** | canonical 상태·payload 서빙 | **신규 read entity/repository** | A4·A8·A9·B1 | 컬럼매핑: `status`, `proposal_parameters`/`confirmation_parameters`(JSON array), `error_message`/`error_code`, `proposal_completed_dtm`, `confirmed_dtm` | spec 5.2; Agent doc 3 | 기존 Backend DB/schema 직접 read. table visibility·SELECT 권한·key type 정합 확인 |
 | X3 | Backend **토큰 발급 API** (+ 발급 인풋 2종) | Agent가 콜백 JWT 자체 발급 | **확인 필요(기존 추정)** | B1 사전 | Agent에 발급 API + 인풋 2종 전달 | spec 5.4, 13 | 기존 self-issued JWT 발급 경로 재사용 가능 여부·계약 확인(문서 미확정) |

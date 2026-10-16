@@ -48,11 +48,12 @@
 - 독립실행과 Scenario 실행의 필수 input 역할은 모두 `DEMAND/SUPPLY/TRADE/OUTPUT` 각 1개다.
 - `PARAMETER_PROPOSAL`: 같은 기준 input set에서 네 파일을 준비하고 제안·사용자 확정값은 `DEMAND/SUPPLY/TRADE`에만 병합한다. OUTPUT은 제안 생성·확정 파라미터·병합·재계산 대상에서 제외하며 기준 원본 bytes를 그대로 실행 input에 포함한다. 값·수식·cached value·workbook package를 변경하지 않는다.
 - 기준 선택은 `scenario-case-execution-workflow-design-draft.md`의 current MI Base/default template source snapshot 규칙을 따른다. OUTPUT만 다른 기준에서 섞거나, 누락 시 생략·임의 생성하지 않는다.
+- 2026-10-15 사용자 결정(Backend 구현, Agent 요청 수신·저장 합의 대기): `PARAMETER_PROPOSAL`에서는 제안 생성 시점을 input 생성의 시작으로 본다. 그 시점에 current MI Base `caseId`와 input 4파일을 기준 묶음으로 고정해 Agent 생성 요청으로 전달하고, Agent는 `caseId`를 proposal 테이블 `mi_base_case_id`에 저장한다. 같은 proposal의 확정 실행·재실행 병합은 이 기준 묶음을 쓴다. 이 경로에서는 MI Base가 없으면 기본 template을 쓰지 않고 제안 생성을 거절한다. 계약은 feature spec §5.1.1을 따른다.
 - `FILE_UPLOAD`: 네 역할 파일을 각각 1개씩 직접 업로드한다. 이 경로도 OUTPUT에 제안값을 적용하지 않고 입력 파일로 보관·전달한다.
 - 두 mode 모두 네 파일을 같은 실행의 Case에 연결하고 모델 Job에 전달한다. 물리 file relation은 기존 `SCNRCASE + case_id`를 사용한다.
 - Agent proposal/confirmation의 `modelTarget.modelFile` 허용값은 계속 `DEMAND|SUPPLY|TRADE`다. 실행 파일 역할이 네 개라는 이유로 OUTPUT을 제안 대상으로 추가하지 않는다.
 - 전환 전 3파일 실행(2026-10-13 사용자 결정): 이미 3파일로 실행한 Scenario Case에 OUTPUT을 보완하지 않는다. 4파일 cutover 전에 그 Case와 연결 실행이력·execution-preparation·해당 시나리오의 active 가격전망해석을 soft delete한다. 판별·pre-check·보존 범위는 `mi-model-input-template-catalog-domain-model-design.md` 규칙 36~38, 팝업 판정은 §6 규칙 32를 따른다.
-- 구현 상태(2026-10-15): Scenario의 파일 준비·접수·Job 전달은 4파일로 구현됐다. 확정값 병합은 DEMAND/SUPPLY/TRADE에만 적용하고 OUTPUT은 basecase 원본을 그대로 포함하며, `modelFile=OUTPUT`은 확정 검증·병합에서 거절한다. 기준본 선택은 아직 Object Storage `input_template`(실패 시 파일별 classpath 폴백)이며 current MI Base source snapshot 규칙은 구현되지 않았다. 아래 Existing Structure Reviewed 및 과거 sync note는 당시 코드/결정 이력이다.
+- 구현 상태(2026-10-15): Scenario의 파일 준비·접수·Job 전달은 4파일로 구현됐다. 확정값 병합은 DEMAND/SUPPLY/TRADE에만 적용하고 OUTPUT은 basecase 원본을 그대로 포함하며, `modelFile=OUTPUT`은 확정 검증·병합에서 거절한다. 기준본은 병합 시작 시 한 번 source snapshot으로 고정한다. current MI Base가 있으면 그 Case의 `SCNRCASE` input 4개를 쓰고, 읽지 못하면 실행 준비를 실패시키며 기본 template으로 넘어가지 않는다. MI Base가 없으면 Object Storage `input_template`에 4역할이 각각 1개씩 있을 때 그 4개, 아니면 classpath 기본 4개를 한 세트로 쓴다(세트 고정 후 다운로드 실패는 실패 처리). 그룹 일괄 실행은 시나리오마다 따로 고정한다. Agent 제안 생성의 basecase 기준 파일은 Backend 범위 밖이며 확인되지 않았다. 아래 Existing Structure Reviewed 및 과거 sync note는 당시 코드/결정 이력이다.
 
 ## 2. Existing Structure Reviewed
 
