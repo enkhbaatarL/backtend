@@ -64,6 +64,8 @@ mcp:
   auth:
     # [MCP 인증] mcp.read-only-api(개발용 인증 우회) 삭제. MCP Basic Auth 시크릿 PBKDF2 반복 횟수 (신규 발급·재발급에 적용, 기존 키는 키별로 저장된 값 사용). 최소 1000
     hash-iterations: ${MCP_AUTH_HASH_ITERATIONS:1000}
+  # [MCP 인증] X-User-Id 헤더가 없을 때 대신 위임할 사용자 로그인 ID. 비워 두면 X-User-Id 필수(누락 시 403)
+  default-id: ${MCP_DEFAULT_ID:}
 
 mi:
   autocomplete:

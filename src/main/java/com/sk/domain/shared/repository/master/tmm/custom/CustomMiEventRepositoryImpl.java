@@ -254,6 +254,7 @@ public class CustomMiEventRepositoryImpl implements CustomMiEventRepository {
     private BooleanBuilder buildEventWhere(EventListReq request, String currentUserLoginId) {
         BooleanBuilder where = new BooleanBuilder();
         where.and(miEvent.isDeleted.isFalse());
+        where.and(miEvent.publishStatus.eq("PUBLISHED"));
 
         applyStatusFilter(where, request.eventStatus());
         applySuggestedFilter(where, request.suggestedOnly());
@@ -369,7 +370,11 @@ public class CustomMiEventRepositoryImpl implements CustomMiEventRepository {
             .from(miEvent)
             .innerJoin(miEvent.eventTypeL2, miEventTypeL2).on(miEventTypeL2.isDeleted.isFalse())
             .innerJoin(miEventTypeL2.eventTypeL1, miEventTypeL1).on(miEventTypeL1.isDeleted.isFalse())
-            .where(miEvent.miEventId.eq(eventId), miEvent.isDeleted.isFalse())
+            .where(
+                miEvent.miEventId.eq(eventId),
+                miEvent.isDeleted.isFalse(),
+                miEvent.publishStatus.eq("PUBLISHED")
+            )
             .fetchOne();
 
         if (base == null) {

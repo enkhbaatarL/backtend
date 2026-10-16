@@ -13,5 +13,6 @@ public class FundamentalModelJobArgs {
     private String demandExcelPath;
     private String supplyExcelPath;
     private String tradeExcelPath;
+    private String outputExcelPath;
     private String callbackUrl;
 }

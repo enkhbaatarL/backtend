@@ -541,7 +541,8 @@ CME는 SK Gas 데이터이고 라우팅 키는 `midb-skgas`로 고정이다(변�
 |---|---|---|---|
 | `Authorization` (Basic Auth) 없음 | `401` | `AUTH-001` | |
 | 키 ID·Secret 불일치, 삭제된 키, 키의 회사가 삭제됨 | `401` | `AUTH-002` | 존재하지 않는 ID 도 같은 응답 (응답 시간도 같게 처리) |
-| `X-User-Id` 헤더 없음 또는 공백 | `403` | `AUTH-007` | 메시지 `X-User-Id header is required.` |
+| `X-User-Id` 헤더 없음 또는 공백 (`mcp.default-id` 미설정) | `403` | `AUTH-007` | 메시지 `X-User-Id header is required.` |
+| `X-User-Id` 헤더 없음 또는 공백 (`mcp.default-id` 설정) | — | — | `mcp.default-id`(환경변수 `MCP_DEFAULT_ID`) 로그인 ID 를 X-User-Id 로 받은 것처럼 처리. 사용자 존재·회사 일치 검사는 동일하게 적용 |
 | 해당 `usr_logn_id`로 삭제되지 않은 사용자를 조회할 수 없음 | `403` | `AUTH-007` | 메시지 `X-User-Id is not allowed for this MCP key.` |
 | effective user의 소속 고객사가 미사용·삭제 상태이거나 현재일이 사용 기간 밖임 | `403` | `AUTH-007` | 위와 같은 메시지 |
 | effective user 의 고객사가 키의 고객사와 다름 (ADMIN + 관리회사 키 제외) | `403` | `AUTH-007` | 위와 같은 메시지 |
@@ -596,7 +597,7 @@ MCP 호출은 기존 API 접근 로그에 **`SYSTEM`이 아니라 `X-User-Id`가
 | 매칭 경로 | `/api/v1/mcp/**` |
 | 인증 스키마 | `McpBasicAuth` (HTTP basic) 를 문서 전체와 모든 operation 의 보안 요구로 노출. 사용자 `BearerAuth` 는 제거 |
 | 공통 응답 예시 | 모든 operation 에 400(`REQ-003`)·401(`AUTH-001`)·403(`AUTH-007`) 자동 추가 |
-| `X-User-Id` | 필수 헤더 파라미터로 노출 |
+| `X-User-Id` | 헤더 파라미터로 노출. `mcp.default-id` 미설정 시 필수, 설정 시 선택 |
 | 기존 그룹 중복 노출 | **없음** — `ETC API` 그룹의 `pathsToExclude`에 `/api/v1/mcp/**`를 추가한다 |
 
 `SK Gas API` 그룹은 `/api/v1/mi/next-gen/**`만 매칭하므로 MCP 경로와 겹치지 않는다. 별도 조치가 필요 없다.

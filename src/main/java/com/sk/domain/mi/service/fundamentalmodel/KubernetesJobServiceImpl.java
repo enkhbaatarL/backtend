@@ -229,9 +229,12 @@ public class KubernetesJobServiceImpl implements KubernetesJobService {
             "--run-seq",           String.valueOf(args.getRunSeq()),
             "--demand-excel-path", args.getDemandExcelPath(),
             "--supply-excel-path", args.getSupplyExcelPath(),
-            "--trade-excel-path",  args.getTradeExcelPath(),
-            "--callback-url",      args.getCallbackUrl()
+            "--trade-excel-path",  args.getTradeExcelPath()
         ));
+        if (StringUtils.hasText(args.getOutputExcelPath())) {
+            namedArgs.addAll(List.of("--output-excel-path", args.getOutputExcelPath()));
+        }
+        namedArgs.addAll(List.of("--callback-url", args.getCallbackUrl()));
         if (args.getCaseId() != null) {
             namedArgs.addAll(List.of("--case-id", String.valueOf(args.getCaseId())));
         }

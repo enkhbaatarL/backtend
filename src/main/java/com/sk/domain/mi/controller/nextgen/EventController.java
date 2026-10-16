@@ -35,7 +35,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 @Profile("!dedicated")
-@Tag(name = "01. Next Gen MI Event API", description = "Next Gen MI Event API입니다.")
+@Tag(name = "01-1. Next Gen MI Event API", description = "Next Gen MI Event API입니다.")
 @Slf4j
 @RestController
 @RequestMapping("/api/v1/mi/next-gen/events")
@@ -72,7 +72,8 @@ public class EventController {
     @Operation(
         summary = "Event 목록 조회 API (with pagination)",
         description = """
-            Event 목록을 필터, 정렬, 페이징 조건으로 조회합니다. <br>
+            게시 완료(PUBLISHED)된 신호 이벤트 목록을 필터, 정렬, 페이징 조건으로 조회합니다. <br>
+            미게시(DRAFT) 및 게시 상태가 없는 이벤트는 제외합니다. <br>
 
             <br><br>
             ### 사용 가능한 파라미터
@@ -171,7 +172,8 @@ public class EventController {
     @Operation(
         summary = "Event 상세 조회 API",
         description = """
-            Event 상세 페이지의 핵심 데이터를 조회합니다. <br>
+            게시 완료(PUBLISHED)된 Event 상세 페이지의 핵심 데이터를 조회합니다. <br>
+            이벤트가 없거나 게시 완료 상태가 아니면 RSC-001(이벤트 없음) 오류를 반환합니다. <br>
 
             <br><br>
             ### 상위(top-level) 필드

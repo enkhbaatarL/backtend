@@ -7,9 +7,9 @@ import java.util.List;
 
 public record FundamentalModelCaseFilesRes(
 
-    @Schema(description = "case 입력 파일명 목록. fileNm 대소문자 무시 오름차순으로 정렬됩니다.")
-    @ArraySchema(schema = @Schema(implementation = FundamentalModelFileNameRes.class))
-    List<FundamentalModelFileNameRes> input,
+    @Schema(description = "case 입력 파일의 다운로드 metadata 목록. fileNm 대소문자 무시 오름차순으로 정렬됩니다.")
+    @ArraySchema(schema = @Schema(implementation = FundamentalModelDownloadFileRes.class))
+    List<FundamentalModelDownloadFileRes> input,
 
     @Schema(description = "최신 실행 output 파일의 다운로드 metadata 목록. fileNm 대소문자 무시 오름차순이며, 최신 실행 또는 연결 파일이 없으면 빈 배열입니다.")
     @ArraySchema(schema = @Schema(implementation = FundamentalModelDownloadFileRes.class))

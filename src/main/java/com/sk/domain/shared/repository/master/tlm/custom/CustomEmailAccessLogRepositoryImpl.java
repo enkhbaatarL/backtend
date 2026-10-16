@@ -157,6 +157,40 @@ public class CustomEmailAccessLogRepositoryImpl implements CustomEmailAccessLogR
 	}
 
 	@Override
+	public List<MiNotificationRes> findNotificationsByEmailSendSns(List<Integer> emailSendSns, String userLoginId) {
+		if (emailSendSns == null || emailSendSns.isEmpty()) {
+			return List.of();
+		}
+		return queryFactory.select(notificationProjection())
+				.from(emailAccessLog)
+				.leftJoin(emailAccessLog.goodsCriticalValueSetting, goodsCriticalValueSetting)
+				.leftJoin(goodsCriticalValueSetting.goodsDataSourceDetail, goodsDataSourceDetail)
+				.leftJoin(goodsDataSourceDetail.goodsData, goodsData)
+				.leftJoin(goodsData.goods, goods)
+				.where(emailAccessLog.emailSendSn.in(emailSendSns),
+						emailAccessLog.emailReceiveUserLoginId.eq(userLoginId),
+						emailAccessLog.isDeleted.isFalse())
+				.fetch();
+	}
+
+	/** 알림벨 상세 응답 프로젝션 (기존 목록 findNotificationsWithinSevenDays와 동일 필드) */
+	private QMiNotificationRes notificationProjection() {
+		return new QMiNotificationRes(
+				emailAccessLog.emailSendSn,
+				emailAccessLog.emailTitleNm,
+				emailAccessLog.emailCntt,
+				emailAccessLog.emailSendDtm,
+				emailAccessLog.isEmailInquiry,
+				goodsCriticalValueSetting.notificationCriticalValueSeparateCd,
+				goodsCriticalValueSetting.criticalValueSettingVol,
+				goodsDataSourceDetail.goodsDataSourceUnitNm,
+				goodsDataSourceDetail.goodsDataSourceNm,
+				goodsDataSourceDetail.goodsDataSourceNo,
+				goodsData.goodsDataNo,
+				goods.goodsNo);
+	}
+
+	@Override
 	public AdminNotificationCountRes findNotificationCounts(String startDate, String endDate) {
 		BooleanBuilder builder = new BooleanBuilder();
 		builder.and(emailAccessLog.isDeleted.isFalse());

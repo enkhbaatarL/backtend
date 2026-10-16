@@ -6,12 +6,12 @@ import java.util.List;
 
 public record ModelExecutionInputFilesRes(
 
-    @Schema(description = "DEMAND/SUPPLY/TRADE role이 각각 정확히 1개인지 여부", example = "true")
+    @Schema(description = "DEMAND/SUPPLY/TRADE/OUTPUT role이 각각 정확히 1개인지 여부", example = "true")
     boolean complete,
 
     @ArraySchema(schema = @Schema(
         description = "누락 파일 role",
-        allowableValues = {"DEMAND", "SUPPLY", "TRADE"}
+        allowableValues = {"DEMAND", "SUPPLY", "TRADE", "OUTPUT"}
     ))
     List<String> missingFileRoles,
 

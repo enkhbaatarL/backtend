@@ -53,7 +53,6 @@ public class CustomMiEventSnapshotRepositoryImpl implements CustomMiEventSnapsho
                 miEventSnapshot.updateTriggerCd,
                 miEventSnapshot.updateReason,
                 miEventSnapshot.changedFieldsJson,
-                miEventSnapshot.eventTitle,
                 miEventSnapshot.oneLineSummary,
                 miEventSnapshot.eventModifyDt
             ))

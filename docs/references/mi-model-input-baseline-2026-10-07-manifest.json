@@ -1,0 +1,886 @@
+{
+  "documentControl": {
+    "status": "Complete",
+    "canonicalFor": "Reference only: normalized baseline identity and package evidence",
+    "owner": "BE",
+    "lastSynced": "2026-10-07"
+  },
+  "baselineId": "2026-10-07-delivery-261006-v8-v6",
+  "files": [
+    {
+      "role": "DEMAND",
+      "sourcePath": "/Users/hoduhomil/Downloads/플랫폼 입력 수정본_261006/Demand_v5_플랫폼입력_최종_v8_플랫폼전달.xlsm",
+      "sourceSnapshotPath": "/Users/hoduhomil/source/mip/backend/temp/model-input-baselines/2026-10-07-delivery-261006-v8-v6/source/DEMAND-source.xlsm",
+      "sourceSha256": "73fa29ff6fa19652243479a43754a65076364488120a69657178c8311b6ce0bc",
+      "normalizedPath": "/Users/hoduhomil/source/mip/backend/temp/model-input-baselines/2026-10-07-delivery-261006-v8-v6/DEMAND-normalized.xlsm",
+      "normalizedSha256": "ef516b6de2a829c891dbd991ba9f9d626f104dcae2e5ecd8128b1f0ae31c23bd",
+      "removedSheets": [
+        "SUMMARY",
+        "플랫폼 입력 안내"
+      ],
+      "sheetCount": 25,
+      "sheets": [
+        {
+          "name": "Input Adjustment ->",
+          "sheetId": "66",
+          "state": "visible",
+          "part": "xl/worksheets/sheet2.xml",
+          "sha256": "6389ef3d1ec4908e462e69b2a45dd0243ae3c305d9fb4f7b38f999d43babb492",
+          "cells": 0,
+          "formulas": 0,
+          "developmentReferences": 0
+        },
+        {
+          "name": "GDPPopulationAdjustment",
+          "sheetId": "67",
+          "state": "visible",
+          "part": "xl/worksheets/sheet3.xml",
+          "sha256": "046912a6e93e0ce9ff59249efe70963669774bbbebcdd5e5cf29b6d8e473b6b8",
+          "cells": 25947,
+          "formulas": 12001,
+          "developmentReferences": 0
+        },
+        {
+          "name": "ElectrificationRateAdjustment",
+          "sheetId": "73",
+          "state": "visible",
+          "part": "xl/worksheets/sheet4.xml",
+          "sha256": "29378477f8ae24ae142127771a0580e71ec5b42f50d565ee3c8fa9fd30c2cf6d",
+          "cells": 13977,
+          "formulas": 6003,
+          "developmentReferences": 0
+        },
+        {
+          "name": "PowerMixAdjustment",
+          "sheetId": "74",
+          "state": "visible",
+          "part": "xl/worksheets/sheet5.xml",
+          "sha256": "22472ab3328ef437ceae387dce5f29a9fb09971c2d69a039ce00d17c938ba0c4",
+          "cells": 111789,
+          "formulas": 39906,
+          "developmentReferences": 0
+        },
+        {
+          "name": "CoalGasAdjustment",
+          "sheetId": "81",
+          "state": "visible",
+          "part": "xl/worksheets/sheet6.xml",
+          "sha256": "55bb5bab9df96ecfae09e9a79ec53f6f7b7ddca69f2fe8d927f2e1f1da417725",
+          "cells": 23953,
+          "formulas": 11995,
+          "developmentReferences": 0
+        },
+        {
+          "name": "WeatherAdjustment",
+          "sheetId": "75",
+          "state": "visible",
+          "part": "xl/worksheets/sheet7.xml",
+          "sha256": "0f9dd0a056e2f17eeceb5dda03f5e681d7d652a1acd34a79df8b694b7e402679",
+          "cells": 223781,
+          "formulas": 79984,
+          "developmentReferences": 0
+        },
+        {
+          "name": "PMIAdjustment",
+          "sheetId": "79",
+          "state": "visible",
+          "part": "xl/worksheets/sheet8.xml",
+          "sha256": "e3f2618cf1336ef82ccc360e378bf46c88b5c338f08f0664e7310999a67a89ad",
+          "cells": 80153,
+          "formulas": 32164,
+          "developmentReferences": 0
+        },
+        {
+          "name": "HydrogenAdjustment",
+          "sheetId": "77",
+          "state": "visible",
+          "part": "xl/worksheets/sheet9.xml",
+          "sha256": "81e05337fd855e1160092130b3a4ad73fd77afb16ae7a1f67da4b95d41fe4c99",
+          "cells": 47982,
+          "formulas": 23998,
+          "developmentReferences": 0
+        },
+        {
+          "name": "LNGBunkeringAdjustment",
+          "sheetId": "68",
+          "state": "visible",
+          "part": "xl/worksheets/sheet10.xml",
+          "sha256": "3932368e6b85335488b084cda347342a846661079acb7493cbc085e785c96fc4",
+          "cells": 20068,
+          "formulas": 319,
+          "developmentReferences": 0
+        },
+        {
+          "name": "Scenario Tracker",
+          "sheetId": "24",
+          "state": "hidden",
+          "part": "xl/worksheets/sheet11.xml",
+          "sha256": "ee970f7bd5530f71d5cf3e3d484db6a050b6d440f353bc70a5f6a4b189b34eec",
+          "cells": 116,
+          "formulas": 0,
+          "developmentReferences": 0
+        },
+        {
+          "name": "DemandOutputOverwrite",
+          "sheetId": "63",
+          "state": "visible",
+          "part": "xl/worksheets/sheet12.xml",
+          "sha256": "bcacfbe2f66a5bb15f680874763a350a602356227544e3f10b54695a134b7ce2",
+          "cells": 7641,
+          "formulas": 1000,
+          "developmentReferences": 0
+        },
+        {
+          "name": "기준정보 ->",
+          "sheetId": "84",
+          "state": "visible",
+          "part": "xl/worksheets/sheet13.xml",
+          "sha256": "f02dfde2c1f1bfe392ed51933c78c03cca955ad8079d3cafc216493051973a6e",
+          "cells": 0,
+          "formulas": 0,
+          "developmentReferences": 0
+        },
+        {
+          "name": "BCInput",
+          "sheetId": "87",
+          "state": "visible",
+          "part": "xl/worksheets/sheet14.xml",
+          "sha256": "eb7c569e5a2d95f6afa5881875d620d85c61102664ab6329c3154fefd3aeff04",
+          "cells": 1429777,
+          "formulas": 304766,
+          "developmentReferences": 0
+        },
+        {
+          "name": "MacroParametersLogicInput",
+          "sheetId": "86",
+          "state": "visible",
+          "part": "xl/worksheets/sheet15.xml",
+          "sha256": "c71b52d7f04f827dcf39c7ba75ff53cfed549373f361fdff1a43d3974241a38c",
+          "cells": 1999,
+          "formulas": 168,
+          "developmentReferences": 0
+        },
+        {
+          "name": "PMIInput",
+          "sheetId": "88",
+          "state": "visible",
+          "part": "xl/worksheets/sheet16.xml",
+          "sha256": "b77605584d9b569b95ef497adacc6ab6d3ae8c4aa845e1f71b5337ad9d5acc0c",
+          "cells": 64697,
+          "formulas": 25878,
+          "developmentReferences": 0
+        },
+        {
+          "name": "PMILogicInput",
+          "sheetId": "89",
+          "state": "visible",
+          "part": "xl/worksheets/sheet17.xml",
+          "sha256": "b8803e73789e18996d59f32a6920d954e15e7a235d608b41465ebab1f5ab0427",
+          "cells": 1061,
+          "formulas": 84,
+          "developmentReferences": 0
+        },
+        {
+          "name": "WeatherLogicInput",
+          "sheetId": "90",
+          "state": "visible",
+          "part": "xl/worksheets/sheet18.xml",
+          "sha256": "d7a0d61acd3f144d94c47696c3e690f87313a452806e694d14b567cafa23b653",
+          "cells": 2639,
+          "formulas": 1176,
+          "developmentReferences": 0
+        },
+        {
+          "name": "WeatherInput",
+          "sheetId": "91",
+          "state": "visible",
+          "part": "xl/worksheets/sheet19.xml",
+          "sha256": "45c3a03a7183323def87389342b2015e62605ad9ee00df3f445f62d6dac6b7f3",
+          "cells": 730146,
+          "formulas": 144760,
+          "developmentReferences": 0
+        },
+        {
+          "name": "LNGBunkeringInput",
+          "sheetId": "92",
+          "state": "visible",
+          "part": "xl/worksheets/sheet20.xml",
+          "sha256": "5704ea3d2bdf584163e4038321b68c47b40f0152bbd41e827b37e15e24ad41d2",
+          "cells": 43252,
+          "formulas": 527,
+          "developmentReferences": 0
+        },
+        {
+          "name": "LNGBunkeringLogicInput",
+          "sheetId": "93",
+          "state": "visible",
+          "part": "xl/worksheets/sheet21.xml",
+          "sha256": "59e1ddb7edd5375aa65e8efb57fdf7ff4ce1aec9635b30e37f8be6cafb91da6a",
+          "cells": 1514,
+          "formulas": 0,
+          "developmentReferences": 0
+        },
+        {
+          "name": "HydrogenInput",
+          "sheetId": "94",
+          "state": "visible",
+          "part": "xl/worksheets/sheet22.xml",
+          "sha256": "e8af335fd8a39d474ed6b8794ffd63cc9c66c218f5f1bad06f2090f312e87411",
+          "cells": 23246,
+          "formulas": 14437,
+          "developmentReferences": 0
+        },
+        {
+          "name": "LNG Demand",
+          "sheetId": "96",
+          "state": "visible",
+          "part": "xl/worksheets/sheet23.xml",
+          "sha256": "cc108fd38c720224dbed3e1e528917212191ea565d7fadb4b3d72434c09b0dd3",
+          "cells": 1406,
+          "formulas": 130,
+          "developmentReferences": 0
+        },
+        {
+          "name": "General",
+          "sheetId": "95",
+          "state": "visible",
+          "part": "xl/worksheets/sheet24.xml",
+          "sha256": "e5faff74ddee527b7b0e9175b9020bb1435803abe7c6c009f70b986762a29643",
+          "cells": 935,
+          "formulas": 2,
+          "developmentReferences": 0
+        },
+        {
+          "name": "Sheet2_DISCARDAFTUSE",
+          "sheetId": "10",
+          "state": "hidden",
+          "part": "xl/worksheets/sheet25.xml",
+          "sha256": "98437d6cc6b25b772632d8733bc95849f4c596f6647a14c764c1a25f7db52495",
+          "cells": 45050,
+          "formulas": 0,
+          "developmentReferences": 0
+        },
+        {
+          "name": "CubeDump_DISCARDAFTUSE",
+          "sheetId": "16",
+          "state": "hidden",
+          "part": "xl/worksheets/sheet26.xml",
+          "sha256": "9c5e4b873cf59d6074ceef5b0cb889a9562adc1f4580b84bc4bb1e8b9d7c9f23",
+          "cells": 1191,
+          "formulas": 0,
+          "developmentReferences": 0
+        }
+      ],
+      "removedParts": [
+        "xl/printerSettings/printerSettings11.bin",
+        "xl/worksheets/_rels/sheet27.xml.rels",
+        "xl/worksheets/sheet1.xml",
+        "xl/worksheets/sheet27.xml"
+      ],
+      "changedMetadataParts": [
+        "[Content_Types].xml",
+        "docProps/app.xml",
+        "xl/_rels/workbook.xml.rels",
+        "xl/workbook.xml"
+      ],
+      "preservedPartCount": 64,
+      "definedNamesRemoved": 1,
+      "definedNameScopesShifted": 29,
+      "verification": {
+        "zipCrc": "pass",
+        "retainedPartsByteIdentical": "pass",
+        "newDanglingRelationships": 0,
+        "businessDevelopmentReferences": 0,
+        "nativeExcelOpen": "not_run",
+        "recalculation": "not_run",
+        "openpyxlWorkbookMetadata": "pass",
+        "definedNameScopeSemantics": "pass",
+        "calculationSettingsUnchanged": "pass"
+      },
+      "comparisonWithLedgerSource": {
+        "businessWorksheetBytesChanged": 25,
+        "interpretation": "byte difference only; cell/policy equivalence not verified"
+      }
+    },
+    {
+      "role": "OUTPUT",
+      "sourcePath": "/Users/hoduhomil/Downloads/플랫폼 입력 수정본_261006/Output_v3_플랫폼입력_최종_v8_플랫폼전달.xlsm",
+      "sourceSnapshotPath": "/Users/hoduhomil/source/mip/backend/temp/model-input-baselines/2026-10-07-delivery-261006-v8-v6/source/OUTPUT-source.xlsm",
+      "sourceSha256": "fa8bbda8ffa3e3aac1ce0767d403c9ab51f94806b286535e8de7878d416e9080",
+      "normalizedPath": "/Users/hoduhomil/source/mip/backend/temp/model-input-baselines/2026-10-07-delivery-261006-v8-v6/OUTPUT-normalized.xlsm",
+      "normalizedSha256": "69742cc9c6fba170324c09c21986574a390c741ba26d371acdce570aeaac28ce",
+      "removedSheets": [
+        "SUMMARY",
+        "플랫폼 입력 안내"
+      ],
+      "sheetCount": 5,
+      "sheets": [
+        {
+          "name": "USCostofSupply",
+          "sheetId": "2",
+          "state": "visible",
+          "part": "xl/worksheets/sheet2.xml",
+          "sha256": "e202e58f9ee72bdc26bce8babdb40cf5474a6025144e76f99912bb38fdcc49b8",
+          "cells": 12221,
+          "formulas": 817,
+          "developmentReferences": 0
+        },
+        {
+          "name": "BCPrices",
+          "sheetId": "4",
+          "state": "visible",
+          "part": "xl/worksheets/sheet3.xml",
+          "sha256": "1d71fae62ea81f4c27ee790e690aa727c46db2945bf10e7f30d1f94b0650c86d",
+          "cells": 88,
+          "formulas": 0,
+          "developmentReferences": 0
+        },
+        {
+          "name": "PremiumCalc",
+          "sheetId": "3",
+          "state": "visible",
+          "part": "xl/worksheets/sheet4.xml",
+          "sha256": "03b038f084ab0b44a6a44d9755f2d275f46d3d685d1442f89147d66db975a96d",
+          "cells": 1069,
+          "formulas": 64,
+          "developmentReferences": 0
+        },
+        {
+          "name": "AnnualPriceCalc",
+          "sheetId": "5",
+          "state": "visible",
+          "part": "xl/worksheets/sheet5.xml",
+          "sha256": "c99461254fe96e94b4bdf9c15f1ef24ad56d2a5eb9bc809de21d92ef6b19af1b",
+          "cells": 732,
+          "formulas": 8,
+          "developmentReferences": 0
+        },
+        {
+          "name": "PriceSeasonality",
+          "sheetId": "6",
+          "state": "visible",
+          "part": "xl/worksheets/sheet6.xml",
+          "sha256": "df1b584da63ab3890c1be2c4f82b79728a831f199bc2174988ced9f9f1e7ac35",
+          "cells": 89,
+          "formulas": 0,
+          "developmentReferences": 0
+        }
+      ],
+      "removedParts": [
+        "xl/worksheets/sheet1.xml",
+        "xl/worksheets/sheet7.xml"
+      ],
+      "changedMetadataParts": [
+        "[Content_Types].xml",
+        "docProps/app.xml",
+        "xl/_rels/workbook.xml.rels",
+        "xl/workbook.xml"
+      ],
+      "preservedPartCount": 34,
+      "definedNamesRemoved": 1,
+      "definedNameScopesShifted": 0,
+      "verification": {
+        "zipCrc": "pass",
+        "retainedPartsByteIdentical": "pass",
+        "newDanglingRelationships": 0,
+        "businessDevelopmentReferences": 0,
+        "nativeExcelOpen": "not_run",
+        "recalculation": "not_run",
+        "openpyxlWorkbookMetadata": "pass",
+        "definedNameScopeSemantics": "pass",
+        "calculationSettingsUnchanged": "pass"
+      },
+      "comparisonWithLedgerSource": {
+        "businessWorksheetBytesChanged": 5,
+        "interpretation": "byte difference only; cell/policy equivalence not verified"
+      }
+    },
+    {
+      "role": "SUPPLY",
+      "sourcePath": "/Users/hoduhomil/Downloads/플랫폼 입력 수정본_261006/Supply_v14_플랫폼입력_최종_v6_플랫폼전달.xlsm",
+      "sourceSnapshotPath": "/Users/hoduhomil/source/mip/backend/temp/model-input-baselines/2026-10-07-delivery-261006-v8-v6/source/SUPPLY-source.xlsm",
+      "sourceSha256": "c5ab906edf807dbf2707a9e13d7146a92c7490f054fed1b7d3d42afd4312824e",
+      "normalizedPath": "/Users/hoduhomil/source/mip/backend/temp/model-input-baselines/2026-10-07-delivery-261006-v8-v6/SUPPLY-normalized.xlsm",
+      "normalizedSha256": "eefbcde6e6a5baeb3491bc2d37abe79a0e9a0ff511d1673ddee39f46ea64bd36",
+      "removedSheets": [
+        "SUMMARY",
+        "플랫폼 입력 안내"
+      ],
+      "sheetCount": 23,
+      "sheets": [
+        {
+          "name": "Input Upstream ->",
+          "sheetId": "2",
+          "state": "visible",
+          "part": "xl/worksheets/sheet2.xml",
+          "sha256": "b4e216f620151b1884255043089d93c3b0c41b12f53dd6700e41f95b8cedda16",
+          "cells": 0,
+          "formulas": 0,
+          "developmentReferences": 0
+        },
+        {
+          "name": "ProductionAdjustment",
+          "sheetId": "23",
+          "state": "visible",
+          "part": "xl/worksheets/sheet3.xml",
+          "sha256": "77b6408bd986d99f6ee11ea72a4c18df153e5084b8f194825dc53e1efcf2d4f9",
+          "cells": 2952,
+          "formulas": 1374,
+          "developmentReferences": 0
+        },
+        {
+          "name": "Input Midstream ->",
+          "sheetId": "38",
+          "state": "visible",
+          "part": "xl/worksheets/sheet4.xml",
+          "sha256": "7ae5a7f71f8e24e7e05fbe891b6fa98d9d08028686a26a293cbe7d42af1ef300",
+          "cells": 0,
+          "formulas": 0,
+          "developmentReferences": 0
+        },
+        {
+          "name": "{USA}Hurricanes",
+          "sheetId": "45",
+          "state": "visible",
+          "part": "xl/worksheets/sheet5.xml",
+          "sha256": "c7d26bb48e97fcf45e21ef42bfba019501d00988a6e84ccaa989df4bd2e4b7fc",
+          "cells": 805,
+          "formulas": 209,
+          "developmentReferences": 0
+        },
+        {
+          "name": "LiqUtilAdjustment",
+          "sheetId": "70",
+          "state": "visible",
+          "part": "xl/worksheets/sheet6.xml",
+          "sha256": "16cd6977c3df6081676c02219e2186596bc6badc2f868ebdc3e37bb68ff51938",
+          "cells": 35797,
+          "formulas": 83,
+          "developmentReferences": 0
+        },
+        {
+          "name": "LiqProdAdjustment",
+          "sheetId": "63",
+          "state": "visible",
+          "part": "xl/worksheets/sheet7.xml",
+          "sha256": "8bcdb02ed8632e06a0b71bb5958c882b83e4121f333916fd7e9ba3ff090dc0fe",
+          "cells": 36190,
+          "formulas": 480,
+          "developmentReferences": 0
+        },
+        {
+          "name": "RegasAdjustment",
+          "sheetId": "43",
+          "state": "visible",
+          "part": "xl/worksheets/sheet8.xml",
+          "sha256": "546734cc341f15c7654d82ce8440b388659fbb729755f8bebf96f7a2670b7b04",
+          "cells": 54056,
+          "formulas": 43464,
+          "developmentReferences": 0
+        },
+        {
+          "name": "PipelineAdjustment",
+          "sheetId": "44",
+          "state": "visible",
+          "part": "xl/worksheets/sheet9.xml",
+          "sha256": "25cbe8c2378ee205befd4fc1b7fad4bd6fe4aea4437ef76bcb9fdcfca8c405b2",
+          "cells": 1809,
+          "formulas": 788,
+          "developmentReferences": 0
+        },
+        {
+          "name": "BCProduction",
+          "sheetId": "64",
+          "state": "visible",
+          "part": "xl/worksheets/sheet10.xml",
+          "sha256": "0d5a6d7ec30dbf74dec436129573825678999a0a6fcbb0adb8ad1bf89fe2783f",
+          "cells": 401553,
+          "formulas": 74378,
+          "developmentReferences": 0
+        },
+        {
+          "name": "BCHurricanes",
+          "sheetId": "65",
+          "state": "visible",
+          "part": "xl/worksheets/sheet11.xml",
+          "sha256": "9fa7372f9b7b397a20ea2fb044bc52301344d7119f55db217b7b8472a9988b07",
+          "cells": 166,
+          "formulas": 8,
+          "developmentReferences": 0
+        },
+        {
+          "name": "BCLiquefaction",
+          "sheetId": "69",
+          "state": "visible",
+          "part": "xl/worksheets/sheet12.xml",
+          "sha256": "3db1d7e263812a441a2a936776af56cda56b49a8ef2148ea398ec1d6eb5b5c7e",
+          "cells": 1362579,
+          "formulas": 104808,
+          "developmentReferences": 0
+        },
+        {
+          "name": "BCRegasification",
+          "sheetId": "67",
+          "state": "visible",
+          "part": "xl/worksheets/sheet13.xml",
+          "sha256": "b48165c2b6d5f47dfa2ae7c797de960401973d6fe08d6ad3827c057720117019",
+          "cells": 31990,
+          "formulas": 754,
+          "developmentReferences": 0
+        },
+        {
+          "name": "BCPipeline",
+          "sheetId": "68",
+          "state": "visible",
+          "part": "xl/worksheets/sheet14.xml",
+          "sha256": "fdb151333875df7e7ff842547b39aefccea65e9c9a289117d7d61bd639a756ac",
+          "cells": 27141,
+          "formulas": 0,
+          "developmentReferences": 0
+        },
+        {
+          "name": "LNG Summary",
+          "sheetId": "73",
+          "state": "visible",
+          "part": "xl/worksheets/sheet15.xml",
+          "sha256": "750593275ebb3c034c2a42f4f8a01f33409a506c1bca32b1f45217afd72705ff",
+          "cells": 12080,
+          "formulas": 0,
+          "developmentReferences": 0
+        },
+        {
+          "name": "LiqUtilAdjustment_backup",
+          "sheetId": "42",
+          "state": "visible",
+          "part": "xl/worksheets/sheet16.xml",
+          "sha256": "898f34a871714f0db0744df9fbe34df671c8375b95e062d94db5037b2e1d66f9",
+          "cells": 73437,
+          "formulas": 47279,
+          "developmentReferences": 0
+        },
+        {
+          "name": "LiqProdAdjustment_backup",
+          "sheetId": "72",
+          "state": "visible",
+          "part": "xl/worksheets/sheet17.xml",
+          "sha256": "05e46f985cb2c16719674b407ced52d3694c81c5ac487b68c477115a296e003f",
+          "cells": 73817,
+          "formulas": 69449,
+          "developmentReferences": 0
+        },
+        {
+          "name": "BCLiquefaction_backup",
+          "sheetId": "66",
+          "state": "visible",
+          "part": "xl/worksheets/sheet18.xml",
+          "sha256": "7287be721f7e53eb3d6fbe4a9af926bf00b6882c4ae348caa320795c0b54858b",
+          "cells": 660492,
+          "formulas": 117729,
+          "developmentReferences": 0
+        },
+        {
+          "name": "{USA}RigsLogic",
+          "sheetId": "48",
+          "state": "hidden",
+          "part": "xl/worksheets/sheet19.xml",
+          "sha256": "ec690c13155cfd8a4b43c1c611ddc1c92ae34ea69527d478ccfe17444484709e",
+          "cells": 16,
+          "formulas": 0,
+          "developmentReferences": 0
+        },
+        {
+          "name": "{China}PolicyLogic",
+          "sheetId": "49",
+          "state": "hidden",
+          "part": "xl/worksheets/sheet20.xml",
+          "sha256": "348812b658d8ff883bc5d2de76bddeb350f688c856411c6d4848493877b7b21b",
+          "cells": 16,
+          "formulas": 0,
+          "developmentReferences": 0
+        },
+        {
+          "name": "{USA}HurricanesLogic",
+          "sheetId": "51",
+          "state": "hidden",
+          "part": "xl/worksheets/sheet21.xml",
+          "sha256": "c7ebfc93f544df05dbc9429a88f681631da4c746a7da385c8ba3660242c91eab",
+          "cells": 16,
+          "formulas": 0,
+          "developmentReferences": 0
+        },
+        {
+          "name": "RegasLogic",
+          "sheetId": "52",
+          "state": "hidden",
+          "part": "xl/worksheets/sheet22.xml",
+          "sha256": "70659e83aac315348b346162bed0318ca73662d7e51143f7ab824ba13cbbb50d",
+          "cells": 16,
+          "formulas": 0,
+          "developmentReferences": 0
+        },
+        {
+          "name": "PipelineLogic",
+          "sheetId": "53",
+          "state": "hidden",
+          "part": "xl/worksheets/sheet23.xml",
+          "sha256": "c72e177c2b247f2f588ee4c74105e16b305aa6a688399d21f38b54ec9d89d77d",
+          "cells": 16,
+          "formulas": 0,
+          "developmentReferences": 0
+        },
+        {
+          "name": "MonthlyAdjProduction",
+          "sheetId": "55",
+          "state": "hidden",
+          "part": "xl/worksheets/sheet24.xml",
+          "sha256": "1b492a7a62b8ccaa18f35b3e559c0a9051a51047275d538bee07cc6fefd6e36e",
+          "cells": 0,
+          "formulas": 0,
+          "developmentReferences": 0
+        }
+      ],
+      "removedParts": [
+        "xl/printerSettings/printerSettings9.bin",
+        "xl/worksheets/_rels/sheet25.xml.rels",
+        "xl/worksheets/sheet1.xml",
+        "xl/worksheets/sheet25.xml"
+      ],
+      "changedMetadataParts": [
+        "[Content_Types].xml",
+        "docProps/app.xml",
+        "xl/_rels/workbook.xml.rels",
+        "xl/workbook.xml"
+      ],
+      "preservedPartCount": 66,
+      "definedNamesRemoved": 1,
+      "definedNameScopesShifted": 8,
+      "verification": {
+        "zipCrc": "pass",
+        "retainedPartsByteIdentical": "pass",
+        "newDanglingRelationships": 0,
+        "businessDevelopmentReferences": 0,
+        "nativeExcelOpen": "not_run",
+        "recalculation": "not_run",
+        "openpyxlWorkbookMetadata": "pass",
+        "definedNameScopeSemantics": "pass",
+        "calculationSettingsUnchanged": "pass"
+      },
+      "comparisonWithLedgerSource": {
+        "businessWorksheetBytesChanged": 0,
+        "interpretation": "byte difference only; cell/policy equivalence not verified"
+      }
+    },
+    {
+      "role": "TRADE",
+      "sourcePath": "/Users/hoduhomil/Downloads/플랫폼 입력 수정본_261006/복호화_Trade_v11_플랫폼입력_최종_v8_플랫폼전달.xlsm",
+      "sourceSnapshotPath": "/Users/hoduhomil/source/mip/backend/temp/model-input-baselines/2026-10-07-delivery-261006-v8-v6/source/TRADE-source.xlsm",
+      "sourceSha256": "8274fc25be1a89dac8e57eda64d84593576d7a71524d4b46de035da300cf6f8e",
+      "normalizedPath": "/Users/hoduhomil/source/mip/backend/temp/model-input-baselines/2026-10-07-delivery-261006-v8-v6/TRADE-normalized.xlsm",
+      "normalizedSha256": "b1211662aa00d49d9f03c1d732acd495cf99446ede69abde34565007b3819a31",
+      "removedSheets": [
+        "SUMMARY",
+        "플랫폼 입력 안내"
+      ],
+      "sheetCount": 17,
+      "sheets": [
+        {
+          "name": "LNG_TradeRestrictionInput",
+          "sheetId": "103",
+          "state": "visible",
+          "part": "xl/worksheets/sheet2.xml",
+          "sha256": "0b66ce2c07713c658b7c8b855e68dd360f1a3d398c7ba3d03d920bcb3c59e216",
+          "cells": 5060,
+          "formulas": 0,
+          "developmentReferences": 0
+        },
+        {
+          "name": "PNG_TradeRestrictionInput",
+          "sheetId": "104",
+          "state": "visible",
+          "part": "xl/worksheets/sheet3.xml",
+          "sha256": "bd9a202abd707abaf1096a66ea1bf0ed15832dd2a6ec7b9f6334e0f5607288c2",
+          "cells": 4554,
+          "formulas": 0,
+          "developmentReferences": 0
+        },
+        {
+          "name": "Sheet1",
+          "sheetId": "39",
+          "state": "hidden",
+          "part": "xl/worksheets/sheet4.xml",
+          "sha256": "b21b314db40c32c466daa4f8ea96ed7eff7996e79c39bb19a9b1b14183d86a74",
+          "cells": 266,
+          "formulas": 88,
+          "developmentReferences": 0
+        },
+        {
+          "name": "MidstreamContractInput",
+          "sheetId": "56",
+          "state": "visible",
+          "part": "xl/worksheets/sheet5.xml",
+          "sha256": "6c13f37e190f52876ed9c71a922a777204b46f0affd1aca08b7b26f45c3edb54",
+          "cells": 222163,
+          "formulas": 166271,
+          "developmentReferences": 0
+        },
+        {
+          "name": "ShippingCostInput",
+          "sheetId": "101",
+          "state": "visible",
+          "part": "xl/worksheets/sheet6.xml",
+          "sha256": "c0aabe16c89b9a6157179d1122cf142f52bd0e8c8b93b66082c811ee5b1ccf71",
+          "cells": 346026,
+          "formulas": 342696,
+          "developmentReferences": 0
+        },
+        {
+          "name": "MidstreamCapacityInput",
+          "sheetId": "96",
+          "state": "visible",
+          "part": "xl/worksheets/sheet7.xml",
+          "sha256": "8d2259aa9542350597d0640f5106e0c95de19349a47a220837d1e6a6848a2b56",
+          "cells": 256421,
+          "formulas": 62236,
+          "developmentReferences": 0
+        },
+        {
+          "name": "UpstreamAdjLogicInput",
+          "sheetId": "97",
+          "state": "visible",
+          "part": "xl/worksheets/sheet8.xml",
+          "sha256": "3114e610a934f9c948834577fe9ce87b01e3f661245c2fb8794a427c03d64aa0",
+          "cells": 8870,
+          "formulas": 3361,
+          "developmentReferences": 0
+        },
+        {
+          "name": "DemandAdjLogicInput",
+          "sheetId": "98",
+          "state": "visible",
+          "part": "xl/worksheets/sheet9.xml",
+          "sha256": "c532e4b5c952d9e8939ac4747672097e8dadce2a2d6c0f18c057b7ae3e5556ac",
+          "cells": 98,
+          "formulas": 15,
+          "developmentReferences": 0
+        },
+        {
+          "name": "CostInput",
+          "sheetId": "99",
+          "state": "visible",
+          "part": "xl/worksheets/sheet10.xml",
+          "sha256": "b01c405ad675e47c385be60f097453137dbc76af431db0a1fdd27b6b58f36b72",
+          "cells": 44713,
+          "formulas": 9871,
+          "developmentReferences": 0
+        },
+        {
+          "name": "4.5 PriceModelInput",
+          "sheetId": "100",
+          "state": "visible",
+          "part": "xl/worksheets/sheet11.xml",
+          "sha256": "927a476a6c0b8e0387970e8587537c129bc6503fd05cf11f44c15b158de6f3ae",
+          "cells": 1126,
+          "formulas": 267,
+          "developmentReferences": 0
+        },
+        {
+          "name": "LNGExportRestictionInput",
+          "sheetId": "102",
+          "state": "visible",
+          "part": "xl/worksheets/sheet12.xml",
+          "sha256": "a814a028717c5ce6fa5640f626095aaab1e8de2d8d10982a320e6a0940d21ffd",
+          "cells": 796,
+          "formulas": 0,
+          "developmentReferences": 0
+        },
+        {
+          "name": "backupLNG_TradeRestrictionInput",
+          "sheetId": "106",
+          "state": "visible",
+          "part": "xl/worksheets/sheet13.xml",
+          "sha256": "9c87e13f40e5888dd2475be7f4a7bfd8aa7c12145f725e2e448438904784dd78",
+          "cells": 3928,
+          "formulas": 0,
+          "developmentReferences": 0
+        },
+        {
+          "name": "backup_MidstreamContractInput",
+          "sheetId": "105",
+          "state": "visible",
+          "part": "xl/worksheets/sheet14.xml",
+          "sha256": "e13cf2500899b8b8ee6a48c7ec72eec32b4dd67b6b177444c11381b9f6817d9d",
+          "cells": 157762,
+          "formulas": 117970,
+          "developmentReferences": 0
+        },
+        {
+          "name": "Industry research",
+          "sheetId": "22",
+          "state": "hidden",
+          "part": "xl/worksheets/sheet15.xml",
+          "sha256": "415254be5b82f0a57a5dc8446cd093eb40557617934a37ba69578d09af58d3a3",
+          "cells": 7,
+          "formulas": 1,
+          "developmentReferences": 0
+        },
+        {
+          "name": "net exporter",
+          "sheetId": "21",
+          "state": "hidden",
+          "part": "xl/worksheets/sheet16.xml",
+          "sha256": "46a5b86b0ab3a5a4f92f0527be9232a846fb8d05435fdad08b16a6680af9521f",
+          "cells": 1275,
+          "formulas": 0,
+          "developmentReferences": 0
+        },
+        {
+          "name": "pipeline cap",
+          "sheetId": "32",
+          "state": "hidden",
+          "part": "xl/worksheets/sheet17.xml",
+          "sha256": "80d21f83663cb9bb6a5d2a9a0c66566273eaa98fb5c45603b6c767c2b36b7ed2",
+          "cells": 2392,
+          "formulas": 0,
+          "developmentReferences": 0
+        },
+        {
+          "name": "pipeline contract",
+          "sheetId": "33",
+          "state": "hidden",
+          "part": "xl/worksheets/sheet18.xml",
+          "sha256": "c9cbb18364ad4a4ce61fbc35b921a4410b2d01335299af278f50406f4f65700b",
+          "cells": 1208,
+          "formulas": 0,
+          "developmentReferences": 0
+        }
+      ],
+      "removedParts": [
+        "xl/worksheets/sheet1.xml",
+        "xl/worksheets/sheet19.xml"
+      ],
+      "changedMetadataParts": [
+        "[Content_Types].xml",
+        "xl/_rels/workbook.xml.rels",
+        "xl/workbook.xml"
+      ],
+      "preservedPartCount": 74,
+      "definedNamesRemoved": 1,
+      "definedNameScopesShifted": 16,
+      "verification": {
+        "zipCrc": "pass",
+        "retainedPartsByteIdentical": "pass",
+        "newDanglingRelationships": 0,
+        "businessDevelopmentReferences": 0,
+        "nativeExcelOpen": "not_run",
+        "recalculation": "not_run",
+        "openpyxlWorkbookMetadata": "pass",
+        "definedNameScopeSemantics": "pass",
+        "calculationSettingsUnchanged": "pass"
+      },
+      "comparisonWithLedgerSource": {
+        "businessWorksheetBytesChanged": 17,
+        "interpretation": "byte difference only; cell/policy equivalence not verified"
+      }
+    }
+  ]
+}

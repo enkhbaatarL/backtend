@@ -74,6 +74,20 @@ spring:
   #          connection-test-query: SELECT 1
   #          validation-timeout: 3000
   #          minimum-idle: 10
+      - company-cd: midb-skgas
+        jdbc-url: jdbc:mysql://40.82.137.178:23009/midb-skgas?useSSL=false&serverTimezone=Asia/Seoul&characterEncoding=UTF-8
+        driver-class-name: com.mysql.cj.jdbc.Driver
+        username: ${SKT_MI_DB_USERNAME_MASTER:min}
+        password: ${SKT_MI_DB_PASSWORD_MASTER:min}
+        hikari:
+          connection-timeout: 7s
+          maximum-pool-size: 20
+          idle-timeout: 5m
+          max-lifetime: 9m
+          keepalive-time: 4m
+          connection-test-query: SELECT 1
+          validation-timeout: 3000
+          minimum-idle: 10
 
   jpa:
     database-platform: org.hibernate.dialect.MySQLDialect
@@ -239,6 +253,16 @@ features:
   scheduling:
     prohibited-word:
       refresh-rate: 3600000 # 1 hour (1h * 1000ms * 60s * 60m)
+    event-keyword-alert-scan: # 키워드 알림 스캔
+      enabled: false
+      fixed-delay-ms: 60000 # 1분
+    event-keyword-alert-dispatch: # 키워드 알림 발송
+      enabled: false # 켜면 실제 메일 발송
+      fixed-delay-ms: 30000 # 30초
+      batch-size: 100
+      max-attempts: 3
+      retry-backoff-minutes: 5
+      sending-timeout-minutes: 10
 
 custom:
   gie-eu:

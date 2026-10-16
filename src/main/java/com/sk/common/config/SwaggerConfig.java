@@ -27,11 +27,13 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import lombok.RequiredArgsConstructor;
+import org.apache.commons.lang3.StringUtils;
 import org.springdoc.core.customizers.OpenApiCustomizer;
 import org.springdoc.core.customizers.GlobalOpenApiCustomizer;
 import org.springdoc.core.customizers.OperationCustomizer;
 import org.springdoc.core.models.GroupedOpenApi;
 import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Profile;
@@ -49,8 +51,12 @@ public class SwaggerConfig {
     private static final String MCP_SECURITY_SCHEME = "McpBasicAuth";
 
     // note: 안정화 후 투머치 문서 모두 삭제예정
-    private static final String SW_VERSION_BASE = "v1.3.1";
+    private static final String SW_VERSION_BASE = "v1.3.2";
     private static final DateTimeFormatter SW_DEPLOY_DATE_FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
+
+    // [MCP 인증] mcp.default-id 가 설정되어 있으면 X-User-Id 헤더를 선택으로 문서화
+    @Value("${mcp.default-id:}")
+    private String mcpDefaultUserId;
 
     @Bean
     public OpenAPI customOpenAPI() {
@@ -146,6 +152,18 @@ public class SwaggerConfig {
 
   ## 수정사항
   <details open>
+    <summary><strong>v1.3.2 (2026-10-08)</strong></summary>
+
+  - [Event Keyword Alert — 신규 도메인] (태그 01-1)
+    - 이벤트 키워드 알림 설정 API 추가 (Event List 툴바 알림 버튼 → 키워드 알림 설정 팝업)
+      - 목록 조회 `GET /api/v1/mi/next-gen/event-keywords` — `keywordCount`/`maxKeywordCount`(20)/`keywords`
+      - 등록 `POST /api/v1/mi/next-gen/event-keywords` — 정규화 후 2~30자, 사용자당 최대 20개, 중복 시 `RSC-003`
+      - 알림 ON/OFF `PATCH /api/v1/mi/next-gen/event-keywords/{keywordSettingId}/notification-use`
+      - 삭제 `DELETE /api/v1/mi/next-gen/event-keywords/{keywordSettingId}`
+
+  </details>
+
+  <details>
     <summary><strong>v1.3.1 (2026-10-05)</strong></summary>
 
   - [Scenario Design — 동일 조합 중복 생성 허용]
@@ -475,8 +493,9 @@ public class SwaggerConfig {
                     parameters.add(0, new io.swagger.v3.oas.models.parameters.Parameter()
                         .name(McpUserContextInterceptor.X_USER_ID)
                         .in("header")
-                        .required(true)
-                        .description("위임할 MI Platform 사용자 로그인 ID. 같은 로그인 ID가 여러 사용자와 일치하면 첫 번째 조회 결과를 사용합니다.")
+                        .required(StringUtils.isBlank(mcpDefaultUserId))
+                        .description("위임할 MI Platform 사용자 로그인 ID. 같은 로그인 ID가 여러 사용자와 일치하면 첫 번째 조회 결과를 사용합니다."
+                            + (StringUtils.isBlank(mcpDefaultUserId) ? "" : " 생략하면 서버에 설정된 기본 사용자로 처리합니다."))
                         .schema(new StringSchema().example("mcp-user@sk.com")));
                 }
                 operation.setParameters(parameters);
@@ -502,7 +521,7 @@ public class SwaggerConfig {
                     new io.swagger.v3.oas.models.responses.ApiResponse()
                         .description(
                             "키 인증은 통과했으나 X-User-Id로 위임할 수 없습니다. "
-                                + "X-User-Id가 누락·공백이거나, 해당 로그인 ID의 유효 사용자가 없거나, "
+                                + "X-User-Id가 누락·공백(기본 사용자 미설정)이거나, 해당 로그인 ID의 유효 사용자가 없거나, "
                                 + "사용자의 회사가 인증 키의 회사와 다릅니다. BaseResponse의 code는 AUTH-007입니다.")
                         .content(mcpErrorContent(
                             ResultCode.Error.AUTH_ACCESS_DENIED,

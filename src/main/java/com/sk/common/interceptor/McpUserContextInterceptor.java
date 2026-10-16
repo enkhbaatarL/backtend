@@ -17,9 +17,9 @@ import jakarta.servlet.http.HttpServletResponse;
 import java.time.Instant;
 import java.util.List;
 import java.util.Objects;
-import lombok.RequiredArgsConstructor;
 import org.apache.commons.lang3.BooleanUtils;
 import org.apache.commons.lang3.StringUtils;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContext;
@@ -30,7 +30,6 @@ import org.springframework.stereotype.Component;
 import org.springframework.web.servlet.HandlerInterceptor;
 
 @Component
-@RequiredArgsConstructor
 public class McpUserContextInterceptor implements HandlerInterceptor {
 
     public static final String X_USER_ID = "X-User-Id";
@@ -42,6 +41,18 @@ public class McpUserContextInterceptor implements HandlerInterceptor {
 
     private final UserRepository userRepository;
     private final CustomerCompanyRepository customerCompanyRepository;
+    // [MCP 인증] X-User-Id 헤더가 없을 때 대신 쓸 로그인 ID (mcp.default-id). 비어 있으면 헤더 필수
+    private final String defaultUserId;
+
+    public McpUserContextInterceptor(
+        UserRepository userRepository,
+        CustomerCompanyRepository customerCompanyRepository,
+        @Value("${mcp.default-id:}") String defaultUserId
+    ) {
+        this.userRepository = userRepository;
+        this.customerCompanyRepository = customerCompanyRepository;
+        this.defaultUserId = StringUtils.trimToNull(defaultUserId);
+    }
 
     @Override
     public boolean preHandle(HttpServletRequest request, HttpServletResponse response, Object handler) {
@@ -50,7 +61,7 @@ public class McpUserContextInterceptor implements HandlerInterceptor {
         try {
             // [MCP 인증] Basic Auth 클라이언트 확인 → X-User-Id 사용자 조회 → 회사 일치 검사
             McpClientAuthenticationToken client = findAuthenticatedClient();
-            User user = findEffectiveUser(request.getHeader(X_USER_ID));
+            User user = findEffectiveUser(resolveUserId(request));
             validateCompanyAccess(client, user);
             JwtAuthenticationToken authentication = createAuthentication(user);
 
@@ -78,6 +89,15 @@ public class McpUserContextInterceptor implements HandlerInterceptor {
         Exception exception
     ) {
         clearOwnedContext();
+    }
+
+    /**
+     * [MCP 인증] X-User-Id 헤더가 없거나 공백이면 mcp.default-id 를 X-User-Id 로 받은 것처럼 사용합니다.
+     * 기본 ID 사용자도 헤더로 받은 사용자와 같은 검사(사용자 존재·회사 일치)를 거칩니다.
+     */
+    private String resolveUserId(HttpServletRequest request) {
+        String userIdHeader = request.getHeader(X_USER_ID);
+        return StringUtils.isBlank(userIdHeader) ? defaultUserId : userIdHeader;
     }
 
     private User findEffectiveUser(String userIdHeader) {
