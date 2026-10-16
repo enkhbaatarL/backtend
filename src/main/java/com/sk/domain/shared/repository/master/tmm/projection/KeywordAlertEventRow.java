@@ -3,7 +3,7 @@ package com.sk.domain.shared.repository.master.tmm.projection;
 import java.time.LocalDateTime;
 
 /**
- * 키워드 알림 스캔 대상 이벤트 (신규 생성 이벤트)
+ * 키워드 알림 스캔 대상 이벤트 (생성·갱신 이벤트)
  */
 public interface KeywordAlertEventRow {
 
@@ -11,5 +11,5 @@ public interface KeywordAlertEventRow {
 
     String getOneLineSummary();
 
-    LocalDateTime getCreateDt();
+    LocalDateTime getModifyDt();
 }

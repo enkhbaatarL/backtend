@@ -9,8 +9,8 @@ import org.springframework.stereotype.Component;
 /**
  * 키워드 알림 스캔 체크포인트 (Redis)
  * - 키: event-keyword-alert:scan-checkpoint (TTL 없음)
- * - 값: 마지막 처리 이벤트의 crt_dtm (DB 값만 사용 → 서버 시계 차이 영향 없음)
- * - 없을 때: 스캔 서비스가 현재 최대 crt_dtm으로 초기화
+ * - 값: 마지막 처리 이벤트의 mod_dtm (DB 값만 사용 → 서버 시계 차이 영향 없음)
+ * - 없을 때: 스캔 서비스가 현재 최대 mod_dtm으로 초기화
  */
 @Slf4j
 @Component
