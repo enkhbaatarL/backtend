@@ -47,7 +47,7 @@ public class SwaggerConfig {
     private static final String BASE_RESPONSE_SCHEMA_REF = "#/components/schemas/" + BASE_RESPONSE_SCHEMA;
 
     // note: 안정화 후 투머치 문서 모두 삭제예정
-    private static final String SW_VERSION_BASE = "v1.3.2";
+    private static final String SW_VERSION_BASE = "v1.3.3";
     private static final DateTimeFormatter SW_DEPLOY_DATE_FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
 
     @Bean
@@ -144,6 +144,14 @@ public class SwaggerConfig {
 
   ## 수정사항
   <details open>
+    <summary><strong>v1.3.3 (2026-10-16)</strong></summary>
+
+  - [Scenario Design] (태그 03-1)
+    - 이벤트 조합 설계 상태 조회 API: 이벤트 1개 선택 시에도 동일 조합 검사 — 해당 이벤트 단독으로 구성된 그룹 목록 반환 (기존 빈 목록)
+
+  </details>
+
+  <details>
     <summary><strong>v1.3.2 (2026-10-08)</strong></summary>
 
   - [Event Keyword Alert — 신규 도메인] (태그 01-1)
