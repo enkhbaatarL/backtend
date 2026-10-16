@@ -40,6 +40,10 @@ public class AgentModelParamProposal extends BaseEntity {
     @Comment("대표 MI 이벤트 ID (다중 이벤트 그룹은 null - migration 0022)")
     private Long eventId;
 
+    @Column(name = "mi_base_case_id", columnDefinition = "int unsigned")
+    @Comment("제안 생성 시 선택된 MI Base case ID")
+    private Long miBaseCaseId;
+
     @Enumerated(EnumType.STRING)
     @Column(name = "status", nullable = false, length = 50)
     @Comment("상태")

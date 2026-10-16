@@ -28,6 +28,7 @@
 - supersedes: 없음
 - last synced: 2026-10-13
 - open questions: 13절 및 duplicate-slot Agent payload의 A6/Excel 실행 좌표 호환성 참조
+- 2026-10-15 사용자 결정 — 제안 생성 기준 묶음: 제안을 생성할 때 Backend가 current MI Base의 `caseId`와 DEMAND/SUPPLY/TRADE/OUTPUT input 4파일을 Agent 생성 요청 body로 보낸다. Agent는 `miBaseCaseId`를 proposal 테이블의 기존 `mi_base_case_id` 컬럼에 저장하고, 확정 실행 병합은 그 case의 input 4파일을 다시 조회해 쓴다. MI Base가 없으면 제안 생성을 거절한다(§5.1, §5.1.1). Backend는 `feature/gas2`에 구현했고, Agent 요청 수신·저장 합의는 대기 중이다.
 - 2026-08-27 오류 계약 정정: 생성 `status=error`는 `REQUEST_FAILED → PROPOSAL_FAILED`로 처리한다(§5.2.1). `REQUEST_NO_CHANGES/PROPOSAL_NO_CHANGES`는 과거 데이터 읽기 호환만 유지한다. 운영 데이터/배포는 변경하지 않는다.
 - integration model: callback = 완료 신호. Backend가 Agent proposal 테이블을 read-only 직접 조회해 결과 서빙(proposal payload hash/snapshot 없음, Backend 상태 조건부 갱신 유지). 공유 DB read 및 read 권한은 확정(조회 가능). callback path `scenarioId`는 proposal identity가 아니라 현재 in-flight execution-preparation을 찾는 scope key다.
 - callback 인증: 확정. 기존 시나리오 설계 콜백과 동일한 Resource Server JWT 체인(`CustomJwtDecoder` HS256 self-issued + `@RequiredPermissionRules(Role.SYSTEM ...)`) 재사용. Agent는 Backend 토큰 발급 API와 발급 인풋 2종을 전달받아 JWT를 자체 발급·갱신한다.
@@ -98,6 +99,7 @@ Frontend가 기존 Scenario의 기반 Event에 따라 두 가지 수급모델 �
 | `modelTarget.tableName` | `model_table` | phase 1 required contract. 실제 테이블명/표시명을 그대로 사용하며 Agent payload 반영 배포가 선행되어야 함 |
 | `proposalParameters` | `proposal_parameters` JSON array | Agent 원본 flat parameter array |
 | `confirmationParameters` | `confirmation_parameters` JSON array | 동일 shape의 사용자 확정 parameter array |
+| 생성 요청 `data.miBaseCaseId` | `mi_base_case_id` (`INT UNSIGNED NULL`, Agent DDL 반영됨 — 2026-10-15 사용자 제공 DDL) | 요청 시점 current MI Base `caseId`. 이 변경 이전에 생성된 row는 NULL(§5.1.1). input 파일 목록은 저장하지 않고 `tcm_filel`에서 다시 조회 |
 
 Agent `status`는 proposal 계산 상태이고 `callback_status`는 Agent→Backend 전달 상태다. Backend orchestration 상태와 혼합하지 않는다.
 
@@ -105,7 +107,7 @@ Agent `status`는 proposal 계산 상태이고 `callback_status`는 Agent→Back
 
 #### Confirmed Facts
 
-- proposal 생성은 body 없는 `POST /model-parameters/scenarios/{scenarioId}/proposals`이며 즉시 wrapper 응답의 `data`에 `modelParamProposalId`와 `PROCESSING`을 반환한다.
+- proposal 생성은 body 없는 `POST /model-parameters/scenarios/{scenarioId}/proposals`이며 즉시 wrapper 응답의 `data`에 `modelParamProposalId`와 `PROCESSING`을 반환한다. (2026-10-15 사용자 결정으로 요청 body 추가 예정, 응답은 그대로 유지: §5.1.1)
 - Backend가 callback endpoint와 URL을 결정해 Agent 팀에 전달하고, Agent는 전달받은 URL을 배포 운영 설정값으로 등록·관리한다.
 - callback은 `{status,message,data}` wrapper와 Bearer token을 사용하며 `data.status` terminal 값은 `PROPOSED | FAILED`다.
 - callback 식별자는 `modelParamProposalId`, `scenarioId`, `scenarioGroupId`, `eventId`다.
@@ -224,8 +226,9 @@ callback path는 `{scenarioId}`를 경로에 둔다. `scenarioId`는 proposal id
 
 - request body: 없음
 - Backend는 Scenario/권한/중복 상태와 `inputMode=PARAMETER_PROPOSAL`을 검증한다.
+- (2026-10-15 결정) Backend는 execution-preparation을 만드는 같은 transaction에서, 행을 저장하기 전에 기준 묶음(current MI Base와 그 input 4파일)을 조회·검증한다. MI Base가 없거나 기준 묶음이 유효하지 않으면 행을 만들지 않고 Agent도 호출하지 않으며 409로 거절한다(§5.1.1, §8).
 - Backend는 Agent 호출 전에 `scenarioId` 기준 execution-preparation을 `REQUESTING` 상태와 `modelParamProposalId=null`로 생성·commit한다. 외부 Agent 호출 동안 이 DB transaction을 열어두지 않는다.
-- Backend Agent client는 body 없이 Agent `POST /model-parameters/scenarios/{scenarioId}/proposals`를 호출한다.
+- Backend Agent client는 Agent `POST /model-parameters/scenarios/{scenarioId}/proposals`를 기준 묶음 body와 함께 호출한다(§5.1.1).
 - Backend가 callback URL을 결정해 Agent 팀에 전달하고, Agent는 이를 배포 운영 설정값으로 등록한다.
 - Agent HTTP 200의 `{status,message,data}` wrapper에서 `data.modelParamProposalId`와 `data.status=PROCESSING`을 읽어 Backend `BaseResponse`로 변환한다.
 - Agent 응답 경로는 응답의 `modelParamProposalId`를, callback 경로는 Agent 테이블 재조회로 확인한 ID를 execution-preparation row의 external correlation key로 조건부 저장한다. 두 경로 중 먼저 도착한 값이 write-once로 설정되며, 같은 ID는 no-op, 다른 ID는 기존 값을 덮어쓰지 않고 correlation conflict로 처리한다.
@@ -250,6 +253,62 @@ Response data:
 
 - 일반 응답 status는 `PROCESSING`이다.
 - 같은 요청의 HTTP 응답/callback 순서 역전은 Agent write-then-callback과 Backend 조건부 갱신으로 처리한다. 서로 다른 요청 사이의 지연 callback은 별개이며 §13의 상관관계 확인 대상이다. 이번 slice에서 `callbackCorrelationId` 필드를 추가하지 않는다는 것이 재요청 경계의 안전성이 검증됐다는 뜻은 아니다.
+
+### 5.1.1 Agent 생성 요청의 기준 묶음 — 2026-10-15 사용자 결정, Backend 구현·Agent 합의 대기
+
+목적: Agent가 제안(`basecaseValue` 포함)을 만들 때 읽는 파일과, Backend가 확정값을 병합해 실행 input을 만드는 파일을 같게 한다. design §1A의 기준 묶음(source snapshot)을 제안 생성 시점에 고정하고, 그 MI Base `caseId`를 Agent proposal 테이블에 보관한다.
+
+Agent 요청 (X1 변경):
+
+```http
+POST /model-parameters/scenarios/{scenarioId}/proposals
+Content-Type: application/json
+```
+
+```json
+{
+  "data": {
+    "miBaseCaseId": 105,
+    "inputFiles": [
+      { "modelFile": "Demand", "storagePath": "https://{endpoint}/{bucket}/{directory}/{uuid}.xlsm" },
+      { "modelFile": "Supply", "storagePath": "https://{endpoint}/{bucket}/{directory}/{uuid}.xlsm" },
+      { "modelFile": "Trade", "storagePath": "https://{endpoint}/{bucket}/{directory}/{uuid}.xlsm" },
+      { "modelFile": "Output", "storagePath": "https://{endpoint}/{bucket}/{directory}/{uuid}.xlsm" }
+    ]
+  }
+}
+```
+
+| 필드 | 타입 | 필수 | 규칙 |
+|---|---|---|---|
+| `data.miBaseCaseId` | integer | Y | 요청 시점 current MI Base(`tmd_mdl_scnrcasem`, `exec_type_cd = 'MI_BASE'`)의 `case_id` |
+| `data.inputFiles` | array | Y | 정확히 4개. 순서는 `Demand`, `Supply`, `Trade`, `Output` |
+| `inputFiles[].modelFile` | string | Y | `Demand` \| `Supply` \| `Trade` \| `Output`, 각 1회. 앞의 셋은 Agent `model_file` 표기와 같다 |
+| `inputFiles[].storagePath` | string | Y | `tcm_filel.strg_path_nm` 원문. `{endpoint}/{bucket}/{key}` URL이며 수급모델 Job이 받는 경로와 같은 형식이다. bucket은 업로더에 따라 공용 bucket 또는 고객사 bucket(`{prefix}{회사코드}`)이다 |
+
+Backend 처리:
+
+- 기준 묶음 조건: current MI Base가 `COMPLETED`이고, active `SCNRCASE + caseId` 파일이 정확히 4개이며, 파일명 역할(DEMAND/SUPPLY/TRADE/OUTPUT)이 각각 1개이고, 저장 경로가 비어 있지 않다. 제안 생성과 병합 기준본 선택이 같은 검증 컴포넌트(`MiBaseInputSetResolver`)를 쓴다.
+- MI Base가 없거나 조건을 만족하지 않으면 생성을 거절한다(§8). 제안 경로에서는 플랫폼 기본 template으로 넘어가지 않는다.
+- 응답 처리, `status=error` 처리, 통신 오류 처리는 §5.1·§5.2.1과 같다. Agent가 body 검증 실패를 `status=error`로 응답하면 일반 실패(`REQUEST_FAILED`)로 저장한다.
+- 확정 실행(A6)은 Agent proposal row의 `mi_base_case_id`를 읽고, `tcm_filel`에서 그 case의 active `SCNRCASE` input 4파일을 다시 조회·검증해 병합한다(파일 수·역할·경로 조건은 위와 같다). 이 시점에는 case가 아직 current MI Base인지, case 상태가 무엇인지는 보지 않는다. 검증·다운로드에 실패하면 실행 준비를 실패시키며 다른 기준으로 넘어가지 않는다.
+- 같은 proposal의 재실행(Option A 재확정 포함)도 같은 `mi_base_case_id`를 쓴다. proposal 단위로 저장되므로 execution-preparation에는 복제하지 않는다.
+- 호환: 이 변경 이전에 생성되어 `mi_base_case_id`가 NULL인 proposal은 기존 동작(병합 시작 시 current MI Base 또는 플랫폼 기본 template)으로 병합한다. Backend는 이전 제안의 NULL과 Agent 저장 누락의 NULL을 구별할 수 없어, 저장 누락도 같은 경로로 조용히 병합된다(합의 항목 5로 방지).
+
+Agent 처리 요구:
+
+- 요청 body를 검증하고, proposal row를 만들 때(`PROCESSING`) `miBaseCaseId`를 기존 `mi_base_case_id` 컬럼에 저장한다. 추가 DDL은 없다.
+- `basecaseValue`는 `inputFiles`의 `Demand`/`Supply`/`Trade` 파일에서 읽는다. `Output`은 제안 대상이 아니며, proposal·confirmation의 `modelTarget.modelFile`에 `Output`을 쓰지 않는다.
+- 접수 후 파일을 읽지 못하면 기존 `FAILED` 완료 신호 흐름을 따른다.
+- 응답, callback, confirmation API의 shape는 바뀌지 않는다.
+
+Agent 합의 필요 항목(합의 전에는 위 필드 이름과 형식을 제안값으로 본다):
+
+1. body 필드 이름과 `{data:{...}}` wrapper 형식
+2. `storagePath` URL 형식을 해석해 공용 bucket과 고객사 bucket 모두에서 읽을 수 있는지
+3. `mi_base_case_id`를 요청 body 값으로 채우는지(Agent가 따로 MI Base를 고르지 않는지), 그리고 이 컬럼이 모든 환경 DB에 적용됐는지. 2026-10-16 사용자 확인: 현재 Agent는 사전 안내에 따라 이 컬럼을 이미 채우고 있다. 사용자가 조회한 환경(환경명 미기록)의 `del_yn = 'N'` 행은 10건 모두 `PROPOSED`이고 NULL은 0건이다. 변경 후에는 body의 `miBaseCaseId`로 채우도록 바꿔야 한다. Backend entity가 이 컬럼을 매핑하고 `ddl-auto=validate`이므로 컬럼이 없는 환경에서는 Backend가 기동되지 않는다
+4. 배포 순서: Backend가 body를 보내기 전에 Agent가 body를 받고 저장하도록 먼저 배포되어야 한다. 현재 Agent가 모르는 body를 무시하는지 거절하는지는 확인되지 않았다. Backend가 먼저 배포되면 새 제안도 `mi_base_case_id`가 NULL이 되어 기존 병합 기준으로 처리된다.
+5. 재확정(Option A) 등으로 proposal을 갱신할 때 `mi_base_case_id`를 NULL로 덮어쓰거나 다른 값으로 바꾸지 않는다.
 
 ### 5.2 Proposal 상태/결과 조회
 
@@ -1426,6 +1485,9 @@ FE가 반드시 처리해야 하는 최소 상태는 `PROCESSING`, `PROPOSED`, `
 | `FILE_UPLOAD` mode에서 current-state proposal 조회 | 409 | `BIZ_RULE_VIOLATION` | workflow 불일치 거절 |
 | `PROCESSING` proposal 존재 | 409 | `RSC_ALREADY_EXISTS` | 중복 생성 차단 |
 | Scenario model execution `RUNNING` | 409 | `RSC_ALREADY_EXISTS` | proposal/실행 차단 |
+| proposal 생성 시 current MI Base 없음 (2026-10-15 결정) | 409 | `BIZ_RULE_VIOLATION` | execution-preparation 미생성, Agent 미호출(§5.1.1) |
+| proposal 생성 시 current MI Base가 미완료이거나 input 4파일 조건 불충족 (2026-10-15 결정) | 409 | `BIZ_RULE_VIOLATION` | execution-preparation 미생성, Agent 미호출(§5.1.1) |
+| 확정 실행 시 저장된 기준 묶음 파일을 확인·다운로드하지 못함 (2026-10-15 결정) | 500 | `SYS_INTERNAL_ERROR` | 실행 준비 실패(`EXECUTION_FAILED`), 다른 기준으로 대체하지 않음 |
 | Agent proposal 요청 timeout/통신 예외 (`AppErrorException`) | 400 | `API_TIMEOUT`/`API_SERVICE_UNAVAILABLE`/`API_CALL_FAILED` | 현행 공통 handler HTTP 유지. 명시적 오류 envelope가 없으므로 `REQUESTING` 유지 |
 | Agent proposal HTTP 4xx/5xx이나 완전한 `status=error` envelope가 아님 (`ApiErrorException`) | 500 | `API_RESPONSE_ERROR` | 실패 응답을 반환하되 생성 실패는 확정하지 않고 `REQUESTING` 유지 |
 | Agent proposal HTTP 2xx이나 status/성공 payload/JSON 형식이 유효하지 않음 | 400 | `API_RESPONSE_ERROR` | 현행 `AppErrorException` HTTP 유지. `REQUESTING` 유지 |
@@ -1597,6 +1659,8 @@ FE가 반드시 처리해야 하는 최소 상태는 `PROCESSING`, `PROPOSED`, `
 
 ## 14. Change Log / Sync Note
 
+- 2026-10-16: **독립 리뷰 반영.** §5.1의 body 없는 호출 문구를 정정하고, 재확정 시 `mi_base_case_id` 보존을 Agent 합의 항목 5로 추가했다. 같은 날 사용자가 결정했던 "NULL이면 실행 거절"은 사용자가 철회했다. 따라서 NULL은 기존 병합 동작을 유지한다(§5.1.1 호환). 사용자 조회 결과 `mi_base_case_id IS NULL AND status IN ('PROPOSED','CONFIRMED')`인 행은 0건이었다(조회 환경 미기록). 상태별 조회에서는 `del_yn = 'N'` 10건이 모두 `PROPOSED`, NULL 0건이었다. Agent가 사전 안내에 따라 이미 값을 채우고 있었다(사용자 확인).
+- 2026-10-15: **제안 생성 기준 묶음을 Agent로 전달.** 사용자 결정에 따라 Agent 생성 요청에 current MI Base `caseId`와 input 4파일(`modelFile`, `storagePath`)을 body로 보낸다. 저장은 Agent proposal 테이블의 기존 `mi_base_case_id` 컬럼에 하고, 확정 실행 병합은 그 case의 input 4파일을 `tcm_filel`에서 다시 조회·검증해 사용한다. MI Base가 없거나 유효하지 않으면 생성을 409로 거절한다(§5.1, §5.1.1, §8). Agent 응답·callback·confirmation과 FE 요청 shape는 바뀌지 않는다. Backend는 구현했다(`MiBaseInputSetResolver` 공유). Agent의 요청 수신·저장 합의와 배포는 대기 중이다.
 - 2026-10-13: **전환 전 3파일 Scenario 실행 정리.** 정합성 검토에서 발견한 P0 #10을 사용자 결정으로 해소했다. 3파일 `SCENARIO` Case를 cutover 정리 대상에 넣고 연결 실행이력·실행준비·active 가격전망해석을 함께 soft delete한다(그룹 삭제 선례). A4a/A8/A9 응답 계약은 바꾸지 않고 남은 non-deleted row로 판정한다(§2 C, §5.7). 같은 날 잠시 기록한 "A4a 입력 파일만 null" 안은 이 결정으로 대체했다. 현재 Scenario 코드는 3파일이며 정리 DML·구현은 4파일 전환(`INPUT-11`)과 함께 한다.
 - 2026-10-07: **Scenario 실행 입력 4파일 목표 계약.** 사용자 확정에 따라 두 mode와 A4a `executionInputFiles`의 필수 role을 `DEMAND/SUPPLY/TRADE/OUTPUT`으로 바꾸고 OUTPUT 제안 제외·원본 포함은 domain §1A를 따르도록 했다(§2 C). 현재 Scenario 코드는 3파일이며 구현·검증은 대기다.
 - 2026-09-17: **생성 POST 즉시 실패 사유 추가.** 명시적 `status=error`를 `REQUEST_FAILED`로 commit한 경우 기존 HTTP 500/`API-004`/표준 message를 유지하면서, GET과 동일한 Backend 승인 문구를 `data.failureReason`으로 반환한다. Agent 원문 전체·숫자 코드는 공개하지 않으며 실패 미확정 오류는 `data=null`을 유지한다. DB/schema/lifecycle 변화는 없다.
