@@ -47,6 +47,8 @@ public class ModelParamProposalController {
         summary = "수급모델 파라미터 제안 생성 접수 API",
         description = """
             시나리오의 파라미터 제안 생성을 요청합니다. 접수 성공은 생성 완료를 뜻하지 않습니다.
+            제안은 요청 시점의 current MI Base 입력 파일 4개를 기준으로 만들고, 이후 확정 실행도 같은 파일에 값을 반영합니다.
+            current MI Base가 없거나 그 입력 파일 4개가 유효하지 않으면 요청을 만들지 않고 409 / BIZ_RULE_VIOLATION을 반환합니다.
             Agent 응답의 status=error이면 오류 코드와 무관하게 일반 실패를 저장하고 HTTP 500 / API_RESPONSE_ERROR와
             data.failureReason을 반환합니다. 이 안전한 사유를 즉시 표시하고 같은 경로의 GET으로 상태를 동기화하세요.
             즉시 -202 거절에는 callback/SSE가 없습니다. status 누락/알 수 없는 값, 응답 형식 오류, timeout은 실패를
@@ -54,7 +56,8 @@ public class ModelParamProposalController {
             """
     )
     @ApiResponse(responseCode = "200", description = "접수 성공")
-    @ApiResponse(responseCode = "409", description = "RSC_ALREADY_EXISTS: 이미 진행 중인 제안 요청 또는 모델 실행이 존재함",
+    @ApiResponse(responseCode = "409", description = "RSC_ALREADY_EXISTS: 이미 진행 중인 제안 요청 또는 모델 실행이 존재함 / "
+        + "BIZ_RULE_VIOLATION: current MI Base가 없거나 MI Base 입력 파일 4개가 유효하지 않음",
         content = @Content(mediaType = MediaType.APPLICATION_JSON_VALUE, schema = @Schema(implementation = BaseResponse.class)))
     @ApiResponse(responseCode = "500", description = "API_RESPONSE_ERROR: 명시적 status=error는 data.failureReason을 즉시 표시하고 GET으로 상태 동기화",
         content = @Content(mediaType = MediaType.APPLICATION_JSON_VALUE, schema = @Schema(implementation = BaseResponse.class),

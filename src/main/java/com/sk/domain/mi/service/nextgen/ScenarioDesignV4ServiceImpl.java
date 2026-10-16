@@ -104,14 +104,12 @@ public class ScenarioDesignV4ServiceImpl implements ScenarioDesignV4Service {
     /**
      * [이벤트 조합 설계 상태 조회]
      * 선택한 이벤트 조합과 구성이 같은 그룹 목록을 조회한다 (이벤트 목록 플로팅바의 동일 조합 안내).
-     * 단건 선택은 동일 조합 검사 대상이 아니므로 빈 목록을 반환한다.
+     * 단건 선택도 동일하게 검사하며, 해당 이벤트 단독으로 구성된 그룹이 조회된다.
      */
     @Override
     public ScenarioDesignStatusRes getDesignStatus(List<Long> miEventIds) {
 
         validateEventIds(miEventIds);
-
-        if (miEventIds.size() == 1) return ScenarioDesignStatusRes.of(List.of());
 
         List<MiScenarioGroup> matched = scenarioGroupRepository.findActiveByExactEventSet(miEventIds, miEventIds.size());
 

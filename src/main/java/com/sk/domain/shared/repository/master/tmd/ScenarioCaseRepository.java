@@ -19,6 +19,13 @@ public interface ScenarioCaseRepository extends JpaRepository<ScenarioCase, Long
 
     Optional<ScenarioCase> findByCaseIdAndIsDeletedFalse(Long caseId);
 
+    @Query("""
+        SELECT c
+          FROM ScenarioCase c
+         WHERE c.activeBaseYn = 'Y'
+        """)
+    Optional<ScenarioCase> findCurrentMiBase();
+
     @Lock(LockModeType.PESSIMISTIC_WRITE)
     @Query("""
         SELECT c
