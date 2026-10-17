@@ -39,8 +39,7 @@ public class Ww2RigSummaryDataCollector implements DataCollectorStrategy {
         }
 
         List<Object[]> result = new ArrayList<>();
-        if (data instanceof Sheet) { // 엑셀 파일 파싱
-            Sheet sheet = (Sheet) data;
+        if (data instanceof Sheet sheet) { // 엑셀 파일 파싱
             Iterator<Row> rowIterator = sheet.iterator();
 
             // 헤더 파싱

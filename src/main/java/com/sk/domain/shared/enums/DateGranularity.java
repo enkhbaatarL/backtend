@@ -6,6 +6,6 @@ public enum DateGranularity {
     YEAR_VARCHAR,
     MONTH_VARCHAR,
     DAY_VARCHAR,
-    DATETIME;
+    DATETIME
 
 }

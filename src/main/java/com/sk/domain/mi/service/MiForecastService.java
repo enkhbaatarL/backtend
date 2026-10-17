@@ -1025,7 +1025,7 @@ public class MiForecastService {
             buildForecastRecordHeadersForCompany(companyNo);
         Boolean modelAccuracyVisible = getModelAccuracyVisible(companyNo);
         List<ForecastTargetAccuracyRes> targetAccuracyList =
-            Boolean.TRUE.equals(modelAccuracyVisible)
+            modelAccuracyVisible
                 ? buildTargetAccuracyList(companyNo, targetList, chartPredictSettingDetails)
                 : null;
         return ForecastInfoRes.of(chartPredictSetting, targetList, lastUpdateDt, recordHeaders,
@@ -1664,7 +1664,7 @@ public class MiForecastService {
                         predictChartDetailExpn = mnemonicCode.getPredictChartDetailExpression();
                     }
                 }
-                if (appendAdHocLabel && Boolean.FALSE.equals(isScheduled)) {
+                if (appendAdHocLabel && !isScheduled) {
                     predictChartDetailExpn = appendAdHocLabel(predictChartDetailExpn);
                 }
                 ForecastSummary report = resolveForecastSummary(
@@ -5974,7 +5974,7 @@ public class MiForecastService {
 
         String whereClause = goodsDataSourceDetail.getQueryConditionCntt();
         if (isScheduled != null) {
-            String scheduledFilter = Boolean.TRUE.equals(isScheduled)
+            String scheduledFilter = isScheduled
                 ? String.format(
                     "EXISTS (SELECT 1 FROM tmm_bztgtprdcrsltdatad d WHERE "
                         + "d.%s = m.%s AND d.%s = m.%s AND d.%s = m.%s AND d.%s = m.%s AND d.rglr_yn = 'Y')",

@@ -71,7 +71,7 @@ public class CommonService {
         User adminUser = userList.stream().filter(u -> u.getUserRoleCd().equals(UserRoleCd.ADMIN) || u.getUserRoleCd().equals(UserRoleCd.OPERATOR))
                 .findFirst().orElse(null);
 
-        Boolean adminUserCheck = adminUser != null ? isAdminUser(adminUser, request) : false;
+        Boolean adminUserCheck = adminUser != null && isAdminUser(adminUser, request);
 
         UserAccessPageType userAccessPageType = (miUserCheck && adminUserCheck) ? UserAccessPageType.BOTH
                 : (miUserCheck) ? UserAccessPageType.MI : (adminUserCheck) ? UserAccessPageType.ADMIN : UserAccessPageType.NONE;

@@ -9,5 +9,5 @@ public interface DataCollectorStrategy {
     ComponentType getComponentType();
     List<Object[]> processData(Object data, List<String> actualColumns, String criteriaDt,
         String category, Map<String, String> conditionMap, List<String> dbColumns);
-    default void postAction(List<Object[]> values){};
+    default void postAction(List<Object[]> values){}
 }

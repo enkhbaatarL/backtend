@@ -38,8 +38,7 @@ public class PivotDataCollector implements DataCollectorStrategy {
     public List<Object[]> processData(Object data, List<String> actualColumns, String criteriaDt,
         String category, Map<String, String> conditionMap, List<String> dbColumns) {
         List<Object[]> result = new ArrayList<>();
-        if (data instanceof Sheet) { // 엑셀 파일 파싱
-            Sheet sheet = (Sheet) data;
+        if (data instanceof Sheet sheet) { // 엑셀 파일 파싱
             Iterator<Row> rowIterator = sheet.iterator();
             // 헤더 파싱
             List<String> periodCodes = ExcelParsedUtil.extractExcelHeader(sheet, HEADER_ROW_INDEX);
@@ -65,8 +64,7 @@ public class PivotDataCollector implements DataCollectorStrategy {
                     result.add(new Object[] {year, periodCodes.get(i - 1), value});
                 }
             }
-        } else if (data instanceof CSVParser) { // CSV 파일 파싱
-            CSVParser csvParser = (CSVParser) data;
+        } else if (data instanceof CSVParser csvParser) { // CSV 파일 파싱
             // 헤더 파싱
             List<String> periodCodes = actualColumns.size() > 1 ? actualColumns.subList(HEADER_COLUMN_INDEX, actualColumns.size())
                     : createDefaultHeaders(actualColumns.size());

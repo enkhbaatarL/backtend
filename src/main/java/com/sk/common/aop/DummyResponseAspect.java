@@ -129,16 +129,14 @@ public class DummyResponseAspect {
         // BaseResponse의 제네릭 타입 추출
         Type returnType = method.getGenericReturnType();
 
-        if (returnType instanceof ParameterizedType) {
-            ParameterizedType paramType = (ParameterizedType) returnType;
+        if (returnType instanceof ParameterizedType paramType) {
             Type[] typeArgs = paramType.getActualTypeArguments();
 
             if (typeArgs.length > 0) {
                 Type dataType = typeArgs[0];
 
                 // PaginationRes<T> 타입 체크
-                if (dataType instanceof ParameterizedType) {
-                    ParameterizedType dataParamType = (ParameterizedType) dataType;
+                if (dataType instanceof ParameterizedType dataParamType) {
 
                     if (PaginationRes.class.isAssignableFrom(
                         (Class<?>) dataParamType.getRawType())) {
@@ -163,8 +161,7 @@ public class DummyResponseAspect {
                 }
 
                 // 일반 데이터 타입 (Class)
-                if (dataType instanceof Class) {
-                    Class<?> dataClass = (Class<?>) dataType;
+                if (dataType instanceof Class<?> dataClass) {
                     Object data = objectMapper.readValue(resource.getInputStream(), dataClass);
                     return BaseResponseFactory.create(data);
                 }
@@ -184,8 +181,7 @@ public class DummyResponseAspect {
     private Class<?> getGenericType(Method method) {
         Type returnType = method.getGenericReturnType();
 
-        if (returnType instanceof ParameterizedType) {
-            ParameterizedType paramType = (ParameterizedType) returnType;
+        if (returnType instanceof ParameterizedType paramType) {
             Type[] typeArgs = paramType.getActualTypeArguments();
             if (typeArgs.length > 0) {
                 return (Class<?>) typeArgs[0];

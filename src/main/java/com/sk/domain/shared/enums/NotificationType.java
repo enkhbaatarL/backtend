@@ -8,6 +8,6 @@ import lombok.RequiredArgsConstructor;
 public enum NotificationType {
 
     FORECAST, // 예측
-    ACTUAL; // 실제
+    ACTUAL // 실제
 
 }

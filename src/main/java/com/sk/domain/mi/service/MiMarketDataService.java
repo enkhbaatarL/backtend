@@ -853,9 +853,9 @@ public class MiMarketDataService {
             goodsDataSourceDetail.getQueryConditionCntt() != null ? String.format("""
                 %s
                 AND del_yn = 'N'
-                """, goodsDataSourceDetail.getQueryConditionCntt()) : String.format("""
+                """, goodsDataSourceDetail.getQueryConditionCntt()) : """
                 del_yn = 'N'
-                """);
+                """;
 
         return mybatisDynamicQueryService.getDynamicRawQuery(
             DynamicDataDetailReq.ofLimit(goodsDataSourceDetail.getTargetDbNm(),
@@ -885,9 +885,9 @@ public class MiMarketDataService {
             goodsDataSourceDetail.getQueryConditionCntt() != null ? String.format("""
                 %s
                 AND del_yn = 'N'
-                """, goodsDataSourceDetail.getQueryConditionCntt()) : String.format("""
+                """, goodsDataSourceDetail.getQueryConditionCntt()) : """
                 del_yn = 'N'
-                """);
+                """;
 
         return mybatisDynamicQueryService.getDynamicRawQuery(
             DynamicDataDetailReq.ofLimit(goodsDataSourceDetail.getTargetDbNm(),
@@ -929,9 +929,9 @@ public class MiMarketDataService {
             ) AS table_alias
             """;
 
-        String whereClause = String.format("""
+        String whereClause = """
             date_rank <= 2 AND rn = 1
-            """);
+            """;
 
         String orderByQuery = String.format("""
             %s DESC, %s DESC

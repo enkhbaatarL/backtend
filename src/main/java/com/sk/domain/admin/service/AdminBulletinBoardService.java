@@ -195,7 +195,7 @@ public class AdminBulletinBoardService {
     @Transactional
     public BulletinBoard updateNotice(NoticeUpdateReq dto, int noticeNo) {
         if (dto.isWholePost() != null) {
-            if (dto.isWholePost() == false) {
+            if (!dto.isWholePost()) {
                 if (dto.target() == null) {
                     throw AppErrorException.of(ResultCode.Error.REQ_INVALID_PARAMETER);
                 }
