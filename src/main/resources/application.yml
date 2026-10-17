@@ -66,6 +66,14 @@ mcp:
     hash-iterations: ${MCP_AUTH_HASH_ITERATIONS:1000}
   # [MCP 인증] X-User-Id 헤더가 없을 때 대신 위임할 사용자 로그인 ID. 비워 두면 X-User-Id 필수(누락 시 403)
   default-id: ${MCP_DEFAULT_ID:}
+  # [MCP Event Generate] 이벤트 생성 비동기 작업 (dedicated profile 에서만 쓴다. 다른 profile 에서는 읽지 않는다)
+  # 환경변수로 바꿀 때는 relaxed binding 이름을 쓴다 (예: MCP_EVENT_GENERATION_MAX_CONCURRENT)
+  event-generation:
+    # 서버당 동시에 실행할 수 있는 생성 작업 수 (실행 스레드·생성 서버 연결 수도 이 값). 넘는 요청은 BIZ-001 로 즉시 거절
+    max-concurrent: 10
+    # 실행 중 작업 heartbeat 주기(ms)와, heartbeat 가 이 시간 이상 끊긴 작업을 INTERRUPTED 로 정리하는 기준
+    heartbeat-rate-ms: 60000
+    stale-after: 5m
 
 mi:
   autocomplete:

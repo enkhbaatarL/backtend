@@ -17,6 +17,7 @@ import com.sk.domain.mi.service.nextgen.PriceInterpretationService;
 import com.sk.domain.mi.service.nextgen.ScenarioGroupService;
 import com.sk.domain.shared.service.CommonService;
 import java.util.LinkedHashSet;
+import java.util.List;
 import java.util.Set;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -54,7 +55,11 @@ class McpOpenApiTest {
     private static final String USER_FEEDBACK_PATH = "/api/v1/mcp/mi/next-gen/user-feedback";
     // [MCP Event Generate] 이벤트 생성(POST) 경로
     private static final String EVENT_GENERATION_PATH = "/api/v1/mcp/mi/next-gen/events/generations";
+    // [MCP Event Generate] 이벤트 생성 작업 조회(GET) 경로. 목록 조회(GET)는 접수(POST)와 같은 경로를 쓴다
+    private static final String EVENT_GENERATION_JOB_PATH = "/api/v1/mcp/mi/next-gen/events/generations/{jobId}";
     private static final Set<String> POST_PATHS = Set.of(USER_FEEDBACK_PATH, EVENT_GENERATION_PATH);
+    // [MCP Event Generate] GET 과 POST 를 함께 가진 경로 (생성 작업 목록 조회 + 생성 접수)
+    private static final Set<String> GET_AND_POST_PATHS = Set.of(EVENT_GENERATION_PATH);
     private static final Set<String> EXPECTED_PATHS = Set.of(
         "/api/v1/mcp/mi/next-gen/events",
         "/api/v1/mcp/mi/next-gen/events/event-types/lv1",
@@ -79,7 +84,9 @@ class McpOpenApiTest {
         // [MCP Feedback] 사용자 피드백 등록 1건 추가 (19 → 20)
         USER_FEEDBACK_PATH,
         // [MCP Event Generate] 이벤트 생성 1건 추가 (20 → 21)
-        EVENT_GENERATION_PATH);
+        EVENT_GENERATION_PATH,
+        // [MCP Event Generate] 비동기 전환: 작업 조회 경로 추가 (작업 목록 GET 은 EVENT_GENERATION_PATH 에 추가돼 operation 21 → 23)
+        EVENT_GENERATION_JOB_PATH);
 
     @Autowired
     private MockMvc mockMvc;
@@ -112,7 +119,7 @@ class McpOpenApiTest {
     private EventGenerationService eventGenerationService;
 
     @Test
-    @DisplayName("MCP API 그룹에 GET 19건 + POST 2건, 필수 문자열 X-User-Id, Basic Auth 보안 요구를 노출한다")
+    @DisplayName("MCP API 그룹에 GET 21건 + POST 2건, 필수 문자열 X-User-Id, Basic Auth 보안 요구를 노출한다")
     void exposesTwelveMcpOperationsWithOnlyUserDelegationHeader() throws Exception {
         JsonNode document = apiDocument("MCP API");
         JsonNode paths = document.path("paths");
@@ -120,27 +127,30 @@ class McpOpenApiTest {
         assertThat(fieldNames(paths)).containsExactlyInAnyOrderElementsOf(EXPECTED_PATHS);
         paths.fields().forEachRemaining(pathEntry -> {
             assertThat(pathEntry.getKey()).startsWith(MCP_PREFIX);
-            // [MCP Feedback][MCP Event Generate] 피드백 등록·이벤트 생성만 POST, 나머지는 GET 만
-            String method = POST_PATHS.contains(pathEntry.getKey()) ? "post" : "get";
-            assertThat(fieldNames(pathEntry.getValue())).containsExactly(method);
+            // [MCP Feedback][MCP Event Generate] 피드백 등록·이벤트 생성 접수만 POST, 이벤트 생성 경로는 작업 목록 GET 도 가진다. 나머지는 GET 만
+            List<String> methods = GET_AND_POST_PATHS.contains(pathEntry.getKey()) ? List.of("get", "post")
+                : POST_PATHS.contains(pathEntry.getKey()) ? List.of("post") : List.of("get");
+            assertThat(fieldNames(pathEntry.getValue())).containsExactlyInAnyOrderElementsOf(methods);
 
-            JsonNode operation = pathEntry.getValue().path(method);
-            JsonNode userIdParameter = findParameter(operation, McpUserContextInterceptor.X_USER_ID);
-            assertThat(userIdParameter.isMissingNode()).as(pathEntry.getKey()).isFalse();
-            assertThat(userIdParameter.path("in").asText()).isEqualTo("header");
-            assertThat(userIdParameter.path("required").asBoolean()).isTrue();
-            assertThat(userIdParameter.path("description").asText())
-                .contains("사용자 로그인 ID")
-                .contains("첫 번째 조회 결과");
-            assertThat(userIdParameter.path("schema").path("type").asText()).isEqualTo("string");
-            assertThat(userIdParameter.path("schema").path("example").asText())
-                .isEqualTo("mcp-user@sk.com");
-            assertThat(findParameter(operation, "X-Company-No").isMissingNode()).isTrue();
-            // [MCP 인증] 인증 없음 → Basic Auth 보안 요구와 403 응답 노출
-            assertThat(operation.path("security").get(0).has("McpBasicAuth")).as(pathEntry.getKey()).isTrue();
-            assertErrorResponse(operation, "400", "REQ_INVALID_PARAMETER", ResultCode.Error.REQ_INVALID_PARAMETER);
-            assertErrorResponse(operation, "401", "AUTH_REQUIRED", ResultCode.Error.AUTH_REQUIRED);
-            assertErrorResponse(operation, "403", "AUTH_ACCESS_DENIED", ResultCode.Error.AUTH_ACCESS_DENIED);
+            for (String method : methods) {
+                JsonNode operation = pathEntry.getValue().path(method);
+                JsonNode userIdParameter = findParameter(operation, McpUserContextInterceptor.X_USER_ID);
+                assertThat(userIdParameter.isMissingNode()).as(pathEntry.getKey()).isFalse();
+                assertThat(userIdParameter.path("in").asText()).isEqualTo("header");
+                assertThat(userIdParameter.path("required").asBoolean()).isTrue();
+                assertThat(userIdParameter.path("description").asText())
+                    .contains("사용자 로그인 ID")
+                    .contains("첫 번째 조회 결과");
+                assertThat(userIdParameter.path("schema").path("type").asText()).isEqualTo("string");
+                assertThat(userIdParameter.path("schema").path("example").asText())
+                    .isEqualTo("mcp-user@sk.com");
+                assertThat(findParameter(operation, "X-Company-No").isMissingNode()).isTrue();
+                // [MCP 인증] 인증 없음 → Basic Auth 보안 요구와 403 응답 노출
+                assertThat(operation.path("security").get(0).has("McpBasicAuth")).as(pathEntry.getKey()).isTrue();
+                assertErrorResponse(operation, "400", "REQ_INVALID_PARAMETER", ResultCode.Error.REQ_INVALID_PARAMETER);
+                assertErrorResponse(operation, "401", "AUTH_REQUIRED", ResultCode.Error.AUTH_REQUIRED);
+                assertErrorResponse(operation, "403", "AUTH_ACCESS_DENIED", ResultCode.Error.AUTH_ACCESS_DENIED);
+            }
         });
 
         assertThat(document.toString()).doesNotContain("X-Company-No");
@@ -234,21 +244,40 @@ class McpOpenApiTest {
 
     @Test
     // [MCP Event Generate] description·requestBody 설명 = MCP tool 설명·인자 설명
-    @DisplayName("이벤트 생성 operation은 명시적 요청 시에만 호출·즉시 저장·중복 생성 주의와 입력 문장 필수를 노출한다")
+    @DisplayName("이벤트 생성 접수 operation은 명시적 요청 시에만 호출·jobId 즉시 반환·중복 생성 주의와 입력 문장 필수를 노출한다")
     void exposesEventGenerationGuidance() throws Exception {
         JsonNode document = apiDocument("MCP API");
         JsonNode operation = document.path("paths").path(EVENT_GENERATION_PATH).path("post");
         assertThat(operation.path("operationId").asText()).isEqualTo("generateEvents");
         assertThat(operation.path("description").asText())
             .contains("명시적으로 요청한 경우에만")
+            .contains("jobId")
+            .contains("이벤트 생성 작업 조회")
+            .contains("reused=true")
             .contains("중복 생성됩니다")
-            .contains("miEventId");
+            .contains("BIZ-001");
 
         String schemaRef = operation.path("requestBody").path("content").path("application/json").path("schema").path("$ref").asText();
         JsonNode schema = document.path("components").path("schemas").path(schemaRef.substring(schemaRef.lastIndexOf('/') + 1));
         assertThat(schema.path("required").toString()).isEqualTo("[\"userQuery\"]");
         assertThat(fieldNames(schema.path("properties"))).containsExactlyInAnyOrder("userQuery", "dateFrom", "dateTo");
         assertThat(schema.path("properties").path("dateFrom").path("description").asText()).contains("YYYY-MM-DD");
+    }
+
+    @Test
+    // [MCP Event Generate] 비동기 전환: 작업 조회·목록 operation
+    @DisplayName("이벤트 생성 작업 조회는 상태별 후속 행동과 miEventId 사용법을, 목록 조회는 result 미포함을 노출한다")
+    void exposesEventGenerationJobQueries() throws Exception {
+        JsonNode paths = apiDocument("MCP API").path("paths");
+        JsonNode detail = operation(paths, EVENT_GENERATION_JOB_PATH, "getEventGeneration");
+        JsonNode list = operation(paths, EVENT_GENERATION_PATH, "getEventGenerations");
+
+        assertThat(detail.path("description").asText())
+            .contains("RUNNING", "SUCCEEDED", "FAILED", "INTERRUPTED", "miEventId", "반복 조회하지 마세요");
+        assertThat(findParameter(detail, "jobId").path("in").asText()).isEqualTo("path");
+        assertThat(list.path("description").asText()).contains("최신순", "result");
+        assertThat(findParameter(list, "page").isMissingNode()).isFalse();
+        assertThat(findParameter(list, "size").isMissingNode()).isFalse();
     }
 
     @Test
@@ -264,25 +293,6 @@ class McpOpenApiTest {
             .contains("게시 완료(PUBLISHED)", "RSC-001");
         assertThat(findParameter(list, "publishStatus").isMissingNode()).isTrue();
         assertThat(findParameter(list, "publish_status").isMissingNode()).isTrue();
-    }
-
-    @Test
-    // [MCP Event Generate] description·requestBody 설명 = MCP tool 설명·인자 설명
-    @DisplayName("이벤트 생성 operation은 명시적 요청 시에만 호출·즉시 저장·중복 생성 주의와 입력 문장 필수를 노출한다")
-    void exposesEventGenerationGuidance() throws Exception {
-        JsonNode document = apiDocument("MCP API");
-        JsonNode operation = document.path("paths").path(EVENT_GENERATION_PATH).path("post");
-        assertThat(operation.path("operationId").asText()).isEqualTo("generateEvents");
-        assertThat(operation.path("description").asText())
-            .contains("명시적으로 요청한 경우에만")
-            .contains("중복 생성됩니다")
-            .contains("miEventId");
-
-        String schemaRef = operation.path("requestBody").path("content").path("application/json").path("schema").path("$ref").asText();
-        JsonNode schema = document.path("components").path("schemas").path(schemaRef.substring(schemaRef.lastIndexOf('/') + 1));
-        assertThat(schema.path("required").toString()).isEqualTo("[\"userQuery\"]");
-        assertThat(fieldNames(schema.path("properties"))).containsExactlyInAnyOrder("userQuery", "dateFrom", "dateTo");
-        assertThat(schema.path("properties").path("dateFrom").path("description").asText()).contains("YYYY-MM-DD");
     }
 
     private JsonNode operation(JsonNode paths, String path, String operationId) {
@@ -363,7 +373,9 @@ class McpOpenApiTest {
         // [MCP Snapshot]
         McpEventSnapshotDedicatedController.class,
         // [MCP Feedback]
-        McpUserFeedbackDedicatedController.class
+        McpUserFeedbackDedicatedController.class,
+        // [MCP Event Generate] 이벤트 생성 작업 API 는 dedicated 전용 컨트롤러로 분리
+        McpEventGenerationDedicatedController.class
     })
     static class TestApplication {
     }

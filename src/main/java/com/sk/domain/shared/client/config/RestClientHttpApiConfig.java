@@ -4,7 +4,6 @@ import com.sk.common.http.RestClientBuilder;
 import com.sk.common.http.RestClientDefaultConfig;
 import com.sk.domain.shared.client.AuthTokenApi;
 import com.sk.domain.shared.client.AxPlatformApi;
-import com.sk.domain.shared.client.EventGenerationAgentApi;
 import com.sk.domain.shared.client.ModelAgentApi;
 import com.sk.domain.shared.client.ModelParamProposalAgentApi;
 import com.sk.domain.shared.client.PriceInterpretationAgentApi;
@@ -101,22 +100,6 @@ public class RestClientHttpApiConfig {
             .connectionTimeout(connectTimeout)
             .readTimeout(readTimeout)
             .build(ModelParamProposalAgentApi.class);
-    }
-
-    /**
-     * [MCP Event Generate] 이벤트 생성 서버. 웹 검색·LLM 생성을 동기로 기다리므로 read-timeout 을 길게 둔다.
-     * 주소는 api.event-generation-agent.url (local/tech/testdb 는 yml 에 설정), 없으면 환경변수 EVENT_GENERATION_AGENT_URL.
-     */
-    @Bean
-    public EventGenerationAgentApi eventGenerationAgentApi(@Value("${api.event-generation-agent.url:${EVENT_GENERATION_AGENT_URL:}}") String url,
-                                                           @Value("${api.event-generation-agent.connection-timeout:1s}") Duration connectTimeout,
-                                                           @Value("${api.event-generation-agent.read-timeout:300s}") Duration readTimeout) {
-
-        return new RestClientBuilder()
-            .url(url)
-            .connectionTimeout(connectTimeout)
-            .readTimeout(readTimeout)
-            .build(EventGenerationAgentApi.class);
     }
 
     @Bean

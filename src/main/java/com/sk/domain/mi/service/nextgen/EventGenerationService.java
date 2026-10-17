@@ -1,55 +1,128 @@
 package com.sk.domain.mi.service.nextgen;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.sk.common.enums.ResultCode;
-import com.sk.common.exception.ApiErrorException;
 import com.sk.common.exception.AppErrorException;
+import com.sk.common.model.PaginationRes;
 import com.sk.domain.mi.dto.request.nextgen.generation.EventGenerationReq;
+import com.sk.domain.mi.dto.response.nextgen.generation.EventGenerationAcceptRes;
+import com.sk.domain.mi.dto.response.nextgen.generation.EventGenerationJobRes;
 import com.sk.domain.mi.dto.response.nextgen.generation.EventGenerationRes;
-import com.sk.domain.shared.client.EventGenerationAgentApi;
-import com.sk.domain.shared.client.dto.response.EventGenerationAgentRes;
+import com.sk.domain.shared.config.EventGenerationJobConfig;
+import com.sk.domain.shared.config.EventGenerationJobProperties;
+import com.sk.domain.shared.entity.master.tmd.MiEventGenerationJob;
 import com.sk.domain.shared.entity.master.tmd.User;
-import java.net.SocketTimeoutException;
-import lombok.RequiredArgsConstructor;
+import com.sk.domain.shared.enums.nextgen.EventGenerationJobStatus;
+import com.sk.domain.shared.repository.master.tmd.MiEventGenerationJobRepository;
+import java.time.LocalDateTime;
+import java.util.Optional;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.context.annotation.Profile;
+import org.springframework.core.task.AsyncTaskExecutor;
+import org.springframework.core.task.TaskRejectedException;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
-import org.springframework.web.client.ResourceAccessException;
-import org.springframework.web.client.RestClientException;
 
 /**
- * [MCP Event Generate] 사용자 입력 문장 기반 이벤트 생성.
- * 생성·저장 로직은 이벤트 생성 서버가 맡고, B.E 는 인증된 사용자 로그인 ID 를 붙여 요청·응답을 그대로 전달만 한다.
+ * [MCP Event Generate] 사용자 입력 문장 기반 이벤트 생성 — 비동기 작업.
+ *
+ * 이벤트 생성 서버는 동기 호출이며 최대 15분 걸린다. 접수 시 작업 행(RUNNING)만 만들고 즉시 jobId 를 돌려주며,
+ * 생성 서버 호출은 전용 실행기에서 EventGenerationJobRunner 가 한다. 생성·저장 로직은 생성 서버가 맡고 B.E 는 결과를 그대로 보관한다.
+ * SK Gas 전용 서버(dedicated profile)에서만 쓴다.
  */
 @Slf4j
+@Profile("dedicated")
 @Service
-@RequiredArgsConstructor
 public class EventGenerationService {
 
-    private final EventGenerationAgentApi eventGenerationAgentApi;
+    private final MiEventGenerationJobRepository jobRepository;
+    private final EventGenerationJobRunner jobRunner;
+    private final AsyncTaskExecutor jobExecutor;
+    private final EventGenerationJobProperties properties;
+    private final ObjectMapper objectMapper;
 
-    public EventGenerationRes generateEvents(User user, EventGenerationReq request) {
+    /** 한도 확인(이 서버가 맡은 작업 수)과 작업 행 생성·예약을 서버 안에서 원자적으로 묶는다. 한도는 서버당이다. */
+    private final Object acceptLock = new Object();
 
-        EventGenerationAgentRes res = callAgent(user.getUserLoginId(), request);
-
-        if (!res.isSuccess()) {
-            throw AppErrorException.of(ResultCode.Error.BIZ_RULE_VIOLATION, "event generation failed: %s".formatted(res.message()));
-        }
-        return res.data();
+    public EventGenerationService(MiEventGenerationJobRepository jobRepository,
+                                  EventGenerationJobRunner jobRunner,
+                                  @Qualifier(EventGenerationJobConfig.EXECUTOR_BEAN_NAME) AsyncTaskExecutor jobExecutor,
+                                  EventGenerationJobProperties properties,
+                                  ObjectMapper objectMapper) {
+        this.jobRepository = jobRepository;
+        this.jobRunner = jobRunner;
+        this.jobExecutor = jobExecutor;
+        this.properties = properties;
+        this.objectMapper = objectMapper;
     }
 
     /**
-     * 통신 예외(호스트 다운/타임아웃/역직렬화 실패)를 통제된 외부 API 에러(500)로 변환한다.
-     * HTTP 오류 status 는 공통 RestClient 빌더가 이미 ApiErrorException 으로 던진다 (PriceInterpretationServiceImpl 과 같은 방식).
+     * 생성 접수. 같은 사용자가 같은 입력으로 진행 중인 작업이 있으면 새로 만들지 않고 그 작업을 돌려준다 (중복 이벤트 생성 방지).
+     * 이 서버가 맡은 작업이 동시 생성 한도(서버당) 이상이면 즉시 거절한다.
      */
-    private EventGenerationAgentRes callAgent(String userLoginId, EventGenerationReq request) {
+    public EventGenerationAcceptRes accept(User user, EventGenerationReq request) {
+        MiEventGenerationJob job;
+        synchronized (acceptLock) {
+            Optional<MiEventGenerationJob> sameRunning = jobRepository
+                .findByUserNoAndStatusAndIsDeletedFalse(user.getUserNo(), EventGenerationJobStatus.RUNNING).stream()
+                .filter(running -> running.hasSameInput(request.userQuery(), request.dateFrom(), request.dateTo()))
+                .findFirst();
+            if (sameRunning.isPresent()) {
+                return EventGenerationAcceptRes.of(sameRunning.get(), true);
+            }
+
+            if (jobRunner.runningCount() >= properties.getMaxConcurrent()) {
+                throw limitExceeded();
+            }
+
+            job = jobRepository.save(MiEventGenerationJob.start(
+                user.getUserNo(), request.userQuery(), request.dateFrom(), request.dateTo(), LocalDateTime.now()));
+            jobRunner.reserve(job.getEventGenerationJobId());
+        }
+
+        Long jobId = job.getEventGenerationJobId();
+        String userLoginId = user.getUserLoginId();
         try {
-            return eventGenerationAgentApi.generate(userLoginId, request);
-        } catch (ResourceAccessException e) {
-            ResultCode.Error code = e.getCause() instanceof SocketTimeoutException ? ResultCode.Error.API_TIMEOUT : ResultCode.Error.API_SERVICE_UNAVAILABLE;
-            log.error("[Event Generate Agent] 통신 오류: {}", e.getMessage(), e);
-            throw ApiErrorException.of(code, e);
-        } catch (RestClientException e) {
-            log.error("[Event Generate Agent] 호출 실패: {}", e.getMessage(), e);
-            throw ApiErrorException.of(ResultCode.Error.API_CALL_FAILED, e);
+            jobExecutor.execute(() -> jobRunner.run(jobId, userLoginId, request));
+        } catch (TaskRejectedException e) {
+            log.warn("[Event Generate Job] jobId={} 실행기 포화로 거절", jobId);
+            jobRunner.failRejected(jobId);
+            throw limitExceeded();
+        }
+        return EventGenerationAcceptRes.of(job, false);
+    }
+
+    /** 요청 사용자 본인의 작업 상태·결과. 다른 사용자 작업은 없는 작업으로 응답한다. */
+    public EventGenerationJobRes getJob(User user, Long jobId) {
+        MiEventGenerationJob job = jobRepository.findByEventGenerationJobIdAndUserNoAndIsDeletedFalse(jobId, user.getUserNo())
+            .orElseThrow(() -> AppErrorException.of(ResultCode.Error.RSC_NOT_FOUND, "이벤트 생성 작업을 찾을 수 없습니다."));
+        EventGenerationRes result = job.getStatus() == EventGenerationJobStatus.SUCCEEDED ? fromJson(job.getResultPayload()) : null;
+        return EventGenerationJobRes.of(job, result);
+    }
+
+    /** 요청 사용자 본인의 작업 목록 (최신순, result 제외). */
+    public PaginationRes<EventGenerationJobRes> getJobs(User user, int page, int size) {
+        return PaginationRes.toRes(jobRepository
+            .findByUserNoAndIsDeletedFalseOrderByEventGenerationJobIdDesc(user.getUserNo(), PageRequest.of(page - 1, size))
+            .map(job -> EventGenerationJobRes.of(job, null)));
+    }
+
+    private AppErrorException limitExceeded() {
+        return AppErrorException.of(ResultCode.Error.BIZ_RULE_VIOLATION,
+            "이벤트 생성은 동시에 최대 %d건까지 실행됩니다. 진행 중인 생성이 끝난 뒤 다시 요청하세요.".formatted(properties.getMaxConcurrent()));
+    }
+
+    private EventGenerationRes fromJson(String payload) {
+        if (payload == null) {
+            return null;
+        }
+        try {
+            return objectMapper.readValue(payload, EventGenerationRes.class);
+        } catch (JsonProcessingException e) {
+            log.error("[Event Generate Job] 저장된 결과 역직렬화 실패", e);
+            throw AppErrorException.of(ResultCode.Error.SYS_INTERNAL_ERROR, "저장된 이벤트 생성 결과를 읽지 못했습니다.");
         }
     }
 
