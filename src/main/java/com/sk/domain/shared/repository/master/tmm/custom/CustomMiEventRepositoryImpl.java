@@ -255,6 +255,10 @@ public class CustomMiEventRepositoryImpl implements CustomMiEventRepository {
         BooleanBuilder where = new BooleanBuilder();
         where.and(miEvent.isDeleted.isFalse());
         where.and(miEvent.publishStatus.eq("PUBLISHED"));
+        // 연관 레코드 시각이 채워지지 않은 이벤트는 목록 노출 대상이 아니다.
+        // 화면은 기간 필터로 이미 걸러지지만, 기간 없이 호출하는 MCP 에서도 동일하게 제외한다.
+        where.and(miEvent.latestRecordFirstCreated.isNotNull());
+        where.and(miEvent.oldestRecordFirstCreated.isNotNull());
 
         applyStatusFilter(where, request.eventStatus());
         applySuggestedFilter(where, request.suggestedOnly());
@@ -373,7 +377,10 @@ public class CustomMiEventRepositoryImpl implements CustomMiEventRepository {
             .where(
                 miEvent.miEventId.eq(eventId),
                 miEvent.isDeleted.isFalse(),
-                miEvent.publishStatus.eq("PUBLISHED")
+                miEvent.publishStatus.eq("PUBLISHED"),
+                // 목록과 동일 — 연관 레코드 시각이 채워지지 않은 이벤트는 노출하지 않는다 (없으면 RSC-001)
+                miEvent.latestRecordFirstCreated.isNotNull(),
+                miEvent.oldestRecordFirstCreated.isNotNull()
             )
             .fetchOne();
 
