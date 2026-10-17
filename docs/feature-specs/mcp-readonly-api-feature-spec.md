@@ -73,7 +73,7 @@
 
 ### 2.2 Out of scope
 
-- 쓰기 API (POST / PATCH / DELETE) 노출 — 단 사용자 피드백 등록(4.7절, D-9)과 이벤트 생성(4.8절, D-11) 2건은 예외
+- 쓰기 API (POST / PATCH / DELETE) 노출 — 단 사용자 피드백 등록(4.7절, D-9)과 이벤트 생성 접수(4.8절, D-11·D-12) 2건은 예외
 - SSE 스트림 엔드포인트 노출 — MCP 호출 모델과 맞지 않는다
 - 서비스 / 레포지토리 계층 로직 변경 또는 복제 — 단 MCP 전용 endpoint(4.6절 이벤트 Snapshot)는 원본이 없으므로 전용 서비스·리포지토리를 신설한다 (D-1)
 - MCP 서버 자체 구현
@@ -505,29 +505,72 @@ CME는 SK Gas 데이터이고 라우팅 키는 `midb-skgas`로 고정이다(변�
 - DB 변경(2026-10-11, DBA 적용): `fedb_chnl_cd`·`fedb_trgt_id` 추가, `fedb_cntt` → mediumtext. 새 컬럼을 매핑한 backend 는 **ALTER 적용 후 배포**해야 기동된다 (`ddl-auto: validate`).
   설계·운영자 조회 SQL: 워크스페이스 `process_userfeedback.md`
 
-### 4.8 이벤트 생성 — **쓰기 API, 이벤트 생성 서버에 위임** (2026-10-12)
+### 4.8 이벤트 생성 — **쓰기 API, 비동기 작업** (2026-10-12, 2026-10-16 비동기 전환 D-12)
 
-- `POST /api/v1/mcp/mi/next-gen/events/generations` (`McpEventDedicatedController.generateEvents`) — 이 1건으로 MCP 채널은 21건(GET 19 + POST 2)
-- B.E 는 인증(채널 공통 3.2절·3.3절)만 하고 이벤트 생성 서버 `POST /events/generations`(스펙 `event_generate_v1`)에 요청을 그대로 넘긴다.
-  생성·저장(`tmm_mi_mievent_m`)은 생성 서버가 하며 B.E 는 DB 를 쓰지 않는다. 권한 규칙은 4.1~4.7 과 동일
+- 3건 (`McpEventGenerationDedicatedController`, **`@Profile("dedicated")` 전용**) — 이 3건으로 MCP 채널은 23건(GET 21 + POST 2)
+- **dedicated profile 에서만 동작한다.** 실행 스레드 풀·생성 서버 클라이언트(연결 풀)·heartbeat 스케줄·서비스·컨트롤러가 모두 dedicated 에서만 만들어진다 (`EventGenerationJobConfig`).
+  그래서 이벤트 조회 API(`McpEventDedicatedController`, `dedicated`·`testdb`)와 컨트롤러를 나눴다. 경로·태그는 같다. 로컬에서는 `testdb,dedicated` 로 띄운다
+
+| 메서드·경로 | operationId | 역할 |
+|---|---|---|
+| `POST /api/v1/mcp/mi/next-gen/events/generations` | `generateEvents` | 생성 접수. 작업을 만들고 `jobId` 를 즉시 응답 |
+| `GET /api/v1/mcp/mi/next-gen/events/generations/{jobId}` | `getEventGeneration` | 작업 상태 + 완료 시 결과 |
+| `GET /api/v1/mcp/mi/next-gen/events/generations?page&size` | `getEventGenerations` | 본인 작업 목록 (최신순, 결과 미포함) |
+
+- 왜 비동기인가: 이벤트 생성 서버 `POST /events/generations`(스펙 `event_generate_v1`)는 동기 호출이고 최대 15분 걸린다.
+  동기로 래핑하면 B.E·MCP 서버·MCP client 의 타임아웃(300s / 60s 등)에 걸려 끊기고, 끊긴 뒤에도 생성 서버는 이벤트를 저장해 재요청 시 중복이 생긴다.
+- 흐름: 접수 시 `tmd_mcp_job_mi_event_generation_m` 에 `RUNNING` 행을 만들고 응답 → 전용 실행기(`eventGenerationJobExecutor`)에서
+  `EventGenerationJobRunner` 가 생성 서버를 동기 호출(read-timeout 1200s) → 결과(`result_payload`, 생성 서버 응답 `data` 원문) 또는 실패 사유를 기록.
+  생성 서버 클라이언트의 동시 연결 수는 `max-concurrent` 와 같다 (공통 HttpClient 기본 풀은 호스트당 5라 6번째 작업부터 연결 대기만 하게 된다).
+  생성·저장(`tmm_mi_mievent_m`)은 생성 서버가 하며, B.E 가 쓰는 테이블은 작업 테이블뿐이다. 권한 규칙은 4.1~4.7 과 동일
 - 생성 서버 호출: 헤더 `X-User-ID` = effective user 의 `usr_logn_id`(로그인 ID 문자열, 생성자·수정자 ID), body 는 요청 그대로 (`EventGenerationAgentApi`)
-- 주소 `api.event-generation-agent.url` → 없으면 환경변수 `EVENT_GENERATION_AGENT_URL`. local/tech/testdb 는 `http://40.82.137.178:8004`(2026-10-16 실 서버 연결, mock 제거). dev/prod 주소는 미정.
-  read-timeout 기본 300s (`api.event-generation-agent.read-timeout`) — 웹 검색·LLM 생성을 동기로 기다린다
-- 요청 body (`EventGenerationReq`)
+- 주소 `api.event-generation-agent.url` → 없으면 환경변수 `EVENT_GENERATION_AGENT_URL`. local/tech/testdb 는 `http://40.82.137.178:8004`, dev/prod 는 클러스터 내부 주소.
+- 설정 (`mcp.event-generation.*`, application.yml). 환경변수는 플레이스홀더 없이 Spring Boot relaxed binding 으로 덮어쓴다 (`.`·`-` → `_`, 대문자)
+
+| 키 | 기본값 | 환경변수 | 설명 |
+|---|---|---|---|
+| `max-concurrent` | 10 | `MCP_EVENT_GENERATION_MAX_CONCURRENT` | **서버당** 동시 실행 작업 수 (서버가 늘면 전체 허용 수도 는다). 실행 스레드 수·생성 서버 연결 수도 이 값 |
+| `heartbeat-rate-ms` | 60000 | `MCP_EVENT_GENERATION_HEARTBEAT_RATE_MS` | 실행 중 작업 heartbeat 주기 |
+| `stale-after` | 5m | `MCP_EVENT_GENERATION_STALE_AFTER` | heartbeat 가 이 시간 이상 끊긴 `RUNNING` 작업을 `INTERRUPTED` 로 정리 |
+
+- 요청 body (`EventGenerationReq`, 변경 없음)
 
 | 필드 | 필수 | 처리 |
 |---|---|---|
 | `userQuery` | Y | 공백이면 `REQ-003`(400) |
 | `dateFrom` / `dateTo` | N | `YYYY-MM-DD` 가 아니면 `REQ-003`(400) |
 
-- **응답**: `data` = 생성 서버 응답의 `data`(`meta`, `events`) 그대로 (`EventGenerationRes`). 생성된 이벤트는 이미 저장된 상태이며 다시 호출하면 중복 생성된다
-- **오류** (채널 공통 외)
+- **접수 응답** `data` (`EventGenerationAcceptRes`): `jobId`, `status`(`RUNNING`), `startedAt`, `reused`.
+  같은 사용자가 같은 입력(`userQuery`·`dateFrom`·`dateTo`)으로 `RUNNING` 작업을 가지고 있으면 새로 만들지 않고 그 작업을 `reused = true` 로 돌려준다.
+  완료된 뒤 다시 접수하면 중복 생성된다.
+- **작업 응답** `data` (`EventGenerationJobRes`): `jobId`, `status`, `userQuery`, `dateFrom`, `dateTo`, `startedAt`, `completedAt`, `errorCode`, `errorMessage`, `result`.
+  `result` 는 상세 조회에서 `SUCCEEDED` 일 때만 생성 서버 응답 `data`(`meta`, `events`, `EventGenerationRes`) 그대로이고, 목록에서는 항상 null.
+  다른 사용자의 작업은 없는 작업(`RSC-001`)으로 응답한다.
+- **작업 상태**
+
+| status | 의미 | errorCode |
+|---|---|---|
+| `RUNNING` | 생성 중 | — |
+| `SUCCEEDED` | 생성 완료. `result` 에 결과 | — |
+| `FAILED` | 생성 서버 `status = error` | `BIZ-001` (메시지에 생성 서버 message) |
+| | 생성 서버 타임아웃 / 연결 실패 / 기타 호출 실패 | `API-002` / `API-003` / `API-001` |
+| | 생성 서버 HTTP 오류(422 등) 또는 `data` 없는 성공 응답 | `API-004` |
+| `INTERRUPTED` | 실행하던 서버 종료·재기동으로 결과 미수신. 생성 서버는 이벤트를 저장했을 수 있다 | `SYS-001` |
+
+- **접수 오류** (채널 공통 외)
 
 | 상황 | HTTP | `code` |
 |---|---|---|
-| 생성 서버가 `status = error` 응답 | `400` | `BIZ-001` (메시지에 생성 서버 message 포함) |
-| 생성 서버 연결 실패 / 타임아웃 | `500` | `API-003` / `API-002` |
-| 생성 서버 HTTP 오류(422 등) | `500` | `API-004` (공통 RestClient 빌더 처리) |
+| 요청을 받은 서버가 맡은 작업이 `max-concurrent` 이상 | `400` | `BIZ-001` (메시지에 한도 포함) |
+
+- **DB**: 새 테이블 `tmd_mcp_job_mi_event_generation_m` — DDL·롤백·배포 순서는 `docs/mcp-event-generation-job-ddl.sql`.
+  엔티티(`MiEventGenerationJob`)가 모든 profile 에서 스캔되므로 `ddl-auto: validate` 상 **DDL 적용 후 배포**해야 기동된다 (backend 가 접속하는 모든 DB).
+- **서버 종료**: 종료 시 그 서버가 맡은 `RUNNING` 작업을 바로 `INTERRUPTED` 로 바꾼다 (`@PreDestroy`). 실행 스레드 풀은 lifecycle 종료 단계에서
+  실행 중 작업을 기다리지 않도록 했다(`acceptTasksAfterContextClose = true`) — 기다리면 종료가 30초(`timeout-per-shutdown-phase`) 늦어져 컨테이너 종료 유예 안에 정리하지 못한다.
+  강제 종료(SIGKILL) 등으로 정리하지 못한 작업은 `stale-after` 경과 후 다른 서버의 heartbeat 정리로 닫힌다.
+- **여러 서버**: 한도·실행은 서버별이고 작업 조회·heartbeat 정리는 DB 기준이라 어느 서버로 요청이 가도 된다.
+  알려진 제약 — 같은 사용자가 같은 입력을 거의 동시에 다른 서버로 보내면 `reused` 판정이 서버 안에서만 원자적이라 작업이 2건 생길 수 있다(이벤트 중복). 서버 간 시계·JVM 타임존이 맞아야 한다.
+- 생성 서버 처리량: 서버 N대면 생성 서버에 최대 N × `max-concurrent` 건이 동시에 들어간다. 생성 서버가 감당하는 동시 처리량에 맞춰 정한다.
 
 ---
 

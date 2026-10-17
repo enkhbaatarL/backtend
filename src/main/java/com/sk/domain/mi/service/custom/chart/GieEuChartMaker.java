@@ -355,9 +355,10 @@ public class GieEuChartMaker implements CustomChartMaker<MiMarketDataRes>{
     }
 
     private LocalDate getLastGieEuCurrent(){
-        Optional<GieEu> lastGieEuOptional = gieEuRepository.findFirstByCodeInOrderByDateDesc(Arrays.asList(
-            GieEu.GIE_EU_CODE_CURRENT
-        ));
+        Optional<GieEu> lastGieEuOptional = gieEuRepository.findFirstByCodeInOrderByDateDesc(
+            List.of(
+                GieEu.GIE_EU_CODE_CURRENT
+            ));
         return lastGieEuOptional.map(gieEu -> gieEu.getDate().toLocalDate()).orElse(null);
     }
 

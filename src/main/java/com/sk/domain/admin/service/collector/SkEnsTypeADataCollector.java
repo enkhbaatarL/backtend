@@ -50,8 +50,7 @@ public class SkEnsTypeADataCollector implements DataCollectorStrategy {
     public List<Object[]> processData(Object data, List<String> actualColumns, String criteriaDt,
         String category, Map<String, String> conditionMap, List<String> dbColumns) {
         List<Object[]> result = new ArrayList<>();
-        if (data instanceof Sheet) { // 엑셀 파일 파싱
-            Sheet sheet = (Sheet) data;
+        if (data instanceof Sheet sheet) { // 엑셀 파일 파싱
             Iterator<Row> rowIterator = sheet.iterator();
             // 헤더 파싱
             List<String> periodCodes = ExcelParsedUtil.extractExcelHeader(sheet, HEADER_ROW_INDEX);
@@ -206,5 +205,5 @@ public class SkEnsTypeADataCollector implements DataCollectorStrategy {
 
         importService.saveBatchData("midb-skens", List.of("code", "date", "value"), result, "tif_skens_type_b");
         log.debug("SK ENS Post Action End.");
-    };
+    }
 }

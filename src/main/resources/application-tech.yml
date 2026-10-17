@@ -135,7 +135,7 @@ api:
   event-generation-agent:
     url: http://40.82.137.178:8004
     connection-timeout: 1s
-    read-timeout: 300s
+    read-timeout: 1200s # [MCP Event Generate] 생성 서버는 최대 15분 걸린다 (백그라운드 호출)
 
 mail:
   smtp:

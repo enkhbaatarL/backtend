@@ -586,7 +586,7 @@ public class MiMarketNewsService {
      * Market News 상세 조회
      */
     public MarketNewsDetailRes getMarketNewsDetail(Long newsSummaryId) {
-        Long id = Long.valueOf(newsSummaryId);
+        Long id = newsSummaryId;
 
         NewsSummary newsData = newsSummaryRepository.findById(id)
             .orElseThrow(() -> AppErrorException.of(Error.RSC_DATA_NOT_FOUND,
@@ -1061,9 +1061,9 @@ public class MiMarketNewsService {
         for (LocalDate date = startDate; !date.isAfter(endDate); date = date.plusDays(1)) {
             String dateKey = date.format(DateTimeFormatter.ofPattern("yyyyMMdd"));
             SentimentCount count = sentimentMap.getOrDefault(dateKey, new SentimentCount(0, 0, 0));
-            upward += count.getUpward();
-            neutral += count.getNeutral();
-            downward += count.getDownward();
+            upward += count.upward();
+            neutral += count.neutral();
+            downward += count.downward();
         }
 
         String period = formatPeriod(startDate, endDate, periodType);
@@ -1387,14 +1387,10 @@ public class MiMarketNewsService {
         );
     }
 
-    /**
-     * Sentiment 카운트를 담는 내부 DTO
-     */
-    @lombok.Value
-    private static class SentimentCount {
+  /**
+   * Sentiment 카운트를 담는 내부 DTO
+   */
+  private record SentimentCount(int upward, int neutral, int downward) {
 
-        int upward;
-        int neutral;
-        int downward;
-    }
+  }
 }

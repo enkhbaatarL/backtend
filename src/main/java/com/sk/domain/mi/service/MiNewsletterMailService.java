@@ -393,7 +393,7 @@ public class MiNewsletterMailService {
             String cid = normalizedCids.get(i);
 
             String contentType = normalizeImageContentType(file);
-            resources.add(new InlineResource(cid, (InputStreamSource) file, contentType));
+            resources.add(new InlineResource(cid, file, contentType));
         }
 
         return resources;
@@ -484,7 +484,7 @@ public class MiNewsletterMailService {
         String contentType = image.getContentType();
         if (StringUtils.isBlank(contentType) || !contentType.startsWith("image/")) {
             throw AppErrorException.of(ResultCode.Error.REQ_INVALID_PARAMETER,
-                    "Only image/* content types are allowed: " + Objects.toString(contentType));
+                    "Only image/* content types are allowed: " + contentType);
         }
         return contentType;
     }

@@ -26,7 +26,7 @@ public class KplerCargo extends BaseEntity {
     public static final String TABLE_NAME = "tif_kpler_cargo";
     public enum CODE{
         USA_Export,
-        USA_Export_mtd;
+        USA_Export_mtd
     }
 
     @Id

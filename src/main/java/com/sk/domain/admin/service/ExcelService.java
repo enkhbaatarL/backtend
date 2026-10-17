@@ -63,7 +63,7 @@ public class ExcelService {
 
                 Sheet sheet = workbook.createSheet(sheetName);
 
-                Row headerRow = (Row) sheet.createRow(0);
+                Row headerRow = sheet.createRow(0);
                 Cell headerCell1 = headerRow.createCell(0);
                 headerCell1.setCellValue("이름");
 

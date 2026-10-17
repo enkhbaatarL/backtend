@@ -12,11 +12,11 @@ import jakarta.validation.constraints.NotNull;
 public record AdminReq() {
     @Schema(name = "adminInsert")
     public record Insert(
-        @NotEmpty(message = "IM코드는 필수 입력 사항입니다.") 
+        @NotEmpty(message = "IM코드는 필수 입력 사항입니다.")
         @Schema(description = "IM코드", example = "10001", required = true)
         String imCd,
 
-        @Schema(description = "타사서비스접근가능여부", example = "false", defaultValue = "false") 
+        @Schema(description = "타사서비스접근가능여부", example = "false", defaultValue = "false")
         Boolean isOtherServiceAccessPossible,
 
         @ArraySchema(
@@ -29,8 +29,8 @@ public record AdminReq() {
         UserRoleCd userRoleCd
     ) {
         public Insert {
-            isOtherServiceAccessPossible = (isOtherServiceAccessPossible == null) ? false
-                    : isOtherServiceAccessPossible;
+            isOtherServiceAccessPossible =
+                isOtherServiceAccessPossible != null && isOtherServiceAccessPossible;
         }
     }
 
@@ -38,7 +38,7 @@ public record AdminReq() {
     public record Update(
 
         @NotNull(message = "타사서비스접근가능여부는 필수 입력 사항입니다.")
-        @Schema(description = "타사서비스접근가능여부", example = "false") 
+        @Schema(description = "타사서비스접근가능여부", example = "false")
         Boolean isOtherServiceAccessPossible,
 
         @ArraySchema(

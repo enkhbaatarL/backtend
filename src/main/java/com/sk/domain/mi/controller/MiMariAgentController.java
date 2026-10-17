@@ -167,11 +167,11 @@ public class MiMariAgentController {
         // StreamResponseWrapper를 받아서 qnaNo와 Flux 분리
         StreamResponseWrapper streamWrapper = mariAgentService.streamChatResponse(chatRoomId,
             qnaReq, user, companyNo);
-        Integer qnaNo = streamWrapper.getQnaNo();
+        Integer qnaNo = streamWrapper.qnaNo();
 
         log.info("Stream initialized - chatRoomId: {}, qnaNo: {}", chatRoomId, qnaNo);
 
-        Disposable disposable = streamWrapper.getStream()
+        Disposable disposable = streamWrapper.stream()
             .subscribeOn(Schedulers.boundedElastic())
             .doOnNext(answerRes -> {
                 try {

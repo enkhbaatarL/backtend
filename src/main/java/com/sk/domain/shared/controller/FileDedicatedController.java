@@ -101,7 +101,7 @@ public class FileDedicatedController {
                 fileDownloadRes.fileNm(), fileDownloadRes.fileData());
         long encryptionStageMs = elapsedMs(encryptionStartedAt);
 
-        String encodedFileName = URLEncoder.encode(fileDownloadRes.fileNm(), StandardCharsets.UTF_8.toString()).replace("+", "%20");
+        String encodedFileName = URLEncoder.encode(fileDownloadRes.fileNm(), StandardCharsets.UTF_8).replace("+", "%20");
 
         HttpHeaders httpHeaders = new HttpHeaders();
         httpHeaders.setContentType(MediaType.APPLICATION_OCTET_STREAM);
@@ -139,7 +139,7 @@ public class FileDedicatedController {
                 : null;
         byte[] fileData = fileService.downloadFiles(body, role, companyCd);
         String encodedFileName = URLEncoder.encode(prefix.concat("_").concat(DateUtil.currentYYYYMMDDHHMMSS()).concat(".zip"),
-                StandardCharsets.UTF_8.toString()).replace("+", "%20");
+            StandardCharsets.UTF_8).replace("+", "%20");
 
         HttpHeaders httpHeaders = new HttpHeaders();
         httpHeaders.setContentType(MediaType.APPLICATION_OCTET_STREAM);

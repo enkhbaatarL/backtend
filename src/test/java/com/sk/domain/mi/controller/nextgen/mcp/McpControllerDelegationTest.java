@@ -68,13 +68,15 @@ class McpControllerDelegationTest {
     private EventGenerationService eventGenerationService;
 
     private McpEventDedicatedController eventController;
+    private McpEventGenerationDedicatedController eventGenerationController;
     private McpScenarioGroupDedicatedController scenarioGroupController;
     private McpEventSnapshotDedicatedController eventSnapshotController;
     private McpUserFeedbackDedicatedController userFeedbackController;
 
     @BeforeEach
     void setUp() {
-        eventController = new McpEventDedicatedController(eventService, eventGenerationService);
+        eventController = new McpEventDedicatedController(eventService);
+        eventGenerationController = new McpEventGenerationDedicatedController(eventGenerationService);
         scenarioGroupController = new McpScenarioGroupDedicatedController(
             scenarioGroupService, priceInterpretationService, cmeBenchmarkService);
         eventSnapshotController = new McpEventSnapshotDedicatedController(eventSnapshotService);
@@ -172,30 +174,34 @@ class McpControllerDelegationTest {
 
     @Test
     // [MCP Event Generate]
-    @DisplayName("이벤트 생성 POST 1건은 위임 사용자와 요청을 EventGenerationService 에 그대로 넘긴다")
+    @DisplayName("이벤트 생성 접수·작업 조회·작업 목록 3건은 위임 사용자와 인자를 EventGenerationService 에 그대로 넘긴다")
     void delegatesEventGenerationOperation() {
         User user = Mockito.mock(User.class);
         EventGenerationReq request = new EventGenerationReq("인도 LPG 수입 정책 변화로 이벤트 생성", "2026-09-01", "2026-10-12");
 
-        eventController.generateEvents(user, request);
+        eventGenerationController.generateEvents(user, request);
+        eventGenerationController.getEventGeneration(user, 42L);
+        eventGenerationController.getEventGenerations(user, 2, 5);
 
-        then(eventGenerationService).should().generateEvents(user, request);
+        then(eventGenerationService).should().accept(user, request);
+        then(eventGenerationService).should().getJob(user, 42L);
+        then(eventGenerationService).should().getJobs(user, 2, 5);
         then(eventGenerationService).shouldHaveNoMoreInteractions();
         then(eventService).shouldHaveNoInteractions();
     }
 
     @Test
     // [MCP Operator] 운영자도 모든 MCP endpoint 를 호출할 수 있다 (회사는 인터셉터가 MCP 키 회사로 제한)
-    @DisplayName("MCP endpoint 21건 모두 USER·ADMIN·OPERATOR 권한 규칙을 가진다")
+    @DisplayName("MCP endpoint 23건 모두 USER·ADMIN·OPERATOR 권한 규칙을 가진다")
     void allowsOperatorOnAllMcpEndpoints() {
         Method[] endpoints = Arrays.stream(new Class<?>[] {
-                McpEventDedicatedController.class, McpScenarioGroupDedicatedController.class,
+                McpEventDedicatedController.class, McpEventGenerationDedicatedController.class, McpScenarioGroupDedicatedController.class,
                 McpEventSnapshotDedicatedController.class, McpUserFeedbackDedicatedController.class})
             .flatMap(controller -> Arrays.stream(controller.getDeclaredMethods()))
             .filter(method -> method.isAnnotationPresent(RequiredPermissionRules.class))
             .toArray(Method[]::new);
 
-        assertThat(endpoints).hasSize(21); // [MCP Event Generate] 이벤트 생성 추가 (20 → 21)
+        assertThat(endpoints).hasSize(23); // [MCP Event Generate] 이벤트 생성 추가 (20 → 21), 비동기 전환으로 작업 조회·목록 추가 (21 → 23)
         for (Method endpoint : endpoints) {
             assertThat(Arrays.stream(endpoint.getAnnotation(RequiredPermissionRules.class).rules()).map(PermissionRule::role))
                 .as(endpoint.getName())

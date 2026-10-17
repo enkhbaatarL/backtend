@@ -19,5 +19,5 @@ public enum ComponentType {
     SKENS_DATA_B, // SKENS 데이터 B
     SKHY_DATA_QUARTER, // SKHy 데이터
 
-    YEAR_QUARTER_ADD; // 2025, 2025 Q1 이런식의 컬럼이 있을때, 2025-03-15 를 date 롤 맨앞에 추가.
+    YEAR_QUARTER_ADD // 2025, 2025 Q1 이런식의 컬럼이 있을때, 2025-03-15 를 date 롤 맨앞에 추가.
 }

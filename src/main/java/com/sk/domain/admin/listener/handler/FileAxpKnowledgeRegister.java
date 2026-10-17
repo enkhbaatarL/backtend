@@ -89,13 +89,13 @@ public class FileAxpKnowledgeRegister implements AxpKnowledgeRegister {
     }
 
     private void handleDeletedFiles(AXUploadFileEvent event, String datasourceId, List<UploadedFile> files, AXMetaRegisterReq registerReq) {
-        if (!Boolean.FALSE.equals(event.getIsNew())) {
+        if (!Boolean.FALSE.equals(event.isNew())) {
             return;
         }
 
         Set<String> fileNamesToLookup = new HashSet<>();
-        if (event.getDeletedFiles() != null) {
-            for (UploadedFile deletedFile : event.getDeletedFiles()) {
+        if (event.deletedFiles() != null) {
+            for (UploadedFile deletedFile : event.deletedFiles()) {
                 fileNamesToLookup.add(deletedFile.getStorageFileNm());
             }
         }

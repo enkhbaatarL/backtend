@@ -51,8 +51,7 @@ public class PmiManufactureDataCollector implements DataCollectorStrategy {
             // if (rowData.length > 0)
             // result.add(rowData);
             // }
-        } else if (data instanceof CSVParser) { // CSV 파일 파싱
-            CSVParser csvParser = (CSVParser) data;
+        } else if (data instanceof CSVParser csvParser) { // CSV 파일 파싱
             for (CSVRecord record : csvParser) {
                 // 데이터 시작 행 인덱스 조건
                 if (record.getRecordNumber() < DEFAULT_DATA_START_ROW_INDEX)

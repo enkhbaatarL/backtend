@@ -99,7 +99,7 @@ class McpUserContextInterceptorTest {
         givenUser("default@a.com", COMPANY_A, UserRoleCd.USER);
 
         assertThat(withDefault.preHandle(new MockHttpServletRequest(), new MockHttpServletResponse(), new Object())).isTrue();
-        assertThat(((JwtAuthenticationToken) SecurityContextHolder.getContext().getAuthentication()).getName()).isEqualTo("default@a.com");
+        assertThat(SecurityContextHolder.getContext().getAuthentication().getName()).isEqualTo("default@a.com");
     }
 
     @Test

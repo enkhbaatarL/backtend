@@ -6,14 +6,14 @@ import lombok.Getter;
 
 @Getter
 public class FocusedDataRes implements FocusedDataDto {
-    private int providerNo;
-    private String providerNm;
-    private int goodsNo;
-    private String goodsNm;
-    private int goodsDataNo;
-    private String goodsDataNm;
-    private LocalDateTime modifyDt;
-    private String modifyDtStr;
+    private final int providerNo;
+    private final String providerNm;
+    private final int goodsNo;
+    private final String goodsNm;
+    private final int goodsDataNo;
+    private final String goodsDataNm;
+    private final LocalDateTime modifyDt;
+    private final String modifyDtStr;
     private String goodsDataCategoryCd;
     private boolean isViewable;
 

@@ -119,7 +119,7 @@ public class AutocompleteService {
         String freqKey = FREQ_SORTED_KEY + prefixLower;
 
         // prefix에 해당하는 Sorted Set이 있으면 바로 사용
-        if (Boolean.TRUE.equals(redisTemplate.hasKey(freqKey))) {
+        if (redisTemplate.hasKey(freqKey)) {
             // Redis에서 이미 빈도수 순으로 정렬된 상태로 가져옴
             Set<ZSetOperations.TypedTuple<String>> results =
                 redisTemplate.opsForZSet().reverseRangeWithScores(freqKey, 0, limit - 1);

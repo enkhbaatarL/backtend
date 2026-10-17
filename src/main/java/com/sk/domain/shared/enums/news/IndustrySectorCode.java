@@ -21,7 +21,7 @@ public enum IndustrySectorCode {
     private final String name;
     private final String description;
 
-    private IndustrySectorCode(String name, String description) {
+    IndustrySectorCode(String name, String description) {
         this.name = name;
         this.description = description;
     }

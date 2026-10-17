@@ -28,7 +28,7 @@ public class NCPStorageConfig {
 
     @Bean
     public AmazonS3 objectStorageClient() {
-        return (AmazonS3Client) AmazonS3ClientBuilder.standard()
+        return AmazonS3ClientBuilder.standard()
                 .withEndpointConfiguration(new AwsClientBuilder.EndpointConfiguration(endPoint, regionName))
                 .withCredentials(new AWSStaticCredentialsProvider(new BasicAWSCredentials(accessKey, secretKey)))
                 .build();
