@@ -134,7 +134,7 @@ api:
     connection-timeout: 1s
     read-timeout: 60s
   event-generation-agent:
-    url: http://skmip-skgas-agent-event-app-prod.mi-skgas.svc.cluster.local:8004
+    url: http://skmip-skgas-agent-custom-event-app-prod.mi-skgas.svc.cluster.local:8000
     connection-timeout: 1s
     read-timeout: 1200s # [MCP Event Generate] 생성 서버는 최대 15분 걸린다 (백그라운드 호출)
 
