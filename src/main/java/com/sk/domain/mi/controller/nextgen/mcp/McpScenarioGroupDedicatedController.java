@@ -34,7 +34,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
-@Profile(value = {"dedicated","testdb"})
+@Profile(value = {"dedicated"})
 @Tag(name = "MCP Next Gen MI Scenario Group API", description = "MCP client용 Next Gen MI 시나리오 그룹 조회 API입니다.")
 @RestController
 @RequestMapping("/api/v1/mcp/mi/next-gen/scenario-groups")

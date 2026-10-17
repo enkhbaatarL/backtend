@@ -32,7 +32,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
-@Profile(value = {"dedicated","testdb"})
+@Profile(value = {"dedicated"})
 @Tag(name = "MCP Next Gen MI Event API", description = "MCP client용 Next Gen MI 이벤트 조회·생성 API입니다.")
 @RestController
 @RequestMapping("/api/v1/mcp/mi/next-gen/events")
