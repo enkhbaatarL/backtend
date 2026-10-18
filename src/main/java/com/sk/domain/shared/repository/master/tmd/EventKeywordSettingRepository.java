@@ -21,7 +21,8 @@ public interface EventKeywordSettingRepository extends JpaRepository<EventKeywor
     Optional<EventKeywordSetting> findByKeywordSettingIdAndUser_UserNoAndIsDeletedFalse(Long keywordSettingId, Integer userNo);
 
     /**
-     * 키워드 알림 매칭 대상 설정: 키워드 활성 + 알림 ON, 사용자 활성 + 전체 알림 스위치 ON
+     * 키워드 알림 매칭 대상 설정: 키워드 활성 + 알림 ON, 사용자 활성
+     * - 사용자 전체 알림 설정(usr_noti_set_yn)은 상품 알림용이라 보지 않음
      */
     @Query("""
         SELECT s
@@ -30,7 +31,6 @@ public interface EventKeywordSettingRepository extends JpaRepository<EventKeywor
          WHERE s.isDeleted = false
            AND s.isNotificationUse = true
            AND u.isDeleted = false
-           AND u.isUserNotificationSetting = true
         """)
     List<EventKeywordSetting> findAllMatchable();
 }

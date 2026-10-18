@@ -22,18 +22,23 @@ public class InputTempFiles {
     private static final String PREFIX="mi-input-read-";
     private final Path root;
     private final Path workspace;
+    private final boolean posix;
     private final FileChannel channel;
     private final FileLock lock;
     public InputTempFiles() { this(Path.of(System.getProperty("java.io.tmpdir"))); }
     InputTempFiles(Path root) {
         try {
             this.root=root;
-            workspace=Files.createDirectory(root.resolve(PREFIX+UUID.randomUUID()),PosixFilePermissions.asFileAttribute(PosixFilePermissions.fromString("rwx------")));
+            this.posix=root.getFileSystem().supportedFileAttributeViews().contains("posix");
+            Path dir=root.resolve(PREFIX+UUID.randomUUID());
+            workspace=posix?Files.createDirectory(dir,PosixFilePermissions.asFileAttribute(PosixFilePermissions.fromString("rwx------"))):Files.createDirectory(dir);
             channel=FileChannel.open(workspace.resolve(".lock"),StandardOpenOption.CREATE,StandardOpenOption.WRITE);
             lock=channel.lock();
         } catch(IOException ex) { throw InputDraftException.internal(); }
     }
-    public Path create() throws IOException { return Files.createTempFile(workspace,"source-",".xlsm",PosixFilePermissions.asFileAttribute(PosixFilePermissions.fromString("rw-------"))); }
+    public Path create() throws IOException {
+        return posix?Files.createTempFile(workspace,"source-",".xlsm",PosixFilePermissions.asFileAttribute(PosixFilePermissions.fromString("rw-------"))):Files.createTempFile(workspace,"source-",".xlsm");
+    }
     @EventListener(ApplicationReadyEvent.class)
     public void recover() {
         try(var dirs=Files.list(root)) {
