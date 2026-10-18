@@ -54,7 +54,7 @@ public class MetaAxpKnowledgeRegister implements AxpKnowledgeRegister{
     public void process(AXUploadFileEvent event, String datasourceId, GoodsData goodsData){
 
         String documentId = null;
-        if(!event.getIsNew()){
+        if(!event.isNew()){
             documentId = goodsData.getGoodsDataDistinguishId();
         }
         if(documentId != null && !documentId.isEmpty()){
@@ -111,7 +111,7 @@ public class MetaAxpKnowledgeRegister implements AxpKnowledgeRegister{
             AXMetaRegisterReq registerReq = new AXMetaRegisterReq();
             registerReq.addModifiedFile(uploadFile);
 
-            if (event.getIsNew() == false && goodsData.getMetadUpldFileNm() != null && !goodsData.getMetadUpldFileNm().isEmpty()) {
+            if (event.isNew() == false && goodsData.getMetadUpldFileNm() != null && !goodsData.getMetadUpldFileNm().isEmpty()) {
                 String fileName = goodsData.getMetadUpldFileNm();
 
                 if (fileName != null && !fileName.isEmpty()) {

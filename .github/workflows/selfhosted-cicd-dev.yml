@@ -15,7 +15,11 @@ env:
   BRANCH_TAG: ${{ github.ref_name }}-latest
   # demo와 반드시 다른 디렉터리를 써야 한다 — 같은 값이면 demo 배포를 덮어쓴다.
   # 시크릿이 아직 없으면 기본값도 demo(/opt/app)와 겹치지 않는 경로를 쓴다.
-  COMPOSE_DIR: ${{ secrets.COMPOSE_DIR_BACKEND_DEV || '/opt/app-backend-dev' }}
+  # 같은 이미지로 서버 두 대를 띄운다. 프로파일(SPRING_PROFILES_ACTIVE)·포트는 각 디렉터리의 compose가 정한다.
+  #   COMPOSE_DIR      : testdb,dedicated (고객사 전용 DB 서버)
+  #   COMPOSE_DIR_MAIN : testdb           (일반 서버, host 포트 = dedicated + 10)
+  COMPOSE_DIR: ${{ secrets.COMPOSE_DIR_BACKEND_DEV || '/home/azureuser/mi/mcp/backend' }}
+  COMPOSE_DIR_MAIN: ${{ secrets.COMPOSE_DIR_BACKEND_DEV_MAIN || '/home/azureuser/mi/mcp/backend-main' }}
   ACR_USER_NAME: ${{ secrets.ACR_USERNAME }}
   ACR_USER_PASS: ${{ secrets.ACR_PASSWORD }}
 
@@ -61,25 +65,30 @@ jobs:
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
-      - name: Ensure compose directory & .env
+      - name: Ensure compose directories & .env
         run: |
           set -eux
-          mkdir -p "${COMPOSE_DIR}"
-          touch "${COMPOSE_DIR}/.env"   # 없으면 생성만
+          for dir in "${COMPOSE_DIR}" "${COMPOSE_DIR_MAIN}"; do
+            mkdir -p "${dir}"
+            touch "${dir}/.env"   # 없으면 생성만
+          done
 
       - name: Update .env with new IMAGE tag (persist)
         run: |
           set -eux
-          cd "${COMPOSE_DIR}"
           NEW_IMAGE="${{ steps.tags.outputs.sha }}"
-          # .env에 IMAGE= 라인이 있으면 치환, 없으면 추가
-          if grep -qE '^IMAGE=' .env; then
-            sed -i "s|^IMAGE=.*|IMAGE=${NEW_IMAGE}|" .env
-          else
-            echo "IMAGE=${NEW_IMAGE}" >> .env
-          fi
-          echo "----- .env after update -----"
-          cat .env
+          for dir in "${COMPOSE_DIR}" "${COMPOSE_DIR_MAIN}"; do
+            cd "${dir}"
+            # .env에 IMAGE= 라인이 있으면 치환, 없으면 추가
+            if grep -qE '^IMAGE=' .env; then
+              sed -i "s|^IMAGE=.*|IMAGE=${NEW_IMAGE}|" .env
+            else
+              echo "IMAGE=${NEW_IMAGE}" >> .env
+            fi
+            # .env에는 DB 접속정보가 들어 있으므로 IMAGE 라인만 출력한다.
+            echo "----- ${dir}/.env IMAGE after update -----"
+            grep -E '^IMAGE=' .env
+          done
 
       - name: Pull image(s) locally (optional warm-up)
         run: |
@@ -90,11 +99,17 @@ jobs:
       - name: Deploy with Docker Compose (apply updated .env)
         run: |
           set -eux
-          cd "${COMPOSE_DIR}"
-          # ${COMPOSE_DIR}/docker-compose.yml은 이 워크플로가 만들지 않는다 (demo와 동일한 관례).
-          # demo와 다른 container_name·다른 host 포트로 이 디렉터리에 미리 배치해둬야
-          # 같은 self-hosted 서버에서 demo 컨테이너를 덮어쓰지 않는다.
-          docker compose up -d --pull always
+          # 각 디렉터리의 docker-compose.yml은 이 워크플로가 만들지 않는다 (demo와 동일한 관례).
+          # demo·서로와 다른 container_name·다른 host 포트로 각 디렉터리에 미리 배치해둬야
+          # 같은 self-hosted 서버에서 다른 컨테이너를 덮어쓰지 않는다.
+          for dir in "${COMPOSE_DIR}" "${COMPOSE_DIR_MAIN}"; do
+            cd "${dir}"
+            if ! docker compose config --quiet; then
+              echo "::error::${dir} 에 docker-compose.yml 이 없거나 잘못됐다. VM 에 먼저 배치할 것."
+              exit 1
+            fi
+            docker compose up -d --pull always
+          done
 
       - name: Cleanup dangling images
         run: docker image prune -f

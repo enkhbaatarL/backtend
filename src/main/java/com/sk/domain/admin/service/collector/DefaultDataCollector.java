@@ -32,8 +32,7 @@ public class DefaultDataCollector implements DataCollectorStrategy {
     public List<Object[]> processData(Object data, List<String> actualColumns, String criteriaDt,
         String category, Map<String, String> conditionMap, List<String> dbColumns) {
         List<Object[]> result = new ArrayList<>();
-        if (data instanceof Sheet) { // 엑셀 파일 파싱
-            Sheet sheet = (Sheet) data;
+        if (data instanceof Sheet sheet) { // 엑셀 파일 파싱
             Iterator<Row> rowIterator = sheet.iterator();
             while (rowIterator.hasNext()) {
                 Row row = rowIterator.next();
@@ -46,8 +45,7 @@ public class DefaultDataCollector implements DataCollectorStrategy {
                 if (rowData.length > 0)
                     result.add(rowData);
             }
-        } else if (data instanceof CSVParser) { // CSV 파일 파싱
-            CSVParser csvParser = (CSVParser) data;
+        } else if (data instanceof CSVParser csvParser) { // CSV 파일 파싱
             for (CSVRecord record : csvParser) {
                 // 데이터 시작 행 인덱스 조건
                 if (record.getRecordNumber() < DEFAULT_DATA_START_ROW_INDEX)

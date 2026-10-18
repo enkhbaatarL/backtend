@@ -89,7 +89,7 @@ public class MDCUtil {
      */
     public static void setJsonValue(String key, Object value) {
         if (value != null) {
-            MDC_ADAPTER.put(key, JsonUtil.getInstance().toJson(value));
+            MDC_ADAPTER.put(key, JsonUtil.toJson(value));
         }
     }
 

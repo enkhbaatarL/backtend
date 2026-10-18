@@ -24,7 +24,7 @@ public class AXEventListener {
     @Async
     @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
     public void onUploadFileEvent(AXUploadFileEvent event) {
-        Integer goodsDataNo = event.getGoodsDataNo();
+        Integer goodsDataNo = event.goodsDataNo();
 
         GoodsData goodsData = goodsDataRepository.findByGoodsDataNoAndIsDeletedFalse(goodsDataNo).orElse(null);
         if (goodsData == null) {

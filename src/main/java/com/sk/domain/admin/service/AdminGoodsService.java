@@ -50,7 +50,7 @@ public class AdminGoodsService {
 
     /**
     * 상품 목록을 페이지네이션 처리하여 조회한다.
-    * 
+    *
     * @param companyNo 사용자가 속한 고객사 번호
     * @param role 사용자 역할
     * @param page 조회할 페이지 번호 (min 1)
@@ -161,7 +161,7 @@ public class AdminGoodsService {
     *
     * @param goodsNo 상품 번호
     * @param GoodsUpdateReq 상품 데이터
-    * @return 
+    * @return
     */
     @Transactional
     public void updateGoods(int companyNo, Role role, int providerNo, int goodsNo, GoodsUpdateReq dto) {
@@ -206,7 +206,7 @@ public class AdminGoodsService {
     * 상품을 삭제한다.
     *
     * @param goodsNo 상품 번호
-    * @return 
+    * @return
     */
     @Transactional
     public void deleteGoods(int goodsNo) {
@@ -217,7 +217,6 @@ public class AdminGoodsService {
 
         goods.softDelete();
 
-        return;
     }
 
     /**

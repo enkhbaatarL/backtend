@@ -73,7 +73,7 @@ public class AdminProviderService {
 
     /**
      * 데이타 프로바이더명 목록을 조회한다.
-     * 
+     *
      * @param companyNo 사용자가 속한 고객사 번호
      * @param role 사용자 역할
      * @return List<ProviderNameRes>
@@ -132,7 +132,7 @@ public class AdminProviderService {
 
     /**
      * 데이타 프로바이더를 상세 조회한다.
-     * 
+     *
      * @param companyNo 사용자가 속한 고객사 번호
      * @param role 사용자 역할
      * @param providerNo 데이타 프로바이더 번호
@@ -181,7 +181,7 @@ public class AdminProviderService {
      *
      * @param providerNo 데이타 프로바이더 번호
      * @param ProviderUpdateReq 데이타 프로바이더 데이터
-     * @return 
+     * @return
      */
     @Transactional
     public void updateProvider(int providerNo, ProviderUpdateReq dto) {
@@ -192,14 +192,13 @@ public class AdminProviderService {
 
         provider.update(dto.providerNm(), dto.providerExpn(), dto.isUsed());
 
-        return;
     }
 
     /**
      * 데이타 프로바이더를 삭제한다.
      *
      * @param providerNo 데이타 프로바이더 번호
-     * @return 
+     * @return
      */
     @Transactional
     public void deleteProvider(int providerNo) {
@@ -209,7 +208,6 @@ public class AdminProviderService {
 
         provider.softDelete();
 
-        return;
     }
 
     /**

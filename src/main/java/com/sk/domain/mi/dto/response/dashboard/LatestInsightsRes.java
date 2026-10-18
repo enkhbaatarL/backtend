@@ -18,13 +18,13 @@ public record LatestInsightsRes(
         @Schema(description = "상품 이름", example = "")
         String goodsNm,
 
-        @Schema(description = "상품데이터번호", example = "") 
+        @Schema(description = "상품데이터번호", example = "")
         int goodsDataNo,
 
-        @Schema(description = "상품데이터명", example = "") 
+        @Schema(description = "상품데이터명", example = "")
         String goodsDataNm,
 
-        @Schema(description = "상품데이터 수정 시간", example = "") 
+        @Schema(description = "상품데이터 수정 시간", example = "")
         LocalDateTime modifyDt,
 
         @Schema(description = "보기 권한", example = "true")
@@ -42,7 +42,7 @@ public record LatestInsightsRes(
             this.goodsDataNo = goodsDataNo;
             this.goodsDataNm = goodsDataNm;
             this.modifyDt = modifyDt;
-            this.isViewable = isViewable != null ? isViewable : false; //
+            this.isViewable = isViewable != null && isViewable; //
         }
 }
 // @formatter:on

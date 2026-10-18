@@ -213,7 +213,7 @@ public class TestService {
         String content = """
                 <h1>TEST MAIL</h1>
                 <p>TEST MAIL</p>
-                """;;
+                """;
         mailService.sendMailNoAccessLog(to, subject, content);
         return true;
     }

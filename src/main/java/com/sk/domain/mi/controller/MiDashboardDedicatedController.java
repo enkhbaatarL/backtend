@@ -118,7 +118,7 @@ public class MiDashboardDedicatedController {
 		String FILE_PREFIX = "dashboard_data_table";
 		String encodedFileName = URLEncoder.encode(
 				FILE_PREFIX.concat("_").concat(date).concat("_").concat(DateUtil.currentYYYYMMDDHHMMSS()).concat(".xlsx"),
-				StandardCharsets.UTF_8.toString());
+            StandardCharsets.UTF_8);
 
 		HttpHeaders headers = new HttpHeaders();
 		headers.setContentLength(fileData.length);

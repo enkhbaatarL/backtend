@@ -13,7 +13,7 @@ public enum RegionSeparationCode {
     private final String name;
     private final String description;
 
-    private RegionSeparationCode(String name, String description) {
+    RegionSeparationCode(String name, String description) {
         this.name = name;
         this.description = description;
     }

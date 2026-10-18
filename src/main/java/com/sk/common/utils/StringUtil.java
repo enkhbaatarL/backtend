@@ -1,6 +1,7 @@
 package com.sk.common.utils;
 
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.LinkedHashSet;
 import java.util.Objects;
 import java.util.Set;
@@ -25,11 +26,10 @@ public class StringUtil {
     public static String maskPartial(String input, int prefix, int suffix) {
         if (input == null) return null;
         if (input.length() <= prefix + suffix) return "*".repeat(input.length());
-        StringBuilder sb = new StringBuilder();
-        sb.append(input, 0, prefix);
-        sb.append("*".repeat(input.length() - prefix - suffix));
-        sb.append(input, input.length() - suffix, input.length());
-        return sb.toString();
+        String sb = input.substring(0, prefix)
+            + "*".repeat(input.length() - prefix - suffix)
+            + input.substring(input.length() - suffix, input.length());
+        return sb;
     }
 
     public static String formatPageNumber(int pageNumber) {
@@ -68,9 +68,7 @@ public class StringUtil {
         }
         String[] items = input.split(",");
         Set<String> unique = new LinkedHashSet<>();
-        for (String item : items) {
-            unique.add(item);
-        }
+        Collections.addAll(unique, items);
         // LinkedHashSet 에 담긴 순서 그대로 다시 콤마로 연결
         return String.join(",", unique);
     }

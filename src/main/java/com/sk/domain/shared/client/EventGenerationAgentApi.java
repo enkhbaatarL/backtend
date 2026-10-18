@@ -17,9 +17,9 @@ public interface EventGenerationAgentApi {
     /**
      * 사용자 입력 문장 기반 이벤트 생성.
      *
-     * @param userNo B.E 가 인증한 요청 사용자 번호(usr_no). 서버가 이벤트 생성자·수정자 ID 로 쓴다.
+     * @param userLoginId B.E 가 인증한 요청 사용자 로그인 ID(usr_logn_id). 서버가 이벤트 생성자·수정자 ID 로 쓴다.
      */
     @PostExchange("/events/generations")
-    EventGenerationAgentRes generate(@RequestHeader("X-User-ID") Integer userNo, @RequestBody EventGenerationReq req);
+    EventGenerationAgentRes generate(@RequestHeader("X-User-ID") String userLoginId, @RequestBody EventGenerationReq req);
 
 }
