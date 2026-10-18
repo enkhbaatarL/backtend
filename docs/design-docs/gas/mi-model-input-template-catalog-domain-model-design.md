@@ -6,10 +6,15 @@
 - canonical for: Business rules, ownership, lifecycle, and relationships of the MI model input template catalog, Draft and finalization; boundary to Case and Run
 - owner: BE
 - source documents:
+  - 2026-10-16 후속 구현 승인: 공통 요청 처리와 Draft 생성·재개·조회만 첫 구현한다. 실제 DB는 testdb/원본Case103, DDL은 사용자 검토·수동 적용이다. 제품 부분 구현/검증 경계는 편집 API §1.2·DDL §6.5, 실행 결과는 기존 stable note를 따른다. 표별 정책은 후속, PriceModel/Regas 추가 추천은 미승인 유지.
+  - 2026-10-16 사용자 작업 전환: 표별 정책은 후속, PriceModel/Regas 추천은 미승인 유지. 공통 저장·최종저장/복구 계약만 이 문서 §3.4·§5.1~5.3 및 편집 API §9·DDL §6.3에 구체화한다. 구현/DB 적용 승인이 아니다.
+  - 2026-10-16 사용자 두 업무 묶음 채택: Sector/Monthly 수요 비우기 금지·행 삭제로 해제, Monthly 필수/자유입력·연월·0 이상/FE0·중복·P blank/R=Q, BCPrices 기존 연도 수정/중복 금지·가격0 이상/비우기 금지·입력값 보존/추가 반올림 없음. 규칙45·§6.1을 따른다.
+  - 2026-10-16 사용자 최종 결정: Sector 국가/하위부문은 필수 자유입력 문자열. 앞선 목록 선택과 목록/seed 연결안을 철회하고 모델의 명칭 인식 제약만 후속 확인한다. 연도1000~9999 정수·월1~12와 신규/기존 수정 중복 금지는 유지한다(규칙45).
+  - 2026-10-16 사용자 결정: 공통 BE 추천 묶음 채택, Sector의 I 저장 행 H blank/J=I 및 I 음수 금지. 채택 범위는 §3.4/§5.1·규칙45, 실행 기록은 stable note를 따른다.
   - `docs/work-notes/2026/2026-09-03-model-input-transfer-format.md`
   - `docs/design-docs/gas/mi-agent-param-proposal.md`
   - `docs/references/mi-model-input-catalog-inventory.md`
-  - `docs/references/mi-model-input-catalog-inventory-2026-09-28.md` — §6.2의 2026-10-08 v8/v6 우선 조사·Midstream T-133~T-139 인계 근거. 앞의 v2 기록과 구분.
+  - `docs/references/mi-model-input-catalog-inventory-2026-09-28.md` — §6.2의 v8/v6·Midstream 조사 및 §6.3의 Sector 목록 원천/소비 한계. 앞의 v2 기록과 구분.
   - `docs/references/mi-model-input-calculation-engine-spike.md`
   - `docs/references/mi-model-input-functions-2026-10-07.md` — 최신 4파일의 함수 관측·POI 5.4.0 기본 등록 및 UNIQUE 보존 정책 대응 근거
   - `docs/references/mi-model-input-baseline-2026-10-07.md` — 최신 v8/v6 원본·정규화본 식별과 보존 검증
@@ -24,6 +29,10 @@
   - 2026-10-13 사용자 후속 결정: F-T-02의 원본에서 이미 `#N/A`인 셀은 변경하지 않고 그대로 보존한다. 비오류 셀 계산과 새 오류 허용은 별도다(규칙 59).
   - 2026-10-14 사용자 최종 결정: F-T-01/02와 F-D-01은 추가 계산하지 않고 각 지정 입력 외 수식·저장값을 모두 원본 보존한다. 해당 사례의 잔여 계산 대기는 해소하며 일반 입력 변경 정책과 구분한다(규칙58/59).
   - 2026-10-08 사용자 결정: 임시저장 계산 실패는 이번 변경 요청 전체 취소, 동일 사용자·원본 Case당 진행 중 Draft는 1건 재개, 최종저장 실패는 저장 취소다. 실패 요청 취소와 이전 성공 임시저장 Draft의 유지를 구분한다(규칙 15·60·61).
+  - 2026-10-15 사용자 결정: 평문 임시 저장 허용, 작업 종료 후1분·서비스 복구 후5분 이내 삭제, 실패 분석용 평문 미보관, 삭제 확인은 파일·열린 핸들 잔여0이다(규칙 63).
+  - 2026-10-15 사용자 후속 승인: worker1개/2vCPU·2GiB/동시 작업1건/비동기, 저장 목표30초·전체 상한120초로 진행하며 먼저 이 자원 제한에서 대표 승인 경로를 재측정한다(규칙 64).
+  - 2026-10-15 사용자 최종 승인: F-S-06 제외 INPUT-02A를 CONDITIONAL로 완료 정리하고 승인 운영 기준·검증 한계·INPUT-03/04/07 전달 제약을 유지한다. API 전체 저장 응답 검증은 후속 티켓으로 넘긴다(Delivery Plan §6A·§7 INPUT-10).
+  - 2026-10-15 사용자 후속 결정: 저장 Case 조회의 원본 기준은 애플리케이션이 관리한다. NCP Object Storage의 버전 관리/잠금을 필수 전제로 두지 않고 §3.2에서 내용 기준의 등록·검증과 기존 파일 처리 설계를 구체화한다. 제품 코드 수정은 아직 수행하지 않는다.
   - 2026-10-08 사용자 확인: TRADE `4.5 PriceModelInput` T-183/T-184는 SUMMARY대로 입력 편집·아래 행 추가 가능한 C다. 기존 시트 전체 읽기 전용/원본 보존을 규칙 44의 표별 경계로 대체한다.
   - 2026-10-07 사용자 확인: DEMAND `BCInput`의 Power Generation `AE:AG`와 GDP·인구 `X`는 화면 미표시·모델 미사용이며 신규 행 수식을 생성하지 않는다. 기존 `AE:AF`는 재계산하지 않고 저장값 Helper는 생성·갱신하지 않는다(규칙 58).
 - depends on:
@@ -34,15 +43,15 @@
   - `docs/conventions/db-term-dictionary-sheet2.csv`
 - supersedes:
   - 없음
-- last synced: 2026-10-15
+- last synced: 2026-10-16
 - open questions:
   - 조사·설계 병행 범위와 미결정 사항별 필요한 근거는 §1A.3~1A.5를 따른다. 공통 초안 작성 가능과 구현 착수 가능은 별도로 판정한다.
   - 구조 변경은 이번 release에 포함하며 주된 추가 방식은 마지막 행·열 추가로 확정했다(규칙 13·26). 표별 추가 경계, 신규 셀 처리와 중간 삽입·삭제 예외의 참조 갱신은 write 계약·실파일 검증에서 구체화해야 한다.
   - 새 행·열에 원본 수식·서식·데이터 유효성 규칙을 어떤 방식으로 복제할지 정해야 한다.
-  - 계산 방식은 2026-10-13 사용자 결정으로 POI 부분 계산이다(§1A.4 Q7). 이 방식의 정확도·XLSM fidelity와 격리 worker·동기/비동기 필요 여부를 `INPUT-02A`에서 검증해야 한다.
-  - Draft 변경분을 table별 JSON으로 저장할지 정규화된 change row로 저장할지, 계산 결과 snapshot을 영속화할지 정해야 한다.
-  - 사용자·source Case당 진행 중 Draft 1건 제한과 기존 Draft 재개는 확정했다. 동시 생성 보장과 완료/폐기 후 새 Draft 생성의 API·저장 표현은 검토해야 한다.
-  - 임시저장 계산 실패 및 최종저장 실패 시 해당 요청 취소는 확정했다. revision·계산 결과의 성공 경계와 파일 업로드/Case/Draft 연결 부분 실패의 복구·정리를 설계·검증해야 한다.
+  - 계산 방식은 2026-10-13 사용자 결정으로 POI 부분 계산이다(§1A.4 Q7). 2026-10-15 승인 실행/운영 기준은 규칙64를 따르며, 그 제한에서의 대표 경로 실측·정확도/보존과 실제 제품/API 구현의 검증 경계를 구분한다.
+  - Draft는 §3.4/§5.1의 관계형 식별/유일성 + 검증된 순서 JSON 변경분으로 채택했다. 공통 저장의 물리 분리·복원 단위는 DDL §6.3, 최종저장/복구는 §5.2~5.3으로 구체화했다. 실제 DBA 적용·제품 검증은 후속이다.
+  - 사용자·source Case당 진행 중 Draft 1건 제한과 기존 Draft 재개는 확정했다. 동시 생성·재개와 완료 후 새 Draft의 공통 API/저장 표현은 편집 API §3·DDL §6.3을 따른다. 폐기 API는 후속이다.
+  - 임시저장 계산 실패 및 최종저장 실패 시 해당 요청 취소는 확정했다. 성공 경계와 부분 실패 복구는 §5.1~5.3에 정리했다. 실제 worker/DB/storage 경합·복구 검증은 후속이다.
   - `BaseEntity`의 `crt_*` 감사 컬럼과 DB 명명 문서의 `reg_*` 표준 충돌을 DBA/데이터 표준 담당자가 확인해야 한다.
   - 기간 축, 셀 원천(BASE/USER), 파생 테이블 표시를 스키마에 넣을지 조회 응답에서만 계산할지 정해야 한다. §14.4 참조.
 
@@ -115,7 +124,7 @@ Case/Run 내부 상태·재실행 의미는 [공통 Case/Run workflow](scenario-
 | --- | --- | --- |
 | 조회·Draft 진입 | 구조 불일치를 다른 양식으로 숨기지 않고 고정 source를 사용. 읽기가 원본 쓰기로 바뀌지 않음 | 구조/값 조회 중 부분 실패의 응답·재조회 방식, 조회 후 Draft 생성까지 source 대조 방법(Q1·Q9) |
 | 변경 검증·임시저장 | BE도 카탈로그 허용 정책을 검증. 계산 실패는 해당 요청의 값·구조 변경 전체 취소이며 직전 성공 Draft 상태 유지(규칙 15) | revision 충돌·동일 요청 재전송 시 구조 동작 중복 방지와 실패 후 상태/값 대조(Q8a). 원본·카탈로그·Case/최종 파일은 변경하지 않음 |
-| 최종 생성·검증 | 전체 원본에서 재생성하고 네 역할을 하나의 set으로 검증. 승인된 기존 오류는 보존하되 신규 오류는 실패. 실패하면 최종저장 취소·이전 성공 임시저장 Draft 유지(규칙 31~32·61) | 작업 자원의 수명/정리·부분 실패 복구 시점(Q7·Q8c). 임시 파일 정리 의무는 SECURITY.md를 따름. 실패 파일을 성공 파일로 취급하는 예외는 없음 |
+| 최종 생성·검증 | 전체 원본에서 재생성하고 네 역할을 하나의 set으로 검증. 승인된 기존 오류는 보존하되 신규 오류는 실패. 실패하면 최종저장 취소·이전 성공 임시저장 Draft 유지(규칙 31~32·61). 평문 작업사본 수명/삭제 기준은 규칙 63 | 작업 자원 정리·부분 실패 복구의 구현/검증(Q7·Q8c). 임시 파일 통제·권한은 SECURITY.md를 따름. 실패 파일을 성공 파일로 취급하는 예외는 없음 |
 | 파일 업로드·Case·Draft 완료 | 성공한 Draft당 최종 Case는 하나이며 완료 재시도는 같은 Case 반환. 실패 확정 시 최종저장 취소·Draft 미완료 유지(규칙 19·61) | 업로드 일부 성공·Case 생성 후 Draft 연결 실패·응답 유실·동시 최종저장의 취소/복구 경계(Q8c). DB와 object storage가 하나의 transaction이라고 가정하지 않음 |
 | Run | 최종저장과 별도 접수·실행. 모델 container는 편집 파일 생성에 참여하지 않음 | 기존 실행 계약을 참조하며 이 공통 초안에서 새로운 Run 실패/재시도 정책을 만들지 않음 |
 
@@ -173,17 +182,17 @@ Q1~Q6은 트랙 A의 우선 조사 목록이다. P1은 write·구조·보존 경
 | 설계 항목 | 확정 사항 | 잠정 제안·미결정 | 필요한 조사·검증 또는 사람의 결정 | 결과 반영 위치 |
 | --- | --- | --- | --- | --- |
 | Q1 / A·P1 — 표 경계·표시 | 전체 표시 구조 + 선택 표 하나의 값. 조회와 쓰기는 별도 범위 | 다중 헤더·빈 입력 셀·공유 control을 표시 정책으로 표현. 표시/입력·미표시 계산·A 표·표 밖 사전 수식 경계를 나눔. 최종 seed는 미확정 | 확보 근거 A-02: T-133/T-139의 최신 헤더/본문과 사전 수식 경계를 구별. A: 나머지 표 대조. 사용자·FE·BE: 표시/양식 대응 확정 및 H2의 입력 끝 처리 | domain §3·6, 조회 spec §2~3, DDL의 초기 seed/경계 검토 |
-| Q2 / A·P1 — 행 식별·신규 행 | 화면 행 번호는 영속 식별자가 아님(규칙 28). §7의 surrogate ID 방향 유지 | ID 발급·원본 행/신규 행 대응·정렬/삭제 후 유지 방식 미정. 입력값 조합·Helper를 영속 ID로 간주하지 않음 | 확보 근거 A-02: PNG 전체 입력 4열도 중복 1쌍, LNG AJ Helper는 값 699개에서 256개만 구별. 사용자: H2/H3 빈 슬롯·필수값 결정. BE·DBA: 편집 가능한 키·정렬/추가 후 identity 유지 검증 | domain §5~7, write 계약, DDL의 식별/변경 저장 검토 |
+| Q2 / A·P1 — 행 식별·신규 행 | 화면 행 번호는 영속 식별자가 아님(규칙 28). §7의 surrogate ID 방향 유지 | 서버 행ID·원본/추가 요청 대응·이동/삭제 후 ID 유지 방향은 §5.1에서 채택. 물리 배정/위치 이력은 DDL §6.3, 실제 제품 검증은 후속. 입력값 조합·Helper를 영속 ID로 간주하지 않음 | 확보 근거 A-02: PNG 전체 입력 4열도 중복 1쌍, LNG AJ Helper는 값 699개에서 256개만 구별. 사용자: H2/H3 빈 슬롯·필수값 결정. BE·DBA: 편집 가능한 키·정렬/추가 후 identity 유지 검증 | domain §5~7, write 계약, DDL의 식별/변경 저장 검토 |
 | Q3 / A·P1 — 값 편집 | 명시된 사람 확인과 §6의 허용 범위 우선. Midstream 기존 입력·C 승인은 유지 | 기존 값 편집과 빈 슬롯 최초 입력·신규 행 필수값/clear는 별도. 최신 SUMMARY와 기존 승인 충돌은 변경 후보 | A-02/H3: 현재 완전 입력 행은 신규 필수 승인 근거가 아님. 사용자: clear·0/빈 값·후보/선행 등록 결정. A: OUTPUT 입력 선언/수식 셀 대응과 나머지 계산 경계 검증, Overwrite BCM/추가 위치·Annual LNG Demand 이름 확대 대조 후 변경 채택/기각 | domain §6, 조회/write 계약, compatibility의 승인 fixture; 표현 영향 때 DDL |
 | Q4 / A·P1 — 구조·연결 | 이번 release 포함, 표 끝 추가·표별 삭제 예외(규칙13·26·45·47). F-D-05 중간 삽입은 현재 제외. 미러 표는 master 선행(규칙12) | 값 끝·입력 선언 끝·수식 끝은 별도. Midstream의 빈 슬롯 활성화·신규 셀 처리와 A를 움직이지 않는 구조 방식 미정 | 확보 근거 A-02: LNG 값 끝 703·입력 선언 끝 2918·수식 끝 4707이 다름. 사용자: H2/H3, Regas 추가, LiqUtil 삭제/Period, Demand 동시 확장. BE: 논리 표 추가와 A 보존을 함께 검증; 나머지 표는 A-03~A-09 | domain §6~7, 구조 write 계약, compatibility STRUCTURE, DDL 정책 표현 |
 | Q5 / A·P1 — 계산·보존·모델 영향 | UNIQUE 5셀과 T-134~T-138은 A 보존(규칙57). F-T-01/02/04는 지정 입력 외 전체 계산 제외·원본 보존(규칙59), F-D-01도 N4 외 계산 제외·보존(규칙58). 지정3사례의 잔여 계산 대기는 해소. 일반 AG/AI 갱신 규칙과 기존/새 오류 구분 유지 | 지정 보존 예외 밖 H1의 선행 계산 범위·기준값/오류 처리와 H4 표 밖 CN/CT 처리 미정. 고정 BA/BI를 읽는다는 사실만으로 유효 기준값이 있다고 가정하지 않음 | 확보 근거 A-01·상류 후속: BA 저장값 전부 빈 값·현재 입력 키와 BI 일치0건. AG는 Q/R/T, AI는 Q/R/S/T/U와 다른 행 입력에 연결. 사용자·모델팀: 지정 사례 밖의 오류·신규 키/H4 업무 필요 결정. BE: 사례별 보존과 승인 계산의 Excel 비교·A 불변·E2E. 보존 사례에는 추가 계산 정답을 요구하지 않음. 나머지는 A-03/A-07/A-08; 규칙31 예외 유지 | domain §6~7, compatibility 검증 경로/fixture, 계산 상태/출처 계약 영향 때 API·결과 저장 영향 때 DDL |
 | Q6 / A·P2 — 표별 정책·화면 갱신 | 규칙 46의 양식별 DB 관리와 값 제공 방향. §14는 두 과거 표본이며 전체 유형 분류 아님 | 기간이 행 필드인 Midstream과 열인 표를 구분. 미표시 계산 영역을 control로 승격하지 않음. 다른 표 값/적용 순서·ISFORMULA 보존/평가 요구 미정 | A-01/A-02는 행의 Year·미표시 계산 영역 분리 근거. A-10 조건부서식의 큰 범위를 표 끝/편집 범위로 사용하지 않음. 사용자·FE: 화면/색상 평가 필요; BE·FE·DBA: 규칙 결과와 저장 표현 | domain §3·7, 조회 spec §3.1B~C, compatibility; 화면 규칙의 DDL 후속 설계 |
-| Q7 / B·검증 — 엔진·실행 | 함수 기본 등록 조사와 UNIQUE 보존 판정 완료. **사용자 결정(2026-10-13): POI 부분 계산.** 전체 workbook을 POI로 열지 않는다. 사용자 변경에 영향받는 계산 허용 수식과 그 수식이 읽는 셀(상수)만 담은 작은 메모리 workbook을 Apache POI(기존 의존성)로 계산하고, 원본 worksheet XML에서 값이 바뀐 셀의 저장값만 교체한다. 상용 엔진은 평가하지 않는다. 이전 POI `NO-GO`는 전체 workbook 로딩 경로의 판정으로 유지 | 격리·동기/비동기, 표별 계산 allowlist, 구조 변경 시 신규 수식·`calcChain` 처리, `SUMIFS` 외 조건 집계 함수의 오류 조건 의미, 낡은 저장값 갱신 방침 미정. 이 결정은 `INPUT-02A` `GO`가 아님 | 근거: `INPUT-02A` 1단계 노트 Phase 3(10-08 프로토타입), 10-12 4사례 9,758셀 부분 검증. BE: 남은 승인 fixture의 Excel 비교값·배열/package 보존·4파일 시간/메모리·동시 요청·timeout/정리 검증(`INPUT-02A`) | 엔진 spike/compatibility 근거, domain 실행 경계, API 계산 응답·상태, 결과 저장 영향 때 DDL |
-| Q8a / B·설계 — 임시저장 실패 | **사용자 결정:** 계산 실패 시 이번 요청의 값·구조 변경 전체 취소, 직전 성공 Draft 상태 유지(규칙 15) | revision/계산 결과 성공 경계·취소 구현, 실패 응답/재조회 표현은 미정. 변경분만 보존하는 이전 추천안은 미채택 | BE·FE: revision 충돌·동일 요청 재전송·계산 실패 후 값/구조/revision/계산 결과가 직전 성공 상태와 일치하는지 검증. Q7 실행 경계 필요 | domain Draft 규칙, write 계약의 실패/멱등 의미, DDL transaction·revision/계산 결과 저장 검토 |
-| Q8b / B·설계 — 단일 Draft 재개 | 동일 사용자·source Case당 진행 중 Draft 1건을 유지하고 기존 Draft 재개(규칙 60) | 동시 생성/재개 방식·완료/폐기 후 재생성 API·저장 보장 수단은 미정. 복수 허용은 현재 범위에서 채택하지 않음 | BE·FE·DBA: 동시 생성에도 1건 유지, 소유자/source 기준 재개, 과거 완료/폐기 Draft와 진행 중 제한 구분 검증 | domain cardinality/lifecycle, Draft API, DDL uniqueness 검토 |
-| Q8c / B·설계 — 최종처리 부분 실패 | 실패 확정 시 최종저장 취소·이전 성공 임시저장 Draft 유지·FINALIZED 미전환(규칙 61). 완료 Draft당 Case 하나·완료 재시도는 같은 Case(규칙 19) | 일부 업로드/Case 생성 후 실패의 취소·정리/복구 수단, 대상 revision 대응과 transaction·자원 수명은 미정 | BE·FE·DBA: 부분 업로드, Case 생성 후 Draft 연결 실패, 응답 유실·동시 최종저장·revision 변경의 취소/복구 검증. 이미 완료한 요청의 응답 유실은 실패 확정과 구별 | domain 최종처리 lifecycle, write 재시도/실패 계약, DDL Case 연결·최종처리 저장/rollout 검토 |
-| Q8d / B·설계 — 저장·계산 결과 | catalog 정책과 사용자 변경분 분리, 변경분·revision 저장 | table별 JSON 또는 change row, 구조 command 순서·계산 snapshot 영속화 미정. 동일 기준의 계산 결과임을 대조할 수 있게 하는 방향 추천(§3.1) | BE·DBA: 저장/복원·동시 수정·구조 동작 재적용·payload 검증. Q7 시간/재계산 비용과 Q8a 실패 의미를 합쳐 결정. FE: 재조회 필요 확인 | domain 논리 책임, write 계약, DDL Draft/change/결과 물리 설계 |
-| Q9 / B·계약·DBA — 식별·API·물리 모델 | 조회 표현은 API 정본, 기존 6개 catalog table·수정 범위 row 방향은 DDL 정본. 화면 규칙 DB 관리 유지 | source 파일 hash와 template 구조 hash 구분·판별 방식, version 공용화, field/options/dependency/Draft 확장 저장 미정. API JSON과 DB 형태 동일 가정 안 함 | BE·FE: snapshot/식별·payload·권한 계약. Security·DRM: 구조화 응답 적용 여부. DBA·표준 담당자: 감사 컬럼 충돌/적용. 양식 version 공용화는 파라미터 담당자 조율 | 조회 spec/후속 write 계약, DDL/DBA rollout; 진행·선행조건은 Delivery Plan |
+| Q7 / B·검증 — 엔진·실행 | 함수 기본 등록 조사와 UNIQUE 보존 판정 완료. **사용자 결정(2026-10-13): POI 부분 계산.** 전체 workbook을 POI로 열지 않는다. 사용자 변경에 영향받는 계산 허용 수식과 그 수식이 읽는 셀(상수)만 담은 작은 메모리 workbook을 Apache POI(기존 의존성)로 계산하고, 원본 worksheet XML에서 값이 바뀐 셀의 저장값만 교체한다. 상용 엔진은 평가하지 않는다. 이전 POI `NO-GO`는 전체 workbook 로딩 경로의 판정으로 유지. **2026-10-15 승인 격리 worker/비동기·자원·저장 목표/상한은 규칙64** | 제한환경 대표 경로 재측정 후 사용자 승인으로 **F-S-06 제외 INPUT-02A는 `DONE (CONDITIONAL)`**이다(Delivery Plan §6A). 비동기 접수/완료 계약은 Q8/INPUT-04, API 전체 저장 응답 검증은 INPUT-10 후속이다. 지정 검증 밖 표별 계산 allowlist, 구조 변경 시 신규 수식·`calcChain` 처리, 조건 집계 함수의 오류 의미, 낡은 저장값 갱신 방침을 자동 확정하지 않는다 | 승인 fixture·제한환경·격리/중단·평문 정리 근거와 한계는 compatibility/engine spike 및 stable work note를 따른다. 선정19사례의 범위 한정 채택이며 모든 표/입력 조합·모델 결과·제품/API·전체 저장 SLA의 검증 완료나 배포 승인이 아니다 | 엔진 spike/compatibility 근거, domain 실행 경계, INPUT-03/04/07 전달 제약은 Delivery Plan §6A, API 계약은 feature spec, 결과 저장 영향 때 DDL |
+| Q8a / B·설계 — 임시저장 실패 | **사용자 결정:** 계산 실패 시 이번 요청의 값·구조 변경 전체 취소, 직전 성공 Draft 상태 유지(규칙 15) | 공통 성공 revision·실패 응답/재조회 기준은 §5.1/편집 API에서 채택. 취소/복원 구현·제품 검증은 후속. 변경분만 보존하는 이전 추천안은 미채택 | BE·FE: revision 충돌·동일 요청 재전송·계산 실패 후 값/구조/revision/계산 결과가 직전 성공 상태와 일치하는지 검증. Q7 실행 경계 필요 | domain Draft 규칙, write 계약의 실패/멱등 의미, DDL transaction·revision/계산 결과 저장 검토 |
+| Q8b / B·설계 — 단일 Draft 재개 | 동일 사용자·source Case당 진행 중 Draft 1건을 유지하고 기존 Draft 재개(규칙 60) | 생성/재개 공통 계약·진행 요청1건은 §5.1/편집 API에서 채택. 유일성은 DDL §6.3에 정의했고 실제 동시 생성 검증·폐기 API는 후속. 자동 만료 없음/동반 보존은 §3.4. 복수 진행 Draft는 허용하지 않음 | BE·FE·DBA: 동시 생성에도 1건 유지, 소유자/source 기준 재개, 과거 완료/폐기 Draft와 진행 중 제한 구분 검증 | domain cardinality/lifecycle, Draft API, DDL uniqueness 검토 |
+| Q8c / B·설계 — 최종처리 부분 실패 | 실패 확정 시 최종저장 취소·이전 성공 임시저장 Draft 유지·FINALIZED 미전환(규칙 61). 완료 Draft당 Case 하나·완료 재시도는 같은 Case(규칙 19) | 공통 최종저장/취소·정리/응답 유실·재시작/늦은완료 계약은 §5.2~5.3·편집 API §9, 저장 수단은 DDL §6.3에 구체화. 실제 제품 복구 검증은 후속 | BE·FE·DBA: 부분 업로드, Case 생성 후 Draft 연결 실패, 응답 유실·동시 최종저장·revision 변경의 취소/복구 검증. 이미 완료한 요청의 응답 유실은 실패 확정과 구별 | domain 최종처리 lifecycle, write 재시도/실패 계약, DDL Case 연결·최종처리 저장/rollout 검토 |
+| Q8d / B·설계 — 저장·계산 결과 | catalog 정책과 사용자 변경분 분리, 변경분·revision 저장 | 관계형 식별/유일성 + 검증된 순서 JSON 변경분·성공 revision은 §3.4/§5.1에서 채택. 성공별 파생 delta/행 위치 구간으로 복원하고 Draft 존속 중 동반 보존/자동 만료 없음으로 구체화(§3.4·DDL §6.3). 실제 동일 기준 결과 검증은 후속 | BE·DBA: 저장/복원·동시 수정·구조 동작 재적용·payload 검증. Q7 시간/재계산 비용과 Q8a 실패 의미를 합쳐 결정. FE: 재조회 필요 확인 | domain 논리 책임, write 계약, DDL Draft/change/결과 물리 설계 |
+| Q9 / B·계약·DBA — 식별·API·물리 모델 | 조회 표현은 API 정본, 기존 6개 catalog table·수정 범위 row 방향은 DDL 정본. 화면 규칙 DB 관리 유지. 저장 Case의 불변 등록은 §3.2·DDL §6.1/§10A, 양식/catalog 연결안은 §3.3·DDL §6.2/§10B | 불변 파일 등록 참조의 제품 연결/조회 검증, template 구조 판별·파라미터 master와의 version 공용화, field/options/dependency 저장은 표별 후속. Draft 공통 저장은 DDL §6.3의7개 구조로 구체화. API JSON과 DB 형태 동일 가정 안 함 | BE·FE: snapshot/식별·payload·권한 계약. 구조화 응답 DRM은 조회 정본의 확정 경계를 따르고 접근/로그 검증은 후속. DBA·표준 담당자: 기존 파일/양식 관계의 실물 대조·감사 컬럼 충돌/적용. 양식 version 공용화는 파라미터 담당자 조율 | 조회 spec/후속 write 계약, DDL/DBA rollout; 진행·선행조건은 Delivery Plan |
 
 #### Midstream 인계 후 정책 결정 — H1~H4
 
@@ -217,15 +226,15 @@ Q1~Q6은 트랙 A의 우선 조사 목록이다. P1은 write·구조·보존 경
 - **트랙 B 공통 초안 구체화: 완료.** 단계별 입력·책임·결과·상태·진입 조건(§1A.2), 정보 소유권(§3.1), 표 정책 후보와 미결정별 근거/결정 주체(§1A.4), A 결과 반영 경로(§1A.3)를 정리했다. 문서 상태는 `Draft`이며 이 단계의 완료는 추천안 승인·전체 조사·`INPUT-03/04/STRUCT-01` 확정 완료를 뜻하지 않는다.
 - **트랙 A 인계 통합: A-01/A-02 정적 조사 결과를 반영.** Midstream 근거를 Q1~Q6과 H1~H4의 정책/검증 잔여에 연결했다. A-03~A-10은 다음 조사 목록이며 전체 조사·정책 확정은 In Progress다.
 - **구현 착수: 현재 `blocked by open questions`.** 조회 구현도 표시 seed·계약 승인이 필요하며, write/파일 생성은 행 식별·표별 구조/계산/보존 정책, Draft 계약·물리 모델과 계산 실행 검증이 필요하다. 이번 초안으로 기존 선행조건을 면제하지 않는다.
-- **Delivery Plan 변경 후보:** §4 Dependency waves·§7·§9에 `INPUT-03/04/STRUCT-01`의 **공통 초안 검토**를 조사·`INPUT-02A` 준비와 병행 가능하다고 명시하는 안을 추천한다. 지금 부족한 조사 질문을 일찍 찾을 수 있기 때문이다. 각 티켓의 최종 확정·구현 배정 조건은 유지한다. 이는 현재 dispatch 규칙의 변경 후보이며 이 작업에서 Plan이나 `BLOCKED/READY/DONE` 상태를 변경하지 않는다. 일정 때문에 구조 변경을 다음 release로 미루지 않는다.
+- **Delivery Plan 변경 후보(공통 초안 단계 당시 추천):** §4 Dependency waves·§7·§9에 `INPUT-03/04/STRUCT-01`의 공통 초안 검토를 조사·`INPUT-02A` 준비와 병행 가능하다고 명시하는 안을 제시했다. 당시에는 상태를 변경하지 않았다. 현재 배정 상태는 2026-10-15 조건부 완료를 반영한 Delivery Plan §6A·§9를 따른다. 일정 때문에 구조 변경을 다음 release로 미루지 않는다.
 
-다음 순서는 (1) 완료된 함수 스캔·보존 결정을 재사용해 A가 Q1~Q5의 표별 미확인/충돌과 필요한 최신 관측을 우선 조사하는 동안 B가 Q6~Q9의 남은 결정·검증 입력을 구체화 → (2) 확인된 표부터 업무 정책을 정본에 반영하고 Q3~Q6 결과로 계산·보존·구조 fixture를 갱신 → (3) 승인 후보/환경에서 `INPUT-02A` 검증 → (4) 결과를 합쳐 `INPUT-03/04/STRUCT-01`의 미결정을 확정·필요한 ERD/DBA 검토 → (5) Delivery Plan 선행조건을 충족한 구현 slice 배정이다. 이번 단계는 공통 책임 초안을 구체화한 것이며 추가 스캔 실행·계산 PoC·구현·배포는 포함하지 않는다.
+공통 초안 당시 순서는 표별 필요한 조사/업무 결정 → fixture 갱신 → 승인 환경 INPUT-02A 검증 → INPUT-03/04/STRUCT-01의 미결정·ERD/DBA 검토 → 선행조건을 충족한 구현 배정이었다. **현재(2026-10-15)는 Q7의 조건부 완료/전달 제약을 입력으로 INPUT-03/04 설계·계약을 진행하는 단계**다. 지정19사례를 다시 대기로 돌리지 않으며 미검증 표의 계약·확장 근거는 후속 범위에서 다룬다. 공통 초안·조건부 판정은 제품 구현·전체 조사/배포 완료와 구분한다.
 
 #### 다른 정본의 변경 후보 — 반영 상태
 
 - ~~Delivery Plan §7 `INPUT-09`의 `4.5 PriceModelInput` 시트 전체 무수정 문구 정리~~ — **2026-10-08 반영 완료.** Plan `INPUT-09`가 규칙 44의 두 표 승인 변경과 나머지 원본 보존으로 정렬됐다(Plan Change Log 2026-10-08).
 - ~~Delivery Plan의 과거 GDP/PIPELINE/UNIQUE 검증 후보 정리~~ — **2026-10-13 반영 완료.** Plan open question과 §9를 오탐 정정·UNIQUE 5셀 원본 보존으로 정렬했다. `INPUT-02A`의 남은 검증 조건은 면제하지 않았다.
-- Q1~Q9 결정이 생기면 조회 spec의 표/화면 규칙 표현, 별도 write 계약의 Draft·실패·재시도, DDL의 정책·Draft·최종 Case 대응을 각각 재검토한다. 기존 수정 범위 row 설계를 일반 JSON으로 대체하는 안은 기존 DDL 결정 변경 후보로만 다룬다. Draft JSON/row 미결정과 혼동하지 않는다.
+- Q1~Q9 결정이 생기면 조회 spec의 표/화면 규칙 표현, 별도 write 계약의 Draft·실패·재시도, DDL의 정책·Draft·최종 Case 대응을 각각 재검토한다. 기존 수정 범위 row 설계를 일반 JSON으로 대체하는 안은 기존 DDL 결정 변경 후보로만 다룬다. §3.4에서 채택한 Draft 관계형/JSON 경계와 혼동하지 않는다.
 - A-07의 OUTPUT 입력 색·T-082 Helper 보존은 최신 v8 사람 확인에 맞춰 규칙 50/§6.1과 compatibility에 반영했다. 과거 817셀 전체 재계산은 사용하지 않으며 D7:K7·L열 대응과 나머지 계산 범위·정답 검증은 A-07/Q5의 잔여다. A-03의 Regas 참고 범위 확대, A-04의 Overwrite/연간 LNG 선언 차이도 기존 승인 변경 후보이며 미조사 영역에 새 계산/쓰기 정책을 적용하지 않는다. 필요한 좁은 대조·사람 결정 후 domain과 compatibility/API의 영향 범위만 갱신한다.
 
 새 조사 결과를 받을 때 Q1~Q6의 해당 표만 먼저 재검토하고, 계산/연결/구조 정책이 달라지면 Q7 fixture와 Q8~Q9 계약·저장 영향도 함께 확인한다. 사용자 결정은 기존 승인과 충돌하는 변경 후보(Q3), 미확정 구조 정책(Q4), Draft 실패 처리·복수 허용(Q8)에 필요하다. 이번 공통 초안을 기록하기 위해 이 결정들을 먼저 확정할 필요는 없다.
@@ -237,7 +246,7 @@ Q1~Q6은 트랙 A의 우선 조사 목록이다. P1은 write·구조·보존 경
 - `tmm_mi_model_param_m`: Agent 파라미터 제안·병합을 위한 일부 파일/시트/셀 위치를 소유한다.
   - 첨부 개발본 76개 시트 중 일부만 포함하고, `model_table` 값이 실질적으로 테이블을 구분하지 못한다.
   - `use_yn`은 Agent 제안 대상 여부이므로 사용자 편집 가능 여부로 재사용할 수 없다.
-- `ModelParamExcelMergeService`와 `MergedModelInputFiles`: 파라미터 제안값을 workbook에 병합하는 생성 로직은 이 기능과 책임·입력이 다르므로 재사용하지 않는다. 기존 타입은 3파일 전용이므로 직접 재사용할 수 없다. 생성이 끝난 role별 bytes를 `MultipartFile`로 바꾸는 adapter 패턴만 4파일 결과 타입에 적용할 수 있다.
+- `ModelParamExcelMergeService`와 `MergedModelInputFiles`: 파라미터 제안값을 workbook에 병합하는 생성 로직은 이 기능과 책임·입력이 다르므로 재사용하지 않는다. 2026-10-16 코드 기준으로 현재 merge/결과 타입은4파일(OUTPUT 원본 포함)이다. 3파일 전용이라는 이전 판단은 더 이상 현재 코드의 재사용 제외 이유가 아니다. 제안 master·current MI Base/플랫폼 fallback·제안값 병합 책임이 Draft 편집과 달라 직접 호출하지 않으며, 완료된 역할별 파일을 `MultipartFile`로 전달하는 방식만 참고한다.
 - `BasecaseReadMode`, `ColumnRoleMap`: 표 읽기 방식과 열 역할 파싱 개념은 재사용 가능하다.
 - 실제 파일에는 demand/supply workbook table part가 없으므로 OOXML `ListObject`만으로 테이블
   경계를 자동 생성할 수 없다.
@@ -248,7 +257,7 @@ Q1~Q6은 트랙 A의 우선 조사 목록이다. P1은 write·구조·보존 경
 
 | 논리 개념 | 분류 | 책임 |
 | --- | --- | --- |
-| InputTemplate | configuration master | 함께 호환되는 4개 input 파일 구조의 버전과 상태 |
+| InputTemplate | configuration master | 함께 호환되는 4개 input 구조의 양식 버전과 상태, 그 버전에 속한 발행 catalog 묶음(§3.3) |
 | InputFileDefinition | detail | 양식 버전에 속한 파일 역할, 기준 파일명, 순서, 구조 해시 |
 | InputSheetDefinition | detail | 파일 안의 시트명, 순서, 표시 상태 |
 | InputTableDefinition | detail | 시트 안의 논리 테이블 경계와 행·열 추가 가능 정책 |
@@ -269,7 +278,7 @@ Q1~Q6은 트랙 A의 우선 조사 목록이다. P1은 write·구조·보존 경
 | 정보 | 소유·책임 | 관계·경계 |
 | --- | --- | --- |
 | 양식·표별 정책 | 버전별 카탈로그 / 운영·BE | source 해석, 표시·필드·후보·쓰기/구조·계산/보존·화면 규칙의 승인 경계를 제공. 사용자 입력·계산 결과로 ACTIVE 정책을 수정하지 않음(규칙 3) |
-| 고정 원본·양식 참조 | 파일 bytes/metadata는 기존 Case·파일 관리, 편집 기준 참조는 Draft | Draft가 source Case의 정확한 4파일과 양식 버전을 고정. 기준본의 원본/정규화본 증거는 baseline 소유. 복사본/저장 위치·hash 필드 설계는 Q9 |
+| 고정 원본·양식 참조 | 파일 bytes/metadata와 내용 기준은 기존 Case·파일 관리, 편집 기준 참조는 Draft | 저장 Case 조회의 내용 기준 등록은 §3.2, 기존 보관 위치/스키마 무변경은 DDL §6.1·§10A. Draft가 source Case의 정확한 4파일과 양식 버전을 고정하며 Draft 보존/복사본은 Q9 후속. 기준본 원본/정규화본 증거는 baseline 소유 |
 | 사용자 값·구조 변경 | 편집 사용자 소유 Draft | 원본과 별도로 변경분·revision을 보존. 구조 변경은 사용자 파일 인스턴스에 적용하며 catalog baseline을 이동시키지 않음(규칙 7). 수식·서식 생성은 승인된 구조 동작의 BE 처리 결과로 구분 |
 | 계산 결과 | BE workbook 계산 책임의 파생 결과 | 고정 원본·양식·변경분 기준에 종속. 사용자 `SET/CLEAR` 입력이나 catalog 정책을 대체하지 않음. 계산 허용 결과와 원본 cached value(저장된 계산값)를 구분. 결과 snapshot 영속화·실패 상태·기준 대조 표현은 Q7·Q8a/d |
 | 화면에 반환할 값 | BE 조회 projection(화면용으로 골라 읽는 처리), FE 화면 갱신 | 원본 조회는 고정 source 값, Draft 편집 조회는 저장 변경과 계산 결과를 연결하는 책임. 연결 방식은 Q8d·write 계약. FE의 아직 저장하지 않은 값/규칙 적용 결과를 BE 계산 성공으로 취급하지 않음. 반환 필드·다른 표 재조회는 API 정본 |
@@ -278,12 +287,89 @@ Q1~Q6은 트랙 A의 우선 조사 목록이다. P1은 write·구조·보존 경
 
 계산 결과와 화면 응답은 독립적인 사용자 변경 이력이 아니다. 저장 성공·계산 성공·Case 연결 완료는 서로 다른 사실이므로 한 단계의 성공으로 다른 단계의 성공을 추론하지 않는다. 이 구분을 API 상태/저장 구조에 어떻게 담을지는 §1A.4 Q7~Q9에서 결정한다.
 
+### 3.2 저장 Case 조회의 원본 기준 등록 — 2026-10-15 구체화
+
+**채택 방향:** QRY-01/02의 원본 기준은 애플리케이션이 관리한다. 기존 NCP Object Storage·Case·UUID 객체를 재사용하고 버킷 versionId/잠금을 필수조건으로 두지 않는다. 이번 설계는 저장 Case 조회에 한정하며 Draft 생성/최종저장 전체의 보존·복구 설계를 함께 확정하지 않는다.
+
+#### 사용자 확인한 원본 불변식
+
+- 사용자는 **업로드마다 새 `tcm_filel` row를 INSERT하고, 등록된 원본의 저장 경로와 같은 경로의 내용도 변경되지 않는다**고 확인했다. 각 업로드는 현재 코드대로 새 UUID 객체를 사용한다. 이 불변식을 이번 조회 설계의 확정 전제로 사용하며 같은 사실을 다시 승인받지 않는다.
+- 따라서 **파일 등록 한 건이 불변 내용 버전 한 건**이다. 서버가 확인한 file_no와 정확한 객체 참조의 대응을 사용한다. 파일명·크기·시각·UUID만 보고 불변이라고 추측하는 것과, 확인된 등록 lifecycle을 사용하는 것은 구별한다.
+- 일반 FileService의 TEMP/null relation 이동 분기는 아직 확정 원본이 아닌 임시 파일 처리다. 등록된 SCNRCASE 파일은 경로를 유지하고 Case 수정도 title/description만 바꾼다. 이 임시 경로를 조회 대상 원본의 변경 경로로 확대하지 않는다.
+- 앞서 제안한 서버 SHA-256 **내용 해시**와 등록 시각의 추가 보관·기존 파일 재해시/재등록 필수안은 철회한다. 외부 입력 `file_hash_val`과 catalog 구조 hash의 의미는 유지한다. 확정된 sourceVersion/sourceKey/inputId의 SHA-256 조합 생성 규칙은 그대로다.
+
+#### 등록 시점·기존 파일 처리
+
+- 신규 원본의 등록은 기존 업로드 성공과 `UploadedFile` 신규 저장을 사용한다. 별도 내용 기준 등록 단계를 만들지 않는다. 직접 Case 업로드는 네 역할과 Case transaction이 모두 커밋된 뒤 조회에 사용한다.
+- staged 경로는 객체를 처음부터 최종 UUID 경로에 저장하고 TEMP/0 metadata로 대기한다. 최종 Case에 metadata-only attach하는 transaction이 커밋된 뒤 사용한다. 객체를 이동/재업로드하거나 별도 해시를 발급하지 않는다. 기존 업로드/DB 실패 보상을 유지한다.
+- 기존의 유효한 4파일 Case도 같은 불변 등록 참조를 그대로 사용한다. 신규 hash 컬럼이 없다는 이유로 미등록으로 분류하거나 조회를 차단하지 않는다. Case·정확한 네 역할/파일/객체 연결과 승인 양식/catalog 대응은 기존 조회 조건대로 확인한다.
+- 기존 3파일 Case에 OUTPUT을 보충하거나 자동 mapping하지 않고 기존 legacy cutover 정책을 유지한다. 원본 등록 사실은 계산값의 정확성/최신성 증명이 아니므로 저장값 판독 계약도 유지한다.
+- 보관 위치·추가 스키마 불필요 판단은 [DDL §6.1·§10A](mi-model-input-template-catalog-erd-ddl-draft.md#61-q2-내용-식별값의-보관-위치), 내부 `contentRevision` 구성과 API 식별자/실패 계약의 연결은 [조회 상세 §4.3~4.5·§7](../../feature-specs/mi-fundamental-model-input-query-api-proposal.md)을 따른다.
+
+#### 조회에서 확인할 항목
+
+- 매 요청의 접근 권한·유효 Case·정확한 네 파일 등록/객체 참조와 template/catalog 기준을 확인하고 같은 기준으로 응답한다. 파일 연결/양식/catalog가 바뀌면 기존 sourceVersion 대조·충돌 처리를 유지한다.
+- 실제 객체 존재/읽기·선택 응답 범위의 저장값 판독·기존 삭제/접근 검사도 유지한다. 별도 전체 내용 재해시, ETag 조건부 읽기, 버킷 버전 관리/잠금이나 새 snapshot/cache/worker를 필수조건으로 추가하지 않는다.
+- 후속 제품 검증은 반복 업로드의 새 file_no/객체 생성과 이전 참조 유지, 직접/staged Case 성공 경계, 역할/연결·catalog 변경 시 버전 대조, 누락/읽기 실패를 확인한다. 사용자 확인 불변식과 코드 근거를 운영 장애/전체 제품 시험 완료로 확대하지 않는다. template/catalog 연결안은 §3.3·DDL §6.2/§10B에 구체화했고 실제 등록/제품 구현·검증은 남는다.
+
+### 3.3 Q2 양식·catalog 발행 묶음과 Case 연결 — 2026-10-15 구체화
+
+이 절은 확정된 원본 불변식·API 식별자 계약을 유지하면서 기존 규칙 1~3·10~11과 Case-template 관계를 구체화한 최소 연결안이다. 물리 보관/키/등록·검증 SQL은 DDL §6.2·§10B, 내부 식별자 문자열 구성은 조회 상세 §4.6이 소유한다. 제품 코드·DBA 적용/seed·제품 검증 완료는 아니다.
+
+#### 두 버전은 같은 발행 묶음을 참조
+
+- 양식 master 한 건이 4역할의 호환 구조와 그 구조를 해석하는 catalog의 발행 묶음이다. `templateVersion`은 양식 버전, `catalogRevision`은 그 묶음의 고정된 표시/해석 정의를 식별한다. 현재 최소안은 기존 양식 master의 식별값과 버전 번호를 재사용하며 별도 catalog revision master/증가 컬럼을 추가하지 않는다.
+- 규칙3대로 발행한 정의를 직접 수정하지 않는다. 표시 표/좌표·control·선택지·화면 갱신 규칙·표시 해석 기준만 바뀌어도 새 DRAFT/양식 버전으로 등록·검증·발행한다. 이때 원본 파일의 재업로드/내용 hash는 필요하지 않다. 같은 layout을 유지한 새 발행 묶음도 가능하다.
+- 발행 후에는 ACTIVE뿐 아니라 기존 Case가 참조하는 DEPRECATED의 해석 정의도 보존한다. 상태의 ACTIVE→DEPRECATED 전환은 해석 내용 변경이 아니므로 기존 Case의 두 버전은 바꾸지 않는다. 기존 Case 조회는 연결된 지원 가능한 ACTIVE/DEPRECATED를 읽고 현재 ACTIVE로 대체하지 않는다.
+- 발행 묶음에는 해당 GET 응답에 영향을 주는 정의·선택지·화면 규칙/표시 해석 참조가 같은 버전에 속해야 한다. 후속 field/options/화면 규칙의 물리 저장도 이 소유권을 따라야 한다. live 공통 master/새 코드의 정책을 조용히 섞어 같은 catalogRevision에 다른 표시 기준을 제공하지 않는다. 읽을 기준이 없거나 지원하지 못하면 기존 해석 정책 오류 계약을 따른다.
+- 현재 6개 table 초안은 모든 field/control/options/화면 규칙 저장을 포함하지 않는다. 필요한 조회 정의/seed가 완비돼야 해당 묶음을 조회용으로 제공할 수 있다. 이 조건을 Draft/write 저장 설계 전체 완료 요구로 확대하지 않는다.
+
+#### Case 연결 시점과 실패 경계
+
+- 최소 연결 시점은 **네 파일과 Case 저장 커밋 뒤, QRY 제공 전**이다. 서버/관리 등록이 정확한 네 역할·파일/객체·등록 양식 대응을 검증한 뒤 기존 Case-template 관계 한 건을 저장한다. GET에서 관계를 추정/생성하지 않고 새 공개 업로드 파라미터나 등록 API를 이번 범위에 추가하지 않는다.
+- 신규 Case는 서버가 확인한 해당 모델의 ACTIVE 양식 후보와 실제 네 파일의 대응을 검증한다. ACTIVE라는 이유나 파일명/버전 번호만으로 연결하지 않는다. 기존 createCase의 Case/4파일 성공과 template 연결 성공은 다른 사실이다. 별도 연결 실패는 이미 커밋된 Case/파일 성공을 소급 취소하지 않고 미연결 상태로 남기며 조회는 기존 정책대로 제공 불가다. 원본 업로드 API의 성공 계약을 바꾸지 않는다.
+- 현재 createCase/공통 파일 경로와 Scenario staged 등록에는 이 관계 저장이 없으며 실제 연결 호출은 후속 구현이다. 위 관리 등록안은 저장 Case 조회의 최소 연결안이며 후속 Draft/최종저장의 Case·양식 원자적 저장 경계를 재정의하지 않는다. SCENARIO를 QRY-01/02의 조회 대상으로 확대하지 않는다.
+- 연결 등록은 짧은 DB transaction에서 Case·네 파일/객체 참조와 양식 기준이 여전히 유효한지 확인해 한 번 저장한다. 같은 Case/같은 양식의 재실행은 그대로 유지한다. 다른 양식 연결이 이미 있거나 등록 중 기준이 바뀌면 자동 UPDATE/upsert로 바꾸지 않는다.
+
+#### 기존 Case와 변경 처리
+
+- 이미 연결된 Case는 그 연결을 유지한다. 새 ACTIVE 발행이나 MI Base 지정 변경 때문에 기존 Case의 양식/catalog를 다시 고르지 않는다. DEPRECATED라도 해석 정의와 제품 reader가 지원하면 기존 Case 조회에 사용할 수 있다.
+- 연결이 없는 유효한 기존 4파일 Case는 실제 네 파일과 일치한다고 검증한 발행 양식에 관계를 등록한다. 과거 파일이면 검증된 DEPRECATED 연결도 허용한다. 파일 내용 재등록/수정·새 hash는 필요 없고, 모호한 후보·정의 미완비는 미연결로 남긴다. 기존 3파일 Case에는 관계를 자동 생성하거나 OUTPUT을 보충하지 않는다.
+- QRY는 현재 Case에 저장한 연결과 네 파일/객체 기준을 읽어 두 버전을 구성한다. 연결/양식/catalog 기준이 없거나 달라진 경우, 객체 누락/판독 실패의 분류는 기존 조회 상세 §7을 유지한다. QRY-02는 기존 sourceVersion 비교를 수행하고 새 기준으로 조용히 성공시키지 않는다.
+- 이 최소안은 두 버전의 발행 주기를 공유한다. 따라서 catalog만 수정해도 새 양식 버전이 필요하고 기존 Case에 자동 소급 적용되지 않는다. 독립적인 catalog 정정 배포/기존 Case 재연결 기능은 이번 요구에 추가하지 않는다.
+
+### 3.4 혼합 저장의 최소 논리 책임 — 2026-10-16 Draft
+
+2026-10-16 사용자 **공통 BE 추천 묶음 채택**으로 아래 책임 분해·안정 행ID/성공 revision·진행 요청1건/재전송·접수/완료 분리를 설계 기준으로 삼는다. 문서 전체는 Draft다. 이번 후속에서 공통 저장 분리·보관/복원과 최종저장/실패 복구 계약을 구체화했고, DBA 적용·제품 검증 및 표별 정책은 분리한 후속이다. 개념 하나가 물리 table 하나라는 뜻은 아니다. API 필드·endpoint·예시는 [공통 편집 API 초안](../../feature-specs/mi-fundamental-model-input-draft-editing-api-proposal.md), 공통 물리 정의·DBA 확인은 [DDL §6.3·§13](mi-model-input-template-catalog-erd-ddl-draft.md)을 따른다. §1A.4 Q2/Q8/Q9 중 채택된 공통 방향과 이번에 마친 공통 저장/복구 계약과 남은 표별 정책·제품 검증을 구분한다.
+
+| 논리 책임 | 최소 보유 정보·관계 | 소유 경계 |
+| --- | --- | --- |
+| 발행 catalog·field·정책 | 기존 양식→역할→시트→표→수정 범위 유지. 표 안의 안정 field key·타입·기존/신규 필수·CLEAR·후보/제약·FE 초기값·구조/파생/계산·보존 정의를 같은 발행 묶음에 연결 | 정책은 사용자 입력과 별도. 원본 workbook 전체 셀 전사나 임의 expression 실행 엔진을 만들지 않음 |
+| Draft | 인증된 tenant/사용자, source Case, 정확한 네 불변 파일 등록 참조와 발행 묶음, 편집 lifecycle, 현재 성공 revision, 최종 Case 참조 | 같은 tenant/사용자/source Case의 진행 Draft 한 건. 기존 파일 등록/양식 참조를 재사용하며 원본 내용 hash나 독립 catalog revision을 새로 요구하지 않음 |
+| 성공 revision | Draft에 종속한 성공 번호·직전 성공 연결, 반영한 요청과 순서 있는 변경분, 그 기준의 행 대응·승인 파생 결과 | 최초 생성은 원본 기준 revision 0. 저장 성공 때만 1 증가. 계산/보존 검증까지 성공한 변경·행 대응·파생 결과와 현재 revision을 함께 공개 |
+| 행 대응 | Draft/표에 속한 불변 surrogate ID(업무값과 무관한 ID), 원본 논리 행 또는 성공 추가 요청과의 대응, revision별 현재 위치·삭제 여부 | 원본 행 번호는 최초 대응 단서일 뿐 ID가 아님. 수정/이동에도 ID 유지, 삭제 ID 재사용 금지. 빈 슬롯은 일반 기존 행 수정으로 활성화하지 않음 |
+| 처리 요청 | Draft·CHANGE/FINALIZE 종류·요청 중복 식별·요청 기준 revision, 검증된 내용, 처리 상태·실행 시도·기한·안전한 결과/오류 | 두 종류가 같은 진행 요청 슬롯·requestId 공간을 공유. 실패 요청은 성공 변경분으로 재적용하지 않음 |
+| 최종 파일 준비 기록 | FINALIZE 요청·실행 시도·4역할별 서버 생성 저장 참조, 업로드/정리 상태와 성공 파일 참조 | 외부 업로드 전에 복구 근거를 저장. 준비 파일은 Case/다운로드에 미노출. 성공 후 기존 파일 관리로 소유 이전 |
+
+관계형 구조는 식별·소유·참조·상태·성공 revision·행 대응·유일성을 소유한다. 순서 있는 변경 payload와 승인된 파생 결과는 schema/타입/크기를 검증한 JSON으로 보관하는 방향이다. 공개 DTO를 그대로 DB JSON으로 저장하도록 강제하지 않는다. 복원은 동일 원본/발행 기준 + 성공 revision 순서의 변경/승인 파생 결과 + 행 위치 이력으로 한다. 각 성공 revision에 사용자 변경과 그때 바뀐 계산/구조·보존 검증 결과의 delta를 함께 남겨 조회 시 재계산하지 않는다. DB 저장 형식/크기는 DDL §6.3을 따른다. Draft가 존재하는 동안 고정 참조·성공 이력·요청 결과/중복 키·행 대응은 함께 보존하고 이번에는 자동 만료/삭제를 도입하지 않는다. 별도 장기 보관/폐기 정책은 후속이며 원본/발행 참조를 먼저 삭제할 수 없다. 평문 workbook 작업사본은 영속 snapshot 대안이 아니며 규칙63을 그대로 적용한다.
+
+#### 발행 정책의 완비 여부와 이미 승인한 입력
+
+표/동작별로 **완비·미완비·불허·제품 미지원**을 구분한다. 미완비 정책을 빈 규칙·`required=false`·무조건 허용으로 발행하지 않는다. 화면 표시 정책이 완비돼도 쓰기/구조/계산 정책까지 완비된 것은 아니다. 특정 동작에 필요한 정의가 없으면 그 동작을 차단하고 다른 표의 승인 정책을 복사하지 않는다. 정상적으로 규칙 없음이 확인된 경우만 빈 규칙이다.
+
+이번 대표 예시에 필요한 기존 사용자 승인을 다음과 같이 연결한다. 새로운 업무 선택이 아니며 전체 정책 완비/제품 검증의 승인이 아니다.
+
+- **BCPrices T-083 신규 행:** B Year/C HH/D East Asia Spot/E TTF 모두 필수. 세 가격은 FE에서 빈칸으로 시작하며 사용자가 숫자0 이상을 입력한다. Year는 4자리 정수 직접 입력이며 별도 업무 기간 제한은 두지 않는다. 같은 Case/Draft 표 안의 동일 연도 신규 추가를 금지한다. 중복 기준은 행ID/DB PK가 아니다. 2026-10-16 채택한 기존 연도/가격 수정과 연도 중복 적용 범위는 §6.1을 따르며 기존 데이터 일괄 정리는 하지 않는다. §6.1의 지정 F-O-04 복사/보존과 일반 신규 행 정책은 구분한다.
+- **Sector T-018:** D:G·I 다섯 입력 필수, H는 사용자 입력 제외. 신규 I는 FE가 숫자0을 표시하고 사용자가 유지/수정 저장한다. 서버는 누락/빈값을 임의0으로 보정하지 않는다. delta에서 생략한 기존 값은 유지하지만 신규 행 필수값 누락은 저장 불가다. H/J 파생 처리·I 음수 금지는 2026-10-16 사용자 채택한 규칙45를 따른다. 국가/하위부문 필수 자유입력·연월 범위·신규/기존 수정 중복 금지도 같은 날 최종 채택한 규칙45를 따른다. 수요량 비우기 금지·행 삭제로 해제도 규칙45에서 채택했다. 명칭 인식 제약 확인·일반 구조 검증은 §11의 별도 후속이다.
+- **Monthly T-019:** 국가/연도/월/백만톤 LNG 수요량 필수·국가 자유입력, 연월 범위·0 이상/FE0·중복 금지·P 비우기/R=Q와 비우기 금지/행 삭제로 해제를 2026-10-16 두 묶음으로 채택했다. 업무 범위는 규칙45를 따른다.
+- 승인 근거는 stable note의 2026-10-15 BCPrices/Sector 선택과 2026-10-16 공통 BE 묶음·Sector H/J/음수 및 수요/가격 두 묶음 채택 결과다. LNG/PNG의 이미 승인된 입력을 재질문하거나 해당 표의 규칙을 다른 표로 확대하지 않는다.
+
 ## 4. Table design draft
 
 물리 테이블·컬럼·타입·키·인덱스·nullability와 좌표 저장 타입은
 `docs/design-docs/gas/mi-model-input-template-catalog-erd-ddl-draft.md` §5~7이 소유한다.
 기존 6개 catalog table 초안과 필드·선택 후보·dependency·화면 갱신 규칙·Draft의 후속 저장 설계를 구분한다.
-이 문서는 §3의 논리 책임만 정리하며 물리명·컬럼·JSON/row 단위를 선점하지 않는다.
+이 문서는 §3의 논리 책임과 채택한 관계형/JSON 경계를 소유하며 실제 물리명·컬럼·table별 저장 분리는 DDL draft에서 구체화한다.
 
 ## 5. Relationship design
 
@@ -310,7 +396,74 @@ ModelInputDraft 0..1 ── 1 finalized ScenarioCase
 - Finalized Draft는 새 독립실행 case 하나를 가리키며 재시도 시 같은 case를 반환한다.
 - 관계도의 `ScenarioCase 1:N ModelInputDraft`는 사용자별·과거 Draft를 포함한 관계다. 동일 사용자·source Case당 진행 중 Draft는 1건이며 재개한다(규칙 60). 동시성/저장 보장 수단은 Q8b에서 검토한다.
 - source/양식 고정은 참조할 내용을 바꾸지 않는다는 규칙이다. 원본을 별도 파일로 중복 보관할지, 기존 immutable 파일을 참조할지는 Q9의 저장·수명 검토에 남긴다.
-- Draft의 `DRAFT/FINALIZED/DISCARDED` 편집 lifecycle에서 `FINALIZED`는 네 파일과 새 Case 연결의 완료를 뜻하며 Run 성공을 뜻하지 않는다. 실패한 임시/최종저장 요청은 규칙 15·61에 따라 취소하며 직전 성공 Draft 상태를 유지한다. 실패 응답/조회 표현과 `DISCARDED` 허용 시점·보존은 Q8의 검토 대상이며 추가 상태·전이를 확정하지 않는다.
+- Draft의 `DRAFT/FINALIZED/DISCARDED` 편집 lifecycle에서 `FINALIZED`는 네 파일과 새 Case 연결의 완료를 뜻하며 Run 성공을 뜻하지 않는다. 실패한 임시/최종저장 요청은 규칙 15·61에 따라 취소하며 직전 성공 Draft 상태를 유지한다. 실패 응답/조회 표현과 별도 처리 상태는 §5.1/편집 API의 채택 기준을 따른다. `DISCARDED` 허용 시점·보존은 Q8 후속이며 편집 lifecycle의 추가 상태·전이를 만들지 않는다.
+
+### 5.1 Draft 성공 revision·행·처리 요청 관계 — 사용자 채택 공통 설계
+
+```text
+발행 묶음 1 ── N 표/field/정책 정의
+source Case 1 ── N 사용자 Draft ── 1 고정 4파일/발행 묶음 참조
+Draft 1 ── N 성공 revision (0은 원본 기준, 이후 번호는 성공 때만 증가)
+Draft 1 ── N 안정 행 identity ── N revision별 위치/삭제 대응
+Draft 1 ── N 처리 요청 ── 0..1 성공 revision
+성공 revision 1 ── 1 검증된 순서 있는 변경분 + 그 기준의 파생 결과
+Draft 1 ── N FINALIZE 요청 ── N 시도별 4역할 준비 기록
+Draft 1 ── 0..1 최종 Case (성공 때만 연결)
+```
+
+- 신규 Draft의 원본 논리 행에 서버 ID를 한 번 배정하고 대응을 보존한다. 전체 셀 복사가 아니라 표/논리 행 대응이다. 생성 중 실패하면 부분 Draft를 공개하지 않는다. 실제 데이터 행만 배정하고 빈 슬롯/표 밖/숨김 보존 영역은 제외한다. Draft·4원본 참조·revision0·원본 행 대응을 하나의 짧은 DB transaction으로 생성하며 부분 생성은 rollback한다. 물리 키는 DDL §6.3을 따른다. 같은 Draft/표/원본 논리 행은 반복 조회·페이지 이동에도 같은 ID다. 다른 Draft·표·최종 Case에서 같은 ID 사용을 보장하지 않는다.
+- 새 행은 요청 안의 임시키와 성공 시 발급된 행ID를 대응시킨다. 성공 전에는 영속 행으로 공개하지 않으며 실패한 임시키는 성공 변경분으로 남기지 않는다. 요청 중복 식별과 업무상 같은 값의 행 허용은 독립적이다.
+- 편집 lifecycle `DRAFT/FINALIZED/DISCARDED`와 처리 상태 `QUEUED/RUNNING/SUCCEEDED/FAILED`를 분리한다. 뒤의 네 상태 이름은 2026-10-16 공통 BE 추천 묶음에서 채택했다. `QUEUED → RUNNING → SUCCEEDED/FAILED`, 대기 중 timeout은 `QUEUED → FAILED`다. 생성/재개만으로 계산하지 않고, 임시저장 성공/실패 모두 lifecycle은 DRAFT로 유지한다. 폐기 API는 후속이다. 보존은 §3.4의 자동 삭제 없음 기준을 따른다.
+- Draft당 진행 처리 요청은 한 건으로 채택했다. 접수는 중복 식별 예약과 작업 기록 저장까지이며 성공 revision 증가가 아니다. 요청은 고정 기준/현재 성공 revision에서 검증·계산하고 짧은 성공 확정 경계에서 변경분·행 대응·파생 결과와 revision을 함께 반영한다. 파일 계산 중 장시간 DB transaction을 유지하지 않는다. 동시 생성/접수/확정은 관계형 유일성·기준 대조로 보장하는 방향이다.
+- 동일 요청 식별/동일 내용의 재전송은 같은 처리 요청/결과를 돌려준다. 중복 확인을 새 revision 검사보다 먼저 하되 인증/소유권 검사는 항상 먼저 한다. 같은 식별의 다른 내용은 거부한다. 실패한 요청을 같은 식별로 재실행하지 않으며 명시적 재시도는 새 식별을 사용한다.
+- 실패/timeout은 이번 요청 전체를 취소하고 직전 성공 revision·값·행 대응·파생 결과를 유지한다. 늦게 끝난 worker가 실패 확정 뒤 성공으로 덮어쓰지 못해야 한다. 처리 결과를 알 수 없는 동안은 성공/실패를 추정하지 않고 기록된 요청을 조회한다. 구체 복구·완료 CAS(기준이 같은 경우에만 갱신)·정리는 §5.3/DDL §6.3을 따른다. 실제 동작 검증은 후속이다. 규칙64의 자원/시간·규칙63의 평문 삭제 기준은 변경하지 않는다.
+
+### 5.2 최종저장 성공 경계 — 공통 계약 완료
+
+표별 미결을 먼저 모두 결정하지 않아도 이 공통 계약은 마칠 수 있다. 새 정책이 필요한 표/동작만 열지 않으며, 승인 범위의 성공 변경을 가진 Draft와 변경 없는 revision0에도 같은 최종저장 구조를 사용한다. 기존 승인한 입력·구조/계산·원본 보존 경계를 확대하지 않는다. PriceModel/Regas의 추가 입력 추천은 **미승인·후속**이며 사용 가능 정책으로 등록하지 않는다.
+
+1. **접수:** 인증/소유권과 기존 요청 확인 후 DRAFT·현재 성공 revision·원본/발행 기준·진행 요청 없음을 검사한다. FINALIZE 요청을 durable하게(DB에 재시작 후에도 남게) 기록하고 진행 슬롯을 같은 transaction에서 잡는다. 대상 revision과 Case 제목/설명은 접수 뒤 바뀌지 않는다. 접수는 새 Case 생성이 아니다.
+2. **생성·검증:** 격리 worker가 고정 원본 + 대상까지의 전체 성공 변경을 순서대로 적용해 4역할을 다시 생성하고 계산·구조·보존을 모두 검증한다. 기존 임시 workbook/조회 snapshot을 최종 파일로 승격하지 않는다. 실패 요청의 입력은 제외한다.
+3. **업로드 준비:** 시도별 4역할의 전용 private object 참조를 먼저 기록한 뒤 업로드한다. 기존 암복호화 경계를 재사용한다. 준비 object는 `tcm_filel`/Case에 아직 연결하지 않고 공개 다운로드/Case 목록/Run에서 접근할 수 없게 한다. DB와 object storage는 하나의 transaction이 아니다.
+4. **한 번의 DB 확정:** 4개 업로드와 저장 참조·정상 읽기 가능 확인이 모두 끝나면, 같은 master transaction에서 새 INDEPENDENT/PENDING Case, 기존 파일 metadata4건/관계, **Draft에 고정한** 발행 묶음의 Case-template 관계, Draft의 FINALIZED/최종 Case, FINALIZE SUCCEEDED/결과와 진행 슬롯 해제를 함께 commit한다. 접수한 소유자·tenant·원본 접근/고정 기준·성공 revision·작업/시도 토큰·기한을 다시 대조한다. 하나라도 실패하면 모두 rollback한다. 최신 ACTIVE 발행으로 자동 교체하지 않는다.
+5. **공개:** commit 뒤에만 Case ID/4파일·완료 상태를 공개한다. 최종저장으로 성공 revision을 증가시키지 않는다. Run은 생성/실행하지 않으며 이후 별도 요청으로 시작한다. 일반 원본 업로드 후 별도 양식 등록(§3.3)의 경계를 이 확정 단계에 복사하지 않는다.
+
+기존 `FundamentalModelCaseServiceImpl.createCase`는 transaction 중 업로드하고 예외 때 파일 삭제를 시도한다. 이 코드의 성공 경계만으로 재시작/응답 유실/정리 복구를 보장하지 못한다. 최종저장 구현은 기존 Case·파일 형식/검증을 재사용하되 위 준비/확정 경계를 만족해야 하며, 기존 메서드를 그대로 호출하면 계약이 충족된다고 보지 않는다.
+
+### 5.3 실패·응답 유실·재시작 복구
+
+| 상황 | 기록/복구와 사용자에게 보이는 결과 |
+| --- | --- |
+| 접수 응답 유실 | 같은 requestId/동일 의미의 body 재송신으로 같은 operation 확인. 접수 transaction이 없으면 한 번만 새 접수. 통신 오류만으로 실패/새 ID 생성 금지 |
+| 계산/검증 실패 또는 업로드 일부만 성공 | operation FAILED·진행 슬롯 해제만 확정. Draft의 직전 성공 revision/변경/행/파생값 유지, 최종 Case 없음. 준비 object는 해당 시도의 기록을 기준으로 정리. 다른 새 요청의 object/원본은 삭제하지 않음 |
+| Case·파일/양식·Draft 연결 중 DB rollback | 부분 Case/파일 row/FINALIZED를 남기지 않음. 실패 확정 뒤 준비 object 정리. 정리가 지연돼도 저장 성공으로 바꾸지 않음 |
+| DB commit 응답 유실 | 성공/실패를 추정하거나 object를 먼저 삭제하지 않음. 쓰기 DB의 같은 Draft/operation row 잠금 아래 재확인. 캐시/읽기 복제본의 미발견을 rollback 증거로 사용하지 않음. commit됐으면 같은 최종 Case/성공 결과 반환. rollback 확인 후에만 FAILED/정리. DB 접근 불가 동안은 결과 불명이며 FE는 같은 작업 조회를 계속하거나 나중에 재개 |
+| QUEUED에서 재시작 | DB 기록을 다시 읽어 같은 operation을 기한 안에서 claim. 새 operation/Case를 만들지 않음. 기한 경과는 TIMEOUT 실패 |
+| RUNNING에서 worker 종료/재시작 | 성공 commit 확인을 먼저 수행. 성공이 없고 기존 worker 종료가 확인되면 실패 확정(기한 내 PERSISTENCE_FAILED, 기한 초과 TIMEOUT), 준비 object와 평문을 정리. RUNNING 작업을 자동 재실행하지 않음. 사용자는 현재 Draft 확인 후 새 requestId로 재시도 |
+| timeout/늦은 worker | 접수 기준 전체120초 상한(대기열 포함)으로 종료 판정. RUNNING·해당 시도 토큰·진행 슬롯·revision·기한을 조건으로만 성공 확정. 실패/timeout이 먼저 확정됐으면 늦은 성공 commit 거부. DB 확인 불가를 임의 성공/실패로 기록하지 않으며 재접속 때 실제 commit을 기준으로 복구 |
+| 실패 뒤 재시도 | 같은 requestId는 저장된 FAILED를 반환하며 실행하지 않음. 새 ID로 직전 성공 Draft를 다시 최종저장. 기존 시도와 별도 object 참조를 사용 |
+| 성공 뒤 재전송·재클릭 | 같은 요청은 기존 성공 operation과 같은 finalizedCaseId. 새 ID여도 같은 최종 revision/제목·설명이면 기존 성공 operation/Case 반환. 다른 최종 내용은 편집 종료 충돌. 어떤 경우도 같은 Draft에서 두 번째 Case 생성 금지 |
+
+요청 claim은 상태 조건 갱신과 서버 시도 토큰으로 한 worker만 얻는다. 실패 확정·성공 commit·복구 판정은 같은 Draft/operation row를 짧게 잠가 직렬화한다. 파일 계산·업로드 동안 DB lock을 잡지 않는다. 종료 상태는 불변이며 실패 기록을 다시 RUNNING으로 돌리지 않는다.
+
+정리 기록은 실패 작업과 분리해 완료 때까지 남긴다. 업로드 응답 유실/늦은 PUT 가능성은 전용 참조를 재확인하고 이전 worker/전송 종료까지 추적한다. 삭제 호출1회나 object 미발견1회로 정리 완료를 추정하지 않는다. 이미 성공 Case에 연결된 object는 정리 대상에서 제외한다. 평문은 규칙63의 작업 종료 후1분·복구 후5분/파일·열린 핸들 잔여0을 유지한다. 준비 object의 정리 실패는 별도 운영 재처리 대상이며 로컬 평문 작업사본 보존의 근거가 아니다. 준비 object가 항상 DRM 암호화됐다고 가정하지 않는다. 기존 업로드는 대상 파일을 복호화해 저장하고 사용자 다운로드에서 조건부 암호화하므로 기존 정책/권한 경계를 그대로 적용한다. 저장소 자체 암호화 여부는 코드만으로 확인하지 못했다.
+
+### 5.4 기존 코드 연결 경계 — 2026-10-16 BE 필수 확인 결과
+
+**2026-10-16 사용자 범위 확인:** 이 기능은 한 회사를 위한 기능이며 타회사가 업로드한 Case를 업무 대상으로 두지 않는다. source의 “공유 조회/업로더 본인 제한 없음”은 **같은 회사 안의 사용자 간 조회**를 뜻한다. 공통 플랫폼의 다중 회사 지원을 근거로 이 기능의 타회사 원본 허용/bucket 확대를 구현하지 않는다. Draft의 회사+생성 사용자 개인 소유 경계는 유지한다.
+
+코드/문서 기준의 연결 검토를 완료했다. 아래는 공통 설계를 구현할 때 재사용할 책임과 채워야 할 차이다. **구현 완료/동작 Pass가 아니며 추가 사용자 업무 결정은 없다.** 실제 DB 확인은 DDL §13의 DBA-01~05, 코드상 타입/길이·JSON 경계는 DDL §6.4를 따른다. 표별 정책은 후속이고 PriceModel/Regas 추가 추천은 미승인이다.
+
+| 공통 연결 | 확인한 코드 근거 | 채택할 연결·남은 구현 경계 |
+| --- | --- | --- |
+| Case·원본4파일 | [Case service](../../../src/main/java/com/sk/domain/mi/service/fundamentalmodel/FundamentalModelCaseServiceImpl.java)의 findReadableActiveCase/validateFiles/uploadCaseFiles와 [4역할 projector](../../../src/main/java/com/sk/domain/mi/service/nextgen/query/ModelExecutionInputFilesProjector.java). SCNRCASE 관계의 active 파일을 읽고 역할 누락/중복/잘못된 파일명을 구분한다. | INDEPENDENT/MI_BASE의 기존 shared-read 경계에서 source를 확인하고 정확한 fileNo4개를 고정한다. source 업로더 소유권을 새로 요구하지 않는다. catalog/Case-template·sourceVersion/개인 Draft의 연결은 아직 코드에 없으므로 새 저장 경계에 구현해야 한다. 파라미터 제안용 current MI Base/플랫폼 fallback을 Draft source 선택으로 가져오지 않음 |
+| 권한·회사/사용자·감사 | [AuthorizationService](../../../src/main/java/com/sk/domain/shared/service/permissions/AuthorizationService.java)의 getUserNo/getCompanyNoWithPriority/getCompanyCdWithPriority. 회사 header는 제3자 접근이 허용된 ADMIN만 사용하고 다른 역할은 token 회사 기준이다. [AuditorAwareCustomizer](../../../src/main/java/com/sk/common/config/AuditorAwareCustomizer.java)는 인증 context가 없으면 SYSTEM으로 기록한다. | 접수 시 확인한 회사/소유자/actor·역할을 영속 기록에서 복원한다. source 공유읽기와 개인 Draft의 회사+소유자 검사를 분리한다. Case 자체에는 회사 FK가 없으므로 Case 조회 하나가 Draft tenant 검사를 대신하지 않는다. 재시작 worker가 SYSTEM으로 actor를 조용히 바꾸지 않게 원래 actor를 명시하고 현재 허용 범위 확인·context 정리 |
+| DB 성공 단위 | [JpaConfig](../../../src/main/java/com/sk/common/config/database/JpaConfig.java)는 master entity/repository·기본 transaction manager를 같은 고정 masterDataSource에 연결. [MyBatisConfig](../../../src/main/java/com/sk/common/config/database/MyBatisConfig.java)는 별도 tenantDataSource/transaction manager. 기존 Case repository에는 짧은 row 잠금, Run repository에는 상태 조건 갱신 패턴이 있다. | 공통 저장7개·기존 Case/파일/양식은 master JPA 경계에서 접수/성공/실패 transaction을 나눈다. tenant MyBatis 쓰기를 섞어 한 transaction이라고 하지 않음. 기존 lock/조건 갱신 패턴만 재사용하고 Run 상태/테이블을 Draft 작업 이력으로 재사용하지 않음 |
+| 파일 업로드·최종 확정 | [FileService](../../../src/main/java/com/sk/domain/shared/service/FileService.java)의 uploadStagedFileToRelationshipPath는 NOT_SUPPORTED에서 업로드 후 tcm_filel에 TEMP/0 row를 저장하고 attachStagedFilesToRelationship은 기존 transaction 안에서 최종 관계만 변경한다. Scenario registrar/stager가 이 경계를 사용한다. | staged 경계는 비교 가능한 패턴이다. 그러나 이번 §5.2 계약은 최종 확정 전에 tcm_filel을 만들지 않으므로 **기존 staged API를 그대로 호출하지 않는다**. 서버 key 결정→준비 기록 commit→비공개 업로드는 기존 storage/암복호화 책임을 재사용하고 metadata 생성은 Case/고정양식/Draft 성공과 함께 확정하도록 연결한다. 새 범용 파일 계층/별도 클래스 생성을 요구하지 않음 |
+| 업로드 실패·commit 불명 | FileService.upload는 PUT 응답 뒤 key를 보상 변수에 넣고 metadata를 저장한다. registerUploadedObjectRollbackCompensation은 afterCompletion 상태가 COMMITTED가 아니면 삭제하므로 UNKNOWN도 삭제 분기에 들어간다. [ObjectStorageService](../../../src/main/java/com/sk/domain/shared/service/ObjectStorageService.java)는 업로드/읽기/존재 확인 후 삭제 primitive를 제공한다. | PUT 전 전용 key를 영속화해야 응답 유실을 복구할 수 있다. 최종저장에는 현재 rollback hook을 그대로 등록하지 않는다. 확실한 rollback만 정리하고 UNKNOWN은 쓰기 DB에서 실제 성공을 확인할 때까지 정리를 보류한다. 삭제 호출/일시 미발견만으로 CLEANED를 확정하지 않음 |
+| 비동기·재시작·정리 | [AsyncConfig](../../../src/main/java/com/sk/common/config/AsyncConfig.java)는 web JVM의 메모리 executor(5/10 threads, queue1000)와 SecurityContext/MDC 전파다. ScenarioModelJobDispatcher의 afterCommit·실패 조건 갱신, Run timeout/Job reconciler는 모델 Run 전용이다. Scenario staged cleanup은 TEMP/0·SCNRCASE와 기본24시간/1시간 주기를 사용한다. | 기존 @Async/모델 Job을 규칙64의 격리 편집 worker·durable QUEUED/RUNNING 복구로 간주하지 않는다. 공통 작업 기록의 claim/기한/시도·성공 여부 확인에 기반해 편집 worker를 연결한다. 기존 Scenario staged TTL은 Draft 전용 준비 기록을 정리하지 못하며 로컬 평문1분/복구5분·핸들 잔여0도 보장하지 않는다. 원래 기록/상태에 기반한 별도 정리 경계를 구현하되 자동 재실행/자동 purge 정책은 추가하지 않음 |
+
+파일 보호의 재사용 범위: FileService.upload는 FileEncryptionPolicy 대상이면 decrypt 후 저장하고 downloadFiles는 조건에 따라 encrypt한다. ObjectStorageService.uploadFile의 isPublic=false 분기는 ACL 공개 설정/공개 URL 반환을 하지 않는다. 이 사실만으로 실제 bucket ACL/저장 암호화가 검증됐다고 하지 않으며, 고객사/역할·비공개/권한 검사는 새 경로에서도 유지한다. 기존 암복호화 재사용 결정을 다시 승인받거나 원격 DRM 재시험을 공통 착수 조건으로 추가하지 않는다.
 
 ## 6. Business rules
 
@@ -377,6 +530,18 @@ ModelInputDraft 0..1 ── 1 finalized ScenarioCase
     - 두 표의 승인 입력과 행 추가는 write allowlist·Draft 값/구조 변경·최종 XLSM 반영 대상이다. 같은 시트의 미표시 계산표 T-177~T-182는 규칙 57의 A 원본 복제를 유지하며 U열도 화면 projection에서 제외한다.
     - 최종 XLSM은 규칙 30에 따라 원본 workbook 전체를 먼저 복제한 뒤 두 표의 승인 변경 및 필요한 구조 metadata만 반영한다. 그 밖 셀·수식·cached value·style·관련 원본 관계/package는 보존한다. 기존 외부 참조 수식·저장값·externalLink 보존은 규칙 33·54를 따르며, 입력/행 추가 허용만으로 재계산·외부 링크 갱신을 승인하지 않는다. 신규 행 필드 검증·서식/validation·범위와 참조 갱신의 상세 write 계약 및 실파일 검증은 별도 잔여다.
 45. DEMAND `DemandOutputOverwrite`는 표 2개(`Demand Model Manual Overwrite Sector Input` `D6:K507`, `Demand Model Manual Overwrite Monthly Input` `M6:S507`)로 구성되며 최종 분류는 둘 다 C(구조 변경)이다. 노랑 입력 영역(`D8:I507`, `M8:Q507`)에는 수식이 없다. **2026-10-13 사용자 최종 결정: 각 논리 표의 마지막 데이터 행 아래 행 추가와 행 삭제만 지원한다. 중간 행 삽입은 현재 범위에서 제외하며 열 추가는 불가하다.** 이 결정은 2026-10-01의 중간 위치 포함 행 추가 승인과 앞선 추가 위치 재검토를 대체한다.
+    - **2026-10-16 사용자 최종 확정 — Sector 국가/하위부문 자유입력:** D 국가와 G 하위부문은 **필수 자유입력 문자열**로 받는다. 신규 필수값 누락과 명시적으로 제출한 빈 문자열·공백만 있는 값은 허용하지 않는다. 입력 문자열을 그대로 사용하며 모델 기준 목록 포함 여부로 제한하거나 임의 명칭 보정·별칭 통합을 하지 않는다. 앞선 목록 선택 정책과 국가/하위부문 목록의 발행·snapshot·seed 연결안은 철회한다. 이 입력 방식에 관한 후속은 **모델의 명칭 인식 제약 확인**뿐이며 목록 구축/발행을 선행조건으로 두지 않는다. 구체 확인 범위는 §11을 따른다.
+    - **2026-10-16 사용자 확정 — Sector 연월 범위:** E 연도는 **1000~9999의4자리 정수**를 직접 입력하고 F 월은 **1~12의 정수 중 선택**한다. 현재 연도/원본에 등장한 연도 기준의 추가 업무 기간 제한은 두지 않는다. 소수 연도/월·범위 밖 값은 거부하며 숫자 문자열을 임의 보정하지 않는다. 이 입력 범위는 실제 모델의 모든 연도 계산/반영을 보장하지 않으며 소비/적용 기간의 제품 검증과 구별한다.
+    - **2026-10-16 사용자 확정 — Sector 신규/기존 수정 중복 금지:** 같은 Draft의 T-018에서 **국가·연도·월·하위부문** 조합이 같은 활성 행을 중복 저장할 수 없다. 신규 추가와 기존 행 수정 모두 적용하며, 기존 행의 I만 수정하는 경우에도 그 행의 최종 조합을 다른 활성 행과 비교한다. 자기 rowId는 제외하므로 다른 중복 행이 없는 동일 행의 수요량 수정은 허용한다. I값이 같거나 다르다는 이유로 별도 행 중복을 허용하지 않는다. 다른 Draft/표의 같은 조합은 이 범위 밖이며,4필드 조합은 중복 기준이지 안정 rowId를 대신하는 ID가 아니다.
+    - 중복 검사는 신규/수정 대상 행의 최종 키를 같은 Draft/Sector의 전체 활성 행(고정 원본·성공 변경·이번 요청의 최종 상태)에 대조한다. 삭제된 행은 제외하고 여러 명령의 순서/최종 상태와 동일 requestId 재전송은 공통 계약을 따른다. 기존 행 수정으로 충돌이 생기거나 수정 대상이 기존 다른 중복 행과 충돌하면 요청 전체를 거부한다. 기존 값을 자동 덮어쓰기·합산하거나 기존 중복을 소급 삭제/정리하지 않으며, 손대지 않은 행의 값을 임의 변경하지 않는다.
+    - **2026-10-16 사용자 확정 — 일반 Sector I 저장·H/J 파생 처리:** T-018의 신규 행이 유효한 I와 함께 생성되거나 기존 행의 I를 명시적으로 SET해 저장할 때, **그 행의 H를 실제 빈 셀로 비우고 J에 I의 실제 숫자값을 그대로 기록**한다. 명시적 SET으로 같은 I값을 유지해 저장한 경우도 포함한다. H는 숫자0/빈 문자열로 바꾸지 않고 셀·서식·행은 유지한다. J에 새 수식을 만들거나 표시 반올림값·환산값을 기록하지 않는다. H/J는 BE 파생 처리이며 사용자 직접 입력으로 열지 않는다.
+    - **2026-10-16 사용자 확정 — Sector I 음수 금지:** 신규/기존 I 입력은 **0 이상 숫자**만 허용한다. FE의 신규 I 초기 숫자0을 그대로 저장하면 H는 실제 빈칸, I/J는 숫자0이다. 신규 D:G·I 다섯 필드 필수, H 입력 제외와 서버 누락/빈값 임의0 보정 금지는 유지한다. 신규 필수 I 누락/빈값 또는 제출 I 음수는 저장 실패이며 H/J만 부분 반영하지 않는다. 실패 시 규칙15의 직전 성공 Draft를 보존한다. 수요량 비우기/해제는 아래 두 묶음 채택 정책을 따른다.
+    - 적용은 I를 저장하는 해당 행에 한정한다. delta에서 기존 I가 생략된 행이나 다른 필드만 수정한 행의 H/J를 일괄 보정하지 않고, 기존 저장값 정리·Monthly P/Q/R·K/S 재계산/Helper 생성으로 확대하지 않는다. I를 저장하는 요청의 값·구조·H/J 파생 결과는 같은 성공 revision에 함께 반영해야 한다. 실제 파일·계산/보존·모델 소비의 구현/검증은 후속이며 원본 파일을 직접 수정하지 않는다.
+    - **2026-10-16 두 묶음 채택 — Sector·Monthly 수요 비우기와 해제:** Sector I와 Monthly Q 수요량의 기존/신규 명시적 비우기(CLEAR)는 금지한다. 숫자0은 유효한 수요0이며 미입력이나 해제를 뜻하지 않는다. 해당 수동 입력을 없애려면 기존 허용 범위의 논리 행 삭제를 사용한다. 비우기/누락 요청을 숫자0으로 바꾸거나 파생값만 지워 성공 처리하지 않는다. 기존 delta에서 수요량 생략은 값 유지이며 실제 빈칸을 포함한 미변경 원본을 일괄 보정하지 않는다.
+    - **2026-10-16 두 묶음 채택 — Monthly 입력:** T-019는 M 국가/N 연도/O 월/Q 백만톤 LNG 수요량의 네 필드가 신규 행 필수다. 국가는 필수 자유입력 문자열이며 목록/seed 포함 여부로 제한하지 않는다. 신규 누락/제출한 빈 문자열·공백만 있는 국가, 명칭 자동 보정·별칭 통합은 Sector와 같이 처리한다. 연도는1000~9999의4자리 정수, 월은1~12 정수이며 별도 현재 연도/원본 기간 제한은 두지 않는다. 실제 모델의 모든 기간/명칭 반영 보장은 아니다. Q는0 이상 숫자이며 FE가 신규 Q를 숫자0으로 표시해 유지/수정 저장할 수 있다. 서버가 누락/빈값을 임의0으로 보정하지 않는다.
+    - **2026-10-16 두 묶음 채택 — Monthly 파생값:** 사용자 수요 입력은 Q 한 단위이며 P BCM은 직접 입력에서 제외한다. 신규 행의 유효 Q 저장 또는 기존 Q의 명시적 SET(동일 값 포함) 시 **해당 행만 P를 실제 빈 셀로 비우고 R에 Q의 실제 숫자값을 그대로 기록**한다. 숫자0/빈 문자열로 P를 대체하지 않고 R에 환산값·표시 반올림값·새 수식을 만들지 않는다. 기존 Q를 생략한 행의 P/R은 일괄 보정하지 않는다. M/N/O/Q 사용자 값·P/R 파생 결과는 같은 성공 revision에 확정하며 오류 시 요청 전체 취소/직전 성공 Draft 보존을 따른다. R/S 미표시와 S Helper 원본 보존·신규 생성 제외는 유지한다.
+    - **2026-10-16 두 묶음 채택 — Monthly 중복:** 같은 Draft/Monthly의 국가·연도·월 조합 중복을 신규 추가와 기존 행 수정 모두 금지한다. Q만 수정한 경우도 대상 행의 최종 조합을 다른 활성 행과 대조하고 자기 rowId·최종 삭제 행은 제외한다. 원본+성공 변경+이번 요청의 최종 활성 상태를 비교하며 다른 Draft/표는 범위 밖이다. 수요량의 같음/다름과 무관하며 자동 덮어쓰기/합산·기존 중복 소급 정리는 하지 않는다. 업무 조합은 안정 rowId/DB PK를 대신하지 않는다.
+    - 아래 **지정 F-D-05-APPEND/DELETE 검증 사례는 해당 원본/지정값·보존 기대값을 그대로 유지**한다. 새 일반 정책 채택으로 과거 fixture/판정·결과 파일을 소급 변경하거나 재계산하지 않는다. 일반 정책은 버전별 정의와 새 write/STRUCT 검증에 연결한다. 발행 정책 연결은 규칙3/§3.3을 따르며 이미 발행한 정의나 기존 Case의 고정 양식 연결을 직접 바꾸지 않는다.
     - **F-D-05 추가/삭제 검증 경계:** 마지막 행 추가와 행 삭제는 독립 사례로 검증한다. 중간 행 삽입은 나중에 실제 요청이 들어오면 별도 범위/정책·구현/검증을 검토하며 현재 미결정/필수 구현 목록으로 남기지 않는다. 실제 추가 대상 표·행/신규 값·필수값, 삭제 대상/범위·삭제 후 데이터 이동 및 K/S·옆 표의 좌표/참조/저장값 처리와 metadata 기대값은 후속 write/검증 명세에서 확정한다. worksheet 전체 행 추가/삭제를 자동 허용하지 않는다.
     - **2026-10-15 F-D-05-APPEND 사용자 확정 — Sector508·추가 계산 제외:** 같은 정규화 DEMAND의 부문별 표(T-018)만508행까지 논리 확장한다. `D508:I508`은 원본 `D19:I19`의 값·타입·실제 빈칸을 그대로 복사하며, 앞서 설명한 `D508:K508` 서식/신규 빈 J508/K508·사용 범위 확장만 반영한다. 기존 `K8:K507`·`S8:S507` 수식/저장값과 J/R·Monthly·나머지 원본은 보존하고 신규 Helper 수식/수요 환산·추가 계산은 하지 않는다. 최종 읽기 전용 Excel 재개방은 재계산·링크 갱신·매크로 실행 없이 확인한다. 기존 빈20슬롯 활성화·worksheet 전체 행 삽입·월별 표 확장이나 일반 필수값/기본값 정책으로 확대하지 않는다. 실제 구조/보존/native 상태는 [compatibility F-D-05-APPEND 후속](../../references/mi-model-input-sheet-calculation-compatibility.md)을 따른다.
     - **2026-10-15 F-D-05-DELETE 사용자 확정 — 원본 Sector19 삭제·K 참조/저장값 동반 이동:** 같은 정규화 DEMAND의 부문별 원본 `D19:K19`(China/2026년12월/Losses)를 삭제하고 `D20:K507`을 `D19:K506`으로 이동한다. J 값과 K 수식/저장값은 해당 원본 기록과 함께 옮기며 K 수식의 참조·공유 범위·계산 순서 목록을 새 위치에 맞춘다. 이동 밖에 남은 공유 master의 관련 범위 속성도 조정한다. `D507:K507`은 기존 서식의 실제 빈 슬롯으로 두고 추가 계산은 하지 않는다. 이 구조 변경에 필요한 삭제/좌표/참조 변화는 아래 K 원본 보존의 지정 사례 예외이며 나머지 저장값·타입·서식과 S/옆 Monthly·헤더·다른 시트/A·물리 행/열/사용 범위는 원본 보존한다. 재계산·링크 갱신·매크로 실행 없이 읽기 전용 Excel 재개방을 확인한다. APPEND 결과를 입력으로 쓰거나 worksheet 전체 행 삭제·일반 K/S 계산 승인으로 확대하지 않는다. 실제 검증 상태는 [compatibility F-D-05-DELETE 후속](../../references/mi-model-input-sheet-calculation-compatibility.md)을 따른다.
@@ -408,6 +573,7 @@ ModelInputDraft 0..1 ── 1 finalized ScenarioCase
     - 자동 추가는 두 표의 마지막 설비 행을 연결해 생성하며 기존 국가별 합계 블록을 추가 행 수만큼 아래로 이동하고 SUMIFS의 고정 끝행을 확장하는 기존 연결 규칙을 따른다. 실제 신규 설비/필수값·식별 대응·자동 입력/수식·서식/validation·집계/names/Table/metadata 변화와 동일 조건 Excel 정답은 F-S-04-ROW 실행 명세에서 확정한다. 한 시트만 변경한 것으로 연결 추가 성공을 판정하지 않는다.
     - **2026-10-15 F-S-04-ROW 지정 검증 사용자 승인:** 독립 정규화 source의 `BCRegasification`380행에 원본8행 B:F 식별값·G:Q 연간 용량을 값으로 복사하고 E380만 `검증용 신규 설비`로 바꾼다. 연결 `RegasAdjustment`383행의 H:AE 과거24개월은 숫자0으로 지정한다. 기존 A380 Helper 수식을 유지하며 A380/R380, 연결 B383:G383·AF383:DK383·DM383:DV383의102셀과 국가 블록1행 이동/끝행383 확장 후 H388:DK445의6,264셀, **총6,366셀만** 동일 조건 Excel 정답 확보·POI 계산/저장·비교한다. 기존 다른 설비의 수식·저장값/국가 목록58개·기간은 보존한다. 최종 재개방은 읽기 전용·재계산/링크 갱신/매크로 실행/저장 없이 확인한다. 이 지정 fixture의0 입력과 계산 범위를 일반 기본값/전체 재계산 정책이나 검증 완료로 확대하지 않는다.
     - 행 삭제는 F-S-04-DELETE로 추가와 독립 검증한다. **2026-10-13 사용자 후속 확인:** `BCRegasification`에서 설비 행을 삭제하면 **같은 설비의 `RegasAdjustment` 연결 행도 자동 삭제**한다. 사용자의 Regas 직접 삭제 금지는 유지하며 master 변경에 따른 자동 구조 처리와 구분한다. 실제 삭제 대상/범위·같은 설비의 행 대응·삭제 후 이동/남은 행 식별·수식/참조/집계/metadata의 기대 변경은 실행 명세에서 별도로 확정한다. 행 위치 참조 관측만으로 정한 정책이 아니라 명시적인 사용자 확인에 따른 결정이다.
+    - **2026-10-15 F-S-04-DELETE 지정 검증 사용자 승인:** 독립 정규화 source의 원본8행 `Avalon`과 연결11행을 삭제하고, 설명한 범위의371설비 기록·서식을 함께 위로 이동한다. 생존37,842수식의 참조/shared/계산 순서는 새 좌표에 맞추며 저장값·타입은 같은 원본 설비 기록을 따라 보존한다. 국가 합계 블록은1행 위로 옮기고 SUMIFS 시작11/끝381과 국가 라벨 참조를 조정한다. **H386:DK443의6,264셀만** 동일 변경 Excel 정답 확보·POI 계산/저장·비교하며 생존 설비 수식은 추가 계산하지 않는다. A380:A389 예약 Helper의 내용/저장값/서식은 보존하고 필요한 공유 범위 경계 조정은 구조 변경으로 분리한다. 최종 재개방은 읽기 전용·재계산/링크 갱신/매크로 실행/저장 없이 확인한다. 이 지정 삭제/보존·계산 범위를 일반 행 삭제 정책이나 검증 완료로 확대하지 않는다.
     - **2026-10-13 F-S-04-COLUMN 사용자 후속 결정:** `BCRegasification`의 연도 추가를 허용한다. 사용자가 지정한 동작은 **R열을 추가한 열 개수만큼 옆으로 복사하고 R열 수식을 계산**하는 것이다. 추가 연도 외 신규 수치 입력은 **빈 값을 허용하지 않고 기본값은 숫자0**이다. 기존 셀의 빈 값 전체를0으로 바꾸거나 연결 수식을 기본값0으로 덮어쓰는 정책은 아니다.
         - **2026-10-14 사용자 확인 — 최대 용량 열 이동·전체 연도 포함:** 현재 R열의 `Maximum capacity`를 추가 연도 열 수만큼 오른쪽으로 옮기고, MAX는 **기존 첫 연도 G열부터 새 연도 마지막 열까지 모두 포함**해 계산한다. 연도1열 추가 예시는 새 연도 R/최대 용량 S, `S8=MAX(G8:R8)`이며 2열 추가 예시는 새 연도 R:S/최대 용량 T, `T8=MAX(G8:S8)`다. 같은 행의 전체 연도 용량을 대상으로 하며 단순 상대참조 복사로 첫 연도가 빠지는 `MAX(H8:R8)`를 사용하지 않는다. 이동/범위 해석 대기는 해소됐으며 실제 추가 연도/개수와 연결 수식/참조의 기대 변경은 F-S-04-COLUMN 실행 명세에서 확정한다. 이 예시는 실제2036년1열 검증값 선정으로 간주하지 않는다.
         - **2026-10-14 사용자 최종 결정 — 연도 추가의 Regas 보존:** `BCRegasification` 연도 추가에서는 `RegasAdjustment`를 연결 갱신하지 않는다. Regas의 기존 셀·수식·저장값·기간·구조/관련 설정을 원본 그대로 보존하며 G열 lookup 인덱스/범위 수정, 월 수식 확장, 연간/국가 합계 이동·재계산을 하지 않는다. 이 사례의 계산은 master의 이동한 최대 용량 수식으로 제한한다. 기존 R을 가리키는 Regas 수식도 보존 대상이며 저장값 보존을 새 계산 정답으로 취급하지 않는다.
@@ -449,6 +615,10 @@ ModelInputDraft 0..1 ── 1 finalized ScenarioCase
 
 62. 2026-10-13 사용자 확인: **F-S-06 CLEAR 사례의 SUPPLY `PipelineAdjustment!H67`은 빈 입력을 허용**한다. 기존 셀의 내용만 제거하여 실제 빈 셀로 만들고 셀·서식·행은 유지한다. 0/빈 문자열 입력이나 행 삭제로 대체하지 않는다. 후속 사용자 확인: **현재 행의 H67이 실제 빈 셀이면 I67 CHECK의 `Error - enter value`가 정상 결과**다. I67 원본 수식을 유지하며 계산 결과는 해당 문자열이어야 한다. 이 CHECK 경고 문자열을 Excel 수식 오류(`#N/A` 등)와 혼동하거나 공백으로 대체하지 않는다. **F-S-06 계산 범위는 I67 CHECK와 이를 집계하는 I3이며 나머지 수식·저장값은 원본 보존**이다(후속 사용자 확인). I3가 읽는 I8:I200 중 승인 I67은 새 계산 결과를 사용하고 나머지는 원본 저장값을 기준으로 유지한다. 이는 F-S-06의 계산/보존 경계이며 다른 입력 변경·셀/표의 빈 값 허용으로 확대하지 않는다. F-O-03의 C2 빈 값 금지는 §6.1을 유지한다.
 
+63. 2026-10-15 사용자 결정 — **평문 임시 저장·삭제:** 모델 입력 파일 처리의 평문 작업사본을 통제된 임시 위치에 저장할 수 있다. 작업 종료 후 **1분 이내**, 중단으로 남은 작업사본은 서비스 복구 후 **5분 이내** 삭제한다. **실패 분석용 평문은 보관하지 않는다.** 삭제 완료는 해당 작업사본의 **파일과 열린 핸들(프로세스가 파일을 열어 둔 참조) 잔여가 모두0**인지 확인한다. 임시 위치/접근 권한은 SECURITY.md를 따른다. 원본·정식 저장 파일·기존 검증 자료의 보관 정책 변경/일괄 삭제로 확대하지 않는다. 구체 정리/복구 수단은 Q7·Q8c/INPUT-02A에서 검증한다. **같은 날 사용자 후속 결정:** 로컬 DRM 복호화 시험은 불가하고 암복호화가 이미 적용된 기능임을 확인했으므로 기존 공통 기능을 재사용하며 이번 INPUT-02A의 실제 DRM 암복호화 재검증은 제외한다. 보호 표본·DRM 시험 설정·원격 재검증 자료를 새 선행조건으로 요구하지 않고 검증 Pass로 기록하지 않는다. 로컬 worker 평문 작업사본의 위 수명·삭제 검증은 별도로 유지한다.
+
+64. 2026-10-15 사용자 승인 — **초기 실행·운영 기준:** 웹 요청 JVM과 분리한 worker **1개**, worker 전체 **2vCPU·2GiB**, **동시 작업1건**, **비동기 처리**를 적용한다. 한 작업의 역할 파일은 순차 처리하고 승인 case별 부분 계산/heap·보존 범위는 유지한다. 저장 완료는 **30초 목표**, 접수 후 대기열·파일 준비/허용 계산/저장 및 필요한 저장 확정까지 요청 전체는 **120초 상한**이다. 접수와 저장 완료를 구분하며 요청 실패 처리는 규칙15·61, 평문 종료/복구 정리는 규칙63을 따른다. 비동기 API의 구체 상태·완료/부분 실패 취소 경계는 Q8/INPUT-04에서 정의한다. 실제 자원 제한 대표 경로 재측정 후 같은 날 사용자 최종 승인으로 Q7·Delivery Plan §6A의 조건부 완료를 채택했다. 파일 처리 실측을 API 전체 저장 SLA 검증으로 확대하지 않으며 제품 구현·API 전체 저장 응답은 INPUT-07~10 후속에서 검증한다.
+
 ### 6.1 규칙 50의 OUTPUT 최신 적용 기준 — 2026-10-08
 
 최신 기준은 고정 OUTPUT v8에 대응한 [판별대장 README](../../references/model-input/README.md)의 사람 확인이다. 표시 6표의 입력·화면·행/기간 정책은 승인됐고, [SUMMARY 원본 유지 대조](../../references/mi-model-input-summary-preservation-review-2026-10-08.md#output--18셀--6묶음)의 미표시 12표는 규칙 57의 A 원본 보존을 따른다. 자동 파랑 셀 수·영향도는 v3 관측이며 현재 쓰기/계산 허용 근거로 쓰지 않는다.
@@ -463,6 +633,8 @@ ModelInputDraft 0..1 ── 1 finalized ScenarioCase
 | `PriceSeasonality` / T-098 | `C2:O4` | B — 값만 교체, 기존 3개 행·월/열 고정 | 지역명·월 헤더는 사용자 쓰기 금지 |
 
 - 입력 색은 노랑이며 파랑은 고정 제목/헤더, 청록은 자동/조회 신호다. 명시된 표/필드 허용을 색보다 우선한다. 입력 선언의 직사각형만으로 원본 수식·고정 헤더를 사용자 값으로 덮어쓰지 않으며 실제 cell allowlist는 원본 수식과 대조한다.
+- **2026-10-16 두 묶음 채택 — BCPrices 기존 연도 수정:** 기존 B Year의 SET을 허용하며 신규와 같은1000~9999의4자리 정수·별도 업무 기간 제한 없음으로 처리한다. 같은 Draft/BCPrices의 신규 추가 또는 기존 Year를 명시적으로 SET한 대상 행의 최종 연도가 다른 활성 행과 같으면 거부한다. 자기 rowId·최종 삭제 행은 제외하고 원본+성공 변경+이번 요청의 최종 상태를 대조한다. 가격만 수정한 행에 기존 연도 중복의 소급 검사/정리를 추가하지 않는다. 다른 Draft/표는 비교하지 않고 자동 덮어쓰기/합산하지 않는다. 연도 변경에도 rowId는 유지한다.
+- **2026-10-16 두 묶음 채택 — BCPrices 기존 가격 수정:** 기존 C HH/D East Asia Spot/E TTF를 수정할 때도 신규와 같은0 이상 숫자를 받는다. 가격의 CLEAR와 명시적 빈값 제출은 금지하며 숫자0은 유효한 가격이다. 기존 delta에서 생략한 가격은 유지하고 원본/기존 중복·빈값을 일괄 수정하지 않는다. 세 가격의 입력값을 그대로 보존하고 별도 업무 소수 자릿수 제한이나 저장 반올림은 추가하지 않는다. 화면 표시 형식으로 실제 저장값을 다시 만들지 않는다. 전송/저장의 숫자 정확도·표현 상한 검증은 BE 후속이며 업무 반올림 허용이 아니다. 이 채택은 BCPrices 연도 CLEAR/행 삭제나 다른 OUTPUT 표의 정책을 확정하지 않는다.
 - **2026-10-13 C2 사용자 확인:** OUTPUT `PriceSeasonality!C2`는 빈 값을 허용하지 않으며 숫자 값을 반드시 입력한다. 숫자 `0`은 허용한다. C2의 CLEAR는 거부 대상이며 빈 입력을 자동으로 0으로 바꾸지 않는다. 기존 F-O-03의 빈 셀 생성·보존 검증은 C2의 업무상 빈 값 허용 근거가 아니다. 다른 `C2:O4` 셀의 필수/빈 값 정책은 이 확인만으로 확정하지 않는다.
 - 미표시 A는 **T-082, T-086~T-089, T-091~T-097의 12표**다. T-082의 `P8:P816`을 포함해 기존 값·수식·배열 결과/저장된 계산값·관련 구성을 원본 보존하며 입력 편집·행 추가를 이유로 갱신·재계산·확장하지 않는다. 같은 시트의 표시 표까지 A로 바꾸지 않는다.
 - **2026-10-13 F-O-01 사용자 확인:** `USCostofSupply!B8`을 0.34→0.35로 SET하는 F-O-01에는 추가로 갱신할 셀이 없다. B8만 변경하고 P8:P816 Helper·D7:K7 등 나머지 셀의 원본 값·수식·저장값·타입·서식을 유지한다. 이 사례의 수식 계산·Excel 계산 정답은 해당 없음이다. 다른 OUTPUT 입력 변경·시트·구조 변경의 계산 정책까지 확정한 것은 아니다.
@@ -513,10 +685,10 @@ ModelInputDraft 0..1 ── 1 finalized ScenarioCase
 - 한 양식 전체를 `file → sheet → table → scope`로 읽는 화면 projection: QueryDSL 또는 전용 projection query.
 - 운영 기준 정규화본의 70개 시트/테이블 seed 대량 등록: DBA 실행 SQL 또는 관리용 batch. 운영 API로 일반 사용자에게 열지 않는다.
 - 실제 workbook 내용 파싱/생성: 기존 파일 서비스와 ZIP/SAX 처리 경계. 카탈로그 repository에 넣지 않는다.
-- Draft master/change 저장과 revision 충돌 처리: transaction service + JPA. Draft 변경분의 물리 저장 단위는 ERD review에서 확정한다.
+- Draft master/change 저장과 revision 충돌 처리: transaction service + JPA. 물리 저장 단위는 DDL §6.3에 정의했고 기존 master 경계와의 대조는 §5.4를 따른다.
 - 최종 XLSM 생성: Backend 소유 값 적용·계산·보존 검증 책임. 별도 클래스 구성은 미확정이며 파라미터 제안의 `ModelParamExcelMergeService`나 모델 실행 container를 호출하지 않는다.
-- 생성 결과 전달: XLSM 4개의 role별 bytes를 `MultipartFile` 4개로 변환하는 adapter 패턴을 사용한다. 기존 `MergedModelInputFiles`는 3파일 전용이므로 새 흐름이 직접 의존하지 않으며, 4파일 결과 타입에 변환을 두거나 중립적인 공통 adapter로 분리한다.
-- 최종 파일 업로드·Case 생성: 변환된 `MultipartFile` 4개를 기존 4파일 Fundamental Model application service에 전달한다.
+- 생성 결과 전달: XLSM 4개의 role별 bytes를 `MultipartFile` 4개로 변환하는 adapter 패턴을 사용한다. 현재 `MergedModelInputFiles`도4파일을 다룬다. 제안 병합 책임과 분리해 파일/스트림→MultipartFile 전달 패턴만 참고하며 새 adapter 클래스를 필수 산출물로 지정하지 않는다.
+- 최종 파일 업로드·Case 생성: §5.2/§5.4의 준비 기록/비공개 업로드·한 번의 master DB 확정으로 연결한다. 기존 createCase 또는 staged API 그대로 호출하는 것으로 원자성/복구가 충족됐다고 보지 않는다.
 
 ## 9. API/DTO impact
 
@@ -539,29 +711,41 @@ API 경로·요청·응답 계약은 feature spec/OpenAPI가 소유한다. 후�
 
 - 기존 Draft는 catalog master/detail/relation 6개 table을 제안했다. field/options/dependency/화면 갱신 규칙 및 Draft transaction
   저장이 필수가 되어 추가 schema 영향이 예상되며, 물리 table 수와 JSON/row 저장 경계는 ERD review에서 확정한다.
-- 초기 backfill은 legacy 3파일 case를 mapping하지 않는다. 신규 4파일 case만 생성 시점의 template과 연결한다.
+- Case-template 초기 등록은 실제 4파일/양식 대응을 검증한 신규·기존 Case만 대상으로 한다(§3.3·DDL §10B). legacy 3파일은 mapping하거나 OUTPUT을 보충하지 않는다. 원본 내용 재등록/hash backfill은 없다.
 - DDL을 application보다 먼저 배포할 수 있지만, 새 application이 mapping을 필수로 읽기 전에
   active template seed와 신규 4파일 Case 생성·mapping 경로를 완료해야 한다.
 - 실제 DDL은 pre-check/apply/backfill/rollback/verify/DBA action 순서로 제공한다.
+- Q2 원본 내용은 기존 불변 파일 등록을 사용한다(§3.2·DDL §6.1/§10A). 양식/catalog는 §3.3·DDL §6.2/§10B의 기존 master/Case-template 참조를 사용한다. 새 내용 hash나 독립 revision 컬럼을 추가하지 않으며 실제 조회 정의/seed·관계 등록과 제품 연결은 후속이다.
 
 ## 11. Risks / open questions
+
+### 2026-10-16 공통 초안의 미결 분류
+
+| 구분 | 실제 남은 결정/확인 | 후속 책임 |
+| --- | --- | --- |
+| BE 설계 구체화/검증 | 기존 코드/문서 연결 확인은 §5.4 및 DDL §6.4로 완료. 재사용/보완 경계를 구분했으며 기존 구현이 공통 계약을 충족한 것은 아니다. §3.4·§5.1~5.3의 공통 저장/최종저장·복구 설계는 이번 문서 범위 완료. Sector/Monthly 자유입력 명칭의 모델 인식 제약(정확한 명칭·언어/별칭·대소문자/공백·미인식 처리), 실제 복원/경합·부분 실패·정리/시간의 제품 검증은 후속. 공개 계약은 편집 API §3~6·§9 | INPUT-03/04; 기술 세부는 BE/DBA가 구체화하며 공통 묶음 재승인을 요구하지 않음 |
+| 사용자 업무 결정 | PriceModel 비계약 물량/Regas 신규 설비 추천은 미승인·후속. 다음 표의 일반 입력·파생 정책과 승인 밖 동작(BCPrices 연도 CLEAR/행 삭제 등) | 공통 설계의 선행조건에서 제외. 해당 표/동작을 열기 전에 업무 단위로 결정. Sector/Monthly 수요 입력·해제 및 BCPrices 기존 수정 두 묶음은 채택 완료이며 재질문하지 않음 |
+| STRUCT/BE 검증 | 일반 행 추가/삭제와 빈 슬롯 소진, 참조/수식·서식·validation·연결/보존, 지정19 밖 계산 allowlist와 실제 모델 영향 | STRUCT 및 해당 구현/검증. 이 초안의 mock 성공은 실제 정책 완비/계산 Pass가 아님 |
+| DBA 확인 | 공통 물리 정의는 DDL §6.3에 구체화. 실제 DB가 필요한 항목은 DDL §13의 DBA-01~05로 분리. MySQL 제약/경합·packet·FK/감사 표준·SQL/rollout 실물 검증은 미수행 | DDL §6.3·§6.4·§13, 적용 준비/제품 검증과 표별 정의 저장은 별도 |
+
+기존 위험/후속 항목:
 
 - 이번 release의 구조 변경 포함과 마지막 행·열 추가 중심 원칙은 확정됐다. 표별 추가 경계, 신규 셀·연결 범위 처리 및 승인된 중간 삽입·삭제 예외의 참조 갱신 계약·실파일 검증은 남아 있다.
 - 새 행·열의 서식·수식 복제 규칙이 없다. 추가 가능 flag만으로 파일 생성 동작을 확정할 수 없다.
 - `INPUT-02` 실파일 spike에서 Apache POI 5.4.0은 1 GiB heap으로 `supply.xlsm` 전체 로딩에 실패했고,
   headless LibreOffice는 cached value를 갱신하지 못하면서 VBA·external link와 package 구조를 훼손했다.
   두 경로는 현재 요구사항에 `NO-GO`다. 2026-10-13 사용자 결정으로 전체 로딩 대신 POI 부분 계산을 채택했다(§1A.4 Q7).
-- 대형 workbook 계산을 web request JVM에 직접 넣으면 OOM과 동시 요청 자원 고갈 위험이 있다. 후속 spike는
-  격리 worker/비동기 처리 필요 여부까지 판정해야 하며, 이 결과에 따라 Draft 계산 상태와 API 응답 형태가 달라진다.
+- 대형 workbook 계산을 web request JVM에 직접 넣으면 OOM과 동시 요청 자원 고갈 위험이 있다. 규칙64의 격리 worker/비동기 경계와 Q7의 조건부 채택은 확정했다. Draft 계산 상태·접수/완료 응답 계약과 실제 worker의 전체 저장 응답·부분 실패 검증은 INPUT-04/07~10 후속이다.
 - 최신 input 표본에는 다른 sheet를 참조하는 복합 수식과 외부 workbook 참조가 존재한다. table dependency
   catalog만으로 계산 결과를 갱신하는 구현은 안전하지 않다.
-- 최신 v8/v6 기준본 고정과 정규화 보존 검사는 완료됐다(baseline reference). 최신 표별 정책 대응·계산 검증과 운영 template 등록은 남아 있다. 9/28의 개발 전용 6개 시트 수를 최신 묶음의 수치로 사용하지 않는다.
-- 독립실행의 Case 생성·MI Base 적격성·Job input 4역할 전달은 현재 코드에 구현돼 있다. Scenario는 현재 3파일 코드이며 목표 계약은 두 mode 모두 4파일이다. 파라미터 제안 기반 Scenario의 OUTPUT 원본 보존·제안 제외 규칙은 `mi-model-parameter-proposal-design.md` §1A를 따른다. Scenario의 기준 파일 준비·4파일 접수·Case 연결·Job 전달 구현과 입력폼 catalog mapping/projection은 남은 작업이다.
+- 최신 v8/v6 기준본 고정·정규화 보존 및 선정19사례의 범위 한정 검증은 완료됐다(baseline/compatibility reference·Q7). 지정 밖 표별 정책·계산/구조 검증과 운영 template 등록은 별도다. 9/28의 개발 전용 6개 시트 수를 최신 묶음의 수치로 사용하지 않는다.
+- 독립실행의 Case 생성·MI Base 적격성·Job input 4역할 전달은 현재 코드에 구현돼 있다. 현재 코드에서 제안 병합 결과/Scenario staged 등록도4파일 전달 경로를 갖춘 부분을 확인했다(§5.4). 이 대조로 Scenario 전체 기능 검증/배포가 완료됐다고 판정하지 않는다. 파라미터 제안 기반 Scenario의 OUTPUT 원본 보존·제안 제외 규칙은 `mi-model-parameter-proposal-design.md` §1A를 따른다. 입력폼 catalog mapping/projection과 Draft 성공/복구는 미구현이며 기존 Scenario의 구현/제품 검증 상태는 해당 목표의 정본/작업 노트를 따른다.
 - 기존 3파일 `INDEPENDENT | MI_BASE | SCENARIO` case는 4파일 기능 cutover 전에 soft delete한다(`SCENARIO`의 연결 row 범위는 규칙 36). 대상 판별·건수·`RUNNING`
   0건·current `MI_BASE` 포함 여부를 DBA pre-check로 확인하고, case/file/run/result hard delete는 하지 않는다.
 - `tmm_mi_model_param_m`도 같은 파일/시트 위치를 저장한다. 양식 버전 FK를 공유하지 않으면 이중 관리가 남는다.
 - `BaseEntity` 감사 컬럼과 DB 명명 문서의 시스템 컬럼명이 다르다. physical DDL 적용 전 표준 예외 확인이 필요하다.
 - 양식 판별 해시의 입력값 정규화 방식이 미정이다. hash column은 nullable로 두되 자동 판별을 아직 계약하지 않는다.
+- §3.2의 불변 파일 등록과 §3.3의 발행 양식/catalog 묶음·Case 연결을 제품 조회에 구현하고 seed/기존 4파일 등록·일관성을 검증해야 한다. 추가 내용 해시/독립 revision 컬럼이나 원본 불변성 재확인을 선행조건으로 두지 않는다.
 - 표본에서 설비명이 유일키가 아니었다. `BCRegasification`의 `Malta LNG`가 국가만 다른 2행으로 존재하고
   helper `설비명&LifeCycle`도 중복이라, 업무 이름 기반 행 identity는 성립하지 않는다.
 - `RegasAdjustment`의 식별 열은 이름이 아니라 `BCRegasification`의 행 번호로 연결돼 있다. 원본 정렬이나
@@ -582,15 +766,17 @@ API 경로·요청·응답 계약은 feature spec/OpenAPI가 소유한다. 후�
 
 ## 12. Exit criteria / handoff
 
-- 공통 초안 단계: Complete — §1A.2~1A.4와 §3.1로 흐름·책임·정보 관계와 후속 결정 입력을 설명할 수 있다. 전체 표 조사·설계 확정 목표는 In Progress이며 Delivery Plan 선행조건·BLOCKED 티켓 상태는 변경하지 않았다.
+- 2026-10-16 BE·DBA 필수 확인: 기존 코드/문서 연결 대조는 §5.4·DDL §6.4로 완료했다. 공통 설계 입력은 `ready after minor cleanup`(실제 DB 대조/적용 준비 별도), 공통 persistence/API·worker/복구는 아직 미구현이다. DBA-01~05와 제품 검증을 완료한 것으로 승격하지 않는다. 추가 사용자 공통 업무 결정은 없다.
+
+- 2026-10-16 최소 논리 관계·FE 공통 편집 초안 작성 범위는 완료했다(§3.4·§5.1 및 편집 API 초안). 공통 BE 추천 묶음과 Sector H/J·I 음수 금지·국가/하위부문 자유입력·연월 범위/신규·기존 수정 중복 금지와 Sector/Monthly 수요 입력·해제·BCPrices 기존 연도/가격 수정 두 묶음은 같은 날 사용자 채택했다. **INPUT-03 전체 확정/구현 ready는 아니다**. 아래 기존 전체 준비도 판정을 유지한다. 이번 후속으로 공통 저장/복원과 최종저장·실패 복구 계약은 §3.4·§5.1~5.3/편집 API §9·DDL §6.3에 마무리했다. 남은 표별 정책과 DBA 적용 준비/유일성·복구 제품 검증은 각각 §11·편집 API §10·DDL §13으로 분리한다. PriceModel/Regas 추가 추천은 미승인이다.
+
+- 공통 초안 단계: Complete — §1A.2~1A.4와 §3.1로 흐름·책임·정보 관계와 후속 결정 입력을 설명할 수 있다. 전체 표 조사·설계 확정 목표는 In Progress다. INPUT-02A의 현재 조건부 판정/후속 배정은 Q7·Delivery Plan §6A·§9를 따른다.
 - 트랙 A 수신 범위: A-01/A-02 Midstream 정적 조사와 4파일 우선 목록을 반영했다. H1~H4 정책·계산/구조 검증, A-03~A-10 상세 조사는 미완료다. 인계 통합을 엔진 GO나 구현 착수 승인으로 사용하지 않는다.
-- 모델 안정성: `blocked by open questions` — 기존 hierarchy와 source snapshot 경계는 유지되지만 field/options/dependency,
-  Draft 저장 단위, 승인된 table/row identity, workbook 계산 엔진과 실행 격리 방식의 물리·행동 계약이 추가로 필요하다.
-- API contract drafting: 조회-only sheet/table hierarchy와 `임시저장/최종저장` action 책임은 초안 작성 가능하다.
-  구체 DTO·오류·동기/비동기 응답은 후속 계산 엔진 spike와 Draft 저장 단위를 확정한 뒤 고정한다.
+- 모델 안정성: `blocked by open questions` — 계산/격리 실행 경계는 Q7/규칙64로 채택했다. 공통 Draft 저장/행 identity·성공 경계·최종저장/복구 계약은 이번 문서 범위 완료다. 기존 hierarchy와 고정 원본 경계는 유지하며 표별 field/구조·계산 정책과 실제 비동기/실패 제품 검증이 필요한 동작은 후속이다.
+- API contract drafting: 공통 EDT-01~07의 DTO·오류·접수/완료·복구 계약은 편집 API §3~6·§9에 작성 완료다. 표별 metadata/binding과 실제 generated OpenAPI·API 전체 저장 응답 검증은 후속이며 INPUT-10으로 이어간다.
 - ERD review required areas:
   - 기존 6개 catalog table과 신규 field/options/dependency 저장 구조의 PK/FK/UK/index
-  - Draft master/change의 JSON 대 row 저장, revision unique, user/source case별 active Draft 제한
+  - 공통7개 저장 정의의 실제 MySQL/DBA 검증, revision unique, tenant/user/source Case별 active Draft 제한
   - `FINALIZED` Draft와 생성 Case의 idempotent 1:1 관계
   - row/column data type 범위
   - active template 단건 보장 generated column
@@ -618,7 +804,7 @@ API 경로·요청·응답 계약은 feature spec/OpenAPI가 소유한다. 후�
 
 좌표는 §6 규칙 4에 따라 Excel 1-based 숫자이며, 열 문자는 확인용 병기다.
 
-### 14.1 표 경계 (`tmm_mdlinpttbld`)
+### 14.1 표 경계 (`tmd_mdl_inpttbld`)
 
 | 시트 | 입력테이블명 | 행 | 열 | 헤더 행 | 데이터 시작 | 행추가 | 열추가 |
 | --- | --- | --- | --- | --- | --- | --- | --- |
@@ -635,7 +821,7 @@ API 경로·요청·응답 계약은 feature spec/OpenAPI가 소유한다. 후�
 행·열 추가 정책은 개발본 `SUMMARY` 시트의 G/H 열(`가능` / `고정`)을 옮긴 후보값이다.
 같은 개발본의 운영 대상 business sheet 구조와 대조·승인하기 전에는 활성 catalog에 등록하지 않는다.
 
-### 14.2 수정 가능 범위 (`tmm_mdlinptmodscopd`)
+### 14.2 수정 가능 범위 (`tmd_mdl_inptmodscopd`)
 
 | 입력테이블 | 순서 | 행 | 열 | 근거 |
 | --- | --- | --- | --- | --- |
@@ -761,5 +947,5 @@ SUMMARY I15가 요구하는 순서(① BCRegasification 등록 → ② 조정 �
 - 2026-10-13: 사용자 결정으로 계산 방식을 POI 부분 계산으로 정했다(§1A.4 Q7). 격리·동기/비동기 경계와 `INPUT-02A` 판정은 미완료다.
 - 2026-10-13: §1A.5 「다른 정본의 변경 후보」 중 Delivery Plan 대상 2건(PriceModelInput 문구, GDP/PIPELINE/UNIQUE 검증 후보)이 반영됐음을 표시했다. 업무 규칙은 바꾸지 않았다.
 - 2026-10-13: 사용자 결정으로 규칙 36의 legacy 3파일 정리에 `SCENARIO` case를 추가했다. 연결 run history·execution-preparation·active 가격전망해석을 함께 soft delete하며 규칙 38의 `RUNNING` pre-check와 §11 위험 문구를 맞췄다. 같은 날 잠시 기록한 "SCENARIO 제외" 문구는 이 결정으로 대체했다.
-- implementation readiness: `blocked by open questions` — `INPUT-02A` 격리·동기/비동기 경계와
-  `INPUT-03` row identity·Draft 물리 모델이 확정되기 전에는 write API 구현을 시작하지 않는다.
+- 2026-10-15: Q7/규칙64와 Delivery Plan §6A에 따라 F-S-06 제외 INPUT-02A를 조건부 완료했다. 위 2026-10-13 미판정 기록은 당시 이력이다. INPUT-03/04 설계·계약 작업에 전달하며 제품 write 구현 승인은 별도다.
+- implementation readiness: `blocked by open questions` — 실행 경계는 규칙64로 확정했으나 `INPUT-03` row identity·Draft 물리 모델과 `INPUT-04` write/비동기 계약이 확정되기 전에는 write API 구현을 시작하지 않는다.

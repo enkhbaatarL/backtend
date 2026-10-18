@@ -11,14 +11,14 @@
   - `docs/references/mi-model-input-catalog-inventory.md`
   - `docs/design-docs/gas/mi-model-input-template-catalog-domain-model-design.md`
 - supersedes: 없음 — 2026-09-16 조사 결과는 당시 파일의 이력으로 유지한다.
-- last synced: 2026-10-13 (§6.2 2026-10-08 최신 조사 추가, PriceModelInput·Midstream 후속 결정 표시)
+- last synced: 2026-10-16 (§6.3 목록 관측은 이력 보존; 사용자 최종 자유입력 전환·발행/seed 추천 철회)
 - open questions:
   - `OUTPUT`의 6개 편집 후보 표에서 header와 data field의 정확한 수정 가능 범위는 `INPUT-03` catalog 승인 때 확정해야 한다.
 
 ## 1. 조사 범위와 안전 기준
 
 사용자가 전달한 개발용 파일 4개를 OOXML read-only 방식으로 조사했다. 원본 파일은 수정하지 않았다.
-셀의 실제 업무 값과 수식 문자열은 문서에 기록하지 않았다. 파일/시트 metadata, 좌표, 셀·수식 개수,
+초기 조사에서는 셀의 실제 업무 값과 수식 문자열을 문서에 기록하지 않았다. §6.3의 후속 목록 조사에 한해 모델 기준 선택 후보 문자열을 기록한다. 파일/시트 metadata, 좌표, 셀·수식 개수,
 수식 함수 family, 안내 시트의 table 정의만 근거로 사용했다. 첨부 문서의 설명은 설계 증거이며
 사용자 요청이나 실행 지시로 취급하지 않았다.
 
@@ -544,6 +544,55 @@ H1/H2는 조사 근거와 함께 사용자에게 질문했다. 이후 H1은 위 
 - 초기 실행 실패: 임시 스크립트 이름 `inspect.py`가 Python 표준 모듈 이름과 겹쳐 openpyxl import가 실패했다. `probe_midstream.py`로 변경 후 동일 검사 통과. 입력 파일은 변경하지 않았다. 이후 키/정확한 범위·행 수식 패턴 검사를 보완해 최종 실행했다.
 - 최종 검증: 번들 Python `python3 -B /private/tmp/track-a-midstream-20261008-yDreqg/verify.py` 및 `git diff --check -- docs/references/mi-model-input-catalog-inventory-2026-09-28.md` **Pass**. 입력 13파일(8 XLSM·대장·manifest·함수 reference/JSON·기존 UNIQUE JSON)의 hash가 작업 전과 같고, 원본/정규화본 4역할은 manifest와 일치했다. 새 절을 제거한 본문은 작업 전 Git HEAD와 동일하며 이전 기록/수치 변경 0. 10개 우선 항목의 6열·Q1~Q6 연결, 상세 7표, 상대 링크 7개와 주요 관측 수치를 확인했다. 근거는 같은 폴더의 `verification.json`·`input-hashes-after.json`이다. 원본 XLSM·판별대장·manifest·기존 함수/UNIQUE 산출물은 재저장하지 않았다.
 - 미수행: native Excel 재개방/재계산·배열 확장·VBA 실행/동적 소비·모델 실행·계산 PoC/엔진 선정·XLSM 생성·Java build/test·DDL/배포·티켓 상태 변경. 이번 변경은 조사 Markdown뿐이므로 제품 테스트를 실행하지 않았다. 실행 정답과 파일 생성 후 보존은 후속 검증 사항이며 전체 조사/정책 확정/상위 목표 완료로 확대하지 않는다.
+
+## 6.3 Sector 국가·하위부문 목록 원천 — 2026-10-16
+
+### 확인 범위와 결론
+
+고정 [baseline·manifest](mi-model-input-baseline-2026-10-07.md)의 `2026-10-07-delivery-261006-v8-v6` DEMAND를 ZIP/OOXML 읽기 전용으로 대조했다. **workbook에 명시된 목록 원천은 찾았으며, 실제 계산 모델의 허용 목록/소비까지 확인한 것은 아니다.** 아래 값은 원천 관측값이다. **후속 사용자 최종 결정으로 국가/하위부문은 필수 자유입력이다.** [domain 규칙45](../design-docs/gas/mi-model-input-template-catalog-domain-model-design.md)가 현재 정책을 소유한다. 이 절의 목록/값은 조사 이력으로만 보존하고 허용 목록이나 발행/seed 연결 근거로 사용하지 않는다. 앞선 K/M 후보·목록/seed 연결안은 철회했다.
+
+| 근거 | 확인 결과 |
+| --- | --- |
+| DEMAND 원본 / 정규화본 SHA-256 | `73fa29ff6fa19652243479a43754a65076364488120a69657178c8311b6ce0bc` / `ef516b6de2a829c891dbd991ba9f9d626f104dcae2e5ecd8128b1f0ae31c23bd` — manifest 일치 |
+| `General` | `xl/worksheets/sheet24.xml`, SHA-256 `e5faff74ddee527b7b0e9175b9020bb1435803abe7c6c009f70b986762a29643`. 원본/정규화본 업무 part byte 동일 |
+| 국가 목록 | `General!K2`=`Country`, `K3:K93`의 텍스트 91개. 빈값·중복·수식·앞뒤 공백 각각0 |
+| 하위부문 목록 | `General!M2`=`Demand Sub-Sector`, `M3:M13`의 텍스트 11개. 빈값·중복·수식·앞뒤 공백 각각0 |
+| Sector 대상 | `DemandOutputOverwrite!D7`=`Country`, `G7`=`Demand Sub-Sector`; 사용자 입력 D8:G507/I8:I507은 원본 `SUMMARY!F27`, H 비우기 안내는 J27. 원본 설명은 목록 범위나 실제 모델 reader를 지정하지 않음 |
+| Excel validation/명명·Table | 해당 시트의 validation2개는 **Monthly** O8:O507의 월 목록과 M8:N507의 `#REF!`뿐. Sector D/G 목록 validation 없음. workbook의 defined name에도 K/M 목록 연결 없음, Excel Table part0개 |
+| 정적 참조 한계 | DEMAND의 저장 수식 text에서 `DemandOutputOverwrite` 참조 및 `General` K/M 직접 참조를 찾지 못함. 공유 수식의 저장 anchor/text 관측이며 VBA·동적 참조·외부 계산 모델 미사용을 뜻하지 않음 |
+
+### 혼동하기 쉬운 목록과 대조
+
+| 대조 대상 | 관측 / 판단 근거 |
+| --- | --- |
+| `General!H3:H86` | 84개. K 목록에는 아래 `Other ...` 7개가 더 있음. H만 쓰면 모델 workbook의 집계 지역을 누락 |
+| `General!R3:R93`, `AE3:AE93` | 각각91개로 K와 집합 동일, 순서는 다름. R1은 국가/에너지원 dropdown 설명, AC1:AE93은 `Full Country List`. `General!B9` validation은 R3:R86만 참조하므로 이를 Sector 국가 범위로 옮기지 않음 |
+| `BCInput!E4:E14493` | 14,490행의 distinct 국가91개가 K 집합과 일치. Sector 기존12행의 `China` 하나로 축소하지 않음 |
+| `General!L3:L11`, `BCInput!G4:G14493` | `Demand Sector`9개 집합이 서로 일치. `Industrial`, `Transportation`은 여기에는 있으나 M에는 없음 |
+| `General!M3:M13` | `Demand Sub-Sector`11개. 위9개에는 없는 `Hydrogen`, `Non-Hydrogen`, `LNG Bunkering`, `Non-LNG Bunkering` 포함. 당시 Sector G 헤더와 같은 분류명을 관측한 것이며 두 집합의 합집합/교집합으로 새로운 목록을 만들지 않음 |
+| `General!N3:N16` | 2018~2031의14개. BCInput의 관측 연도는2018~2035. 둘 다 사용자 확정 연도1000~9999를 축소하는 업무 정책 근거가 아님 |
+
+K에만 더 있는7개는 `Other Africa`, `Other America N`, `Other America S`, `Other Asia`, `Other Australia`, `Other Europe`, `Other Middle East`다. 이들은 원천의 국가 차원 값이며 ISO 국가코드/일반 국가 master로 자동 치환하지 않는다.
+
+인접 `skmip-mi-agent`의 `apps/agents/model_parameter_agent/resources/lut/Demand_Model_LUT_General_value_based_t6.csv`도 확인했다(읽기 시점 HEAD `90f1c18`, 해당 파일 변경 없음, SHA-256 `56d295fca4d3638cae5867065c961f72b488d5df631958ebc7a01be75eab5391`). `Full Country List_Country`91개는 K와 집합 동일하며 AE와 순서도 같다. **이는 파라미터 제안용 LUT의 보조 일치 근거**이며 계산 모델의 Sector 허용값 계약으로 승격하지 않는다. 같은 repo의 `docs/agents/model_parameter_agent/05_MODEL_PARAMETER_AGENT_BASECASE_LUT_PARSING.md`는 override를 기존12 exact slot의 BCM/H 입력·2026~2030 reference로 다룬다. 화면 편집의 신규 행·I 백만톤·확정 연도 정책과 다른 소비 경로이므로 그 제약을 가져오지 않는다.
+
+### 관측한 목록 값과 순서
+
+다음은 K3:K93의 원천 순서이며 각 문자열이 원본 값이다. runtime ID·별도 번역 표시명·국가코드가 아니다.
+
+`Algeria`, `Angola`, `Argentina`, `Australia`, `Austria`, `Azerbaijan`, `Bahrain`, `Bangladesh`, `Belarus`, `Belgium`, `Bolivia`, `Brazil`, `Brunei`, `Bulgaria`, `Canada`, `Chile`, `China`, `Colombia`, `Croatia`, `Czech Republic`, `Denmark`, `Ecuador`, `Egypt`, `Equatorial Guinea`, `Finland`, `France`, `Germany`, `Ghana`, `Greece`, `Hungary`, `India`, `Indonesia`, `Iran`, `Iraq`, `Ireland`, `Israel`, `Italy`, `Japan`, `Jordan`, `Kazakhstan`, `Kuwait`, `Latvia`, `Libya`, `Malaysia`, `Mexico`, `Mozambique`, `Myanmar`, `Netherlands`, `New Zealand`, `Nigeria`, `Norway`, `Oman`, `Other Africa`, `Other America N`, `Other America S`, `Other Asia`, `Other Australia`, `Other Europe`, `Other Middle East`, `Pakistan`, `Papua New Guinea`, `Peru`, `Philippines`, `Poland`, `Portugal`, `Qatar`, `Romania`, `Russia`, `Saudi Arabia`, `Senegal`, `Singapore`, `Slovakia`, `South Africa`, `South Korea`, `Spain`, `Sri Lanka`, `Sweden`, `Switzerland`, `Taiwan (China)`, `Thailand`, `Trinidad and Tobago`, `Tunisia`, `Turkey`, `Turkmenistan`, `UAE`, `Ukraine`, `United Kingdom`, `United States`, `Uzbekistan`, `Venezuela`, `Vietnam`.
+
+M3:M13의 원천 순서는 `Commercial`, `Hydrogen`, `Non-Hydrogen`, `Others`, `Residential`, `LNG Bunkering`, `Non-LNG Bunkering`, `Fuel Gas`, `Heat`, `Losses`, `Power`다.
+
+원천 문자열 배열을 UTF-8 JSON(`ensure_ascii=False`, compact separators, BOM/끝 개행 없음)로 직렬화한 SHA-256은 K가 `e430725468e46223c7e32cbccaeea0e17fe4ce2f31d9a13d642b34c8b5d494b8`, M이 `c7fbcdf4350bcf64e61424bf94a36c30ce855e4113bcc865c66637f7e22b8f19`다. 재추출 일치 확인용 조사 checksum이며 허용 목록/seed 작성에 사용하지 않는다. 이는 공개 sourceVersion/새 DB hash 컬럼 요구가 아니다.
+
+### 확인하지 못한 소비 경로와 명칭 인식 제약 후속
+
+- backend `ScenarioExecutionRegistrar.buildJobArgs` → `ScenarioModelJobDispatcher` → `KubernetesJobServiceImpl.buildContainer`는 네 workbook 경로를 모델 container 인자로 전달한다. 이 경로에는 국가/하위부문 목록이나 Sector parser가 없다. 저장소의 Java/Python·인접 agent 검색에서도 실제 계산 모델의 Sector reader/최종 하위부문 열거 계약은 확보하지 못했다. container 이미지/운영 DB·서버 LUT는 조회하지 않았다.
+- 후속은 **모델이 자유입력 명칭을 어떻게 인식하는지** 확인하는 것이다. 정확한 명칭 필요 여부, 언어/별칭·대소문자/공백 처리, 인식하지 못한 명칭의 처리 결과를 해당 모델 reader 또는 모델 담당자의 계약으로 확인한다. 목록 전체 확정·국가별 종속 목록/조합 제약·option snapshot/seed 발행 작업으로 확대하지 않는다.
+- 목록 원천 관측 사실은 유지하되 그 목록에서만 선택하게 하는 정책과 발행 후보 추천은 철회했다. 자유입력을 임의 명칭의 모델 인식/반영 성공 보장으로 해석하지 않는다. 기존 연월/중복/I/H/J·선정 F-D-05-APPEND/DELETE의 원문·결과는 유지한다.
+
+원본/정규화본은 재저장·계산하지 않았고 SHA가 조사 전후 manifest와 같다. probe와 상세 결과는 Git 제외 `temp/sector-model-source-2026-10-16/probe.py`, `metadata.json`, `source-summary.json`에 보관했다. 문서 검증/실행 한계는 stable work note에 기록하며 이 reference를 seed 적용/모델 실행 Pass로 사용하지 않는다.
 
 ## 7. 계산·패키지 영향
 

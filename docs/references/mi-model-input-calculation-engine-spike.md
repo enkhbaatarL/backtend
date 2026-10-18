@@ -3,7 +3,7 @@
 ## Document Control
 
 - status: Complete
-- canonical for: Reference only — INPUT-02 조사 및 INPUT-02A 부분 실행 증거
+- canonical for: Reference only — INPUT-02 조사 및 INPUT-02A 선정 경로의 조건부 판정 근거
 - owner: BE
 - date: 2026-09-16
 - task type: investigation
@@ -16,13 +16,103 @@
   - `docs/design-docs/gas/mi-model-input-template-catalog-domain-model-design.md`
   - `docs/references/mi-model-input-baseline-2026-10-07.md` (부록 A의 입력 기준본)
 - supersedes: 없음
-- last synced: 2026-10-13
+- last synced: 2026-10-15
 - open questions:
-  - 2026-10-13 사용자 결정으로 계산 방식은 상용 엔진 평가 없이 POI 부분 계산이다(domain design §1A.4 Q7). 이 방식의 남은 fixture 실파일 계산·보존성과 운영 격리·동기/비동기 경계 검증이 필요하다.
-  - POI 기본 미지원 함수의 사용 위치를 표별 계산/보존 정책에 연결하고 실제 변경 입력·배열 결과·원본 보존을 검증해야 한다. 이름이 가리키는 수식 셀의 계산 영향과 VBA 동작도 미검증이다.
+  - F-S-06 제외 INPUT-02A는 2026-10-15 사용자 승인으로 `DONE (CONDITIONAL)`이다(Delivery Plan §6A). 계산/격리 비동기·운영 기준은 domain Q7/규칙63·64, 후속 API 전체 저장 응답·부분 실패 검증은 INPUT-04 계약/INPUT-07~09 구현/INPUT-10 검증을 따른다.
+  - 지정 밖 함수 조합·이름 참조·VBA 동작과 일반 표의 계산/구조는 미검증이다. 선정19사례의 완료를 미지원 함수 계산 승인이나 전체 workbook 호환 인증으로 확대하지 않는다.
 
 이 문서는 계산 엔진 선정 자체의 canonical 설계가 아니라, 실제 XLSM 3개로 수행한
 `INPUT-02` 및 최신 source의 `INPUT-02A` 부분 실행 증거다. 셀 원문, 수식 원문, 고객사 식별값은 기록하지 않는다.
+
+## INPUT-02A 최종 판정 — CONDITIONAL (2026-10-15)
+
+- 사용자 최종 승인에 따라 F-S-06 제외 INPUT-02A를 **`DONE (CONDITIONAL)`**로 닫았다. 고정 source·선정19의 입력/보존·기록 범위 native Pass, 계산/동일변경 Excel9 Pass·계산 제외10 해당 없음, 승인7경로21회 자원·동시/중단6시험·평문 수명10시험·실제2vCPU/2GiB 대표12회 근거에 한정한다. 사례별 범위/상태는 [compatibility의 최종 표](mi-model-input-sheet-calculation-compatibility.md#input-02a-최종-조건부-완료--2026-10-15)를 따른다. 이전 전체 workbook POI/LibreOffice NO-GO는 유지한다.
+- 승인 실행/운영·평문 정책은 domain Q7/규칙63·64, 티켓 판정과 INPUT-03/04/07 전달 제약은 [Delivery Plan §6A](../design-docs/gas/mi-model-input-editing-delivery-plan.md#6a-completed-ticket--input-02a-conditional-f-s-06-제외)를 따른다. [종료 기록](../../temp/input-02a-engine/2026-10-15-input-02a-conditional-closeout-c2mlcayi/final-summary.json)·[종료 감사](../../temp/input-02a-engine/2026-10-15-input-02a-conditional-closeout-c2mlcayi/verification.json)에 기존 증거·hash와 검증 한계를 연결했다. 별도 새 계산/골든/native/성능 시험은 실행하지 않았다.
+- 조건/한계: 대표 제한환경 최대14.564초·worker kernel peak666.5MiB/OOM0은 warm cache·Linux/tmpfs 파일 처리 결과다. 각3회·역할별 값 합을 실제4파일 저장 요청/SLA로 해석하지 않는다. **API 전체 저장 응답은 INPUT-10 후속 PENDING**이며 INPUT-04 계약/INPUT-07~09 구현 후 대기열·DB/storage 저장 확정·완료/부분 실패·규칙64 시간 기준을 검증한다. OS reboot/정전·production worker 구현, 접근 불가 사용자 핸들·물리 매체 삭제, native 전수 계산/저장·VBA/모델 결과는 검증하지 않았다. 실제 DRM 재검증은 사용자 제외로 해당 없음이며 Pass가 아니다.
+- 이 최종 절이 현재 판정이다. 아래 단계별 전체 In Progress/미승인 추천/남은 운영·DRM 결정 기록과 기존 실행 JSON은 최종 승인 전 이력으로 보존한다. 전체 기능/조사·제품 배포 완료는 후속 티켓과 구분한다.
+
+## INPUT-02A 승인2vCPU·2GiB worker 대표 경로 재측정 — 2026-10-15
+
+- [최종 결과](../../temp/input-02a-engine/2026-10-15-resource-limited-worker-0hv3nf5z/final-summary.json)·[별도 감사](../../temp/input-02a-engine/2026-10-15-resource-limited-worker-0hv3nf5z/verification.json)·[재현/경계](../../temp/input-02a-engine/2026-10-15-resource-limited-worker-0hv3nf5z/README.md): 사용자 승인 운영 기준은 domain 규칙64다. 이전 미승인 추천은 이 승인 전 이력이다. 별도 로컬 Linux worker를 한 번에1개만 실행하고 요청도 순차1건, 대표4경로 각3회·인정12회를 실제 제한에서 측정했다. Docker 설정과 내부 cgroup v2 모두 CPU `200000/100000=2vCPU`, 메모리 `2147483648bytes=2GiB`, swap0을 확인했다. JVM heap/CPU 인식값만 설정한 시험이 아니다.
+
+| 사례 | 처리시간 중앙값(최소~최대), 초 | 관측 process group RSS peak, MiB | 승인 계산/보존 |
+| --- | --- | --- | --- |
+| F-D-03 | 5.747 (5.444~6.394) | 519.5 | 16합계 계산·기존 E:N 등 보존 |
+| F-S-04-DELETE | 14.296 (13.431~14.564) | 490.2 | 삭제/이동 후6,264계산·기타 cache 보존 |
+| F-T-04 | 3.187 (3.057~3.187) | 189.2 | 승인5입력 외 계산 제외·원본 보존 |
+| F-O-04 | 0.280 (0.274~0.292) | 52.3 | 승인4입력 외 계산 제외·원본 보존 |
+
+- worker 전체 cgroup의 커널 memory peak는 **666.5MiB/2GiB**, OOM kill0이다. 이 값은 controller·cache·tmpfs까지 포함하며 위 표의 표본 RSS와 지표가 다르다.12결과 모두 기존 승인 XLSM의 전체 SHA256·ZIP member/metadata·CRC/저장 후 재읽기 동일, source-only unit6 hash 동일, 실제6 JVM/18,840평가·실패0/skip0이다. 기존 입력/수식/구조·보존/외부 캐시 정책과 계산 도구/jar/class를 유지했고 새 golden/native·외부 링크/매크로/DRM은 실행하지 않았다. 동일 hash의 기존 Excel 비교·native 근거를 유지한다.
+- 환경/시간 경계: 기존 로컬 Java 이미지에 Python 표준 라이브러리와 bundled openpyxl3.1.5·동일 POI5.4.0만 넣은 측정 전용 이미지다. Ubuntu24.04 arm64/Temurin17.0.18/Python3.12.3, 원본은 host 읽기 전용 bind, 새 작업 파일은2GiB에 계상되는512MiB tmpfs다. 이전 Mac/Homebrew17.0.14·파일시스템과 달라 시간 차이를 CPU 제한만의 영향으로 해석하지 않는다. 초기 source hash로 cache가 데워졌고 통제하지 않았다. 각3회 결과는 p95/최대 처리량/SLA가 아니다.
+- 측정은 새 pipeline 시작→source 읽기/입력·구조/허용 POI→ZIP close/자식 종료까지다. 사후 승인 hash·보존 감사/정리는 별도 기록이며 이미지/컨테이너 시작·대기열/API·DB/storage upload·fsync는 제외한다. 각 역할 중앙값 합은 약23.511초이지만 같은4파일 최종저장 요청의 실측이 아니다. **30초 목표/전체120초 상한은 승인됐으나 그 전체 요청 SLA를 이 결과로 Pass 처리하지 않는다.** 후속 API/제품 검증에서 접수·대기·필요 저장 확정 경계를 확인한다.
+- 실패/복구 이력: 첫 측정에서 D03/S04DELETE는 통과했고 F-T-04는 내부 검증용 baseline manifest의 읽기 전용 mount 누락으로 준비 단계에서1회 실패했다. OOM/계산 실패가 아니며 새 작업 파일/핸들·컨테이너 잔여0을 확인했다. manifest만 읽기 전용으로 추가하고 미완료 T04/O04의1회차, 이후 네 경로2/3회차만 실행했다. 최초 도구/실패 metadata와 인정12회/전체13시도를 구분해 보관했다. 원본/기존 검증2,610파일 hash 불변이다.
+- 정리/상태: 새 XLSM·unit/results TSV·raw stdout/stderr는 검증 후 모두 삭제했고 token이 붙은 컨테이너도 제거했다. 각 종료 후60초 이내 파일/핸들0·실패 분석용 평문0이다. 컨테이너 PID namespace의 `/proc/*/fd`를 경로와 device/inode로 대조했으며 업무 내용은 이미지/build context/log에 넣지 않았다. 이번 제한환경 재측정은 Complete·전체 INPUT-02A In Progress, 최종 판정은 이번 요청에서 채택하지 않았다. 아래 미승인 추천/운영 대기는 이번 승인/실측 전 이력이다.
+
+## INPUT-02A 잔여와 운영 추천 — 2026-10-15, 미승인 제안
+
+- [최신 대조/추천 근거](../../temp/input-02a-engine/2026-10-15-input-02a-operating-recommendation-6bwaaahc/remaining-and-recommendation.json): F-S-06 제외 선정19파일의 입력/보존·native, 계산/Excel9·추가 계산 제외10,21회 자원 실측, 동시 요청/중단6시험, 평문 수명/프로세스 복구10시험은 완료했다. 실제 DRM 재검증은 사용자 제외다. 남은 것은 운영 예산·허용 대기/완료 경험·실행 경계 선택, 검증 한계를 명시한 최종 판정/후속 티켓 제약이다. 기존19파일 재실행/새 golden·DRM 표본을 요구하지 않는다.
+- **미승인 추천:** 웹 요청 JVM과 별도인 프로세스/worker에서 비동기 처리한다. worker(파일 작업 실행 단위)당 초기 검증 예산2vCPU/2GiB, 동시 작업1·한 작업의 역할 파일은 순차 처리, 승인 case별 heap768MiB/1024MiB 유지다. 단일 요청 RSS 관측 최대570.8MiB와 기존1GiB heap 외 Python/native/VM 메모리 여유를 고려한 초기안이며, 해당 CPU/메모리 제한에서 성능을 실측한 운영 사양은 아니다. 동시4혼합987.0MiB/동일 SUPPLY2요청952.7MiB Pass를 최대 동시4 또는 무제한 메모리 안전 근거로 쓰지 않는다. 웹서버/OS의 기존 예산은 별도다.
+- 저장 경험 제안은 정상 완료30초 목표·접수부터 대기열/처리/필요한 저장 확정까지 요청 전체120초 상한이다. 접수 응답과 저장 성공을 구분하고 진행/실패 상태를 표시하며 기존 실패 시 요청 전체 취소/직전 성공 Draft 보존 규칙을 따른다. 두 수치는 미승인 목표/한도 후보이며 관측한SLA·p95가 아니다. 실제 물리 저장/DB 완료·timeout 취소 경계는 INPUT-04/Q8c 후속 계약으로 구체화한다. 평문 정리 유예는 이미 확정된 domain 규칙63을 그대로 따른다.
+- 근거/한계: 단일 파일7경로의 중앙값은0.223~11.858초·관측 최대12.027초다. 역할별 느린 중앙값 합19.693초는 **서로 다른 사례를 더한 추정**이고 같은4파일 최종저장 요청의 실측이 아니다. macOS10CPU/16GiB·OS cache 데워짐·각3회이며 DB/네트워크/storage 업로드·사후 보존 감사·fsync는 제외했다. 목표 환경/제한에서 대표 승인 경로를 좁게 재확인하는 것을 권장하며, 환경이 없으면 미검증 경계를 조건으로 수용/기록해 후속 제품 검증으로 전달한다. 이를 새 전체 production 조사 선행조건으로 확대하지 않는다.
+- 소스 재확인: [AsyncConfig](../../src/main/java/com/sk/common/config/AsyncConfig.java:20)는 같은 JVM의 스레드 pool5/최대10·대기1000이며 프로세스 격리가 아니다. 이 값을 workbook 동시성/접수 정책으로 재사용할 근거는 없다. [Java17 공식 문서](https://docs.oracle.com/en/java/javase/17/docs/specs/man/java.html)의 `-Xmx`는 heap 한도이며 VM 전체 메모리 한도가 아니다. [Kubernetes 공식 문서](https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/)의 CPU 제한/메모리 초과 종료 특성도 목표 제한에서 재확인을 권하는 근거다. 새 K8s Job/queue 기술·배포 구성을 이 추천으로 확정하지 않는다.
+- 사용자 결정은 자원 예산/초기 동시1,30초 목표/120초 상한의 허용 여부, 격리 비동기/진행 표시, 검증된 계산/보존 경계와 운영 미검증 한계를 붙인 **CONDITIONAL 판정 후보** 수용 여부다. 확인 후 domain Q7·Delivery Plan §6A에 최종 경계/판정을 기록하고 INPUT-03의 domain/persistence, INPUT-04의 비동기 계약, INPUT-07의 실제 materialization/worker·정리 구현 제약을 넘긴다. Draft transaction/Case/Run/운영 E2E는 INPUT-08~10의 후속 검증이다. 이번에는 추천 정리만 Complete·전체 INPUT-02A In Progress이며 최종 판정/정책 채택은 하지 않았다.
+
+## INPUT-02A 로컬 평문 작업사본 수명·삭제 — 2026-10-15
+
+- [최종 결과](../../temp/input-02a-engine/2026-10-15-plaintext-lifecycle-j210bq3l/final-summary.json)·[검증](../../temp/input-02a-engine/2026-10-15-plaintext-lifecycle-j210bq3l/verification.json)·[재현/경계](../../temp/input-02a-engine/2026-10-15-plaintext-lifecycle-j210bq3l/README.md): domain 규칙63으로10시험(핸들 대조1·workload9)을 통과했다. 별도 사전 핸들 대조1도 통과했으며 이전 동시 요청 probe의 승인 pipeline을 새 요청별0700 scratch에 복사했다. 허용식·입력·writer는 유지하고 시험용 오류와 JVM 임시/error 경로만 추가했다. 원본/정규화/대장/기존 검증·domain/Delivery Plan 포함2,526자료 hash 불변이다.
+
+| 사례 | 실제 조건 | 삭제·핸들0 확인까지, 초 | 결과 |
+| --- | --- | --- | --- |
+| H-01 | 실제 OUTPUT 사본을 읽기 핸들로 유지한 채 unlink; 경로·device/inode 대조 | 정리0.605, 열린 핸들1 검출 후 최종0 | Pass |
+| L-01~04 | F-D-03·F-S-01·F-T-04·F-O-04 정상 처리 | 4.345 / 3.777 / 3.464 / 0.617 | 모두60초 이내 Pass |
+| L-05 | F-D-03 준비/unit 생성 후 실제 예외 종료 | 0.629 | 60초 이내 Pass |
+| L-06 | F-S-01 준비/unit 후 대기·시험 deadline12초에서 TERM | 0.622 | 60초 이내 Pass |
+| L-07 | F-S-01 최종 ZIP 첫 member flush 중 SIGKILL; 열린 부분 파일 관측 | 0.659 | 60초 이내 Pass |
+| R-01 | F-D-03 unit 단계에서 정리 controller SIGKILL·핸들8 잔존 후 새 recovery process | 복구 시작부터0.665 | 300초 이내 Pass |
+| R-02 | F-O-04 완성/검증 후 정리 전 controller SIGKILL·핸들1 잔존 후 새 recovery process | 복구 시작부터0.637 | 300초 이내 Pass |
+
+- 복구 중단 구간은 실제2.322/2.311초이며 옛 controller는 exit-9로 종료됐다. 외부 감사기는 그동안 파일을 지우지 않고 잔존 핸들을 관측한 뒤 새 복구 프로세스를 기동했다. 시간/mtime을 앞당기지 않았다. 종료 시간은 마지막 생존 관측/종료 신호부터 최종 핸들0까지의 보수적 상한이며, 복구 시간은 새 프로세스 기동 직전부터 계산해 startup/scan도 포함한다.60/300초 전에 실제 정리가 끝났으므로 기한 전체를 기다려 Pass로 만든 것이 아니다.
+- 새 완성5파일(정상4+복구 직전 완성1)은 삭제 전에 승인 hash/ZIP CRC·모든 XML/rels 재읽기 동일을 확인했고, source-only unit6도 기존 승인 unit과 동일하다. 정상2 JVM의 실제9,628평가/실패0/skip0을 기록했다. 세 번째 JVM은 계산 반환 후 저장 중 KILL되어 완성 평가 기록/게시 성공에 합산하지 않았다. Java/JUnit 테스트는 미사용이다. 이전 동일 hash의 Excel 비교·보존/native 근거를 재사용하며 새 native/링크/매크로·DRM 호출은 없다.
+- 모든 새 runtime/tools 입력 metadata·중간/완성 XLSM·unit/results TSV·stdout/stderr·VM 임시 사본을 삭제했다. 실제 임시 파일 mode0600, 요청 경로0700, 최종 파일/핸들/소유 그룹0·실패 분석용 평문 보관0이다. `lsof`는 같은 OS 사용자 중 열람 가능한 프로세스를 검사하고 경로와 device/inode 양쪽을 대조한다(최종 감사 경고0, 관측 시점별 프로세스 수는 verification.json). root/접근 불가 다른 사용자·저장장치 블록 삭제는 주장하지 않는다. 요청 token/파일 hash·크기·시각/상태만 새 증거로 남긴다.
+- 이번 완료는 같은 호스트에서 controller/worker의 실제 프로세스 종료·새 프로세스 복구를 시험한 로컬 경계다. OS reboot/정전·production worker/복구 scheduler·Draft/권한/transaction 구현을 증명하지 않는다.12초 deadline/0.5초 TERM 유예·짧은 중단은 시험 제어값이다. 기존 기능의 실제 DRM 재검증은 사용자 제외, 전체 INPUT-02A는 In Progress이며 운영 자원/허용 저장 대기·완료 경험/실행 경계·최종 판정은 남는다.
+
+## INPUT-02A 동시 요청 격리·timeout/강제 종료 후 정리 — 2026-10-15
+
+- [최종 결과](../../temp/input-02a-engine/2026-10-15-request-isolation-cleanup-xu06fygi/final-summary.json)·[재현/경계](../../temp/input-02a-engine/2026-10-15-request-isolation-cleanup-xu06fygi/README.md): 직전 승인 pipeline·POI Java를 새 temp에 복사했다. 계산/입력·구조 writer는 유지하고, 재현용 checkpoint·TERM 무시 조건만 분리했다. 외부 probe 제어기가 요청별 private scratch(0700)·새 session/process group·검증 후 게시·그룹 종료/정리를 담당했다. 고정 정규화 source에서 독립 시작하며 과거 승인 결과는 저장 후 hash 비교에만 썼다.
+
+| 시험 | 조건/관측 | 결과 |
+| --- | --- | --- |
+| C-01 four roles | F-D-03/F-S-04-DELETE/F-T-04/F-O-04 동시4요청, source/작업/결과 경로 분리, RSS 합계 관측987.0MiB | 4결과 승인 hash 동일·별도 파일/inode·scratch/소유 프로세스0, Pass |
+| C-02 same SUPPLY | F-S-01 동시2요청, 서로 다른 JVM이 동시에 살아 있는128표본, RSS 합계 관측952.7MiB | 2결과 승인 hash 동일·unit/결과/프로세스 분리, Pass |
+| T-01 ready timeout | source 준비/계산 unit 생성 후 test gate, 요청 시작12초 deadline에서 TERM | 준비 XLSM/unit 제거·실패 게시0·정상 동반 요청 완료, Pass |
+| T-02 hung JVM timeout | 자체 JVM만 STOP, 시험 Python만 TERM 무시. 12초 deadline→TERM→0.5초 유예 후 KILL | 정지 JVM/소유 그룹 종료·실패 게시0·정상 동반 요청 완료, Pass |
+| K-01 parent crash | pipeline 부모만 KILL, 남은 자식2개 관측 후 외부 제어기가 그룹 TERM/회수 | 고아 자식/작업 폴더0·정상 동반 요청 완료, Pass |
+| K-02 partial ZIP kill | 최종 ZIP 첫 member662byte 저장/flush 후 gate, 그룹 KILL | 불완전 ZIP 미게시·제거·정상 동반 요청 완료, Pass |
+
+- 6개 인정 시험/14요청 중 정상10파일은 [게시 검사](../../temp/input-02a-engine/2026-10-15-request-isolation-cleanup-xu06fygi/publication-verification.json)에서 기존 승인 결과와 hash/ZIP CRC·재읽기 동일이다. 실패 주입4요청의 게시 결과는0이고 앞서 게시된 성공 파일도 불변이다. 새 source-only unit11개는 기존 unit과 동일하다. [계산 기록](../../temp/input-02a-engine/2026-10-15-request-isolation-cleanup-xu06fygi/source-only-unit-and-evaluation.json): 완료8 JVM/35,164평가·실패0/skip0, 이 중 성공 게시7 JVM/25,552평가다. 나머지 완료9,612평가는 K-02에서 계산 후 저장을 중단했으므로 성공 결과로 게시하지 않았다. 주입으로 중단된2 JVM은 완료/정답/skip0을 주장하지 않고 별도 표시한다. JUnit/Gradle 테스트는 해당 없음이다.
+- [모든 시도의 정리 검사](../../temp/input-02a-engine/2026-10-15-request-isolation-cleanup-xu06fygi/all-attempt-process-and-scratch-checks.json): 최초 상태 조회 차단과 종료 조건 보정으로 중단된4요청을 포함해 실제18요청의 소유 그룹·scratch가 모두0이다. 실패 주입4건은 신호 발생 후 약2.11~2.29초에 파일 정리까지 확인했으며 정상 동반 요청의 완료 확인/감사도 포함한 관측값이다. 삭제 전 파일 목록/크기/hash와 신호/PID·정리 후 증거를 남기고 실제 중간 XLSM/unit은 제거했다. 성공 최종 XLSM과 내용 없는 제어 파일/진단 로그는 지정 temp에 보관한다. 원본/보관본/정규화4역할·대장·기존2,122자료 및 domain/Delivery Plan은 불변이다.
+- 재시도 이력: execution-v1의 앞3시험은 유지했다. T-02 첫 시도는 자체 JVM 상태를 읽는 `/bin/ps`의 sandbox 차단으로 중단·정리했다. 허용된 환경의 다음 시도에서는 STOP된 JVM까지 TERM으로 종료돼 KILL 전환 요구가 충족되지 않았다. 시험 Python에만 TERM 무시를 명시해 무응답 그룹을 재현한 뒤 execution-v3에서 미완료3시험만 Pass했다. 최초/2차 도구·로그/정리 기록을 보관했으며 이전 검증 자료를 고치지 않았다.
+- 측정은 macOS/Java17/POI5.4.0의 제한된 로컬 probe다. RSS 표본20ms 목표/최대 간격75.566ms·공유 페이지 중복/짧은 peak 누락 가능성이 있고 gate 대기/실패 주입 시간은 사용자 저장 응답시간이나 생산 동시성/SLA 기준으로 쓰지 않는다. 12초/0.5초도 시험값이며 운영 정책이 아니다. 외부 제어기가 생존한 worker 종료/정리 경계만 확인했다. 제품 API/Draft revision·권한/transaction, 제어기·호스트 전체 유실 복구, DRM 평문 보안 삭제·실제 운영 부하는 미검증이다.
+- 다음 확인은 DRM 복호화 표본/검증 가능한 대체 절차·평문 수명과 실제 운영 자원/허용 대기·완료 경험이다. 이를 반영한 동기/격리 비동기 경계 및 GO/CONDITIONAL/NO-GO·INPUT-03/04/07 전달 제약은 대기다. 이번 probe는 Complete·전체 INPUT-02A는 In Progress이며 native Excel/링크 갱신/매크로·제품 구현/배포는 실행하지 않았다.
+
+## INPUT-02A 승인4역할7경로 읽기→저장 자원 실측 — 2026-10-15
+
+- [최종 결과](../../temp/input-02a-engine/2026-10-15-approved-path-resource-nfg9e6_3/final-summary.json)·[환경](../../temp/input-02a-engine/2026-10-15-approved-path-resource-nfg9e6_3/environment.json)·[반복 원자료](../../temp/input-02a-engine/2026-10-15-approved-path-resource-nfg9e6_3/measurements-v1/measurements.json)·[재현 명령](../../temp/input-02a-engine/2026-10-15-approved-path-resource-nfg9e6_3/README.md): 고정 정규화4역할의 승인7경로를 각3회, 총21회 독립·순차 실행했다. 기존 준비 writer의 원본 읽기/입력·구조 변경 core와 기존 POI5.4.0 평가기를 새 temp에 복사해 연결했다. macOS27.0.1 arm64/10CPU/16GiB, Java17.0.14, Python3.12이며 계산마다 새 JVM이다. heap은 D03/S01 768MiB·S04DELETE1024MiB 설정을 유지했고 실제 메모리 측정과 구분한다.
+
+| 사례 | 회당 계산 셀 | 처리시간 중앙값(최소~최대), 초 | 부모·자식 동시 RSS 관측 peak, MiB | 단일 프로세스 kernel peak, MiB |
+| --- | --- | --- | --- | --- |
+| F-D-03 | 16 | 4.659 (4.468~4.896) | 570.8 | 555.3 |
+| F-D-05-DELETE | 0 | 5.141 (5.056~5.499) | 327.3 | 299.9 |
+| F-S-01 | 9612 | 9.208 (9.034~9.329) | 524.1 | 351.5 |
+| F-S-04-DELETE | 6264 | 11.858 (11.594~12.027) | 516.6 | 387.1 |
+| F-T-04 | 0 | 2.461 (2.435~2.461) | 267.5 | 239.8 |
+| F-O-01 | 0 | 0.234 (0.224~0.255) | 79.2 | 52.0 |
+| F-O-04 | 0 | 0.223 (0.221~0.237) | 79.9 | 52.3 |
+
+- 시간은 새 프로세스 시작→source 읽기/기존 source-local 검사·CRC→지정 입력/구조 반영→필요한 unit 새 추출→허용 POI→중간/최종 ZIP 저장·닫기→자식 종료까지다. 최초 protected hash·도구 준비/컴파일과 저장 후 hash/part/ZIP·정답/native 감사는 제외했다. 파일 저장은 OS buffered write/ZIP close이며 fsync·네트워크/DB/upload는 포함하지 않는다. 사전 hash 확인으로 OS 파일 캐시는 데워졌고 통제하지 않았다. 3회 표본은 production 부하·첫 디스크 읽기·서비스 JVM 상주 처리의 SLA/동시 처리량을 증명하지 않는다.
+- MiB는1,048,576byte, RSS는 실제 메모리에 올라온 프로세스 페이지다. 외부 관측기가 Darwin `proc_pid_rusage`로 supervisor·실행 중 Python·Java를10ms 목표 간격으로 합산했다(실제 최대 간격32.485ms). 표의 동시 peak는 관측값이며 간격보다 짧은 peak를 놓칠 수 있고 공유 페이지가 중복 집계될 수 있다. 별도로 `wait4/getrusage`의 프로세스별 kernel 최대 RSS를 byte로 기록했다. 서로 다른 시간에 나온 개별 최대값 합계는 보수적 상한일 뿐 동시 최대값으로 사용하지 않는다. observer 메모리는 합계에서 제외했다.
+- [unit 동등성](../../temp/input-02a-engine/2026-10-15-approved-path-resource-nfg9e6_3/unit-equivalence.json): 새 source/변경에서 추출한 계산 입력9개가 기존 source-only unit과 byte/hash 동일이다. 실제47,676셀 평가·실패0·skip0, 허용식/상수·고정 기존 cache 경계 변경0이다. [저장 검사](../../temp/input-02a-engine/2026-10-15-approved-path-resource-nfg9e6_3/verification.json): 최종21파일 모두 기존 승인 결과와 hash/모든 ZIP part 동일·CRC/재읽기 Pass, 원본/보관본/정규화4역할·대장·이전1,706자료 불변이다. golden은 생성 입력으로 읽지 않았고 같은 hash의 기존 Excel 비교·보존/native 근거를 유지했다. Java는 standalone9회 실제 평가이며 JUnit/Gradle 테스트 실행은 해당 없음이다.
+- 이 순차 실측 당시 남은 확인: 동시 요청의 자원/작업 경로 격리, timeout/kill·임시 파일 정리, DRM 표본/대체 절차와 평문 수명, 실제 운영 환경·허용 대기시간을 본 동기/격리 비동기 선택 및 GO/CONDITIONAL/NO-GO였다. 이후 위 로컬 동시 요청/worker 중단 정리 probe를 완료했다. 순차 실측에서는 native Excel/링크 갱신·매크로·동시 요청/실패 주입·DRM·제품 구현을 실행하지 않았다.
 
 ## INPUT-02A 4사례 선택 계산 부분 실행 — 2026-10-12
 

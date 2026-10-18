@@ -254,10 +254,10 @@ features:
     prohibited-word:
       refresh-rate: 3600000 # 1 hour (1h * 1000ms * 60s * 60m)
     event-keyword-alert-scan: # 키워드 알림 스캔
-      enabled: false
+      enabled: true
       fixed-delay-ms: 60000 # 1분
     event-keyword-alert-dispatch: # 키워드 알림 발송
-      enabled: false # 켜면 실제 메일 발송
+      enabled: true # 켜면 실제 메일 발송
       fixed-delay-ms: 30000 # 30초
       batch-size: 100
       max-attempts: 3
@@ -291,3 +291,6 @@ kubernetes:
   image-pull-secret-name: ${MI_K8S_IMAGE_PULL_SECRET_NAME:}
   callback-base-url: ${MI_K8S_CALLBACK_BASE_URL:http://localhost:8080}
 
+mi:
+  model-input:
+    model-code: DRAFT_API_SMOKE
