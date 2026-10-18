@@ -140,19 +140,16 @@ public interface MiEventRepository extends JpaRepository<MiEvent, Long>, CustomM
 
     /**
      * 이벤트-레코드 매핑 근거 조회 (Event Records 목록의 현재 페이지 레코드만 일괄 조회).
+     * (mi_event_id, mi_record_id) 유니크라 레코드당 최대 1건.
      */
     @Query(
         value = """
-            SELECT ecm.mi_record_id AS miRecordId,
-                   ecm.mapping_confidence AS mappingConfidence,
-                   ecm.mapping_reason AS mappingReason
-            FROM tmm_mi_mievent_candidate_record_map AS ecm
-            JOIN tmm_mi_mievent_candidate_m AS ec ON ec.mi_event_candidate_id = ecm.mi_event_candidate_id
-                AND ec.del_yn = 'N'
-            WHERE ecm.del_yn = 'N'
-                AND ec.mi_event_id = :eventId
-                AND ecm.mi_record_id IN (:recordIds)
-            ORDER BY ecm.crt_dtm DESC
+            SELECT m.mi_record_id AS miRecordId,
+                   m.match_reason AS matchReason
+            FROM tmm_mi_mievent_record_map AS m
+            WHERE m.mi_event_id = :eventId
+                AND m.mi_record_id IN (:recordIds)
+                AND m.del_yn = 'N'
             """,
         nativeQuery = true
     )
