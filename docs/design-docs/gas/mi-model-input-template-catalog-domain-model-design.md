@@ -43,7 +43,7 @@
   - `docs/conventions/db-term-dictionary-sheet2.csv`
 - supersedes:
   - 없음
-- last synced: 2026-10-16
+- last synced: 2026-10-19 (감사 이름·정밀도 사용자 채택은 DDL §6.8 참조)
 - open questions:
   - 조사·설계 병행 범위와 미결정 사항별 필요한 근거는 §1A.3~1A.5를 따른다. 공통 초안 작성 가능과 구현 착수 가능은 별도로 판정한다.
   - 구조 변경은 이번 release에 포함하며 주된 추가 방식은 마지막 행·열 추가로 확정했다(규칙 13·26). 표별 추가 경계, 신규 셀 처리와 중간 삽입·삭제 예외의 참조 갱신은 write 계약·실파일 검증에서 구체화해야 한다.
@@ -52,7 +52,7 @@
   - Draft는 §3.4/§5.1의 관계형 식별/유일성 + 검증된 순서 JSON 변경분으로 채택했다. 공통 저장의 물리 분리·복원 단위는 DDL §6.3, 최종저장/복구는 §5.2~5.3으로 구체화했다. 실제 DBA 적용·제품 검증은 후속이다.
   - 사용자·source Case당 진행 중 Draft 1건 제한과 기존 Draft 재개는 확정했다. 동시 생성·재개와 완료 후 새 Draft의 공통 API/저장 표현은 편집 API §3·DDL §6.3을 따른다. 폐기 API는 후속이다.
   - 임시저장 계산 실패 및 최종저장 실패 시 해당 요청 취소는 확정했다. 성공 경계와 부분 실패 복구는 §5.1~5.3에 정리했다. 실제 worker/DB/storage 경합·복구 검증은 후속이다.
-  - `BaseEntity`의 `crt_*` 감사 컬럼과 DB 명명 문서의 `reg_*` 표준 충돌을 DBA/데이터 표준 담당자가 확인해야 한다.
+  - 감사 이름·정밀도는 DDL §6.8의 사용자 채택을 따른다. 실제 적용·환경 시간대/외부 표준 확인은 DBA-04 잔여다.
   - 기간 축, 셀 원천(BASE/USER), 파생 테이블 표시를 스키마에 넣을지 조회 응답에서만 계산할지 정해야 한다. §14.4 참조.
 
 ## 1. Feature summary
@@ -400,6 +400,10 @@ ModelInputDraft 0..1 ── 1 finalized ScenarioCase
 
 ### 5.1 Draft 성공 revision·행·처리 요청 관계 — 사용자 채택 공통 설계
 
+감사 이름·정밀도/증분 적용은 [DDL §6.8](mi-model-input-template-catalog-erd-ddl-draft.md)이 소유한다. 작업120초 상한과 revision·행/시도 토큰의 상태 판단은 유지하고 감사 시각의 소수점에 의존하지 않는다.
+
+성공 확정/복원의 내부 delta 형식은 [DDL §6.3.4.1](mi-model-input-template-catalog-erd-ddl-draft.md)을 따른다. 검증된 표별 처리 결과를 저장하는 공통 경계와 아직 미연결인 실제 처리기/계산 실행을 구분하며, 저장 이력 누락·불일치를 원본 fallback으로 숨기지 않는다.
+
 ```text
 발행 묶음 1 ── N 표/field/정책 정의
 source Case 1 ── N 사용자 Draft ── 1 고정 4파일/발행 묶음 참조
@@ -464,6 +468,33 @@ Draft 1 ── 0..1 최종 Case (성공 때만 연결)
 | 비동기·재시작·정리 | [AsyncConfig](../../../src/main/java/com/sk/common/config/AsyncConfig.java)는 web JVM의 메모리 executor(5/10 threads, queue1000)와 SecurityContext/MDC 전파다. ScenarioModelJobDispatcher의 afterCommit·실패 조건 갱신, Run timeout/Job reconciler는 모델 Run 전용이다. Scenario staged cleanup은 TEMP/0·SCNRCASE와 기본24시간/1시간 주기를 사용한다. | 기존 @Async/모델 Job을 규칙64의 격리 편집 worker·durable QUEUED/RUNNING 복구로 간주하지 않는다. 공통 작업 기록의 claim/기한/시도·성공 여부 확인에 기반해 편집 worker를 연결한다. 기존 Scenario staged TTL은 Draft 전용 준비 기록을 정리하지 못하며 로컬 평문1분/복구5분·핸들 잔여0도 보장하지 않는다. 원래 기록/상태에 기반한 별도 정리 경계를 구현하되 자동 재실행/자동 purge 정책은 추가하지 않음 |
 
 파일 보호의 재사용 범위: FileService.upload는 FileEncryptionPolicy 대상이면 decrypt 후 저장하고 downloadFiles는 조건에 따라 encrypt한다. ObjectStorageService.uploadFile의 isPublic=false 분기는 ACL 공개 설정/공개 URL 반환을 하지 않는다. 이 사실만으로 실제 bucket ACL/저장 암호화가 검증됐다고 하지 않으며, 고객사/역할·비공개/권한 검사는 새 경로에서도 유지한다. 기존 암복호화 재사용 결정을 다시 승인받거나 원격 DRM 재시험을 공통 착수 조건으로 추가하지 않는다.
+
+### 5.5 첫 실제 변경 경로 — F-O-01 한정 worker 연결
+
+- 첫 지원은 §6.1의 F-O-01 PRESERVE 사례다. 정규화 OUTPUT SHA256 `69742cc9c6fba170324c09c21986574a390c741ba26d371acdce570aeaac28ce`, `USCostofSupply!B8`의 원본0.34와 요청0.35만 지원한다. 기존 BCPrices 가격 SET의 업무 승인은 유지하지만 계산/연관값 정책 미결이므로 이번 runtime 허용으로 확대하지 않는다. F-O-01 외 계산을 생략해 성공시키지 않는다.
+- 별도 발행/시험 Case의 `OUTPUT/USCostofSupply/us_cost_of_supply`에 B8 한 슬롯·`breakevenPrice` 필드만 READY로 선언한다. 기존 Case103/ACTIVE 발행은 수정하지 않는다. 접수·처리·확정에서 같은 제한과 소유/원본 기준을 대조한다. 이전 성공도 이 경로로 생성한 B8 보존 delta만 재현하고 지원하지 않는 누적 변경과 혼합하지 않는다.
+- 시험 발행은 별도 model-code/Case로 준비하고 그 설정의 시험 앱을 별도 포트에서 실행한다. 현재 model-code의 유일 ACTIVE 발행·Case103 연결과 기존 앱 설정을 바꾸지 않는다. worker도 시험 앱과 같은 model-code만 소비한다. 업무 model-code 다중 선택이나 ACTIVE 교체 기능을 이번 연결에 추가하지 않는다.
+- worker는 웹 component scan/스케줄러와 분리한 전용 진입점으로 DB queue를 읽는다. 웹은 실제 처리기를 실행하지 않는다. 전용 단일 container/PID1 감독 프로세스와 한 자식 JVM을 사용하며 규칙64의 전체 cgroup CPU/메모리/swap 제한을 시작 시 확인한다. heap 옵션만으로 자원 제한을 주장하지 않는다. 동일 queue의 모든 worker는 같은 private 영속 작업 volume을 공유하고 OS 파일 잠금으로 하나만 실행한다. master의 session advisory lock도 유지한다. 이 volume/단일 인스턴스 조건 없이 worker를 복제하지 않는다.
+- claim 전에 operation/token marker를 private volume의 `.pending-<operation>-<token>.json`에 완성·file fsync한 뒤 같은 directory의 최종 `<operation>-<token>.json`으로 atomic move하고 directory fsync한다. atomic move를 지원하지 않으면 claim하지 않는다. 이전 JVM 종료를 확인한 복구는 정해진 임시 marker 이름의 regular file만 회수하며, 손상된 최종 marker를 임의 삭제하거나 claim 여부를 추정하지 않는다. 파일 처리와 DB transaction은 분리한다. 자식 JVM의 watchdog은 DB 기한의 남은 시간 안에서 프로세스를 종료하고, 감독 프로세스는 종료/모든 handle 닫힘을 확인한 뒤 평문 scratch를 정리한다. 정상 작업도 결과 확정 전에 파일 handle을 닫고 삭제한다. supervisor 종료 시 자식도 함께 종료되는 PID namespace를 사용한다. 재시작은 같은 volume의 배타 잠금과 이전 자식 종료 증거를 확보한 marker만 복구하며 알 수 없는 RUNNING을 재실행/종료 추정하지 않는다.
+- 재시작 actor는 저장된 Draft/operation과 현재 사용자·회사/역할·삭제/타사 허용을 쓰기 DB에서 대조한다. 요청 JWT를 저장하거나 SYSTEM으로 대체하지 않는다. plaintext 파일은 0700 directory/0600 file, 작업 종료1분·복구5분 내 제거하고 실패 원문/파일을 보관하지 않는다. 기존 저장 원본은 공통 업로드 복호화 후 저장되는 경계를 그대로 읽으며 새 암호화 정책을 만들지 않는다. 최종 다운로드/최종저장·DRM 재검증은 이번 경로에 없다.
+
+
+#### 5.5.1 별도 시험 환경 준비·수동 확인 순서
+
+1. 별도 쓰기 시험 Case가 없으면 기존 `POST /api/v1/mi/fundamental-model/cases`의 multipart `title`과 `files`에 정규화 DEMAND/SUPPLY/TRADE/OUTPUT을 각각 한 개씩 새로 업로드한다. HTTP201/SUC-000·새 caseId(103 제외)·PENDING·files4를 확인한다. 이 API는 Run을 접수하지 않는다. 기존 Case의 파일 metadata만 복제해 같은 저장 객체를 참조하지 않는다. 새 Case ID를 확인한 뒤 그 Case만 별도 model-code의 F-O-01 발행에 연결한다. 발행 SQL/COMMIT과 실제 API는 사용자가 실행한다.
+2. 시험 웹 앱은 기존 앱과 다른 포트로 시작하며 `mi.model-input.model-code`를 별도 시험 발행 코드로, `mi.model-input.change-worker.enabled=true`로 지정한다. 기존 앱·Case103 model-code/발행 연결은 그대로 둔다. worker의 model-code도 반드시 같은 시험 발행 코드로 설정한다.
+3. 배포 묶음은 `./gradlew inputDraftWorkerDist`로 만든다. `docker build --build-arg WORKER_JRE_IMAGE=<검토한 Java17 이미지의 고정 참조> -f Dockerfile.input-draft-worker -t <시험 worker 이미지> build/input-draft-worker`로 이미지를 생성한다. 클래스/의존성만 포함하며 개인 application profile·XLSM·비밀 설정을 이미지에 넣지 않는다.
+4. private 외부 YAML에는 같은 master DB의 `spring.datasource.master.{jdbc-url,username,password,driver-class-name}`, 기존 허용 저장소의 `ncp.storage.{end-point,region-name,access-key,secret-key,bucket-name,prefix}`, 같은 `mi.model-input.model-code`를 준비한다. FINALIZE를 활성화할 때는 `mi.model-input.finalization.enabled=true`와 기존 앱과 동일한 `file.encryption.*`/`external.file-crypto.*` 정책·허용된 암복호화 설정도 전달한다. 비밀 값은 채팅/저장소/실행 기록에 적지 않는다. 컨테이너 UID10001이 읽을 수 있고 다른 사용자에게 공개되지 않도록 설정한다. 이 전용 설정은 웹 앱 profile 전체를 복제하지 않는다.
+5. `MI_INPUT_DRAFT_WORKER_IMAGE`를 검토한 이미지의 고정 참조로, `MI_INPUT_DRAFT_WORKER_CONFIG`를 위 외부 파일의 절대 경로로 지정하고 `docker compose -f compose.input-draft-worker.yml up -d`로 단일 worker를 시작한다. 재시작/업데이트 때 같은 compose project와 `worker-state` volume을 유지한다. 같은 DB의 worker를 별도 volume으로 복제하거나 `down -v`로 복구 marker를 지우지 않는다. CPU/메모리/swap 조건과 PID1 supervisor 확인이 실패하면 시작하지 않는다.
+6. 새 Case의 sourceVersion으로 Draft를 만들고 EDT-03에서 B8의 rowId·revision0·0.34를 얻는다. EDT-04에 그 rowId/필드로 SET0.35 한 건을 보내고 EDT-05의 SUCCEEDED/resultRevision1을 확인한다. EDT-03 revision1의0.35·같은 rowId와 동일 requestId 재전송 시 같은 operation/revision을 확인한다. 기존 Case103 상태는 기준과 대조한다. 성공 판단은 사용자 응답/조회 증거를 받은 뒤 실행 노트에 기록한다. 로컬 H2/파일 시험은 실제 MySQL/API 결과를 대신하지 않는다.
+
+#### 5.5.2 FINALIZE의 같은 worker 통합
+
+최종저장도 위 단일 영속 queue/worker·marker/시도 token·기한·감독 프로세스에서 처리한다. 신규 준비파일 schema를 적용한 뒤 웹/worker의 `mi.model-input.finalization.enabled`를 함께 활성화한다(기본 false). D 전용 준비/확정 경계는 §5.2~5.4를 구현하는 구성요소이며 별도 queue나 worker를 만들지 않는다. 기존 공통 저장 접수/조회와 원본/현재 사용자·고정 기준 검증을 재사용한다.
+
+대상 성공 revision0은 원본4파일을 byte 동일하게 복제·검증한다. nonzero는 전체 성공 chain을 검증하고 지정 F-O-01의 OUTPUT B8 적용/저장·보존 검증을 같은 처리기로 재사용한다. 미변경 역할은 byte 동일 복제하며 미지원 chain은 거부한다. 파일 IO는 master transaction 밖에서 순차 실행하며 전용 참조 기록 뒤에만 PUT한다. 새 Case/파일4/고정 발행·FINALIZED/요청 성공/준비 COMMITTED·슬롯 해제는 같은 master 확정이고 revision/Run은 추가하지 않는다.
+
+FINALIZE의 claim-null은 RUNNING이 없다는 증거가 아니다. 오류/불명 결과는 marker를 유지해 자식 JVM/전송 종료·평문 정리를 확인한 다음 쓰기 DB의 실제 상태/token으로 복구한다. 알려진 안전 failure reason만 marker에 원자적으로 기록할 수 있으며 payload/경로/거부값은 기록하지 않는다. 실패 준비 object는 같은 종료 증거와 durable 기록으로 반복 정리하고, 정리 미확정이면 marker를 유지한다. 성공/결과 불명 object나 고정 원본을 삭제하지 않는다. 실제 MySQL/storage/호스트 유실 확인은 사용자 후속이다.
 
 ## 6. Business rules
 
@@ -743,7 +774,7 @@ API 경로·요청·응답 계약은 feature spec/OpenAPI가 소유한다. 후�
 - 기존 3파일 `INDEPENDENT | MI_BASE | SCENARIO` case는 4파일 기능 cutover 전에 soft delete한다(`SCENARIO`의 연결 row 범위는 규칙 36). 대상 판별·건수·`RUNNING`
   0건·current `MI_BASE` 포함 여부를 DBA pre-check로 확인하고, case/file/run/result hard delete는 하지 않는다.
 - `tmm_mi_model_param_m`도 같은 파일/시트 위치를 저장한다. 양식 버전 FK를 공유하지 않으면 이중 관리가 남는다.
-- `BaseEntity` 감사 컬럼과 DB 명명 문서의 시스템 컬럼명이 다르다. physical DDL 적용 전 표준 예외 확인이 필요하다.
+- 감사 이름은 실제 DB/코드 기준 유지로 사용자가 채택했다. 정밀도/증분 적용은 DDL §6.8, 실제 시간대/외부 표준 확인 잔여는 DBA-04를 따른다.
 - 양식 판별 해시의 입력값 정규화 방식이 미정이다. hash column은 nullable로 두되 자동 판별을 아직 계약하지 않는다.
 - §3.2의 불변 파일 등록과 §3.3의 발행 양식/catalog 묶음·Case 연결을 제품 조회에 구현하고 seed/기존 4파일 등록·일관성을 검증해야 한다. 추가 내용 해시/독립 revision 컬럼이나 원본 불변성 재확인을 선행조건으로 두지 않는다.
 - 표본에서 설비명이 유일키가 아니었다. `BCRegasification`의 `Malta LNG`가 국가만 다른 2행으로 존재하고
@@ -781,7 +812,7 @@ API 경로·요청·응답 계약은 feature spec/OpenAPI가 소유한다. 후�
   - row/column data type 범위
   - active template 단건 보장 generated column
   - legacy 3파일 case soft-delete 대상 판별, `RUNNING` 차단, rollback과 DBA rollout 순서
-  - 감사 컬럼 명명 충돌
+  - DDL §6.8 감사 적용·실측 확인
 
 ## 13. Dictionary updates
 
@@ -941,7 +972,7 @@ SUMMARY I15가 요구하는 순서(① BCRegasification 등록 → ② 조정 �
 - 2026-10-01: 전체 화면 구조와 단일 표 값의 반환 범위 및 FE 필드 이름/셀 표현 재사용 계약은 위 API spec §3이 소유한다. 규칙 25는 표시 후보와 write 허용 범위를 구분하도록 정리했으며 표 단위 조회를 일부 field만 반환한다는 결정으로 해석하지 않는다. API의 `sections/inputId/tableData`를 새 도메인 엔터티나 DB 컬럼 요구로 해석하지 않는다.
 - 2026-10-01 UI 보완: API의 table은 일반 표·부속 control·control 전용 영역을 포함하는 논리 입력 영역이다. 공유 control의 연결/소유권과 원본 셀 binding 표현은 위 API spec §3.1B가 소유한다. 이 조회 표현만으로 새 엔터티/DB 컬럼이나 모드 write 정책을 확정하지 않는다.
 - 2026-10-01 업로드 보완: kind별 등록 양식으로 사용자 파일을 검증·파싱하는 화면용 POST /input-uploads 계약은 위 API spec §3.3이 소유한다. 신규 포맷 자동 등록이나 4파일 Case 생성과 구분하며 업로드 원본 보존/수명 모델은 별도 확정한다.
-- 행·열 추가 방식과 감사 컬럼 표준 충돌은 구현 전 해결해야 하지만, hierarchy 조회용 schema 초안 검토는 진행할 수 있다.
+- 행·열 추가 방식과 DDL §6.8 감사 적용 확인은 실제 활성화 전 해결해야 하지만, hierarchy 조회용 schema 초안 검토는 진행할 수 있다.
 - 2026-10-08: 트랙 B 공통 흐름·책임·정책 후보·A 결과 반영과 단계 완료 판정은 §1A·§3.1을 따른다. API·DDL·Delivery Plan·조사 대장 변경은 이 요약만으로 확정되지 않는다.
 - 2026-10-08 트랙 A 인계: Midstream A-01/A-02와 AG/AI 상류 정적 확인을 §1A.3~1A.4의 Q1~Q6·H1~H4에 연결했다. 기존 §6 승인은 유지하며 다음 표 조사·계산/보존/구조 검증과 사람 결정은 미완료다.
 - 2026-10-13: 사용자 결정으로 계산 방식을 POI 부분 계산으로 정했다(§1A.4 Q7). 격리·동기/비동기 경계와 `INPUT-02A` 판정은 미완료다.

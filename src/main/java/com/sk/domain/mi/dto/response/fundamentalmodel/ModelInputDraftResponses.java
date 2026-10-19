@@ -68,6 +68,35 @@ public final class ModelInputDraftResponses {
     public record Problem(@Schema(description="클라이언트 분기용 오류 사유") String reason,
         @Schema(description="현재 성공 저장 번호. 판단할 수 없으면 null",nullable=true,types={"integer","null"},minimum="0",maximum="9007199254740991") Long currentRevision,
         @Schema(description="명령별 상세 오류. 이 조회 slice는 빈 배열") List<Object> issues) {}
+    @Schema(requiredProperties={"operationId","requestId","draftId","status","statusLabel","baseRevision","resultRevision","rowMappings","affectedTableIds","failure","statusEndpoint"})
+    public record OperationView(
+        @Schema(description="서버 작업 ID",format="uuid") String operationId,
+        @Schema(description="클라이언트 중복 식별 ID",format="uuid") String requestId,
+        @Schema(description="소유 Draft ID",format="uuid") String draftId,
+        @Schema(description="처리 상태. SUCCEEDED만 임시저장 성공",allowableValues={"QUEUED","RUNNING","SUCCEEDED","FAILED"}) String status,
+        @Schema(description="처리 상태 표시명") String statusLabel,
+        @Schema(description="접수한 기준 성공 번호",minimum="0",maximum="9007199254740991") long baseRevision,
+        @Schema(description="SUCCEEDED에만 기준+1. 다른 상태는 null",nullable=true,types={"integer","null"},minimum="1",maximum="9007199254740991") Long resultRevision,
+        @Schema(description="성공한 신규 행 대응. 성공 전/실패는 빈 배열") List<JsonNode> rowMappings,
+        @Schema(description="성공 후 다시 조회할 표 ID. 성공 전/실패는 빈 배열") List<String> affectedTableIds,
+        @Schema(description="FAILED의 안전한 오류. 다른 상태는 null",nullable=true,types={"object","null"},schemaResolution=Schema.SchemaResolution.INLINE) Problem failure,
+        @Schema(description="이 작업 결과 조회의 상대 경로") String statusEndpoint) {}
+    @Schema(requiredProperties={"status","code","message","data"})
+    public record OperationEnvelope(boolean status,String code,String message,OperationView data) {}
+    @Schema(requiredProperties={"role","fileNo"})
+    public record FinalizedFile(@Schema(allowableValues={"SUPPLY","DEMAND","TRADE","OUTPUT"}) String role,
+        @Schema(description="새 Case에 연결한 파일 번호",format="int64",minimum="1") long fileNo) {}
+    @Schema(requiredProperties={"operationId","requestId","draftId","status","statusLabel","baseRevision","finalizedCaseId","files","caseEndpoint","failure","statusEndpoint"})
+    public record FinalizationView(@Schema(format="uuid") String operationId,@Schema(format="uuid") String requestId,@Schema(format="uuid") String draftId,
+        @Schema(allowableValues={"QUEUED","RUNNING","SUCCEEDED","FAILED"}) String status,String statusLabel,
+        @Schema(minimum="0",maximum="9007199254740991") long baseRevision,
+        @Schema(description="SUCCEEDED에만 새 PENDING Case ID",nullable=true,types={"integer","null"},format="int64",minimum="1") Long finalizedCaseId,
+        @Schema(description="성공만 SUPPLY/DEMAND/TRADE/OUTPUT 4건. 그 외 빈 배열") List<FinalizedFile> files,
+        @Schema(description="성공 Case 조회 상대 경로. 그 외 null",nullable=true,types={"string","null"}) String caseEndpoint,
+        @Schema(description="FAILED만 안전한 오류. 그 외 null",nullable=true,types={"object","null"},schemaResolution=Schema.SchemaResolution.INLINE) Problem failure,
+        String statusEndpoint) {}
+    @Schema(requiredProperties={"status","code","message","data"})
+    public record FinalizationEnvelope(boolean status,String code,String message,FinalizationView data) {}
     // 실제 wire wrapper와 같은 구조를 생성 OpenAPI에 명시한다.
     @Schema(requiredProperties={"status","code","message","data"})
     public record CreatedEnvelope(boolean status,String code,String message,Created data) {}

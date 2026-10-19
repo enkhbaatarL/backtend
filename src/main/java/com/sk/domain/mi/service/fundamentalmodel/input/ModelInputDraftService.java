@@ -40,16 +40,91 @@ import org.springframework.transaction.support.TransactionTemplate;
 public class ModelInputDraftService {
     private static final List<String> ROLES=List.of("DEMAND","SUPPLY","TRADE","OUTPUT");
     private final ModelInputDraftRepository store;
-    private final AuthorizationService authorization;
+    @org.springframework.lang.Nullable private final AuthorizationService authorization;
     private final InputWorkbookReader reader;
     private final InputDraftJson json;
     // JpaConfig의 primary manager이며 JDBC도 같은 masterDataSource를 사용한다.
     private final PlatformTransactionManager transactionManager;
+    @org.springframework.beans.factory.annotation.Value("${mi.model-input.change-worker.enabled:false}")
+    private boolean changesEnabled;
+    @org.springframework.beans.factory.annotation.Value("${mi.model-input.finalization.enabled:false}")
+    private boolean finalizationEnabled;
+    private Supplier<InputDraftFinalizationService> finalizations=()->null;
+    @org.springframework.beans.factory.annotation.Autowired
+    void finalizations(org.springframework.beans.factory.ObjectProvider<InputDraftFinalizationService> provider) {
+        finalizations=provider::getIfAvailable;
+    }
+    // 수동 조립하는 로컬 transaction fixture도 같은 경계를 사용한다.
+    void finalizations(InputDraftFinalizationService service){finalizations=()->service;}
+    private InputDraftFinalizationService finalizer() {
+        var service=finalizations.get();if(service==null)throw InputDraftException.internal();return service;
+    }
+    Source verifyFinalizationBasis(Draft draft,ModelInputDraftRepository.Operation operation) {
+        Actor actor=workerActor(draft,operation);Source original=source(actor,draft.caseId(),false);
+        if(!draft.sourceVersion().equals(original.version())||draft.templateId()!=original.catalog().templateId())
+            throw InputDraftException.conflict("SOURCE_CHANGED",draft.revision());
+        fixed(draft,original,draft.sourceVersion());
+        InputDraftPreserveChange.validateHistory(store.revisions(draft.id()),json);
+        return original;
+    }
+    @Transactional(propagation=Propagation.NOT_SUPPORTED)
+    public FinalizationView submitFinalization(String id,InputDraftJson.FinalizationRequest request) {
+        Actor actor=actor();recoverExpired(actor,id);
+        tx(true,()->{
+            Draft draft=store.owned(id,actor.company,actor.user);store.caseAccess(draft.caseId(),false);
+            if(!finalizationEnabled&&store.request(id,request.requestId())==null&&!draft.status().equals("FINALIZED"))
+                throw InputDraftException.conflict("POLICY_UNSUPPORTED",draft.revision());
+            return null;
+        });
+        var role=authorization.getCurrentRole();
+        if(role!=com.sk.domain.shared.enums.Role.USER&&role!=com.sk.domain.shared.enums.Role.ADMIN)throw InputDraftException.missing();
+        var operation=finalizer().accept(id,actor.company,actor.user,actor.login,role.name(),
+            new InputDraftFinalizationService.Request(request.requestId(),request.baseRevision(),request.title(),request.description()));
+        return finalizationView(operation);
+    }
+    @Transactional(propagation=Propagation.NOT_SUPPORTED)
+    public FinalizationView finalizationOperation(String id,String operationId) {
+        Actor actor=actor();recoverExpired(actor,id);
+        return tx(true,()->{
+            Draft draft=store.owned(id,actor.company,actor.user);store.caseAccess(draft.caseId(),false);
+            var op=store.operation(id,operationId,false);
+            if(!op.type().equals("FINALIZE"))throw InputDraftException.missing();
+            return finalizationView(op);
+        });
+    }
+    private FinalizationView finalizationView(ModelInputDraftRepository.Operation op) {
+        if(!op.type().equals("FINALIZE")||op.schemaVersion()!=1)throw InputDraftException.internal();
+        String label=switch(op.status()){case "QUEUED"->"대기 중";case "RUNNING"->"처리 중";case "SUCCEEDED"->"최종저장 완료";case "FAILED"->"최종저장 실패";default->throw InputDraftException.internal();};
+        Long caseId=null;List<FinalizedFile> files=List.of();Problem failure=null;
+        if(op.status().equals("SUCCEEDED")) {
+            JsonNode result=json.payload(op.result());
+            if(!result.path("finalizedCaseId").isIntegralNumber()||!result.path("finalizedCaseId").canConvertToLong()
+                ||result.path("finalizedCaseId").longValue()<=0||!result.path("files").isArray()||result.path("files").size()!=4)throw InputDraftException.internal();
+            caseId=result.path("finalizedCaseId").longValue();var saved=new ArrayList<FinalizedFile>();
+            for(int i=0;i<4;i++) {
+                JsonNode file=result.path("files").get(i);
+                if(!InputDraftFinalizationService.ROLES.get(i).equals(file.path("role").asText())||!file.path("fileNo").isIntegralNumber()
+                    ||!file.path("fileNo").canConvertToLong()||file.path("fileNo").longValue()<=0)throw InputDraftException.internal();
+                saved.add(new FinalizedFile(file.path("role").asText(),file.path("fileNo").longValue()));
+            }
+            if(saved.stream().map(FinalizedFile::fileNo).distinct().count()!=4)throw InputDraftException.internal();files=List.copyOf(saved);
+        } else if(op.status().equals("FAILED")) {
+            JsonNode problem=json.payload(op.failure());
+            if(!Set.of("VALIDATION_FAILED","CALCULATION_FAILED","STRUCTURE_VALIDATION_FAILED","PRESERVATION_FAILED","PERSISTENCE_FAILED","TIMEOUT","SOURCE_CHANGED","POLICY_INCOMPLETE","POLICY_UNSUPPORTED").contains(problem.path("reason").asText())
+                ||!problem.path("currentRevision").isIntegralNumber()||!problem.path("errors").isArray())throw InputDraftException.internal();
+            List<Object> issues=new ArrayList<>();problem.path("errors").forEach(issues::add);
+            failure=new Problem(problem.path("reason").asText(),problem.path("currentRevision").longValue(),List.copyOf(issues));
+        }
+        return new FinalizationView(op.id(),op.requestId(),op.draftId(),op.status(),label,op.baseRevision(),caseId,files,
+            caseId==null?null:"/api/v1/mi/fundamental-model/cases/"+caseId,failure,
+            "/api/v1/mi/fundamental-model/input-drafts/"+op.draftId()+"/finalizations/"+op.id());
+    }
     private record Actor(int company,int user,String companyCode,String login) {}
-    private record Source(long caseId,Catalog catalog,List<FileRef> files,String key,String version,
+    record Source(long caseId,Catalog catalog,List<FileRef> files,String key,String version,
         Map<String,String> inputIds,Map<Long,InputReadDefinition> definitions) {}
-    private record State(Draft draft,Source source) {}
+    private record State(Draft draft,Source source,InputDraftHistory history) {}
     private Actor actor() {
+        if(authorization==null)throw InputDraftException.missing();
         int company=authorization.getCompanyNoWithPriority(),user=authorization.getUserNo();
         String code=authorization.getCompanyCdWithPriority(),login=authorization.getSubject();
         if(company<=0||user<=0||code==null||code.isBlank()||login==null||login.isBlank()||login.length()>50)throw InputDraftException.missing();
@@ -119,8 +194,9 @@ public class ModelInputDraftService {
             Source current=source(actor,caseId,true);
             Draft existing=store.active(actor.company,actor.user,caseId);
             if(existing==null)throw InputDraftException.conflict("DRAFT_SOURCE_CONFLICT",previous.revision());
-            fixed(existing,current,requestedVersion);supported(existing);
-            return new Created(summary(existing,current),false);
+            existing=store.lockOwned(existing.id(),actor.company,actor.user);
+            fixed(existing,current,requestedVersion);
+            return new Created(summary(existing,restore(existing,current).source),false);
         });
         if(!basis.version.equals(requestedVersion))throw InputDraftException.conflict("SOURCE_CHANGED",null);
         List<RowRef> rows=new ArrayList<>();
@@ -144,7 +220,7 @@ public class ModelInputDraftService {
             Source current=source(actor,caseId,true);
             if(!basis.version.equals(current.version))throw InputDraftException.conflict("SOURCE_CHANGED",null);
             Draft existing=store.active(actor.company,actor.user,caseId);
-            if(existing!=null){fixed(existing,current,requestedVersion);supported(existing);return new Created(summary(existing,current),false);}
+            if(existing!=null){existing=store.lockOwned(existing.id(),actor.company,actor.user);fixed(existing,current,requestedVersion);return new Created(summary(existing,restore(existing,current).source),false);}
             Draft created=store.create(actor.company,actor.user,caseId,current.catalog,current.version,current.files,rows,actor.login);
             return new Created(summary(created,current),true);
         });
@@ -155,19 +231,197 @@ public class ModelInputDraftService {
         if(!expected.equals(tx(true,()->store.fixedFiles(draft.id()))))throw InputDraftException.conflict("SOURCE_CHANGED",draft.revision());
     }
     private State state(Actor actor,String id) {
-        Draft draft=store.owned(id,actor.company,actor.user);Source source=source(actor,draft.caseId(),false);
+        return state(actor,store.lockOwned(id,actor.company,actor.user));
+    }
+    private State state(Actor actor,Draft draft) {
+        Source source=source(actor,draft.caseId(),false);
         if(!draft.sourceVersion().equals(source.version)) throw InputDraftException.conflict("SOURCE_CHANGED",draft.revision());
         fixed(draft,source,draft.sourceVersion());
-        // 이번 slice는 성공 revision0만 생성. 이후 성공 chain reader는 CHANGE slice가 제공한다.
-        supported(draft);
-        return new State(draft,source);
+        return restore(draft,source);
     }
-    private static void supported(Draft draft) {
-        if(draft.revision()!=0||draft.activeOperation()!=null)throw InputDraftException.conflict("POLICY_UNSUPPORTED",draft.revision());
+    private State restore(Draft draft,Source source) {
+        InputDraftHistory history=InputDraftHistory.restore(draft,source.catalog,source.definitions,
+            store.revisions(draft.id()),store.rowIdentities(draft.id()),store.rowPositions(draft.id()),json);
+        Source current=new Source(source.caseId,history.catalog(),source.files,source.key,source.version,source.inputIds,history.definitions());
+        return new State(draft,current,history);
     }
     private Summary summary(Draft draft,Source source) {
         String label=switch(draft.status()){case "DRAFT"->"편집 중";case "FINALIZED"->"최종저장 완료";case "DISCARDED"->"폐기";default->throw InputDraftException.internal();};
-        return new Summary(draft.id(),draft.caseId(),source.key,draft.sourceVersion(),draft.status(),label,draft.revision(),null,null,draft.finalizedCase(),"/api/v1/mi/fundamental-model/input-drafts/"+draft.id());
+        String endpoint=null;
+        if(draft.activeOperation()!=null) {
+            var op=store.operation(draft.id(),draft.activeOperation(),false);
+            if(op.terminal())throw InputDraftException.internal();
+            endpoint="/api/v1/mi/fundamental-model/input-drafts/"+draft.id()
+                +(op.type().equals("CHANGE")?"/change-requests/":"/finalizations/")+op.id();
+        }
+        return new Summary(draft.id(),draft.caseId(),source.key,draft.sourceVersion(),draft.status(),label,draft.revision(),draft.activeOperation(),endpoint,draft.finalizedCase(),"/api/v1/mi/fundamental-model/input-drafts/"+draft.id());
+    }
+    @Transactional(propagation=Propagation.NOT_SUPPORTED)
+    public OperationView submitChange(String id,InputDraftJson.ChangeRequest request) {
+        Actor actor=actor();recoverExpired(actor,id);
+        return tx(false,()->{
+            Draft draft=store.lockOwned(id,actor.company,actor.user);store.caseAccess(draft.caseId(),false);
+            var previous=store.request(id,request.requestId());
+            if(previous!=null) {
+                if(previous.schemaVersion()!=1)throw InputDraftException.internal();
+                if(!previous.type().equals("CHANGE")||!json.sameRequest(previous.request(),request))throw InputDraftException.conflict("IDEMPOTENCY_CONFLICT",draft.revision());
+                return operationView(previous);
+            }
+            Source current=source(actor,draft.caseId(),false);
+            if(!draft.sourceVersion().equals(current.version))throw InputDraftException.conflict("SOURCE_CHANGED",draft.revision());
+            fixed(draft,current,draft.sourceVersion());
+            if(!draft.status().equals("DRAFT"))throw InputDraftException.conflict("DRAFT_NOT_EDITABLE",draft.revision());
+            if(draft.activeOperation()!=null)throw InputDraftException.conflict("DRAFT_BUSY",draft.revision());
+            if(draft.revision()!=request.baseRevision())throw InputDraftException.conflict("REVISION_CONFLICT",draft.revision());
+            State state=restore(draft,current);
+            validateChange(state.source,request,draft);
+            var role=authorization.getCurrentRole();
+            if(role!=com.sk.domain.shared.enums.Role.USER&&role!=com.sk.domain.shared.enums.Role.ADMIN)throw InputDraftException.missing();
+            var op=store.enqueueChange(draft,request.requestId(),request.baseRevision(),new String(json.changeBytes(request),StandardCharsets.UTF_8),role.name(),actor.login);
+            return operationView(op);
+        });
+    }
+    void validateChange(Source source,InputDraftJson.ChangeRequest request,Draft draft) {
+        for(JsonNode command:request.operations()) {
+            TableRef table=source.catalog.tables().stream().filter(t->t.key().equals(command.path("tableId").asText())).findFirst().orElseThrow(InputDraftException::missing);
+            InputReadDefinition definition=source.definitions.get(table.id());
+            String capability=definition.capabilities().path(command.path("type").asText()).asText();
+            if(capability.equals("INCOMPLETE"))throw InputDraftException.conflict("POLICY_INCOMPLETE",draft.revision());
+            if(capability.equals("NOT_ALLOWED"))throw InputDraftException.validation(draft.revision(),List.of(Map.of(
+                "commandId",command.path("commandId").asText(),"tableId",table.key(),
+                "path","/operations/"+request.operations().indexOf(command),"reason","ACTION_NOT_ALLOWED")));
+            if(!capability.equals("READY"))throw InputDraftException.conflict("POLICY_UNSUPPORTED",draft.revision());
+        }
+        if(!changesEnabled)throw InputDraftException.conflict("POLICY_UNSUPPORTED",draft.revision());
+        InputDraftPreserveChange.validate(source,request,draft,store.rowPositions(draft.id()));
+        InputDraftPreserveChange.validateHistory(store.revisions(draft.id()),json);
+    }
+    record PreparedChange(String draftId,String operationId,String token,String company,FileRef file,
+            long templateId,TableRef table,String rowId,InputDraftJson.ChangeRequest request,BigDecimal previous) {}
+    private Actor workerActor(Draft draft,ModelInputDraftRepository.Operation op) {
+        var owner=store.workerOwner(draft,op);
+        if(owner.companyCode()==null||owner.companyCode().isBlank()||owner.login()==null||owner.login().isBlank())throw InputDraftException.missing();
+        return new Actor(owner.company(),owner.user(),owner.companyCode(),owner.login());
+    }
+    @Transactional(propagation=Propagation.NOT_SUPPORTED)
+    PreparedChange prepareWorkerChange(String id,String operationId,String token) {
+        return tx(false,()->{
+            Draft draft=store.lockForRecovery(id);var op=store.lockRunningChange(id,operationId,token);
+            if(op==null)return null;
+            Actor actor=workerActor(draft,op);State current=state(actor,draft);
+            var request=json.changeRequest(new java.io.ByteArrayInputStream(op.request().getBytes(StandardCharsets.UTF_8)));
+            InputDraftPreserveChange.validate(current.source,request,draft,store.rowPositions(id));
+            InputDraftPreserveChange.validateHistory(store.revisions(id),json);
+            TableRef table=current.source.catalog.tables().stream().filter(t->t.key().equals(InputDraftPreserveChange.TABLE)).findFirst().orElseThrow(InputDraftException::internal);
+            Map<Integer,Cell> values=new HashMap<>();current.history.overlay(table.id(),8,values);
+            Cell previous=values.get(2);
+            if(previous!=null&&(previous.formula()||!(previous.raw() instanceof BigDecimal)))throw InputDraftException.internal();
+            return new PreparedChange(id,op.id(),token,actor.companyCode,current.source.files.stream().filter(f->f.role().equals("OUTPUT")).findFirst().orElseThrow(),
+                current.source.catalog.templateId(),table,request.operations().get(0).path("rowRef").path("rowId").asText(),request,previous==null?null:(BigDecimal)previous.raw());
+        });
+    }
+    @Transactional(propagation=Propagation.NOT_SUPPORTED)
+    public OperationView changeOperation(String id,String operationId) {
+        Actor actor=actor();recoverExpired(actor,id);
+        return tx(true,()->{
+            Draft draft=store.owned(id,actor.company,actor.user);store.caseAccess(draft.caseId(),false);
+            var op=store.operation(id,operationId,false);
+            if(!op.type().equals("CHANGE"))throw InputDraftException.missing();
+            return operationView(op);
+        });
+    }
+    private void recoverExpired(Actor actor,String id) {
+        tx(false,()->{
+            Draft draft=store.lockOwned(id,actor.company,actor.user);store.caseAccess(draft.caseId(),false);
+            if(draft.activeOperation()!=null) {
+                var operation=store.operation(id,draft.activeOperation(),true);
+                if(operation.type().equals("FINALIZE"))finalizer().expireQueuedJoined(id,operation.id());
+                else store.expireChange(id,operation.id(),failureJson("TIMEOUT",draft.revision()));
+            }
+            return null;
+        });
+    }
+    private String failureJson(String reason,long revision) {
+        return new String(json.bytes(new Problem(reason,revision,List.of())),StandardCharsets.UTF_8);
+    }
+    /** 내부 복구 경계: 호출자는 이 token의 worker 종료를 확인해야 한다. HTTP로 노출하지 않는다. */
+    @Transactional(propagation=Propagation.NOT_SUPPORTED)
+    public void recoverStoppedChange(String id,String operationId,String stoppedToken) {
+        tx(false,()->{
+            Draft draft=store.lockForRecovery(id);
+            // timeout을 먼저 확정하고, 성공/실패가 이미 commit됐다면 종료 상태를 보존한다.
+            var op=store.expireChange(id,operationId,failureJson("TIMEOUT",draft.revision()));
+            if(!op.terminal())store.failStoppedChange(id,operationId,stoppedToken,failureJson("PERSISTENCE_FAILED",draft.revision()));
+            return null;
+        });
+    }
+    /** 후속 처리기가 검증한 결과의 내부 확정 경계. HTTP/dispatcher에는 연결하지 않는다. */
+    @Transactional(propagation=Propagation.NOT_SUPPORTED)
+    public boolean completeChange(String id,String operationId,String token,JsonNode verifiedDelta) {
+        Actor actor=actor();
+        var role=authorization.getCurrentRole();
+        if(role!=com.sk.domain.shared.enums.Role.USER&&role!=com.sk.domain.shared.enums.Role.ADMIN)throw InputDraftException.missing();
+        return completeChange(actor,id,operationId,token,verifiedDelta);
+    }
+    @Transactional(propagation=Propagation.NOT_SUPPORTED)
+    boolean completeWorkerChange(String id,String operationId,String token,JsonNode verifiedDelta) {
+        return completeChange(null,id,operationId,token,verifiedDelta);
+    }
+    private boolean completeChange(Actor requestedActor,String id,String operationId,String token,JsonNode verifiedDelta) {
+        try {
+            return tx(false,()->{
+                Draft draft=requestedActor==null?store.lockForRecovery(id):store.lockOwned(id,requestedActor.company,requestedActor.user);
+                store.caseAccess(draft.caseId(),false);
+                var op=store.lockRunningChange(id,operationId,token);
+                if(op==null){store.expireChange(id,operationId,failureJson("TIMEOUT",draft.revision()));return false;}
+                Actor actor=requestedActor==null?workerActor(draft,op):requestedActor;
+                State state=state(actor,draft);
+                if(requestedActor==null) {
+                    var request=json.changeRequest(new java.io.ByteArrayInputStream(op.request().getBytes(StandardCharsets.UTF_8)));
+                    InputDraftPreserveChange.validate(state.source,request,draft,store.rowPositions(id));
+                    InputDraftPreserveChange.validateHistory(store.revisions(id),json);
+                }
+                var applied=state.history.apply(json.delta(json.deltaText(verifiedDelta)),op.request(),op.id(),op.baseRevision()+1);
+                boolean completed=store.completeChange(id,operationId,token,applied.delta(),applied.result(),applied.rows());
+                if(!completed)store.expireChange(id,operationId,failureJson("TIMEOUT",draft.revision()));
+                return completed;
+            });
+        } catch(RuntimeException ex) {
+            if(requestedActor!=null&&ex instanceof InputDraftException error&&error.getStatus().value()==404)throw error;
+            String reason=ex instanceof InputDraftException error&&"SOURCE_CHANGED".equals(error.getReason())?"SOURCE_CHANGED":"PERSISTENCE_FAILED";
+            // commit 응답 유실도 여기로 올 수 있다. 쓰기 DB 잠금으로 성공 여부를 먼저 재확인한다.
+            return tx(false,()->{
+                Draft draft=requestedActor==null?store.lockForRecovery(id):store.lockOwned(id,requestedActor.company,requestedActor.user);
+                if(requestedActor!=null)store.caseAccess(draft.caseId(),false);
+                var op=store.operation(id,operationId,true);
+                if(op.status().equals("SUCCEEDED"))return token!=null&&token.equals(op.token());
+                if(op.terminal()||!op.status().equals("RUNNING")||token==null||!token.equals(op.token()))return false;
+                op=store.expireChange(id,operationId,failureJson("TIMEOUT",draft.revision()));
+                if(!op.terminal())store.failStoppedChange(id,operationId,token,failureJson(reason,draft.revision()));
+                return false;
+            });
+        }
+    }
+    private OperationView operationView(ModelInputDraftRepository.Operation op) {
+        if(op.schemaVersion()!=1)throw InputDraftException.internal();
+        String label=switch(op.status()){case "QUEUED"->"대기 중";case "RUNNING"->"처리 중";case "SUCCEEDED"->"저장 완료";case "FAILED"->"저장 실패";default->throw InputDraftException.internal();};
+        Long resultRevision=null;List<JsonNode> mappings=List.of();List<String> affected=List.of();Problem failure=null;
+        if(op.status().equals("SUCCEEDED")) {
+            JsonNode result=json.payload(op.result());
+            if(!result.path("resultRevision").isIntegralNumber()||result.path("resultRevision").longValue()!=op.baseRevision()+1
+                ||!result.path("rowMappings").isArray()||!result.path("affectedTableIds").isArray())throw InputDraftException.internal();
+            resultRevision=result.path("resultRevision").longValue();
+            List<JsonNode> rowList=new ArrayList<>();result.path("rowMappings").forEach(rowList::add);mappings=List.copyOf(rowList);
+            List<String> tableList=new ArrayList<>();for(JsonNode table:result.path("affectedTableIds")){if(!table.isTextual())throw InputDraftException.internal();tableList.add(table.asText());}affected=List.copyOf(tableList);
+        } else if(op.status().equals("FAILED")) {
+            JsonNode problem=json.payload(op.failure());
+            if(!Set.of("VALIDATION_FAILED","CALCULATION_FAILED","STRUCTURE_VALIDATION_FAILED","PRESERVATION_FAILED","PERSISTENCE_FAILED","TIMEOUT","SOURCE_CHANGED","POLICY_INCOMPLETE","POLICY_UNSUPPORTED","REVISION_CONFLICT").contains(problem.path("reason").asText())
+                ||!problem.has("currentRevision")||!problem.path("issues").isArray())throw InputDraftException.internal();
+            List<Object> issues=new ArrayList<>();problem.path("issues").forEach(issues::add);
+            failure=new Problem(problem.path("reason").asText(),problem.path("currentRevision").isNull()?null:problem.path("currentRevision").longValue(),List.copyOf(issues));
+        }
+        return new OperationView(op.id(),op.requestId(),op.draftId(),op.status(),label,op.baseRevision(),resultRevision,mappings,affected,failure,
+            "/api/v1/mi/fundamental-model/input-drafts/"+op.draftId()+"/change-requests/"+op.id());
     }
     private List<Section> sections(Source source) {
         List<Section> result=new ArrayList<>();
@@ -196,10 +450,18 @@ public class ModelInputDraftService {
         return new SourceStructure(source.key,source.version,sections(source),null);
     }
     @Transactional(propagation=Propagation.NOT_SUPPORTED)
-    public Structure structure(String id) {Actor actor=actor();State state=tx(true,()->state(actor,id));return new Structure(summary(state.draft,state.source),sections(state.source),null);}
+    public Structure structure(String id) {
+        Actor actor=actor();
+        return tx(false,()->{
+            // 포인터와 작업을 읽는 동안 timeout/종료 복구가 같은 Draft를 바꾸지 못하게 한다.
+            Draft draft=store.lockOwned(id,actor.company,actor.user);
+            State state=state(actor,draft);
+            return new Structure(summary(state.draft,state.source),sections(state.source),null);
+        });
+    }
     @Transactional(propagation=Propagation.NOT_SUPPORTED)
     public Table table(String id,long revision,String key,Integer first) {
-        Actor actor=actor();State state=tx(true,()->state(actor,id));
+        Actor actor=actor();State state=tx(false,()->state(actor,id));
         if(revision!=state.draft.revision())throw InputDraftException.conflict("REVISION_CONFLICT",state.draft.revision());
         TableRef table=state.source.catalog.tables().stream().filter(t->t.key().equals(key)).findFirst().orElseThrow(InputDraftException::missing);
         InputReadDefinition def=state.source.definitions.get(table.id());List<Integer> candidate=def.page(first,2000),headers=def.headerRows();
@@ -208,20 +470,32 @@ public class ModelInputDraftService {
         Set<Integer> invalidRows=new HashSet<>(),invalidControls=new HashSet<>();
         FileRef file=state.source.files.stream().filter(f->f.role().equals(table.role())).findFirst().orElseThrow(InputDraftException::internal);
         List<Window> windows=new ArrayList<>();
-        windows.add(new Window(table.sheet(),
-            row->headers.contains(row)||(wanted.contains(row)&&row<=cutoff[0]),Set.copyOf(def.columns()),(row,values)->{
-            budget[0]+=json.bytes(values).length;
-            if(budget[0]>InputDraftJson.RESPONSE_LIMIT&&!headers.contains(row)&&candidate.contains(row)&&!candidate.isEmpty()&&row!=candidate.get(0)){cutoff[0]=Math.min(cutoff[0],row-1);return;}
-            rows.computeIfAbsent(row,k->new HashMap<>()).putAll(values);
-        },invalidRows::add));
+        Map<Integer,List<Integer>> sourceRows=new HashMap<>();
+        for(int row:wanted){Integer original=state.history.sourceRow(table.id(),row);if(original!=null)sourceRows.computeIfAbsent(original,k->new ArrayList<>()).add(row);}
+        windows.add(new Window(table.sheet(),row->sourceRows.containsKey(row)&&sourceRows.get(row).stream().anyMatch(current->headers.contains(current)||current<=cutoff[0]),Set.copyOf(def.columns()),(original,values)->{
+            for(int row:sourceRows.get(original)) {
+                if(!headers.contains(row)&&row>cutoff[0])continue;
+                budget[0]+=json.bytes(values).length;
+                if(budget[0]>InputDraftJson.RESPONSE_LIMIT&&!headers.contains(row)&&candidate.contains(row)&&!candidate.isEmpty()&&row!=candidate.get(0)){cutoff[0]=Math.min(cutoff[0],row-1);continue;}
+                rows.computeIfAbsent(row,k->new HashMap<>()).putAll(values);
+            }
+        },original->invalidRows.addAll(sourceRows.get(original))));
         for(JsonNode control:def.controls()) {
             int boundRow=control.path("binding").path("rowNumber").asInt(),boundColumn=control.path("binding").path("columnIndex").asInt()+1;
-            windows.add(new Window(table.sheet(),row->row==boundRow,Set.of(boundColumn),
-                (row,values)->rows.computeIfAbsent(row,k->new HashMap<>()).putAll(values),invalidControls::add));
+            JsonNode original=state.history.originalControl(table.id(),control.path("id").asText());
+            int sourceRow=original.path("binding").path("rowNumber").asInt(),sourceCol=original.path("binding").path("columnIndex").asInt()+1;
+            windows.add(new Window(table.sheet(),row->row==sourceRow,Set.of(sourceCol),
+                (row,values)->{if(values.containsKey(sourceCol))rows.computeIfAbsent(boundRow,k->new HashMap<>()).put(boundColumn,values.get(sourceCol));},invalidControls::add));
         }
         reader.read(file,actor.companyCode,windows);
+        for(int row:wanted)state.history.overlay(table.id(),row,rows.computeIfAbsent(row,k->new HashMap<>()));
+        for(JsonNode control:def.controls()) {
+            int row=control.path("binding").path("rowNumber").asInt(),col=control.path("binding").path("columnIndex").asInt()+1;
+            Cell value=state.history.control(control.path("sourceTableId").asText(),row,col);
+            if(value!=null)rows.computeIfAbsent(row,k->new HashMap<>()).put(col,value);
+        }
         List<Integer> page=new ArrayList<>(candidate.stream().filter(row->row<=cutoff[0]).toList());
-        Map<Integer,String> identities=new HashMap<>();tx(true,()->store.rows(id,table.id())).forEach(row->identities.put(row.row(),row.id()));
+        Map<Integer,String> identities=state.history.bindings(table.id());
         Table result;
         while(true) {
             result=project(state,table,def,page,rows,identities,invalidRows);
@@ -231,7 +505,7 @@ public class ModelInputDraftService {
         // 크기로 정한 범위만 검사한다. 오류 때문에 행을 건너뛰거나 페이지를 줄이지 않는다.
         if(!invalidControls.isEmpty()||invalidRows.stream().anyMatch(headers::contains)
             ||page.stream().anyMatch(invalidRows::contains))throw InputDraftException.internal();
-        State current=tx(true,()->state(actor,id));
+        State current=tx(false,()->state(actor,id));
         if(current.draft.revision()!=revision)throw InputDraftException.conflict("REVISION_CONFLICT",current.draft.revision());
         if(!state.source.version.equals(current.source.version))throw InputDraftException.conflict("SOURCE_CHANGED",revision);
         return result;
@@ -242,15 +516,18 @@ public class ModelInputDraftService {
         Set<Integer> returned=new java.util.TreeSet<>(def.headerRows());returned.addAll(page);
         for(int row:returned) {
             Map<Integer,Cell> cells=values.getOrDefault(row,Map.of());Map<String,Object> record=new LinkedHashMap<>();record.put("id",row-1);record.put("rowNumber",row);
-            for(int col:def.columns()){Cell value=cells.get(col);if(value!=null)record.put("column"+(col-1),value.display());}
+            for(int col:def.columns()){Cell value=cells.get(col);if(value!=null&&value.display()!=null)record.put("column"+(col-1),value.display());}
             grid.add(record);
             if(!page.contains(row))continue;
-            String rowId=ids.get(row);bindings.add(new RowBinding(row,rowId,rowId==null?"EMPTY_SLOT":"SOURCE"));Map<String,Object> typed=new LinkedHashMap<>();
+            String rowId=ids.get(row);
+            if(rowId==null&&def.identityColumns().stream().map(cells::get).anyMatch(value->value!=null&&value.raw()!=null
+                &&(!(value.raw() instanceof String text)||!text.isBlank())))invalidRows.add(row);
+            bindings.add(new RowBinding(row,rowId,rowId==null?"EMPTY_SLOT":state.history.origin(rowId)));Map<String,Object> typed=new LinkedHashMap<>();
             for(JsonNode field:def.fields()) {
                 int col=field.path("columnNumber").asInt();Cell value=cells.get(col);
                 boolean editable="READY".equals(field.path("policyStatus").path("SET").asText())&&table.scopes().stream().anyMatch(scope->scope.contains(row,col));
                 if(editable&&(value==null||!value.formula()))inputs.add((long)row*16384+(col-1));
-                if(editable&&rowId!=null&&value!=null&&!value.formula()) {
+                if(editable&&rowId!=null&&value!=null&&value.raw()!=null&&!value.formula()) {
                     try {typed.put(field.path("fieldKey").asText(),typed(field.path("dataType").asText(),value.raw()));}
                     catch(InputDraftException ex){invalidRows.add(row);}
                 }
@@ -258,7 +535,8 @@ public class ModelInputDraftService {
             if(rowId!=null)edits.add(new EditValue(rowId,Map.copyOf(typed)));
         }
         List<JsonNode> fields=new ArrayList<>();for(JsonNode original:def.fields()){ObjectNode field=original.deepCopy();int col=field.remove("columnNumber").asInt();field.put("columnField","column"+(col-1));fields.add(field);}
-        Map<String,String> caps=new LinkedHashMap<>();def.capabilities().fields().forEachRemaining(e->caps.put(e.getKey(),"READY".equals(e.getValue().asText())?"UNSUPPORTED":e.getValue().asText()));
+        Map<String,String> caps=new LinkedHashMap<>();def.capabilities().fields().forEachRemaining(e->caps.put(e.getKey(),"READY".equals(e.getValue().asText())
+            &&!(changesEnabled&&e.getKey().equals("SET")&&InputDraftPreserveChange.supports(table,def))?"UNSUPPORTED":e.getValue().asText()));
         List<JsonNode> controls=new ArrayList<>();for(JsonNode original:def.controls()){ObjectNode control=original.deepCopy();int row=control.path("binding").path("rowNumber").asInt(),col=control.path("binding").path("columnIndex").asInt()+1;Cell cell=values.getOrDefault(row,Map.of()).get(col);control.set("value",json.tree(cell==null?null:cell.raw()));controls.add(control);}
         Integer start=page.isEmpty()?null:page.get(0),end=page.isEmpty()?null:page.get(page.size()-1),next=null;
         if(end!=null) {List<Integer> after=def.page(end,2);if(after.size()>1)next=after.get(1);}

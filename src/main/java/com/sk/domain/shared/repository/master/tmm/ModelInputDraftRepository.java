@@ -8,6 +8,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import java.time.LocalDateTime;
 import javax.sql.DataSource;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
@@ -88,6 +89,181 @@ public class ModelInputDraftRepository {
     public Draft owned(String id,int company,int user) {
         return jdbc.query("SELECT * FROM tmd_mdl_inptdrftm WHERE drft_id=? AND cust_cpny_no=? AND usr_no=? AND del_yn='N'",
             this::draft,id,company,user).stream().findFirst().orElseThrow(InputDraftException::missing);
+    }
+    /** 접수/복구는 항상 Draft → 요청 순서로 잠근다. 호출 transaction은 master여야 한다. */
+    public Draft lockOwned(String id,int company,int user) {
+        requireTransaction();
+        return jdbc.query("SELECT * FROM tmd_mdl_inptdrftm WHERE drft_id=? AND cust_cpny_no=? AND usr_no=? AND del_yn='N' FOR UPDATE",
+            this::draft,id,company,user).stream().findFirst().orElseThrow(InputDraftException::missing);
+    }
+    private Draft lockDraft(String id) {
+        requireTransaction();
+        return jdbc.query("SELECT * FROM tmd_mdl_inptdrftm WHERE drft_id=? AND del_yn='N' FOR UPDATE",this::draft,id)
+            .stream().findFirst().orElseThrow(InputDraftException::missing);
+    }
+    public Draft lockForRecovery(String id){return lockDraft(id);}
+    private static void requireTransaction() {
+        if(!org.springframework.transaction.support.TransactionSynchronizationManager.isActualTransactionActive())throw new IllegalStateException("master transaction required");
+    }
+    public record Operation(String id,String draftId,String requestId,String type,String role,long baseRevision,
+        String status,int schemaVersion,String request,String token,LocalDateTime expires,String result,String failure,String actor) {
+        public boolean terminal(){return status.equals("SUCCEEDED")||status.equals("FAILED");}
+    }
+    private Operation operation(ResultSet rs,int ignored)throws SQLException {
+        return new Operation(rs.getString("prcs_id"),rs.getString("drft_id"),rs.getString("req_id"),rs.getString("prcs_type_cd"),
+            rs.getString("usr_role_cd"),rs.getLong("base_rvsn_no"),rs.getString("prcs_stat_cd"),rs.getInt("json_rvsn_no"),
+            rs.getString("req_json"),rs.getString("try_tokn"),rs.getTimestamp("expr_dtm").toLocalDateTime(),rs.getString("rslt_json"),rs.getString("fail_json"),rs.getString("crt_usr_logn_id"));
+    }
+    public Operation request(String draftId,String requestId) {
+        return jdbc.query("SELECT * FROM tmd_mdl_inptdrftprcsl WHERE drft_id=? AND req_id=?",this::operation,draftId,requestId).stream().findFirst().orElse(null);
+    }
+    public Operation operation(String draftId,String operationId,boolean lock) {
+        if(lock)requireTransaction();
+        return jdbc.query("SELECT * FROM tmd_mdl_inptdrftprcsl WHERE drft_id=? AND prcs_id=?"+(lock?" FOR UPDATE":""),this::operation,draftId,operationId)
+            .stream().findFirst().orElseThrow(InputDraftException::missing);
+    }
+    public LocalDateTime databaseTime(){return jdbc.queryForObject("SELECT CURRENT_TIMESTAMP(6)",LocalDateTime.class);}
+    public Operation enqueueChange(Draft draft,String requestId,long baseRevision,String request,String role,String actor) {
+        Draft current=lockDraft(draft.id());
+        if(!current.status().equals("DRAFT"))throw InputDraftException.conflict("DRAFT_NOT_EDITABLE",current.revision());
+        if(current.activeOperation()!=null)throw InputDraftException.conflict("DRAFT_BUSY",current.revision());
+        if(current.revision()!=baseRevision)throw InputDraftException.conflict("REVISION_CONFLICT",current.revision());
+        // 감사 시간은 초 단위다. 같은 값을 기한의 기준으로 써 DB 반올림/CHECK 불일치를 막는다.
+        LocalDateTime now=databaseTime().withNano(0);String id=UUID.randomUUID().toString();
+        jdbc.update("""
+            INSERT INTO tmd_mdl_inptdrftprcsl(prcs_id,drft_id,req_id,prcs_type_cd,usr_role_cd,base_rvsn_no,prcs_stat_cd,json_rvsn_no,req_json,expr_dtm,crt_dtm,mod_dtm,crt_usr_logn_id,mod_usr_logn_id)
+            VALUES(?,?,?,'CHANGE',?,?,'QUEUED',1,?,?,?,?,?,?)
+            """,id,current.id(),requestId,role,baseRevision,request,now.plusSeconds(120),now,now,actor,actor);
+        int changed=jdbc.update("UPDATE tmd_mdl_inptdrftm SET actv_prcs_id=?,mod_usr_logn_id=?,mod_dtm=? WHERE drft_id=? AND actv_prcs_id IS NULL AND rvsn_no=? AND drft_stat_cd='DRAFT'",id,actor,now,current.id(),baseRevision);
+        if(changed!=1)throw InputDraftException.internal();
+        return operation(current.id(),id,false);
+    }
+    /** 후속 격리 worker가 DB에서 같은 QUEUED를 찾는 경계. 메모리 queue는 근거가 아니다. */
+    public List<Operation> queuedChanges() { return queuedOperations(false); }
+    public List<Operation> queuedOperations(boolean finalizations) {
+        return jdbc.query("""
+            SELECT p.* FROM tmd_mdl_inptdrftprcsl p
+            JOIN tmd_mdl_inptdrftm d ON d.drft_id=p.drft_id JOIN tmd_mdl_inpttmpltm t ON t.tmplt_id=d.tmplt_id
+            WHERE p.prcs_stat_cd='QUEUED' AND (p.prcs_type_cd='CHANGE' OR (? AND p.prcs_type_cd='FINALIZE')) AND t.mdl_spt_cd=?
+            ORDER BY p.expr_dtm,p.prcs_id LIMIT 100
+            """,this::operation,finalizations,modelCode);
+    }
+    public Operation claimChange(String draftId,String operationId) {
+        return claimChange(draftId,operationId,UUID.randomUUID().toString());
+    }
+    /** marker를 먼저 fsync한 서버 토큰만 전달한다. HTTP 입력으로 받지 않는다. */
+    public Operation claimChange(String draftId,String operationId,String token) {
+        if(token==null||!UUID.fromString(token).toString().equals(token))throw InputDraftException.internal();
+        Draft draft=lockDraft(draftId);Operation op=operation(draftId,operationId,true);
+        if(op.schemaVersion()!=1||!op.type().equals("CHANGE"))throw InputDraftException.internal();
+        if(!op.status().equals("QUEUED")||!draft.status().equals("DRAFT")||!operationId.equals(draft.activeOperation())
+            ||draft.revision()!=op.baseRevision()||!databaseTime().isBefore(op.expires()))return null;
+        int changed=jdbc.update("UPDATE tmd_mdl_inptdrftprcsl SET prcs_stat_cd='RUNNING',try_tokn=?,bgn_dtm=CURRENT_TIMESTAMP(6),mod_dtm=CURRENT_TIMESTAMP WHERE drft_id=? AND prcs_id=? AND prcs_stat_cd='QUEUED' AND expr_dtm>CURRENT_TIMESTAMP(6)",token,draftId,operationId);
+        return changed==1?operation(draftId,operationId,false):null;
+    }
+    public record WorkerOwner(int company,int user,String companyCode,String login) {}
+    /** 요청의 원래 actor/역할과 현재 DB의 회사·사용 권한을 함께 확인한다. */
+    public WorkerOwner workerOwner(Draft draft,Operation op) {
+        return jdbc.query("""
+            SELECT d.cust_cpny_no,d.usr_no,c.cust_cpny_cd,u.usr_logn_id
+            FROM tmd_mdl_inptdrftm d JOIN tmd_usrm u ON u.usr_no=d.usr_no
+            JOIN tmd_custcpnym c ON c.cust_cpny_no=d.cust_cpny_no
+            WHERE d.drft_id=? AND d.del_yn='N' AND u.del_yn='N' AND c.del_yn='N'
+              AND u.usr_logn_id=? AND u.usr_role_cd=? AND u.usr_role_cd IN ('USER','ADMIN')
+              AND ((u.usr_role_cd='USER' AND u.cust_cpny_no=d.cust_cpny_no AND c.cust_cpny_cd='SKGAS')
+                OR (u.usr_role_cd='ADMIN' AND u.otcmp_svc_accs_psbl_yn='Y'))
+            """,(rs,n)->new WorkerOwner(rs.getInt(1),rs.getInt(2),rs.getString(3),rs.getString(4)),
+            draft.id(),op.actor(),op.role()).stream().findFirst().orElseThrow(InputDraftException::missing);
+    }
+    /** 성공 기록도 이 잠금/기준 아래 같은 transaction에서 delta·행·revision과 함께 확정해야 한다. */
+    public Operation lockRunningChange(String draftId,String operationId,String token) {
+        Draft draft=lockDraft(draftId);Operation op=operation(draftId,operationId,true);
+        return op.schemaVersion()==1&&op.type().equals("CHANGE")&&op.status().equals("RUNNING")&&token!=null&&token.equals(op.token())
+            &&draft.status().equals("DRAFT")&&operationId.equals(draft.activeOperation())&&draft.revision()==op.baseRevision()
+            &&databaseTime().isBefore(op.expires())?op:null;
+    }
+    public record Revision(long number,Long base,String operation,int schema,String delta,
+        String type,String status,int operationSchema,Long operationBase,String request,String result) {}
+    public record RowIdentity(long table,String id,Integer original,String operation,String client) {}
+    public record RowPosition(long table,String id,long begin,Long end,Integer row) {}
+    public record RowWrite(long table,String id,String client,Integer row,boolean added) {}
+    public List<Revision> revisions(String draftId) {
+        return jdbc.query("""
+            SELECT r.*,p.prcs_type_cd,p.prcs_stat_cd,p.json_rvsn_no AS op_schema,
+                p.base_rvsn_no AS op_base,p.req_json,p.rslt_json,p.del_yn AS op_deleted
+            FROM tmd_mdl_inptdrftrvsnl r LEFT JOIN tmd_mdl_inptdrftprcsl p
+                ON p.drft_id=r.drft_id AND p.prcs_id=r.prcs_id
+            WHERE r.drft_id=? ORDER BY r.rvsn_no
+            """,(rs,n)->{
+                if(!"N".equals(rs.getString("del_yn"))||(rs.getString("prcs_id")!=null&&!"N".equals(rs.getString("op_deleted"))))throw InputDraftException.internal();
+                return new Revision(rs.getLong("rvsn_no"),rs.getObject("base_rvsn_no",Long.class),rs.getString("prcs_id"),rs.getInt("json_rvsn_no"),rs.getString("dlta_json"),
+                    rs.getString("prcs_type_cd"),rs.getString("prcs_stat_cd"),rs.getInt("op_schema"),rs.getObject("op_base",Long.class),rs.getString("req_json"),rs.getString("rslt_json"));
+            },draftId);
+    }
+    public List<RowIdentity> rowIdentities(String draftId) {
+        return jdbc.query("SELECT * FROM tmd_mdl_inptdrftrowm WHERE drft_id=? ORDER BY inpt_tbl_id,row_id",(rs,n)->{
+            if(!"N".equals(rs.getString("del_yn")))throw InputDraftException.internal();
+            return new RowIdentity(rs.getLong("inpt_tbl_id"),rs.getString("row_id"),rs.getObject("org_row_no",Integer.class),rs.getString("prcs_id"),rs.getString("clnt_row_id"));
+        },draftId);
+    }
+    public List<RowPosition> rowPositions(String draftId) {
+        return jdbc.query("SELECT * FROM tmd_mdl_inptdrftrowh WHERE drft_id=? ORDER BY row_id,bgn_rvsn_no",(rs,n)->{
+            if(!"N".equals(rs.getString("del_yn")))throw InputDraftException.internal();
+            return new RowPosition(rs.getLong("inpt_tbl_id"),rs.getString("row_id"),rs.getLong("bgn_rvsn_no"),rs.getObject("end_rvsn_no",Long.class),rs.getObject("row_no",Integer.class));
+        },draftId);
+    }
+    /** 검증된 결과만 저장한다. 호출자는 같은 master transaction에서 payload/행 소속을 먼저 검사한다. */
+    public boolean completeChange(String draftId,String operationId,String token,String delta,String result,List<RowWrite> rows) {
+        Operation op=lockRunningChange(draftId,operationId,token);
+        if(op==null)return false;
+        long next=op.baseRevision()+1;
+        if(next>9007199254740991L)throw InputDraftException.internal();
+        jdbc.update("""
+            INSERT INTO tmd_mdl_inptdrftrvsnl(drft_id,rvsn_no,json_rvsn_no,base_rvsn_no,prcs_id,dlta_json,crt_usr_logn_id,mod_usr_logn_id)
+            VALUES(?,?,1,?,?,?,?,?)
+            """,draftId,next,op.baseRevision(),op.id(),delta,op.actor(),op.actor());
+        for(RowWrite row:rows)if(row.added())jdbc.update("""
+            INSERT INTO tmd_mdl_inptdrftrowm(row_id,drft_id,inpt_tbl_id,prcs_id,clnt_row_id,crt_usr_logn_id,mod_usr_logn_id)
+            VALUES(?,?,?,?,?,?,?)
+            """,row.id(),draftId,row.table(),op.id(),row.client(),op.actor(),op.actor());
+        // 위치 교환/이동은 모든 이전 current를 닫은 뒤 새 위치를 넣어 generated UK를 지킨다.
+        for(RowWrite row:rows)if(!row.added()) {
+            int changed=jdbc.update("UPDATE tmd_mdl_inptdrftrowh SET end_rvsn_no=?,mod_usr_logn_id=?,mod_dtm=CURRENT_TIMESTAMP WHERE drft_id=? AND inpt_tbl_id=? AND row_id=? AND end_rvsn_no IS NULL",next,op.actor(),draftId,row.table(),row.id());
+            if(changed!=1)throw InputDraftException.internal();
+        }
+        for(RowWrite row:rows)jdbc.update("""
+            INSERT INTO tmd_mdl_inptdrftrowh(row_id,bgn_rvsn_no,drft_id,inpt_tbl_id,row_no,crt_usr_logn_id,mod_usr_logn_id)
+            VALUES(?,?,?,?,?,?,?)
+            """,row.id(),next,draftId,row.table(),row.row(),op.actor(),op.actor());
+        int finished=jdbc.update("""
+            UPDATE tmd_mdl_inptdrftprcsl SET prcs_stat_cd='SUCCEEDED',rslt_json=?,end_dtm=CURRENT_TIMESTAMP(6),mod_dtm=CURRENT_TIMESTAMP,mod_usr_logn_id=?
+            WHERE drft_id=? AND prcs_id=? AND prcs_stat_cd='RUNNING' AND try_tokn=? AND expr_dtm>CURRENT_TIMESTAMP(6)
+            """,result,op.actor(),draftId,op.id(),token);
+        if(finished!=1)throw InputDraftException.internal(); // 늦은 완료는 위 INSERT까지 전부 rollback한다.
+        int advanced=jdbc.update("""
+            UPDATE tmd_mdl_inptdrftm SET rvsn_no=?,actv_prcs_id=NULL,mod_dtm=CURRENT_TIMESTAMP,mod_usr_logn_id=?
+            WHERE drft_id=? AND drft_stat_cd='DRAFT' AND rvsn_no=? AND actv_prcs_id=?
+            """,next,op.actor(),draftId,op.baseRevision(),op.id());
+        if(advanced!=1)throw InputDraftException.internal();
+        return true;
+    }
+    public Operation expireChange(String draftId,String operationId,String failure) {
+        Draft draft=lockDraft(draftId);Operation op=operation(draftId,operationId,true);
+        if(!op.type().equals("CHANGE")||op.terminal()||databaseTime().isBefore(op.expires()))return op;
+        return failLocked(draft,op,failure);
+    }
+    /** 호출자가 해당 worker/시도의 종료를 확인한 경우에만 사용한다. 시작 때 전체 RUNNING을 실패로 바꾸지 않는다. */
+    public Operation failStoppedChange(String draftId,String operationId,String stoppedToken,String failure) {
+        Draft draft=lockDraft(draftId);Operation op=operation(draftId,operationId,true);
+        if(!op.type().equals("CHANGE")||!op.status().equals("RUNNING")||stoppedToken==null||!stoppedToken.equals(op.token()))return op;
+        return failLocked(draft,op,failure);
+    }
+    private Operation failLocked(Draft draft,Operation op,String failure) {
+        if(!op.id().equals(draft.activeOperation()))throw InputDraftException.internal();
+        jdbc.update("UPDATE tmd_mdl_inptdrftprcsl SET prcs_stat_cd='FAILED',fail_json=?,end_dtm=CURRENT_TIMESTAMP(6),mod_dtm=CURRENT_TIMESTAMP WHERE drft_id=? AND prcs_id=? AND prcs_stat_cd IN ('QUEUED','RUNNING')",failure,draft.id(),op.id());
+        int changed=jdbc.update("UPDATE tmd_mdl_inptdrftm SET actv_prcs_id=NULL,mod_usr_logn_id=?,mod_dtm=CURRENT_TIMESTAMP WHERE drft_id=? AND actv_prcs_id=?",op.actor(),draft.id(),op.id());
+        if(changed!=1)throw InputDraftException.internal();
+        return operation(draft.id(),op.id(),false);
     }
     public Map<String,Long> fixedFiles(String draft) {
         Map<String,Long> files=new LinkedHashMap<>();

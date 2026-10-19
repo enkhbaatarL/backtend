@@ -29,15 +29,15 @@ public class UploadedFile extends BaseEntity {
     @Comment("파일번호")
     private Long fileNo;
 
-    @Column(name = "org_file_nm", nullable = false, length = 100)
+    @Column(name = "org_file_nm", nullable = false, length = 300)
     @Comment("원본파일명")
     private String originalFileNm;
 
-    @Column(name = "strg_file_nm", nullable = false, length = 100)
+    @Column(name = "strg_file_nm", nullable = false, length = 300)
     @Comment("저장파일명")
     private String storageFileNm;
 
-    @Column(name = "strg_path_nm", nullable = false, length = 100)
+    @Column(name = "strg_path_nm", nullable = true, length = 255)
     @Comment("저장경로명")
     private String storagePathNm;
 

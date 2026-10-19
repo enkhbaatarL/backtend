@@ -1,0 +1,28 @@
+services:
+  input-draft-worker:
+    image: ${MI_INPUT_DRAFT_WORKER_IMAGE:?Set the reviewed worker image identity}
+    init: false
+    restart: unless-stopped
+    read_only: true
+    user: "10001:10001"
+    cpus: 2
+    mem_limit: 2g
+    memswap_limit: 2g
+    pids_limit: 128
+    cap_drop: [ALL]
+    security_opt: [no-new-privileges:true]
+    ulimits:
+      core: 0
+    tmpfs:
+      - /scratch:rw,noexec,nosuid,nodev,size=512m,mode=0700,uid=10001,gid=10001
+      - /tmp:rw,noexec,nosuid,nodev,size=64m,mode=0700,uid=10001,gid=10001
+    volumes:
+      - worker-state:/work
+      - type: bind
+        source: ${MI_INPUT_DRAFT_WORKER_CONFIG:?Set the private external worker configuration path}
+        target: /config/worker.yml
+        read_only: true
+    command: ["--spring.config.location=file:/config/worker.yml"]
+    stop_grace_period: 30s
+volumes:
+  worker-state:

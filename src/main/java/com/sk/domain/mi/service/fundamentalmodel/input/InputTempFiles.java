@@ -39,6 +39,9 @@ public class InputTempFiles {
     public Path create() throws IOException {
         return posix?Files.createTempFile(workspace,"source-",".xlsm",PosixFilePermissions.asFileAttribute(PosixFilePermissions.fromString("rw-------"))):Files.createTempFile(workspace,"source-",".xlsm");
     }
+    boolean plaintextRemains()throws IOException {
+        try(var files=Files.list(workspace)){return files.anyMatch(path->!path.getFileName().toString().equals(".lock"));}
+    }
     @EventListener(ApplicationReadyEvent.class)
     public void recover() {
         try(var dirs=Files.list(root)) {

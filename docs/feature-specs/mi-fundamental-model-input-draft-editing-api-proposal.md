@@ -15,7 +15,7 @@
   - [Delivery Plan](../design-docs/gas/mi-model-input-editing-delivery-plan.md) §6A·§7·§9
   - [OpenAPI 규칙](../conventions/openapi-documentation-conventions.md), [보안 정책](../../SECURITY.md)
 - supersedes: 없음. QRY-01/02와 기존 조회/업로드 범위를 대체하지 않는다.
-- last synced: 2026-10-16
+- last synced: 2026-10-19 (첫 구현 상태 참조 유지·감사 시간 정밀도 DDL 연결)
 - open questions: §10. 2026-10-16 공통 BE 채택과 이번 공통 저장·최종저장/복구 계약(§9) 마무리를 반영한다. 표별 정책·DBA 적용 준비/제품 검증은 별도 후속이며 PriceModel/Regas 추천은 미승인이다. 문서 전체는 Draft다.
 
 ## 1. 목표·이번 slice
@@ -38,15 +38,35 @@ FE가 공통 그리드, 신규 행 입력, 저장 대기/성공/실패, 충돌 �
 
 ### 1.2 첫 구현 범위 — 2026-10-16
 
-- 2026-10-16 물리 table prefix 변경은 [DDL §6.6](../design-docs/gas/mi-model-input-template-catalog-erd-ddl-draft.md)이 소유한다. endpoint/요청·응답은 유지하며 새 이름 코드 사용 전 사용자 수동 DB rename/검증이 필요하다. 기존 사용자 조회 캡처는 변경 전 이름의 준비 확인이며 새 이름 적용/API 합격을 뜻하지 않는다.
+- 2026-10-16 물리 table prefix 변경은 [DDL §6.6](../design-docs/gas/mi-model-input-template-catalog-erd-ddl-draft.md)이 소유한다. endpoint/요청·응답은 유지한다. 새 이름 적용과 API 검증의 실행 사실은 [기존 작업 노트의 최신 결과](../work-notes/2026/2026-09-03-model-input-transfer-format.md#actual-result)를 참조한다.
 
-사용자는 공통 요청 처리와 EDT-01~03의 DB 연동 구현을 승인했다. `ModelInputDraftController`가 EDT-01~03과 sourceVersion 진입에 필요한 QRY-01을 제공한다. QRY-02·EDT-04~07, 계산/격리 worker, 값·행·열 변경과 최종저장은 후속이다. 현재 구현 대상은 생성 직후 **revision 0**이며 이후 성공 이력/진행 작업이 있으면 원본으로 대체하지 않고 POLICY_UNSUPPORTED로 차단한다. 전체 계약의 완료/배포를 뜻하지 않는다.
+사용자는 공통 요청 처리와 EDT-01~03의 DB 연동 구현을 승인했다. `ModelInputDraftController`가 EDT-01~03과 sourceVersion 진입에 필요한 QRY-01을 제공한다. QRY-02·EDT-06/07, 계산/격리 worker, 값·행·열 변경과 최종저장은 후속이다. EDT-04/05의 공통 요청 기반 범위는 아래 2026-10-18 항목을 따른다. 조회는 고정 원본 revision 0과 지원하는 성공 CHANGE 이력을 복원한다. 진행 작업 중에는 직전 성공 revision을 조회한다. 저장 이력의 schema/참조·행 대응이 맞지 않으면 HTTP500/data:null로 차단하고 원본으로 대체하지 않는다. 전체 계약의 완료/배포를 뜻하지 않는다.
 
 - POST는 신규/재개 모두200, 회사·사용자·원본별 active Draft 1건이다. 원본 파일 읽기는 장기 DB transaction 밖에서 하고, 저장 직전 Case 잠금과 원본 기준 재검사를 거쳐 Draft·4파일·revision0·원본 행/위치이력을 한 master transaction에 저장한다. 재개 시 새 행ID를 만들지 않는다.
 - 조회 정의는 DDL §6.5의 발행 `qry_json`이다. 읽기 좌표/행 식별 근거와 확인된 metadata만 사용한다. 표별 정책이 미완비여도 읽기 정의는 준비할 수 있으며 해당 capability를 INCOMPLETE로 구분한다. 정의 누락을 빈 규칙으로 추정하지 않는다. 저장 API가 없는 첫 구현에서는 발행 capability READY를 공개 UNSUPPORTED로 내려 쓰기 버튼을 열지 않는다. 정책 채택 상태를 바꾸는 것이 아니다.
 - 원본 비교 키의 tenantKey는 인증 resolver로 확정한 회사 번호의 선행0 없는 10진 문자열이다. 다른 입력의 해시 순서/표현은 QRY §4.3~4.6을 유지한다. 각 호출에서 source와 개인 소유권을 다시 확인한다.
 - 요청 body는 wrapper가 먼저 전부 읽기 전에 이 경로의 HTTP body/MDC 캐싱·로그를 제외한다. 전용 JSON 경계에서 크기·중복 key·알 수 없는 필드·형식/후행 JSON을 검사하며 수치 직렬화는 정확한10진수를 유지한다. 내부 SQL/저장소/거부값 원문은 오류에 넣지 않는다.
-- **현재 검증 한계:** 로컬 H2/JPA 저장·취소·동시 생성 및 HTTP/생성 OpenAPI focused 검증은 통과했으며 증거/한계는 stable note를 따른다. 실제 testdb/Case103 연동과 DDL 적용은 미완료이며 사용자가 추가 접속 확인을 보류했다. 독립 검토의 표시/페이지/생성 계약3건은 후속 사용자 승인으로 최소 수정했고 관련 회귀와 후속 검토를 통과했다. 실행 증거와 실제 DB 미검증 한계는 stable note를 따른다. 타회사 원본 허용 지적은 domain §5.4의 사용자 범위 확인에 따라 적용하지 않는다. FE 조회 시점은 후속 사용자 결정으로 [QRY 상세 §5.1의 FE 구간 로딩 방식](mi-fundamental-model-input-query-api-proposal.md)을 채택했다. EDT-03도 같은 흐름을 사용하며 FE 구현/화면 검증은 후속이다. 표별 정책은 후속, PriceModel/Regas 추가 추천은 미승인 유지.
+- **구현·검증 현황:** 첫 구현과 Case103 기본 DB 연동 시험의 결과·환경·독립 검토·남은 확인은 [기존 작업 노트의 최신 결과](../work-notes/2026/2026-09-03-model-input-transfer-format.md#actual-result)를 참조한다. 기본 시험과 실제 MySQL 경합/실패·접근 경계·큰 표의 추가 검증, 전체 기능/운영 배포는 구분한다. 타회사 원본 허용 지적은 domain §5.4의 사용자 범위 확인에 따라 적용하지 않는다. FE 조회 시점은 [QRY 상세 §5.1의 FE 구간 로딩 방식](mi-fundamental-model-input-query-api-proposal.md)을 따르며 FE 구현/화면 검증은 후속이다. 표별 정책은 후속, PriceModel/Regas 추가 추천은 미승인 유지.
+
+#### 2026-10-18 EDT-04/05 공통 기반 구현 경계
+
+EDT-04/05는 §3~6의 요청 파싱·동일 requestId 의미 비교·DB 작업/진행 슬롯·상태 조회 경계를 제공한다. 현재 표별 변경·계산 처리기는 연결하지 않는다. 새 요청의 표/동작 정책 미완비는 POLICY_INCOMPLETE, 준비된 정책이라도 실제 처리기가 없으면 POLICY_UNSUPPORTED로 접수 전에 거부하며 operation을 만들지 않는다. 비어 있는 처리를 SUCCEEDED로 기록하거나 요청만 저장해 무기한 QUEUED로 돌려주지 않는다. 따라서 현재 공개 API에서 신규202/실제 변경 성공을 검증했다는 뜻은 아니다. 공통 영속 접수·중복·claim·복구 경계는 격리 테스트에서 검증한다.
+
+기존 기록 조회와 동일 요청 재전송은 현재 source 기준이 달라져도 소유권/source 접근을 확인한 뒤 저장 기록을 반환한다. 기한 경과 복구는 쓰기 DB의 Draft→요청 row 잠금 아래 접수/결과 조회 때 수행한다. worker 연결 전에는 자동 dispatcher/주기적 전체 스캔을 가동하지 않는다. QUEUED 탐색/claim과 RUNNING 종료 확인 후 실패 확정의 내부 저장 경계를 준비하며, 실제 격리 worker/종료 증거 수집·재시작 조정과 성공 변경 확정은 후속이다. 종료가 확인되지 않은 RUNNING을 서버 시작만으로 실패/재실행하지 않는다.
+
+성공 확정/복원 공통 경로의 내부 저장 형식은 [DDL §6.3.4.1](../design-docs/gas/mi-model-input-template-catalog-erd-ddl-draft.md)이 소유한다. 이 경로는 검증된 처리 결과를 원자적으로 저장하는 내부 경계이며 실제 처리기·정책이 미준비인 신규 공개 요청의 차단을 해제하지 않는다. EDT-02/03은 재계산 없이 저장된 성공 값·구조·행 대응을 읽으며 revision0 응답 형식/페이지·정확 수치 구분을 유지한다.
+
+2026-10-19 감사 이름·시간 정밀도와 수동 증분 적용은 [DDL §6.8](../design-docs/gas/mi-model-input-template-catalog-erd-ddl-draft.md)을 따른다. 공개 endpoint/응답·숫자/페이지 계약과 작업120초 상한은 유지한다.
+
+#### 2026-10-19 첫 실제 처리 연결 — F-O-01 한정
+
+위 처리기 미연결 설명은 공통 기반 구현 당시 경계다. 이번 연결은 [domain §5.5](../design-docs/gas/mi-model-input-template-catalog-domain-model-design.md)의 지정 F-O-01만 지원한다. 별도 발행의 `OUTPUT/USCostofSupply/us_cost_of_supply`, B8 한 슬롯의 `breakevenPrice`에 한 개 SET으로 숫자0.35를 보내는 요청을 받는다. null은 기존 공통 요청 형식 검증의400, 문자열/다른 숫자값은422 VALIDATION_FAILED, 다른 준비된 동작은409 POLICY_UNSUPPORTED, 미완비 정책은 기존409 POLICY_INCOMPLETE다. `setConstraints`의 minimum/maximum은 모두0.35다. worker 사용 설정과 이 좁은 발행 정의가 함께 준비된 경우에만 SET을 공개 READY로 제공한다. 기존 Case103 발행은 바꾸지 않는다.
+
+신규 접수202→영속 QUEUED/RUNNING→검증·동일 master 성공 확정 뒤 SUCCEEDED/resultRevision=baseRevision+1로 연결한다. 추가 계산은 승인 사례상 해당 없음이며 B8 외 전체 OOXML member/수식·cache·서식/구조 보존과 저장 재읽기를 확인한다. 동일 요청 재송신·기한/실패·기존 조회/숫자 계약은 §5~6을 유지한다. 실제 DB/API 검증은 사용자 실행 결과를 별도로 확인하며 로컬 성공과 구분한다. EDT-06/07과 다른 표/값/구조·계산 지원을 뜻하지 않는다.
+
+#### 2026-10-19 EDT-06/07 공통 통합 경계
+
+EDT-06/07은 §9 정본 계약으로 연결한다. 신규 준비파일 DDL의 수동 적용/검증 뒤 웹과 같은 단일 worker에 `mi.model-input.finalization.enabled=true`를 함께 지정한다(기본 false). 비활성화 중에는 신규 FINALIZE 접수를409 POLICY_UNSUPPORTED로 차단하고 기존 기록 조회/동일 요청 재전송은 유지한다. CHANGE와 FINALIZE의 작업 이력·requestId·진행 슬롯·120초/marker 복구 경계는 하나다. revision0의 원본4개와 지원하는 전체 성공 변경을 대상으로 하며, 현재 nonzero 파일 재생성은 지정 F-O-01 보존 이력만 지원한다. 지원되지 않는 성공 이력을 무시해 최종저장하지 않는다. 실제 DB/API/storage/worker 배포 결과는 별도 사용자 검증이며 로컬 구현 완료와 구분한다.
 
 ## 2. 호출 흐름·공통 접근 경계
 
@@ -656,11 +676,11 @@ EDT-07 HTTP200 실패의 data(같은 요청 재전송은 이 결과를 유지):
 - 성공은 Case/4역할 fileNo·고정 양식·Draft/작업 상태의 동시 확정이며 revision 불변이다. 하나의 업로드/연결 실패도 부분 성공을 반환하지 않는다.
 - 동시 최종저장·CHANGE 충돌, 같은 키/다른 종류 또는 내용, 성공 응답 유실/새 키 재클릭에도 최종 Case1건, 실패 기록 재전송과 새 키 재시도, QUEUED/RUNNING 재시작·timeout/늦은commit·준비파일 정리 시나리오를 제품에서 검증한다.
 - 표별 정책 미승인을 공통 계약 미완료로 바꾸지 않는다. 실제 해당 표 쓰기/구조·계산 경로가 미완비면 POLICY_INCOMPLETE/POLICY_UNSUPPORTED로 거부한다. 원본 보존만 하는 표에 새 쓰기 정책을 요구하지 않는다.
-- OpenAPI summary는 §3 EDT-06/07, description/Schema는 §9.1~9.3의 목적·부작용·멱등/재클릭·상태별 nullability, 202/200·Location/Retry-After·§6 오류와 §9.4 예시를 구조화한다. 아직 endpoint/annotation이 없으므로 generated OpenAPI/HTTP/worker 검증은 미실행이다.
+- OpenAPI summary는 §3 EDT-06/07, description/Schema는 §9.1~9.3의 목적·부작용·멱등/재클릭·상태별 nullability, 202/200·Location/Retry-After·§6 오류와 §9.4 예시를 구조화한다. 구현·생성 OpenAPI/HTTP/worker 검증 현황과 실제 DB/storage 대기는 [기존 실행 기록](../work-notes/2026/2026-09-03-model-input-transfer-format.md#verification-result)을 참조한다.
 
 ## 10. Open Questions·준비도
 
-2026-10-16 기존 코드/문서 기준 BE 필수 확인은 완료했다. 기존4역할 파일 조회·master JPA/transaction·권한 resolver를 재사용할 수 있고, 개인 Draft/고정 발행·정확한 수치/JSON 제한·본문 비로깅·격리 worker/재시작·최종저장 준비/확정은 후속 구현 범위다. 연결/보완 경계는 [domain §5.4](../design-docs/gas/mi-model-input-template-catalog-domain-model-design.md), 코드상 저장 호환은 [DDL §6.4](../design-docs/gas/mi-model-input-template-catalog-erd-ddl-draft.md), **실제 DB 확인은 DDL §13 DBA-01~05**가 소유한다. 추가 사용자 공통 업무 결정은 없으며, 검토 완료를 기존 코드의 EDT 구현/제품 Pass로 바꾸지 않는다. 공개 endpoint/DTO·오류·기존16 JSON 예시는 이번 확인에서 변경하지 않았다.
+첫 구현 전 코드/문서 대조의 연결·보완 경계는 [domain §5.4](../design-docs/gas/mi-model-input-template-catalog-domain-model-design.md), 코드상 저장 호환은 [DDL §6.4](../design-docs/gas/mi-model-input-template-catalog-erd-ddl-draft.md), DBA 확인 항목은 **DDL §13 DBA-01~05**가 소유한다. 현재 구현 범위는 §1.2, 실제 적용·시험 결과와 남은 확인은 [기존 작업 노트의 최신 결과](../work-notes/2026/2026-09-03-model-input-transfer-format.md#actual-result)를 참조한다. 추가 사용자 공통 업무 결정은 없으며 코드/문서 대조만으로 구현·제품 검증 완료를 판단하지 않는다.
 
 공통 저장 구조와 EDT-01~07/최종저장·복구 **문서 계약은 이번 범위 완료**다. 전체 기능/INPUT-03·04 완료·운영 발행/DB 적용·제품 검증 완료를 뜻하지 않는다.
 
@@ -668,7 +688,7 @@ EDT-07 HTTP200 실패의 data(같은 요청 재전송은 이 결과를 유지):
 | --- | --- | --- |
 | 표별 업무 정책 | PriceModel 비계약 물량·Regas 신규 설비 추천은 **미승인·후속**. BCPrices Year CLEAR/행 삭제 등 승인 밖 동작 | 공통 설계의 선행조건에서 제외, 해당 표/동작을 열 때 업무 단위로 결정. 이미 승인한 Sector/Monthly/BCPrices 정책 재질문 없음. 목록/seed 세부 설계 제외 |
 | 모델/STRUCT | Sector/Monthly 자유입력 명칭 인식 제약, 실제 runtime table/field/row binding·빈 슬롯/append·삭제/연결·참조/수식·서식/보존 | 해당 행동의 명세/구현 준비에서 확인. mock 성공이나 선정 fixture를 일반 정책 승인으로 확대하지 않음 |
-| DBA 적용 준비 | DDL §6.4의 코드상 타입/저장 대조는 완료. 실제 확인은 §13 DBA-01~05(schema/ID·제약/경합·packet·감사 예외·SQL/rollout) | DB 미접속/미적용. 실제 결과/승인은 DBA 후속이며 코드/annotation을 적용 증거로 쓰지 않음 |
+| DBA 적용 준비 | DDL §6.4의 코드상 타입/저장 대조와 §13 DBA-01~05(schema/ID·제약/경합·packet·감사 예외·SQL/rollout) | 확인한 시험 범위와 남은 실제 DB 확인은 [기존 작업 노트](../work-notes/2026/2026-09-03-model-input-transfer-format.md#actual-result)를 참조. 기본 연동 시험을 DBA 운영 준비 전체 승인으로 대체하지 않음 |
 | 제품 구현/검증 | durable 접수/BigDecimal 정밀도·payload 상한/복원·동시성/응답 유실·부분 업로드/DB commit 불명·재시작/정리·전체 시간·OpenAPI | INPUT-07~10 후속. 문서만으로 Pass/배포 ready 판정 없음. 변경 필요 시 계약/FE와 동기화 |
 | 보관 후속 | Draft 존속 중 참조·성공 이력/요청/행을 함께 유지하고 자동 만료 없음 | 장기 archive/폐기는 별도 계약 시 결정. 이번 공통 저장 완료의 미결로 되돌리지 않음 |
 

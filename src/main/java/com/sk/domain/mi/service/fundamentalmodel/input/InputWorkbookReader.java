@@ -55,8 +55,13 @@ public class InputWorkbookReader {
         }
     }
     public void read(FileRef file,String company,List<Window> windows) {
+        withLocal(file,company,path->{try {readLocal(path,windows);return null;}catch(InputDraftException ex){throw ex;}catch(Exception ex){throw InputDraftException.internal();}});
+    }
+    /** 저장소 원본은 공통 업로드 복호화 후 저장된 객체다. 임시 사본만 읽고 항상 제거한다. */
+    <T>T withLocal(FileRef file,String company,java.util.function.Function<Path,T> action) {
         Path temp=null;
         try {
+            try {
             URI location=URI.create(file.location()),server=URI.create(endpoint);
             if(!Set.of("http","https").contains(location.getScheme())||!location.getAuthority().equals(server.getAuthority())
                 ||location.getRawQuery()!=null||location.getFragment()!=null) throw InputDraftException.internal();
@@ -68,9 +73,10 @@ public class InputWorkbookReader {
                 byte[] buffer=new byte[65536];long size=0;int len;
                 while((len=stream.read(buffer))!=-1) { size+=len;if(size>300L*1024*1024)throw InputDraftException.internal();out.write(buffer,0,len); }
             }
-            readLocal(temp,windows);
-        } catch(InputDraftException ex) { throw ex; }
-        catch(Exception ex) { throw InputDraftException.internal(); }
+            } catch(InputDraftException ex) {throw ex;}
+            catch(Exception ex) {throw InputDraftException.internal();}
+            return action.apply(temp);
+        }
         finally { if(temp!=null)try { Files.deleteIfExists(temp); }catch(IOException ex) {throw InputDraftException.internal();} }
     }
     void readLocal(Path file,List<Window> windows)throws Exception {

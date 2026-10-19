@@ -14,14 +14,14 @@
   - `docs/conventions/db-term-dictionary-sheet2.csv`
 - supersedes:
   - 이 문서의 2026-09-04 `양식 → 테이블` 2단계 초안
-- last synced: 2026-10-16 (기존 코드/문서 기준 타입·저장/연동 대조 §6.4; 실제 DB 확인은 §13 DBA-01~05로 분리)
+- last synced: 2026-10-19 (§6.8 감사 초 정밀도 정렬·증분 적용 준비; §6.3.4.1 성공값 좌표 이동·저장 이력 오류 처리 보완; 사용자 제공 midb 정의에 따른 §6.4 파일 metadata 매핑 정렬 유지; 나머지 DBA 후속은 §13)
 - open questions:
   - Q2 §6.2/§10B의 기존 catalog table/승인 GET 정의·seed·발행과 신규/기존 Case-template 관계 등록 결과를 확인해야 한다. field/control/options/화면 규칙의 실제 저장 구조/정의는 기존 후속이며 root ID만으로 완비를 가정하지 않는다.
   - 3파일 `SCENARIO` legacy cleanup의 apply/verify/rollback DML(case master + run history + 연결 execution-preparation + active 가격전망해석)은 미작성이다. `INPUT-11` 착수 시 작성해 DBA 검토를 받는다.
   - domain 규칙 47의 LiqUtilAdjustment 행·열 삭제 허용 정책을 카탈로그에 저장할 물리 표현을 확정해야 한다. 현재 SQL의 행·열 추가 플래그만으로 삭제 허용을 표현하지 않는다.
   - domain 규칙 46에서 확정한 별도 화면 갱신 규칙의 DB 저장 단위, 양식 version/표/필드 연결, 물리 테이블·컬럼·키는 후속 설계 대상이다. 아래 기존 6개 table DDL은 아직 이 저장 구조를 포함하지 않는다.
   - 이번 release의 구조 변경 포함과 마지막 행·열 추가 중심 원칙은 domain 규칙 13·26에서 확정했다. 표별 추가 경계와 중간 삽입·삭제 예외를 저장할 물리 표현, 신규 셀의 수식·서식 복제 규칙은 미정이다.
-  - `BaseEntity`의 `crt_*` 감사 컬럼과 DB 명명 문서의 `reg_*` 표준 충돌을 DBA/데이터 표준 담당자가 확인해야 한다.
+  - 감사 이름/초 정밀도는 §6.8의 사용자 결정으로 확정했다. 실제 적용·백업/손실 확인·환경별 시간대와 외부 DBA 표준 확인은 남아 있다.
   - 운영 DB의 `tmm_mi_model_param_m` 현재 값은 확인되지 않았다. 이 문서의 대조는 저장소 DDL/seed 기준이다.
   - 개발 전용 시트가 없는 실제 운영 승인본 4개를 아직 계측하지 않았다. seed 수와 구조 hash는 승인본 검증 후 확정해야 한다.
 
@@ -132,17 +132,17 @@ supply.xlsm의 `LiqUtilAdjustment_backup`(60,216셀)은 basecase의 `LiqUtilAdju
 명명은 [db-object-naming-rules.md](../../conventions/db-object-naming-rules.md)와
 [db-term-dictionary-sheet2.csv](../../conventions/db-term-dictionary-sheet2.csv)를 따른다.
 `시트/SHT`는 이번 설계에서 사전에 추가했다. 감사 컬럼은 JPA `BaseEntity`와 가장 가까운
-`tmd_mdl_scnrcasem` 패턴을 따라 `crt_*`를 사용한 초안이며, 표준 충돌은 적용 전에 해결한다.
+`tmd_mdl_scnrcasem` 패턴을 따라 `crt_*`를 사용한다. 감사 이름·초 정밀도의 사용자 채택과 실제 적용 잔여는 §6.8/DBA-04를 따른다.
 
 ```sql
 CREATE TABLE tmd_mdl_inpttmpltm
 (
     tmplt_id            INT UNSIGNED AUTO_INCREMENT COMMENT '입력템플릿ID' PRIMARY KEY,
     crt_usr_logn_id     VARCHAR(50) DEFAULT 'SYSTEM' NOT NULL COMMENT '생성사용자로그인ID',
-    crt_dtm             DATETIME(6) DEFAULT CURRENT_TIMESTAMP(6) NOT NULL COMMENT '생성일시',
+    crt_dtm             DATETIME DEFAULT CURRENT_TIMESTAMP NOT NULL COMMENT '생성일시',
     mod_usr_logn_id     VARCHAR(50) DEFAULT 'SYSTEM' NOT NULL COMMENT '수정사용자로그인ID',
-    mod_dtm             DATETIME(6) DEFAULT CURRENT_TIMESTAMP(6) NOT NULL
-                            ON UPDATE CURRENT_TIMESTAMP(6) COMMENT '수정일시',
+    mod_dtm             DATETIME DEFAULT CURRENT_TIMESTAMP NOT NULL
+                            ON UPDATE CURRENT_TIMESTAMP COMMENT '수정일시',
     del_yn              CHAR(1) DEFAULT 'N' NOT NULL COMMENT '삭제여부',
     mdl_spt_cd          VARCHAR(20) NOT NULL COMMENT '모델구분코드',
     tmplt_ver_no        SMALLINT UNSIGNED NOT NULL COMMENT '템플릿버전번호',
@@ -164,10 +164,10 @@ CREATE TABLE tmd_mdl_inptfiled
 (
     inpt_file_id        INT UNSIGNED AUTO_INCREMENT COMMENT '입력파일ID' PRIMARY KEY,
     crt_usr_logn_id     VARCHAR(50) DEFAULT 'SYSTEM' NOT NULL COMMENT '생성사용자로그인ID',
-    crt_dtm             DATETIME(6) DEFAULT CURRENT_TIMESTAMP(6) NOT NULL COMMENT '생성일시',
+    crt_dtm             DATETIME DEFAULT CURRENT_TIMESTAMP NOT NULL COMMENT '생성일시',
     mod_usr_logn_id     VARCHAR(50) DEFAULT 'SYSTEM' NOT NULL COMMENT '수정사용자로그인ID',
-    mod_dtm             DATETIME(6) DEFAULT CURRENT_TIMESTAMP(6) NOT NULL
-                            ON UPDATE CURRENT_TIMESTAMP(6) COMMENT '수정일시',
+    mod_dtm             DATETIME DEFAULT CURRENT_TIMESTAMP NOT NULL
+                            ON UPDATE CURRENT_TIMESTAMP COMMENT '수정일시',
     del_yn              CHAR(1) DEFAULT 'N' NOT NULL COMMENT '삭제여부',
     tmplt_id            INT UNSIGNED NOT NULL COMMENT '입력템플릿ID',
     mdl_file_cd         VARCHAR(20) NOT NULL COMMENT '모델파일코드 (DEMAND/SUPPLY/TRADE/OUTPUT)',
@@ -191,10 +191,10 @@ CREATE TABLE tmd_mdl_inptshtd
 (
     inpt_sht_id         INT UNSIGNED AUTO_INCREMENT COMMENT '입력시트ID' PRIMARY KEY,
     crt_usr_logn_id     VARCHAR(50) DEFAULT 'SYSTEM' NOT NULL COMMENT '생성사용자로그인ID',
-    crt_dtm             DATETIME(6) DEFAULT CURRENT_TIMESTAMP(6) NOT NULL COMMENT '생성일시',
+    crt_dtm             DATETIME DEFAULT CURRENT_TIMESTAMP NOT NULL COMMENT '생성일시',
     mod_usr_logn_id     VARCHAR(50) DEFAULT 'SYSTEM' NOT NULL COMMENT '수정사용자로그인ID',
-    mod_dtm             DATETIME(6) DEFAULT CURRENT_TIMESTAMP(6) NOT NULL
-                            ON UPDATE CURRENT_TIMESTAMP(6) COMMENT '수정일시',
+    mod_dtm             DATETIME DEFAULT CURRENT_TIMESTAMP NOT NULL
+                            ON UPDATE CURRENT_TIMESTAMP COMMENT '수정일시',
     del_yn              CHAR(1) DEFAULT 'N' NOT NULL COMMENT '삭제여부',
     inpt_file_id        INT UNSIGNED NOT NULL COMMENT '입력파일ID',
     sht_nm              VARCHAR(150) NOT NULL COMMENT '시트명',
@@ -213,10 +213,10 @@ CREATE TABLE tmd_mdl_inpttbld
 (
     inpt_tbl_id         INT UNSIGNED AUTO_INCREMENT COMMENT '입력테이블ID' PRIMARY KEY,
     crt_usr_logn_id     VARCHAR(50) DEFAULT 'SYSTEM' NOT NULL COMMENT '생성사용자로그인ID',
-    crt_dtm             DATETIME(6) DEFAULT CURRENT_TIMESTAMP(6) NOT NULL COMMENT '생성일시',
+    crt_dtm             DATETIME DEFAULT CURRENT_TIMESTAMP NOT NULL COMMENT '생성일시',
     mod_usr_logn_id     VARCHAR(50) DEFAULT 'SYSTEM' NOT NULL COMMENT '수정사용자로그인ID',
-    mod_dtm             DATETIME(6) DEFAULT CURRENT_TIMESTAMP(6) NOT NULL
-                            ON UPDATE CURRENT_TIMESTAMP(6) COMMENT '수정일시',
+    mod_dtm             DATETIME DEFAULT CURRENT_TIMESTAMP NOT NULL
+                            ON UPDATE CURRENT_TIMESTAMP COMMENT '수정일시',
     del_yn              CHAR(1) DEFAULT 'N' NOT NULL COMMENT '삭제여부',
     inpt_sht_id         INT UNSIGNED NOT NULL COMMENT '입력시트ID',
     inpt_tbl_nm         VARCHAR(100) NOT NULL COMMENT '입력테이블명',
@@ -250,10 +250,10 @@ CREATE TABLE tmd_mdl_inptmodscopd
 (
     mod_scop_id         INT UNSIGNED AUTO_INCREMENT COMMENT '수정범위ID' PRIMARY KEY,
     crt_usr_logn_id     VARCHAR(50) DEFAULT 'SYSTEM' NOT NULL COMMENT '생성사용자로그인ID',
-    crt_dtm             DATETIME(6) DEFAULT CURRENT_TIMESTAMP(6) NOT NULL COMMENT '생성일시',
+    crt_dtm             DATETIME DEFAULT CURRENT_TIMESTAMP NOT NULL COMMENT '생성일시',
     mod_usr_logn_id     VARCHAR(50) DEFAULT 'SYSTEM' NOT NULL COMMENT '수정사용자로그인ID',
-    mod_dtm             DATETIME(6) DEFAULT CURRENT_TIMESTAMP(6) NOT NULL
-                            ON UPDATE CURRENT_TIMESTAMP(6) COMMENT '수정일시',
+    mod_dtm             DATETIME DEFAULT CURRENT_TIMESTAMP NOT NULL
+                            ON UPDATE CURRENT_TIMESTAMP COMMENT '수정일시',
     del_yn              CHAR(1) DEFAULT 'N' NOT NULL COMMENT '삭제여부',
     inpt_tbl_id         INT UNSIGNED NOT NULL COMMENT '입력테이블ID',
     mod_scop_ord        SMALLINT UNSIGNED NOT NULL COMMENT '수정범위순서',
@@ -277,10 +277,10 @@ CREATE TABLE tmd_mdl_scnrcasetmpltd
 (
     case_id             INT UNSIGNED COMMENT '시나리오케이스ID' PRIMARY KEY,
     crt_usr_logn_id     VARCHAR(50) DEFAULT 'SYSTEM' NOT NULL COMMENT '생성사용자로그인ID',
-    crt_dtm             DATETIME(6) DEFAULT CURRENT_TIMESTAMP(6) NOT NULL COMMENT '생성일시',
+    crt_dtm             DATETIME DEFAULT CURRENT_TIMESTAMP NOT NULL COMMENT '생성일시',
     mod_usr_logn_id     VARCHAR(50) DEFAULT 'SYSTEM' NOT NULL COMMENT '수정사용자로그인ID',
-    mod_dtm             DATETIME(6) DEFAULT CURRENT_TIMESTAMP(6) NOT NULL
-                            ON UPDATE CURRENT_TIMESTAMP(6) COMMENT '수정일시',
+    mod_dtm             DATETIME DEFAULT CURRENT_TIMESTAMP NOT NULL
+                            ON UPDATE CURRENT_TIMESTAMP COMMENT '수정일시',
     del_yn              CHAR(1) DEFAULT 'N' NOT NULL COMMENT '삭제여부',
     tmplt_id            INT UNSIGNED NOT NULL COMMENT '입력템플릿ID',
     CONSTRAINT tmd_mdl_scnrcasetmpltd_fk01 FOREIGN KEY (case_id)
@@ -335,7 +335,7 @@ catalogRevision은 별도 숫자 카운터가 아니라 불변 발행 묶음의 
 
 - 신규 테이블은 기존 Case/파일과 같은 **master persistence** 경계를 사용한다. tenant DB에 분산하거나 DB 간 transaction으로 만들지 않는다. tenant는 권한 확인된 회사번호 `cust_cpny_no MEDIUMINT UNSIGNED`, 소유자는 `usr_no INT UNSIGNED`로 보관한다. 요청 header만으로 회사/DB를 선택하지 않으며 worker는 확인된 actor·role·tenant 문맥을 복원/정리한다. 접수한 actor login은 요청 감사 컬럼, owner/회사번호는 Draft, 접수 역할은 요청 usr_role_cd로 보관해 QUEUED 재시작에도 JWT/요청 header를 재사용하지 않고 복원한다. 현재 허용 권한/원본 접근을 서버에서 다시 대조하며 role 문자열만으로 권한을 새로 부여하지 않는다.
 - 아래 `UUID`는 `CHAR(36) CHARACTER SET ascii COLLATE ascii_bin`, 소문자 UUID만 허용한다. revision은 `BIGINT UNSIGNED` + `0..9007199254740991` CHECK, 1기반 행번호는 `INT UNSIGNED` + `1..1048576` CHECK다. ID/코드의 equality는 대소문자 무시 collation에 의존하지 않는다.
-- 표시한 PK/required는 NOT NULL, `?`만 NULL 허용이며 임의 DEFAULT0을 두지 않는다. 감사 컬럼은 기존6개/`BaseEntity`와 같은 `crt_usr_logn_id/mod_usr_logn_id VARCHAR(50)`, `crt_dtm/mod_dtm DATETIME(6)`, `del_yn CHAR(1) DEFAULT 'N'`을 사용한다. 운영 감사 `reg_*` 표준 예외 승인은 §13의 DBA 적용 전 확인으로 남긴다. 성공 이력/요청/참조에 CASCADE DELETE·독립 soft delete/자동 TTL을 두지 않는다.
+- 표시한 PK/required는 NOT NULL, `?`만 NULL 허용이며 임의 DEFAULT0을 두지 않는다. 감사 컬럼은 기존6개/`BaseEntity`와 같은 `crt_usr_logn_id/mod_usr_logn_id VARCHAR(50)`, `crt_dtm/mod_dtm DATETIME`, `del_yn CHAR(1) DEFAULT 'N'`을 사용한다. 감사 이름·초 정밀도는 §6.8의 사용자 결정을 따르며 외부 DBA 승인으로 간주하지 않는다. 성공 이력/요청/참조에 CASCADE DELETE·독립 soft delete/자동 TTL을 두지 않는다.
 - `sourceVersion`은 원본 등록/양식 참조로 계산한 `VARCHAR(68) ascii_bin`을 고정하고 새 원본 내용 SHA/revision은 만들지 않는다. sourceKey는 기존 식별 규칙으로 파생한다. 원본 fileNo는 `tcm_filel.file_no BIGINT UNSIGNED`, Case ID는 `tmd_mdl_scnrcasem.case_id INT UNSIGNED`, template/table ID는 기존 `INT UNSIGNED`와 타입을 맞춘다.
 
 #### 6.3.2 테이블·컬럼·참조
@@ -344,7 +344,7 @@ catalogRevision은 별도 숫자 카운터가 아니라 불변 발행 묶음의 
 | --- | --- | --- |
 | `tmd_mdl_inptdrftm` / `drft_id UUID` | `cust_cpny_no`, `usr_no`, `org_case_id INT UNSIGNED`, `tmplt_id INT UNSIGNED`, `org_rvsn_val VARCHAR(68)`, `drft_stat_cd VARCHAR(20)`, `rvsn_no BIGINT UNSIGNED` | `actv_prcs_id UUID?`(진행 포인터), `fnsv_case_id INT UNSIGNED?`(최종 Case). DRAFT/FINALIZED/DISCARDED CHECK. FINALIZED와 최종 Case 존재는 동치, 종료 Draft는 진행 포인터 NULL |
 | `tmd_mdl_inptdrftfiled` / `(drft_id, mdl_file_cd)` | `drft_id UUID`, `mdl_file_cd VARCHAR(20) ascii_bin`, `file_no BIGINT UNSIGNED` | 없음. SUPPLY/DEMAND/TRADE/OUTPUT CHECK, Draft의 고정 원본4개. 같은 Draft/file_no UK로 한 파일의 역할 중복 금지 |
-| `tmd_mdl_inptdrftprcsl` / `prcs_id UUID` | `drft_id UUID`, `req_id UUID`, `prcs_type_cd VARCHAR(20)`, `usr_role_cd VARCHAR(20)`, `base_rvsn_no BIGINT UNSIGNED`, `prcs_stat_cd VARCHAR(20)`, `json_rvsn_no SMALLINT UNSIGNED`(현재1), `req_json LONGTEXT`, `expr_dtm DATETIME(6)` | `try_tokn UUID?`, `bgn_dtm/end_dtm DATETIME(6)?`, `rslt_json/fail_json LONGTEXT?`. 종류 CHANGE/FINALIZE, 상태 QUEUED/RUNNING/SUCCEEDED/FAILED CHECK. 접수시각 crt_dtm+120초가 expr_dtm. RUNNING은 token/시작시각 필수, 종료는 종료시각 필수. 성공은 result만, 실패는 failure만 존재 |
+| `tmd_mdl_inptdrftprcsl` / `prcs_id UUID` | `drft_id UUID`, `req_id UUID`, `prcs_type_cd VARCHAR(20)`, `usr_role_cd VARCHAR(20)`, `base_rvsn_no BIGINT UNSIGNED`, `prcs_stat_cd VARCHAR(20)`, `json_rvsn_no SMALLINT UNSIGNED`(현재1), `req_json LONGTEXT`, `expr_dtm DATETIME(6)` | `try_tokn UUID?`, `bgn_dtm/end_dtm DATETIME(6)?`, `rslt_json/fail_json LONGTEXT?`. 종류 CHANGE/FINALIZE, 상태 QUEUED/RUNNING/SUCCEEDED/FAILED CHECK. 초 단위 접수시각 crt_dtm+120초가 expr_dtm이며 기한 비교는 마이크로초 DB 시계다(§6.8). RUNNING은 token/시작시각 필수, 종료는 종료시각 필수. 성공은 result만, 실패는 failure만 존재 |
 | `tmd_mdl_inptdrftrvsnl` / `(drft_id, rvsn_no)` | `drft_id UUID`, `rvsn_no BIGINT UNSIGNED`, `json_rvsn_no SMALLINT UNSIGNED` | `base_rvsn_no BIGINT UNSIGNED?`, `prcs_id UUID?`, `dlta_json LONGTEXT?`. revision0은 세 nullable 값 모두 NULL; n>0은 parent=n-1/성공 CHANGE 작업/delta 모두 필수. 사용자 명령·그 성공의 승인 파생/구조 결과를 한 payload로 보관 |
 | `tmd_mdl_inptdrftrowm` / `row_id UUID` | `drft_id UUID`, `inpt_tbl_id INT UNSIGNED` | `org_row_no INT UNSIGNED?`, `prcs_id UUID?`, `clnt_row_id VARCHAR(64) ascii_bin?`. 원본은 org_row_no만, 신규는 성공 ADD의 prcs_id/clientRowKey만 존재(CHECK). clientRowKey는 API의 영문 식별 문자열이며 UUID가 아님. 업무값을 ID/UK로 사용하지 않음 |
 | `tmd_mdl_inptdrftrowh` / `(row_id, bgn_rvsn_no)` | `row_id UUID`, `drft_id UUID`, `inpt_tbl_id INT UNSIGNED`, `bgn_rvsn_no BIGINT UNSIGNED` | `end_rvsn_no BIGINT UNSIGNED?`, `row_no INT UNSIGNED?`. [시작 revision, 종료 revision) 동안의 위치. 종료 NULL은 현재 대응. row_no NULL은 삭제 tombstone이며 행ID 재사용 없음. 비NULL 종료는 시작보다 커야 함 |
@@ -390,6 +390,18 @@ revision0은 참조만 보유한다. n>0의 delta를 순서대로 합성하고 �
 
 Draft 존속 중 기준 참조/성공 chain/행이력/종료 요청·중복 키와 결과를 함께 보존하며 자동 purge를 만들지 않는다. 완료/실패 기록의 독립 soft delete로 UK를 비우지 않는다. 장기 archive/폐기 도입 시 별도 보존 계약이 필요하다. 준비 파일은 업로드 전에 참조 기록, 실패 뒤 CLEANUP_PENDING, 실제 전송 종료와 object 삭제 확인 뒤 CLEANED다. 정리 실패/늦은 업로드는 기록을 보존해 재처리하며 성공 Case의 COMMITTED object는 지우지 않는다. 평문 작업사본은 이 저장의 대안이 아니며 domain 규칙63의 삭제 기준을 따른다.
 
+#### 6.3.4.1 성공 delta schemaVersion1 구현 형식 — 2026-10-18
+
+기존 LONGTEXT/관계형 컬럼 안의 내부 형식이며 새 DDL은 없다. 공개 요청을 저장 결과로 간주하지 않고, 후속 표별 처리기가 검증한 **변경된 결과만** 내부 성공 확정에 전달한다. top-level은 정확히 `policyTemplateId`(고정 tmplt_id), `commands`(저장 요청의 순서 있는 operations와 같은 의미), `tables`, `rows`, `cells`다. schemaVersion은 기존 json_rvsn_no=1이며 payload 안에 중복 저장하지 않는다. 각 배열은 빈 경우에도 필수다.
+
+- `tables`: 바뀐 표만 `{tableId,startRow,endRow,dataStart,definition,scopes}`. definition은 §6.5의 조회 형식이며 승인 fields/capabilities/열·identity/화면 규칙과 control 의미는 유지하고 header/body·control binding 좌표만 처리 결과로 이동할 수 있다. scopes는 현재 표 안의 `{startRow,endRow,startColumn,endColumn}` 배열이다. 기존 column bounds/행·열 추가 정책을 바꾸거나 발행 catalog를 UPDATE하지 않는다.
+- `rows`: 이번 성공에서 추가/이동/삭제된 행의 최종 대응만 `{tableId,rowId,clientRowKey,rowNumber}`. 원본/이전 성공 행은 clientRowKey:null, 신규는 같은 요청 ADD_ROW 임시키이며 rowId는 서버 UUID다. rowNumber:null은 삭제 tombstone이다. ADD 후 DELETE도 신규 identity와 tombstone을 남긴다. 기존 삭제 identity를 되살리거나 새 ID로 재사용하지 않는다. 위치 변경 전체의 이전 구간을 먼저 닫고 새 구간을 추가한다.
+- `cells`: 바뀐 사용자/승인 파생·계산 저장값만 `{tableId,rowId,rowNumber,columnNumber,raw,display,formula}`. 논리 행은 rowId만, header/control/미활성 슬롯은 rowNumber만 사용한다(다른 쪽은 null). raw/display는 정확한 JSON number·string·boolean 또는 null, formula는 boolean이다. CLEAR는 raw/display:null·formula:false다. raw와 표시를 서로 변환하지 않고, 계산 셀은 검증된 cached raw/display와 formula:true만 복원한다. 수식 계산/수식 원문 생성은 조회에서 하지 않는다. 같은 좌표의 배열 순서는 적용 순서이며 최종 사용자 값은 commands의 마지막 SET/CLEAR/ADD 값과 일치해야 한다.
+
+허용된 tables 좌표 이동에서는 기존 성공 fixed 값도 header 순서/control ID의 대응에 따라 이동한다. 공유 control은 같은 owner 좌표 값을 한 번의 이전 상태로 읽고 출발 좌표를 비운 뒤 목적지에 배치하므로 좌표 교환에서도 값을 잃지 않는다. 이번 revision의 cells(명시 null 포함)가 이동된 이전 값보다 나중에 적용된다. 서로 다른 이전 고정값이 같은 새 좌표로 모이는 경우 이번 cells의 명시 값이 없으면 저장 실패로 차단한다. 저장 delta 안의 definition 형식/버전 오류도 저장 이력 해석 실패이며, 원본 발행 정의의 정책409와 구분해 기존 안전한500/data:null을 반환한다.
+
+복원은 revision0의 원본 행 대응에서 시작해 각 성공 payload를 순서대로 적용한다. 각 revision의 최종 행 위치와 관계형 row history가 같아야 하고, chain은0부터 현재까지 연속·parent=n-1·동일 Draft의 SUCCEEDED CHANGE/base/result revision과 대응해야 한다. 알 수 없는 key/schema·누락·소속/행 구간 불일치는 저장 실패로 차단한다. 읽기의 안전한 HTTP500/data:null 계약은 유지하고 접수된 작업의 성공 확정 실패는 PERSISTENCE_FAILED로 기록한다. 삭제/이동으로 빈 원본 위치에 이전 논리 행 값을 다시 노출하지 않으며 신규 행은 해당 성공 결과에 없는 값을 원본 빈 슬롯에서 추정하지 않는다. 전체 workbook/cell snapshot은 저장하지 않는다.
+
 #### 6.3.5 적용 준비·검증 경계
 
 - **Pre-check:** 실제 master의 catalog6개/Case·파일·회사·사용자 타입·engine/collation/FK와 감사 예외, packet 여유를 확인한다. 현재 데이터에 새 Draft는 없다는 전제는 운영 확인 전 사실로 단정하지 않는다. 신규7개 이름 충돌/동일 정의 존재 여부와 nullable generated UK·경합을 staging MySQL에서 검증한다.
@@ -400,15 +412,17 @@ Draft 존속 중 기준 참조/성공 chain/행이력/종료 요청·중복 키�
 
 명명은 기존 MDL/INPT/DRFT/PRCS/REQ/RVSN/ROW/FNSV/FILE/REF/JSON/TRY/TOKN/EXPR/CLNT/APLY·기존 회사/사용자 용어를 재사용한다. 신규 사전 등록은 없다.
 
-### 6.4 코드 기준의 공통 저장 호환성 확인 — 실제 DB 미접속
+### 6.4 코드 기준의 공통 저장 호환성 확인 — Codex 직접 DB 접속 없음
 
 [domain §5.4](mi-model-input-template-catalog-domain-model-design.md)의 기존 코드 연결 검토에 대응하는 물리/직렬화 경계다. **annotation/초안 확인은 실제 DB 스키마 확인이 아니다.** 새 테이블·업무 정책/공개 endpoint·상한을 추가/변경하지 않는다.
+
+2026-10-18 파일 metadata 대조는 사용자가 제공한 시험 midb의 `SHOW CREATE TABLE tcm_filel` 결과를 근거로 한다. 사용자 승인으로 아래 파일명·경로의 Entity 매핑을 해당 규격에 맞췄으며 DB 변경은 없다. dev·prod 컬럼의 동일 규격은 사용자 지시에 따른 적용 전제이고 별도 실측 결과가 아니다. 환경별 시간대 확인과 나머지 DBA 후속은 별도로 유지한다.
 
 | 확인 영역 | 소스/문서에서 확인한 사실 | 공통 저장에 적용할 기준·남은 확인 |
 | --- | --- | --- |
 | master 연결/적용 방식 | [JpaConfig](../../../src/main/java/com/sk/common/config/database/JpaConfig.java)는 Case/UploadedFile/User/CustomerCompany가 있는 master entity/repository와 masterTransactionManager를 같은 고정 datasource에 묶는다. application.yml은 ddl-auto:validate/Flyway disabled다. | 신규7개도 같은 master JPA/transaction 사용. tenant MyBatis manager와 분산 transaction을 구성하지 않음. schema는 앱 자동 생성 대상이 아니며 새 entity 배포 전 DBA 적용 순서 필요(DBA-01/05) |
 | 참조 ID/Java 범위 | ScenarioCase case_id와 User usr_no는 INT UNSIGNED, UploadedFile file_no는 BIGINT UNSIGNED, CustomerCompany cust_cpny_no는 MEDIUMINT UNSIGNED 선언이다. Java Case/file ID는 Long, user/company·file relation 번호는 Integer. Case→파일 조회/등록에서 Math.toIntExact(caseId)를 사용한다. | §6.3 FK 타입은 annotation상 일치한다. SQL unsigned 최대값과 Java 양수 범위가 같다고 가정하지 않음. 기존 relation API의 caseId는 Integer 양수로 표현 가능해야 한다. 파일번호는 공개 양의 int64 범위. 실제 최대 ID/auto_increment·컬럼 signedness는 DBA-01에서 확인하며 이번에 타입 확대/기존 데이터 변환을 요구하지 않음 |
-| 파일 metadata/감사 | [UploadedFile](../../../src/main/java/com/sk/domain/shared/entity/master/tcm/UploadedFile.java)은 원본/저장 파일명·저장 전체 경로 길이100, MIME100·확장자20, file_size INT UNSIGNED 선언이다. [BaseEntity](../../../src/main/java/com/sk/domain/shared/entity/base/BaseEntity.java)/TimeBaseEntity는 crt_*/mod_*/del_yn을 사용하나 명명 문서 시스템 컬럼은 reg_*다. | 서버 생성 경로/파일명·bytes가 기존 metadata 범위에 맞도록 새 경로에서 검증한다. 준비 기록 LONGTEXT가 길어도 최종 metadata에 조용히 절삭해 넣지 않음. 감사 예외 승인·실제 정밀도/길이는 DBA-01/04. actor의 SYSTEM fallback 문제는 domain §5.4의 BE 책임 |
+| 파일 metadata/감사 | 사용자 제공 DB 정의와 [UploadedFile](../../../src/main/java/com/sk/domain/shared/entity/master/tcm/UploadedFile.java)의 정렬된 매핑은 원본·저장 파일명 VARCHAR(300) NOT NULL, 저장 경로 VARCHAR(255) NULL이다. MIME100·확장자20, file_size INT UNSIGNED 선언은 유지한다. [BaseEntity](../../../src/main/java/com/sk/domain/shared/entity/base/BaseEntity.java)/TimeBaseEntity는 crt_*/mod_*/del_yn을 사용하나 명명 문서 시스템 컬럼은 reg_*다. | 경로의 DB/Entity NULL 허용과 Draft 원본의 경로 필수 규칙을 구별한다. ModelInputDraftService의 경로 NULL·빈값 차단은 유지한다. 서버 생성 경로/파일명·bytes가 기존 metadata 범위에 맞도록 새 경로에서 검증하며 조용히 절삭해 넣지 않음. 감사 이름·정밀도 채택 및 실제 확인 잔여는 DBA-04, actor의 SYSTEM fallback 문제는 domain §5.4의 BE 책임 |
 | 정확한 JSON 숫자 | [ObjectMapperBuilderCustomizer](../../../src/main/java/com/sk/common/config/ObjectMapperBuilderCustomizer.java)는 날짜/timezone 설정이며 공통 BigDecimal/BigInteger·plain-number 강제 설정이 없다. 기존 제안 validator는 Object/Number를 나중에 BigDecimal(number.toString())로 바꾸고 XlsmStreamMerger는 Double 숫자를 처리한다. | 이 경로들을 Draft 숫자 보존 구현으로 그대로 재사용하지 않음. 새 EDT 입력/영속 payload/재조회는 처음 JSON 숫자를 읽는 시점부터 정확한10진수/큰 정수로 다루고 지수 없는 숫자로 쓰며 비교도 동일 값으로 수행. 이미 Double로 바뀐 뒤 BigDecimal 변환으로 원래 자릿수를 복구할 수 없다. 전역 ObjectMapper 변경은 요구하지 않고 해당 경로에서 해결. JSON/DB 왕복과 최종 XLSM 수치 보존은 구현 후 별도 검증 |
 | JSON 제한·body/로그 경계 | application.yml의300MB는 multipart 제한이며 EDT JSON1 MiB·깊이/명령 수 제한의 근거가 아니다. [HttpLoggingFilter](../../../src/main/java/com/sk/common/filter/HttpLoggingFilter.java)는 EDT 경로를 제외하지 않아 요청/응답 body와 MDC의 REQUEST_BODY를 남길 수 있고 wrapper는 body를 먼저 읽는다. 제안 응답 일부 reader의 중복 key 검사도 EDT 요청에 자동 적용되지 않는다. | 공통 API의1 MiB/깊이8·명령500/ADD100·TEXT4096, 영속 delta16 MiB 등 기존 계약을 EDT 읽기/저장 경계에서 강제. HTTP/MDC body 수집/출력을 해당 경로에서 제외해야 하며 handler 뒤의 검사만으로 앞선 전체 body 캐싱 제한/비노출이 보장되지 않음. 공통 mapper/filter 전체 개편을 선결하지 않고 영향 경로에 필요한 최소 변경. 실제 DB packet/접속 설정은 DBA-03 |
 | 업로드 metadata 원자성 | FileService의 staged 업로드는 PUT 뒤 TEMP/0 metadata를 별도 저장, attach는 row 잠금 후 관계만 바꾼다. 최종준비fileNo와 Case 관계는 구분된다. | §6.3 신규 준비 기록의 전용 key는 PUT 전에 commit, tcm_filel/fileNo는 최종 성공 transaction에서만 생성한다. 기존 TEMP/0 row를 이 저장소로 사용하거나 기존 Scenario staged TTL 대상에 편입하지 않음. commit UNKNOWN/재시작·정리 연결은 domain §5.4를 따른다 |
@@ -457,6 +471,22 @@ Draft 존속 중 기준 참조/성공 chain/행이력/종료 요청·중복 키�
 사용자는 해당 API/등록 작업을 중단한 상태에서 구 이름10개·새 이름0개와 InnoDB/연결 제약·별도 table 권한/뷰·routine 의존을 확인하고, 같은 schema의 단일 `RENAME TABLE`10쌍을 적용한다. 이후 새 이름10개·구 이름0개, 행 수/기존 데이터·FK 참조와 앱 접근을 검증하고 새 이름 코드·등록 SQL을 사용한다. 데이터 backfill/복사·FK 검사 해제는 필요하지 않다. 구/신 이름 코드의 동시 호환 창은 제공하지 않는다.
 
 기존 명시 제약 이름 보존과 metadata lock·table 단위 권한 별도 처리 근거는 [MySQL8.0 RENAME TABLE](https://dev.mysql.com/doc/refman/8.0/en/rename-table.html), 일반 transaction ROLLBACK 대신 별도 역 rename이 필요한 경계는 [implicit commit](https://dev.mysql.com/doc/refman/8.0/en/implicit-commit.html)을 참조한다. 실제 MySQL 적용/권한·의존 검증은 사용자 실행 결과 전 미확인이다. 제품 코드의 새 table명 조회는 SQL 적용 뒤에 사용한다.
+
+### 6.7 EDT-04/05 공통 요청 증분 DDL — 2026-10-18
+
+수동 증분 정본은 [model-input-draft-change-request-ddl-draft.sql](../../model-input-draft-change-request-ddl-draft.sql)이다. 기존 적용 catalog/Draft 5개·Case103을 유지하고 §6.3의 요청 이력1개 및 성공revision/신규행의 동일 Draft 요청 복합 FK2개만 추가한다. 최종 준비파일은 제외한다. 사전 확인→CREATE→누락 FK→verify 순서이며 실제 적용은 사용자 담당이다. backfill은 없다. 롤백은 접수 중단·실제 commit 확인 후 이력을 보존하는 앱 롤백이며 DROP/데이터 삭제를 사용하지 않는다.
+
+ERD 검토: 기존 승인 물리 정의를 재사용한다. 요청의 원자적 명령 배열/결과는 의도된 JSON payload이며 관계형 소유·유일성과 분리한다. PK/UK는 §6.3을 유지하고 상태 단독 index는 추가하지 않는다. Draft→요청 순서의 row 잠금과 같은 master transaction을 사용한다. 신규 사전 용어는 없으며 감사 컬럼 예외와 MySQL 실물 CHECK/nullable generated UK·경합·packet/EXPLAIN은 DBA 후속이다. 기존 tmm 접두사 제약은 재명명하지 않는다. 적용 준비도는 사용자 pre-check 후 ready이며 실제 MySQL 통과는 미확인이다.
+
+### 6.8 감사 시간 정밀도 정렬 — 2026-10-19 사용자 채택
+
+사용자는 실제 DB/코드의 `crt_usr_logn_id/crt_dtm/mod_usr_logn_id/mod_dtm/del_yn` 이름을 유지하고 기존 Case·파일·회사·사용자와 같은 **생성/수정 DATETIME(0)**을 채택했다. 이 방향은 catalog6개와 §6.3 Draft7개에 적용하며 아직 없는 최종준비파일은 후속 CREATE 때 적용한다. 기존 테이블을 재생성하지 않는다. 신규 단어·이름·관계·PK/FK/UK/정규화/인덱스·소유권 변경은 없다. audit DEFAULT/ON UPDATE는 CURRENT_TIMESTAMP(0), 적용/처리 시간 `aply_bgn_dtm/expr_dtm/bgn_dtm/end_dtm`은 DATETIME(6)을 유지한다.
+
+새 접수는 DB 현재 시각의 초 아래를 버린 같은 값을 crt_dtm/mod_dtm에 넣고 그 값+120초를 expr_dtm에 저장한다. 실제 접수 후 허용 시간은120초를 넘지 않으며 최대1초 미만 짧아질 수 있다. 만료/claim/성공 조건은 기존 마이크로초 DB 시계로 비교하고 Draft→요청 잠금·시도 토큰·원자 성공 경계를 유지한다. 감사 시각으로 revision 순서/worker 재시도 여부를 결정하지 않는다. 공개 endpoint·조회/숫자 계약·작업 정책 차단은 변경하지 않는다.
+
+증분 적용·사전/사후 조회의 정본은 [감사 시간 증분 SQL](../../model-input-audit-precision-ddl-draft.sql)이다. 모든 writer 중단·진행 작업0·PK별 백업과 손실 확인 뒤, 호환 코드 배포→기존 감사 소수점 명시 절삭(요청은 생성/만료를 같은 UPDATE로 정렬)→단계별 ALTER→정의/건수/기준 Case103·Draft/행ID 보존 확인 순서다. request crt_dtm의 ck09는 같은 ALTER에서 drop/re-add하여 MySQL의 CHECK 참조 컬럼 변경 규칙을 지킨다. 처리 시작/종료 시간은 보존하며 과거 종료 요청의 만료만 생성 소수점만큼 앞당겨 ck09를 유지한다. 손실은 타입 재확대로 복원되지 않으며 정확 복원은 백업이 필요하다. DDL은 자동 commit되므로 일괄 transaction rollback으로 간주하지 않는다. 생성/변경 SQL 파일은 빈 환경/누락 table용 최신 정의이며 기존 적용 DB에는 재실행하지 않는다.
+
+ERD/code 영향은 감사 정밀도와 접수 기준의 연계 수정에 한정한다. 직접 SQL Repository 경로이며 JPA BaseEntity/기존 엔티티·tenant 조회/DTO를 변경하지 않는다. 이름 CRT/MOD/DTM은 기존 사전 용어이고 새 등록은 없다. 사용자 채택은 외부 DBA 공식 승인이나 실제 MySQL 적용 성공을 뜻하지 않는다. 구현 입력은 `ready`, 수동 적용은 SQL pre-check/백업·손실 확인/유지보수 조건을 충족한 뒤 `ready`다. UTC/한국 시간 설정·외부 표준 확인은 DBA-04 잔여이며 이번 정밀도 수정에서 바꾸지 않는다. [MySQL 소수점 처리](https://dev.mysql.com/doc/refman/8.0/en/fractional-seconds.html)와 [CHECK 참조 컬럼 ALTER 제약](https://dev.mysql.com/doc/refman/8.0/en/alter-table.html)을 적용 근거로 한다.
 
 ## 7. ERD review
 
@@ -638,7 +668,7 @@ WHERE t.tmplt_stat_cd = 'ACTIVE'
 
 ### DBA action / deployment note
 
-- `crt_*` 대 `reg_*` 감사 컬럼 표준을 확정한다.
+- 감사 컬럼 이름·정밀도의 사용자 결정은 §6.8을 따른다. 실제 적용/외부 표준·환경 시간 확인은 DBA-04로 남긴다.
 - generated column/unique 지원과 이름 충돌을 확인한다.
 - seed SQL과 개발 전용 시트가 없는 운영 승인본 4개 workbook 검증 결과를 함께 승인한다.
 - catalog read application 배포 전 ACTIVE seed와 legacy soft-delete 대상 snapshot·DML·rollback 절차를 확인한다.
@@ -734,14 +764,14 @@ QRY-01/02는 이 관계에서 얻은 두 내부 버전을 현재 네 불변 파�
 
 ### 2026-10-16 실제 DB 확인이 필요한 DBA 후속
 
-공통 저장 정의는 §6.3, **기존 코드/문서 대조 완료 범위**는 §6.4 및 domain §5.4다. 아래 항목은 모두 **실제 DB 미확인/PENDING**이다. 이번에는 접속/SQL 실행/적용하지 않았다. 소스의 annotation이나 과거 DDL 초안을 운영 적용 증거로 쓰지 않는다.
+공통 저장 정의는 §6.3, **기존 코드/문서 대조 완료 범위**는 §6.4 및 domain §5.4다. 아래는 실제 DB 확인이 필요한 후속 목록이며, 파일 metadata의 사용자 제공 정의와 매핑 정렬은 §6.4에 반영했다. 해당 정렬만으로 DBA-01~05 전체 확인·운영 적용을 완료로 판단하지 않는다. Codex는 직접 DB 접속·SQL 실행/적용을 하지 않았으며 소스의 annotation이나 과거 DDL 초안을 운영 적용 증거로 쓰지 않는다.
 
 | ID / 담당 | 실제 확인할 것 | 필요한 결과/완료 경계 |
 | --- | --- | --- |
-| DBA-01 / DBA, BE 대조 | master의 Case/파일/User/회사·catalog6개/Case-template의 존재·실제 CREATE 정의와 신규7개 이름 충돌. PK/FK signedness/길이/NULL·engine/charset/collation·metadata 경로100/file_size·참조 가능한 active 데이터/최대 ID·auto_increment | 실제 정의와 §6.3/§6.4의 차이 목록. Case→Integer relation/파일번호→양의 int64 등 코드 표현 범위 확인. 기존 Case4파일·발행 연결 대상 여부는 BE와 확인하되 목록/seed 구축·내용 재등록으로 확대하지 않음 |
+| DBA-01 / DBA, BE 대조 | master의 Case/파일/User/회사·catalog6개/Case-template의 존재·실제 CREATE 정의와 신규7개 이름 충돌. PK/FK signedness/길이/NULL·engine/charset/collation·파일 metadata(§6.4)/file_size·참조 가능한 active 데이터/최대 ID·auto_increment | 실제 정의와 §6.3/§6.4의 차이 목록. Case→Integer relation/파일번호→양의 int64 등 코드 표현 범위 확인. 기존 Case4파일·발행 연결 대상 여부는 BE와 확인하되 목록/seed 구축·내용 재등록으로 확대하지 않음 |
 | DBA-02 / DBA, BE 경합 검증 | 실제 MySQL 버전에서 nullable generated UK·복합 FK/parent revision·CHECK/JSON_VALID가 동작하는지, 같은 master transaction/엔진·격리/lock 설정이 맞는지 | 적용 가능한 제약/생성 순서와 경합 검증 환경 확인. 실제 동시 생성/접수/최종 commit·늦은worker 시험은 구현 후 BE+DBA 검증이며 지금 Pass로 기록하지 않음 |
 | DBA-03 / DBA, BE 저장/접속 대조 | max_allowed_packet·connector/배포 환경 한도와 utf8mb4 LONGTEXT/JSON_VALID. 최대16 MiB delta 및 같은 SQL/프로토콜 여유 수용 여부 | 실제값과 최대 영속 요청의 여유 확인. 부족하면 적용 전에 설정/계약 대응 확정; 숫자 반올림·문자열 절삭/부분 저장으로 회피하지 않음. multipart300MB를 JSON/DB 한도 증거로 사용하지 않음 |
-| DBA-04 / DBA·데이터 표준 담당 | crt_*/mod_*와 reg_* 표준 차이의 예외 승인, 실제 감사 컬럼 길이/시간 정밀도·DB 시간 설정 | 기존 BaseEntity 호환 감사 컬럼의 확정/예외 근거. 공통 설계의 사용자 업무 결정으로 되돌리지 않음 |
+| DBA-04 / 사용자·BE, 외부 DBA·표준 담당은 별도 | 사용자 채택: 기존 crt_*/mod_*/del_yn 이름과 감사 DATETIME(0) 유지(§6.8). 실제 컬럼/백업·소수점 손실·증분 적용/verify와 환경별 DB/JVM 시간대 확인 | 사용자 방향 결정은 완료, 실제 적용·검증과 외부 DBA 표준 확인은 미완료. 사용자 채택을 외부 DBA 공식 승인으로 표시하지 않으며 시간대 설정은 이번에 변경하지 않음 |
 | DBA-05 / DBA·BE 배포 담당 | 위 결과를 반영한 CREATE/ALTER/검증 SQL 패키지·권한·적용 순서, ddl-auto:validate 앱과의 호환/롤백·운영 owner/go-no-go | 실제 환경에 맞는 패키지와 수동 적용 승인 후 별도 실행. 이번에는 SQL 패키지/실행을 만들지 않음. 참조 데이터/성공 이력 보존·기존 Case backfill 불필요 기준 유지, legacy cutover/표별 정책·seed 설계는 별도 |
 
 BE 구현 후의 제품 검증은 별도다: 입력→JSON text→DB→재조회/XLSM 수치 보존, body/로그·소유/회사 접근, durable 접수/격리 worker·재시작/timeout/UNKNOWN·부분 업로드/늦은PUT/정리·같은 최종 Case를 검증한다. 기존 Scenario staged/Run 시험 결과를 새 Draft의 Pass로 사용하지 않는다. 실제 저장소 ACL/암호화·편집 worker 운영 강제는 BE/운영 확인이며 DBA만의 DB 실물 확인 목록으로 넘기지 않는다.
@@ -753,7 +783,7 @@ BE 구현 후의 제품 검증은 별도다: 입력→JSON text→DB→재조회
 - 구조 변경 허용 범위는 domain 규칙 13·26·45·47을 따른다. 마지막 행·열 추가와 개별 중간 삽입·삭제 예외를 구분할 정책 저장 구조·검증 계약은 미정이며, 현재 추가 가능 플래그만으로 전체 정책을 표현하지 않는다.
 - 새 행/열의 수식·서식·validation 복제 규칙이 미정이다.
 - 구조 hash의 정규화/판별 방식이 미정이다.
-- `BaseEntity`와 DB 명명 문서의 감사 컬럼 표준이 충돌한다.
+- 감사 컬럼 이름/정밀도는 사용자 채택(§6.8)으로 정리했다. 실제 적용·외부 표준 확인/환경 시간대는 DBA-04 잔여다.
 - ACTIVE child soft delete 및 version activation을 수행할 운영 주체/API가 미정이다.
 - legacy 3파일 case soft-delete의 대상 ID/건수, `RUNNING` 0건, current `MI_BASE` 영향은 운영 DB pre-check가 필요하다.
 - Q2의 양식/catalog·Case 연결안은 §6.2·§10B에 있다. 실제 table/승인 GET 정의·seed/발행/기존 Case 연결 대상과 결과, 제품 projection/버전 대조·경합/실행 계획 검증은 남았다. 내용 hash/독립 revision 컬럼을 새 선행조건으로 두지 않는다.
@@ -801,7 +831,7 @@ BE 구현 후의 제품 검증은 별도다: 입력→JSON text→DB→재조회
 
 - ERD/DDL review verdict: `REVISE` for rollout — 공통 저장 구조 선택은 완료, 실제 schema/감사·SQL 패키지/DBA 확인이 남았다.
 - hierarchy/keys/types/index 방향은 구현 입력으로 충분하다.
-- DBA apply와 행·열 추가 실행 API는 감사 컬럼 표준, 추가 방식, 복제 규칙을 해결한 뒤 `ready`로 전환한다.
+- DBA apply와 행·열 추가 실행 API는 §6.8의 감사 변경 적용 검증, 추가 방식, 복제 규칙을 해결한 뒤 `ready`로 전환한다.
 - current readiness: `blocked by open questions` for write/execute implementation;
   read-only catalog schema/entity drafting is `ready after minor cleanup`.
 - Q2 기존 원본 등록과 §6.2/§10B의 양식/catalog 연결안은 추가 스키마 없이 기존 master/관계를 사용한다. table/GET 정의·seed/발행·Case 연결 등록·제품 검증은 미완료다. 기존 catalog의 `ready after minor cleanup` 및 write/execute의 `blocked by open questions` 판정을 변경하지 않는다.
