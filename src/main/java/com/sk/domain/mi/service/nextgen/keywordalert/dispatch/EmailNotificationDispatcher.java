@@ -1,5 +1,6 @@
 package com.sk.domain.mi.service.nextgen.keywordalert.dispatch;
 
+import com.sk.common.utils.DateUtil;
 import com.sk.domain.shared.enums.notification.NotificationChannel;
 import com.sk.domain.shared.repository.master.tmm.MiEventRepository;
 import com.sk.domain.shared.repository.master.tmm.projection.KeywordAlertMailEventRow;
@@ -63,9 +64,9 @@ public class EmailNotificationDispatcher extends AbstractNotificationDispatcher 
         mailService.sendMailWithInlineLogoNoAccessLog(target.userLoginId(), subject(target), body);
     }
 
-    /** Figma: [AI Market Insights] 키워드 알림 발생 - {키워드} */
+    /** [AI Market Insights] 이벤트 키워드 알림 발생 - {키워드} */
     static String subject(NotificationDispatchTarget target) {
-        return "[AI Market Insights] 키워드 알림 발생 - %s".formatted(target.keywordName());
+        return "[AI Market Insights] 이벤트 키워드 알림 발생 - %s".formatted(target.keywordName());
     }
 
     /**
@@ -84,7 +85,8 @@ public class EmailNotificationDispatcher extends AbstractNotificationDispatcher 
 
     static String eventMeta(KeywordAlertMailEventRow event) {
         String status = Boolean.TRUE.equals(event.getIsNew()) ? "신규" : "갱신";
-        String occurredAt = event.getOccurredAt() == null ? null : event.getOccurredAt().format(OCCURRED_AT_FORMAT);
+        // 이벤트 상세 '갱신일시'와 같은 값으로 표시 (UTC → KST)
+        String occurredAt = event.getOccurredAt() == null ? null : DateUtil.utcToKst(event.getOccurredAt()).format(OCCURRED_AT_FORMAT);
         return String.join(" · ", Stream.of(status, event.getCategoryLabel(), occurredAt)
                 .filter(StringUtils::isNotBlank)
                 .toList());

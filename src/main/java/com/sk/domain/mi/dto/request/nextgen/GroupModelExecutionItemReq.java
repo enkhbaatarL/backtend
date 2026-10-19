@@ -27,7 +27,14 @@ public record GroupModelExecutionItemReq(
 
 ) {
 
+    /**
+     * 비교 그리드 기준으로 만든 요청에는 이 시나리오가 제안하지 않은 파라미터가 values 빈 배열로 섞여 올 수 있어 제외한다.
+     * 나머지는 단건 실행 검증(제안 구조 일치)을 그대로 거친다.
+     */
     public ModelParamProposalExecutionReq toSingleExecutionRequest() {
-        return new ModelParamProposalExecutionReq(modelParamProposalId, confirmationParameters);
+        List<ModelParamPayloadItem> proposedParameters = confirmationParameters.stream()
+            .filter(item -> item == null || (item.values() != null && !item.values().isEmpty()))
+            .toList();
+        return new ModelParamProposalExecutionReq(modelParamProposalId, proposedParameters);
     }
 }

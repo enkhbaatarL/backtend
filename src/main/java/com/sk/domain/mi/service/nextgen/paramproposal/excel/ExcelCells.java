@@ -1,5 +1,6 @@
 package com.sk.domain.mi.service.nextgen.paramproposal.excel;
 
+import com.sk.domain.shared.enums.nextgen.BasecaseStopRule;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.function.IntPredicate;
@@ -16,12 +17,6 @@ final class ExcelCells {
     /** 숫자 비교 허용 오차 — payload 값은 같은 셀에서 추출된 double이라 사실상 동일하나 직렬화 잡음만 흡수한다. */
     private static final double EPSILON = 1e-9;
 
-    /**
-     * 행 스캔 종료 기준 — key 컬럼이 모두 빈 행이 연속으로 이만큼 나오면 데이터 영역이 끝난 것으로 본다.
-     * (ShippingCost처럼 데이터 앞에 빈 행이 끼는 시트가 있어 첫 빈 행에서 바로 멈추지 않는다)
-     */
-    private static final int BLANK_STREAK_LIMIT = 20;
-
     private ExcelCells() {
     }
 
@@ -33,26 +28,28 @@ final class ExcelCells {
     }
 
     /**
-     * startRowIndex부터 key 컬럼 기준으로 데이터 영역을 스캔한다.
-     * stop_when_all_key_columns_empty 규칙 — 연속 빈 행이 한도를 넘으면 종료하고,
+     * startRowIndex부터 key 컬럼 기준으로 데이터 영역을 스캔한다. 종료 시점은 마스터의 basecase_stop_rule을 따른다.
      * 데이터 행마다 rowMatches 판정으로 일치 행을 수집한다.
      */
-    static RowScan scanRows(MergeSheet sheet, int startRowIndex, List<Integer> keyColumnIndexes, IntPredicate rowMatches) {
+    static RowScan scanRows(MergeSheet sheet, BasecaseStopRule stopRule, int startRowIndex, List<Integer> keyColumnIndexes, IntPredicate rowMatches) {
+        return switch (stopRule) {
+            case STOP_WHEN_ALL_KEY_COLUMNS_EMPTY -> scanUntilAllKeyColumnsEmpty(sheet, startRowIndex, keyColumnIndexes, rowMatches);
+        };
+    }
+
+    /**
+     * key 컬럼이 모두 빈 첫 행에서 종료한다 (Agent의 Basecase 읽기와 동일 범위).
+     * 한 시트에 같은 key 구조의 표가 빈 행을 사이에 두고 이어지는 경우(예: ShippingCostInput)가 있어, 빈 행을 넘어 다음 표까지 읽으면 안 된다.
+     */
+    private static RowScan scanUntilAllKeyColumnsEmpty(MergeSheet sheet, int startRowIndex, List<Integer> keyColumnIndexes, IntPredicate rowMatches) {
         List<Integer> matched = new ArrayList<>();
-        int lastDataRowIndex = startRowIndex - 1;
-        int blankStreak = 0;
-        for (int rowIndex = startRowIndex; blankStreak < BLANK_STREAK_LIMIT; rowIndex++) {
-            if (isRowBlank(sheet, rowIndex, keyColumnIndexes)) {
-                blankStreak++;
-                continue;
-            }
-            blankStreak = 0;
-            lastDataRowIndex = rowIndex;
+        int rowIndex = startRowIndex;
+        for (; !isRowBlank(sheet, rowIndex, keyColumnIndexes); rowIndex++) {
             if (rowMatches.test(rowIndex)) {
                 matched.add(rowIndex);
             }
         }
-        return new RowScan(matched, lastDataRowIndex + 1);
+        return new RowScan(matched, rowIndex);
     }
 
     /** 컬럼 문자를 0-based 인덱스로 변환한다. */
