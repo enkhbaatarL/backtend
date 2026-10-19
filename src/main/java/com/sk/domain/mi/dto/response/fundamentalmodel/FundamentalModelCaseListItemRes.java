@@ -1,5 +1,6 @@
 package com.sk.domain.mi.dto.response.fundamentalmodel;
 
+import com.fasterxml.jackson.annotation.JsonInclude;
 import com.sk.domain.shared.enums.fundamentalmodel.FundamentalModelCaseStatus;
 import com.sk.domain.shared.enums.fundamentalmodel.FundamentalModelExecType;
 import io.swagger.v3.oas.annotations.media.Schema;
@@ -41,7 +42,18 @@ public record FundamentalModelCaseListItemRes(
 
     @Schema(description = "case 최종 변경 시각")
     @NotNull
-    LocalDateTime updatedAt
+    LocalDateTime updatedAt,
+
+    @Schema(
+        description = "현재 회사·로그인 사용자가 이 Case를 원본으로 편집 중인 미삭제 DRAFT ID. 없으면 null이며 FINALIZED/DISCARDED Draft는 제외합니다.",
+        format = "uuid",
+        example = "aefb60dc-18b8-4ac2-beb4-a4d499950765",
+        nullable = true,
+        types = {"string", "null"},
+        requiredMode = Schema.RequiredMode.REQUIRED
+    )
+    @JsonInclude(JsonInclude.Include.ALWAYS)
+    String draftId
 
 ) {
 }

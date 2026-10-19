@@ -70,6 +70,8 @@ EDT-06/07은 §9 정본 계약으로 연결한다. 신규 준비파일 DDL의 �
 
 ## 2. 호출 흐름·공통 접근 경계
 
+Case 목록에서 개인 Draft ID를 받은 경우 EDT-02로 바로 재조회해 편집을 이어갈 수 있다. 목록 필드의 범위와 null 의미는 [MI Base/Case 목록 계약 §3](mi-fundamental-model-mi-base-designation-feature-spec.md#3-api-slice-a--기존-scenario-case-목록에-current-mi-base-포함)를 따른다. ID가 없으면 아래 생성/재개 흐름을 사용한다.
+
 1. 기존 QRY-01로 구조를 읽고 최초 표 미선택을 유지한다. 원본 표를 볼 때 QRY-02를 그대로 사용한다.
 2. 편집 시작 시 QRY-01의 `caseId/sourceVersion`으로 EDT-01을 호출한다. 기존 진행 Draft가 있으면 재개한다.
 3. EDT-02의 성공 revision/구조를 기준으로 EDT-03에서 선택 표를 읽는다. FE 구간 로딩은 [QRY 상세 §5.1](mi-fundamental-model-input-query-api-proposal.md)을 따르며, 각 추가 조회도 같은 draftId/revision/tableId를 사용한다. 원본 QRY 응답을 Draft 저장값으로 표시하지 않는다.

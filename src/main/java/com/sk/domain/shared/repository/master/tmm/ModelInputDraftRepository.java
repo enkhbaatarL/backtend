@@ -4,6 +4,7 @@ import com.sk.domain.mi.service.fundamentalmodel.input.InputDraftException;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -86,6 +87,29 @@ public class ModelInputDraftRepository {
         return jdbc.query("SELECT * FROM tmd_mdl_inptdrftm WHERE cust_cpny_no=? AND usr_no=? AND org_case_id=? AND drft_stat_cd='DRAFT' AND del_yn='N'",
             this::draft,company,user,caseId).stream().findFirst().orElse(null);
     }
+
+    public Map<Long, String> findActiveDraftIds(int company, int user, List<Long> caseIds) {
+        if (caseIds.isEmpty()) {
+            return Map.of();
+        }
+        String placeholders = String.join(",", Collections.nCopies(caseIds.size(), "?"));
+        List<Object> parameters = new ArrayList<>();
+        parameters.add(company);
+        parameters.add(user);
+        parameters.addAll(caseIds);
+        return jdbc.query("""
+            SELECT org_case_id, drft_id FROM tmd_mdl_inptdrftm
+            WHERE cust_cpny_no=? AND usr_no=? AND drft_stat_cd='DRAFT' AND del_yn='N'
+              AND org_case_id IN (%s)
+            """.formatted(placeholders), rs -> {
+                Map<Long, String> draftIds = new LinkedHashMap<>();
+                while (rs.next()) {
+                    draftIds.put(rs.getLong("org_case_id"), rs.getString("drft_id"));
+                }
+                return draftIds;
+            }, parameters.toArray());
+    }
+
     public Draft owned(String id,int company,int user) {
         return jdbc.query("SELECT * FROM tmd_mdl_inptdrftm WHERE drft_id=? AND cust_cpny_no=? AND usr_no=? AND del_yn='N'",
             this::draft,id,company,user).stream().findFirst().orElseThrow(InputDraftException::missing);

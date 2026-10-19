@@ -1,5 +1,5 @@
 -- Document Control
--- status: Draft / USER REVIEW AND MANUAL APPLY ONLY / NOT EXECUTED
+-- status: Draft / USER REVIEW AND MANUAL APPLY ONLY / NOT EXECUTED BY CODEX
 -- canonical for: 이 baseline의 구조 데이터 등록·검증 SQL 초안 (정책·schema 정본 아님)
 -- owner: BE / DBA; date: 2026-10-19; last synced: 2026-10-19
 -- source: docs/references/mi-model-input-baseline-2026-10-07-manifest.json
@@ -7,8 +7,9 @@
 -- depends on: docs/design-docs/gas/mi-model-input-template-catalog-erd-ddl-draft.md §6.2, §10B
 -- depends on: docs/design-docs/gas/mi-model-input-template-catalog-domain-model-design.md §3.3, 규칙3/39~44/49~58, §6.1
 -- evidence/pending: docs/references/mi-model-input-catalog-structure-2026-10-19.md
+-- execution record: docs/work-notes/2026/2026-10-19-model-input-catalog-structure-sql.md (사용자 등록 결과·재실행 금지 대상)
 -- supersedes: 없음. Case103 smoke SQL/기존 ACTIVE·DEPRECATED 정의를 대체하지 않는다.
--- open questions: 보류 7표·표별 쓰기/계산 정책·구조 hash 판별 방식·실DB 검증.
+-- open questions: 보류 7표·표별 쓰기/계산 정책·구조 hash 판별 방식·다른 적용 대상의 실DB 검증.
 -- baselineId=2026-10-07-delivery-261006-v8-v6
 -- 목적: 새 DRAFT 양식1개, 역할4개, 유지 시트70개, 확인된 조회 표92개만 INSERT.
 -- 기존 Case/파일 metadata/Draft/Case-template/수정범위는 쓰지 않는다. UPDATE/DELETE/발행/DDL 없음.
@@ -47,18 +48,28 @@ WHERE mdl_spt_cd=@c_model AND (tmplt_ver_no=@c_version OR tmplt_expn=@c_marker);
 
 -- 2. 등록 (전 단계를 같은 transaction에서 실행; ERROR 발생 시 ROLLBACK 후 종료)
 START TRANSACTION;
+-- 한 등록자 / 같은 연결. 이미 있는 동일 버전 또는 marker는 재사용하지 않는다.
+SET @c_preexisting_count=(SELECT COUNT(*) FROM tmd_mdl_inpttmpltm
+  WHERE mdl_spt_cd=@c_model AND (tmplt_ver_no=@c_version OR tmplt_expn=@c_marker));
+SELECT @c_model AS model_code,@c_version AS template_version,@c_actor AS actor,
+       @c_preexisting_count AS existing_roots_must_be_0;
 INSERT INTO tmd_mdl_inpttmpltm
   (mdl_spt_cd,tmplt_ver_no,tmplt_ver_nm,tmplt_stat_cd,aply_bgn_dtm,tmplt_expn,
    crt_usr_logn_id,crt_dtm,mod_usr_logn_id,mod_dtm,del_yn)
 SELECT @c_model,@c_version,'2026-10-07 v8-v6 structure DRAFT','DRAFT',NULL,@c_marker,
        @c_actor,CURRENT_TIMESTAMP,@c_actor,CURRENT_TIMESTAMP,'N'
-WHERE @c_model IS NOT NULL AND CHAR_LENGTH(TRIM(@c_model)) BETWEEN 1 AND 20
+WHERE @c_preexisting_count=0 AND @c_model IS NOT NULL AND CHAR_LENGTH(TRIM(@c_model)) BETWEEN 1 AND 20
   AND @c_model <> 'DRAFT_API_SMOKE'
   AND @c_version BETWEEN 1 AND 65535 AND @c_version=FLOOR(@c_version)
   AND @c_actor IS NOT NULL AND CHAR_LENGTH(TRIM(@c_actor)) BETWEEN 1 AND 50
   AND NOT EXISTS (SELECT 1 FROM tmd_mdl_inpttmpltm
                   WHERE mdl_spt_cd=@c_model AND (tmplt_ver_no=@c_version OR tmplt_expn=@c_marker));
-SET @c_created=ROW_COUNT();
+-- ROW_COUNT()를 사용하지 않고 이번 transaction에서 저장된 실제 행을 확인한다.
+-- 기존 행이 있던 실행은 @c_preexisting_count 때문에 계속 차단된다.
+SET @c_created=(SELECT COUNT(*) FROM tmd_mdl_inpttmpltm
+  WHERE @c_preexisting_count=0 AND mdl_spt_cd=@c_model AND tmplt_ver_no=@c_version AND tmplt_expn=@c_marker
+    AND tmplt_stat_cd='DRAFT' AND aply_bgn_dtm IS NULL AND del_yn='N'
+    AND crt_usr_logn_id=@c_actor AND mod_usr_logn_id=@c_actor);
 -- 이번에1건 생성한 자연키·marker·DRAFT·감사값으로 실재 부모를 조회한다. 오래된 LAST_INSERT_ID에 기대지 않는다.
 SET @c_tmplt_id=(SELECT tmplt_id FROM tmd_mdl_inpttmpltm
   WHERE @c_created=1 AND mdl_spt_cd=@c_model AND tmplt_ver_no=@c_version AND tmplt_expn=@c_marker
@@ -82,7 +93,7 @@ UNION ALL
 SELECT 'OUTPUT','OUTPUT-normalized.xlsm',4
 ) x JOIN tmd_mdl_inpttmpltm p ON p.tmplt_id=@c_tmplt_id AND p.tmplt_stat_cd='DRAFT' AND p.tmplt_expn=@c_marker AND p.del_yn='N'
 WHERE @c_ok=1;
-SET @c_ok=IF(@c_ok=1 AND ROW_COUNT()=4 AND (SELECT COUNT(*) FROM tmd_mdl_inptfiled WHERE tmplt_id=@c_tmplt_id)=4,1,0);
+SET @c_ok=IF(@c_ok=1 AND (SELECT COUNT(*) FROM tmd_mdl_inptfiled WHERE tmplt_id=@c_tmplt_id)=4,1,0);
 SELECT @c_ok AS roles_must_be_1;
 
 INSERT INTO tmd_mdl_inptshtd
@@ -231,7 +242,7 @@ SELECT 'OUTPUT','PriceSeasonality',5,'VISIBLE'
 ) x JOIN tmd_mdl_inptfiled f ON f.tmplt_id=@c_tmplt_id AND f.mdl_file_cd=x.role AND f.del_yn='N'
 JOIN tmd_mdl_inpttmpltm p ON p.tmplt_id=f.tmplt_id AND p.tmplt_stat_cd='DRAFT' AND p.tmplt_expn=@c_marker AND p.del_yn='N'
 WHERE @c_ok=1;
-SET @c_ok=IF(@c_ok=1 AND ROW_COUNT()=70 AND (SELECT COUNT(*) FROM tmd_mdl_inptshtd s JOIN tmd_mdl_inptfiled f ON f.inpt_file_id=s.inpt_file_id WHERE f.tmplt_id=@c_tmplt_id)=70,1,0);
+SET @c_ok=IF(@c_ok=1 AND (SELECT COUNT(*) FROM tmd_mdl_inptshtd s JOIN tmd_mdl_inptfiled f ON f.inpt_file_id=s.inpt_file_id WHERE f.tmplt_id=@c_tmplt_id)=70,1,0);
 SELECT @c_ok AS sheets_must_be_1;
 
 -- 검증한 schemaVersion1 정의92개. 행·열은 Excel의1-based이며 fieldKey는 표 안에서 유일하다.
@@ -707,7 +718,7 @@ SELECT 'OUTPUT','PriceSeasonality','Price Seasonality',1,1,4,2,15,1,1,2,'N','N',
 JOIN tmd_mdl_inptshtd s ON s.inpt_file_id=f.inpt_file_id AND BINARY s.sht_nm=BINARY x.sheet AND s.sht_stat_cd='VISIBLE' AND s.del_yn='N'
 JOIN tmd_mdl_inpttmpltm p ON p.tmplt_id=f.tmplt_id AND p.tmplt_stat_cd='DRAFT' AND p.tmplt_expn=@c_marker AND p.del_yn='N'
 WHERE @c_ok=1;
-SET @c_ok=IF(@c_ok=1 AND ROW_COUNT()=92,1,0);
+SET @c_ok=IF(@c_ok=1 AND (SELECT COUNT(*) FROM tmd_mdl_inpttbld t JOIN tmd_mdl_inptshtd s ON s.inpt_sht_id=t.inpt_sht_id JOIN tmd_mdl_inptfiled f ON f.inpt_file_id=s.inpt_file_id WHERE f.tmplt_id=@c_tmplt_id)=92,1,0);
 SELECT @c_ok AS table_insert_must_be_1;
 -- tmd_mdl_inptmodscopd INSERT 없음. 확인된 읽기 구조와 쓰기 허용은 별개다.
 

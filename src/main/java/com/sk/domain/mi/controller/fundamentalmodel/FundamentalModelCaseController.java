@@ -77,6 +77,10 @@ public class FundamentalModelCaseController {
             - `cases`: 검색 조건이 적용된 active `INDEPENDENT` 목록이며, `createdAt DESC, caseId DESC`로 정렬됩니다.
             - `totalCount`: current MI Base 0~1건과 필터된 `cases.size()`의 합입니다.
             - `SCENARIO`는 두 영역에서 모두 제외됩니다.
+            - 각 항목의 `draftId`는 현재 회사·로그인 사용자가 해당 Case를 원본으로 편집 중인 미삭제 `DRAFT` ID이며, 없으면 `null`입니다. 다른 사용자와 `FINALIZED`/`DISCARDED` Draft는 제외합니다.
+
+            `draftId`가 있으면 `GET /api/v1/mi/fundamental-model/input-drafts/{draftId}`로 현재 구조·revision·진행 작업을 확인하고 편집을 이어갑니다.
+            `null`이면 원본 구조 조회 후 Draft 생성/재개 API를 사용합니다. 목록 조회는 Draft를 생성하거나 변경하지 않습니다.
 
             `keyword`가 non-blank인 경우에만 `searchType`이 필수입니다. 각 항목의 `execType`은 current 기준값과 일반 독립실행을 구분합니다.
             """
@@ -97,8 +101,8 @@ public class FundamentalModelCaseController {
                       "message": "Success.",
                       "data": {
                         "totalCount": 2,
-                        "miBase": {"caseId": 105, "title": "현재 기준", "status": "COMPLETED", "execType": "MI_BASE", "assigneeName": "홍길동", "createdAt": "2026-06-30T16:25:00", "updatedAt": "2026-06-30T16:25:00"},
-                        "cases": [{"caseId": 110, "title": "독립 실행", "status": "COMPLETED", "execType": "INDEPENDENT", "assigneeName": "홍길동", "createdAt": "2026-06-30T17:30:00", "updatedAt": "2026-06-30T17:34:00"}]
+                        "miBase": {"caseId": 105, "draftId": "aefb60dc-18b8-4ac2-beb4-a4d499950765", "title": "현재 기준", "status": "COMPLETED", "execType": "MI_BASE", "assigneeName": "홍길동", "createdAt": "2026-06-30T16:25:00", "updatedAt": "2026-06-30T16:25:00"},
+                        "cases": [{"caseId": 110, "draftId": null, "title": "독립 실행", "status": "COMPLETED", "execType": "INDEPENDENT", "assigneeName": "홍길동", "createdAt": "2026-06-30T17:30:00", "updatedAt": "2026-06-30T17:34:00"}]
                       }
                     }
                     """
@@ -485,7 +489,7 @@ public class FundamentalModelCaseController {
                           "status": true,
                           "code": "SUC-000",
                           "message": "Success.",
-                          "data": {"caseId": 110, "title": "독립 실행", "status": "COMPLETED", "execType": "MI_BASE", "assigneeName": "홍길동", "createdAt": "2026-06-30T17:30:00", "updatedAt": "2026-07-23T16:50:00"}
+                          "data": {"caseId": 110, "draftId": null, "title": "독립 실행", "status": "COMPLETED", "execType": "MI_BASE", "assigneeName": "홍길동", "createdAt": "2026-06-30T17:30:00", "updatedAt": "2026-07-23T16:50:00"}
                         }
                         """
                 )

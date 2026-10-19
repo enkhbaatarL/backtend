@@ -295,6 +295,6 @@ mi:
   model-input:
     model-code: DRAFT_FO01_SMOKE
     change-worker:
-      enabled: false
+      enabled: true
     finalization:
-      enabled: false
+      enabled: true

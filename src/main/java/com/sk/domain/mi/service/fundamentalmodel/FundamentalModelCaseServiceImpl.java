@@ -5,6 +5,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.sk.common.enums.ResultCode;
 import com.sk.common.exception.AppErrorException;
 import com.sk.common.exception.AppHttpStatusException;
+import com.sk.common.exception.CustomAuthorizationException;
 import com.sk.common.utils.DateUtil;
 import com.sk.domain.admin.dto.response.file.FileUploadRes;
 import com.sk.domain.mi.dto.request.fundamentalmodel.FundamentalModelCaseListReq;
@@ -65,6 +66,7 @@ import com.sk.domain.shared.repository.master.tmd.projection.ScenarioCasePriceRo
 import com.sk.domain.shared.repository.master.tmd.projection.ScenarioCaseTradeFlowHeaderRow;
 import com.sk.domain.shared.repository.master.tmd.projection.ScenarioCaseTradeFlowRow;
 import com.sk.domain.shared.repository.master.tmd.projection.ScenarioCaseVolumeRegionBucketRow;
+import com.sk.domain.shared.repository.master.tmm.ModelInputDraftRepository;
 import com.sk.domain.shared.service.FileService;
 import com.sk.domain.shared.service.permissions.AuthorizationService;
 import java.math.BigDecimal;
@@ -171,6 +173,7 @@ public class FundamentalModelCaseServiceImpl implements FundamentalModelCaseServ
     private final ScenarioCaseTradeFlowHeaderRepository scenarioCaseTradeFlowHeaderRepository;
     private final ScenarioCaseTradeFlowRepository scenarioCaseTradeFlowRepository;
     private final UploadedFileRepository uploadedFileRepository;
+    private final ModelInputDraftRepository modelInputDraftRepository;
     private final FileService fileService;
     private final AuthorizationService authorizationService;
     private final KubernetesJobService kubernetesJobService;
@@ -195,12 +198,19 @@ public class FundamentalModelCaseServiceImpl implements FundamentalModelCaseServ
             searchType = null;
         }
 
-        List<FundamentalModelCaseListItemRes> cases = scenarioCaseRepository.findListRows(searchType, keyword)
+        List<ScenarioCaseListRow> caseRows = scenarioCaseRepository.findListRows(searchType, keyword);
+        Optional<ScenarioCaseListRow> miBaseRow = scenarioCaseRepository.findCurrentMiBaseListRow();
+        List<Long> caseIds = new ArrayList<>();
+        caseRows.forEach(row -> caseIds.add(row.caseId()));
+        miBaseRow.ifPresent(row -> caseIds.add(row.caseId()));
+        Map<Long, String> draftIds = findActiveDraftIds(caseIds);
+
+        List<FundamentalModelCaseListItemRes> cases = caseRows
             .stream()
-            .map(this::toListItemResponse)
+            .map(row -> toListItemResponse(row, draftIds.get(row.caseId())))
             .toList();
-        FundamentalModelCaseListItemRes miBase = scenarioCaseRepository.findCurrentMiBaseListRow()
-            .map(this::toListItemResponse)
+        FundamentalModelCaseListItemRes miBase = miBaseRow
+            .map(row -> toListItemResponse(row, draftIds.get(row.caseId())))
             .orElse(null);
         int totalCount = cases.size() + (miBase == null ? 0 : 1);
         return new FundamentalModelCaseListRes(totalCount, miBase, cases);
@@ -2485,6 +2495,22 @@ public class FundamentalModelCaseServiceImpl implements FundamentalModelCaseServ
     }
 
     private FundamentalModelCaseListItemRes toListItemResponse(ScenarioCaseListRow row) {
+        return toListItemResponse(row, findActiveDraftIds(List.of(row.caseId())).get(row.caseId()));
+    }
+
+    private Map<Long, String> findActiveDraftIds(List<Long> caseIds) {
+        if (caseIds.isEmpty()) {
+            return Map.of();
+        }
+        Integer companyNo = authorizationService.getCompanyNoWithPriority();
+        Integer userNo = authorizationService.getUserNo();
+        if (companyNo == null || companyNo <= 0 || userNo == null || userNo <= 0) {
+            throw CustomAuthorizationException.of(ResultCode.Error.AUTH_INSUFFICIENT_PERMISSIONS);
+        }
+        return modelInputDraftRepository.findActiveDraftIds(companyNo, userNo, caseIds);
+    }
+
+    private FundamentalModelCaseListItemRes toListItemResponse(ScenarioCaseListRow row, String draftId) {
         return new FundamentalModelCaseListItemRes(
             row.caseId(),
             row.title(),
@@ -2492,7 +2518,8 @@ public class FundamentalModelCaseServiceImpl implements FundamentalModelCaseServ
             row.execType(),
             row.assigneeName(),
             row.createdAt(),
-            row.updatedAt()
+            row.updatedAt(),
+            draftId
         );
     }
 
