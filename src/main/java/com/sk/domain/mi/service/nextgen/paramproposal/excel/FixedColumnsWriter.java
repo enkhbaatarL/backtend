@@ -3,6 +3,7 @@ package com.sk.domain.mi.service.nextgen.paramproposal.excel;
 import com.sk.domain.mi.service.nextgen.paramproposal.excel.ColumnRoleMap.Role;
 import com.sk.domain.mi.service.nextgen.paramproposal.excel.ExcelCells.RowScan;
 import com.sk.domain.shared.entity.master.tmm.MiModelParam;
+import com.sk.domain.shared.enums.nextgen.BasecaseStopRule;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
@@ -17,7 +18,7 @@ import lombok.extern.slf4j.Slf4j;
  * 기입 규칙:
  * - slot 키를 column roles 라벨로 매칭해 slot 컬럼을, 잔여 role 하나로 value 컬럼을 정한다
  * - row filter(예: E=CDD)가 있으면 필터 컬럼 값이 일치하는 행만 후보로 본다 (HDD/CDD 혼재 표 대응)
- * - data start row부터 slot 컬럼 전체가 일치하는 행을 찾아 value 셀에 proposedValue를 덮어쓴다
+ * - data start row부터 basecase_stop_rule 범위 안에서 slot 컬럼 전체가 일치하는 행을 찾아 value 셀에 proposedValue를 덮어쓴다
  * - 일치 행이 없으면(원본에 없던 신규 항목) 데이터 영역 끝에 행을 추가한다. 필터가 있으면 필터 값도 기입한다
  * - 일치 행이 복수면 시트 데이터 정합 문제이므로 실패시킨다 (부분 성공 없음)
  */
@@ -30,13 +31,15 @@ final class FixedColumnsWriter {
     private final MergeSheet sheet;
     private final MiModelParam param;
     private final ColumnRoleMap roles;
+    private final BasecaseStopRule stopRule;
     private final RowFilter rowFilter;
     private final String context;
 
-    FixedColumnsWriter(MergeSheet sheet, MiModelParam param, ColumnRoleMap roles) {
+    FixedColumnsWriter(MergeSheet sheet, MiModelParam param, ColumnRoleMap roles, BasecaseStopRule stopRule) {
         this.sheet = sheet;
         this.param = param;
         this.roles = roles;
+        this.stopRule = stopRule;
         this.context = ValueRows.context(param);
         this.rowFilter = RowFilter.parse(context, param.getBasecaseRowFilter());
     }
@@ -75,7 +78,7 @@ final class FixedColumnsWriter {
         double proposedValue = ValueRows.proposedValue(context, valueRow);
 
         List<Integer> keyColumns = slots.stream().map(SlotCell::columnIndex).toList();
-        RowScan scan = ExcelCells.scanRows(sheet, param.getBasecaseDataStartRow() - 1, keyColumns, rowIndex -> matchesRow(rowIndex, slots));
+        RowScan scan = ExcelCells.scanRows(sheet, stopRule, param.getBasecaseDataStartRow() - 1, keyColumns, rowIndex -> matchesRow(rowIndex, slots));
 
         if (scan.matchedRowIndexes().size() > 1) {
             throw ValueRows.error(context, "slot에 일치하는 행이 복수입니다 (엑셀 행=%s, slot=%s)".formatted(toExcelRows(scan.matchedRowIndexes()), slotAxes));
