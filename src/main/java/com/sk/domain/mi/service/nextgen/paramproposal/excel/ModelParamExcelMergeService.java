@@ -4,6 +4,7 @@ import com.sk.common.enums.ResultCode;
 import com.sk.common.exception.AppErrorException;
 import com.sk.common.exception.SystemErrorException;
 import com.sk.domain.shared.entity.master.tmm.MiModelParam;
+import com.sk.domain.shared.enums.nextgen.BasecaseStopRule;
 import com.sk.domain.shared.repository.master.tmm.MiModelParamRepository;
 import java.io.IOException;
 import java.nio.file.Files;
@@ -150,11 +151,22 @@ public class ModelParamExcelMergeService {
         }
 
         ColumnRoleMap roles = ColumnRoleMap.parse(context, param.getBasecaseColumnRoles());
+        BasecaseStopRule stopRule = stopRule(context, param);
 
         return switch (param.getBasecaseReadMode()) {
-            case FIXED_COLUMNS -> new FixedColumnsWriter(sheet, param, roles).apply(adjustment.values());
-            case MATRIX_TIME_COLUMNS -> new MatrixTimeColumnsWriter(sheet, param, roles).apply(adjustment.values());
+            case FIXED_COLUMNS -> new FixedColumnsWriter(sheet, param, roles, stopRule).apply(adjustment.values());
+            case MATRIX_TIME_COLUMNS -> new MatrixTimeColumnsWriter(sheet, param, roles, stopRule).apply(adjustment.values());
         };
+    }
+
+    /** 지원하지 않는 basecase_stop_rule이면 실패시킨다 — Agent와 다른 범위로 읽어 엉뚱한 행에 기입하는 것을 막는다. */
+    private BasecaseStopRule stopRule(String context, MiModelParam param) {
+        try {
+            return BasecaseStopRule.from(param.getBasecaseStopRule());
+        } catch (IllegalArgumentException e) {
+            log.error("[ModelInput Merge] - STOP-RULE [{}] 지원하지 않는 basecase_stop_rule: {}", context, param.getBasecaseStopRule());
+            throw SystemErrorException.of(ResultCode.Error.SYS_INTERNAL_ERROR, "수급모델 입력 병합 실패 [%s] — 지원하지 않는 basecase_stop_rule입니다: %s (마스터 확인 필요)".formatted(context, param.getBasecaseStopRule()));
+        }
     }
 
     /**

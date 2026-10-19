@@ -1,7 +1,9 @@
+
 package com.sk.domain.mi.service.nextgen.paramproposal.excel;
 
 import com.sk.domain.mi.service.nextgen.paramproposal.excel.ExcelCells.RowScan;
 import com.sk.domain.shared.entity.master.tmm.MiModelParam;
+import com.sk.domain.shared.enums.nextgen.BasecaseStopRule;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -33,13 +35,15 @@ final class MatrixTimeColumnsWriter {
     private final MergeSheet sheet;
     private final MiModelParam param;
     private final ColumnRoleMap roles;
+    private final BasecaseStopRule stopRule;
     private final RowFilter rowFilter;
     private final String context;
 
-    MatrixTimeColumnsWriter(MergeSheet sheet, MiModelParam param, ColumnRoleMap roles) {
+    MatrixTimeColumnsWriter(MergeSheet sheet, MiModelParam param, ColumnRoleMap roles, BasecaseStopRule stopRule) {
         this.sheet = sheet;
         this.param = param;
         this.roles = roles;
+        this.stopRule = stopRule;
         this.context = ValueRows.context(param);
         this.rowFilter = RowFilter.parse(context, param.getBasecaseRowFilter());
         requireMatrixSpec();
@@ -88,7 +92,7 @@ final class MatrixTimeColumnsWriter {
             .toList();
 
         List<Integer> keyColumns = roles.columnIndexes();
-        RowScan scan = ExcelCells.scanRows(sheet, param.getBasecaseDataStartRow() - 1, keyColumns,
+        RowScan scan = ExcelCells.scanRows(sheet, stopRule, param.getBasecaseDataStartRow() - 1, keyColumns,
             candidate -> matchesRow(candidate, slots));
 
         if (scan.matchedRowIndexes().isEmpty()) {
