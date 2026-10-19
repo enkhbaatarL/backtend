@@ -293,4 +293,8 @@ kubernetes:
 
 mi:
   model-input:
-    model-code: DRAFT_API_SMOKE
+    model-code: DRAFT_FO01_SMOKE
+    change-worker:
+      enabled: false
+    finalization:
+      enabled: false
