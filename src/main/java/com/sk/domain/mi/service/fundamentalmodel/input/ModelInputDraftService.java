@@ -302,17 +302,23 @@ public class ModelInputDraftService {
         if(!expected.equals(tx(true,()->store.fixedFiles(draft.id()))))throw InputDraftException.conflict("SOURCE_CHANGED",draft.revision());
     }
     private State state(Actor actor,String id) {
-        return state(actor,store.lockOwned(id,actor.company,actor.user));
+        return state(actor,InputDraftDiagnostics.timed(InputDraftDiagnostics.Stage.SNAPSHOT_LOCK,null,
+            ()->store.lockOwned(id,actor.company,actor.user)));
     }
     private State state(Actor actor,Draft draft) {
-        Source source=source(actor,draft);
+        Source source=InputDraftDiagnostics.timed(InputDraftDiagnostics.Stage.SOURCE_LOAD,null,()->source(actor,draft));
         if(!java.util.Objects.equals(draft.sourceVersion(),source.version)) throw InputDraftException.conflict("SOURCE_CHANGED",draft.revision());
-        fixed(draft,source,draft.sourceVersion());
+        InputDraftDiagnostics.timed(InputDraftDiagnostics.Stage.FIXED_FILES,null,()->{
+            fixed(draft,source,draft.sourceVersion());return null;
+        });
         return restore(draft,source);
     }
     private State restore(Draft draft,Source source) {
-        InputDraftHistory history=InputDraftHistory.restore(draft,source.catalog,source.definitions,
-            store.revisions(draft.id()),store.rowIdentities(draft.id()),store.rowPositions(draft.id()),json);
+        var revisions=InputDraftDiagnostics.timed(InputDraftDiagnostics.Stage.REVISION_LOAD,null,()->store.revisions(draft.id()));
+        var identities=InputDraftDiagnostics.timed(InputDraftDiagnostics.Stage.ROW_IDENTITIES_LOAD,null,()->store.rowIdentities(draft.id()));
+        var positions=InputDraftDiagnostics.timed(InputDraftDiagnostics.Stage.ROW_POSITIONS_LOAD,null,()->store.rowPositions(draft.id()));
+        InputDraftHistory history=InputDraftDiagnostics.timed(InputDraftDiagnostics.Stage.HISTORY_RESTORE,null,
+            ()->InputDraftHistory.restore(draft,source.catalog,source.definitions,revisions,identities,positions,json));
         Source current=new Source(source.caseId,history.catalog(),source.files,source.key,source.version,source.inputIds,history.definitions());
         return new State(draft,current,history);
     }
@@ -587,19 +593,18 @@ public class ModelInputDraftService {
     @Transactional(propagation=Propagation.NOT_SUPPORTED)
     public Structure structure(String id) {
         Actor actor=actor();
-        return tx(false,()->{
+        return InputDraftDiagnostics.timed(InputDraftDiagnostics.Stage.STRUCTURE_STATE,null,()->tx(false,()->{
             // 포인터와 작업을 읽는 동안 timeout/종료 복구가 같은 Draft를 바꾸지 못하게 한다.
-            Draft draft=store.lockOwned(id,actor.company,actor.user);
-            State state=state(actor,draft);
+            State state=state(actor,id);
             return structure(state);
-        });
+        }));
     }
     @Transactional(propagation=Propagation.NOT_SUPPORTED)
     public Table table(String id,long revision,String key,Integer first) {
-        Actor actor=actor();State state=tx(false,()->state(actor,id));
+        Actor actor=actor();State state=InputDraftDiagnostics.timed(InputDraftDiagnostics.Stage.TABLE_STATE_BEFORE,null,()->tx(false,()->state(actor,id)));
         if(revision!=state.draft.revision())throw InputDraftException.conflict("REVISION_CONFLICT",state.draft.revision());
-        Table result=renderTable(actor,state,key,first);
-        State current=tx(false,()->state(actor,id));
+        Table result=InputDraftDiagnostics.timed(InputDraftDiagnostics.Stage.TABLE_RENDER,null,()->renderTable(actor,state,key,first));
+        State current=InputDraftDiagnostics.timed(InputDraftDiagnostics.Stage.TABLE_STATE_AFTER,null,()->tx(false,()->state(actor,id)));
         if(current.draft.revision()!=revision)throw InputDraftException.conflict("REVISION_CONFLICT",current.draft.revision());
         if(!java.util.Objects.equals(state.source.version,current.source.version))throw InputDraftException.conflict("SOURCE_CHANGED",revision);
         return result;

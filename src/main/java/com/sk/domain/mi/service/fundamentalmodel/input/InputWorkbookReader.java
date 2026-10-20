@@ -59,13 +59,19 @@ public class InputWorkbookReader {
         }
     }
     public void read(FileRef file,String company,List<Window> windows) {
-        withLocal(file,company,path->{try {readLocal(path,windows);return null;}catch(InputDraftException ex){throw ex;}catch(Exception ex){InputDraftDiagnostics.failure(InputDraftDiagnostics.Stage.WORKBOOK_PARSE,file.role(),ex);throw InputDraftException.internal();}});
+        withLocal(file,company,path->InputDraftDiagnostics.timed(InputDraftDiagnostics.Stage.WORKBOOK_PARSE,file.role(),()->{
+            try {readLocal(path,windows);return null;}
+            catch(InputDraftException ex){throw ex;}
+            catch(Exception ex){InputDraftDiagnostics.failure(InputDraftDiagnostics.Stage.WORKBOOK_PARSE,file.role(),ex);throw InputDraftException.internal();}
+        }));
     }
     /** 저장소 원본은 공통 업로드 복호화 후 저장된 객체다. 임시 사본만 읽고 항상 제거한다. */
     <T>T withLocal(FileRef file,String company,java.util.function.Function<Path,T> action) {
         InputTempFiles.checkpoint();
         Path temp=null;
         try {
+            long downloadStarted=System.nanoTime();
+            boolean downloaded=false;
             try {
             URI location=URI.create(file.location()),server=URI.create(endpoint);
             if(!Set.of("http","https").contains(location.getScheme())||!location.getAuthority().equals(server.getAuthority())
@@ -87,8 +93,10 @@ public class InputWorkbookReader {
                 try {plain=uploadCrypto.decrypt(encrypted,file.name());if(plain.length>300L*1024*1024)throw InputDraftException.internal();Files.write(temp,plain);}
                 finally {java.util.Arrays.fill(encrypted,(byte)0);if(plain!=null)java.util.Arrays.fill(plain,(byte)0);}
             }
+            downloaded=true;
             } catch(InputDraftException ex) {throw ex;}
             catch(Exception ex) {InputDraftDiagnostics.failure(InputDraftDiagnostics.Stage.WORKBOOK_DOWNLOAD,file.role(),ex);throw InputDraftException.internal();}
+            finally {InputDraftDiagnostics.elapsed(InputDraftDiagnostics.Stage.WORKBOOK_DOWNLOAD,file.role(),downloadStarted,downloaded);}
             InputTempFiles.checkpoint();
             return action.apply(temp);
         }

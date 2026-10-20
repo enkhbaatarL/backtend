@@ -313,13 +313,13 @@ public class ModelInputDraftRepository {
             },draftId);
     }
     public List<RowIdentity> rowIdentities(String draftId) {
-        return jdbc.query("SELECT * FROM tmd_mdl_inptdrftrowm WHERE drft_id=? ORDER BY inpt_tbl_id,row_id",(rs,n)->{
+        return jdbc.query("SELECT inpt_tbl_id,row_id,org_row_no,prcs_id,clnt_row_id,file_rvsn_no,del_yn FROM tmd_mdl_inptdrftrowm WHERE drft_id=? ORDER BY inpt_tbl_id,row_id",(rs,n)->{
             if(!"N".equals(rs.getString("del_yn")))throw InputDraftException.internal();
             return new RowIdentity(rs.getLong("inpt_tbl_id"),rs.getString("row_id"),rs.getObject("org_row_no",Integer.class),rs.getString("prcs_id"),rs.getString("clnt_row_id"),rs.getLong("file_rvsn_no"));
         },draftId);
     }
     public List<RowPosition> rowPositions(String draftId) {
-        return jdbc.query("SELECT * FROM tmd_mdl_inptdrftrowh WHERE drft_id=? ORDER BY row_id,bgn_rvsn_no",(rs,n)->{
+        return jdbc.query("SELECT inpt_tbl_id,row_id,bgn_rvsn_no,end_rvsn_no,row_no,del_yn FROM tmd_mdl_inptdrftrowh WHERE drft_id=? ORDER BY row_id,bgn_rvsn_no",(rs,n)->{
             if(!"N".equals(rs.getString("del_yn")))throw InputDraftException.internal();
             return new RowPosition(rs.getLong("inpt_tbl_id"),rs.getString("row_id"),rs.getLong("bgn_rvsn_no"),rs.getObject("end_rvsn_no",Long.class),rs.getObject("row_no",Integer.class));
         },draftId);

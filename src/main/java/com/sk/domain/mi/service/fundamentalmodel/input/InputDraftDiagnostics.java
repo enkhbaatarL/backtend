@@ -7,12 +7,37 @@ import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import lombok.extern.slf4j.Slf4j;
 
-/** 예외 메시지/SQL/저장소 주소 없이 실패 위치만 기록한다. 요청 uuid는 기존 MDC를 사용한다. */
+/** 데이터/SQL/저장소 주소 없이 단계와 시간을 기록한다. 요청 uuid는 기존 MDC를 사용한다. */
 @Slf4j
 final class InputDraftDiagnostics {
-    enum Stage { CREATE_SOURCE, CREATE_RESUME, CREATE_READ, CREATE_STORE, WORKBOOK_DOWNLOAD, WORKBOOK_PARSE }
+    enum Stage {
+        CREATE_SOURCE, CREATE_RESUME, CREATE_READ, CREATE_STORE, WORKBOOK_DOWNLOAD, WORKBOOK_PARSE,
+        SNAPSHOT_LOCK, SOURCE_LOAD, FIXED_FILES, REVISION_LOAD, ROW_IDENTITIES_LOAD, ROW_POSITIONS_LOAD,
+        HISTORY_RESTORE, STRUCTURE_STATE, TABLE_STATE_BEFORE, TABLE_RENDER, TABLE_STATE_AFTER
+    }
 
     private InputDraftDiagnostics() {}
+
+    static <T> T timed(Stage stage, String role, Supplier<T> action) {
+        long started = System.nanoTime();
+        boolean completed = false;
+        try {
+            T result = action.get();
+            completed = true;
+            return result;
+        } finally {
+            elapsed(stage, role, started, completed);
+        }
+    }
+
+    static void elapsed(Stage stage, String role, long started, boolean completed) {
+        log.info("Input Draft timing stage={} role={} completed={} elapsedMs={}",
+            stage, safeRole(role), completed, (System.nanoTime() - started) / 1_000_000);
+    }
+
+    private static String safeRole(String role) {
+        return role != null && Set.of("DEMAND", "SUPPLY", "TRADE", "OUTPUT").contains(role) ? role : "-";
+    }
 
     static <T> T during(Stage stage, String role, Supplier<T> action) {
         try {
@@ -41,10 +66,9 @@ final class InputDraftDiagnostics {
             .limit(3)
             .map(frame -> frame.getClassName() + "." + frame.getMethodName() + ":" + frame.getLineNumber())
             .collect(Collectors.joining(","));
-        String safeRole = role != null && Set.of("DEMAND", "SUPPLY", "TRADE", "OUTPUT").contains(role) ? role : "-";
         // Throwable 자체를 logger에 넘기면 cause/suppressed 메시지에 셀 값이나 SQL이 노출될 수 있다.
         log.error("Input Draft failure stage={} role={} errorType={} causeType={} source={} sqlState={} vendorCode={}",
-            stage, safeRole, failure.getClass().getName(), root.getClass().getName(), source,
+            stage, safeRole(role), failure.getClass().getName(), root.getClass().getName(), source,
             sqlState, database == null ? 0 : database.getErrorCode());
     }
 }
