@@ -53,7 +53,7 @@ public record CmeBenchmarkGraphRes(
     public static CmeBenchmarkGraphRes of(IndexName indexName, GraphPeriodUnit periodUnit, List<String> dates, List<BigDecimal> values) {
         List<BaseSeries> baseSeries = values == null || values.isEmpty()
             ? List.of()
-            : List.of(new BaseSeries(CME_SERIES_ID, CME_SERIES_NAME, values));
+            : List.of(new BaseSeries(CME_SERIES_ID, CME_SERIES_NAME, null, values));
 
         return new CmeBenchmarkGraphRes(
             indexName.getCode(),
@@ -81,7 +81,7 @@ public record CmeBenchmarkGraphRes(
         }
         List<String> clippedDates = keepIdx.stream().map(dates::get).toList();
         List<BaseSeries> clippedBase = baseSeries.stream()
-            .map(base -> new BaseSeries(base.seriesId(), base.seriesName(),
+            .map(base -> new BaseSeries(base.seriesId(), base.seriesName(), base.seriesTitle(),
                 keepIdx.stream().map(i -> i < base.values().size() ? base.values().get(i) : null).toList()
             ))
             .toList();

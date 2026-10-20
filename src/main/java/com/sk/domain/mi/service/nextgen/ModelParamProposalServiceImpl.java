@@ -11,6 +11,7 @@ import com.sk.common.exception.AppErrorException;
 import com.sk.common.exception.AppHttpStatusException;
 import com.sk.domain.mi.dto.response.nextgen.*;
 import com.sk.domain.mi.exception.ModelParamProposalCreateRejectedException;
+import com.sk.domain.mi.service.nextgen.paramproposal.GroupMiBaseResolver;
 import com.sk.domain.mi.service.nextgen.paramproposal.MiBaseInputSetResolver;
 import com.sk.domain.mi.service.nextgen.paramproposal.MiBaseInputSetResolver.InvalidMiBaseInputSetException;
 import com.sk.domain.mi.service.nextgen.paramproposal.MiBaseInputSetResolver.MiBaseInputSet;
@@ -119,6 +120,7 @@ public class ModelParamProposalServiceImpl implements ModelParamProposalService 
     private final ModelParameterTreeProjector modelParameterTreeProjector;
     private final ModelExecutionInputFilesProjector modelExecutionInputFilesProjector;
     private final MiBaseInputSetResolver miBaseInputSetResolver;
+    private final GroupMiBaseResolver groupMiBaseResolver;
 
     @Override
     @Transactional(propagation = Propagation.NOT_SUPPORTED)
@@ -213,6 +215,21 @@ public class ModelParamProposalServiceImpl implements ModelParamProposalService 
     }
 
     private CurrentModelParamProposalRes toCurrentProposalResponse(ModelExecutionPreparation preparation) {
+        if (preparation.getStatus() == ModelExecutionPreparationStatus.RESET) {
+            // 그룹 전체 초기화 이후 아직 [생성] 전 — 이력이 없는 시나리오와 동일하게 미생성
+            return currentResponse(
+                preparation.getScenarioId(),
+                CurrentModelParamProposalState.NOT_REQUESTED,
+                ModelParamParameterSource.NONE,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null
+            );
+        }
+
         Optional<AgentModelParamProposal> proposal = findAgentProposal(preparation);
 
         if (preparation.getStatus() == ModelExecutionPreparationStatus.REQUEST_NO_CHANGES
@@ -363,15 +380,33 @@ public class ModelParamProposalServiceImpl implements ModelParamProposalService 
             throw dataMismatch("Case-linked preparation has no Agent proposal row. execPrepId: %d".formatted(preparation.getExecPrepId()));
         }
 
-        ScenarioCase scenarioCase = scenarioCaseRepository.findByCaseIdAndScenarioIdAndExecTypeAndIsDeletedFalse(
-                preparation.getCaseId(),
+        Optional<ScenarioCase> activeCase = scenarioCaseRepository.findByCaseIdAndScenarioIdAndExecTypeAndIsDeletedFalse(
+            preparation.getCaseId(),
+            preparation.getScenarioId(),
+            FundamentalModelExecType.SCENARIO
+        );
+        if (activeCase.isEmpty() && scenarioCaseRepository.existsByCaseIdAndScenarioIdAndExecTypeAndIsDeletedTrue(
+            preparation.getCaseId(),
+            preparation.getScenarioId(),
+            FundamentalModelExecType.SCENARIO
+        )) {
+            // 시나리오 폐기(실현 캐스케이드 포함)로 실행 케이스가 soft delete된 정상 상황 — 실행 결과 없음(미생성)으로 본다
+            return currentResponse(
                 preparation.getScenarioId(),
-                FundamentalModelExecType.SCENARIO
-            )
-            .orElseThrow(() -> dataMismatch(
-                "Case-linked preparation has no matching scenario case. execPrepId: %d, caseId: %d"
-                    .formatted(preparation.getExecPrepId(), preparation.getCaseId())
-            ));
+                CurrentModelParamProposalState.NOT_REQUESTED,
+                ModelParamParameterSource.NONE,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null
+            );
+        }
+        ScenarioCase scenarioCase = activeCase.orElseThrow(() -> dataMismatch(
+            "Case-linked preparation has no matching scenario case. execPrepId: %d, caseId: %d"
+                .formatted(preparation.getExecPrepId(), preparation.getCaseId())
+        ));
 
         if (scenarioCase.getLastRunId() == null || scenarioCase.getLastRunId().isBlank()) {
             throw dataMismatch(
@@ -607,7 +642,7 @@ public class ModelParamProposalServiceImpl implements ModelParamProposalService 
             rejectDiscardedScenario(scenario);
             rejectIfActiveExecutionExists(scenarioId);
             rejectIfActivePreparationExists(scenarioId);
-            MiBaseInputSet miBaseInputSet = resolveProposalMiBaseInputSet(scenarioId);
+            MiBaseInputSet miBaseInputSet = resolveProposalMiBaseInputSet(scenarioId, scenario.getScenarioGroup().getScenarioGroupId());
             supersedeInterruptedPreparation(scenarioId);
 
             Integer actorUserNo = authorizationService.getUserNo();
@@ -624,10 +659,15 @@ public class ModelParamProposalServiceImpl implements ModelParamProposalService 
     }
 
     /**
-     * 제안 기준 묶음 — Agent가 basecase를 읽고 확정 실행이 병합할 current MI Base input 4파일.
+     * 제안 기준 묶음 — Agent가 basecase를 읽고 확정 실행이 병합할 MI Base input 4파일.
+     * 그룹에 적용된 MI Base가 있으면 그 case를 이어 쓰고(그룹 내 MI Base 통일), 없으면(최초·초기화 후) current MI Base.
      * MI Base가 없거나 유효하지 않으면 실행 준비 행을 만들기 전에 거절하며, 기본 template으로 넘어가지 않는다.
      */
-    private MiBaseInputSet resolveProposalMiBaseInputSet(Long scenarioId) {
+    private MiBaseInputSet resolveProposalMiBaseInputSet(Long scenarioId, Long scenarioGroupId) {
+        Optional<Long> appliedCaseId = groupMiBaseResolver.findAppliedCaseId(scenarioGroupId);
+        if (appliedCaseId.isPresent()) {
+            return resolveAppliedMiBaseInputSet(scenarioId, appliedCaseId.get());
+        }
         try {
             return miBaseInputSetResolver.findCurrent()
                 .orElseThrow(() -> AppHttpStatusException.of(
@@ -642,6 +682,27 @@ public class ModelParamProposalServiceImpl implements ModelParamProposalService 
                 HttpStatus.CONFLICT,
                 ResultCode.Error.BIZ_RULE_VIOLATION,
                 "current MI Base 입력 파일이 유효하지 않아 파라미터 제안을 생성할 수 없습니다. caseId: %d".formatted(e.getCaseId())
+            );
+        }
+    }
+
+    private MiBaseInputSet resolveAppliedMiBaseInputSet(Long scenarioId, Long caseId) {
+        if (scenarioCaseRepository.findByCaseIdAndIsDeletedFalse(caseId).isEmpty()) {
+            throw AppHttpStatusException.of(
+                HttpStatus.CONFLICT,
+                ResultCode.Error.BIZ_RULE_VIOLATION,
+                "그룹에 적용된 MI Base가 삭제되어 파라미터 제안을 생성할 수 없습니다. 초기화 후 다시 생성하세요. scenarioId: %d, caseId: %d".formatted(scenarioId, caseId)
+            );
+        }
+        try {
+            return miBaseInputSetResolver.resolve(caseId);
+        } catch (InvalidMiBaseInputSetException e) {
+            log.warn("Group MI Base input set rejected model parameter proposal. scenarioId={}, caseId={}, reason={}",
+                scenarioId, e.getCaseId(), e.getReason());
+            throw AppHttpStatusException.of(
+                HttpStatus.CONFLICT,
+                ResultCode.Error.BIZ_RULE_VIOLATION,
+                "그룹에 적용된 MI Base 입력 파일이 유효하지 않아 파라미터 제안을 생성할 수 없습니다. 초기화 후 다시 생성하세요. caseId: %d".formatted(caseId)
             );
         }
     }

@@ -12,7 +12,9 @@ public enum ModelExecutionPreparationStatus {
     CONFIRMING,
     PREPARING_EXECUTION,
     EXECUTING,
-    EXECUTION_FAILED;
+    EXECUTION_FAILED,
+    /** 그룹 전체 초기화 표시 행. 이전 행은 그대로 두고 이 행이 최신이 되어 시나리오를 미생성 상태로 되돌린다 */
+    RESET;
 
     private static final Set<ModelExecutionPreparationStatus> IN_FLIGHT = Set.of(
         REQUESTING,

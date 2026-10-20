@@ -1,5 +1,6 @@
 package com.sk.domain.mi.dto.response.nextgen;
 
+import com.sk.domain.mi.service.nextgen.paramproposal.GroupMiBaseResolver.GroupMiBaseStatus;
 import com.sk.domain.shared.entity.master.tmm.MiScenarioGroup;
 import io.swagger.v3.oas.annotations.media.Schema;
 import java.time.LocalDateTime;
@@ -20,15 +21,31 @@ public record GroupModelParamProposalsRes(
     LocalDateTime groupCreatedAt,
 
     @Schema(description = "그룹 내 시나리오별 제안 현황 (displayOrder 순)")
-    List<GroupModelParamProposalItemRes> scenarios
+    List<GroupModelParamProposalItemRes> scenarios,
+
+    @Schema(description = "그룹에 적용된 MI Base (생성 결과가 없거나 초기화 후면 null)")
+    MiBaseRefRes appliedMiBase,
+
+    @Schema(description = "현재 지정된 MI Base ([현재 MI Base 보기] 이동용, 지정된 MI Base가 없으면 null)")
+    MiBaseRefRes currentMiBase,
+
+    @Schema(description = "MI Base 변경 여부 (그룹에 적용된 MI Base와 현재 MI Base가 다르면 true)", example = "false")
+    boolean miBaseChanged
 ) {
 
-    public static GroupModelParamProposalsRes of(MiScenarioGroup group, List<GroupModelParamProposalItemRes> scenarios) {
+    public static GroupModelParamProposalsRes of(
+        MiScenarioGroup group,
+        List<GroupModelParamProposalItemRes> scenarios,
+        GroupMiBaseStatus miBaseStatus
+    ) {
         return new GroupModelParamProposalsRes(
             group.getScenarioGroupId(),
             group.getTitle(),
             group.getCreateDt(),
-            scenarios
+            scenarios,
+            miBaseStatus.applied(),
+            miBaseStatus.current(),
+            miBaseStatus.changed()
         );
     }
 }

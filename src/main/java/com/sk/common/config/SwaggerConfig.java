@@ -51,7 +51,7 @@ public class SwaggerConfig {
     private static final String MCP_SECURITY_SCHEME = "McpBasicAuth";
 
     // note: 안정화 후 투머치 문서 모두 삭제예정
-    private static final String SW_VERSION_BASE = "v1.3.3";
+    private static final String SW_VERSION_BASE = "v1.3.4";
     private static final DateTimeFormatter SW_DEPLOY_DATE_FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
 
     // [MCP 인증] mcp.default-id 가 설정되어 있으면 X-User-Id 헤더를 선택으로 문서화
@@ -152,6 +152,21 @@ public class SwaggerConfig {
 
   ## 수정사항
   <details open>
+    <summary><strong>v1.3.4 (2026-10-21)</strong></summary>
+
+  - [Scenario Parameter Comparison] (태그 05-3)
+    - 그룹 파라미터 제안 현황 일괄 조회 API: `appliedMiBase`/`currentMiBase`/`miBaseChanged` 추가 (MI Base 변경 감지, [초기화] 노출 판단)
+    - 그룹 파라미터 제안 전체 초기화 API 추가 (`POST .../{scenarioGroupId}/model-param-proposals/reset`)
+  - [Model Parameter Proposal]
+    - 파라미터 제안 생성 접수 API: 그룹에 적용된 MI Base가 있으면 그 MI Base로 생성 (초기화 전까지 유지)
+    - 그룹 수급모델 일괄 실행 접수 API: 초기화 이전 제안은 시나리오 실패(BIZ_RULE_VIOLATION)
+    - 실행 이력이 있는 폐기 시나리오의 상태 조회 오류(BIZ-001) 수정 — `NOT_REQUESTED`로 응답
+  - [Scenario Group Graph]
+    - 그룹 그래프 API(CME 합본 포함): `baseSeries[].seriesTitle` 추가 (MI Base 기준선은 현재 MI Base 타이틀, CME는 null)
+
+  </details>
+
+  <details>
     <summary><strong>v1.3.3 (2026-10-16)</strong></summary>
 
   - [Scenario Design] (태그 03-1)

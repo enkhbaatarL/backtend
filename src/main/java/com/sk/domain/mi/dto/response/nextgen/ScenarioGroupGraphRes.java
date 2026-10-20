@@ -147,10 +147,10 @@ public record ScenarioGroupGraphRes(
         List<BaseSeries> baseSeries = new ArrayList<>();
 
         for (BaseSeries base : graph.baseSeries()) {
-            baseSeries.add(new BaseSeries(base.seriesId(), base.seriesName(), realign(mergedDates, graph.dates(), base.values())));
+            baseSeries.add(new BaseSeries(base.seriesId(), base.seriesName(), base.seriesTitle(), realign(mergedDates, graph.dates(), base.values())));
         }
         for (BaseSeries base : extraBaseSeries) {
-            baseSeries.add(new BaseSeries(base.seriesId(), base.seriesName(), realign(mergedDates, extraDates, base.values())));
+            baseSeries.add(new BaseSeries(base.seriesId(), base.seriesName(), base.seriesTitle(), realign(mergedDates, extraDates, base.values())));
         }
 
         List<ScenarioSeries> scenarioSeries = graph.scenarioSeries().stream()
@@ -193,6 +193,7 @@ public record ScenarioGroupGraphRes(
             .map(base -> new BaseSeries(
                 base.seriesId(),
                 base.seriesName(),
+                base.seriesTitle(),
                 sliceValues(base.values(), keepIdx)
             ))
             .toList();
@@ -220,6 +221,9 @@ public record ScenarioGroupGraphRes(
         @Schema(description = "시리즈명", example = "MI Base")
         String seriesName,
 
+        @Schema(description = "범례·툴팁 괄호 표기용 타이틀 (MI Base: 현재 MI Base 케이스 타이틀, CME: null)", example = "독립 수급모델 테스트 1000")
+        String seriesTitle,
+
         @Schema(description = "값 목록 (dates와 동일 순서)")
         List<BigDecimal> values
 
@@ -244,6 +248,7 @@ public record ScenarioGroupGraphRes(
                 BaseSeries.builder()
                     .seriesId(MI_BASE_SERIES_ID)
                     .seriesName(MI_BASE_SERIES_NAME)
+                    .seriesTitle(miBasePrices.get(0).miBaseTitle())
                     .values(series)
                     .build()
             );
