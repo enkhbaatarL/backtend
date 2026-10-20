@@ -19,7 +19,7 @@
   - `docs/conventions/source-of-truth-governance.md`
   - `docs/design-docs/gas/mi-model-input-template-catalog-erd-ddl-draft.md`
 - supersedes: 없음
-- last synced: 2026-10-19 (F-O-01 실환경 기본 성공 흐름·C DRAFT 등록과 후속 검증 구분)
+- last synced: 2026-10-19 (F-O-01 실환경 기본 성공 흐름·C DRAFT 등록과 후속 검증 구분; v2 이후 실제 Excel 편집기 구현/검증/커밋 승인 §7B)
 - open questions:
   - F-S-06 제외 INPUT-02A는 §6A의 `DONE (CONDITIONAL)`이다. 계산/격리 비동기·운영 기준은 domain Q7·규칙63/64를 따른다. 공통 저장 구조/최종저장·복구 계약은 domain §3.4·§5.1~5.3/DDL §6.3·편집 API §9로 문서 범위 완료다. 표별 정책·DBA 적용 준비/제품 구현·INPUT-10의 API 전체 저장 응답 검증은 후속이다. 지정 사례 밖 계산 allowlist를 자동 승인하지 않는다. GDP/PIPELINE 오탐·UNIQUE 5셀 보존 판정은 유지한다.
 
@@ -462,6 +462,16 @@ EDT-04~07 접수/처리, 변경 적용·계산/구조 명령·XLSM 생성, 격�
 
 - 최초 계획 반영 완료 기준(이력): 첫 범위·진행 순서/검증/DBA 경계와 미승인 유지가 정본/기존 note에 일치하는 문서 범위였다. 이후 구현·시험 상태는 다음 항목을 따른다.
 - 현재 첫 범위의 구현·기본 시험 결과와 잔여는 [기존 작업 노트](../../work-notes/2026/2026-09-03-model-input-transfer-format.md#actual-result)를 참조한다. 이 결과를 전체 INPUT-03/04·INPUT-05/06 DONE 또는 INPUT-07 배정으로 확대하지 않는다. 후속도 같은 stable work note를 **update**한다.
+
+## 7B. 실제 Excel 편집기 구현 — 2026-10-19 사용자 승인
+
+- 사용자 요청: 공통 v2 완료 뒤 원본 사본에 허용된 값·행·열 편집과 수식·서식·참조 보존을 실제 구현·검증하고 로컬 커밋까지 진행한다. INPUT-07/08 및 STRUCT-01~05의 실제 처리 범위를 연결하며 단일 고정 셀 시험으로 전체 완료 처리하지 않는다.
+- 상태: **선행 v2 완료 대기 / 후속 구현 승인됨**. v2 세션 `01a1542f-4898-7491-bf0e-1619b6bb3cd7`의 필수 검증·독립 검토·커밋을 확인한 뒤 같은 파일 수정에 착수한다. 과거 티켓의 BLOCKED 표기를 새 사용자 정책 미결로 자동 재해석하지 않는다.
+- 실행 순서: 표별 허용/보존/계산 범위 대응 → 실제 값 편집 → 논리 표의 행/열 구조 변경·연결 행 저장 → 참조/수식·서식 보존과 승인 부분 계산 → v2/worker/최종4파일 연결 → 실파일/회귀·독립 검토 → 범위 한정 로컬 커밋.
+- 후속 구현 세션은 이 목표의 coordinating session이다. 모델은 Astra Extra High이며 업무/API/DDL 정본을 참조해 필요한 최소 갱신만 한다. 실제 DB·스토리지/배포·push는 수행하지 않는다.
+- 2026-10-19 사용자 재확인: worker 별도 배포 없이 웹 Pod에 함께 배포한다. 실행 위치의 정본은 domain §5.5.3이며, 별도 worker Deployment/Pod·Job 준비와 기존2GiB 전용 구성 고정은 이 작업의 선행조건이 아니다. 웹 Pod 안의 A/B 실행 방식과 제품 연동 후 총 메모리/종료·복구 검증은 해당 정본을 따른다.
+- **전체 구현 후 표 전환 조회 재검토(2026-10-19 사용자 요청):** 현재 EDT-03 `table-data` 요청은 선택 표마다 저장소의 원본 XLSM을 임시 파일로 가져와 해당 시트를 읽고 성공 이력을 합쳐 JSON을 반환한다. FE는 표 전환 시 값 전체를 업로드하지 않는다. 실제 Excel 편집·v2·FE 연동이 끝난 뒤 첫 조회/같은 표 재방문/여러 표 전환/뒤쪽 페이지/동시 요청의 지연, 저장소 전송량, 웹 Pod 메모리와 FE 렌더링을 측정한다. 결과에 따라 같은 `revision`의 FE 재사용, 서버 캐시·색인 등 필요한 개선만 별도 결정한다. 이 항목은 현재 계약 변경이나 캐시 구현 지시가 아니며 편집기 완료를 막는 선행조건도 아니다. 별도 실행 기록은 [표 전환 조회 성능 재검토 작업 노트](../../work-notes/2026/2026-10-19-model-input-table-switch-performance-review.md)에 남긴다.
+- 독립 완료 기준과 실행 기록의 stable path: [실제 Excel 편집기 작업 노트](../../work-notes/2026/2026-10-19-model-input-excel-editor.md), action **update**. 선행 v2의 결과는 기존 transfer-format note에 유지한다. 표별 원본/처리 정책을 이 delivery plan에서 재정의하지 않는다.
 
 ## 8. 이번 release의 구조 변경 작업 — STRUCT 티켓
 

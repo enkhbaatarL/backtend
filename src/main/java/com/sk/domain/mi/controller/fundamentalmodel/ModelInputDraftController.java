@@ -194,7 +194,7 @@ public class ModelInputDraftController {
             pattern="^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$") String requestId,
         @Schema(description="EDT-02/03의 성공 저장 번호",minimum="0",maximum="9007199254740991",type="integer",format="int64") long baseRevision,
         @io.swagger.v3.oas.annotations.media.ArraySchema(minItems=1,maxItems=500,
-            schema=@Schema(oneOf={AddRowCommand.class,SetCommand.class,ClearCommand.class,DeleteRowCommand.class,AddColumnCommand.class,DeleteColumnCommand.class,SetAddedColumnCommand.class,ClearAddedColumnCommand.class,DeleteAddedColumnCommand.class}))
+            schema=@Schema(oneOf={AddRowCommand.class,SetControlCommand.class,SetHeaderCommand.class,SetAddedHeaderCommand.class,SetCommand.class,ClearCommand.class,DeleteRowCommand.class,AddColumnCommand.class,DeleteColumnCommand.class,SetAddedColumnCommand.class,ClearAddedColumnCommand.class,DeleteAddedColumnCommand.class}))
         List<Object> operations) {}
     @Schema(requiredProperties={"type","commandId","tableId","clientRowKey","values"},additionalProperties=Schema.AdditionalPropertiesValue.FALSE)
     public record AddRowCommand(@Schema(allowableValues={"ADD_ROW"}) String type,
@@ -202,6 +202,22 @@ public class ModelInputDraftController {
         @Schema(description="구조 응답의 표 ID") String tableId,
         @Schema(pattern="^[A-Za-z][A-Za-z0-9_-]{0,63}$",description="이 요청 안에서 유일한 임시키") String clientRowKey,
         @Schema(description="안정 fieldKey별 TEXT/INTEGER/DECIMAL 값. null/boolean/객체/배열은 금지") java.util.Map<String,Object> values) {}
+    @Schema(requiredProperties={"type","commandId","tableId","fieldKey","headerKey","value"},additionalProperties=Schema.AdditionalPropertiesValue.FALSE)
+    public record SetHeaderCommand(@Schema(allowableValues={"SET"}) String type,
+        @Schema(pattern="^[A-Za-z][A-Za-z0-9_-]{0,63}$") String commandId,String tableId,
+        @Schema(description="policyStatus.SET_HEADER가 READY인 열의 안정 키") String fieldKey,
+        @Schema(allowableValues={"year"}) String headerKey,@Schema(type="integer",description="수정할 연도 정수") java.math.BigInteger value) {}
+    @Schema(requiredProperties={"type","commandId","tableId","clientColumnKey","headerKey","value"},additionalProperties=Schema.AdditionalPropertiesValue.FALSE)
+    public record SetAddedHeaderCommand(@Schema(allowableValues={"SET"}) String type,
+        @Schema(pattern="^[A-Za-z][A-Za-z0-9_-]{0,63}$") String commandId,String tableId,
+        @Schema(description="같은 표의 앞선 ADD_COLUMN 임시키") String clientColumnKey,
+        @Schema(allowableValues={"year"}) String headerKey,@Schema(type="integer",description="수정할 연도 정수. 신규 필수 헤더는 ADD_COLUMN에 먼저 제출") java.math.BigInteger value) {}
+    @Schema(requiredProperties={"type","commandId","tableId","controlId","value"},additionalProperties=Schema.AdditionalPropertiesValue.FALSE)
+    public record SetControlCommand(@Schema(allowableValues={"SET"}) String type,
+        @Schema(pattern="^[A-Za-z][A-Za-z0-9_-]{0,63}$") String commandId,
+        @Schema(description="control을 함께 조회한 선택 표 ID") String tableId,
+        @Schema(description="tableData.controls의 editable:true인 항목 ID. 행·열 참조와 함께 제출하지 않음") String controlId,
+        @Schema(description="해당 options[].value 중 하나. 표시명으로 치환하지 않음. null 금지") Object value) {}
     @Schema(requiredProperties={"type","commandId","tableId","rowRef","fieldKey","value"},additionalProperties=Schema.AdditionalPropertiesValue.FALSE)
     public record SetCommand(@Schema(allowableValues={"SET"}) String type,
         @Schema(pattern="^[A-Za-z][A-Za-z0-9_-]{0,63}$") String commandId,String tableId,RowReference rowRef,
@@ -244,7 +260,7 @@ public class ModelInputDraftController {
         @Schema(pattern="^[A-Za-z][A-Za-z0-9_-]{0,63}$",description="같은 표의 앞선 ADD_ROW 임시키") String clientRowKey) {}
 
     @PostMapping(value="/input-drafts/{draftId}/change-requests",consumes=MediaType.APPLICATION_JSON_VALUE)
-    @Operation(summary="Draft 변경 임시저장 접수",description="EDT-02/03의 성공 revision과 순서 있는 SET/CLEAR/ADD_ROW/DELETE_ROW/ADD_COLUMN/DELETE_COLUMN 명령을 제출합니다. 열 참조는 fieldKey 또는 앞선 ADD_COLUMN의 clientColumnKey 중 하나이며 성공 신규 열의 키는 columnMappings로 반환합니다. 같은 requestId의 같은 의미 요청은 기존 작업을 반환하며 숫자3.20과3.2는 같습니다. 진행 중202, 종료 후 재전송200입니다. 202는 저장 성공이 아니며 statusEndpoint로 결과를 조회합니다. 현재는 별도 발행의 F-O-01(USCostofSupply B8 한 슬롯, breakevenPrice 숫자0.35 SET)만 지원합니다. 승인 사례는 추가 계산 없이 다른 원본 셀·수식·저장값·구조를 보존합니다. 다른 동작은 정책 미완비/미지원 오류로 거부됩니다. 본문은 UTF-8 1MiB, 깊이8, ADD_ROW 최대100개입니다. 회사·사용자는 인증 문맥에서 결정합니다.")
+    @Operation(summary="Draft 변경 임시저장 접수",description="EDT-02/03의 성공 revision과 순서 있는 SET/CLEAR/ADD_ROW/DELETE_ROW/ADD_COLUMN/DELETE_COLUMN 명령을 제출합니다. 부속 control은 rowRef/열 참조 대신 controlId와 options[].value로 SET합니다. SET_HEADER가 READY인 연도 열은 rowRef 대신 headerKey:year와 열 참조로 제목을 수정합니다. 열 참조는 fieldKey 또는 앞선 ADD_COLUMN의 clientColumnKey 중 하나이며 성공 신규 열의 키는 columnMappings로 반환합니다. 같은 requestId의 같은 의미 요청은 기존 작업을 반환하며 숫자3.20과3.2는 같습니다. 진행 중202, 종료 후 재전송200입니다. 202는 저장 성공이 아니며 statusEndpoint로 결과를 조회합니다. 현재는 별도 발행의 F-O-01(USCostofSupply B8 한 슬롯, breakevenPrice 숫자0.35 SET)만 지원합니다. 승인 사례는 추가 계산 없이 다른 원본 셀·수식·저장값·구조를 보존합니다. 다른 동작은 정책 미완비/미지원 오류로 거부됩니다. 본문은 UTF-8 1MiB, 깊이8, ADD_ROW 최대100개입니다. 회사·사용자는 인증 문맥에서 결정합니다.")
     @io.swagger.v3.oas.annotations.parameters.RequestBody(required=true,content=@Content(schema=@Schema(implementation=ChangeRequestSchema.class)))
     @ApiResponse(responseCode="202",description="SUC-000: 신규 또는 진행 중 동일 요청 접수. 실제 임시저장 성공 아님",content=@Content(schema=@Schema(implementation=OperationEnvelope.class)))
     @ApiResponse(responseCode="200",description="SUC-000: 종료된 동일 요청의 기존 결과",content=@Content(schema=@Schema(implementation=OperationEnvelope.class)))

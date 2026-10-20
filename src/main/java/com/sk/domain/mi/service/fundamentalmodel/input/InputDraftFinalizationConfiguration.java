@@ -21,7 +21,11 @@ class InputDraftFinalizationConfiguration {
             PlatformTransactionManager manager) {
         var repository=new InputDraftFinalizationRepository(master,common,json,drafts::verifyFinalizationBasis);
         var files=new InputDraftFinalizationFiles(reader,scratch,
-            (job,role,original,target)->InputDraftPreserveChange.replay(job,role,original,target,reader,json));
+            (job,role,original,target)->{
+                if(job.basis()==null)InputDraftPreserveChange.replay(job,role,original,target,reader,json);
+                else new InputWorkbookEditor(reader,scratch,json,()->{if(Thread.currentThread().isInterrupted())throw new InputDraftPreserveChange.Failure("TIMEOUT");})
+                    .finalFile(job.basis(),role,original,target);
+            });
         var objects=new InputDraftFinalizationStorage(storage,protection,crypto,
             env.getRequiredProperty("ncp.storage.end-point"),env.getRequiredProperty("ncp.storage.bucket-name"),env.getRequiredProperty("ncp.storage.prefix"));
         return new InputDraftFinalizationService(repository,files,objects,manager);

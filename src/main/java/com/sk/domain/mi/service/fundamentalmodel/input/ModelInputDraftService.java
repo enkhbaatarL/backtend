@@ -67,7 +67,7 @@ public class ModelInputDraftService {
         if(!java.util.Objects.equals(draft.sourceVersion(),original.version())||draft.templateId()!=original.catalog().templateId())
             throw InputDraftException.conflict("SOURCE_CHANGED",draft.revision());
         fixed(draft,original,draft.sourceVersion());
-        InputDraftPreserveChange.validateHistory(store.revisions(draft.id()),json);
+        InputWorkbookEditor.validateHistory(original,store.revisions(draft.id()),json);
         return original;
     }
     @Transactional(propagation=Propagation.NOT_SUPPORTED)
@@ -246,8 +246,12 @@ public class ModelInputDraftService {
         List<RowRef> rows=new ArrayList<>();
         for(FileRef file:basis.files) {
             List<Window> windows=new ArrayList<>();
+            List<TableRef> regas=basis.catalog.tables().stream().filter(table->table.role().equals(file.role())
+                &&InputWorkbookPolicy.kind(table)==InputWorkbookPolicy.Kind.REGAS_MONTHLY).toList();
+            if(regas.size()>1)throw InputDraftException.conflict("POLICY_INCOMPLETE",null);
             for(TableRef table:basis.catalog.tables())if(table.role().equals(file.role())) {
                 InputReadDefinition def=basis.definitions.get(table.id());
+                if(regas.contains(table))continue;
                 windows.add(new Window(table.sheet(),def::body,Set.copyOf(def.identityColumns()),(row,cells)->{
                     boolean active=false;
                     for(int col:def.identityColumns()) {
@@ -258,7 +262,24 @@ public class ModelInputDraftService {
                     if(active)rows.add(new RowRef(table.id(),row,UUID.randomUUID().toString()));
                 }));
             }
-            reader.read(file,actor.companyCode,windows);
+            if(regas.isEmpty())reader.read(file,actor.companyCode,windows);
+            else reader.withLocal(file,actor.companyCode,path->{
+                try {
+                    reader.readLocal(path,windows);
+                    List<TableRef> masters=basis.catalog.tables().stream().filter(table->table.role().equals("SUPPLY")&&table.sheet().equals("BCRegasification")).toList();
+                    TableRef monthly=regas.get(0);
+                    if(masters.size()!=1||!basis.definitions.get(monthly.id()).identityColumns().equals(List.of(2,3,4,5,6)))throw InputDraftException.conflict("POLICY_INCOMPLETE",null);
+                    TableRef master=masters.get(0);
+                    Set<Integer> masterRows=rows.stream().filter(row->row.table()==master.id()).map(RowRef::row).collect(java.util.stream.Collectors.toSet());
+                    for(int row:InputWorkbookRegas.linkedSourceRows(path,master,monthly,masterRows,()->{})) {
+                        if(!basis.definitions.get(monthly.id()).body(row))throw InputDraftException.conflict("POLICY_INCOMPLETE",null);
+                        rows.add(new RowRef(monthly.id(),row,UUID.randomUUID().toString()));
+                    }
+                    return null;
+                } catch(InputDraftException ex){throw ex;}
+                catch(InputDraftPreserveChange.Failure ex){throw InputDraftException.conflict("POLICY_INCOMPLETE",null);}
+                catch(Exception ex){throw InputDraftException.internal();}
+            });
         }
         return tx(false,()->{
             Source current=source(actor,caseId,true);
@@ -348,7 +369,7 @@ public class ModelInputDraftService {
                 }
             }
             policy(definition.capabilities().path(type).asText(),draft,command,request,"ACTION_NOT_ALLOWED");
-            if(field!=null)policy(field.path("policyStatus").path(type).asText(),draft,command,request,type.equals("CLEAR")?"CLEAR_NOT_ALLOWED":"ACTION_NOT_ALLOWED");
+            if(field!=null)policy(field.path("policyStatus").path(command.has("headerKey")?"SET_HEADER":type).asText(),draft,command,request,type.equals("CLEAR")?"CLEAR_NOT_ALLOWED":"ACTION_NOT_ALLOWED");
             if(type.equals("ADD_COLUMN")) {
                 JsonNode rules=definition.columnCreation().path("headerValues"),values=command.path("headerValues");
                 var names=values.fieldNames();while(names.hasNext())if(!rules.has(names.next()))throw InputDraftException.invalid();
@@ -361,15 +382,18 @@ public class ModelInputDraftService {
                 }
                 newColumns.put(command.path("clientColumnKey").asText(),definition.columnCreation().path("body"));
             } else if(type.equals("DELETE_COLUMN")&&command.has("fieldKey"))deletedFields.add(table.key()+"/"+command.path("fieldKey").asText());
-            if(type.equals("SET")) {
+            if(type.equals("SET")&&!command.has("controlId")) {
                 JsonNode target=field==null?newColumns.get(command.path("clientColumnKey").asText()):field;
-                if(target==null)throw InputDraftException.invalid();JsonNode value=command.path("value");String dataType=target.path("dataType").asText();
+                if(target==null)throw InputDraftException.invalid();JsonNode value=command.path("value");String dataType=command.has("headerKey")?"INTEGER":target.path("dataType").asText();
                 if(!inputType(dataType,value))throw InputDraftException.invalid();
             }
         }
         if(!changesEnabled)throw InputDraftException.conflict("POLICY_UNSUPPORTED",draft.revision());
-        InputDraftPreserveChange.validate(source,request,draft,store.rowPositions(draft.id()));
-        InputDraftPreserveChange.validateHistory(store.revisions(draft.id()),json);
+        Map<Long,Map<Integer,String>> bindings=new HashMap<>();
+        for(var row:store.rowPositions(draft.id()))if(row.end()==null&&row.row()!=null)
+            bindings.computeIfAbsent(row.table(),ignored->new HashMap<>()).put(row.row(),row.id());
+        InputWorkbookEditor.validate(source,bindings,request,draft.revision());
+        InputWorkbookEditor.validateHistory(source(actor(),draft),store.revisions(draft.id()),json);
     }
     private boolean inputType(String type,JsonNode value) {
         if(type.equals("TEXT"))return value.isTextual();if(!value.isNumber())return false;
@@ -383,7 +407,12 @@ public class ModelInputDraftService {
         if(!status.equals("READY"))throw InputDraftException.conflict("POLICY_UNSUPPORTED",draft.revision());
     }
     record PreparedChange(String draftId,String operationId,String token,String company,FileRef file,
-            long templateId,TableRef table,String rowId,InputDraftJson.ChangeRequest request,BigDecimal previous) {}
+            long templateId,TableRef table,String rowId,InputDraftJson.ChangeRequest request,BigDecimal previous,InputDraftEditingBasis basis) {
+        PreparedChange(String draftId,String operationId,String token,String company,FileRef file,long templateId,TableRef table,
+                String rowId,InputDraftJson.ChangeRequest request,BigDecimal previous) {
+            this(draftId,operationId,token,company,file,templateId,table,rowId,request,previous,null);
+        }
+    }
     private Actor workerActor(Draft draft,ModelInputDraftRepository.Operation op) {
         var owner=store.workerOwner(draft,op);
         if(owner.companyCode()==null||owner.companyCode().isBlank()||owner.login()==null||owner.login().isBlank())throw InputDraftException.missing();
@@ -396,14 +425,13 @@ public class ModelInputDraftService {
             if(op==null)return null;
             Actor actor=workerActor(draft,op);State current=state(actor,draft);
             var request=json.changeRequest(new java.io.ByteArrayInputStream(op.request().getBytes(StandardCharsets.UTF_8)));
-            InputDraftPreserveChange.validate(current.source,request,draft,store.rowPositions(id));
-            InputDraftPreserveChange.validateHistory(store.revisions(id),json);
-            TableRef table=current.source.catalog.tables().stream().filter(t->t.key().equals(InputDraftPreserveChange.TABLE)).findFirst().orElseThrow(InputDraftException::internal);
-            Map<Integer,Cell> values=new HashMap<>();current.history.overlay(table.id(),8,values);
-            Cell previous=values.get(2);
-            if(previous!=null&&(previous.formula()||!(previous.raw() instanceof BigDecimal)))throw InputDraftException.internal();
-            return new PreparedChange(id,op.id(),token,actor.companyCode,current.source.files.stream().filter(f->f.role().equals("OUTPUT")).findFirst().orElseThrow(),
-                current.source.catalog.templateId(),table,request.operations().get(0).path("rowRef").path("rowId").asText(),request,previous==null?null:(BigDecimal)previous.raw());
+            InputWorkbookEditor.validate(current.source,current.history,request,draft.revision());
+            Source original=source(actor,draft);
+            InputWorkbookEditor.validateHistory(original,store.revisions(id),json);
+            var basis=new InputDraftEditingBasis(draft,original,store.revisions(id),store.rowIdentities(id),store.rowPositions(id));
+            TableRef table=current.source.catalog.tables().stream().filter(t->t.key().equals(request.operations().get(0).path("tableId").asText())).findFirst().orElseThrow(InputDraftException::internal);
+            return new PreparedChange(id,op.id(),token,actor.companyCode,current.source.files.stream().filter(f->f.role().equals(table.role())).findFirst().orElseThrow(),
+                current.source.catalog.templateId(),table,request.operations().get(0).path("rowRef").path("rowId").asText(),request,null,basis);
         });
     }
     @Transactional(propagation=Propagation.NOT_SUPPORTED)
@@ -464,8 +492,8 @@ public class ModelInputDraftService {
                 State state=state(actor,draft);
                 if(requestedActor==null) {
                     var request=json.changeRequest(new java.io.ByteArrayInputStream(op.request().getBytes(StandardCharsets.UTF_8)));
-                    InputDraftPreserveChange.validate(state.source,request,draft,store.rowPositions(id));
-                    InputDraftPreserveChange.validateHistory(store.revisions(id),json);
+                    InputWorkbookEditor.validate(state.source,state.history,request,draft.revision());
+                    InputWorkbookEditor.validateHistory(source(actor,draft),store.revisions(id),json);
                 }
                 var applied=state.history.apply(json.delta(json.deltaText(verifiedDelta)),op.request(),op.id(),op.baseRevision()+1);
                 boolean completed=store.completeChange(id,operationId,token,applied.delta(),applied.result(),applied.rows());
@@ -657,10 +685,10 @@ public class ModelInputDraftService {
             }
             if(rowId!=null)edits.add(new EditValue(rowId,Map.copyOf(typed)));
         }
-        List<JsonNode> fields=new ArrayList<>();for(JsonNode original:def.fields()){ObjectNode field=original.deepCopy();int col=field.remove("columnNumber").asInt();field.put("columnField","column"+(col-1));fields.add(field);}
+        List<JsonNode> fields=new ArrayList<>();for(JsonNode original:def.fields()){ObjectNode field=original.deepCopy();int col=field.remove("columnNumber").asInt();field.put("columnField","column"+(col-1));if("READY".equals(field.path("policyStatus").path("SET_HEADER").asText())&&!(changesEnabled&&InputWorkbookPolicy.supportsHeader(table,col)))((ObjectNode)field.path("policyStatus")).put("SET_HEADER","UNSUPPORTED");fields.add(field);}
         Map<String,String> caps=new LinkedHashMap<>();def.capabilities().fields().forEachRemaining(e->caps.put(e.getKey(),"READY".equals(e.getValue().asText())
-            &&!(changesEnabled&&e.getKey().equals("SET")&&InputDraftPreserveChange.supports(state.source,table,def))?"UNSUPPORTED":e.getValue().asText()));
-        List<JsonNode> controls=new ArrayList<>();for(JsonNode original:def.controls()){ObjectNode control=original.deepCopy();int row=control.path("binding").path("rowNumber").asInt(),col=control.path("binding").path("columnIndex").asInt()+1;Cell cell=values.getOrDefault(row,Map.of()).get(col);control.set("value",json.tree(cell==null?null:cell.raw()));controls.add(control);}
+            &&!(changesEnabled&&InputWorkbookEditor.supports(table,def,e.getKey()))?"UNSUPPORTED":e.getValue().asText()));
+        List<JsonNode> controls=new ArrayList<>();for(JsonNode original:def.controls()){ObjectNode control=original.deepCopy();int row=control.path("binding").path("rowNumber").asInt(),col=control.path("binding").path("columnIndex").asInt()+1;Cell cell=values.getOrDefault(row,Map.of()).get(col);control.set("value",json.tree(cell==null?null:cell.raw()));control.put("editable",original.path("editable").asBoolean()&&"READY".equals(caps.get("SET"))&&InputWorkbookPolicy.supportsControl(table,original));controls.add(control);}
         Integer start=page.isEmpty()?null:page.get(0),end=page.isEmpty()?null:page.get(page.size()-1),next=null;
         if(end!=null) {List<Integer> after=def.page(end,2);if(after.size()>1)next=after.get(1);}
         return new Table(state.draft.id(),state.draft.revision(),state.source.key,state.source.version,

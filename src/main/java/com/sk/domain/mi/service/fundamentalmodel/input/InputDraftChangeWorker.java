@@ -144,7 +144,9 @@ final class InputDraftChangeWorker implements AutoCloseable {
                     var job=service.prepareWorkerChange(claimed.draftId(),claimed.id(),token);
                     if(job==null)fail(claimed.draftId(),claimed.id(),token,"TIMEOUT");
                     else {
-                        JsonNode delta=InputDraftPreserveChange.execute(job,reader,scratch,json);
+                        JsonNode delta=job.basis()==null?InputDraftPreserveChange.execute(job,reader,scratch,json)
+                            :new InputWorkbookEditor(reader,scratch,json,()->{if(Thread.currentThread().isInterrupted())throw new InputDraftPreserveChange.Failure("TIMEOUT");})
+                                .execute(job.basis(),job.company(),job.request());
                         if(scratch.plaintextRemains())throw new IllegalStateException("worker cleanup unconfirmed");
                         service.completeWorkerChange(claimed.draftId(),claimed.id(),token,delta);
                     }
@@ -153,7 +155,7 @@ final class InputDraftChangeWorker implements AutoCloseable {
                     fail(claimed.draftId(),claimed.id(),token,ex.reason);
                 } catch(InputDraftException ex) {
                     if(scratch.plaintextRemains())throw new IllegalStateException("worker cleanup unconfirmed");
-                    fail(claimed.draftId(),claimed.id(),token,allowed(ex.getReason()));
+                    fail(claimed.draftId(),claimed.id(),token,allowed(ex.getReason()),ex.getIssues());
                 }
                 // 예상하지 못한 DB/commit 오류는 자식 JVM을 끝내고 실제 DB+marker로 복구한다.
                 var current=tx.execute(ignored->store.operation(claimed.draftId(),claimed.id(),true));
@@ -190,10 +192,13 @@ final class InputDraftChangeWorker implements AutoCloseable {
         String safe=allowed(reason);return safe.equals("REVISION_CONFLICT")?"PERSISTENCE_FAILED":safe;
     }
     private void fail(String draft,String operation,String token,String reason) {
+        fail(draft,operation,token,reason,List.of());
+    }
+    private void fail(String draft,String operation,String token,String reason,List<Object> issues) {
         tx.execute(ignored->{
             var current=store.lockForRecovery(draft);
             var op=store.expireChange(draft,operation,failure("TIMEOUT",current.revision()));
-            if(!op.terminal())store.failStoppedChange(draft,operation,token,failure(allowed(reason),current.revision()));
+            if(!op.terminal())store.failStoppedChange(draft,operation,token,new String(json.bytes(new Problem(allowed(reason),current.revision(),issues)),java.nio.charset.StandardCharsets.UTF_8));
             return null;
         });
     }

@@ -308,7 +308,7 @@ EDT-03의 data는 `draftId/revision/sourceKey/sourceVersion/tableData/page/editi
 | `rowBindings` | 이번 페이지 본문에 대응하는 `{rowNumber,rowId,origin}`. 원본/성공 추가 행은 UUID rowId와 SOURCE/ADDED, 미활성 슬롯은 rowId:null과 EMPTY_SLOT. 헤더는 포함하지 않음 |
 | `editValues` | 이번 페이지의 활성 논리 행별 `{rowId,values:{fieldKey:scalar}}`. 편집 가능한 실제 typed 값이며 표시/반올림 문자열과 다름. 실제 빈 셀은 key 생략. 원본 수식/읽기 전용 셀은 넣지 않음 |
 
-`fieldKey`는 같은 표의 열을 식별하는 안정 key다. 기존 열은 발행 정의의 키를 유지하고 신규 열은 해당 Draft/표에서 서버가 발급한다. 기존 `columnN`·Excel 좌표·연월/Period와 별도이며 이동해도 유지한다. 삭제 키는 재사용하지 않는다. `rowId`는 Draft/표에 귀속하며 값/정렬/위치가 바뀌어도 유지한다. 다른 Draft/표의 ID, 삭제된 ID, EMPTY_SLOT에 대한 SET은 거부한다. 신규 행은 ADD_ROW로만 활성화한다. 열 참조는 §4, control 쓰기의 별도 후속은 §10을 따른다.
+`fieldKey`는 같은 표의 열을 식별하는 안정 key다. 기존 열은 발행 정의의 키를 유지하고 신규 열은 해당 Draft/표에서 서버가 발급한다. 기존 `columnN`·Excel 좌표·연월/Period와 별도이며 이동해도 유지한다. 삭제 키는 재사용하지 않는다. `rowId`는 Draft/표에 귀속하며 값/정렬/위치가 바뀌어도 유지한다. 다른 Draft/표의 ID, 삭제된 ID, EMPTY_SLOT에 대한 SET은 거부한다. 신규 행은 ADD_ROW로만 활성화한다. 열 참조와 control 값의 SET은 §4를 따른다.
 
 capabilities는 표/동작 공통 구조·계산/보존 정책의 준비도, fields의 policyStatus는 필드별 준비도다. SET/CLEAR는 둘 다 READY인 대상만 허용한다. §1.1 채택한 ADD_COLUMN 버튼은 표 capability가 READY일 때, DELETE_COLUMN 버튼은 표 capability와 선택 field policyStatus가 모두 READY일 때 활성화하며 서버도 같은 조건을 검증한다. ADD_ROW는 공통 정책과 필요한 신규 필드 정책이 모두 완비돼야 한다. 불허/미완비 field가 있다고 정상 조회를 빈 성공으로 바꾸지 않는다.
 
@@ -327,7 +327,7 @@ Monthly 국가는 Sector 국가와 같은 필수 자유입력 TEXT다. 신규 Q 
 | type | 필수 필드 | 의미 |
 | --- | --- | --- |
 | `ADD_ROW` | `commandId`, `tableId`, `clientRowKey`, `values:{fieldKey:scalar}` | 서버의 표별 생성 정책으로 신규 논리 행 생성. 임시키는 이 요청 안에서 유일. 실제 좌표/빈 슬롯/append 방식은 서버 정책이며 afterRowNumber를 받지 않음 |
-| `SET` | `commandId`, `tableId`, `rowRef`, `fieldKey` 또는 `clientColumnKey`, `value` | 한 값을 지정. 두 열 참조 중 정확히 하나. rowRef는 `{rowId:UUID}` 또는 앞선 ADD_ROW의 `{clientRowKey:string}` 중 정확히 하나 |
+| `SET` | `commandId`, `tableId`, 본문 또는 control 또는 헤더 대상, `value` | 본문은 rowRef와 fieldKey/clientColumnKey, control은 controlId, 헤더는 headerKey와 fieldKey/clientColumnKey. 세 대상은 배타적. 한 값을 지정. 두 열 참조 중 정확히 하나. rowRef는 `{rowId:UUID}` 또는 앞선 ADD_ROW의 `{clientRowKey:string}` 중 정확히 하나 |
 | `CLEAR` | `commandId`, `tableId`, `rowRef`, `fieldKey` 또는 `clientColumnKey` | 실제 빈 셀 생성. 두 열 참조 중 정확히 하나, value는 금지. 0/빈 문자열/행 삭제와 다름. 해당 필드의 기존 CLEAR 정책 적용 |
 | `DELETE_ROW` | `commandId`, `tableId`, `rowRef` | 허용된 논리 행 삭제. 전체 worksheet 행 삭제를 의미하지 않으며 연결·참조 보정은 표별 STRUCT 정책이 소유 |
 | `ADD_COLUMN` | `commandId`, `tableId`, `clientColumnKey`, `headerValues` | 해당 논리 표의 마지막 기간 열 뒤에 생성. headerValues는 아래 표의 object. 본문 입력은 뒤의 SET으로 전달하며 rowRef/fieldKey/values/좌표/before/after를 받지 않음 |
@@ -336,14 +336,22 @@ Monthly 국가는 Sector 국가와 같은 필수 자유입력 TEXT다. 신규 Q 
 | ADD_COLUMN 대상 | 필수 headerValues | 서버가 생성하는 값·본문 |
 | --- | --- | --- |
 | LiqProdAdjustment | `{year:integer,month:integer}`; month 1~12 | Period는 domain 규칙65. 본문 빈칸, 미입력 유지·명시적0 구분. Period 직접 제출 금지 |
-| LiqUtilAdjustment | `{}` (object 자체 필수) | Year/Month/Period 모두 승인된 마지막 잔존 월 기준 자동 생성. 본문 빈칸 |
+| LiqUtilAdjustment | `{}` (object 자체 필수) | 남은 월이 있으면 마지막 잔존 월 기준 다음 월/Period+1. 활성 월0개이면 domain 규칙47의 고정 원본 첫 월부터 재시작. 본문 빈칸 |
 | LNG Demand 및 §1.1 U2의 연도형7표 | `{year:integer}` | 수동 연도. 각 표의 확정 본문 기본값/필수/계산 규칙 적용. BCRegas는 신규 수치0, 기존값·Regas 보존 |
 
 headerValues는 위 키만 받으며 연도/month도 기존 JSON number 정확도·형식 계약을 따른다. 누락된 object·잘못된 타입·자동 항목/미정의 키 제출은400, object 안의 필수 year/month 누락은422 REQUIRED다. 연도에 근거 없는 범위·연속성·중복 금지를 추가하지 않는다(domain 규칙66). LiqProd의 월 건너뛰기·같은 연월/Period의 복수 열은 허용하며 서로 다른 fieldKey를 부여한다. 연도 추가 허용에서 삭제 허용을 추정하지 않는다.
 
 commandId/clientRowKey/clientColumnKey/fieldKey는 `[A-Za-z][A-Za-z0-9_-]{0,63}`이다. commandId는 요청 전체에서, clientRowKey와 clientColumnKey는 각각의 종류 안에서 요청 전체에 유일하다. 알 수 없는 필드/type, JSON 중복 key, 중복 명령/임시키, 두 rowRef 동시 지정, fieldKey와 clientColumnKey의 동시 지정/둘 다 누락, 다른 표 또는 뒤에 나올 임시키 참조는400이다. 임시키는 같은 요청의 앞선 ADD가 만든 활성 대상만 가리키며 다른 요청의 영속 ID가 아니다.
 
-명령은 배열 순서대로 적용한다. ADD_ROW → 해당 clientRowKey의 SET/CLEAR, ADD_COLUMN → 해당 clientColumnKey의 SET/CLEAR/DELETE_COLUMN이 가능하다. 신규 행×신규 열의 셀은 두 ADD 뒤에 SET한다. ADD_ROW.values는 기존 fieldKey만 키로 사용하고 신규 열의 임시키를 섞지 않는다. 같은 셀의 SET/CLEAR는 마지막 명령이 최종 값이다. 같은 요청에서 삭제한 행/열의 뒤쪽 참조는400이다. 최종 상태에서 신규 필수값·승인된 중복 제한·구조/파생 정책을 검사하므로 앞선 ADD_ROW의 누락을 뒤의 SET으로 채울 수 있으나 요청 종료까지 빠져 있으면 전체 실패다. 헤더는 ADD_COLUMN.headerValues에서 완성하며 SET으로 헤더/Period를 보충하지 않는다. ADD 후 DELETE도 허용 정책 범위 안에서만 처리하며 대응 ID는 재사용하지 않고 성공 mapping에 DELETED로 표시한다. 기존 값 생략은 유지이며 새 값 생략은 각 표의 승인 초기값/필수 정책을 따른다. 임의 기본0/타표 값 복사는 하지 않는다.
+**부속 control의 SET (2026-10-20):** 선택 표의 `tableData.controls`에서 `editable:true`인 항목은 `{"type":"SET","commandId":"mode","tableId":"<선택 표 ID>","controlId":"<controls[].id>","value":"Fixed"}`로 변경한다. 본문 셀의 `rowRef`·`fieldKey/clientColumnKey`와 `controlId`는 함께 보내지 않는다. control에는 행 ID나 새 fieldKey를 만들지 않으며 `CLEAR`·구조 명령의 대상으로 사용하지 않는다. `value`는 해당 항목의 `options[].value` 중 하나여야 한다. 기존 저장값이 선택지 밖이어도 조회/원본 보존은 유지하고, 새 입력만 선택지와 대조한다. LNG의 `Dynamaic` 저장값과 `Dynamic` 표시명 구분은 QRY §5.4의 확정 계약을 따른다.
+
+동일 선택값을 포함한 순서 있는 SET은 마지막 값으로 저장하고 기존 원자성·revision·재전송 규칙을 따른다. 알 수 없는 control ID나 혼합 대상 형식은400, `editable:false`는422 `ACTION_NOT_ALLOWED`, 선택지 밖의 값은422 `OPTION_NOT_ALLOWED`이다. 발행 정책이 미완비/미지원이면 기존409 계약을 따른다. 처리 대상은 DEMAND `LNG Demand`의 연간 표에 연결된 C1 모드와 TRADE `ShippingCostInput` 운임5표의 C3 공유 모드다. Shipping C3는 원본 선택값 `"RE Base Case"`, `" Absolute"`, `" Percentage Growth (%)"`를 사용한다(뒤 두 값의 선행 공백을 유지하고 label만 공백 없이 표시). 기존 C3의 `"Absolute"`는 선택지 밖 기존값 보존 규칙을 따른다. 새 모드로 변경 시 운임5표의 내부 계산열에 같은 값이 반영된다. A 연간 운송비표는 보존한다. 후속 표는 실제 처리기 검증 후 제공하며 준비되지 않은 control은 Draft 조회에서 `editable:false`로 제공한다. 성공 결과의 rowMappings/columnMappings는 빈 배열이며 affectedTableIds에는 요청 표와 실제 값 소유 표(sourceTableId)를 포함한다. 내부 저장은 DDL §6.9.5의 기존 고정 셀 delta를 재사용한다.
+
+**기존 연도 헤더 SET (2026-10-20):** 필드의 `policyStatus.SET_HEADER`가 READY인 열은 `{"type":"SET","commandId":"year","tableId":"<표 ID>","fieldKey":"<열 키>","headerKey":"year","value":2036}`으로 연도 제목을 수정한다. 앞선 ADD_COLUMN의 `clientColumnKey`도 fieldKey 대신 사용할 수 있다. rowRef/controlId·실제 행 번호는 보내지 않는다. `value`는 JSON 정수이며 null·문자열·소수는400이다. headerKey는 year만 지원하고 헤더 CLEAR는 허용하지 않는다. 현재 대상은 LNG Demand의 E열 이후 연도 열이며 새로 추가한 연도에도 같은 정책을 적용한다. 기타 표의 기존 고정 헤더 수정으로 확대하지 않는다. SET_HEADER가 없던 발행은 INCOMPLETE로 읽고 미완비/미지원/비허용 상태는 기존 정책 오류를 따른다.
+
+연도 변경은 열 key·본문 값·합계 수식/저장값을 바꾸지 않는다. 같은 요청의 해당 헤더 SET은 마지막 값이 적용되며 신규 열 헤더는 ADD_COLUMN.headerValues에 먼저 제출해야 한다. 이 형식은 새 연도 필수값을 나중에 보충하는 방법이 아니다. 같은 요청의 열 추가·본문 SET과 원자 처리하고 재시작/최종 파일에 동일 값을 재생한다. 기존 연도 선택에 추가 정렬·중복·범위 제한을 만들지 않는다.
+
+명령은 배열 순서대로 적용한다. ADD_ROW → 해당 clientRowKey의 SET/CLEAR, ADD_COLUMN → 해당 clientColumnKey의 SET/CLEAR/DELETE_COLUMN이 가능하다. 신규 행×신규 열의 셀은 두 ADD 뒤에 SET한다. ADD_ROW.values는 기존 fieldKey만 키로 사용하고 신규 열의 임시키를 섞지 않는다. 같은 셀의 SET/CLEAR는 마지막 명령이 최종 값이다. 같은 요청에서 삭제한 행/열의 뒤쪽 참조는400이다. 최종 상태에서 신규 필수값·승인된 중복 제한·구조/파생 정책을 검사하므로 앞선 ADD_ROW의 누락을 뒤의 SET으로 채울 수 있으나 요청 종료까지 빠져 있으면 전체 실패다. 신규 헤더는 ADD_COLUMN.headerValues에서 완성하며 생략값을 SET으로 보충하지 않는다. 별도 SET_HEADER 정책이 있는 기존/신규 연도 제목만 위 형식으로 다시 수정할 수 있다. Period 직접 수정은 허용하지 않는다. ADD 후 DELETE도 허용 정책 범위 안에서만 처리하며 대응 ID는 재사용하지 않고 성공 mapping에 DELETED로 표시한다. 기존 값 생략은 유지이며 새 값 생략은 각 표의 승인 초기값/필수 정책을 따른다. 임의 기본0/타표 값 복사는 하지 않는다.
 
 같은 operations의 ADD_COLUMN→DELETE_COLUMN은 [§1.1 추가 후 삭제 채택](#column-add-delete-api-decision-20261019)에 따라 최종 표에는 열을 남기지 않고 columnMappings에 발급 fieldKey와 DELETED를 남긴다(§7.16). 같은 연월을 다시 추가하면 새 키, 동일 requestId/내용의 재전송이면 기존 operation/키/결과다. 삭제된 기존 fieldKey와 알 수 없는 fieldKey는400 INVALID_REQUEST이며 존재 유출 방지를 위한 Draft/table 접근404 검증은 먼저 유지한다.
 

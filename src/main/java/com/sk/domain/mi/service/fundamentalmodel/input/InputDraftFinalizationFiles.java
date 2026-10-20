@@ -68,16 +68,28 @@ final class InputDraftFinalizationFiles {
         try (InputStream input = Files.newInputStream(path)) { return digest(input); }
     }
 
+    static String digest(Path path, Runnable checkpoint) throws Exception {
+        try(InputStream input=Files.newInputStream(path)){return digest(input,checkpoint);}
+    }
     static String digest(InputStream input) throws Exception {
+        return digest(input, () -> {});
+    }
+
+    static String digest(InputStream input, Runnable checkpoint) throws Exception {
         MessageDigest digest = MessageDigest.getInstance("SHA-256");
         byte[] buffer = new byte[65536];
         int read;
-        while ((read = input.read(buffer)) != -1) digest.update(buffer, 0, read);
+        while ((read = input.read(buffer)) != -1) { checkpoint.run(); digest.update(buffer, 0, read); }
         return HexFormat.of().formatHex(digest.digest());
     }
 
     /** streaming CRC·크기·OOXML workbook 검증. revision0의 byte 동일성은 모든 수식/저장값/구조 보존도 보장한다. */
     static void validatePackage(Path path) throws Exception {
+        validatePackage(path, () -> {});
+    }
+
+    static void validatePackage(Path path, Runnable checkpoint) throws Exception {
+        checkpoint.run();
         long compressed = Files.size(path);
         if (compressed <= 0 || compressed > 300L * 1024 * 1024) throw InputDraftException.internal();
         try (ZipFile zip = new ZipFile(path.toFile())) {
@@ -86,6 +98,7 @@ final class InputDraftFinalizationFiles {
             var entries = zip.entries();
             byte[] buffer = new byte[65536];
             while (entries.hasMoreElements()) {
+                checkpoint.run();
                 var entry = entries.nextElement();
                 String name = entry.getName();
                 long maximum = name.equals("xl/sharedStrings.xml") ? 64L * 1024 * 1024
@@ -99,6 +112,7 @@ final class InputDraftFinalizationFiles {
                 try (InputStream input = zip.getInputStream(entry)) {
                     int read;
                     while ((read = input.read(buffer)) != -1) {
+                        checkpoint.run();
                         size += read;
                         if (size > maximum) throw InputDraftException.internal();
                         crc.update(buffer, 0, read);

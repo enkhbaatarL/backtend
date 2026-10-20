@@ -89,7 +89,7 @@ final class InputDraftColumns {
                 String client=command.path("clientColumnKey").asText();Column added=additions.getOrDefault(table.id(),Map.of()).get(client);
                 require(added!=null&&used.add(client));clients.put(client,added.field);live.get(table.id()).add(added.field);
                 mappings.add(Map.of("commandId",command.path("commandId").asText(),"clientColumnKey",client,"tableId",table.key(),"fieldKey",added.field,"columnState",added.position==null?"DELETED":"ACTIVE"));
-            } else if(type.equals("SET")||type.equals("CLEAR")||type.equals("DELETE_COLUMN")) {
+            } else if(!command.has("controlId")&&(type.equals("SET")||type.equals("CLEAR")||type.equals("DELETE_COLUMN"))) {
                 String field=resolve(command,clients);require(field!=null&&live.get(table.id()).contains(field));
                 if(type.equals("DELETE_COLUMN"))live.get(table.id()).remove(field);
             } else if(type.equals("ADD_ROW"))command.path("values").fieldNames().forEachRemaining(field->require(live.get(table.id()).contains(field)));

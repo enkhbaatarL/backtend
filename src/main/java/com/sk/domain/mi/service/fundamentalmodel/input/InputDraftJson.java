@@ -129,7 +129,7 @@ public class InputDraftJson {
                 String column=op.has("fieldKey")?"fieldKey":"clientColumnKey";
                 Set<String> fields=switch(type) {
                     case "ADD_ROW"->Set.of("type","commandId","tableId","clientRowKey","values");
-                    case "SET"->Set.of("type","commandId","tableId","rowRef",column,"value");
+                    case "SET"->op.has("controlId")?Set.of("type","commandId","tableId","controlId","value"):op.has("headerKey")?Set.of("type","commandId","tableId",column,"headerKey","value"):Set.of("type","commandId","tableId","rowRef",column,"value");
                     case "CLEAR"->Set.of("type","commandId","tableId","rowRef",column);
                     case "DELETE_ROW"->Set.of("type","commandId","tableId","rowRef");
                     case "ADD_COLUMN"->Set.of("type","commandId","tableId","clientColumnKey","headerValues");
@@ -140,7 +140,10 @@ public class InputDraftJson {
                 if(op.size()!=fields.size()||!key(op.path("commandId"))||!commands.add(op.path("commandId").asText())
                     ||!op.path("tableId").isTextual()||op.path("tableId").asText().isBlank())throw InputDraftException.invalid();
                 String table=op.path("tableId").asText();
-                if(type.equals("ADD_ROW")) {
+                if(op.has("controlId")) {
+                    if(!op.path("controlId").isTextual()||op.path("controlId").asText().isBlank())throw InputDraftException.invalid();
+                    scalar(op.path("value"));
+                } else if(type.equals("ADD_ROW")) {
                     if(++adds>100||!key(op.path("clientRowKey"))||!op.path("values").isObject()
                         ||addedRows.putIfAbsent(op.path("clientRowKey").asText(),table)!=null)throw InputDraftException.invalid();
                     var values=op.path("values").fields();
@@ -153,7 +156,7 @@ public class InputDraftJson {
                     if(op.path("headerValues").has("month")&&(op.path("headerValues").path("month").bigIntegerValue().compareTo(java.math.BigInteger.ONE)<0
                         ||op.path("headerValues").path("month").bigIntegerValue().compareTo(java.math.BigInteger.valueOf(12))>0))throw InputDraftException.invalid();
                 } else {
-                    if(!type.equals("DELETE_COLUMN")) {
+                    if(!type.equals("DELETE_COLUMN")&&!op.has("headerKey")) {
                         JsonNode ref=op.path("rowRef");requestKeys(ref,Set.of("rowId","clientRowKey"));
                         if(ref.size()!=1)throw InputDraftException.invalid();
                         String row;
@@ -173,7 +176,10 @@ public class InputDraftJson {
                         if(column.equals("clientColumnKey")&&!table.equals(addedColumns.get(op.path(column).asText())))throw InputDraftException.invalid();
                         if(deletedColumns.contains(table+"/"+reference))throw InputDraftException.invalid();
                         if(type.equals("DELETE_COLUMN"))deletedColumns.add(table+"/"+reference);
-                        if(type.equals("SET"))scalar(op.path("value"));
+                        if(type.equals("SET")) {
+                            scalar(op.path("value"));
+                            if(op.has("headerKey")&&(!op.path("headerKey").isTextual()||!op.path("headerKey").asText().equals("year")||!op.path("value").isIntegralNumber()))throw InputDraftException.invalid();
+                        }
                     }
                 }
                 operations.add(op.deepCopy());

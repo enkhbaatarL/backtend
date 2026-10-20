@@ -439,6 +439,8 @@ Draft 존속 중 기준 참조/성공 chain/행이력/종료 요청·중복 키�
 
 조회 정의 version1의 필수 key는 schemaVersion(1), columns(1기반 표시 열번호 배열), headerRows(반복 헤더 행번호 배열), bodyRanges(startRow/endRow), identityColumns(활성 원본 행을 식별할 비수식 입력 열번호 배열), fields(편집 API field metadata와 columnNumber), capabilities(SET/CLEAR/ADD_ROW/DELETE_ROW의 승인 준비도), inputGuideRules/controls/displayUpdateRules(확인된 조회 규칙 배열)다. 빈 규칙 배열은 실제로 없음이 확인된 경우만 등록한다. identityColumns는 업무 중복 키/행ID가 아니며 해당 행의 식별 입력이 모두 빈 경우 EMPTY_SLOT로 분류하는 읽기 근거다. 미확인 행/표·필드를 임의 추정하지 않는다. 기존 승인 정책 밖 동작은 발행 READY로 만들지 않는다.
 
+**Regas 원본 연결 행 예외(2026-10-20):** domain 규칙51의 `SUPPLY/RegasAdjustment` 월별 표는 B:F가 master 연결 수식이므로 일반 비수식 활성 행 판정에서 제외한다. 같은 고정 파일의 `BCRegasification` 활성 원본 행을 먼저 확인하고, 각 행의 +3 위치에 있는 Regas B:F 다섯 수식이 같은 master 행/열을 직접 참조하는지 전부 대조한 후 별도 원본 rowId를 배정한다. 두 표의 경계·행 집합·수식 대응이 맞지 않으면 `POLICY_INCOMPLETE`로 생성하지 않는다. 설비명/저장된 계산값으로 행을 연결하거나 다른 표의 formula identity를 허용하는 예외가 아니다. `identityColumns=[2,3,4,5,6]`과 §6.9.5의 안정 rowId/내부 연결 계약을 사용하며 JSON key·물리 schema를 추가하지 않는다.
+
 입력 양식은 Case에 연결된 ACTIVE/DEPRECATED 발행으로 결정한다. application model-code 설정과의 일치는 요구하지 않는다. 양식 미연결/삭제/미발행은 POLICY_INCOMPLETE이며 현재 ACTIVE/MAX로 대체하지 않는다. DB의 mdl_spt_cd와 모델별 버전/ACTIVE 유일성 제약은 유지한다. worker의 모델 코드 간 처리 범위와 고정 기준 검증은 domain §5.5를 따른다.
 
 기존 table의 ck01은 일반 grid의 헤더/본문 순서를 전제했다. 수동 SQL §3은 기존 유효 행을 유지하면서 헤더0/본문0 또는1인 control 전용 단일행 사각형도 저장하도록 그 제약만 완화한다. 실제 grid는 qry_json의 columns/headerRows/bodyRanges로 명시하며 control 값은 grid에 중복하지 않는다. 같은 발행/역할/sheet의 sourceTableId 소유 사각형과 binding·공유 정의 일치를 검사한다. 신규 schema 변경을 자동 적용하거나 기존 발행을 다시 쓰지 않는다.
@@ -788,6 +790,40 @@ DDL은 암묵 commit되므로 reset의 DELETE transaction을 검증·COMMIT/ROLL
 
 #### 6.9.5 검증·준비도
 
+##### 실제 편집기 파생 열 위치 소유 — 2026-10-19
+
+- DemandAdjLogicInput의 기존 Parameters 표는 C1:F3 경계를 유지하고 D2:D3/F2:F3만 입력한다. Premium(2행) 변경은 원본 L3:L7, Non-premium(3행) 변경은 M3:M7 수식으로 계산하며 결과는 숨김 계산영역에 유지한다. Bands는 H1:J7 경계의 기존 H/J 숫자 입력을 제공한다. H 변경은 해당 K 연결식, J 변경은 해당 L/M만 갱신하며 중앙5행 L/M은 원본 D2/D3 직접 참조라 J5 변경의 계산 대상이 아니다. 계산에 필요한 L5/M5는 원본 수식으로 평가하되 D2/D3가 바뀌지 않았으면 저장 셀은 보존한다. C/E 라벨·혼합 타입 I열·나머지 원본은 보존한다. 이전 L/M cache를 계산 근거로 쓰지 않는다. 신규 유형/행과 I열 입력은 별도 구현 준비도이며 기존 입력 지원을 전체 READY로 확대하지 않는다.
+
+- ShippingCostInput 운임5표·운하중단2표는 원본 B:F 또는 B:D의 고정 헤더/기존 본문을 유지한다. 연속 배치된 다른 표를 이동하지 않고, 신규 논리 행은 고정 원본 B:F의 마지막 내용 행과 현재7표의 예약 행 뒤에 요청 순서로 배정한다. 기존 `bodyRanges`/scope를 비연속 범위로 확장하여 다른 표의 중간 행을 포함하지 않는다. 운임은 기존 C3 모드/현재 입력을 기준으로 E만 계산하고, Pacific/Atlantic의 새 C는 직전 논리 행 C×1.02로 생성한다. E의 직전 E/D 참조도 물리 인접 행이 아닌 같은 표의 직전 논리 행이다. 운하중단의 신규 D는 고정 D61/D72 참조로 생성한다. C3 공유 control SET은 운임5표에 반영하며 A 연간 운송비·기존 외부/다른 표는 보존한다. 표별 실제 준비도는 구현/검증을 마친 후 발행하며 이 선언만으로 READY가 되지 않는다.
+
+- MidstreamCapacityInput 배분표는 내부 DX1:EC끝행에 EC 결과를 포함하고 표시/입력은 DX:EB만 유지한다. DX/DZ/EA/EB 변경행 및 신규행의 EC를 원본 INDEX/MATCH식으로 계산하며 A 보존인 FK:FM의 저장값만 읽는다. DY만 바꾼 행은 EC를 보존한다. Nord Stream FB:FD는 입력/추가만 제공하며 SUMMARY43/44의 FF:FI·FK:FM을 포함한 별도 A표를 갱신하지 않는다.
+
+- ShippingCostInput 노선표는 내부 AC2:AM끝행을 유지하고 입력/표시는 AC:AE·AH:AI·AL:AM이다. 기간/속도/운하 변경행과 신규 행은 원본 AF/AG 및 AJ/AK 수식으로 계산하고 연료만 바꾸면 AJ/AK만 계산한다. AC/AD/AM만 수정한 행의 파생값은 유지한다. 고정 추가 거리 D61/D72와 A 연간 운송비표는 보존한다. 신규 네 계산 셀은 원본 마지막 행 서식/상대 수식을 사용하며 기존 rowId에 결과를 보관한다.
+
+- DEMAND MacroParametersLogicInput은 표시/입력 I:P를 유지하고 내부 경계 I7:Q끝행에 Q 연결식 결과를 같은 rowId로 보관한다. I/L 입력 변경행과 신규 행의 Q만 원본 `I행&L행`으로 계산하며 B:F의 A 선택표·다른 행 Q는 보존한다. 원본 I8:P끝행 자동 필터와 대응 숨김 이름만 입력 마지막 행까지 확장한다. BCInput 규칙58의 별도 Helper 보존 예외를 이 표로 확대하지 않는다.
+
+- ShippingCostInput Technical Parameters는 원본 B81:E83 내부 경계를 유지하고 B83/E83만 입력한다. B83 변경 시 원본 C83을 읽어 D83 수식/결과만 갱신하며 C83·A 운송비 계산표는 보존한다. Panama Spot Capacity는 B88:E90 고정 입력이며 ADD를 제공하지 않는다. Importer Classification AP:AQ와 Exporter List AT는 SUMMARY의 아래 목록 추가 범위를 유지하고 관련 A 운송비 원본을 재계산하지 않는다.
+
+- TRADE UpstreamAdjLogicInput의 고정 공급조정표는 내부 I1:R674에 Q/R 계산 결과를 보관하고 표시/입력은 I/J/P만 유지한다. P 변경은 원본 AZ 기준값을 읽는 Q식, I/J 변경은 R 연결키만 갱신하며 외부 K/M과 O·General/AZ는 보존한다. 국가 목록은 내부 T1:U끝행·본문4행부터로 U2 COUNTA를 같은 표에 저장한다. 입력은 T열뿐이며 기본 T3:T100 참조는 유지하고100행을 넘는 추가부터 현재 끝행까지 늘린다. Premium 국가 목록 A열은 별도 파생식을 생성하지 않는다.
+
+- TRADE CostInput의 SRMC표는 AK:AN만 표시/입력하고 AO:AR 순위·연결키까지 내부 경계에 포함한다. 기존 연도/비용 변경과 신규 행의 이전·현재 연도 그룹만 원본 COUNTIFS/IF 수식으로 다시 계산한다. 동률은 원본의 위쪽 행 누적 순서를 유지한다. 기본 참조 끝1000행 안에서는 기존 수식을 유지하고 이를 넘어 추가하면 승인 표의 현재 끝행까지 순위 참조를 확장한다. 기존 AS의 외부 MATCH 수식/저장값·관련 externalLink는 보존하며 새 AS 수식은 생성하지 않는다.
+
+- TRADE CostInput의 앞선5표는 입력 A:D/H:K/O:R/V:Y/AC:AG와 그 오른쪽 Selected Input·Helper 두 열을 내부 경계에 포함한다. 표시 columns/수정 scopes는 SUMMARY51..55의 입력 범위만 유지한다. 기준값·사용자값 변경은 Selected Input, 연도·국가 변경은 Helper만 같은 rowId에 계산하며 새 행은 원본 정상 수식을 상대 복사한다. 원본의 빈값 또는 숫자0이면 기준값을 선택하는 수식은 그대로 유지한다. 기존 예약 수식이 있으면 일치 여부를 확인한 후 사용하며 옆 표/외부참조/순위표를 이 처리에 포함하지 않는다.
+
+- WeatherLogicInput의 네 입력표는 국가(D/I/N/S)가 변경된 행의 지리 정보 두 열(B:C/G:H/L:M/Q:R)만 원본 General F:H3..86 lookup 수식으로 계산하여 같은 rowId에 저장한다. 강도(E/J/O/T)만 변경하면 지리 정보 cache는 유지한다. 원본에서 아래 행 추가가 확정된 Base 두 표(L:O/Q:T)의 신규 행에만 정상 lookup 수식을 상대 복사한다. User-Adjusted 두 표의 미확정 선택표 동시 확장은 제공하지 않고, A 원본 보존인 V:AD의 값·수식/행은 변경하지 않는다. 기존 입력 범위/새 lookup 오류의 원자 실패를 유지하며 새 국가 목록 제한을 따로 만들지 않는다.
+
+- HydrogenInput의 입력 F:H는 원본 본문9..736행을 유지한다. 그 아래 같은 열의 보존 Helper 블록은 이동하지 않고, 고정 원본 F:H의 마지막 내용 셀 뒤부터 신규 입력을 배치한다(현재 원본10078행). `bodyRanges`와 수정 scopes를 기존/신규 구간으로 분리하며 중간 Helper 행을 조회·입력 대상으로 포함하지 않는다. 기존 다중 본문 구간과 rowId 위치 이력으로 표현하므로 schema/public 필드를 추가하지 않는다. 판별대장 T062의 I Helper·F737 이후 다른 표 Helper 및 A영역은 원본 보존이며 신규 Helper를 만들지 않는다. LNGBunkeringInput은 H:K 입력만 확장하고 T058의 L 환산 계산열·M 보조열은 보존한다.
+
+- {USA}Hurricanes는 내부 경계를 B3:I끝행으로 잡고 표시 columns/입력 fields는 B:D, 헤더7행·본문13행부터를 유지한다. 고정 source의 B:E8..12 오류 수식은 보존하며 입력 변경의 정상 E CHECK와 I3 집계만 같은 표의 v2 결과에 저장한다. 새 행 E는 E13 정상 원본 수식의 상대 참조를 적용한다. I3의 E8:끝행과 기준 셀 수를 함께 늘리고 다른 E행 cache는 원본/직전 성공값을 사용한다.
+- BCProduction의 내부 표 경계는 A7:K끝행으로 잡고 화면/입력은 C:F·H:K를 유지한다. 기존 C 입력 변경은 B(연간 개월수), E/F 입력 변경은 G(연결키)만 부분 계산한다. 새 행의 A/B/G는 원본 정상 수식을 상대 행 이동하여 생성하며 A는 직전 행 순번을 잇는다. L의 저장값과 N:T 참조표/피벗은 복사·재계산하지 않는다. 자동 필터 A7:L끝행과 동일 숨김 필터 이름만 새 마지막 행까지 늘리며 원본 필터 조건·정렬 설정은 유지한다.
+- ProductionAdjustment의 월간 입력 정의는 내부 경계를 H3:O끝행으로 잡고 화면 columns와 사용자 fields/scopes는 I:K·M, 헤더7행·본문8행부터를 유지한다. 기존 H 연결 Helper와 N/O의 영향받는 수식, M3 집계 결과를 같은 표의 v2 이력에 보관하기 위한 내부 경계이며 사용자 입력 범위를 늘리지 않는다. 신규 H/N/O는 정상 원본 수식의 상대 행 참조를 적용하고 기존 예약 N201/O201은 동일 수식인지 확인하여 유지한다. 규칙31의 기존 G/L 오류 셀은 재계산/복제하지 않고 신규 G/L은 비워 둔다. M3의 두 집계 범위와 기준 숫자 확장은 규칙31을 따른다.
+- BCInput의 새 편집 발행 정의는 GDP/인구 표의 X열과 발전 이용률 표의 AO열까지 내부 table 경계를 포함하여 기존 수식의 변경 결과를 같은 rowId에 저장한다. 화면 `columns`/사용자 `fields`/수정 scopes는 각각 Q:V와 AK:AN을 유지한다. 발전량 표의 AG는 기존 Z:AI 내부 경계에 포함하되 사용자 필드에서 제외한다. domain 규칙58의 기존 AE:AF·저장값 Helper 보존과 신규 Helper 미생성은 유지한다. 기존 X/AG/AO4 수식의 선행 입력을 변경한 경우만 원본 수식을 부분 계산하며, Helper 값만 있는 셀을 수식으로 바꾸거나 새 행 Helper를 생성하지 않는다.
+- BCRegasification의 새 편집 발행 정의는 원본 readonly `Maximum capacity` R열까지 내부 table 경계에 포함한다. 화면 `columns`와 사용자 `fields`/수정 scopes는 기존 B:Q 입력 계약을 유지하며 MAX를 사용자 입력으로 열지 않는다. 연도 추가 시 MAX는 원본 `sourceColumnNumber:18`, `fieldKey:null`을 유지한 채 현재 위치만 이동한다(§6.9.1의 파생 열 이동 계약). 새로운 연도 열은 별도 fieldKey를 갖는다.
+- 연결 행 추가/삭제를 제공하는 새 정의는 A Helper까지 내부 경계 A:R에 포함한다. A는 표시/입력 필드가 아니며 같은 설비 행의 이동·신규 계산 결과를 rowId에 보관한다. 활성 설비 밖의 예약 Helper는 domain 규칙51대로 보존한다. Regas 국가 합계 블록은 연결 설비 증감 수만큼 header/body 경계를 함께 이동하며 기존 국가 rowId를 유지한다. 표시 행과 고정 원본 행의 대응은 §6.9.5의 위치 이력으로 복원한다.
+- BCRegasification 기존 B:Q 입력 변경은 같은 rowId의 A 연결키(E/F 변경 시)와 Maximum(기존 용량 변경 시), 연결 월 표의 해당 B:F/DM을 먼저 갱신한다. 현재 설비명에 대한 첫 MATCH 대상이 달라지거나 그 대상의 기존 연간 용량이 변경된 생존 행만 G·AF:DK·DN:DV를 계산하고 국가 합계에 반영한다. 같은 요청의 직접 월 변경/구조 이동 결과를 사용하며, 새 연도 추가만으로 기존 연결 월 계산을 갱신하지 않는 domain 규칙51의 보존 예외는 유지한다.
+- RegasAdjustment의 설비별 월 표는 같은 설비 행의 readonly 연간 합계 DM:DV까지 내부 경계를 포함하여 rowId별 계산 delta를 보관한다. 표시 `columns`는 기존 B:DK, 직접 수정 scopes는 H:AE를 유지한다. DL 간격은 변경 대상으로 삼지 않는다. 국가별 월 합계는 기존 별도 table/rowId를 유지한다. 이 경계 확장은 내부 계산 저장을 위한 것이며 숨긴 파생 열을 사용자 필드로 추가하지 않는다.
+- 이는 미발행 catalog 정의/정책과 v2 delta를 연결하는 표현 보완이며 물리 schema 변경은 없다. 기존 발행 catalog를 수정하지 않고 새 발행 묶음에 등록하며, 실제 DB/DML 적용과 지원 READY 판정은 실파일 검증 뒤 별도 수행한다. RegasAdjustment의 연도 추가 보존 예외는 domain 규칙51을 따른다.
+
 ##### 실제 편집기 연결 행 저장 보완 — 2026-10-19 구현 검토안
 
 - BCRegasification의 공개 ADD_ROW 하나가 만드는 RegasAdjustment 자동 행은 별도 UUID rowId를 갖는다. `rows[]`의 자동 행에만 `derivedFromRowId`를 추가하여 같은 Draft의 master rowId를 명시한다. 직접 행의 기존4키는 유지한다. 자동 행의 `clientRowKey`는 내부 예약값 `_regas_` + master UUID이며 공개 명령의 임시키로 사용할 수 없다(공개 키는 영문자로 시작). 이 값은 기존 `clnt_row_id VARCHAR(64)`·요청별 UK에 저장하므로 새 table/column/DDL은 필요 없다.
@@ -800,6 +836,12 @@ DDL은 암묵 commit되므로 reset의 DELETE transaction을 검증·COMMIT/ROLL
 - SQL 검증: reset transaction rollback·child-first/self-FK 순서·commit 뒤7table0 및 보존 대상 비교, CHECK2/상한/기존 제약, 신규 request/revision0/성공 version2·mapping/columns 배열, 빈 환경에서의 CHECK 원복. SQL의 JSON 배열 확인만으로 논리 복원 검증을 대신하지 않는다.
 - ERD 영향은 CHECK1개 교체와 승인된7table 데이터 초기화뿐이다. 기존 JSON은 Draft별 순서 있는 변경 기록으로 쓰며 새 JSON 검색/index나 관계형 열 저장을 추가하지 않는다. 기존 오브젝트/단어를 재사용하고 이름/사전 추가는 없다. JPA/MyBatis/QueryDSL 모델 변경 없이 기존 master JDBC 경로를 수정하는 구현 입력이다.
 - **형식·SQL 준비도: ready. 공통 v2 코드/격리 fixture·F-O-01 최종4파일 검증과 실제 표별 열 처리·DB 적용은 분리한다. 실제 표별 열 처리/실제 적용: 후속.** 환경별 schema/실제 데이터·백업/미정리 파일 상태는 SQL pre-check 결과로 확인한다. 실제 개발/운영 접속·적용·열 동작 성공은 이 문서 작성으로 확인한 것이 아니다.
+
+- 부속 control SET은 공개 명령의 선택 표/control ID를 고정 발행의 sourceTableId/binding으로 검증한 뒤 값 소유 표의 `rowId:null,rowNumber,columnNumber` 셀 delta로 저장한다. 기존 표/행/열 schema 및 version2를 유지하고 control용 행 identity나 컬럼을 추가하지 않는다. 복원 시 마지막 명령값과 저장된 비수식 raw값을 대조하며 같은 값을 공유하는 표는 같은 소유 셀을 읽는다. LNG C1은 연간 표 본문/헤더에 중복하지 않고, 모드 SET만으로 합계나 다른 보존 영역을 재계산하지 않는다.
+
+- LNG 기존/추가 연도 제목은 qry_json fields.policyStatus.SET_HEADER로 입력 준비도를 제공한다(누락은 INCOMPLETE). 공개 headerKey year는 현재 열 key로 찾은3행 고정 셀 delta를 재사용한다. 신규 필드는 기존 연도와 동일한 SET_HEADER 준비도를 가지며 물리 schema/version2 변경은 없다. B/C 지역·국가명은 원본 SUMMARY30 입력 범위를 따른다. B4/B109의 TOTAL, C5/10/15/25/27/35/43의 Sub-Total은 보존하고 다른 지역명 수정만으로 합계를 재계산하지 않는다.
+
+- TRADE MidstreamCapacityInput의 PNG Infrastructure(SUMMARY33)는 B/D/G와 기존 J:Q·새 연도 입력만 제공하며 본문은11행부터다. 4..10행 및 외부 E:F/H:I와 A R:S는 domain33/34의 원본 수식/저장값 보존 대상이다. C의 R&S 연결식은 보존값에 의존하므로 기존/예약 C식·cache는 유지하고 예약 밖 새 행에는 상대 C식과 서식을 생성해 보존 R/S 또는 확인된 빈 셀로 계산한다. 외부 신규 조회값을 추정하거나 링크를 갱신하지 않는다. 새 연도는 다른 표/Helper를 이동하지 않는 비연속 열에 만들고 header3/fields/scopes로 제공한다.
 
 <a id="incremental-upload-storage-20261019"></a>
 

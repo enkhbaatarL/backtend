@@ -34,7 +34,11 @@ final class InputDraftFinalizationService {
     }
 
     record Job(Draft draft, Operation operation, WorkerOwner owner, List<FileRef> files,
-            List<Revision> revisions) {}
+            List<Revision> revisions, InputDraftEditingBasis basis) {
+        Job(Draft draft,Operation operation,WorkerOwner owner,List<FileRef> files,List<Revision> revisions) {
+            this(draft,operation,owner,files,revisions,null);
+        }
+    }
     record SavedFile(String role, long fileNo) {}
     record Result(long finalizedCaseId, List<SavedFile> files, String executionStatus,
             String executionRunId, String executionFailureReason) {

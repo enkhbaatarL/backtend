@@ -106,9 +106,9 @@ final class InputDraftFinalizationRepository {
         if(actual.size()!=4)throw InputDraftException.conflict("FILES_INCOMPLETE",draft.revision());
         if (!draft.uploaded()&&!actual.equals(common.fixedFiles(draft.id()))) throw InputDraftException.conflict("SOURCE_CHANGED", draft.revision());
         List<Revision> chain = common.revisions(draft.id());
-        InputDraftHistory.restore(draft, source.catalog(), source.definitions(), chain,
-                common.rowIdentities(draft.id()), common.rowPositions(draft.id()), json);
-        return new Job(draft, op, owner, List.copyOf(source.files()), List.copyOf(chain));
+        var editing=new InputDraftEditingBasis(draft,source,chain,common.rowIdentities(draft.id()),common.rowPositions(draft.id()));
+        editing.history(draft.revision(),json);
+        return new Job(draft, op, owner, List.copyOf(source.files()), List.copyOf(chain),editing);
     }
 
     private Job running(Job expected) {
@@ -121,7 +121,7 @@ final class InputDraftFinalizationRepository {
         if (draft.company() != expected.draft().company() || draft.user() != expected.draft().user()
                 || !Objects.equals(draft.caseId(),expected.draft().caseId()) || draft.templateId() != expected.draft().templateId()
                 || !Objects.equals(draft.sourceVersion(),expected.draft().sourceVersion())) throw InputDraftException.internal();
-        return new Job(draft, op, expected.owner(), expected.files(), expected.revisions());
+        return new Job(draft, op, expected.owner(), expected.files(), expected.revisions(),expected.basis());
     }
 
     void prepare(Job job, List<Reference> refs) {
