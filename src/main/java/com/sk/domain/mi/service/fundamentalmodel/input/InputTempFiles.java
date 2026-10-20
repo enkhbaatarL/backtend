@@ -23,8 +23,9 @@ public class InputTempFiles {
     Path registerUpload(String id)throws IOException {
         if(!id.matches("[0-9a-f-]{36}"))throw InputDraftException.internal();
         Path marker=workspace.resolve(".upload-"+id+".marker");
-        try(FileChannel record=FileChannel.open(marker,java.util.Set.of(StandardOpenOption.CREATE_NEW,StandardOpenOption.WRITE),PosixFilePermissions.asFileAttribute(PosixFilePermissions.fromString("rw-------")))){record.force(true);}
-        try(FileChannel directory=FileChannel.open(workspace,StandardOpenOption.READ)){directory.force(true);}
+        try(FileChannel record=posix?FileChannel.open(marker,java.util.Set.of(StandardOpenOption.CREATE_NEW,StandardOpenOption.WRITE),PosixFilePermissions.asFileAttribute(PosixFilePermissions.fromString("rw-------"))):FileChannel.open(marker,StandardOpenOption.CREATE_NEW,StandardOpenOption.WRITE)){record.force(true);}
+        // 비POSIX(Windows)는 디렉터리를 FileChannel로 열 수 없어 디렉터리 fsync를 건너뛴다.
+        if(posix)try(FileChannel directory=FileChannel.open(workspace,StandardOpenOption.READ)){directory.force(true);}
         return marker;
     }
     java.util.Set<String> stoppedUploads(){return java.util.Set.copyOf(stoppedUploads);}
@@ -71,7 +72,7 @@ public class InputTempFiles {
                                 stoppedUploads.add(name.substring(8,name.length()-7));
                             }
                         }
-                        try(FileChannel directory=FileChannel.open(workspace,StandardOpenOption.READ)){directory.force(true);}
+                        if(posix)try(FileChannel directory=FileChannel.open(workspace,StandardOpenOption.READ)){directory.force(true);}
                         deleteContents(dir);
                     }
                 } catch(OverlappingFileLockException ignored) { /* 같은 JVM의 다른 활성 workspace */ }
