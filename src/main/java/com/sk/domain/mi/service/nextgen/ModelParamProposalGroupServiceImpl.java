@@ -12,28 +12,43 @@ import com.sk.domain.mi.dto.response.nextgen.GroupModelExecutionItemRes;
 import com.sk.domain.mi.dto.response.nextgen.GroupModelExecutionRes;
 import com.sk.domain.mi.dto.response.nextgen.GroupModelParamCompareRes;
 import com.sk.domain.mi.dto.response.nextgen.GroupModelParamProposalItemRes;
+import com.sk.domain.mi.dto.response.nextgen.GroupModelParamProposalResetRes;
 import com.sk.domain.mi.dto.response.nextgen.GroupModelParamProposalsRes;
 import com.sk.common.utils.DateUtil;
 import com.sk.domain.mi.service.nextgen.execution.GroupModelInputFilesArchive;
 import com.sk.domain.mi.service.nextgen.execution.GroupModelInputFilesArchiver;
 import com.sk.domain.mi.service.nextgen.execution.GroupModelInputFilesArchiver.ScenarioInputFiles;
+import com.sk.domain.mi.service.nextgen.paramproposal.GroupMiBaseResolver;
 import com.sk.domain.mi.service.nextgen.paramproposal.ModelParamCompareMerger;
 import com.sk.domain.mi.service.nextgen.paramproposal.ModelParamCompareMerger.CompareSource;
 import com.sk.domain.mi.service.nextgen.support.ScenarioProbabilityAllocator;
+import com.sk.domain.shared.entity.master.tmd.ModelExecutionPreparation;
+import com.sk.domain.shared.entity.master.tmm.AgentModelParamProposal;
 import com.sk.domain.shared.entity.master.tmm.MiScenario;
 import com.sk.domain.shared.entity.master.tmm.MiScenarioGroup;
+import com.sk.domain.shared.enums.fundamentalmodel.FundamentalModelCaseStatus;
+import com.sk.domain.shared.enums.fundamentalmodel.FundamentalModelExecType;
+import com.sk.domain.shared.enums.nextgen.AgentModelParamProposalStatus;
 import com.sk.domain.shared.enums.nextgen.CurrentModelParamProposalState;
+import com.sk.domain.shared.enums.nextgen.ModelExecutionPreparationStatus;
 import com.sk.domain.shared.enums.nextgen.ScenarioDisplayStatus;
+import com.sk.domain.shared.repository.master.tmd.ModelExecutionPreparationRepository;
+import com.sk.domain.shared.repository.master.tmd.ScenarioCaseRepository;
+import com.sk.domain.shared.repository.master.tmm.AgentModelParamProposalRepository;
 import com.sk.domain.shared.repository.master.tmm.MiScenarioGroupRepository;
 import com.sk.domain.shared.repository.master.tmm.MiScenarioRepository;
+import com.sk.domain.shared.service.permissions.AuthorizationService;
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
@@ -62,12 +77,30 @@ public class ModelParamProposalGroupServiceImpl implements ModelParamProposalGro
         CurrentModelParamProposalState.EXECUTION_FAILED
     );
 
+    /** actv_scnr_id 생성식과 같은 진행 중 상태 */
+    private static final List<ModelExecutionPreparationStatus> IN_FLIGHT_STATUSES = List.of(
+        ModelExecutionPreparationStatus.REQUESTING,
+        ModelExecutionPreparationStatus.PROPOSAL_PENDING,
+        ModelExecutionPreparationStatus.CONFIRMING,
+        ModelExecutionPreparationStatus.PREPARING_EXECUTION
+    );
+    private static final List<ModelExecutionPreparationStatus> RESET_CLOSE_STATUSES = List.of(
+        ModelExecutionPreparationStatus.PROPOSAL_PENDING,
+        ModelExecutionPreparationStatus.REQUEST_INTERRUPTED
+    );
+    private static final String RESET_CLOSE_REASON = "그룹 전체 초기화로 종료된 제안입니다.";
+
     private final MiScenarioGroupRepository miScenarioGroupRepository;
     private final MiScenarioRepository miScenarioRepository;
     private final ModelParamProposalService modelParamProposalService;
     private final ModelParamCompareMerger modelParamCompareMerger;
     private final ScenarioModelExecutionService scenarioModelExecutionService;
     private final GroupModelInputFilesArchiver groupModelInputFilesArchiver;
+    private final GroupMiBaseResolver groupMiBaseResolver;
+    private final ModelExecutionPreparationRepository modelExecutionPreparationRepository;
+    private final AgentModelParamProposalRepository agentModelParamProposalRepository;
+    private final ScenarioCaseRepository scenarioCaseRepository;
+    private final AuthorizationService authorizationService;
 
     @Override
     public GroupModelParamProposalsRes getGroupProposals(Long scenarioGroupId) {
@@ -93,7 +126,103 @@ public class ModelParamProposalGroupServiceImpl implements ModelParamProposalGro
             ))
             .toList();
 
-        return GroupModelParamProposalsRes.of(group, items);
+        return GroupModelParamProposalsRes.of(group, items, groupMiBaseResolver.status(scenarioGroupId));
+    }
+
+    /**
+     * 그룹 전체 초기화 — 시나리오별로 RESET 행을 추가해 [생성] 전 상태로 되돌린다.
+     * 이전 제안·실행 이력은 지우지 않는다. 그룹 MI Base가 비게 되어 다음 [생성]부터 current MI Base로 생성된다.
+     * 생성 중·실행 중인 시나리오가 있으면 늦게 도착한 결과가 초기화를 무력화하므로 거절한다.
+     */
+    @Override
+    @Transactional
+    public GroupModelParamProposalResetRes resetGroupProposals(Long scenarioGroupId) {
+        findGroup(scenarioGroupId);
+        // 시나리오 상태 변경(실현/폐기)과 같은 잠금 — 생성·실행 접수와도 시나리오 행 잠금으로 직렬화된다
+        List<MiScenario> scenarios = miScenarioGroupRepository.findScenarioEntitiesByGroupIdForUpdate(scenarioGroupId);
+
+        List<Long> runningScenarioIds = scenarios.stream()
+            .map(MiScenario::getScenarioId)
+            .filter(this::isInProgress)
+            .toList();
+
+        if (!runningScenarioIds.isEmpty()) {
+            throw AppHttpStatusException.of(
+                HttpStatus.CONFLICT,
+                ResultCode.Error.BIZ_RULE_VIOLATION,
+                "생성 중이거나 실행 중인 시나리오가 있어 초기화할 수 없습니다. scenarioIds: %s".formatted(runningScenarioIds)
+            );
+        }
+
+        Integer actorUserNo = authorizationService.getUserNo();
+        String actorLoginId = authorizationService.getSubject();
+        List<Long> resetScenarioIds = new ArrayList<>();
+        for (MiScenario scenario : scenarios) {
+            Long scenarioId = scenario.getScenarioId();
+            Optional<ModelExecutionPreparation> latest = modelExecutionPreparationRepository.findFirstByScenarioIdAndIsDeletedFalseOrderByExecPrepIdDesc(scenarioId);
+            if (latest.isEmpty() || latest.get().getStatus() == ModelExecutionPreparationStatus.RESET) {
+                continue;
+            }
+            closeOpenPreparations(scenarioId, actorLoginId);
+            modelExecutionPreparationRepository.save(ModelExecutionPreparation.createReset(scenarioId, actorUserNo));
+            resetScenarioIds.add(scenarioId);
+        }
+
+        log.info("Group model parameter proposals reset. scenarioGroupId={}, resetScenarioIds={}", scenarioGroupId, resetScenarioIds);
+        return new GroupModelParamProposalResetRes(scenarioGroupId, resetScenarioIds);
+    }
+
+    /**
+     * 생성 중·실행 접수 중·실행 중 판정. 현재 상태 조회(getCurrentProposal)의 GENERATING / CONFIRMED_PENDING_EXECUTION / EXECUTING과 같은 기준을
+     * 원천 데이터로 판정한다 — 상태 조회는 케이스 정합성 예외를 던질 수 있어 그룹 전체 초기화를 막지 않도록 쓰지 않는다.
+     */
+    private boolean isInProgress(Long scenarioId) {
+        // 실행 중: 제안 생성·실행 접수와 같은 RUNNING 케이스 기준 (multipart 실행 포함)
+        if (scenarioCaseRepository.existsByScenarioIdAndExecTypeAndStatusAndIsDeletedFalse(
+            scenarioId, FundamentalModelExecType.SCENARIO, FundamentalModelCaseStatus.RUNNING)) {
+            return true;
+        }
+        return modelExecutionPreparationRepository.findLatestByScenarioIdAndStatuses(scenarioId, IN_FLIGHT_STATUSES)
+            .map(this::isInProgress)
+            .orElse(false);
+    }
+
+    /**
+     * 진행 중 행(시나리오당 최대 1건, actv_scnr_id unique) 판정.
+     * REQUESTING은 제안 ID가 붙지 않은 생성 중, CONFIRMING/PREPARING_EXECUTION은 실행 접수 중.
+     * PROPOSAL_PENDING은 Agent 제안이 없거나 PROCESSING이면 생성 중, CONFIRMED면 실행 접수 중이고,
+     * PROPOSED(완료)·FAILED/ABSTAINED(콜백 유실된 실패)는 초기화 대상이다.
+     */
+    private boolean isInProgress(ModelExecutionPreparation preparation) {
+        if (preparation.getStatus() != ModelExecutionPreparationStatus.PROPOSAL_PENDING) {
+            return true;
+        }
+        AgentModelParamProposalStatus agentStatus = preparation.getAgentProposalId() == null
+            ? null
+            : agentModelParamProposalRepository
+                .findByModelParamProposalIdAndScenarioIdAndIsDeletedFalse(preparation.getAgentProposalId(), preparation.getScenarioId())
+                .map(AgentModelParamProposal::getStatus)
+                .orElse(null);
+        return agentStatus == null
+            || agentStatus == AgentModelParamProposalStatus.PROCESSING
+            || agentStatus == AgentModelParamProposalStatus.CONFIRMED;
+    }
+
+    /**
+     * 실행 전 제안(PROPOSAL_PENDING)과 통신 중단(REQUEST_INTERRUPTED) 행을 종료 상태로 닫는다.
+     * PROPOSAL_PENDING은 진행 중 unique 제약(actv_scnr_id)을 잡고 있어 닫지 않으면 다음 [생성]이 막히고,
+     * REQUEST_INTERRUPTED는 늦은 Agent 콜백으로 다시 진행 중이 될 수 있다. 제안 재생성 시 중단 행을 닫는 기존 처리와 같은 방식.
+     */
+    private void closeOpenPreparations(Long scenarioId, String actorLoginId) {
+        modelExecutionPreparationRepository.findCallbackCandidates(scenarioId, RESET_CLOSE_STATUSES)
+            .forEach(preparation -> modelExecutionPreparationRepository.transitionStatus(
+                preparation.getExecPrepId(),
+                RESET_CLOSE_STATUSES,
+                ModelExecutionPreparationStatus.REQUEST_FAILED,
+                RESET_CLOSE_REASON,
+                actorLoginId,
+                LocalDateTime.now()
+            ));
     }
 
     @Override

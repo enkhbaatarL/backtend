@@ -65,6 +65,14 @@ public class ModelExecutionPreparation extends BaseEntity {
         return preparation;
     }
 
+    public static ModelExecutionPreparation createReset(Long scenarioId, Integer requestUserNo) {
+        ModelExecutionPreparation preparation = new ModelExecutionPreparation();
+        preparation.scenarioId = scenarioId;
+        preparation.requestUserNo = requestUserNo;
+        preparation.status = ModelExecutionPreparationStatus.RESET;
+        return preparation;
+    }
+
     public static ModelExecutionPreparation createConfirmingExecution(
         Long scenarioId,
         Integer requestUserNo,

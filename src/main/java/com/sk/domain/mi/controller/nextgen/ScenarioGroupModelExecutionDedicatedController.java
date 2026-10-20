@@ -47,6 +47,7 @@ public class ScenarioGroupModelExecutionDedicatedController {
         summary = "그룹 수급모델 일괄 실행 접수 API",
         description = """
             선택된 시나리오들을 각자의 확정 파라미터로 순차 실행 접수합니다.
+            그룹 전체 초기화 이전에 생성된 제안은 해당 시나리오 실패(BIZ_RULE_VIOLATION)로 내려갑니다.
             """
     )
     @ApiResponse(responseCode = "200", description = "일괄 접수 처리 완료. 시나리오별 결과는 results로 판별")

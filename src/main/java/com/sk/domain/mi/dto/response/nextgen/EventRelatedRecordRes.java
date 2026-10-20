@@ -4,7 +4,6 @@ import com.sk.common.utils.DateUtil;
 import com.sk.domain.shared.repository.master.tmm.projection.EventRecordMappingRow;
 import com.sk.domain.shared.repository.master.tmm.projection.EventRecordRow;
 import io.swagger.v3.oas.annotations.media.Schema;
-import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
 
@@ -35,10 +34,7 @@ public record EventRelatedRecordRes(
     Boolean isPermitted,
 
     @Schema(description = "이벤트-레코드 매핑 근거", example = "해당 기사는 이벤트의 공급 차질 경로를 직접 서술한다")
-    String mappingReason,
-
-    @Schema(description = "이벤트-레코드 매핑 신뢰도 (0.00~1.00)", example = "0.92")
-    BigDecimal mappingConfidence
+    String mappingReason
 
 ) {
 
@@ -52,8 +48,7 @@ public record EventRelatedRecordRes(
             row.getGoodsDataNo(),
             row.getSourceObjId(),
             isPermitted,
-            mapping == null ? null : mapping.getMappingReason(),
-            mapping == null ? null : mapping.getMappingConfidence()
+            mapping == null ? null : mapping.getMatchReason()
         );
     }
 

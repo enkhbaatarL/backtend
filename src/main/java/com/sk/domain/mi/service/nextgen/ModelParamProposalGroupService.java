@@ -3,12 +3,15 @@ package com.sk.domain.mi.service.nextgen;
 import com.sk.domain.mi.dto.request.nextgen.GroupModelExecutionReq;
 import com.sk.domain.mi.dto.response.nextgen.GroupModelExecutionRes;
 import com.sk.domain.mi.dto.response.nextgen.GroupModelParamCompareRes;
+import com.sk.domain.mi.dto.response.nextgen.GroupModelParamProposalResetRes;
 import com.sk.domain.mi.dto.response.nextgen.GroupModelParamProposalsRes;
 import com.sk.domain.mi.service.nextgen.execution.GroupModelInputFilesArchive;
 
 public interface ModelParamProposalGroupService {
 
     GroupModelParamProposalsRes getGroupProposals(Long scenarioGroupId);
+
+    GroupModelParamProposalResetRes resetGroupProposals(Long scenarioGroupId);
 
     GroupModelParamCompareRes getGroupCompare(Long scenarioGroupId);
 

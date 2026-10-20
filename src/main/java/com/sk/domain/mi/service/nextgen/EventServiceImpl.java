@@ -204,8 +204,7 @@ public class EventServiceImpl implements EventService {
      * [연관 레코드 목록]
      * - 뉴스(NEWS)와 데이터 파일 요약(비NEWS) 두 소스를 UNION으로 합쳐 first_created 내림차순
      * - isPermitted: 현재 사용자(고객사)의 상품 조회 권한 여부 — goodsViewableMap을 1회 조회해 row별 goodsNo로 판정
-     * - mappingReason/mappingConfidence: 이벤트-레코드 매핑 근거 — 현재 페이지 레코드만 1회 일괄 조회해 합성한다.
-     *   확정 매핑에는 근거가 없어 후보 매핑에서 역추적하므로, 후보 경로를 거치지 않은 매핑은 근거가 null이다.
+     * - mappingReason: 이벤트-레코드 매핑 근거(확정 매핑의 match_reason) — 현재 페이지 레코드만 1회 일괄 조회해 합성한다.
      */
     @Override
     public PaginationRes<EventRelatedRecordRes> getEventRecords(Long eventId, int page, int size) {
@@ -228,8 +227,7 @@ public class EventServiceImpl implements EventService {
     }
 
     /**
-     * 현재 페이지 레코드의 매핑 근거를 일괄 조회한다.
-     * 같은 (이벤트, 레코드) 쌍이 여러 후보에서 나올 수 있어 쿼리가 최신순으로 내려주며, 먼저 온 1건만 취한다.
+     * 현재 페이지 레코드의 매핑 근거를 일괄 조회한다. (이벤트, 레코드) 쌍은 유니크라 레코드당 최대 1건이다.
      */
     private Map<Integer, EventRecordMappingRow> loadRecordMappings(Long eventId, List<EventRecordRow> records) {
         List<Integer> recordIds = records.stream()
