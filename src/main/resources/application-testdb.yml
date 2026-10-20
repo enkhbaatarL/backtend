@@ -297,3 +297,7 @@ mi:
       enabled: true
     finalization:
       enabled: true
+    upload:
+      enabled: true
+      source-key: DRAFT_C_STRUCTURE_V1
+      model-code: DRAFT_C_STRUCTURE

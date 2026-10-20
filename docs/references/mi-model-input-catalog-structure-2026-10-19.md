@@ -17,7 +17,7 @@
   - [source-of-truth governance](../conventions/source-of-truth-governance.md)
 - source work note: [독립 SQL 작업 기록](../work-notes/2026/2026-10-19-model-input-catalog-structure-sql.md)
 - supersedes: 없음. v3 기록·기존 smoke SQL·발행 catalog를 수정/대체하지 않음
-- last synced: 2026-10-19
+- last synced: 2026-10-20 (F1: SUPPLY 두 월별 표의 Period9행 조회 누락 수정)
 - open questions: 아래 7항목의 조회 표현, 199열의 필드 타입, 표별 쓰기·계산/구조 변경 정책, 구조 hash 방식, 실제 DB 적용 검증
 
 ## 결과와 범위
@@ -164,8 +164,8 @@
 | DEMAND | Base Case Hydrogen Production Input / `HydrogenInput` | `F7:H736` | 7,8 / 9:736 | F:H / F:H | `@c_q040` | 없음 |
 | SUPPLY | PNG Production Adjustment / `ProductionAdjustment` | `I7:M200` | 7 / 8:200 | I:K, M / I:K, M | `@c_q041` | I:K, M |
 | SUPPLY | Monthly Hurricane Adjustment / `{USA}Hurricanes` | `B7:D200` | 7 / 13:200 | B:D / B:D | `@c_q042` | B:D |
-| SUPPLY | Monthly LNG Train Utilization / `LiqUtilAdjustment` | `B7:CL407` | 7,8,10 / 11:407 | B:CL / B:CL | `@c_q043` | 없음 |
-| SUPPLY | Monthly LNG Train Production / `LiqProdAdjustment` | `B7:CL407` | 7,8,10 / 11:407 | B:CL / B:CL | `@c_q044` | G:CL |
+| SUPPLY | Monthly LNG Train Utilization / `LiqUtilAdjustment` | `B7:CL407` | 7,8,9,10 / 11:407 | B:CL / B:CL | `@c_q043` | 없음 |
+| SUPPLY | Monthly LNG Train Production / `LiqProdAdjustment` | `B7:CL407` | 7,8,9,10 / 11:407 | B:CL / B:CL | `@c_q044` | G:CL |
 | SUPPLY | Monthly Regas Capacity Adjustment / `RegasAdjustment` | `B8:DK382` | 8,9,10 / 11:382 | B:DK / H:AE | `@c_q045` | F |
 | SUPPLY | Monthly Regas Capacity by Country / `RegasAdjustment` | `G385:DK444` | 385,386 / 387:444 | G:DK / G | `@c_q046` | 없음 |
 | SUPPLY | Annual Gas Production Baseline / `BCProduction` | `C7:K24779` | 7 / 8:24779 | C:F, H:K / C:F, H:K | `@c_q047` | 없음 |
@@ -243,6 +243,8 @@
 연간 Regas 집계는 DM:DV 본문 전체가 수식이라 현행 Draft 생성의 `identityColumns`에 넣을 수 없다. 국가별 월간 집계는 실제 비수식 국가 열 G를 확인해 등록했다. Pipeline은 B:D의 수식 기반 식별과 H만 비어 있는 행을 원천 행으로 어떻게 다룰지 남아 있다. 임의 row key나 수식 식별 허용으로 우회하지 않았다. 고정 셀형 Spread·Hydrogen 환산계수는 조회 표현/필드 결합을 먼저 확인해야 한다. C1 선택 control은 원본 `Dynamaic` 오타/화면·저장 선택지 결정까지 포함해 규칙50을 따른다.
 
 ## 현행 reader 오프라인 검증
+
+아래 전수 집계는 2026-10-19 최초 정의 기준이다. 2026-10-20 승인된 F1 수정으로 `@c_q043`·`@c_q044`에 Period9행을 포함했다. 현재 제품 parser로92정의를 확인하고 해당 두 표의 수정 전후를 reader로 대조해 Period170셀 추가 및 기존 셀 불변을 검증했다. 명령·결과·적용 한계는 [Period 수정 기록](../work-notes/2026/2026-10-20-model-input-period-header-fix.md)을 따른다. 아래 과거 전수 실행 건수를 이번 전수 재실행 결과로 바꾸지 않았다.
 
 현재 소스의 `InputReadDefinition`, `InputDraftJson`, `InputWorkbookReader`, `InputDraftException`과 `ResultCode`를 Java17로 별도 임시 디렉터리에 컴파일했다. DB/네트워크와 연결되는 타입3개(`FileRef` DTO, storage, temp-file entry)만 차단용 stub을 두고 reader의 `readLocal`을 호출했다. 제품 parser/reader 소스는 수정하지 않았고 검증 전후 소스 해시도 확인했다. Spring context·서버·전체 앱·Gradle build는 실행하지 않았다.
 

@@ -1,7 +1,7 @@
 -- Document Control
 -- status: Draft / MANUAL REVIEW AND APPLY ONLY; NOT EXECUTED
 -- canonical for: Schema rollout — incremental upload precheck/apply/backfill/verify/preserving rollback SQL
--- owner: BE / DBA; date / last synced: 2026-10-19
+-- owner: BE / DBA; date: 2026-10-19; last synced: 2026-10-20
 -- depends on: docs/design-docs/gas/mi-model-input-template-catalog-erd-ddl-draft.md §6.10
 --             domain-model-design.md §5.6 / rule67; existing audit / request / finalization / column-v2 DDL
 -- supersedes: none; this is an ordered extension, not a replacement CREATE/reset script.
@@ -46,8 +46,12 @@ SELECT COUNT(*) AS non_v2_operations FROM tmd_mdl_inptdrftprcsl WHERE json_rvsn_
 -- Confirm no unknown inbound FK/trigger, maintained backups, InnoDB, actual app READ_COMMITTED and privileges.
 
 -- 2. APPLY A — preserve CASE data, extend nullability and owner references.
+-- Keep FK DROP and same-name ADD in separate statements (MySQL error1826 / bug113226).
+-- https://bugs.mysql.com/bug.php?id=113226
+-- The gap temporarily has no dropped FK: keep ALL affected writers/workers stopped.
+-- Stop on the first error. Each successful DDL commits; inspect SHOW CREATE before resuming.
+ALTER TABLE tmd_mdl_inptdrftm DROP FOREIGN KEY tmm_mdlinptdrftm_fk01;
 ALTER TABLE tmd_mdl_inptdrftm
-    DROP FOREIGN KEY tmm_mdlinptdrftm_fk01,
     MODIFY org_case_id INT UNSIGNED NULL,
     MODIFY org_rvsn_val VARCHAR(68) CHARACTER SET ascii COLLATE ascii_bin NULL,
     ADD src_spt_cd VARCHAR(20) CHARACTER SET ascii COLLATE ascii_bin NOT NULL DEFAULT 'CASE',
@@ -77,8 +81,8 @@ WHERE cust_cpny_no IS NULL OR usr_no IS NULL;
 -- Drop/re-add the known inbound composite FKs while changing their referenced column's nullability.
 ALTER TABLE tmd_mdl_inptdrftrvsnl DROP FOREIGN KEY tmd_mdl_inptdrftrvsnl_fk03;
 ALTER TABLE tmd_mdl_inptdrftrowm DROP FOREIGN KEY tmd_mdl_inptdrftrowm_fk03;
+ALTER TABLE tmd_mdl_inptdrftprcsl DROP FOREIGN KEY tmd_mdl_inptdrftprcsl_fk01;
 ALTER TABLE tmd_mdl_inptdrftprcsl
-    DROP FOREIGN KEY tmd_mdl_inptdrftprcsl_fk01,
     DROP CHECK tmd_mdl_inptdrftprcsl_ck01,
     DROP CHECK tmd_mdl_inptdrftprcsl_ck03,
     MODIFY drft_id CHAR(36) CHARACTER SET ascii COLLATE ascii_bin NULL,
@@ -190,8 +194,8 @@ CREATE TABLE tmd_mdl_inptupldactvm
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 -- 2. APPLY C — current file pointer and original-row generations.
+ALTER TABLE tmd_mdl_inptdrftfiled DROP FOREIGN KEY tmm_mdlinptdrftfiled_fk02;
 ALTER TABLE tmd_mdl_inptdrftfiled
-    DROP FOREIGN KEY tmm_mdlinptdrftfiled_fk02,
     MODIFY file_no BIGINT UNSIGNED NULL,
     ADD upld_file_id CHAR(36) CHARACTER SET ascii COLLATE ascii_bin NULL,
     ADD CONSTRAINT tmm_mdlinptdrftfiled_fk02 FOREIGN KEY(file_no)
@@ -298,3 +302,11 @@ HAVING (d.src_spt_cd='CASE' AND COUNT(f.mdl_file_cd)<>4)
 -- Retention is the existing no-automatic-TTL policy. Cleanup removes only proven uncommitted private candidates.
 -- Before apply: actual MySQL/FK/CHECK/names/packet/backups verified; after apply: constraints/counters/PKs preserved.
 -- Feature enablement waits for API/worker/file-format and fixture concurrency checks; this draft is not approval to deploy.
+
+SHOW CREATE TABLE midb.tmd_mdl_inptdrftm;
+
+SELECT column_name, column_type, is_nullable
+FROM information_schema.columns
+WHERE table_schema = 'midb'
+  AND table_name = 'tmd_mdl_inptdrftprcsl'
+  AND column_name IN ('cust_cpny_no', 'usr_no');

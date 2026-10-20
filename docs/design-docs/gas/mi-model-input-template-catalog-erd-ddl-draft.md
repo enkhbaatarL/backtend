@@ -3,7 +3,7 @@
 ## Document Control
 
 - status: Draft
-- canonical for: Schema rollout — model input template catalog tables, columns, keys, indexes, nullability, migration, rollback, and verify SQL; §6.1/§10A의 기존 불변 파일 참조와 §6.2/§10B의 발행 양식/catalog·Case 연결, §6.3의 Draft 공통 저장 및 §6.10의 직접 업로드 확장 물리 정의. 기존 공통 파일 table 전체 DDL은 재정의하지 않는다.
+- canonical for: Schema rollout — model input template catalog tables, columns, keys, indexes, nullability, migration, rollback, and verify SQL; §6.1/§10A의 기존 불변 파일 참조와 §6.2/§10B의 발행 양식/catalog·Case 연결, §6.3의 Draft 공통 저장 및 §6.10의 직접 업로드 확장 물리 정의, §6.11의 A 실행기 상태 저장 제안. 기존 공통 파일 table 전체 DDL은 재정의하지 않는다.
 - owner: BE / DBA
 - source documents:
   - `docs/work-notes/2026/2026-09-03-model-input-transfer-format.md`
@@ -14,8 +14,9 @@
   - `docs/conventions/db-term-dictionary-sheet2.csv`
 - supersedes:
   - 이 문서의 2026-09-04 `양식 → 테이블` 2단계 초안
-- last synced: 2026-10-19 (§6.10 직접 업로드 저장 확장/증분 DDL 초안; §6.9 미배포 v2 단일 저장/복원 형식·Draft 초기화 SQL 확정; §6.8 감사 초 정밀도 정렬·증분 적용 준비; §6.3.4.1 성공값 좌표 이동·저장 이력 오류 처리 보완; 사용자 제공 midb 정의에 따른 §6.4 파일 metadata 매핑 정렬 유지; 나머지 DBA 후속은 §13)
+- last synced: 2026-10-20 (§6.11 A 실행기 상태 table 승인 전 제안; §6.10 직접 업로드 저장 확장/증분 DDL 초안; §6.9 미배포 v2 단일 저장/복원 형식·Draft 초기화 SQL 확정; §6.8 감사 초 정밀도 정렬·증분 적용 준비; §6.3.4.1 성공값 좌표 이동·저장 이력 오류 처리 보완; 사용자 제공 midb 정의에 따른 §6.4 파일 metadata 매핑 정렬 유지; 나머지 DBA 후속은 §13)
 - open questions:
+  - §6.11의 A 실행기 전용 상태 table1개 추가는 사용자 승인 대기다. 기존 DB 구조에 소비자 수명 전체의 종료/복구 승인 기록이 없어 제품 구현을 보류했다. 실제 DB 조회·DDL 적용은 하지 않았다.
   - 직접 업로드의 물리 설계/증분 SQL은 §6.10에 정리했다. 실제 환경 제약명·타입·수동 적용, MySQL 제약/동시성 및 새 저장 형식 reader/writer 검증은 미실행이며 이 확인 전에는 적용 준비 완료로 판정하지 않는다.
   - Q2 §6.2/§10B의 기존 catalog table/승인 GET 정의·seed·발행과 신규/기존 Case-template 관계 등록 결과를 확인해야 한다. field/control/options/화면 규칙의 실제 저장 구조/정의는 기존 후속이며 root ID만으로 완비를 가정하지 않는다.
   - 3파일 `SCENARIO` legacy cleanup의 apply/verify/rollback DML(case master + run history + 연결 execution-preparation + active 가격전망해석)은 미작성이다. `INPUT-11` 착수 시 작성해 DBA 검토를 받는다.
@@ -904,6 +905,48 @@ UPLOAD_FILE의 v2 dlta_json은 닫힌 형식 `{policyTemplateId,uploadFileId,kin
 - 사용자 업무 선택: 현재 저장 설계에서 추가로 필요한 미결 없음. 확정된 단일 작성·부분 편집·교체/취소·형식/120초 기준을 재질문하지 않는다.
 - 기술 후속: 실제 SHOW CREATE와 SQL 제약명/타입 대조, MySQL 실행/경합 검증, 위 공통 reader/writer/worker의 새 분기와 API 조회/취소/완료 DTO 구체화, 환경별 private 저장소/정리 실행 연결이 남는다. 실제 DB를 확인하지 않고 DBA 적용 ready로 승인하지 않는다.
 - **Implementation readiness: ready** — 저장 구조의 구현 입력. **DBA apply readiness: blocked by open questions** — 위 환경/실행 검증을 충족한 뒤 수동 적용한다. 전체 업로드 제품 기능/관련 API가 완료됐다는 판정이 아니다.
+
+<a id="in-process-runner-state-proposal-20261020"></a>
+
+### 6.11 A 웹 실행기 상태 저장 — 2026-10-20 승인 전 제안
+
+**상태: Draft / 사용자 승인 전, 구현·SQL 적용 없음.** 수명/인계 순서는 [domain §5.5.3](mi-model-input-template-catalog-domain-model-design.md#worker-execution-direction-20261019)이 소유한다. 이 절은 기존 구조 적합성 검토와 최소 물리 변경 제안이다.
+
+#### 기존 구조로 표현할 수 없는 이유
+
+- `tmd_mdl_inptdrftprcsl.try_tokn/bgn_dtm/end_dtm`은 개별 요청의 처리 시도/결과다. 요청 claim 전·idle 중에는 소비자 시도를 표현하지 못하고, 요청 성공은 Java 처리 본문·finally·전송의 종료 증거가 아니다.
+- `tmd_mdl_inptfnsvfiled`는 operation/token별 준비파일, `tmd_mdl_inptupldfiled`는 수신 파일, `tmd_mdl_inptupldactvm`은 회사/사용자별 작성 상태다. master queue 전체 소비자나 복구 승인의 소유 테이블이 아니다.
+- 공통 작업 종류/CHECK를 변경해 가짜 요청을 만들거나 req/rslt/fail/strg_ref JSON에 소비자 상태를 넣지 않는다. 세션 잠금과 로컬 operation marker도 영속 소비자 상태의 대체가 아니다.
+
+#### 최소 변경안 — 신규 table1개, 기존 table ALTER 없음
+
+`tmd_mdl_inptexecm`을 같은 master schema에 두고 queue당 고정1행을 유지한다. 사용자 입력으로 queue/tenant를 선택하지 않는다. 표의 값은 승인 전 제안이며 증분 SQL은 승인 후 작성한다.
+
+| 컬럼 | 제안 타입·제약 | 책임 |
+| --- | --- | --- |
+| `exec_no` | `TINYINT UNSIGNED NOT NULL PRIMARY KEY`, CHECK `=1` | master 모델 입력 queue의 단일 제어 행 |
+| `crt_usr_logn_id/crt_dtm/mod_usr_logn_id/mod_dtm/del_yn` | 기존 §6.8 이름·타입·감사 시간, CHECK `del_yn='N'` | 기존 감사 규칙 유지 |
+| `exec_id` | `CHAR(36) ascii_bin NULL` | 현재 소비자/복구 명령의 시도 UUID. 최초 초기화 때만 NULL |
+| `exec_stat_cd` | `VARCHAR(20) ascii_bin NOT NULL` | `ACTIVE`, `RECOVERING`, `STOPPED` |
+| `bgn_dtm/end_dtm` | `DATETIME(6) NULL` | 해당 시도 시작/종료 확인 시각. 시간 경과로 종료를 추정하지 않음 |
+| `prcs_id/try_tokn` | 각 `CHAR(36) ascii_bin NULL`, 둘 다 NULL 또는 둘 다 값 | 처리/정리 중인 요청과 예상 처리 token. 처리 본문·정리 완료 전 지우지 않음 |
+| `aprv_exec_id` | `CHAR(36) ascii_bin NULL` | 마지막 수동 복구가 대상으로 삼은 이전 소비자 시도 |
+| `aprv_usr_logn_id/aprv_dtm` | `VARCHAR(50) NULL` / `DATETIME(6) NULL` | 같은 승인 대상의 운영자 식별 기록·승인 시각 |
+
+- 상태 CHECK: 최초 `STOPPED`는 exec_id/bgn_dtm/end_dtm과 작업 쌍이 NULL이다. 실행/복구 시도는 exec_id/bgn_dtm 필수·end_dtm NULL이고, 종료 확인된 `STOPPED`는 exec_id/bgn_dtm/end_dtm 필수·작업 쌍 NULL이다. 승인3필드는 모두 NULL 또는 모두 값이며 최초 초기화에서는 NULL이다.
+- `prcs_id`에 기존 요청 PK로 RESTRICT FK와 지원 index를 둔다. token 일치는 같은 master transaction에서 대조한다. claim 전 예상 token 기록도 허용하므로 기존 요청의 nullable try_tokn에 새 UK/FK를 추가하지 않는다. 이전 소비자 UUID는 보존된 별도 행을 참조하는 값이 아니므로 자기참조 FK를 만들지 않는다.
+- 단일 현재 상태/마지막 승인 기록이며 실행 이력 테이블로 확대하지 않는다. 배열·JSON·반복 그룹은 없고 각 값은 고정 queue 행의 현재 상태에 속한다. 별도 상태 index, TTL, 자동 초기화/reset, 기존 요청의 backfill은 없다.
+- 명명은 기존 `tmd_mdl_inpt*` 계열과 사전의 MDL/INPT/EXEC/NO/ID/PRCS/TRY/TOKN/STAT/CD/BGN/END/APRV/USR/LOGN/DTM을 재사용한다. 사전 등록 추가는 없다.
+
+#### 코드·DBA 영향과 승인 범위
+
+- 새 직접 SQL Repository와 웹 실행기/복구 명령에서만 읽고 쓴다. 공개 API/DTO·기존 entity·QueryDSL projection·기존 worker Main/Supervisor/Compose 변경은 없다. 작업 연결은 기존 claim 전에 소비자 행을 잠그고 기록하며, 기존 회사/사용자→Draft→operation 잠금 순서 앞에 소비자 행을 둔다. 외부 IO 동안 row transaction을 유지하지 않는다.
+- 조건부 갱신은 현재 exec_id/상태와 operation/token을 함께 대조한다. 수동 승인 수락 시 새 복구 exec_id로 바꾸는 commit 자체가 승인 소비다. 별도 재사용 가능한 승인 token이나 자동 복구 허가 플래그를 만들지 않는다. 이전 대상의 명령은 현재 exec_id와 달라 재사용할 수 없다.
+- **Pre-check/apply/backfill:** A를 끈 상태에서 실제 MySQL 정의와 기존 요청/미정리 상태를 확인한다. 신규 table을 수동 생성하고 최초1행은 운영자가 초기화한다. 기존 이력으로 종료 사실을 추정해 자동 seed하지 않으며, 테이블/행 누락 시 앱은 소비를 보류한다. 이전 실행/전송의 종료를 확인할 수 없는 잔여는 최초 활성화를 보류한다. 기존 worker 종료는 사용자 담당이라는 domain 전제를 유지한다.
+- **Verify/rollback:** 고정1행·CHECK/FK·기존 table 정의와 데이터 불변·120초 ck09 유지, 실제 두 연결의 세션 잠금/행 잠금 경쟁을 확인한다. rollback은 A 비활성화와 새 행/기존 이력 보존이며 DROP/reset을 사용하지 않는다. A가 시작된 뒤 예전 worker로 돌아가는 절차는 이 승인에 포함하지 않는다.
+- 승인 후 증분 SQL에 pre-check/apply/초기화/verify/보존 rollback/DBA 순서를 작성한다. 실제 MySQL 실행계획/제약/잠금 검증은 아직 없다. 고정 PK 조회 외 새 대량 조회 index는 이번 상태 table에 필요하지 않다.
+
+**Open Questions:** 신규 table1개와 위 초기화/인계 방식의 사용자 승인. `implementation readiness: blocked by open questions` — 기존 DB 구조로 계약을 충족하지 못하므로 승인 전 제품 구현·DDL 적용을 진행하지 않는다.
 
 ## 7. ERD review
 
