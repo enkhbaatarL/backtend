@@ -44,7 +44,7 @@ final class InputDraftFinalizationRepository {
         Operation candidate = new Operation(UUID.randomUUID().toString(), id, request.requestId(), "FINALIZE", role,
                 request.baseRevision(), "QUEUED", 2, encode(request), null, common.databaseTime().withNano(0).plusSeconds(120), null, null, actor);
         common.workerOwner(draft, candidate);
-        common.caseAccess(draft.caseId(), false);
+        if(!draft.uploaded())common.caseAccess(draft.caseId(), false);
         Operation existing = common.request(id, request.requestId());
         if (existing != null) {
             if (!existing.type().equals("FINALIZE") || !same(readRequest(existing), request)) {
@@ -66,10 +66,10 @@ final class InputDraftFinalizationRepository {
         if (draft.revision() != request.baseRevision()) throw InputDraftException.conflict("REVISION_CONFLICT", draft.revision());
         LocalDateTime now = candidate.expires().minusSeconds(120);
         sql.update("""
-                INSERT INTO tmd_mdl_inptdrftprcsl(prcs_id,drft_id,req_id,prcs_type_cd,usr_role_cd,base_rvsn_no,
+                INSERT INTO tmd_mdl_inptdrftprcsl(prcs_id,cust_cpny_no,usr_no,drft_id,req_id,prcs_type_cd,usr_role_cd,base_rvsn_no,
                     prcs_stat_cd,json_rvsn_no,req_json,expr_dtm,crt_dtm,mod_dtm,crt_usr_logn_id,mod_usr_logn_id)
-                VALUES(?,?,?,'FINALIZE',?,?,'QUEUED',2,?,?,?,?,?,?)
-                """, candidate.id(), id, request.requestId(), role, request.baseRevision(), candidate.request(), candidate.expires(), now, now, actor, actor);
+                VALUES(?,?,?,?,?,'FINALIZE',?,?,'QUEUED',2,?,?,?,?,?,?)
+                """, candidate.id(), company, user, id, request.requestId(), role, request.baseRevision(), candidate.request(), candidate.expires(), now, now, actor, actor);
         one(sql.update("UPDATE tmd_mdl_inptdrftm SET actv_prcs_id=?,mod_usr_logn_id=?,mod_dtm=CURRENT_TIMESTAMP WHERE drft_id=? AND drft_stat_cd='DRAFT' AND actv_prcs_id IS NULL AND rvsn_no=?",
                 candidate.id(), actor, id, request.baseRevision()));
         return common.operation(id, candidate.id(), false);
@@ -93,17 +93,18 @@ final class InputDraftFinalizationRepository {
 
     private Job verify(Draft draft, Operation op) {
         WorkerOwner owner = common.workerOwner(draft, op);
-        common.caseAccess(draft.caseId(), true);
+        if(!draft.uploaded())common.caseAccess(draft.caseId(), true);
         ModelInputDraftService.Source source = Objects.requireNonNull(basis.verify(draft, op));
-        if (source.caseId() != draft.caseId() || source.catalog().templateId() != draft.templateId()
-                || !draft.sourceVersion().equals(source.version())) throw InputDraftException.conflict("SOURCE_CHANGED", draft.revision());
+        if (!Objects.equals(source.caseId(),draft.caseId()) || source.catalog().templateId() != draft.templateId()
+                || !Objects.equals(draft.sourceVersion(),source.version())) throw InputDraftException.conflict("SOURCE_CHANGED", draft.revision());
         Map<String, Long> actual = new HashMap<>();
         for (FileRef file : source.files()) {
-            if (!ROLES.contains(file.role()) || actual.put(file.role(), file.fileNo()) != null || file.fileNo() <= 0) {
+            if (!ROLES.contains(file.role()) || actual.put(file.role(), file.fileNo()) != null || (!draft.uploaded()&&(file.fileNo()==null||file.fileNo()<=0))) {
                 throw InputDraftException.internal();
             }
         }
-        if (actual.size() != 4 || !actual.equals(common.fixedFiles(draft.id()))) throw InputDraftException.conflict("SOURCE_CHANGED", draft.revision());
+        if(actual.size()!=4)throw InputDraftException.conflict("FILES_INCOMPLETE",draft.revision());
+        if (!draft.uploaded()&&!actual.equals(common.fixedFiles(draft.id()))) throw InputDraftException.conflict("SOURCE_CHANGED", draft.revision());
         List<Revision> chain = common.revisions(draft.id());
         InputDraftHistory.restore(draft, source.catalog(), source.definitions(), chain,
                 common.rowIdentities(draft.id()), common.rowPositions(draft.id()), json);
@@ -118,8 +119,8 @@ final class InputDraftFinalizationRepository {
             throw InputDraftException.conflict("DRAFT_NOT_EDITABLE", draft.revision());
         }
         if (draft.company() != expected.draft().company() || draft.user() != expected.draft().user()
-                || draft.caseId() != expected.draft().caseId() || draft.templateId() != expected.draft().templateId()
-                || !draft.sourceVersion().equals(expected.draft().sourceVersion())) throw InputDraftException.internal();
+                || !Objects.equals(draft.caseId(),expected.draft().caseId()) || draft.templateId() != expected.draft().templateId()
+                || !Objects.equals(draft.sourceVersion(),expected.draft().sourceVersion())) throw InputDraftException.internal();
         return new Job(draft, op, expected.owner(), expected.files(), expected.revisions());
     }
 
@@ -172,7 +173,7 @@ final class InputDraftFinalizationRepository {
         List<SavedFile> saved = new ArrayList<>();
         for (Prepared item : prepared) {
             Reference ref = item.ref();
-            UploadedFile file = UploadedFile.of(ref.name(), item.role() + ".xlsm", ref.location(), ref.size(), "xlsm", ref.mime(),
+            UploadedFile file = UploadedFile.of(ref.name(), ref.name(), ref.location(), ref.size(), ref.name().endsWith(".xlsx")?"xlsx":"xlsm", ref.mime(),
                     "99991231", Math.toIntExact(caseId), "SCNRCASE", null);
             long fileNo = insert("""
                     INSERT INTO tcm_filel(org_file_nm,strg_file_nm,strg_path_nm,file_size,filex_nm,mime_type_nm,file_vald_end_dt,
@@ -196,6 +197,7 @@ final class InputDraftFinalizationRepository {
                 UPDATE tmd_mdl_inptdrftm SET drft_stat_cd='FINALIZED',fnsv_case_id=?,actv_prcs_id=NULL,mod_usr_logn_id=?,mod_dtm=CURRENT_TIMESTAMP
                 WHERE drft_id=? AND drft_stat_cd='DRAFT' AND rvsn_no=? AND actv_prcs_id=?
                 """, caseId, live.operation().actor(), live.draft().id(), live.operation().baseRevision(), live.operation().id()));
+        if(live.draft().uploaded())sql.update("UPDATE tmd_mdl_inptupldactvm SET drft_id=NULL WHERE cust_cpny_no=? AND usr_no=? AND drft_id=?",live.draft().company(),live.draft().user(),live.draft().id());
         return result;
     }
 

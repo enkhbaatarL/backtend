@@ -27,6 +27,8 @@ final class InputDraftHistory {
     private final Map<String,Map<Integer,InputWorkbookReader.Cell>> rowCells=new HashMap<>();
     private final Map<Long,Map<Integer,Map<Integer,InputWorkbookReader.Cell>>> fixedCells=new HashMap<>();
     private final List<RowPosition> positions=new ArrayList<>();
+    private final Map<String,Long> rowBaselines=new HashMap<>();
+    private final Map<Long,Long> tableBaselines=new HashMap<>();
     private record LogicalRow(long table,String id,Integer original,Integer position,String operation,String client) {}
     private record CellLocation(long table,int row,int column) {}
     record Applied(String delta,String result,List<RowWrite> rows) {}
@@ -39,12 +41,13 @@ final class InputDraftHistory {
     static InputDraftHistory restore(Draft draft,Catalog basis,Map<Long,InputReadDefinition> definitions,
             List<Revision> revisions,List<RowIdentity> identities,List<RowPosition> storedPositions,InputDraftJson json) {
         InputDraftHistory history=new InputDraftHistory(basis,definitions,json);
-        for(RowIdentity row:identities)if(row.original()!=null) {
+        for(RowIdentity row:identities)if(row.original()!=null&&row.baseline()==0) {
             TableRef table=history.table(row.table());
             require(row.operation()==null&&row.client()==null&&uuid(row.id())&&definitions.get(table.id()).body(row.original()));
             require(history.rows.putIfAbsent(row.id(),new LogicalRow(row.table(),row.id(),row.original(),row.original(),null,null))==null);
             history.originalRows.computeIfAbsent(row.table(),ignored->new HashSet<>()).add(row.original());
             history.positions.add(new RowPosition(row.table(),row.id(),0,null,row.original()));
+            history.rowBaselines.put(row.id(),0L);
         }
         require(revisions.size()==draft.revision()+1);
         long expected=0;
@@ -55,17 +58,48 @@ final class InputDraftHistory {
                 continue;
             }
             require(revision.base()!=null&&revision.base()==revision.number()-1&&uuid(revision.operation())
-                &&"CHANGE".equals(revision.type())&&"SUCCEEDED".equals(revision.status())&&revision.operationSchema()==2
+                &&Set.of("CHANGE","UPLOAD_FILE").contains(revision.type())&&"SUCCEEDED".equals(revision.status())&&revision.operationSchema()==2
                 &&revision.base().equals(revision.operationBase()));
+            if("UPLOAD_FILE".equals(revision.type())) {
+                JsonNode delta=json.payload(revision.delta());exact(delta,"policyTemplateId","uploadFileId","kind");
+                require(delta.path("policyTemplateId").asLong()==basis.templateId()&&uuid(delta.path("uploadFileId").asText())
+                    &&Set.of("SUPPLY","DEMAND","TRADE","OUTPUT").contains(delta.path("kind").asText()));
+                history.resetFile(delta.path("kind").asText(),revision.number(),identities);
+                continue;
+            }
             Applied applied=history.apply(json.delta(revision.delta()),revision.request(),revision.operation(),revision.number());
             require(json.sameValue(json.payload(revision.result()),json.payload(applied.result())));
         }
         Set<RowIdentity> expectedRows=new HashSet<>();
-        history.rows.values().forEach(row->expectedRows.add(new RowIdentity(row.table,row.id,row.original,row.operation,row.client)));
+        history.rows.values().forEach(row->expectedRows.add(new RowIdentity(row.table,row.id,row.original,row.operation,row.client,history.rowBaselines.getOrDefault(row.id,0L))));
         require(expectedRows.size()==identities.size()&&expectedRows.equals(new HashSet<>(identities)));
         require(history.positions.size()==storedPositions.size()&&new HashSet<>(history.positions).equals(new HashSet<>(storedPositions)));
         history.validatePositions();
         return history;
+    }
+    private void resetFile(String role,long revision,List<RowIdentity> identities) {
+        for(TableRef table:basis.tables())if(table.role().equals(role)) {
+            tables.put(table.id(),table);definitions.put(table.id(),originalDefinitions.get(table.id()));
+            columns.reset(table,originalDefinitions.get(table.id()));tableBaselines.put(table.id(),revision);
+            originalRows.remove(table.id());fixedCells.remove(table.id());
+            for(var entry:new ArrayList<>(rows.entrySet())) {
+                LogicalRow row=entry.getValue();if(row.table!=table.id())continue;
+                rowCells.remove(row.id);
+                if(row.position!=null) {
+                    for(int i=0;i<positions.size();i++){RowPosition p=positions.get(i);if(p.id().equals(row.id)&&p.end()==null)positions.set(i,new RowPosition(p.table(),p.id(),p.begin(),revision,p.row()));}
+                    positions.add(new RowPosition(row.table,row.id,revision,null,null));
+                    rows.put(row.id,new LogicalRow(row.table,row.id,row.original,null,row.operation,row.client));
+                }
+            }
+            for(RowIdentity row:identities)if(row.table()==table.id()&&row.original()!=null&&row.baseline()==revision) {
+                require(row.operation()==null&&row.client()==null&&uuid(row.id())&&definitions.get(table.id()).body(row.original()));
+                require(rows.putIfAbsent(row.id(),new LogicalRow(row.table(),row.id(),row.original(),row.original(),null,null))==null);
+                rowBaselines.put(row.id(),revision);
+                originalRows.computeIfAbsent(row.table(),ignored->new HashSet<>()).add(row.original());
+                positions.add(new RowPosition(row.table(),row.id(),revision,null,row.original()));
+            }
+        }
+        validatePositions();
     }
     Applied apply(JsonNode delta,String storedRequest,String operation,long revision) {
         exact(delta,"policyTemplateId","commands","tables","rows","columns","cells");
@@ -131,7 +165,7 @@ final class InputDraftHistory {
             } else require(old.table==table.id()&&old.position!=null&&change.path("clientRowKey").isNull());
             LogicalRow updated=old==null?new LogicalRow(table.id(),id,null,position,operation,client)
                 :new LogicalRow(old.table,old.id,old.original,position,old.operation,old.client);
-            rows.put(id,updated);writes.add(new RowWrite(table.id(),id,client,position,old==null));affected.add(table.key());
+            rows.put(id,updated);if(old==null)rowBaselines.put(id,tableBaselines.getOrDefault(table.id(),0L));writes.add(new RowWrite(table.id(),id,client,position,old==null));affected.add(table.key());
             if(old!=null) {
                 boolean closed=false;
                 for(int n=0;n<positions.size();n++) {

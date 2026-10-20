@@ -39,6 +39,8 @@ final class InputDraftChangeWorker implements AutoCloseable {
     private final Runnable terminate;
     private final InputDraftFinalizationService finalizations;
     private final boolean finalizationEnabled;
+    private InputUploadService uploads;
+    void uploads(InputUploadService uploads){this.uploads=uploads;}
 
     InputDraftChangeWorker(ModelInputDraftRepository store,ModelInputDraftService service,InputWorkbookReader reader,
             InputTempFiles scratch,InputDraftJson json,PlatformTransactionManager manager,Path root,Runnable terminate)throws Exception {
@@ -58,6 +60,7 @@ final class InputDraftChangeWorker implements AutoCloseable {
 
     /** supervisor가 이전 JVM 종료/평문 정리를 확인한 뒤 복구하며, 남은 object 정리는 다음 idle cycle에도 확인한다. */
     void recoverStopped()throws Exception {
+        if(uploads!=null)uploads.cleanupCandidates();
         try(var files=Files.list(markers)) {
             var paths=files.toList();
             // 최종 marker 공개/claim 전의 임시 파일에는 DB 복구 권한이 없다.
@@ -69,8 +72,14 @@ final class InputDraftChangeWorker implements AutoCloseable {
                 if(PENDING_MARKER.matcher(path.getFileName().toString()).matches())continue;
                 if(!Files.isRegularFile(path,LinkOption.NOFOLLOW_LINKS)||Files.size(path)>1024)throw new IllegalStateException("worker marker");
                 JsonNode marker=json.payload(Files.readString(path));
-                String draft=uuid(marker.path("draftId").asText()),operation=uuid(marker.path("operationId").asText()),token=uuid(marker.path("token").asText());
+                String operation=uuid(marker.path("operationId").asText()),token=uuid(marker.path("token").asText());
                 if(!path.getFileName().toString().equals(operation+"-"+token+".json"))throw new IllegalStateException("worker marker");
+                if("UPLOAD".equals(marker.path("draftId").asText())) {
+                    if(uploads==null)throw new IllegalStateException("upload recovery unavailable");
+                    if(!uploads.recoverStopped(operation,token))throw new IllegalStateException("upload recovery unconfirmed");
+                    Files.delete(path);continue;
+                }
+                String draft=uuid(marker.path("draftId").asText());
                 var current=tx.execute(ignored->store.operation(draft,operation,true));
                 if(current.type().equals("FINALIZE")) {
                     if(finalizations==null)throw new IllegalStateException("finalization recovery unavailable");
@@ -95,6 +104,20 @@ final class InputDraftChangeWorker implements AutoCloseable {
     }
 
     boolean runOne()throws Exception {
+        if(uploads!=null)for(var queued:uploads.pending()) {
+            if(!queued.status().equals("QUEUED"))continue;
+            long remaining=Duration.between(store.databaseTime(),queued.expires()).toNanos();
+            if(remaining<=0){uploads.expireQueued(queued);continue;}
+            String token=UUID.randomUUID().toString();Path marker=writeMarker("UPLOAD",queued.id(),token);
+            remaining=Duration.between(store.databaseTime(),queued.expires()).toNanos();
+            if(remaining<=0){uploads.expireQueued(queued);Files.delete(marker);continue;}
+            var deadline=watchdog.schedule(terminate,remaining,TimeUnit.NANOSECONDS);boolean acknowledged=false;
+            try {
+                uploads.process(queued,token);
+                if(scratch.plaintextRemains()||!uploads.terminal(queued.id()))throw new IllegalStateException("upload result unconfirmed");
+                Files.delete(marker);acknowledged=true;return true;
+            } finally {if(acknowledged)deadline.cancel(false);}
+        }
         for(var queued:finalizationEnabled?store.queuedOperations(true):store.queuedChanges()) {
             long remaining=Duration.between(store.databaseTime(),queued.expires()).toNanos();
             if(remaining<=0) {
@@ -182,7 +205,7 @@ final class InputDraftChangeWorker implements AutoCloseable {
     private Path writeMarker(String draft,String operation,String token,String reason)throws Exception {
         Path path=markers.resolve(uuid(operation)+"-"+uuid(token)+".json");
         Path pending=markers.resolve(".pending-"+path.getFileName());
-        var record=new java.util.HashMap<String,String>();record.put("draftId",uuid(draft));record.put("operationId",operation);record.put("token",token);
+        var record=new java.util.HashMap<String,String>();record.put("draftId",draft.equals("UPLOAD")?draft:uuid(draft));record.put("operationId",operation);record.put("token",token);
         if(reason!=null)record.put("failureReason",finalReason(reason));
         byte[] bytes=json.bytes(record);
         try(FileChannel file=FileChannel.open(pending,Set.of(StandardOpenOption.CREATE_NEW,StandardOpenOption.WRITE),

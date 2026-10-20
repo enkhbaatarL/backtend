@@ -56,6 +56,13 @@ final class InputDraftFinalizationService {
     /** 전용 private 참조만 사용한다. 구현은 저장소 정책/암복호화 primitive를 재사용한다. */
     interface ObjectsStore {
         Reference plan(WorkerOwner owner, Operation operation, String role);
+        default Reference plan(WorkerOwner owner,Operation operation,String role,String extension) {
+            Reference original=plan(owner,operation,role);
+            if(extension.equals("xlsm"))return original;
+            if(!extension.equals("xlsx"))throw InputDraftException.internal();
+            String key=original.key().replaceAll("\\.xlsm$",".xlsx");
+            return new Reference(original.bucket(),key,original.location().replaceAll("\\.xlsm$",".xlsx"),role+".xlsx",InputUploadValidation.XLSX,original.company(),null,null,null);
+        }
         void upload(Reference ref, Path generated) throws Exception;
         void verifyReadable(Reference ref) throws Exception;
         void delete(Reference ref) throws Exception;
@@ -71,9 +78,10 @@ final class InputDraftFinalizationService {
             return new Reference(bucket, key, location, name, mime, company, size, sha256, when);
         }
         void validate(Operation op, String role, WorkerOwner owner) {
-            String expected = "SCNRCASE/INPUTDRAFT/" + uuid(op.id()) + "/" + uuid(op.token()) + "/" + role + ".xlsm";
+            String extension=(role+".xlsx").equals(name)?"xlsx":"xlsm";
+            String expected = "SCNRCASE/INPUTDRAFT/" + uuid(op.id()) + "/" + uuid(op.token()) + "/" + role + "."+extension;
             if (bucket == null || bucket.isBlank() || !expected.equals(key) || !Objects.equals(company, owner.companyCode())
-                    || !(role + ".xlsm").equals(name) || !MIME.equals(mime) || location == null || location.length() > 255
+                    || !(role + "."+extension).equals(name) || !(extension.equals("xlsx")?InputUploadValidation.XLSX:MIME).equals(mime) || location == null || location.length() > 255
                     || !location.endsWith("/" + bucket + "/" + key) || absentSince != null
                     || size != null || sha256 != null) {
                 throw InputDraftException.internal();
@@ -115,7 +123,8 @@ final class InputDraftFinalizationService {
             throw new IllegalStateException("finalization file IO requires no transaction");
         }
         List<Reference> refs = ROLES.stream().map(role -> {
-            Reference ref = objects.plan(job.owner(), job.operation(), role);
+            String name=job.files().stream().filter(f->f.role().equals(role)).findFirst().orElseThrow(InputDraftException::internal).name();
+            Reference ref = objects.plan(job.owner(), job.operation(), role,name.toLowerCase(java.util.Locale.ROOT).endsWith(".xlsx")?"xlsx":"xlsm");
             ref.validate(job.operation(), role, job.owner());
             return ref;
         }).toList();

@@ -3,7 +3,7 @@
 ## Document Control
 
 - status: Draft
-- canonical for: Schema rollout — model input template catalog tables, columns, keys, indexes, nullability, migration, rollback, and verify SQL; §6.1/§10A의 기존 불변 파일 참조와 §6.2/§10B의 발행 양식/catalog·Case 연결 및 §6.3의 Draft 공통 저장 물리 정의. 기존 공통 파일 table 전체 DDL은 재정의하지 않는다.
+- canonical for: Schema rollout — model input template catalog tables, columns, keys, indexes, nullability, migration, rollback, and verify SQL; §6.1/§10A의 기존 불변 파일 참조와 §6.2/§10B의 발행 양식/catalog·Case 연결, §6.3의 Draft 공통 저장 및 §6.10의 직접 업로드 확장 물리 정의. 기존 공통 파일 table 전체 DDL은 재정의하지 않는다.
 - owner: BE / DBA
 - source documents:
   - `docs/work-notes/2026/2026-09-03-model-input-transfer-format.md`
@@ -14,8 +14,9 @@
   - `docs/conventions/db-term-dictionary-sheet2.csv`
 - supersedes:
   - 이 문서의 2026-09-04 `양식 → 테이블` 2단계 초안
-- last synced: 2026-10-19 (§6.9 공통 v2 저장/복원·초기화/CHECK 수동 SQL; §6.8 감사 초 정밀도 정렬·증분 적용 준비; §6.3.4.1 성공값 좌표 이동·저장 이력 오류 처리 보완; 사용자 제공 midb 정의에 따른 §6.4 파일 metadata 매핑 정렬 유지; 나머지 DBA 후속은 §13)
+- last synced: 2026-10-19 (§6.10 직접 업로드 저장 확장/증분 DDL 초안; §6.9 미배포 v2 단일 저장/복원 형식·Draft 초기화 SQL 확정; §6.8 감사 초 정밀도 정렬·증분 적용 준비; §6.3.4.1 성공값 좌표 이동·저장 이력 오류 처리 보완; 사용자 제공 midb 정의에 따른 §6.4 파일 metadata 매핑 정렬 유지; 나머지 DBA 후속은 §13)
 - open questions:
+  - 직접 업로드의 물리 설계/증분 SQL은 §6.10에 정리했다. 실제 환경 제약명·타입·수동 적용, MySQL 제약/동시성 및 새 저장 형식 reader/writer 검증은 미실행이며 이 확인 전에는 적용 준비 완료로 판정하지 않는다.
   - Q2 §6.2/§10B의 기존 catalog table/승인 GET 정의·seed·발행과 신규/기존 Case-template 관계 등록 결과를 확인해야 한다. field/control/options/화면 규칙의 실제 저장 구조/정의는 기존 후속이며 root ID만으로 완비를 가정하지 않는다.
   - 3파일 `SCENARIO` legacy cleanup의 apply/verify/rollback DML(case master + run history + 연결 execution-preparation + active 가격전망해석)은 미작성이다. `INPUT-11` 착수 시 작성해 DBA 검토를 받는다.
   - domain 규칙47의 삭제 정책은 현재 추가 플래그만으로 표현하지 않는다. 열 capability/field 상태·생성 정의는 기존 qry_json 확장으로 표현하며 §6.9를 따른다. 실제 표별 정책/처리기 연결과 catalog DML은 후속이다.
@@ -515,7 +516,7 @@ ERD/code 영향은 감사 정밀도와 접수 기준의 연계 수정에 한정�
 | fail_json | 기존 Problem. 실패 요청의 새 열/row mapping을 성공 이력에 넣지 않음 |
 | dlta_json top-level | `{policyTemplateId,commands,tables,rows,columns,cells}`. policyTemplateId는 고정 양식 ID, commands는 저장 요청 operations와 의미/순서 동일. 다섯 배열은 비어도 필수 |
 | tables[] | `{tableId,startRow,endRow,startColumn,endColumn,dataStart,definition,scopes}`. 구조가 바뀐 표의 **변경 후 전체 구조 정의**. definition은 확장된 조회 정의, scopes는 기존4좌표 object 배열. 기존행/열 구간·header/body/fields/controls/갱신 규칙의 이동과 파생표 변경을 함께 기술 |
-| rows[] | 기존 `{tableId,rowId,clientRowKey,rowNumber}` 유지. 새 행의 clientRowKey만 값, 기존 행은null. 삭제는 rowNumber:null. relational row identity/history와 대조 |
+| rows[] | 직접 행은 기존 `{tableId,rowId,clientRowKey,rowNumber}` 유지. 자동 연결 행 생성은 §6.9.5의 `derivedFromRowId`/예약 내부 key 예외를 따른다. 기존 행은 clientRowKey:null, 삭제는 rowNumber:null. relational row identity/history와 대조 |
 | columns[] | `{tableId,fieldKey,sourceColumnNumber,columnNumber,clientColumnKey}`. 추가/이동/삭제된 열만 한 번씩. 아래 identity 규칙 적용 |
 | cells[] | 기존 `{tableId,rowId,rowNumber,columnNumber,raw,display,formula}` 유지. 최종 위치의 값 덮어쓰기. 활성 논리 행은 rowId만, header/control/비활성 슬롯은 rowNumber만 지정하고 다른 행 참조는null. raw/display는 기존 scalar 또는null, formula boolean. 빈칸은 raw/display:null·formula:false |
 
@@ -531,7 +532,7 @@ ERD/code 영향은 감사 정밀도와 접수 기준의 연계 수정에 한정�
 **값 복원 순서 — 좌표 이동 전에 이전 값을 읽는다**
 
 1. 소유 Draft/원본·고정 양식 검증 뒤 revision0부터 요청·성공 revision의 연속성(parent=n-1), SUCCEEDED CHANGE, base/result/version2를 확인한다.
-2. commands를 순서대로 해석해 임시 행/열 참조와 삭제 후 참조를 검증한다. 직접 추가한 rows/columns의 신규 identity가 각 공개 ADD와 정확히1대1인지 확인한다. 기존 키의 출처 바꾸기·이동 충돌·삭제 부활은 저장 오류다. 아래의 자동 연결 행은 기존 행 저장 규칙의 후속 보완 대상이다.
+2. commands를 순서대로 해석해 임시 행/열 참조와 삭제 후 참조를 검증한다. 직접 추가한 rows/columns의 신규 identity가 각 공개 ADD와 정확히1대1인지 확인한다. 기존 키의 출처 바꾸기·이동 충돌·삭제 부활은 저장 오류다. 자동 연결 행의 별도 생성·삭제 대조는 §6.9.5의 내부 저장 보완을 따른다.
 3. 이번 revision의 최종 rows/columns/구조를 먼저 검증하되, **이전 성공 셀 overlay 전체를 이전 상태에서 수집**한다. rowId는 유지하고 열 값은 이전 열 identity→새 columnNumber로 이동한다. 삭제 열의 값은 버리고 신규 열에는 이전 물리 위치의 값을 복사하지 않는다. 고정 셀은 기존 header 순번/control ID의 행 이동과 열 이동을 함께 적용한다. 공유 control은 owner 기준 한 번만 이동하고 상충하는 목적지 값은 실패시킨다.
 4. 이동을 마친 뒤 이번 cells를 최종 좌표에 덮어쓴다. 명시 blank도 값이므로 이동값/원본 값을 가린다. 현재 commands의 마지막 SET/CLEAR, 생성 기본값·자동 header/계산 결과가 이 최종 cells/상태와 맞는지 검증한다. 이미 삭제된 행/열에는 최종 cells를 남기지 않는다.
 5. 조회 시 원본 셀을 읽는 주소는 **sourceRow와 sourceColumnNumber의 교차점**이다. 현재 columnNumber로 원본 파일을 읽지 않는다. 둘 중 하나라도 신규라 원본 대응이 없으면 시작은 빈칸이다. 그 위에 누적 성공 overlay를 적용한다. 새 열 빈칸/명시0·이동된 값·삭제 후 같은 위치 재사용을 구분한다.
@@ -787,11 +788,80 @@ DDL은 암묵 commit되므로 reset의 DELETE transaction을 검증·COMMIT/ROLL
 
 #### 6.9.5 검증·준비도
 
-- 기존 행 저장 규칙의 후속 한계: BCRegasification ADD_ROW가 자동 생성하는 RegasAdjustment 연결 행(domain 규칙51)은 공개 ADD_ROW와1대1이 아니므로 현재 rows/clientRowKey 규칙만으로 저장할 수 없다. 해당 처리기 구현 전에 파생 행 identity와 관계형 저장·공개 rowMappings 경계를 보완해야 한다. 이번 열 형식 확정을 전체 행 처리 지원 완료로 보지 않으며, 해당 행×열 조합은 그 보완 뒤 검증한다.
+##### 실제 편집기 연결 행 저장 보완 — 2026-10-19 구현 검토안
+
+- BCRegasification의 공개 ADD_ROW 하나가 만드는 RegasAdjustment 자동 행은 별도 UUID rowId를 갖는다. `rows[]`의 자동 행에만 `derivedFromRowId`를 추가하여 같은 Draft의 master rowId를 명시한다. 직접 행의 기존4키는 유지한다. 자동 행의 `clientRowKey`는 내부 예약값 `_regas_` + master UUID이며 공개 명령의 임시키로 사용할 수 없다(공개 키는 영문자로 시작). 이 값은 기존 `clnt_row_id VARCHAR(64)`·요청별 UK에 저장하므로 새 table/column/DDL은 필요 없다.
+- 신규 자동 행의 생성 revision을 복원할 때 승인된 두 table 관계와 master의 공개 ADD_ROW/같은 성공 revision을 정확히1대1로 대조한다. 이후 이동·삭제는 이미 고정된 연결 관계를 대조한다. 원본 연결은 고정 baseline의 master 원본8행↔연결11행의 같은 설비 대응을 검증한 뒤 고정 rowId로 묶는다. 추가 행 관계는 이 내부 연결 값으로 유지하며 설비명이나 현재 행번호로 다시 찾지 않는다.
+- 자동 행을 공개 rowMappings에 추가하지 않는다. rowMappings는 공개 ADD_ROW만 포함하고 affectedTableIds에는 연결 표/집계표도 포함한다. 자동 행의 생성·이동·삭제·파생 셀과 master 변경은 같은 성공 revision/transaction에 함께 저장한다. master 삭제 시 연결 행도 삭제하고 직접 연결 표 ADD/DELETE는 허용하지 않는다.
+- 원본/기존 자동 행 이동·삭제에서는 `clientRowKey:null`을 유지하며 기존 연결 identity를 재작성하지 않는다. ADD→DELETE에서도 신규 두 identity와 삭제 상태를 함께 남긴다. 임의 파생 표·없는 master·중복 연결·cross-Draft 연결·연결만 살아남는 delta는 저장 오류다. 검토·제품 구현/검증 완료는 실제 편집기 stable work note에서 판정한다.
+
+- 기존 직접 행 규칙과의 차이: BCRegasification ADD_ROW가 자동 생성하는 RegasAdjustment 연결 행(domain 규칙51)은 공개 ADD_ROW와1대1이 아니다. 위 derivedFromRowId/예약 key 보완이 이 경우의 내부 저장 계약이다. 실제 자동 행 생성·파일 처리/저장·재생의 구현 및 검증 상태는 실제 편집기 stable work note에서 추적한다. 이번 열 형식 확정을 전체 행 처리 지원 완료로 보지 않으며, 해당 행×열 조합은 그 보완 뒤 검증한다.
 - 필수 구현 검증: 첫 월 추가·헤더/빈칸/명시0, 중간/끝 월 삭제 후 source→현재 열 매핑, 같은 연월 두 키, 삭제 후 같은 연월 새 키, ADD→DELETE의 tombstone/mapping, 신규 행×신규 열, 기존/신규 row의 열 이동·고정 header/control/파생 MAX 이동, 페이지/재시작 동일 결과, 동일 요청 재전송·실패 원자성·최종4파일.
 - SQL 검증: reset transaction rollback·child-first/self-FK 순서·commit 뒤7table0 및 보존 대상 비교, CHECK2/상한/기존 제약, 신규 request/revision0/성공 version2·mapping/columns 배열, 빈 환경에서의 CHECK 원복. SQL의 JSON 배열 확인만으로 논리 복원 검증을 대신하지 않는다.
 - ERD 영향은 CHECK1개 교체와 승인된7table 데이터 초기화뿐이다. 기존 JSON은 Draft별 순서 있는 변경 기록으로 쓰며 새 JSON 검색/index나 관계형 열 저장을 추가하지 않는다. 기존 오브젝트/단어를 재사용하고 이름/사전 추가는 없다. JPA/MyBatis/QueryDSL 모델 변경 없이 기존 master JDBC 경로를 수정하는 구현 입력이다.
 - **형식·SQL 준비도: ready. 공통 v2 코드/격리 fixture·F-O-01 최종4파일 검증과 실제 표별 열 처리·DB 적용은 분리한다. 실제 표별 열 처리/실제 적용: 후속.** 환경별 schema/실제 데이터·백업/미정리 파일 상태는 SQL pre-check 결과로 확인한다. 실제 개발/운영 접속·적용·열 동작 성공은 이 문서 작성으로 확인한 것이 아니다.
+
+<a id="incremental-upload-storage-20261019"></a>
+
+### 6.10 직접 업로드 초안 저장 확장 — 2026-10-19
+
+직접 업로드의 행·열 편집은 기존 초안과 같은 정책/공통 API를 사용한다(사용자 후속 확인; domain §5.6·편집 API §3). 아래 UPLOAD 분기는 원본 Case 없는 부분 초안의 생성·파일 기준점/소유 저장을 위한 내부 구분이며 별도 편집 저장 체계를 뜻하지 않는다. xlsm/xlsx·원본 형식 유지·파일당50MiB는 입력 제공 명세 §3.3의 기존 확정을 유지하며 이번 확인으로 SQL/스키마를 추가 변경하지 않는다.
+
+이 절은 §6.3의 **기존 Case 기반 경로를 유지**하면서 [domain 규칙67·§5.6](mi-model-input-template-catalog-domain-model-design.md#incremental-upload-lifecycle-storage-20261019)을 구현할 물리 확장이다. API는 [입력 제공 명세 §3.3](../../feature-specs/mi-fundamental-model-input-provision-feature-spec.md#incremental-input-upload-api-20261019)이 소유한다. 수동 증분 SQL은 [model-input-incremental-upload-ddl-draft.sql](../../model-input-incremental-upload-ddl-draft.sql)이다. 이 절/SQL은 설계 초안이며 실제 DB 적용·실행 검증이나 기존 코드의 지원 완료를 뜻하지 않는다. §6.3~6.9에서 원본 Case·고정4파일·CHANGE 성공만 전제한 문구는 직접 업로드에 한해 아래 확장을 따른다.
+
+#### 6.10.1 변경 분류·테이블 책임
+
+**신규2개 + 기존4개 물리 변경 + 성공 revision payload 확장**이다. 별도 편집 이력 체계를 만들지 않고 기존 요청·revision·행/열 복원을 재사용한다. 가짜 Case, TEMP/0 공통 파일 등록, Case ID 대신 UUID를 기존 정수 관계 번호에 넣는 방식을 사용하지 않는다.
+
+| 테이블 | 변경·소유 데이터 |
+| --- | --- |
+| `tmd_mdl_inptdrftm` | `src_spt_cd VARCHAR(20) ascii_bin NOT NULL DEFAULT 'CASE'` 추가. CASE는 기존 `org_case_id/org_rvsn_val` 필수, UPLOAD는 둘 다 NULL CHECK. template/owner/revision/state는 공통 사용. `org_case_id`와 `org_rvsn_val`만 NULL 허용으로 확장하며 최종 Case는 기존 fnsv_case_id 사용 |
+| `tmd_mdl_inptdrftprcsl` | CHANGE/FINALIZE에 UPLOAD_CREATE/UPLOAD_FILE 추가. 소유 회사/사용자 NOT NULL 추가(기존 요청은 Draft에서 backfill). 최초 요청은 base_rvsn_no=NULL, 성공 전 drft_id=NULL; 최초 성공 때만 생성된 drft_id 기록. 나머지 종류는 둘 다 필수. 상태·토큰·120초 기한/종료 결과·payload 한도는 기존 공통 구조 사용 |
+| 신규 `tmd_mdl_inptupldactvm` | PK `(cust_cpny_no,usr_no)`. 현재 최초 접수 prcs_id 또는 성공한 drft_id 중 하나만 보유하고 둘 다 NULL이면 비어 있음. 사용자별 잠금 기준이며 과거 초안 목록이 아님. 최초 접수 이전에도 행을 안전하게 생성/잠금해 경쟁을 직렬화 |
+| 신규 `tmd_mdl_inptupldfiled` | PK `upld_file_id UUID`. private 원본 객체의 서버 참조(최대16KiB JSON), 소유 회사/사용자, 원본 파일명300·확장자20·MIME100, 실제 수신 크기/내용 SHA-256, 요청·검증 양식·역할·성공 Draft/revision. 상태 PREPARED/RECEIVED/COMMITTED/CLEANUP_PENDING/CLEANED. 파일 바이트는 DB에 넣지 않음 |
+| `tmd_mdl_inptdrftfiled` | 기존 `(drft_id,mdl_file_cd)` PK 유지. file_no를 NULL 허용하고 upld_file_id UUID? 추가. 정확히 하나만 존재하는 XOR CHECK. CASE는 기존 tcm_filel, UPLOAD는 새 private 원본 참조 사용. 업로드 중/실패 후보는 여기에 넣지 않음 |
+| `tmd_mdl_inptdrftrowm` | `file_rvsn_no BIGINT UNSIGNED NOT NULL DEFAULT 0` 추가. 해당 역할 파일의 기준 revision이며 행 위치 이력의 시작 번호와 구별. 원본 행 UK를 `(drft_id,inpt_tbl_id,file_rvsn_no,org_row_no)`로 확장해 교체 전후 같은 Excel 행번호에 서로 다른 rowId를 보장 |
+| `tmd_mdl_inptdrftrvsnl` | 물리 컬럼/키 변경 없음. n>0의 성공 요청은 CHANGE 또는 UPLOAD_FILE. 업로드 성공 delta의 v2 형식은 아래에서 정의. 최초 UPLOAD_CREATE는 기존 revision0 규칙대로 prcs_id/delta=NULL |
+
+필수/NULL 타입·감사 DATETIME(0)/처리 DATETIME(6)·master 경계·RESTRICT FK는 §6.3/§6.8을 재사용한다. src_spt_cd는 BE 내부 분류이며 FE의 sourceKey를 새 고정 문자열로 바꾸지 않는다. org_rvsn_val=NULL을 공개 API의 임의 sourceVersion 값으로 채우지 않는다. 업로드의 조회/완료 DTO는 API 정본에서 별도 완결한다.
+
+#### 6.10.2 키·제약·조회와 정규화
+
+- Draft: 기존 Case별 활성 UK 유지. 추가 generated `actv_upld_usr_no=IF(src_spt_cd='UPLOAD' AND drft_stat_cd='DRAFT' AND del_yn='N',usr_no,NULL)`와 `(cust_cpny_no,actv_upld_usr_no)` UK로 직접 업로드 활성 Draft도1건을 보장한다. 최초 검증 전에는 Draft가 없으므로 이 UK만으로 충분하지 않으며 위 단일 작성 행을 함께 사용한다.
+- 요청: 기존 `(drft_id,req_id)`/활성 drft_id UK는 후속 업로드·편집·최종저장을 함께 묶는다. 최초 전용 generated `crt_req_id`와 `(cust_cpny_no,usr_no,crt_req_id)` UK를 추가한다. 최초 requestId 범위는 인증된 회사/사용자이며 sourceKey/파일/metadata는 동일 내용 비교 대상이다. 후속은 기존 Draft/requestId 범위다. 최초 성공 뒤에도 같은 초기 키/작업을 유지한다.
+- 요청/단일 작성의 owner 복합 FK는 같은 회사·사용자의 Draft/요청만 참조한다. private 파일의 성공 `(drft_id,prcs_id)` 및 `(drft_id,file_rvsn_no)` FK, 현재 파일의 `(drft_id,upld_file_id)` FK를 사용한다. 역할·고정 양식·성공 상태·현재 파일과 해당 baseline 소속 등은 DB FK만으로 표현되지 않으므로 짧은 확정 transaction과 검증 SQL로 확인한다.
+- 파일은 요청당 하나(널 허용 prcs_id UK), 성공 역할/revision당 하나이며 교체 전 참조도 유지한다. 정리 index는 `(prcs_stat_cd,mod_dtm)`. 신규 단독 상태 index·목록 검색 index·캐시는 추가하지 않는다.
+- 1NF/2NF/3NF 검토: 역할은 배열 컬럼 대신 현재 역할 row와 파일별 baseline으로 분리했다. 단일 작성은 owner당 한 row다. JSON은 기존 원자 요청/결과 및 provider 저장 참조에만 사용한다. 요청/파일의 owner와 고정 양식은 독립 접수·권한 확인/파일 검증 시점의 증거이며 복합 FK/확정 검증으로 일치시킨다. 전체 workbook·현재 readiness를 중복 저장하지 않는다.
+
+#### 6.10.3 접수·성공·교체/복원 경계
+
+1. **수신 준비:** 서버 UUID로 생성한 private 객체 참조를 PREPARED로 먼저 기록한 뒤 저장한다. 아직 operation/초안/Case가 아니며 조회·다운로드에 공개하지 않는다. 수신 완료 바이트의 크기·SHA-256을 기록하고 RECEIVED로 바꾼다. 요청/파일 기본 검증 실패·중복 재전송의 새 사본은 현재 파일에 연결하지 않고 별도 정리한다. 실제 수신 파일은 `0<size<=52428800`. 새 digest는 업로드 동일성 판별용이며 기존 tcm_filel.file_hash_val의 의미를 바꾸지 않는다.
+2. **접수:** 현재 요청의 재전송 여부를 먼저 대조하고, 단일 작성 행 잠금 뒤 같은 키를 다시 조회한 후에만 busy/revision을 판정한다. UK 경쟁이 발생하면 해당 transaction을 rollback한 뒤 같은 잠금/원 요청 재조회로 동일 내용의 원래 결과를 반환한다. 새 최초 요청은 단일 작성 행이 비어 있는 경우만 UPLOAD_CREATE/파일 요청 연결/최초 진행 포인터를 한 transaction에 기록한다. 후속은 단일 작성→Draft→요청 순으로 잠가 현재 revision/소유/교체 확인/진행 없음 확인 후 UPLOAD_FILE과 공통 진행 포인터를 확정한다. **직접 업로드의 CHANGE/FINALIZE·claim/완료·timeout/재시작 복구·취소도 같은 잠금 순서를 사용**하며 Draft/요청을 먼저 잠근 뒤 단일 작성 행을 얻지 않는다. 원본 Case 경로의 기존 순서는 유지한다. 파일 수신 중 DB 잠금을 유지하지 않는다. crt_dtm/expr_dtm은 파일 수신 후 이 접수의 DB 시각으로 정하고 기존120초 정책을 적용한다.
+3. **검증:** 첫 요청의 worker가 실제 검증을 시작할 때 선택한 ACTIVE tmplt_id를 파일 검증 기록에 한 번 고정한다. 이후 ACTIVE 변경으로 다시 선택하지 않는다. 후속은 Draft의 tmplt_id를 그대로 쓴다. 파일명 역할과 실제 형식/MIME·구조를 대조하고 필요 행/표를 파싱한다. private 파일이 RECEIVED라는 이유로 유효 역할에 포함하지 않는다.
+4. **첫 성공:** 단일 작성→요청 잠금 아래 토큰/기한/현재 최초 포인터·소유/정책를 대조하고 새 UPLOAD Draft·revision0·해당 파일의 행ID/위치·현재 역할 연결, 파일 COMMITTED/baseline0, 작업 SUCCEEDED/결과, 단일 작성의 최초 포인터→Draft 전환을 한 master transaction에 commit한다. 최초 검증 실패는 Draft/Case가 없고 실패 기록/자기 후보 정리만 남기며 최초 슬롯을 해제한다. 기존 성공 replay는 이후 상태를 초기화하지 않는다.
+5. **추가/교체 성공:** 같은 잠금 순서 아래 현재 baseRevision/진행 포인터/토큰/기한을 다시 대조한다. revision=n+1·baseline 파일 COMMITTED·현재 역할 참조·해당 역할의 행/구조 초기화·성공 결과와 포인터 해제를 함께 확정한다. 교체 전 파일 객체/성공 이력은 보존하며 이전 역할의 활성 행 위치를 새 revision에서 tombstone으로 닫고 새 파일 기준 rowId를 만든다. 다른 역할의 행/열/값/계산은 바꾸지 않는다. 실패는 기존 참조/revision/편집을 그대로 둔다.
+6. **조회/편집/최종 복원:** 역할별로 목표 revision 이하의 마지막 성공 파일 baseline을 선택하고, 그 역할에 속한 **baseline 이후** 성공 CHANGE의 승인 결과만 복원한다. 예전 파일의 셀·행·열·구조 delta를 새 파일에 다시 적용하지 않는다. 다른 역할의 기존 delta는 유지한다. snapshot/cache도 같은 기준점으로 판별하며 실패·진행 파일을 사용하지 않는다. 기존 Case 경로는 baseline0/기존 고정4파일을 유지한다.
+7. **취소·최종저장:** 진행 없음/확인된 취소는 같은 단일 작성→Draft 잠금에서 DISCARDED와 단일 작성 포인터 해제를 함께 확정한다. 최종저장은 기존4파일·Case/file metadata/고정 template/FINALIZED/요청 성공 확정 transaction에 슬롯 해제를 포함한다. 이때만 실제 Case 및 tcm_filel4건을 만든다. 취소 A는 새 최초 B의 실패/timeout으로 복구하지 않는다. 종료/실패 후 동일 요청 결과는 불변이며 새 작성을 가리키는 포인터를 과거 실패 처리로 해제하지 않는다.
+
+UPLOAD_FILE의 v2 dlta_json은 닫힌 형식 `{policyTemplateId,uploadFileId,kind}`이며 세 key가 필수다. file baseline·행 identity/위치는 관계형 성공 기록과 대조한다. CHANGE의 v2 형식은 §6.9를 그대로 사용한다. 읽기/최종저장 reader는 연결 요청 종류로 분기하며 업로드 delta를 CHANGE로 해석하거나 무시하지 않는다. UPLOAD_CREATE/UPLOAD_FILE의 req_json은 파일 바이트/경로 대신 정규화 metadata와 실제 파일 크기·내용 digest/의미 있는 파일명을 포함하고 기존1MiB 한도를 유지한다. 랜덤 수신 UUID·object key·multipart boundary를 동일성 비교에 넣지 않는다. 파일 형식/크기/개인 경로를 성공 응답으로 무조건 노출하지 않으며 API 필드 추가는 해당 정본에서 결정한다.
+
+#### 6.10.4 코드 영향·보관·배포/검증
+
+- **발행된 검증 정의:** 기존 `tmd_mdl_inpttbld.qry_json`에 `uploadValidation:{schemaVersion:1,headerCells:[{rowNumber,columnNumber,value}]}`를 등록한다. 좌표는1기반이고 value는 승인된 고정 제목/헤더 문자열 또는 숫자다. 표마다 headerRows가 있으면 최소 하나의 고정 헤더 검사가 필요하다. 기간·사용자 입력값을 정적 헤더로 등록하지 않는다. 누락은 POLICY_INCOMPLETE로 차단한다. 새 물리 컬럼은 없으며 이미 발행된 양식을 제자리 수정하지 않고 기존 DRAFT 등록/새 버전 발행 절차를 따른다. 실제 라벨·대상 template을 확인하지 않은 범용 DML/자동 활성화는 제공하지 않는다.
+- **수신 종료 증거:** PREPARED 객체 기록 전에 값 없는 `.upload-{UUID}.marker`를 소유 임시 디렉터리에0600으로 fsync하고 디렉터리도 동기화한다. 살아 있는 수신 JVM은 `.lock` FileLock을 유지한다. 다음 시작은 같은 root에서 이전 lock을 획득한 경우만 종료 증거를 새 소유 디렉터리에 복사·동기화한 뒤 이전 디렉터리를 지운다. 증거별 DB transaction에서 `prcs_id IS NULL`인 PREPARED/RECEIVED만 CLEANUP_PENDING으로 바꾸고 DB 결과 확인 뒤 marker를 지운다. 접수된 작업/성공 원본은 이 정리 대상이 아니다. 정리 도중 다시 종료돼도 marker를 보존한다. 시각 경과만으로 writer 종료를 추정하지 않는다. 디렉터리 증거가 사라진 호스트/Pod 유실은 자동 정리 완료로 판단하지 않는다.
+- **활성화 순서:** 업로드 기본값은 `mi.model-input.upload.enabled=false`다. SQL 적용과 검증 규칙을 포함한 새 양식 발행, 인증된 회사의 private storage 및 수신/worker 종료 증거 디렉터리를 확인한 뒤 `mi.model-input.upload.source-key`와 `mi.model-input.upload.model-code`를 설정한다. 값/행열 편집 및 최종저장은 기존 `mi.model-input.change-worker.enabled`·`mi.model-input.finalization.enabled` 설정/실제 지원 범위를 따른다. 개발·시험의 기존 durable worker에 업로드 claim/복구를 연결했고, 고객 배포의 웹 Pod 내 실행 방식은 domain §5.5.3의 별도 운영 결정이다. 기존 전역 multipart 상한은 유지하며 API 수신 스트림에서 파일당50MiB를 따로 확인한다. 업로드 package는 압축 해제 총량512MiB·기존 entry/CRC/XML 제한도 적용한다.
+- 기존 직접 SQL Repository/record의 primitive caseId, tcm_filel 전용 FileRef, 모든 요청의 Draft 필수, 서비스 source(caseId)/고정4파일 및 worker의 Draft→actor 복원을 분기해야 한다. 최초 worker는 요청의 검증된 owner/접수 role을 복원한다. JPA/QueryDSL 생성 모델은 이번 문서 작업에서 변경하지 않으며 기존 Case entity/FK/tenant router를 개편하지 않는다.
+- 미접수/실패 후보는 이전 writer/전송 종료·DB 실제 결과와 현재/성공 baseline 미참조를 확인한 뒤 자기 private 객체만 정리한다. PREPARED 기록으로 재시작 뒤 미접수 사본도 추적한다. COMMITTED 및 교체/취소한 성공 원본·요청/revision은 기존 자동 TTL 없음/이력 보존을 따른다. 목록/선택 재개·장기 자동 만료/사용자 복구 기능을 추가하지 않는다. 로컬 평문 정리는 domain 규칙63을 유지한다.
+- **Pre-check / apply / backfill:** 기존 감사/요청/최종준비/열v2 적용 상태와 실제 제약 이름을 확인하고 writer/worker를 중지한다. 기존 CASE 데이터와 owner를 보존하는 nullable 확장·owner backfill 후 제약 추가→신규2개→현재파일/행 baseline 확장 순서다. 기존 데이터를 초기화하지 않는다. 이전 §6.9의 별도 초기화 SQL을 이 적용에 다시 실행하지 않는다.
+- **호환/rollback:** 기존 앱은 UPLOAD의 NULL Case/새 요청을 처리하지 못한다. 호환 reader/worker와 SQL을 준비한 뒤 새 진입을 열고, 구버전 혼재 writer/worker를 두지 않는다. 롤백은 신규 접수 중지·진행/commit 결과 확인·데이터/객체 보존 후 호환 버전으로 수행한다. NULL을 가짜 Case로 backfill하거나 새 table DROP/성공 파일 삭제로 되돌리지 않는다. DDL 암묵 commit으로 구간별 실제 정의를 확인한다.
+- **Verify:** SQL의 정의/소속/현재 포인터·baseline/revision 검증 결과0과 기존 Case·파일·행ID 보존을 확인한다. 별도 fixture로 최초 서로 다른 requestId/탭의 경쟁, 성공/실패 replay, 동시 파일/편집/최종저장 차단, 실패 교체 보존, 교체 전 행ID/열 delta 재사용 차단·다른 역할 불변, 취소 후 B 실패, deadline/서버 재시작/늦은 확정과 형식별 최종저장을 검증한다. EXPLAIN/nullable UK·CHECK·FK의 실제 강제는 MySQL 실물 검증 대상이며 정적 검사로 통과 처리하지 않는다.
+- **명명:** 기존 MDL/INPT/UPLD/ACTV/FILE/FILEX/DRFT/PRCS/REQ/SRC/SPT/CD/CNTT/HASH/RVSN/REF/JSON/CRT/MIME/SIZE 토큰을 재사용한다. 파일 metadata 이름은 기존 filex_nm/mime_type_nm과 맞춘다. 기존 tmm 접두사 제약명은 재명명하지 않고 신규 제약만 tmd 표준명을 사용한다. 사전 추가 없음. DB 세부 근거: [CHECK의 NULL 판정](https://dev.mysql.com/doc/refman/8.0/en/create-table-check-constraints.html), [복합 FK/타입 조건](https://dev.mysql.com/doc/refman/8.0/en/create-table-foreign-keys.html), [DDL 암묵 commit](https://dev.mysql.com/doc/refman/8.0/en/implicit-commit.html).
+
+#### 6.10.5 Open Questions / implementation readiness
+
+- 사용자 업무 선택: 현재 저장 설계에서 추가로 필요한 미결 없음. 확정된 단일 작성·부분 편집·교체/취소·형식/120초 기준을 재질문하지 않는다.
+- 기술 후속: 실제 SHOW CREATE와 SQL 제약명/타입 대조, MySQL 실행/경합 검증, 위 공통 reader/writer/worker의 새 분기와 API 조회/취소/완료 DTO 구체화, 환경별 private 저장소/정리 실행 연결이 남는다. 실제 DB를 확인하지 않고 DBA 적용 ready로 승인하지 않는다.
+- **Implementation readiness: ready** — 저장 구조의 구현 입력. **DBA apply readiness: blocked by open questions** — 위 환경/실행 검증을 충족한 뒤 수동 적용한다. 전체 업로드 제품 기능/관련 API가 완료됐다는 판정이 아니다.
 
 ## 7. ERD review
 
@@ -1128,6 +1198,8 @@ BE 구현 후의 제품 검증은 별도다: 입력→JSON text→DB→재조회
 - Q2는 기존 파일 식별값을 사용하므로 신규 DB 용어/컬럼 등록은 없다.
 
 ## 18. Implementation readiness
+
+- 2026-10-19 직접 업로드: §6.10 저장 구조/증분 SQL 작성과 독립 정적 검토 완료. 저장 구조 구현 입력은 `ready`, 실제 MySQL/환경 대조·동시성 검증 전 DBA 적용은 `blocked by open questions`다. 신규 API/worker 및 일반 행·열 처리의 제품 구현/검증 완료 판정은 별도다.
 
 - 2026-10-16: §6.3의 관계형/JSON 방향·공통 유일성/성공 경계는 사용자 채택한 설계 기준이다. 공통 물리 정의/저장 계약은 §6.3으로 문서 범위 완료다. 전체 CREATE/ALTER/verify SQL·DBA rollout 및 실제 제품 동작은 미완료다. 기존6개 SQL의 적용 완료/확장 완료로 읽지 않는다. 공통 설계 입력은 `ready after minor cleanup`(실제 schema·감사 예외/SQL 적용 준비 확인), 표별 쓰기/최종 파일 제품 활성화는 해당 정책/STRUCT·구현 검증 전 `blocked by open questions`다.
 

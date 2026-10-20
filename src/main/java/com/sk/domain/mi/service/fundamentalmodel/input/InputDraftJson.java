@@ -215,6 +215,12 @@ public class InputDraftJson {
         try {JsonNode node=mapper.readTree(text);if(node==null)throw InputDraftException.internal();return node;}
         catch(IOException ex){throw InputDraftException.internal();}
     }
+    JsonNode uploadMetadata(String text) {
+        if(text==null)throw InputDraftException.invalid();
+        if(text.getBytes(java.nio.charset.StandardCharsets.UTF_8).length>BODY_LIMIT)throw InputDraftException.large();
+        try {JsonNode node=mapper.readTree(text);if(node==null||!node.isObject())throw InputDraftException.invalid();return node;}
+        catch(IOException ex){throw InputDraftException.json();}
+    }
     public JsonNode definition(String text) {
         if(text==null) throw InputDraftException.conflict("POLICY_INCOMPLETE",null);
         if(text.getBytes(java.nio.charset.StandardCharsets.UTF_8).length>BODY_LIMIT) throw InputDraftException.internal();

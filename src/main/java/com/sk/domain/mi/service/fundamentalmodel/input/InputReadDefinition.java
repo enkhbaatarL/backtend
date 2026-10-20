@@ -14,7 +14,7 @@ public record InputReadDefinition(List<Integer> columns,List<Integer> headerRows
     public static InputReadDefinition parse(JsonNode root) {
         if(root==null || !root.isObject()) throw incomplete();
         InputDraftJson.keys(root,Set.of("schemaVersion","columns","headerRows","bodyRanges","identityColumns",
-            "fields","capabilities","inputGuideRules","controls","displayUpdateRules","columnCreation"));
+            "fields","capabilities","inputGuideRules","controls","displayUpdateRules","columnCreation","uploadValidation"));
         if(!root.path("schemaVersion").isIntegralNumber()) throw incomplete();
         if(!root.path("schemaVersion").canConvertToInt() || root.path("schemaVersion").intValue()!=1) throw InputDraftException.conflict("POLICY_UNSUPPORTED",null);
         List<Integer> columns=ints(root.path("columns"),16384), headers=ints(root.path("headerRows"),1048576),

@@ -11,21 +11,28 @@ public final class ModelInputDraftResponses {
     private ModelInputDraftResponses() {}
     public record Summary(
         @Schema(description="개인 편집 Draft ID",format="uuid",requiredMode=Schema.RequiredMode.REQUIRED) String draftId,
-        @Schema(description="고정한 원본 Case ID",format="int64",minimum="1",requiredMode=Schema.RequiredMode.REQUIRED) long sourceCaseId,
-        @Schema(description="회사·Case 비교 키",pattern="^sc1_[0-9a-f]{64}$",requiredMode=Schema.RequiredMode.REQUIRED) String sourceKey,
-        @Schema(description="고정 원본4파일·발행 기준",pattern="^sv1_[0-9a-f]{64}$",requiredMode=Schema.RequiredMode.REQUIRED) String sourceVersion,
+        @Schema(description="원본 Case ID. 직접 업로드는 null",format="int64",minimum="1",nullable=true,types={"integer","null"},requiredMode=Schema.RequiredMode.REQUIRED) Long sourceCaseId,
+        @Schema(description="서버가 제공한 출처 키",requiredMode=Schema.RequiredMode.REQUIRED) String sourceKey,
+        @Schema(description="Case 원본 기준. 직접 업로드는 null",nullable=true,types={"string","null"},pattern="^sv1_[0-9a-f]{64}$",requiredMode=Schema.RequiredMode.REQUIRED) String sourceVersion,
         @Schema(description="Draft 편집 상태",allowableValues={"DRAFT","FINALIZED","DISCARDED"},requiredMode=Schema.RequiredMode.REQUIRED) String status,
         @Schema(description="편집 상태 표시명",requiredMode=Schema.RequiredMode.REQUIRED) String statusLabel,
         @Schema(description="현재 성공 저장 번호",minimum="0",maximum="9007199254740991",requiredMode=Schema.RequiredMode.REQUIRED) long revision,
         @Schema(description="진행 요청 ID. 없으면 null",nullable=true,types={"string","null"},requiredMode=Schema.RequiredMode.REQUIRED) String activeOperationId,
         @Schema(description="진행 요청 조회 경로. 없으면 null",nullable=true,types={"string","null"},requiredMode=Schema.RequiredMode.REQUIRED) String activeOperationEndpoint,
         @Schema(description="최종저장 성공 Case. 미완료는 null",nullable=true,types={"integer","null"},requiredMode=Schema.RequiredMode.REQUIRED) Long finalizedCaseId,
-        @Schema(description="Draft 구조 재조회 상대 경로",requiredMode=Schema.RequiredMode.REQUIRED) String draftEndpoint) {}
+        @Schema(description="Draft 구조 재조회 상대 경로",requiredMode=Schema.RequiredMode.REQUIRED) String draftEndpoint) {
+        public Summary(String draftId,long sourceCaseId,String sourceKey,String sourceVersion,String status,String statusLabel,long revision,String activeOperationId,String activeOperationEndpoint,Long finalizedCaseId,String draftEndpoint){this(draftId,Long.valueOf(sourceCaseId),sourceKey,sourceVersion,status,statusLabel,revision,activeOperationId,activeOperationEndpoint,finalizedCaseId,draftEndpoint);}
+    }
     public record Created(@JsonUnwrapped Summary summary,
         @Schema(description="신규 생성 true, 기존 재개 false",requiredMode=Schema.RequiredMode.REQUIRED) boolean created) {}
     public record Structure(@JsonUnwrapped Summary summary,
-        @Schema(description="동일 성공 기준의 네 역할 구조",requiredMode=Schema.RequiredMode.REQUIRED) List<Section> sections,
-        @Schema(description="표 미선택이므로 항상 null",nullable=true,types={"null"},requiredMode=Schema.RequiredMode.REQUIRED) Object tableData) {}
+        @Schema(description="동일 성공 기준의 연결 완료 역할 구조. 직접 업로드는1~4개",requiredMode=Schema.RequiredMode.REQUIRED) List<Section> sections,
+        @Schema(description="표 미선택이므로 항상 null",nullable=true,types={"null"},requiredMode=Schema.RequiredMode.REQUIRED) Object tableData,
+        @JsonUnwrapped Readiness readiness) {
+        public Structure(Summary summary,List<Section> sections,Object tableData){this(summary,sections,tableData,null);}
+    }
+    @Schema(requiredProperties={"uploadedKinds","missingKinds","canFinalize"})
+    public record Readiness(List<String> uploadedKinds,List<String> missingKinds,boolean canFinalize) {}
     @Schema(requiredProperties={"sourceKey","sourceVersion","sections","tableData"})
     public record SourceStructure(String sourceKey,String sourceVersion,List<Section> sections,
         @Schema(description="원본 구조 최초 조회에서는 항상 null",nullable=true,types={"null"},requiredMode=Schema.RequiredMode.REQUIRED) Object tableData) {}
@@ -65,7 +72,7 @@ public final class ModelInputDraftResponses {
     @Schema(requiredProperties={"draftId","revision","sourceKey","sourceVersion","tableData","page","editing"})
     public record Table(@Schema(format="uuid") String draftId,
         @Schema(description="조회한 성공 저장 번호",minimum="0",maximum="9007199254740991") long revision,
-        String sourceKey,String sourceVersion,TableData tableData,Page page,Editing editing) {}
+        String sourceKey,@Schema(description="Case 원본 기준. 직접 업로드는 null",nullable=true,types={"string","null"}) String sourceVersion,TableData tableData,Page page,Editing editing) {}
     @Schema(requiredProperties={"reason","currentRevision","issues"})
     public record Problem(@Schema(description="클라이언트 분기용 오류 사유") String reason,
         @Schema(description="현재 성공 저장 번호. 판단할 수 없으면 null",nullable=true,types={"integer","null"},minimum="0",maximum="9007199254740991") Long currentRevision,

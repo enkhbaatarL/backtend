@@ -20,7 +20,9 @@ import org.springframework.stereotype.Repository;
 public class ModelInputDraftRepository {
     private final JdbcTemplate jdbc;
     public ModelInputDraftRepository(@Qualifier("masterDataSource") DataSource master) { jdbc=new JdbcTemplate(master); }
-    public record FileRef(String role,long fileNo,String name,String location) {}
+    public record FileRef(String role,Long fileNo,String name,String location,long baseline,String sha256,Long size) {
+        public FileRef(String role,long fileNo,String name,String location){this(role,fileNo,name,location,0,null,null);}
+    }
     public record Scope(int startRow,int endRow,int startColumn,int endColumn) {
         public boolean contains(int row,int col) { return row>=startRow&&row<=endRow&&col>=startColumn&&col<=endColumn; }
     }
@@ -30,8 +32,11 @@ public class ModelInputDraftRepository {
         public String key() { return role+"/"+sheet+"/"+name; }
     }
     public record Catalog(long templateId,int version,List<String> roles,List<TableRef> tables) {}
-    public record Draft(String id,int company,int user,long caseId,long templateId,String sourceVersion,String status,
-            long revision,String activeOperation,Long finalizedCase) {}
+    public record Draft(String id,int company,int user,Long caseId,long templateId,String sourceVersion,String status,
+            long revision,String activeOperation,Long finalizedCase) {
+        public Draft(String id,int company,int user,long caseId,long templateId,String sourceVersion,String status,long revision,String activeOperation,Long finalizedCase){this(id,company,user,Long.valueOf(caseId),templateId,sourceVersion,status,revision,activeOperation,finalizedCase);}
+        public boolean uploaded(){return caseId==null;}
+    }
     public record RowRef(long table,int row,String id) {}
     public void caseAccess(long id, boolean lock) {
         List<String> types=jdbc.query("SELECT exec_type_cd FROM tmd_mdl_scnrcasem WHERE case_id=? AND del_yn='N'"+(lock?" FOR UPDATE":""),
@@ -53,7 +58,9 @@ public class ModelInputDraftRepository {
             WHERE c.case_id=? AND c.del_yn='N' AND t.del_yn='N' AND t.tmplt_stat_cd IN ('ACTIVE','DEPRECATED')
             """,(rs,n)->new long[]{rs.getLong(1),rs.getInt(2)},caseId);
         if(root.size()!=1) throw InputDraftException.conflict("POLICY_INCOMPLETE",null);
-        long template=root.get(0)[0];
+        return catalogTemplate(root.get(0)[0],(int)root.get(0)[1]);
+    }
+    public Catalog catalogTemplate(long template,int version) {
         List<String> roles=jdbc.query("SELECT mdl_file_cd FROM tmd_mdl_inptfiled WHERE tmplt_id=? AND del_yn='N' ORDER BY file_ord",(rs,n)->rs.getString(1),template);
         Map<Long,List<Scope>> scopes=new LinkedHashMap<>();
         jdbc.query("""
@@ -72,10 +79,10 @@ public class ModelInputDraftRepository {
             rs.getString("inpt_tbl_expn"),rs.getInt("tbl_bgn_row_no"),rs.getInt("tbl_end_row_no"),rs.getInt("tbl_bgn_col_no"),rs.getInt("tbl_end_col_no"),
             rs.getInt("hdr_bgn_row_no"),rs.getInt("hdr_end_row_no"),rs.getInt("data_bgn_row_no"),"Y".equals(rs.getString("row_add_psbl_yn")),
             "Y".equals(rs.getString("col_add_psbl_yn")),rs.getString("qry_json"),List.copyOf(scopes.getOrDefault(rs.getLong("inpt_tbl_id"),List.of()))),template);
-        return new Catalog(template,(int)root.get(0)[1],List.copyOf(roles),List.copyOf(tables));
+        return new Catalog(template,version,List.copyOf(roles),List.copyOf(tables));
     }
     private Draft draft(ResultSet rs,int ignored)throws SQLException {
-        return new Draft(rs.getString("drft_id"),rs.getInt("cust_cpny_no"),rs.getInt("usr_no"),rs.getLong("org_case_id"),
+        return new Draft(rs.getString("drft_id"),rs.getInt("cust_cpny_no"),rs.getInt("usr_no"),rs.getObject("org_case_id",Long.class),
             rs.getLong("tmplt_id"),rs.getString("org_rvsn_val"),rs.getString("drft_stat_cd"),rs.getLong("rvsn_no"),
             rs.getString("actv_prcs_id"),rs.getObject("fnsv_case_id",Long.class));
     }
@@ -113,15 +120,20 @@ public class ModelInputDraftRepository {
     /** 접수/복구는 항상 Draft → 요청 순서로 잠근다. 호출 transaction은 master여야 한다. */
     public Draft lockOwned(String id,int company,int user) {
         requireTransaction();
+        lockUploadOwner(owned(id,company,user));
         return jdbc.query("SELECT * FROM tmd_mdl_inptdrftm WHERE drft_id=? AND cust_cpny_no=? AND usr_no=? AND del_yn='N' FOR UPDATE",
             this::draft,id,company,user).stream().findFirst().orElseThrow(InputDraftException::missing);
     }
     private Draft lockDraft(String id) {
         requireTransaction();
+        jdbc.query("SELECT * FROM tmd_mdl_inptdrftm WHERE drft_id=? AND del_yn='N'",this::draft,id).stream().findFirst().ifPresent(this::lockUploadOwner);
         return jdbc.query("SELECT * FROM tmd_mdl_inptdrftm WHERE drft_id=? AND del_yn='N' FOR UPDATE",this::draft,id)
             .stream().findFirst().orElseThrow(InputDraftException::missing);
     }
     public Draft lockForRecovery(String id){return lockDraft(id);}
+    private void lockUploadOwner(Draft draft) {
+        if(draft.uploaded())jdbc.query("SELECT cust_cpny_no FROM tmd_mdl_inptupldactvm WHERE cust_cpny_no=? AND usr_no=? FOR UPDATE",(rs,n)->rs.getInt(1),draft.company(),draft.user());
+    }
     private static void requireTransaction() {
         if(!org.springframework.transaction.support.TransactionSynchronizationManager.isActualTransactionActive())throw new IllegalStateException("master transaction required");
     }
@@ -151,9 +163,9 @@ public class ModelInputDraftRepository {
         // 감사 시간은 초 단위다. 같은 값을 기한의 기준으로 써 DB 반올림/CHECK 불일치를 막는다.
         LocalDateTime now=databaseTime().withNano(0);String id=UUID.randomUUID().toString();
         jdbc.update("""
-            INSERT INTO tmd_mdl_inptdrftprcsl(prcs_id,drft_id,req_id,prcs_type_cd,usr_role_cd,base_rvsn_no,prcs_stat_cd,json_rvsn_no,req_json,expr_dtm,crt_dtm,mod_dtm,crt_usr_logn_id,mod_usr_logn_id)
-            VALUES(?,?,?,'CHANGE',?,?,'QUEUED',2,?,?,?,?,?,?)
-            """,id,current.id(),requestId,role,baseRevision,request,now.plusSeconds(120),now,now,actor,actor);
+            INSERT INTO tmd_mdl_inptdrftprcsl(prcs_id,cust_cpny_no,usr_no,drft_id,req_id,prcs_type_cd,usr_role_cd,base_rvsn_no,prcs_stat_cd,json_rvsn_no,req_json,expr_dtm,crt_dtm,mod_dtm,crt_usr_logn_id,mod_usr_logn_id)
+            VALUES(?,?,?,?,?,'CHANGE',?,?,'QUEUED',2,?,?,?,?,?,?)
+            """,id,current.company(),current.user(),current.id(),requestId,role,baseRevision,request,now.plusSeconds(120),now,now,actor,actor);
         int changed=jdbc.update("UPDATE tmd_mdl_inptdrftm SET actv_prcs_id=?,mod_usr_logn_id=?,mod_dtm=? WHERE drft_id=? AND actv_prcs_id IS NULL AND rvsn_no=? AND drft_stat_cd='DRAFT'",id,actor,now,current.id(),baseRevision);
         if(changed!=1)throw InputDraftException.internal();
         return operation(current.id(),id,false);
@@ -247,7 +259,9 @@ public class ModelInputDraftRepository {
     }
     public record Revision(long number,Long base,String operation,int schema,String delta,
         String type,String status,int operationSchema,Long operationBase,String request,String result) {}
-    public record RowIdentity(long table,String id,Integer original,String operation,String client) {}
+    public record RowIdentity(long table,String id,Integer original,String operation,String client,long baseline) {
+        public RowIdentity(long table,String id,Integer original,String operation,String client){this(table,id,original,operation,client,0);}
+    }
     public record RowPosition(long table,String id,long begin,Long end,Integer row) {}
     public record RowWrite(long table,String id,String client,Integer row,boolean added) {}
     public List<Revision> revisions(String draftId) {
@@ -266,7 +280,7 @@ public class ModelInputDraftRepository {
     public List<RowIdentity> rowIdentities(String draftId) {
         return jdbc.query("SELECT * FROM tmd_mdl_inptdrftrowm WHERE drft_id=? ORDER BY inpt_tbl_id,row_id",(rs,n)->{
             if(!"N".equals(rs.getString("del_yn")))throw InputDraftException.internal();
-            return new RowIdentity(rs.getLong("inpt_tbl_id"),rs.getString("row_id"),rs.getObject("org_row_no",Integer.class),rs.getString("prcs_id"),rs.getString("clnt_row_id"));
+            return new RowIdentity(rs.getLong("inpt_tbl_id"),rs.getString("row_id"),rs.getObject("org_row_no",Integer.class),rs.getString("prcs_id"),rs.getString("clnt_row_id"),rs.getLong("file_rvsn_no"));
         },draftId);
     }
     public List<RowPosition> rowPositions(String draftId) {
@@ -290,6 +304,7 @@ public class ModelInputDraftRepository {
             VALUES(?,?,?,?,?,?,?)
             """,row.id(),draftId,row.table(),op.id(),row.client(),op.actor(),op.actor());
         // 위치 교환/이동은 모든 이전 current를 닫은 뒤 새 위치를 넣어 generated UK를 지킨다.
+        for(RowWrite row:rows)if(row.added())jdbc.update("UPDATE tmd_mdl_inptdrftrowm SET file_rvsn_no=COALESCE((SELECT u.file_rvsn_no FROM tmd_mdl_inptdrftfiled f JOIN tmd_mdl_inptupldfiled u ON u.upld_file_id=f.upld_file_id JOIN tmd_mdl_inpttbld t ON t.inpt_tbl_id=? JOIN tmd_mdl_inptshtd sh ON sh.inpt_sht_id=t.inpt_sht_id JOIN tmd_mdl_inptfiled tf ON tf.inpt_file_id=sh.inpt_file_id AND tf.mdl_file_cd=f.mdl_file_cd WHERE f.drft_id=?),0) WHERE row_id=?",row.table(),draftId,row.id());
         for(RowWrite row:rows)if(!row.added()) {
             int changed=jdbc.update("UPDATE tmd_mdl_inptdrftrowh SET end_rvsn_no=?,mod_usr_logn_id=?,mod_dtm=CURRENT_TIMESTAMP WHERE drft_id=? AND inpt_tbl_id=? AND row_id=? AND end_rvsn_no IS NULL",next,op.actor(),draftId,row.table(),row.id());
             if(changed!=1)throw InputDraftException.internal();

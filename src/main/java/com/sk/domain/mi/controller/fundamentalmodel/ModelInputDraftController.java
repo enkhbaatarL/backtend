@@ -8,6 +8,7 @@ import com.sk.domain.mi.dto.response.fundamentalmodel.ModelInputDraftResponses.*
 import com.sk.domain.mi.service.fundamentalmodel.input.InputDraftException;
 import com.sk.domain.mi.service.fundamentalmodel.input.InputDraftJson;
 import com.sk.domain.mi.service.fundamentalmodel.input.ModelInputDraftService;
+import com.sk.domain.mi.service.fundamentalmodel.input.InputUploadService;
 import com.sk.domain.shared.enums.PermissionCondition;
 import com.sk.domain.shared.enums.Role;
 import io.swagger.v3.oas.annotations.Operation;
@@ -35,6 +36,74 @@ import org.springframework.web.bind.annotation.*;
 public class ModelInputDraftController {
     private final ModelInputDraftService service;
     private final InputDraftJson json;
+    @org.springframework.beans.factory.annotation.Autowired(required=false)
+    private InputUploadService uploads;
+
+    @Schema(additionalProperties=Schema.AdditionalPropertiesValue.FALSE,requiredProperties={"sourceKey","requestId"})
+    public record UploadMetadata(@Schema(description="서버의 EXCEL_UPLOAD 출처 키") String sourceKey,
+        @Schema(format="uuid",description="최초는 회사/사용자, 후속은 Draft 범위의 재전송 키") String requestId,
+        @Schema(description="후속 추가/교체에서 필수. 최초에는 생략",minimum="0",maximum="9007199254740991") Long baseRevision,
+        @Schema(description="기존 역할 교체에 사용자 동의 후 true. 최초에는 생략") Boolean replaceConfirmed) {}
+    @Schema(requiredProperties={"file","metadata"})
+    public record UploadRequest(@Schema(type="string",format="binary",description="xlsx/xlsm 원본 하나, 최대50MiB") String file,UploadMetadata metadata) {}
+    public record DiscardRequest(@Schema(minimum="0",maximum="9007199254740991",requiredMode=Schema.RequiredMode.REQUIRED) long baseRevision,
+        @Schema(allowableValues={"true"},requiredMode=Schema.RequiredMode.REQUIRED) boolean discardConfirmed) {}
+
+    @PostMapping(value="/input-upload-drafts",consumes=MediaType.MULTIPART_FORM_DATA_VALUE)
+    @Operation(summary="첫 파일의 업로드 검증 접수",description="기존 Case 없이 xlsx/xlsm 하나를 수신합니다. metadata는 application/json입니다. 같은 사용자는 직접 업로드 Case 하나만 작성하며 같은 requestId/동일 파일·내용은 기존 작업을 반환합니다. 파일당50MiB이고 실제 검증/파싱 성공 뒤에만 초안을 생성합니다. statusEndpoint를2초 간격 조회하며 SUCCEEDED/FAILED에서 종료합니다. 성공 뒤 공통 Draft 조회/편집 API를 사용합니다.")
+    @io.swagger.v3.oas.annotations.parameters.RequestBody(required=true,content=@Content(schema=@Schema(implementation=UploadRequest.class),encoding=@io.swagger.v3.oas.annotations.media.Encoding(name="metadata",contentType=MediaType.APPLICATION_JSON_VALUE)))
+    @ApiResponse(responseCode="202",description="접수/진행 중 동일 요청. 초안 생성 완료 아님",content=@Content(schema=@Schema(implementation=UploadEnvelope.class),examples=@ExampleObject(value="{\"status\":true,\"code\":\"SUC-000\",\"message\":\"Success.\",\"data\":{\"operationId\":\"19ea2ef1-7a4c-4c01-b3be-de451e024234\",\"requestId\":\"d0dcf4f3-dbbb-4c69-a9b0-6846c05d2c05\",\"status\":\"QUEUED\",\"statusEndpoint\":\"/api/v1/mi/fundamental-model/input-upload-requests/19ea2ef1-7a4c-4c01-b3be-de451e024234\",\"result\":null,\"failure\":null}}")))
+    @ApiResponse(responseCode="200",description="종료된 동일 요청의 원래 성공/실패 결과",content=@Content(schema=@Schema(implementation=UploadEnvelope.class)))
+    @ApiResponse(responseCode="400",description="REQ-003/REQ-005: 파일/metadata 형식 오류",content=@Content(schema=@Schema(implementation=ProblemEnvelope.class)))
+    @ApiResponse(responseCode="409",description="BIZ-001: UPLOAD_IN_PROGRESS/IDEMPOTENCY_CONFLICT/정책 미완비",content=@Content(schema=@Schema(implementation=ProblemEnvelope.class)))
+    @ApiResponse(responseCode="413",description="REQ-003: 파일당50MiB 초과",content=@Content(schema=@Schema(implementation=ProblemEnvelope.class)))
+    @RequiredPermissionRules(rules={@PermissionRule(role=Role.USER,conditions={PermissionCondition.SKGAS_COMPANY_USER_ONLY}),@PermissionRule(role=Role.ADMIN,conditions={PermissionCondition.THIRD_PARTY_ADMIN_ONLY})})
+    public ResponseEntity<byte[]> uploadFirst(@RequestPart("file") org.springframework.web.multipart.MultipartFile file,
+            @RequestPart("metadata") String metadata,HttpServletRequest request)throws Exception {
+        uploadParts(request);return uploadResponse(uploadService().accept(null,file,metadata));
+    }
+    @PostMapping(value="/input-upload-drafts/{draftId}/files",consumes=MediaType.MULTIPART_FORM_DATA_VALUE)
+    @Operation(summary="초안 파일 추가 또는 확인한 교체 접수",description="metadata JSON에 requestId/sourceKey/baseRevision을 보냅니다. 기존 역할의 파일 교체는 편집 초기화 안내 후 replaceConfirmed:true가 필요합니다. 검증 성공 때만 해당 역할 파일/편집과 revision+1을 함께 확정하며 실패하면 기존 상태를 유지합니다. 다른 변경 작업과 동시 접수하지 않습니다. 형식·크기·상태 조회는 최초 업로드와 같습니다.")
+    @io.swagger.v3.oas.annotations.parameters.RequestBody(required=true,content=@Content(schema=@Schema(implementation=UploadRequest.class),encoding=@io.swagger.v3.oas.annotations.media.Encoding(name="metadata",contentType=MediaType.APPLICATION_JSON_VALUE)))
+    @ApiResponse(responseCode="202",description="신규/진행 중 동일 요청 접수",content=@Content(schema=@Schema(implementation=UploadEnvelope.class)))
+    @ApiResponse(responseCode="200",description="동일 요청의 원래 종료 결과",content=@Content(schema=@Schema(implementation=UploadEnvelope.class)))
+    @ApiResponse(responseCode="400",description="REQ-003/REQ-005: metadata 또는 파일 형식 오류",content=@Content(schema=@Schema(implementation=ProblemEnvelope.class)))
+    @ApiResponse(responseCode="404",description="RSC-001: 본인 업로드 초안 없음",content=@Content(schema=@Schema(implementation=ProblemEnvelope.class)))
+    @ApiResponse(responseCode="409",description="BIZ-001: DRAFT_BUSY/REVISION_CONFLICT/IDEMPOTENCY_CONFLICT/REPLACEMENT_NOT_CONFIRMED/DRAFT_NOT_EDITABLE",content=@Content(schema=@Schema(implementation=ProblemEnvelope.class)))
+    @ApiResponse(responseCode="413",description="REQ-003: 파일당50MiB 초과",content=@Content(schema=@Schema(implementation=ProblemEnvelope.class)))
+    @RequiredPermissionRules(rules={@PermissionRule(role=Role.USER,conditions={PermissionCondition.SKGAS_COMPANY_USER_ONLY}),@PermissionRule(role=Role.ADMIN,conditions={PermissionCondition.THIRD_PARTY_ADMIN_ONLY})})
+    public ResponseEntity<byte[]> uploadFile(@PathVariable String draftId,@RequestPart("file") org.springframework.web.multipart.MultipartFile file,
+            @RequestPart("metadata") String metadata,HttpServletRequest request)throws Exception {
+        uploadParts(request);return uploadResponse(uploadService().accept(uuid(draftId),file,metadata));
+    }
+    @GetMapping("/input-upload-requests/{operationId}")
+    @Operation(summary="업로드 검증 결과 조회",description="최초 요청은 초안이 없어도 operationId로 조회합니다. 진행 중 result/failure는null, 성공은 기존 공통 구조·첫 표 스냅샷의 result, 실패는 안전한 reason/currentRevision/issues의 failure입니다. FAILED 조회도 HTTP200이며 새 처리/파일 연결을 시작하지 않습니다. 종료 결과는 이후 편집으로 변경되지 않습니다.")
+    @ApiResponse(responseCode="200",description="업로드 상태 및 원래 결과",content=@Content(schema=@Schema(implementation=UploadEnvelope.class)))
+    @ApiResponse(responseCode="404",description="RSC-001: 본인 업로드 작업 없음",content=@Content(schema=@Schema(implementation=ProblemEnvelope.class)))
+    @RequiredPermissionRules(rules={@PermissionRule(role=Role.USER,conditions={PermissionCondition.SKGAS_COMPANY_USER_ONLY}),@PermissionRule(role=Role.ADMIN,conditions={PermissionCondition.THIRD_PARTY_ADMIN_ONLY})})
+    public ResponseEntity<byte[]> uploadOperation(@PathVariable String operationId){return success(uploadService().operation(uuid(operationId)));}
+    @PostMapping(value="/input-upload-drafts/{draftId}/discard",consumes=MediaType.APPLICATION_JSON_VALUE)
+    @Operation(summary="확인한 현재 업로드 작성 취소",description="현재 파일·편집을 더 이상 이어가지 않는다는 확인 후 discardConfirmed:true와 baseRevision을 보냅니다. 진행 작업이 없을 때만 취소하고 현재 작성 제한을 해제합니다. 취소한 초안을 복구하거나 파일을 즉시 삭제하지 않습니다. 새 첫 파일은 취소 성공 후 별도 업로드하며 새 검증 실패도 이전 취소를 되돌리지 않습니다.")
+    @io.swagger.v3.oas.annotations.parameters.RequestBody(required=true,content=@Content(schema=@Schema(implementation=DiscardRequest.class)))
+    @ApiResponse(responseCode="200",description="DISCARDED 상태의 공통 Draft 구조",content=@Content(schema=@Schema(implementation=StructureEnvelope.class)))
+    @ApiResponse(responseCode="400",description="REQ-003: 확인/버전 오류",content=@Content(schema=@Schema(implementation=ProblemEnvelope.class)))
+    @ApiResponse(responseCode="404",description="RSC-001: 본인 업로드 초안 없음",content=@Content(schema=@Schema(implementation=ProblemEnvelope.class)))
+    @ApiResponse(responseCode="409",description="BIZ-001: 진행 작업/버전/편집 종료 충돌",content=@Content(schema=@Schema(implementation=ProblemEnvelope.class)))
+    @RequiredPermissionRules(rules={@PermissionRule(role=Role.USER,conditions={PermissionCondition.SKGAS_COMPANY_USER_ONLY}),@PermissionRule(role=Role.ADMIN,conditions={PermissionCondition.THIRD_PARTY_ADMIN_ONLY})})
+    public ResponseEntity<byte[]> discardUpload(@PathVariable String draftId,@RequestBody String body){return success(uploadService().discard(uuid(draftId),body));}
+    @Schema(requiredProperties={"status","code","message","data"})
+    public record UploadEnvelope(boolean status,String code,String message,@Schema(implementation=InputUploadService.UploadOperationSchema.class) InputUploadService.View data) {}
+    private InputUploadService uploadService(){if(uploads==null)throw InputDraftException.internal();return uploads;}
+    private ResponseEntity<byte[]> uploadResponse(InputUploadService.View view) {
+        return ResponseEntity.status(view.status().equals("QUEUED")||view.status().equals("RUNNING")?HttpStatus.ACCEPTED:HttpStatus.OK)
+            .contentType(MediaType.APPLICATION_JSON).body(json.bytes(BaseResponseFactory.create(view)));
+    }
+    private static void uploadParts(HttpServletRequest request)throws Exception {
+        var parts=request.getParts();if(parts.size()!=2||parts.stream().filter(p->p.getName().equals("file")).count()!=1||parts.stream().filter(p->p.getName().equals("metadata")).count()!=1)throw InputDraftException.invalid();
+        var metadata=parts.stream().filter(p->p.getName().equals("metadata")).findFirst().orElseThrow();
+        try {if(metadata.getContentType()==null||!MediaType.APPLICATION_JSON.isCompatibleWith(MediaType.parseMediaType(metadata.getContentType())))throw InputDraftException.invalid();}
+        catch(org.springframework.http.InvalidMediaTypeException ex){throw InputDraftException.invalid();}
+    }
 
     public record CreateRequest(
         @Schema(description = "원본 구조 조회에서 받은 비교 기준", requiredMode = Schema.RequiredMode.REQUIRED,
@@ -271,6 +340,10 @@ public class ModelInputDraftController {
     // Provider/SQL/parse 예외의 원문에는 셀 값·저장소 주소가 포함될 수 있다.
     @ExceptionHandler(Exception.class)
     public ResponseEntity<byte[]> unexpected(Exception ex, HttpServletRequest request) {
+        if(ex instanceof org.springframework.web.multipart.MaxUploadSizeExceededException)return failure(InputDraftException.large(),request);
+        if(ex instanceof org.springframework.web.multipart.support.MissingServletRequestPartException
+            ||ex instanceof org.springframework.http.converter.HttpMessageNotReadableException
+            ||ex instanceof org.springframework.web.bind.MissingServletRequestParameterException)return failure(InputDraftException.invalid(),request);
         if (ex instanceof CustomAuthorizationException denied) {
             return ResponseEntity.status(HttpStatus.FORBIDDEN).contentType(MediaType.APPLICATION_JSON)
                 .body(json.bytes(BaseResponseFactory.create(denied.getErrorCode())));

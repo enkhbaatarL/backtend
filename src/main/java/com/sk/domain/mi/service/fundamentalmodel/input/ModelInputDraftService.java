@@ -43,6 +43,9 @@ public class ModelInputDraftService {
     @org.springframework.lang.Nullable private final AuthorizationService authorization;
     private final InputWorkbookReader reader;
     private final InputDraftJson json;
+    private InputUploadRepository uploads;
+    @org.springframework.beans.factory.annotation.Autowired
+    void uploads(InputUploadRepository uploads){this.uploads=uploads;}
     // JpaConfig의 primary manager이며 JDBC도 같은 masterDataSource를 사용한다.
     private final PlatformTransactionManager transactionManager;
     @org.springframework.beans.factory.annotation.Value("${mi.model-input.change-worker.enabled:false}")
@@ -60,8 +63,8 @@ public class ModelInputDraftService {
         var service=finalizations.get();if(service==null)throw InputDraftException.internal();return service;
     }
     Source verifyFinalizationBasis(Draft draft,ModelInputDraftRepository.Operation operation) {
-        Actor actor=workerActor(draft,operation);Source original=source(actor,draft.caseId(),false);
-        if(!draft.sourceVersion().equals(original.version())||draft.templateId()!=original.catalog().templateId())
+        Actor actor=workerActor(draft,operation);Source original=source(actor,draft);
+        if(!java.util.Objects.equals(draft.sourceVersion(),original.version())||draft.templateId()!=original.catalog().templateId())
             throw InputDraftException.conflict("SOURCE_CHANGED",draft.revision());
         fixed(draft,original,draft.sourceVersion());
         InputDraftPreserveChange.validateHistory(store.revisions(draft.id()),json);
@@ -71,7 +74,7 @@ public class ModelInputDraftService {
     public FinalizationView submitFinalization(String id,InputDraftJson.FinalizationRequest request) {
         Actor actor=actor();recoverExpired(actor,id);
         tx(true,()->{
-            Draft draft=store.owned(id,actor.company,actor.user);store.caseAccess(draft.caseId(),false);
+            Draft draft=store.owned(id,actor.company,actor.user);if(!draft.uploaded())store.caseAccess(draft.caseId(),false);
             if(!finalizationEnabled&&store.request(id,request.requestId())==null&&!draft.status().equals("FINALIZED"))
                 throw InputDraftException.conflict("POLICY_UNSUPPORTED",draft.revision());
             return null;
@@ -86,7 +89,7 @@ public class ModelInputDraftService {
     public FinalizationView finalizationOperation(String id,String operationId) {
         Actor actor=actor();recoverExpired(actor,id);
         return tx(true,()->{
-            Draft draft=store.owned(id,actor.company,actor.user);store.caseAccess(draft.caseId(),false);
+            Draft draft=store.owned(id,actor.company,actor.user);if(!draft.uploaded())store.caseAccess(draft.caseId(),false);
             var op=store.operation(id,operationId,false);
             if(!op.type().equals("FINALIZE"))throw InputDraftException.missing();
             return finalizationView(op);
@@ -132,11 +135,13 @@ public class ModelInputDraftService {
         String label=switch(status){case "QUEUED"->"실행 대기";case "RUNNING"->"실행 중";case "COMPLETED"->"실행 완료";case "FAILED"->"실행 실패";default->throw InputDraftException.internal();};
         return new FinalizationExecution(status,label,runId,"/api/v1/mi/fundamental-model/cases/"+caseId+"/status",reason);
     }
-    private record Actor(int company,int user,String companyCode,String login) {}
-    record Source(long caseId,Catalog catalog,List<FileRef> files,String key,String version,
-        Map<String,String> inputIds,Map<Long,InputReadDefinition> definitions) {}
+    record Actor(int company,int user,String companyCode,String login) {}
+    record Source(Long caseId,Catalog catalog,List<FileRef> files,String key,String version,
+        Map<String,String> inputIds,Map<Long,InputReadDefinition> definitions) {
+        Source(long caseId,Catalog catalog,List<FileRef> files,String key,String version,Map<String,String> inputIds,Map<Long,InputReadDefinition> definitions){this(Long.valueOf(caseId),catalog,files,key,version,inputIds,definitions);}
+    }
     private record State(Draft draft,Source source,InputDraftHistory history) {}
-    private Actor actor() {
+    Actor actor() {
         if(authorization==null)throw InputDraftException.missing();
         int company=authorization.getCompanyNoWithPriority(),user=authorization.getUserNo();
         String code=authorization.getCompanyCdWithPriority(),login=authorization.getSubject();
@@ -194,6 +199,32 @@ public class ModelInputDraftService {
         version.put("files",refs);version.put("templateVersion",template);version.put("catalogRevision",publication);
         return new Source(caseId,catalog,List.copyOf(ordered),key,hash("sv1",version),Map.copyOf(inputIds),Map.copyOf(definitions));
     }
+    private Source source(Actor actor,Draft draft) {
+        if(!draft.uploaded())return source(actor,draft.caseId(),false);
+        if(uploads==null)throw InputDraftException.internal();
+        var registered=uploads.files(draft.id());
+        if(registered.isEmpty())throw InputDraftException.internal();
+        var first=uploads.operation(registered.get(0).operation());
+        String key=json.payload(first.request()).path("metadata").path("sourceKey").asText();
+        List<FileRef> files=registered.stream().map(u->u.file(json.payload(u.reference()).path("location").asText())).toList();
+        return uploadSource(uploads.template(draft.templateId(),null),files,key);
+    }
+    Source uploadSource(Catalog full,List<FileRef> files,String sourceKey) {
+        Set<String> present=files.stream().map(FileRef::role).collect(java.util.stream.Collectors.toSet());
+        Catalog catalog=new Catalog(full.templateId(),full.version(),full.roles().stream().filter(present::contains).toList(),full.tables().stream().filter(t->present.contains(t.role())).toList());
+        Map<Long,InputReadDefinition> definitions=new LinkedHashMap<>();Map<String,String> ids=new LinkedHashMap<>();
+        for(TableRef table:catalog.tables())definitions.put(table.id(),InputReadDefinition.parse(json.definition(table.definition())));
+        for(FileRef file:files)ids.put(file.role(),hash("in1",ordered("sourceKey",sourceKey,"kind",file.role(),"template",Long.toString(catalog.templateId()),"objectRef",file.location())));
+        return new Source(null,catalog,List.copyOf(files),sourceKey,null,Map.copyOf(ids),Map.copyOf(definitions));
+    }
+    private Structure structure(State state) {
+        Readiness readiness=null;
+        if(state.draft.uploaded()) {
+            List<String> present=ROLES.stream().filter(r->state.source.inputIds.containsKey(r)).toList();
+            readiness=new Readiness(present,ROLES.stream().filter(r->!present.contains(r)).toList(),finalizationEnabled&&present.size()==4&&state.draft.status().equals("DRAFT")&&state.draft.activeOperation()==null);
+        }
+        return new Structure(summary(state.draft,state.source),sections(state.source),null,readiness);
+    }
     private static Map<String,String> ordered(String... pairs) {Map<String,String> map=new LinkedHashMap<>();for(int i=0;i<pairs.length;i+=2)map.put(pairs[i],pairs[i+1]);return map;}
     private String hash(String prefix,Object value) {
         try {return prefix+"_"+HexFormat.of().formatHex(MessageDigest.getInstance("SHA-256").digest(json.bytes(value)));}
@@ -239,7 +270,8 @@ public class ModelInputDraftService {
         });
     }
     private void fixed(Draft draft,Source source,String version) {
-        if(!draft.sourceVersion().equals(version)||!draft.sourceVersion().equals(source.version)||draft.templateId()!=source.catalog.templateId())throw InputDraftException.conflict("DRAFT_SOURCE_CONFLICT",draft.revision());
+        if(draft.uploaded()){if(draft.templateId()!=source.catalog.templateId())throw InputDraftException.internal();return;}
+        if(!draft.sourceVersion().equals(version)||!java.util.Objects.equals(draft.sourceVersion(),source.version)||draft.templateId()!=source.catalog.templateId())throw InputDraftException.conflict("DRAFT_SOURCE_CONFLICT",draft.revision());
         Map<String,Long> expected=new LinkedHashMap<>();source.files.forEach(f->expected.put(f.role(),f.fileNo()));
         if(!expected.equals(tx(true,()->store.fixedFiles(draft.id()))))throw InputDraftException.conflict("SOURCE_CHANGED",draft.revision());
     }
@@ -247,8 +279,8 @@ public class ModelInputDraftService {
         return state(actor,store.lockOwned(id,actor.company,actor.user));
     }
     private State state(Actor actor,Draft draft) {
-        Source source=source(actor,draft.caseId(),false);
-        if(!draft.sourceVersion().equals(source.version)) throw InputDraftException.conflict("SOURCE_CHANGED",draft.revision());
+        Source source=source(actor,draft);
+        if(!java.util.Objects.equals(draft.sourceVersion(),source.version)) throw InputDraftException.conflict("SOURCE_CHANGED",draft.revision());
         fixed(draft,source,draft.sourceVersion());
         return restore(draft,source);
     }
@@ -264,8 +296,8 @@ public class ModelInputDraftService {
         if(draft.activeOperation()!=null) {
             var op=store.operation(draft.id(),draft.activeOperation(),false);
             if(op.terminal())throw InputDraftException.internal();
-            endpoint="/api/v1/mi/fundamental-model/input-drafts/"+draft.id()
-                +(op.type().equals("CHANGE")?"/change-requests/":"/finalizations/")+op.id();
+            endpoint=op.type().equals("UPLOAD_FILE")?"/api/v1/mi/fundamental-model/input-upload-requests/"+op.id()
+                :"/api/v1/mi/fundamental-model/input-drafts/"+draft.id()+(op.type().equals("CHANGE")?"/change-requests/":"/finalizations/")+op.id();
         }
         return new Summary(draft.id(),draft.caseId(),source.key,draft.sourceVersion(),draft.status(),label,draft.revision(),draft.activeOperation(),endpoint,draft.finalizedCase(),"/api/v1/mi/fundamental-model/input-drafts/"+draft.id());
     }
@@ -273,15 +305,15 @@ public class ModelInputDraftService {
     public OperationView submitChange(String id,InputDraftJson.ChangeRequest request) {
         Actor actor=actor();recoverExpired(actor,id);
         return tx(false,()->{
-            Draft draft=store.lockOwned(id,actor.company,actor.user);store.caseAccess(draft.caseId(),false);
+            Draft draft=store.lockOwned(id,actor.company,actor.user);if(!draft.uploaded())store.caseAccess(draft.caseId(),false);
             var previous=store.request(id,request.requestId());
             if(previous!=null) {
                 if(previous.schemaVersion()!=2)throw InputDraftException.internal();
                 if(!previous.type().equals("CHANGE")||!json.sameRequest(previous.request(),request))throw InputDraftException.conflict("IDEMPOTENCY_CONFLICT",draft.revision());
                 return operationView(previous);
             }
-            Source current=source(actor,draft.caseId(),false);
-            if(!draft.sourceVersion().equals(current.version))throw InputDraftException.conflict("SOURCE_CHANGED",draft.revision());
+            Source current=source(actor,draft);
+            if(!java.util.Objects.equals(draft.sourceVersion(),current.version))throw InputDraftException.conflict("SOURCE_CHANGED",draft.revision());
             fixed(draft,current,draft.sourceVersion());
             if(!draft.status().equals("DRAFT"))throw InputDraftException.conflict("DRAFT_NOT_EDITABLE",draft.revision());
             if(draft.activeOperation()!=null)throw InputDraftException.conflict("DRAFT_BUSY",draft.revision());
@@ -378,7 +410,7 @@ public class ModelInputDraftService {
     public OperationView changeOperation(String id,String operationId) {
         Actor actor=actor();recoverExpired(actor,id);
         return tx(true,()->{
-            Draft draft=store.owned(id,actor.company,actor.user);store.caseAccess(draft.caseId(),false);
+            Draft draft=store.owned(id,actor.company,actor.user);if(!draft.uploaded())store.caseAccess(draft.caseId(),false);
             var op=store.operation(id,operationId,false);
             if(!op.type().equals("CHANGE"))throw InputDraftException.missing();
             return operationView(op);
@@ -386,7 +418,7 @@ public class ModelInputDraftService {
     }
     private void recoverExpired(Actor actor,String id) {
         tx(false,()->{
-            Draft draft=store.lockOwned(id,actor.company,actor.user);store.caseAccess(draft.caseId(),false);
+            Draft draft=store.lockOwned(id,actor.company,actor.user);if(!draft.uploaded())store.caseAccess(draft.caseId(),false);
             if(draft.activeOperation()!=null) {
                 var operation=store.operation(id,draft.activeOperation(),true);
                 if(operation.type().equals("FINALIZE"))finalizer().expireQueuedJoined(id,operation.id());
@@ -425,7 +457,7 @@ public class ModelInputDraftService {
         try {
             return tx(false,()->{
                 Draft draft=requestedActor==null?store.lockForRecovery(id):store.lockOwned(id,requestedActor.company,requestedActor.user);
-                store.caseAccess(draft.caseId(),false);
+                if(!draft.uploaded())store.caseAccess(draft.caseId(),false);
                 var op=store.lockRunningChange(id,operationId,token);
                 if(op==null){store.expireChange(id,operationId,failureJson("TIMEOUT",draft.revision()));return false;}
                 Actor actor=requestedActor==null?workerActor(draft,op):requestedActor;
@@ -446,7 +478,7 @@ public class ModelInputDraftService {
             // commit 응답 유실도 여기로 올 수 있다. 쓰기 DB 잠금으로 성공 여부를 먼저 재확인한다.
             return tx(false,()->{
                 Draft draft=requestedActor==null?store.lockForRecovery(id):store.lockOwned(id,requestedActor.company,requestedActor.user);
-                if(requestedActor!=null)store.caseAccess(draft.caseId(),false);
+                if(requestedActor!=null)if(!draft.uploaded())store.caseAccess(draft.caseId(),false);
                 var op=store.operation(id,operationId,true);
                 if(op.status().equals("SUCCEEDED"))return token!=null&&token.equals(op.token());
                 if(op.terminal()||!op.status().equals("RUNNING")||token==null||!token.equals(op.token()))return false;
@@ -495,6 +527,7 @@ public class ModelInputDraftService {
     private List<Section> sections(Source source) {
         List<Section> result=new ArrayList<>();
         for(String role:ROLES) {
+            if(!source.inputIds.containsKey(role))continue;
             Map<String,List<TableInfo>> sheets=new LinkedHashMap<>();
             for(TableRef table:source.catalog.tables())if(table.role().equals(role)) {
                 InputReadDefinition def=source.definitions.get(table.id());List<String> controls=new ArrayList<>();def.controls().forEach(c->controls.add(c.path("id").asText()));
@@ -525,13 +558,21 @@ public class ModelInputDraftService {
             // 포인터와 작업을 읽는 동안 timeout/종료 복구가 같은 Draft를 바꾸지 못하게 한다.
             Draft draft=store.lockOwned(id,actor.company,actor.user);
             State state=state(actor,draft);
-            return new Structure(summary(state.draft,state.source),sections(state.source),null);
+            return structure(state);
         });
     }
     @Transactional(propagation=Propagation.NOT_SUPPORTED)
     public Table table(String id,long revision,String key,Integer first) {
         Actor actor=actor();State state=tx(false,()->state(actor,id));
         if(revision!=state.draft.revision())throw InputDraftException.conflict("REVISION_CONFLICT",state.draft.revision());
+        Table result=renderTable(actor,state,key,first);
+        State current=tx(false,()->state(actor,id));
+        if(current.draft.revision()!=revision)throw InputDraftException.conflict("REVISION_CONFLICT",current.draft.revision());
+        if(!java.util.Objects.equals(state.source.version,current.source.version))throw InputDraftException.conflict("SOURCE_CHANGED",revision);
+        return result;
+    }
+    private Table renderTable(Actor actor,State state,String key,Integer first) {return renderTable(actor,state,key,first,InputDraftJson.RESPONSE_LIMIT);}
+    private Table renderTable(Actor actor,State state,String key,Integer first,int limit) {
         TableRef table=state.source.catalog.tables().stream().filter(t->t.key().equals(key)).findFirst().orElseThrow(InputDraftException::missing);
         InputReadDefinition def=state.source.definitions.get(table.id());List<Integer> candidate=def.page(first,2000),headers=def.headerRows();
         Map<Integer,Map<Integer,Cell>> rows=new HashMap<>();Set<Integer> wanted=new HashSet<>(candidate);wanted.addAll(headers);
@@ -569,16 +610,28 @@ public class ModelInputDraftService {
         Table result;
         while(true) {
             result=project(state,table,def,page,rows,identities,invalidRows);
-            if(json.bytes(BaseResponseFactory.create(result)).length<=InputDraftJson.RESPONSE_LIMIT)break;
+            if(json.bytes(BaseResponseFactory.create(result)).length<=limit)break;
             if(page.size()<=1)throw InputDraftException.responseLarge();page=new ArrayList<>(page.subList(0,Math.max(1,page.size()/2)));
         }
         // 크기로 정한 범위만 검사한다. 오류 때문에 행을 건너뛰거나 페이지를 줄이지 않는다.
         if(!invalidControls.isEmpty()||invalidRows.stream().anyMatch(headers::contains)
             ||page.stream().anyMatch(invalidRows::contains))throw InputDraftException.internal();
-        State current=tx(false,()->state(actor,id));
-        if(current.draft.revision()!=revision)throw InputDraftException.conflict("REVISION_CONFLICT",current.draft.revision());
-        if(!state.source.version.equals(current.source.version))throw InputDraftException.conflict("SOURCE_CHANGED",revision);
         return result;
+    }
+    @io.swagger.v3.oas.annotations.media.Schema(requiredProperties={"kind","draftId","revision","draftEndpoint","structure","selection"})
+    public record UploadResult(String kind,String draftId,long revision,String draftEndpoint,Structure structure,
+        @io.swagger.v3.oas.annotations.media.Schema(nullable=true,types={"object","null"},schemaResolution=io.swagger.v3.oas.annotations.media.Schema.SchemaResolution.INLINE) Table selection) {}
+    UploadResult previewUpload(Actor actor,Draft draft,Catalog catalog,List<FileRef> files,String sourceKey,
+            List<Revision> chain,List<RowIdentity> identities,List<RowPosition> positions,String kind) {
+        Source source=uploadSource(catalog,files,sourceKey);
+        InputDraftHistory history=InputDraftHistory.restore(draft,source.catalog,source.definitions,chain,identities,positions,json);
+        State state=new State(draft,new Source(null,history.catalog(),source.files,source.key,null,source.inputIds,history.definitions()),history);
+        var first=state.source.catalog.tables().stream().filter(t->t.role().equals(kind)).findFirst().orElse(null);
+        Structure structure=structure(state);
+        int budget=InputDraftJson.BODY_LIMIT-json.bytes(structure).length-4096;
+        if(budget<1)throw InputDraftException.responseLarge();
+        Table selection=first==null?null:renderTable(actor,state,first.key(),null,budget);
+        return new UploadResult(kind,draft.id(),draft.revision(),"/api/v1/mi/fundamental-model/input-drafts/"+draft.id(),structure,selection);
     }
     private Table project(State state,TableRef table,InputReadDefinition def,List<Integer> page,Map<Integer,Map<Integer,Cell>> values,Map<Integer,String> ids,Set<Integer> invalidRows) {
         List<Column> columns=def.columns().stream().map(col->new Column("column"+(col-1),CellReference.convertNumToColString(col-1))).toList();
@@ -606,7 +659,7 @@ public class ModelInputDraftService {
         }
         List<JsonNode> fields=new ArrayList<>();for(JsonNode original:def.fields()){ObjectNode field=original.deepCopy();int col=field.remove("columnNumber").asInt();field.put("columnField","column"+(col-1));fields.add(field);}
         Map<String,String> caps=new LinkedHashMap<>();def.capabilities().fields().forEachRemaining(e->caps.put(e.getKey(),"READY".equals(e.getValue().asText())
-            &&!(changesEnabled&&e.getKey().equals("SET")&&InputDraftPreserveChange.supports(table,def))?"UNSUPPORTED":e.getValue().asText()));
+            &&!(changesEnabled&&e.getKey().equals("SET")&&InputDraftPreserveChange.supports(state.source,table,def))?"UNSUPPORTED":e.getValue().asText()));
         List<JsonNode> controls=new ArrayList<>();for(JsonNode original:def.controls()){ObjectNode control=original.deepCopy();int row=control.path("binding").path("rowNumber").asInt(),col=control.path("binding").path("columnIndex").asInt()+1;Cell cell=values.getOrDefault(row,Map.of()).get(col);control.set("value",json.tree(cell==null?null:cell.raw()));controls.add(control);}
         Integer start=page.isEmpty()?null:page.get(0),end=page.isEmpty()?null:page.get(page.size()-1),next=null;
         if(end!=null) {List<Integer> after=def.page(end,2);if(after.size()>1)next=after.get(1);}

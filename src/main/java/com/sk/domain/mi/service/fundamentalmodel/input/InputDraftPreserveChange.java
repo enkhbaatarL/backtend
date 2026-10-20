@@ -45,12 +45,17 @@ final class InputDraftPreserveChange {
             &&bounds.size()==2&&number(bounds.path("minimum"))&&number(bounds.path("maximum"));
     }
 
+    static boolean supports(ModelInputDraftService.Source source,TableRef table,InputReadDefinition definition) {
+        return supports(table,definition)&&(source.caseId()!=null||source.files().stream()
+            .anyMatch(file->file.role().equals(table.role())&&SOURCE_SHA.equals(file.sha256())));
+    }
+
     static void validate(ModelInputDraftService.Source source,InputDraftJson.ChangeRequest request,
             Draft draft,List<RowPosition> positions) {
         if(request.operations().size()!=1)throw unsupported(draft);
         JsonNode command=request.operations().get(0);
         TableRef table=source.catalog().tables().stream().filter(t->TABLE.equals(t.key())).findFirst().orElseThrow(()->unsupported(draft));
-        if(!supports(table,source.definitions().get(table.id()))||!TABLE.equals(command.path("tableId").asText())
+        if(!supports(source,table,source.definitions().get(table.id()))||!TABLE.equals(command.path("tableId").asText())
             ||!"SET".equals(command.path("type").asText())
             ||!command.path("rowRef").has("rowId"))throw unsupported(draft);
         if(!FIELD.equals(command.path("fieldKey").asText()))throw InputDraftException.invalid();
@@ -63,7 +68,7 @@ final class InputDraftPreserveChange {
     static void validateHistory(List<Revision> revisions,InputDraftJson json) {
         for(Revision revision:revisions) {
             if(revision.schema()!=2||(revision.number()>0&&revision.operationSchema()!=2))throw InputDraftException.internal();
-            if(revision.number()==0)continue;
+            if(revision.number()==0||"UPLOAD_FILE".equals(revision.type()))continue;
             JsonNode delta=json.delta(revision.delta());
             if(delta.path("commands").size()!=1||!delta.path("tables").isEmpty()||!delta.path("columns").isArray()||!delta.path("columns").isEmpty()||!delta.path("rows").isEmpty()||delta.path("cells").size()!=1)
                 throw InputDraftException.conflict("POLICY_UNSUPPORTED",revision.number());
@@ -103,10 +108,10 @@ final class InputDraftPreserveChange {
             return;
         }
         BigDecimal previous=null;
-        for(Revision revision:job.revisions())if(revision.number()>0) {
+        for(Revision revision:job.revisions())if(revision.number()>role.baseline()&&"CHANGE".equals(revision.type())) {
             generate(original,target,previous,reader,json);previous=VALUE;
         }
-        if(previous==null)throw new Failure("PRESERVATION_FAILED");
+        if(previous==null){Files.copy(original,target,java.nio.file.StandardCopyOption.REPLACE_EXISTING);if(!InputDraftFinalizationFiles.digest(original).equals(InputDraftFinalizationFiles.digest(target)))throw new Failure("PRESERVATION_FAILED");}
     }
 
     private static InputWorkbookReader.Cell generate(Path source,Path saved,BigDecimal previous,

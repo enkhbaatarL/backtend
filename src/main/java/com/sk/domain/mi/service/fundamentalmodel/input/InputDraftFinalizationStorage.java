@@ -89,8 +89,9 @@ final class InputDraftFinalizationStorage implements ObjectsStore {
     private void allowed(Reference ref) {
         if (ref.company() == null || ref.company().isBlank() || ref.bucket() == null
                 || !(ref.bucket().equals(commonBucket) || ref.bucket().equals(prefix + ref.company().toLowerCase(Locale.ROOT)))
-                || ref.key() == null || !ref.key().matches("SCNRCASE/INPUTDRAFT/[0-9a-f-]{36}/[0-9a-f-]{36}/(SUPPLY|DEMAND|TRADE|OUTPUT)\\.xlsm")
-                || !Objects.equals(ref.location(), endpoint + "/" + ref.bucket() + "/" + ref.key()) || !MIME.equals(ref.mime())) {
+                || ref.key() == null || !ref.key().matches("SCNRCASE/INPUTDRAFT/[0-9a-f-]{36}/[0-9a-f-]{36}/(SUPPLY|DEMAND|TRADE|OUTPUT)\\.(xlsm|xlsx)")
+                || !Objects.equals(ref.location(), endpoint + "/" + ref.bucket() + "/" + ref.key()) || !(ref.name()!=null&&ref.name().endsWith(".xlsx")?InputUploadValidation.XLSX:MIME).equals(ref.mime())
+                || !ref.key().endsWith("/"+ref.name())) {
             throw InputDraftException.missing();
         }
     }

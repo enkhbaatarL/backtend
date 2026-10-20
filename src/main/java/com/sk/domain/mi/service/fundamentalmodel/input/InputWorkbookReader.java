@@ -47,6 +47,10 @@ public class InputWorkbookReader {
     @Value("${ncp.storage.end-point}") private String endpoint;
     @Value("${ncp.storage.bucket-name}") private String commonBucket;
     @Value("${ncp.storage.prefix}") private String bucketPrefix;
+    @org.springframework.beans.factory.annotation.Autowired(required=false)
+    private com.sk.domain.shared.service.FileEncryptionPolicy uploadProtection;
+    @org.springframework.beans.factory.annotation.Autowired(required=false)
+    private com.sk.domain.shared.client.FileCryptoApiClient uploadCrypto;
     public record Cell(Object raw,Object display,boolean formula) {}
     public record Window(String sheet,IntPredicate rows,Set<Integer> columns,
             BiConsumer<Integer,Map<Integer,Cell>> accept,IntConsumer invalidRow) {
@@ -71,7 +75,16 @@ public class InputWorkbookReader {
             temp=tempFiles.create();
             try(var object=storage.getObject(parts[1],parts[2]);InputStream stream=object.getObjectContent();var out=Files.newOutputStream(temp)) {
                 byte[] buffer=new byte[65536];long size=0;int len;
-                while((len=stream.read(buffer))!=-1) { size+=len;if(size>300L*1024*1024)throw InputDraftException.internal();out.write(buffer,0,len); }
+                var digest=java.security.MessageDigest.getInstance("SHA-256");
+                while((len=stream.read(buffer))!=-1) { size+=len;if(size>300L*1024*1024||(file.size()!=null&&size>file.size()))throw InputDraftException.internal();digest.update(buffer,0,len);out.write(buffer,0,len); }
+                if(file.size()!=null&&size!=file.size())throw InputDraftException.internal();
+                if(file.sha256()!=null&&!java.util.HexFormat.of().formatHex(digest.digest()).equals(file.sha256()))throw InputDraftException.internal();
+            }
+            if(file.fileNo()==null&&uploadProtection!=null&&uploadProtection.isEnabled(company,file.name())) {
+                if(uploadCrypto==null)throw InputDraftException.internal();
+                byte[] encrypted=Files.readAllBytes(temp),plain=null;
+                try {plain=uploadCrypto.decrypt(encrypted,file.name());if(plain.length>300L*1024*1024)throw InputDraftException.internal();Files.write(temp,plain);}
+                finally {java.util.Arrays.fill(encrypted,(byte)0);if(plain!=null)java.util.Arrays.fill(plain,(byte)0);}
             }
             } catch(InputDraftException ex) {throw ex;}
             catch(Exception ex) {throw InputDraftException.internal();}

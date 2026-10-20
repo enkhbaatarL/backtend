@@ -121,6 +121,9 @@ public class HttpLoggingFilter extends OncePerRequestFilter implements Ordered {
     // 셀 값과 수식은 본문 캐시·로그·MDC에 남기지 않는다. 캐시 wrapper 생성 전에 판별한다.
     private static boolean isModelInputRequest(String uri) {
         return uri.startsWith("/api/v1/mi/fundamental-model/input-drafts/")
+            || uri.equals("/api/v1/mi/fundamental-model/input-upload-drafts")
+            || uri.startsWith("/api/v1/mi/fundamental-model/input-upload-drafts/")
+            || uri.startsWith("/api/v1/mi/fundamental-model/input-upload-requests/")
             || uri.matches("/api/v1/mi/fundamental-model/cases/[^/]+/(input-drafts|inputs/structure)/?");
     }
 

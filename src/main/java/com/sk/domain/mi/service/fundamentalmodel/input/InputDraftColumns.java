@@ -26,6 +26,10 @@ final class InputDraftColumns {
         }
     }
     InputDraftColumns(InputDraftColumns source) {source.tables.forEach((id,columns)->{tables.put(id,new LinkedHashMap<>(columns));index(id);});}
+    void reset(TableRef table,InputReadDefinition definition) {
+        InputDraftColumns original=new InputDraftColumns(List.of(table),Map.of(table.id(),definition));
+        tables.put(table.id(),new LinkedHashMap<>(original.tables.get(table.id())));index(table.id());
+    }
     Column field(long table,String key) {
         return tables.get(table).values().stream().filter(c->key.equals(c.field)).findFirst().orElse(null);
     }

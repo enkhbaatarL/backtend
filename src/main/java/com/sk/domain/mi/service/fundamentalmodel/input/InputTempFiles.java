@@ -19,6 +19,16 @@ import org.springframework.stereotype.Component;
 /** 소유한 작업 디렉터리만 정리한다. 다른 살아 있는 JVM의 lock은 건드리지 않는다. */
 @Component
 public class InputTempFiles {
+    private final java.util.Set<String> stoppedUploads=java.util.concurrent.ConcurrentHashMap.newKeySet();
+    Path registerUpload(String id)throws IOException {
+        if(!id.matches("[0-9a-f-]{36}"))throw InputDraftException.internal();
+        Path marker=workspace.resolve(".upload-"+id+".marker");
+        try(FileChannel record=FileChannel.open(marker,java.util.Set.of(StandardOpenOption.CREATE_NEW,StandardOpenOption.WRITE),PosixFilePermissions.asFileAttribute(PosixFilePermissions.fromString("rw-------")))){record.force(true);}
+        try(FileChannel directory=FileChannel.open(workspace,StandardOpenOption.READ)){directory.force(true);}
+        return marker;
+    }
+    java.util.Set<String> stoppedUploads(){return java.util.Set.copyOf(stoppedUploads);}
+    void acknowledgedUpload(String id)throws IOException {Files.deleteIfExists(workspace.resolve(".upload-"+id+".marker"));stoppedUploads.remove(id);}
     private static final String PREFIX="mi-input-read-";
     private final Path root;
     private final Path workspace;
@@ -40,7 +50,8 @@ public class InputTempFiles {
         return posix?Files.createTempFile(workspace,"source-",".xlsm",PosixFilePermissions.asFileAttribute(PosixFilePermissions.fromString("rw-------"))):Files.createTempFile(workspace,"source-",".xlsm");
     }
     boolean plaintextRemains()throws IOException {
-        try(var files=Files.list(workspace)){return files.anyMatch(path->!path.getFileName().toString().equals(".lock"));}
+        try(var files=Files.list(workspace)){return files.anyMatch(path->!path.getFileName().toString().equals(".lock")
+            &&!path.getFileName().toString().matches("\\.upload-[0-9a-f-]{36}\\.marker"));}
     }
     @EventListener(ApplicationReadyEvent.class)
     public void recover() {
@@ -49,7 +60,20 @@ public class InputTempFiles {
                 if(dir.equals(workspace)||!Files.isDirectory(dir,LinkOption.NOFOLLOW_LINKS)||Files.isSymbolicLink(dir)) continue;
                 Path marker=dir.resolve(".lock"); if(!Files.isRegularFile(marker,LinkOption.NOFOLLOW_LINKS)) continue;
                 try(FileChannel old=FileChannel.open(marker,StandardOpenOption.WRITE);FileLock acquired=old.tryLock()) {
-                    if(acquired!=null) deleteContents(dir);
+                    if(acquired!=null) {
+                        try(var records=Files.list(dir)) {
+                            for(Path record:records.filter(p->p.getFileName().toString().matches("\\.upload-[0-9a-f-]{36}\\.marker")).toList()) {
+                                if(!Files.isRegularFile(record,LinkOption.NOFOLLOW_LINKS)||Files.size(record)!=0)throw new IOException("invalid intake marker");
+                                String name=record.getFileName().toString();
+                                Path durable=workspace.resolve(name);
+                                if(!Files.exists(durable))Files.copy(record,durable);
+                                try(FileChannel copied=FileChannel.open(durable,StandardOpenOption.WRITE)){copied.force(true);}
+                                stoppedUploads.add(name.substring(8,name.length()-7));
+                            }
+                        }
+                        try(FileChannel directory=FileChannel.open(workspace,StandardOpenOption.READ)){directory.force(true);}
+                        deleteContents(dir);
+                    }
                 } catch(OverlappingFileLockException ignored) { /* 같은 JVM의 다른 활성 workspace */ }
                 catch(IOException ex) { throw InputDraftException.internal(); }
                 if(Files.isDirectory(dir)&&!Files.exists(marker)) Files.delete(dir);
@@ -63,7 +87,14 @@ public class InputTempFiles {
     }
     @PreDestroy
     public void close() {
-        try { deleteContents(workspace);lock.release();channel.close();Files.deleteIfExists(workspace); }
+        try {
+            boolean markers;
+            try(var files=Files.list(workspace)){markers=files.anyMatch(p->p.getFileName().toString().matches("\\.upload-[0-9a-f-]{36}\\.marker"));}
+            if(markers) {
+                try(var files=Files.list(workspace)){for(Path p:files.toList())if(!p.getFileName().toString().equals(".lock")&&!p.getFileName().toString().matches("\\.upload-[0-9a-f-]{36}\\.marker"))Files.deleteIfExists(p);}
+                lock.release();channel.close(); // 값 없는 종료 증거만 남긴다. 다음 시작에서 잠금 해제를 확인한다.
+            } else {deleteContents(workspace);lock.release();channel.close();Files.deleteIfExists(workspace);}
+        }
         catch(IOException ex) { throw InputDraftException.internal(); }
     }
 }

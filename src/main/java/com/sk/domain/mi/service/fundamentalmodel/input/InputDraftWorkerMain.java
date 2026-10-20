@@ -52,6 +52,7 @@ public final class InputDraftWorkerMain {
                     context.getBean(InputWorkbookReader.class),context.getBean(InputTempFiles.class),context.getBean(InputDraftJson.class),
                     context.getBean(PlatformTransactionManager.class),Path.of(System.getenv("MI_INPUT_DRAFT_WORK_DIR")),()->Runtime.getRuntime().halt(124),
                     context.getBean(InputDraftFinalizationService.class),context.getEnvironment().getProperty("mi.model-input.finalization.enabled",Boolean.class,false));
+                worker.uploads(context.getBean(InputUploadService.class));
                 try(worker) {
                     worker.recoverStopped();
                     while(!Thread.currentThread().isInterrupted()) {
@@ -81,7 +82,8 @@ public final class InputDraftWorkerMain {
     @ConditionalOnProperty(name="mi.model-input.worker-process",havingValue="true")
     @EnableConfigurationProperties(DataSourceProperties.class)
     @Import({ModelInputDraftRepository.class,ModelInputDraftService.class,InputDraftJson.class,InputWorkbookReader.class,
-        InputTempFiles.class,ObjectStorageService.class,InputDraftFinalizationConfiguration.class,WorkerCryptoConfiguration.class})
+        InputTempFiles.class,ObjectStorageService.class,InputDraftFinalizationConfiguration.class,WorkerCryptoConfiguration.class,
+        InputUploadRepository.class,InputUploadObjects.class,InputUploadValidation.class,InputUploadService.class})
     static class WorkerConfiguration {
         @Bean(name="masterDataSource",destroyMethod="close")
         HikariDataSource masterDataSource(DataSourceProperties properties) {
