@@ -95,7 +95,7 @@ public class ModelInputDraftService {
     private FinalizationView finalizationView(ModelInputDraftRepository.Operation op) {
         if(!op.type().equals("FINALIZE")||op.schemaVersion()!=1)throw InputDraftException.internal();
         String label=switch(op.status()){case "QUEUED"->"대기 중";case "RUNNING"->"처리 중";case "SUCCEEDED"->"최종저장 완료";case "FAILED"->"최종저장 실패";default->throw InputDraftException.internal();};
-        Long caseId=null;List<FinalizedFile> files=List.of();Problem failure=null;
+        Long caseId=null;List<FinalizedFile> files=List.of();Problem failure=null;FinalizationExecution execution=null;
         if(op.status().equals("SUCCEEDED")) {
             JsonNode result=json.payload(op.result());
             if(!result.path("finalizedCaseId").isIntegralNumber()||!result.path("finalizedCaseId").canConvertToLong()
@@ -108,6 +108,7 @@ public class ModelInputDraftService {
                 saved.add(new FinalizedFile(file.path("role").asText(),file.path("fileNo").longValue()));
             }
             if(saved.stream().map(FinalizedFile::fileNo).distinct().count()!=4)throw InputDraftException.internal();files=List.copyOf(saved);
+            execution=finalizationExecution(result,caseId);
         } else if(op.status().equals("FAILED")) {
             JsonNode problem=json.payload(op.failure());
             if(!Set.of("VALIDATION_FAILED","CALCULATION_FAILED","STRUCTURE_VALIDATION_FAILED","PRESERVATION_FAILED","PERSISTENCE_FAILED","TIMEOUT","SOURCE_CHANGED","POLICY_INCOMPLETE","POLICY_UNSUPPORTED").contains(problem.path("reason").asText())
@@ -117,7 +118,19 @@ public class ModelInputDraftService {
         }
         return new FinalizationView(op.id(),op.requestId(),op.draftId(),op.status(),label,op.baseRevision(),caseId,files,
             caseId==null?null:"/api/v1/mi/fundamental-model/cases/"+caseId,failure,
-            "/api/v1/mi/fundamental-model/input-drafts/"+op.draftId()+"/finalizations/"+op.id());
+            "/api/v1/mi/fundamental-model/input-drafts/"+op.draftId()+"/finalizations/"+op.id(),execution);
+    }
+    private FinalizationExecution finalizationExecution(JsonNode result,long caseId) {
+        if(!result.has("executionStatus"))return null; // 배포 전 완료한 저장은 자동 실행하지 않는다.
+        String status=result.path("executionStatus").asText();
+        String runId=result.path("executionRunId").asText(null),reason=result.path("executionFailureReason").asText(null);
+        if(runId!=null) {
+            var run=store.finalizationRun(caseId,runId);status=run.status();
+            reason=status.equals("FAILED")?("JOB_SUBMIT_FAILED".equals(run.failureReason())?"JOB_SUBMIT_FAILED":"MODEL_EXECUTION_FAILED"):null;
+        } else if(!status.equals("QUEUED")&&!status.equals("FAILED"))throw InputDraftException.internal();
+        if(status.equals("FAILED")&&runId==null&&!"EXECUTION_REQUEST_FAILED".equals(reason))throw InputDraftException.internal();
+        String label=switch(status){case "QUEUED"->"실행 대기";case "RUNNING"->"실행 중";case "COMPLETED"->"실행 완료";case "FAILED"->"실행 실패";default->throw InputDraftException.internal();};
+        return new FinalizationExecution(status,label,runId,"/api/v1/mi/fundamental-model/cases/"+caseId+"/status",reason);
     }
     private record Actor(int company,int user,String companyCode,String login) {}
     record Source(long caseId,Catalog catalog,List<FileRef> files,String key,String version,

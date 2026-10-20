@@ -101,7 +101,9 @@ import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.TransactionStatus;
 import org.springframework.transaction.annotation.Transactional;
-import org.springframework.transaction.support.TransactionOperations;
+import org.springframework.transaction.PlatformTransactionManager;
+import org.springframework.transaction.TransactionDefinition;
+import org.springframework.transaction.support.TransactionTemplate;
 import org.springframework.transaction.support.TransactionSynchronization;
 import org.springframework.transaction.support.TransactionSynchronizationManager;
 import org.springframework.web.multipart.MultipartFile;
@@ -177,7 +179,7 @@ public class FundamentalModelCaseServiceImpl implements FundamentalModelCaseServ
     private final FileService fileService;
     private final AuthorizationService authorizationService;
     private final KubernetesJobService kubernetesJobService;
-    private final TransactionOperations transactionOperations;
+    private final PlatformTransactionManager transactionManager;
     private final ObjectMapper objectMapper;
 
     @Value("${kubernetes.callback-base-url:}")
@@ -382,6 +384,25 @@ public class FundamentalModelCaseServiceImpl implements FundamentalModelCaseServ
     public FundamentalModelRunAcceptRes runCase(Long caseId) {
         String actorLoginId = authorizationService.getSubject();
         findActiveOwnedCase(caseId);
+        return startOwnedRun(caseId, actorLoginId);
+    }
+
+    /** HTTP 인증을 만들지 않는다. DB에서 요청 소유권을 재검증한 Draft 실행 접수기만 사용한다. */
+    @Transactional
+    public FundamentalModelRunAcceptRes runFinalizedDraftCase(Long caseId, Integer ownerUserNo, String actorLoginId) {
+        ScenarioCase scenarioCase = scenarioCaseRepository.findActiveCaseForUpdate(caseId)
+            .filter(found -> found.getExecType() == FundamentalModelExecType.INDEPENDENT)
+            .filter(found -> found.getUserNo().equals(ownerUserNo))
+            .orElseThrow(() -> caseNotFound(caseId));
+        if (actorLoginId == null || actorLoginId.isBlank() || actorLoginId.length() > 50
+            || scenarioCase.getStatus() != FundamentalModelCaseStatus.PENDING || scenarioCase.getLastRunId() != null) {
+            throw AppHttpStatusException.of(HttpStatus.CONFLICT, ResultCode.Error.BIZ_RULE_VIOLATION,
+                "finalized draft case is not awaiting its first run.");
+        }
+        return startOwnedRun(caseId, actorLoginId);
+    }
+
+    private FundamentalModelRunAcceptRes startOwnedRun(Long caseId, String actorLoginId) {
         LocalDateTime requestedAt = LocalDateTime.now();
         String runId = generateRunId(requestedAt);
 
@@ -2192,7 +2213,10 @@ public class FundamentalModelCaseServiceImpl implements FundamentalModelCaseServ
     }
 
     private void markRunFailed(String runId, Long caseId, String errorMessage) {
-        transactionOperations.executeWithoutResult((TransactionStatus ignored) -> {
+        // afterCommit 동기 실패도 이미 종료된 접수 transaction에 참여하지 않고 별도 확정한다.
+        TransactionTemplate failureTransaction = new TransactionTemplate(transactionManager);
+        failureTransaction.setPropagationBehavior(TransactionDefinition.PROPAGATION_REQUIRES_NEW);
+        failureTransaction.executeWithoutResult((TransactionStatus ignored) -> {
             LocalDateTime failedAt = LocalDateTime.now();
             int updateCount = scenarioCaseRunHistoryRepository.updateRunningToTerminal(
                 runId,

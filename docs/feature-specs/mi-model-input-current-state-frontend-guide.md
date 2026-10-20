@@ -318,11 +318,11 @@ EDT-04로 보낸다. `requestId`는 새 저장마다 만드는 소문자 UUID다
 
 - `title`: 필수 문자열. 서버 trim 후 1~200자.
 - `description`: 선택 문자열 또는 null. UTF-8 65,535 bytes 이하. 생략은 null, 빈 문자열은 그대로 보존한다.
-- `202`는 작업 접수다. EDT-07을 2초 간격으로 조회하고 `SUCCEEDED/FAILED`에서 멈춘다.
+- `202`는 저장 작업 접수다. EDT-07을 2초 간격으로 조회하며 저장/자동 실행의 종료 조건은 아래를 따른다.
 - 성공 시 `finalizedCaseId`, 역할별 `files[{role,fileNo}]` 4건, `caseEndpoint`가 제공된다. 성공 전/실패는 Case ID와 경로가 null, files는 빈 배열이다. 파일 배열은 `role`로 매핑한다.
-- 성공하면 새 `INDEPENDENT/PENDING` Case가 생기고 Draft는 `FINALIZED`가 된다. Draft revision은 증가하지 않는다.
+- 저장 성공 시 새 `INDEPENDENT/PENDING` Case와 실행 대기가 생기고 Draft는 `FINALIZED`가 된다. BE 실행 접수 후 Case는 `RUNNING`이 된다. Draft revision은 증가하지 않는다.
 - 성공 후 Case 목록을 재조회한다. 완료된 Draft는 목록의 편집 재개 ID에서 제외되며, 새 Case의 `draftId`도 현재 회사·로그인 사용자가 그 Case를 원본으로 새로 편집 중인지에 따라 결정된다.
-- **최종저장은 모델 Run을 시작하지 않는다.** 새 Case로 이동한 뒤 기존 Run API를 별도 호출한다. 현재 FE 팝업의 “MI 수급모델 실행” 버튼도 소스상 Case 업로드만 하고, `onCreated`는 목록에서 Case를 선택한다. 버튼 이름만으로 Run 완료를 판단하지 않는다.
+- **최종저장 성공 후 BE가 모델 Run을 자동 접수한다.** FE는 별도 Run POST를 호출하지 않는다. 저장 SUCCEEDED 후에도 `execution.status=QUEUED/RUNNING`이면 같은 최종저장 결과를 2초 간격으로 조회하고 COMPLETED/FAILED에서 멈춘다. execution=null인 과거 성공 건은 자동 실행 대상이 아니다. 실행 실패에도 Case/파일과 저장 성공은 유지하며 `execution.failureReason`을 표시한다. 같은 최종저장 재전송으로 재실행하지 않는다. 명시적 실행 재시도는 기존 Case Run API를 사용한다. [최종저장 계약 §9.2.1][be-edit-spec]을 따른다.
 - 현재 최종저장이 재생성할 수 있는 입력은 revision 0 원본 4개 또는 지원하는 F-O-01 성공 이력이다. 지원하지 않는 편집 이력을 무시하고 파일을 만드는 방식은 제공하지 않는다.
 - 이미 최종저장된 동일 내용은 원래 작업/Case를 돌려준다. 제목·설명·기준 revision을 바꿔 같은 Draft를 다시 최종저장하는 흐름으로 사용하지 않는다.
 
@@ -393,7 +393,7 @@ FE에서 특히 대조할 부분:
 2. 서버 응답을 쓰는 서비스와 타입을 만들고, 팝업/표 컴포넌트가 그 응답을 직접 사용하게 바꾼다. FE 문서 방침대로 실제 응답을 예전 mock 모양으로 보충하는 어댑터는 만들지 않는다.
 3. 읽기 전용 화면부터 열고, `editing` 조건을 만족하는 셀만 편집 가능하게 한다.
 4. API로 통과한 F-O-01 한 셀 변경 → 작업 성공 → 새 revision 재조회를 FE에 연결한다. 별도 편집 가능한 시험 Draft를 사용하며 완료된 Case105 시험 Draft를 재사용하지 않는다.
-5. API로 통과한 최종저장 → 새 PENDING Case 이동을 FE에 연결한다. Run은 별도 사용자 동작으로 연결·검증하며 이번 시험에서 자동 실행하지 않았다. 전체 표 편집 완료 판정은 일반 표별 처리까지 준비한 뒤 한다.
+5. 당시 API 시험은 최종저장 → 새 PENDING Case까지였으며 Run을 자동 실행하지 않았다. 현재 BE 자동 실행 연결과 FE 폴링은 §6·편집 API §9.2.1을 따른다. 전체 표 편집 완료 판정은 일반 표별 처리까지 준비한 뒤 한다.
 
 ### 별도 합의·준비가 필요한 항목
 
@@ -415,7 +415,7 @@ FE에서 특히 대조할 부분:
 - `INCOMPLETE/NOT_ALLOWED/UNSUPPORTED`, 빈 슬롯, 읽기 전용 셀에 편집 버튼이 열리지 않는다.
 - 저장 응답 `202`와 작업 `FAILED`를 성공으로 표시하지 않는다. 성공 후에는 새 revision의 서버 값을 표시한다.
 - 같은 requestId 재전송으로 중복 저장하지 않으며, 충돌/원본 변경/접근 상실 시 자동 덮어쓰기하지 않는다.
-- 최종저장 완료 후 새 Case의 입력 파일로 Run을 호출한다. 원래 로컬 File을 다시 업로드하는 경로와 섞이지 않는다.
+- 최종저장 완료 후 BE가 새 Case의 입력 파일로 Run을 자동 접수한다(§6). 원래 로컬 File을 다시 업로드하는 경로와 섞이지 않는다.
 
 이 문서로 현재 조회와 제한 저장의 연결 방법을 식별할 수 있다. **전체 입력편집의 implementation readiness는 `blocked by open questions`**이며, F-O-01 성공을 전체 표·FE 화면·운영 검증 완료로 확대하지 않는다. 표별 정책은 후속, PriceModel 비계약 물량·Regas 신규 설비 추가 추천은 미승인으로 유지한다.
 

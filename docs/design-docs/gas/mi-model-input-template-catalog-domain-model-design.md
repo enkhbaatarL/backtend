@@ -73,7 +73,7 @@ Excel 파일 4개로 구성된다. `OUTPUT`도 다른 세 역할과 같은 input
 임시저장은 Backend가 작업용 workbook의 계산 허용 수식만 재계산하며 변경 저장·계산이 모두 성공하면 변경분·revision과 영향받은 테이블 값을 확정한다. 계산 실패 시 이번 요청의 변경 전체를 취소하고 직전 성공 임시저장 상태를 유지한다.
 최종저장은 고정된 원본 snapshot과 전체 Draft 변경분으로 `DEMAND`, `SUPPLY`, `TRADE`, `OUTPUT` XLSM 4개를 다시 만든 뒤,
 기존 4파일 Fundamental Model 파일 업로드·Case 생성 서비스를 내부 호출한다. 모델 실행 container는 이 파일 생성 과정에
-참여하지 않으며 생성된 파일을 이후 Run에서 소비한다.
+참여하지 않으며 생성된 파일을 이후 Run에서 소비한다. 최종저장 성공 후 BE가 이 Run을 자동 접수하는 연결은 규칙18·§5.5를 따른다.
 
 ## 1A. 조사 미완료 상태의 공통 설계 — 트랙 B 공통 초안
 
@@ -81,7 +81,7 @@ Excel 파일 4개로 구성된다. `OUTPUT`도 다른 세 역할과 같은 input
 
 | 구분 | 현재 근거·해석 |
 | --- | --- |
-| 기존 확정 결정 | 4역할을 하나의 양식·source set으로 사용한다. 전체 표시 구조와 선택 표 하나의 값을 조회하고, 카탈로그와 사용자 Draft를 분리하며, 임시저장·최종저장·별도 Run 경계를 유지한다(§5~6, 조회 feature spec §2~3). 구조 변경은 이번 release에 포함한다(규칙 13·26). |
+| 기존 확정 결정 | 4역할을 하나의 양식·source set으로 사용한다. 전체 표시 구조와 선택 표 하나의 값을 조회하고, 카탈로그와 사용자 Draft를 분리하며, 임시저장·최종저장·Run 책임 경계를 유지하며, 저장 후 BE 자동 실행 연결은 규칙18을 따른다(§5~6, 조회 feature spec §2~3). 구조 변경은 이번 release에 포함한다(규칙 13·26). |
 | 표별 편집 확정 — 2026-10-08 | TRADE `4.5 PriceModelInput`의 T-183/T-184는 입력 편집·아래 행 추가 가능한 C다. 기존 시트 전체 제외를 해제하고 두 표의 허용 영역만 Draft/최종 파일에 반영한다. 미표시 T-177~T-182 A 보존 및 계산/구조 검증 경계는 규칙 44·57을 따른다. |
 | 보존 확정 결정 — 2026-10-08 | 양방향 조사 후 사용자 최종 확인으로 UNIQUE 5셀은 미표시·모델 미사용·A 원본 복제로 확정했다. `MidstreamContractInput`의 T-137/T-138은 헤더 수식·배열 결과를 보존하고 T-187 backup과 T-188 Industry research는 시트 전체를 보존한다. 사용자 입력 변경에도 이 보존 영역을 갱신·재계산·확장하지 않으며 UNIQUE 구현을 요구하지 않는다(규칙 57의 UNIQUE 적용 확인). 모델 미사용은 사용자 업무 확인이며 실행 검증 결과와 구분한다. |
 | OUTPUT 최신 기준 동기화 — 2026-10-08 | v8 사람 확인의 노랑 입력·표시 6표, T-083만 아래 연도 행 추가, 미표시 12표 A 보존을 규칙 50/§6.1에 반영했다. T-082 Helper는 갱신·재계산하지 않는다. 상세 계산 allowlist·정답/모델 사용 검증은 미완료다. |
@@ -102,7 +102,7 @@ Excel 파일 4개로 구성된다. `OUTPUT`도 다른 세 역할과 같은 input
 
 ### 1A.2 확정된 공통 흐름과 책임
 
-`원본 4파일 + 양식 기준 → 화면 조회 → Draft(임시 편집 상태) → 값·구조 변경 → 임시저장 → 최종 XLSM 4개 생성 → 새 Case → 별도 Run`
+`원본 4파일 + 양식 기준 → 화면 조회 → Draft(임시 편집 상태) → 값·구조 변경 → 임시저장 → 최종 XLSM 4개 생성 → 새 Case/실행 대기 → BE Run 접수`
 
 아래는 기존 §5~6 규칙을 단계별로 풀어 쓴 공통 흐름이다. 작업 책임을 나눈 것이며 클래스·물리 테이블·호출 횟수를 정한 것은 아니다. 표 정책이 아직 미확정이면 그 표의 변경 경계를 열지 않되, 구조 변경 자체는 이번 release에 포함한다. API 세부는 [조회 feature spec](../../feature-specs/mi-fundamental-model-input-provision-feature-spec.md) 및 후속 write 계약, 물리 저장은 [DDL draft](mi-model-input-template-catalog-erd-ddl-draft.md)가 소유한다.
 
@@ -114,8 +114,8 @@ Excel 파일 4개로 구성된다. `OUTPUT`도 다른 세 역할과 같은 input
 | 4. 값·구조 변경 | Draft 기준과 사용자 입력·구조 동작 | FE가 허용 규칙으로 편집을 표현하고 BE는 저장 시 같은 정책으로 검증. 기존 셀 값, 신규 행 필수값, 표 끝 추가와 개별 삽입·삭제 예외를 구분(규칙 13·21~28) | 저장할 변경 후보. 화면의 아직 저장하지 않은 값은 영속 Draft 변경분이나 BE 계산 성공을 뜻하지 않음 | 대상/타입/필수값·구조 선행조건·revision을 검증할 수 있어야 임시저장. 실제 요청 단위·연결 동작의 원자성은 Q2~Q4·Q8 |
 | 5. 임시저장 | Draft revision과 값·구조 변경 | BE가 변경 저장·revision과 작업용 workbook의 계산 허용 영향 범위 재계산을 하나의 성공 단위로 다룸. 화면 규칙만으로 저장·계산 검증을 생략하지 않음 | 모두 성공한 Draft 변경분·revision과 영향 표 값. 계산 실패면 이번 요청 전체 취소·직전 성공 상태 유지. Case·최종 XLSM은 없음(규칙 15) | 최종저장에 사용할 전체 변경분과 revision을 식별할 수 있어야 함. 임시저장 성공만으로 최종 파일 검증을 대체하지 않음 |
 | 6. 최종 XLSM 4개 생성 | 고정 원본 전체 + 대상 revision의 전체 Draft 변경분 + 양식 정책 | BE가 원본 전체를 복제하고 승인 값·구조만 반영한 뒤 허용 계산, 원본 보존, 구조·신규 오류를 검증. 임시 파일을 그대로 승격하거나 모델 container에 생성을 맡기지 않음(규칙 16·20·30~34) | 네 역할이 완비된 검증 결과 파일 set. 아직 새 Case·Run 완료는 아님 | 4파일 생성과 계산·구조·보존 검증이 모두 성공해야 Case 연결. 하나라도 실패하면 불완전 set을 성공으로 전달하지 않음 |
-| 7. 새 Case 연결·최종저장 완료 | 검증된 4파일 set, 대상 Draft | 기존 Fundamental Model application service에 4파일을 내부 전달해 새 `INDEPENDENT` Case 생성·파일 연결. Draft와 생성 Case의 대응을 완료(규칙 17~19) | 새 Case와 연결 파일, `FINALIZED` Draft·최종 Case 참조. 같은 Draft의 완료 재시도는 같은 Case 반환 | 최종 Case 확정·4파일 연결 완료 후 별도 Run 요청 가능. 업로드/DB/Draft 연결 사이의 부분 실패·동시 재시도는 Q8c |
-| 8. 별도 Run | 완성된 새 Case의 4역할 파일 | 기존 실행 흐름이 실행 접수·이력·Job 전달·결과를 소유. Draft 저장이나 XLSM 생성의 일부로 Run을 시작하지 않음 | Case의 실행 이력·결과. Run 실패를 Draft 계산 실패와 구분 | 실행 가능 상태·재실행 조건은 기존 실행 정본을 따름. Run 재시도를 위해 편집 최종저장이나 Case 생성을 다시 하지 않음 |
+| 7. 새 Case 연결·최종저장 완료 | 검증된 4파일 set, 대상 Draft | 기존 Fundamental Model application service에 4파일을 내부 전달해 새 `INDEPENDENT` Case 생성·파일 연결. Draft와 생성 Case의 대응을 완료(규칙 17~19) | 새 Case와 연결 파일, `FINALIZED` Draft·최종 Case 참조. 같은 Draft의 완료 재시도는 같은 Case 반환 | 최종 Case 확정·4파일 연결 완료 후 BE가 Run 자동 접수(규칙18). 업로드/DB/Draft 연결 사이의 부분 실패·동시 재시도는 Q8c |
+| 8. BE Run 접수 | 완성된 새 Case의 4역할 파일 | 저장 확정 후 BE가 자동 연결하며 기존 실행 흐름이 실행 접수·이력·Job 전달·결과를 소유(규칙18). XLSM 생성 중에는 Run을 시작하지 않음 | Case의 실행 이력·결과. Run 실패를 Draft 계산 실패와 구분 | 실행 가능 상태·재실행 조건은 기존 실행 정본을 따름. Run 재시도를 위해 편집 최종저장이나 Case 생성을 다시 하지 않음 |
 
 Case/Run 내부 상태·재실행 의미는 [공통 Case/Run workflow](scenario-case-execution-workflow-design-draft.md), 실행 endpoint·필드·오류는 [Fundamental Model Case feature spec](../../feature-specs/mi-fundamental-model-mock-api-feature-spec.md)을 참조한다. 이 설계는 편집 최종저장과의 연결 경계만 소유한다.
 
@@ -127,7 +127,7 @@ Case/Run 내부 상태·재실행 의미는 [공통 Case/Run workflow](scenario-
 | 변경 검증·임시저장 | BE도 카탈로그 허용 정책을 검증. 계산 실패는 해당 요청의 값·구조 변경 전체 취소이며 직전 성공 Draft 상태 유지(규칙 15) | revision 충돌·동일 요청 재전송 시 구조 동작 중복 방지와 실패 후 상태/값 대조(Q8a). 원본·카탈로그·Case/최종 파일은 변경하지 않음 |
 | 최종 생성·검증 | 전체 원본에서 재생성하고 네 역할을 하나의 set으로 검증. 승인된 기존 오류는 보존하되 신규 오류는 실패. 실패하면 최종저장 취소·이전 성공 임시저장 Draft 유지(규칙 31~32·61). 평문 작업사본 수명/삭제 기준은 규칙 63 | 작업 자원 정리·부분 실패 복구의 구현/검증(Q7·Q8c). 임시 파일 통제·권한은 SECURITY.md를 따름. 실패 파일을 성공 파일로 취급하는 예외는 없음 |
 | 파일 업로드·Case·Draft 완료 | 성공한 Draft당 최종 Case는 하나이며 완료 재시도는 같은 Case 반환. 실패 확정 시 최종저장 취소·Draft 미완료 유지(규칙 19·61) | 업로드 일부 성공·Case 생성 후 Draft 연결 실패·응답 유실·동시 최종저장의 취소/복구 경계(Q8c). DB와 object storage가 하나의 transaction이라고 가정하지 않음 |
-| Run | 최종저장과 별도 접수·실행. 모델 container는 편집 파일 생성에 참여하지 않음 | 기존 실행 계약을 참조하며 이 공통 초안에서 새로운 Run 실패/재시도 정책을 만들지 않음 |
+| Run | 저장 확정 뒤 BE가 자동 접수·실행(규칙18). 모델 container는 편집 파일 생성에 참여하지 않음 | 기존 실행 계약을 참조하며 이 공통 초안에서 새로운 Run 실패/재시도 정책을 만들지 않음 |
 
 #### 조회·수정·재계산·원본 보존의 독립 범위
 
@@ -430,8 +430,8 @@ Draft 1 ── 0..1 최종 Case (성공 때만 연결)
 1. **접수:** 인증/소유권과 기존 요청 확인 후 DRAFT·현재 성공 revision·원본/발행 기준·진행 요청 없음을 검사한다. FINALIZE 요청을 durable하게(DB에 재시작 후에도 남게) 기록하고 진행 슬롯을 같은 transaction에서 잡는다. 대상 revision과 Case 제목/설명은 접수 뒤 바뀌지 않는다. 접수는 새 Case 생성이 아니다.
 2. **생성·검증:** 격리 worker가 고정 원본 + 대상까지의 전체 성공 변경을 순서대로 적용해 4역할을 다시 생성하고 계산·구조·보존을 모두 검증한다. 기존 임시 workbook/조회 snapshot을 최종 파일로 승격하지 않는다. 실패 요청의 입력은 제외한다.
 3. **업로드 준비:** 시도별 4역할의 전용 private object 참조를 먼저 기록한 뒤 업로드한다. 기존 암복호화 경계를 재사용한다. 준비 object는 `tcm_filel`/Case에 아직 연결하지 않고 공개 다운로드/Case 목록/Run에서 접근할 수 없게 한다. DB와 object storage는 하나의 transaction이 아니다.
-4. **한 번의 DB 확정:** 4개 업로드와 저장 참조·정상 읽기 가능 확인이 모두 끝나면, 같은 master transaction에서 새 INDEPENDENT/PENDING Case, 기존 파일 metadata4건/관계, **Draft에 고정한** 발행 묶음의 Case-template 관계, Draft의 FINALIZED/최종 Case, FINALIZE SUCCEEDED/결과와 진행 슬롯 해제를 함께 commit한다. 접수한 소유자·tenant·원본 접근/고정 기준·성공 revision·작업/시도 토큰·기한을 다시 대조한다. 하나라도 실패하면 모두 rollback한다. 최신 ACTIVE 발행으로 자동 교체하지 않는다.
-5. **공개:** commit 뒤에만 Case ID/4파일·완료 상태를 공개한다. 최종저장으로 성공 revision을 증가시키지 않는다. Run은 생성/실행하지 않으며 이후 별도 요청으로 시작한다. 일반 원본 업로드 후 별도 양식 등록(§3.3)의 경계를 이 확정 단계에 복사하지 않는다.
+4. **한 번의 DB 확정:** 4개 업로드와 저장 참조·정상 읽기 가능 확인이 모두 끝나면, 같은 master transaction에서 새 INDEPENDENT/PENDING Case, 기존 파일 metadata4건/관계, **Draft에 고정한** 발행 묶음의 Case-template 관계, Draft의 FINALIZED/최종 Case, FINALIZE SUCCEEDED/결과·최초 실행 대기와 진행 슬롯 해제를 함께 commit한다. 접수한 소유자·tenant·원본 접근/고정 기준·성공 revision·작업/시도 토큰·기한을 다시 대조한다. 하나라도 실패하면 모두 rollback한다. 최신 ACTIVE 발행으로 자동 교체하지 않는다.
+5. **공개·실행 연결:** commit 뒤에만 Case ID/4파일·저장 완료 상태를 공개한다. 최종저장으로 성공 revision을 증가시키지 않는다. BE가 영속 대기를 읽어 별도 짧은 transaction에서 기존 Run 접수 로직으로 연결한다(§5.5·규칙18). 실행 실패는 저장 성공을 취소하지 않으며 FE의 추가 Run 요청은 필요 없다. 일반 원본 업로드 후 별도 양식 등록(§3.3)의 경계를 이 확정 단계에 복사하지 않는다.
 
 기존 `FundamentalModelCaseServiceImpl.createCase`는 transaction 중 업로드하고 예외 때 파일 삭제를 시도한다. 이 코드의 성공 경계만으로 재시작/응답 유실/정리 복구를 보장하지 못한다. 최종저장 구현은 기존 Case·파일 형식/검증을 재사용하되 위 준비/확정 경계를 만족해야 하며, 기존 메서드를 그대로 호출하면 계약이 충족된다고 보지 않는다.
 
@@ -493,7 +493,7 @@ Draft 1 ── 0..1 최종 Case (성공 때만 연결)
 
 최종저장도 위 단일 영속 queue/worker·marker/시도 token·기한·감독 프로세스에서 처리한다. 신규 준비파일 schema를 적용한 뒤 웹/worker의 `mi.model-input.finalization.enabled`를 함께 활성화한다(기본 false). D 전용 준비/확정 경계는 §5.2~5.4를 구현하는 구성요소이며 별도 queue나 worker를 만들지 않는다. 기존 공통 저장 접수/조회와 원본/현재 사용자·고정 기준 검증을 재사용한다.
 
-대상 성공 revision0은 원본4파일을 byte 동일하게 복제·검증한다. nonzero는 전체 성공 chain을 검증하고 지정 F-O-01의 OUTPUT B8 적용/저장·보존 검증을 같은 처리기로 재사용한다. 미변경 역할은 byte 동일 복제하며 미지원 chain은 거부한다. 파일 IO는 master transaction 밖에서 순차 실행하며 전용 참조 기록 뒤에만 PUT한다. 새 Case/파일4/고정 발행·FINALIZED/요청 성공/준비 COMMITTED·슬롯 해제는 같은 master 확정이고 revision/Run은 추가하지 않는다.
+대상 성공 revision0은 원본4파일을 byte 동일하게 복제·검증한다. nonzero는 전체 성공 chain을 검증하고 지정 F-O-01의 OUTPUT B8 적용/저장·보존 검증을 같은 처리기로 재사용한다. 미변경 역할은 byte 동일 복제하며 미지원 chain은 거부한다. 파일 IO는 master transaction 밖에서 순차 실행하며 전용 참조 기록 뒤에만 PUT한다. 새 Case/파일4/고정 발행·FINALIZED/요청 성공/준비 COMMITTED·슬롯 해제와 최초 실행 대기는 같은 master 확정이며 revision은 증가하지 않는다. 웹 BE가 이 영속 대기를 읽어 기존 실행 접수 로직을 사용한다. Run 생성과 최종저장 작업의 최초 실행 연결은 다음 짧은 master transaction으로 함께 확정한다. 파일 worker에는 Kubernetes/HTTP 인증 컨텍스트를 추가하지 않는다. 기존 요청 결과 JSON에 선택적 실행 대기/연결 필드를 추가하고 물리 schema는 변경하지 않는다. 기존 완료 기록은 자동 실행하지 않으며 현재 사용자 권한과 최종 Case 소유권을 재검증한다. 실행 실패는 저장 성공을 소급 취소하지 않는다(규칙18·편집 API §9.2.1).
 
 FINALIZE의 claim-null은 RUNNING이 없다는 증거가 아니다. 오류/불명 결과는 marker를 유지해 자식 JVM/전송 종료·평문 정리를 확인한 다음 쓰기 DB의 실제 상태/token으로 복구한다. 알려진 안전 failure reason만 marker에 원자적으로 기록할 수 있으며 payload/경로/거부값은 기록하지 않는다. 실패 준비 object는 같은 종료 증거와 durable 기록으로 반복 정리하고, 정리 미확정이면 marker를 유지한다. 성공/결과 불명 object나 고정 원본을 삭제하지 않는다. 실제 MySQL/storage/호스트 유실 확인은 사용자 후속이다.
 
@@ -519,7 +519,7 @@ FINALIZE의 claim-null은 RUNNING이 없다는 증거가 아니다. 오류/불�
 15. 임시저장은 Case나 최종 XLSM을 만들지 않고 변경분·revision 저장과 영향받은 계산 허용 테이블의 재계산을 하나의 성공 단위로 다룬다. 2026-10-08 사용자 결정에 따라 계산 실패 시 **이번 요청의 값·구조 변경 전체를 취소**한다. 요청의 변경분·revision 증가·부분 계산 결과를 성공한 Draft 상태로 확정하지 않고 직전 성공 임시저장의 변경분·revision·계산 결과를 유지한다. 취소를 보장할 transaction·계산 실행 방식과 실패 응답 표현은 후속 write/저장 설계에서 확정한다.
 16. 최종저장은 고정 source snapshot과 전체 Draft 변경분으로 XLSM 4개를 처음부터 다시 생성한다. 임시 작업 파일을 그대로 승격하지 않는다.
 17. 최종저장은 계산 허용 수식의 workbook 계산, 계산 제외 영역의 원본 보존, 구조 검증과 네 파일 생성이 모두 성공한 뒤 4파일 계약으로 확장된 Fundamental Model 파일 업로드·Case 생성 application service를 내부 재사용한다. Backend가 자기 HTTP Controller를 호출하지 않는다.
-18. 최종저장 성공 시 새 `INDEPENDENT` Case는 기존 업로드 흐름의 초기 상태로 생성되고 Draft는 `FINALIZED`와 `finalizedCaseId`를 가진다. Run 접수는 기존 별도 흐름을 사용한다.
+18. **2026-10-19 사용자 변경:** 최종저장 성공 시 새 `INDEPENDENT/PENDING` Case와 `FINALIZED` Draft·최종 Case 연결 및 최초 실행 대기를 함께 확정한다. BE가 기존 Run 접수 로직으로 자동 연결한다. 저장 완료와 실행 완료는 별개이며 실행 실패에도 확정된 Case/4파일/Draft는 유지한다. 같은 최종저장 재전송은 실행을 다시 만들지 않는다. API/중복/실패 조회 계약은 편집 API §9.2.1을 따른다.
 19. 동일 Draft의 최종저장 재시도는 새 Case를 중복 생성하지 않고 이미 연결된 `finalizedCaseId`를 반환해야 한다.
 20. 모델 실행 container는 편집 결과 XLSM 생성 책임이 없다. Backend가 소유한 workbook materialization/calculation 경계가 값 적용·계산 허용 수식 재계산·계산 제외 영역 보존·구조 검증·XLSM 직렬화를 수행한다.
 21. 카탈로그에서 화면에 내려준 편집/추가/선택 규칙은 Backend write validation에도 동일하게 적용한다. 화면 표시 전용 metadata로만 사용하지 않는다.

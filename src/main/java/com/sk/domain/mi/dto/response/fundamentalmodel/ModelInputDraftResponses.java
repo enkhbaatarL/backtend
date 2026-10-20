@@ -86,15 +86,24 @@ public final class ModelInputDraftResponses {
     @Schema(requiredProperties={"role","fileNo"})
     public record FinalizedFile(@Schema(allowableValues={"SUPPLY","DEMAND","TRADE","OUTPUT"}) String role,
         @Schema(description="새 Case에 연결한 파일 번호",format="int64",minimum="1") long fileNo) {}
-    @Schema(requiredProperties={"operationId","requestId","draftId","status","statusLabel","baseRevision","finalizedCaseId","files","caseEndpoint","failure","statusEndpoint"})
+    @Schema(requiredProperties={"status","statusLabel","runId","statusEndpoint","failureReason"})
+    public record FinalizationExecution(
+        @Schema(description="최초 연결한 모델 실행 상태",allowableValues={"QUEUED","RUNNING","COMPLETED","FAILED"}) String status,
+        @Schema(description="모델 실행 상태 표시명") String statusLabel,
+        @Schema(description="최초 연결한 실행 ID. 접수 전/접수 실패는 null",nullable=true,types={"string","null"}) String runId,
+        @Schema(description="Case의 최신 실행 상태 조회 경로. 명시적 재실행 후에는 최신 Run을 조회한다") String statusEndpoint,
+        @Schema(description="FAILED만 안전한 실패 코드. 내부 오류 원문은 제공하지 않음",nullable=true,types={"string","null"},
+            allowableValues={"EXECUTION_REQUEST_FAILED","JOB_SUBMIT_FAILED","MODEL_EXECUTION_FAILED"}) String failureReason) {}
+    @Schema(requiredProperties={"operationId","requestId","draftId","status","statusLabel","baseRevision","finalizedCaseId","files","caseEndpoint","failure","statusEndpoint","execution"})
     public record FinalizationView(@Schema(format="uuid") String operationId,@Schema(format="uuid") String requestId,@Schema(format="uuid") String draftId,
         @Schema(allowableValues={"QUEUED","RUNNING","SUCCEEDED","FAILED"}) String status,String statusLabel,
         @Schema(minimum="0",maximum="9007199254740991") long baseRevision,
-        @Schema(description="SUCCEEDED에만 새 PENDING Case ID",nullable=true,types={"integer","null"},format="int64",minimum="1") Long finalizedCaseId,
+        @Schema(description="SUCCEEDED에만 새 Case ID. 저장 후 BE가 모델 실행을 자동 접수",nullable=true,types={"integer","null"},format="int64",minimum="1") Long finalizedCaseId,
         @Schema(description="성공만 SUPPLY/DEMAND/TRADE/OUTPUT 4건. 그 외 빈 배열") List<FinalizedFile> files,
         @Schema(description="성공 Case 조회 상대 경로. 그 외 null",nullable=true,types={"string","null"}) String caseEndpoint,
         @Schema(description="FAILED만 안전한 오류. 그 외 null",nullable=true,types={"object","null"},schemaResolution=Schema.SchemaResolution.INLINE) Problem failure,
-        String statusEndpoint) {}
+        String statusEndpoint,
+        @Schema(description="저장 성공 후 자동 실행 상태. 저장 전/실패 및 과거 자동 실행 미대상 성공 건은 null",nullable=true,types={"object","null"},schemaResolution=Schema.SchemaResolution.INLINE) FinalizationExecution execution) {}
     @Schema(requiredProperties={"status","code","message","data"})
     public record FinalizationEnvelope(boolean status,String code,String message,FinalizationView data) {}
     // 실제 wire wrapper와 같은 구조를 생성 OpenAPI에 명시한다.

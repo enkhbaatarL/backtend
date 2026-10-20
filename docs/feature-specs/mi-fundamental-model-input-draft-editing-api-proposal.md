@@ -581,8 +581,19 @@ body UTF-8 1 MiB·깊이8, 알 수 없는 key/중복 JSON key/잘못된 타입�
 | `caseEndpoint` | required 상대 API path 또는 null. SUCCEEDED에만 `/api/v1/mi/fundamental-model/cases/{caseId}`. Case 최신 상태/파일 조회용이며 Run 시작 path가 아님 |
 | `failure` | required Problem 또는 null. FAILED만 안전한 오류, 다른 상태는 null |
 | `statusEndpoint` | required EDT-07 상대 path |
+| `execution` | required object 또는 null. 저장 후 자동 실행 상태/최초 Run 연결은 §9.2.1. 저장 전/실패 및 과거 완료 건은 null |
 
-SUCCEEDED는 새 INDEPENDENT Case/파일4개·고정 발행 연결·FINALIZED와 작업 성공이 같은 DB 확정으로 공개됐다는 뜻이다. 새 Case의 생성 상태는 PENDING이고 lastRunId는 null이다. 이후 Run에 따른 Case 상태 변화는 기존 Case 조회에서 확인한다. FinalizationView의 성공 결과는 이후에도 바뀌지 않는다. `status:true/SUC-000` 접수/조회와 data.status:SUCCEEDED를 구분한다.
+SUCCEEDED는 새 INDEPENDENT Case/파일4개·고정 발행 연결·FINALIZED와 저장 성공이 같은 DB 확정으로 공개됐다는 뜻이다. 같은 확정에 최초 모델 실행 대기를 기록하고 BE가 기존 실행 로직으로 자동 접수한다. FE는 별도 Run POST를 호출하지 않는다. Case 생성 시점은 PENDING/lastRunId null이고 실행 접수 때 RUNNING과 runId가 함께 확정된다. 저장 결과(caseId/files)는 불변이며 아래 execution은 실행 진행에 따라 달라진다. `status:true/SUC-000` 접수/조회와 data.status:SUCCEEDED 및 모델 계산 완료를 구분한다.
+
+#### 9.2.1 최종저장 후 자동 실행 — 2026-10-19 사용자 승인
+
+- 요청 body/path는 유지한다. `FinalizationView.execution`은 required object 또는 null이다. 저장 전/저장 실패 및 이 변경 전 이미 완료된 저장은 null이다. 과거 완료 건을 배포만으로 자동 실행하지 않는다.
+- execution 필드: `status`=`QUEUED|RUNNING|COMPLETED|FAILED`, `statusLabel`=실행 대기/실행 중/실행 완료/실행 실패, `runId`=접수 후 최초 연결 실행 ID(접수 전·접수 실패는 null), `statusEndpoint`=성공 Case의 `/api/v1/mi/fundamental-model/cases/{caseId}/status`, `failureReason`=FAILED에만 안전한 코드(접수 실패 `EXECUTION_REQUEST_FAILED`, Job 전송 실패 `JOB_SUBMIT_FAILED`, 그 외 모델 실패 `MODEL_EXECUTION_FAILED`). 이 객체는 최초 자동 연결한 Run을 추적한다. 명시적으로 별도 재실행한 최신 Run은 기존 Case/status에서 확인한다.
+- 저장 진행은 기존 202/200 규칙을 유지한다. 저장 SUCCEEDED여도 execution.QUEUED/RUNNING이면 EDT-07을 2초 간격으로 조회하고 execution.COMPLETED/FAILED에서 멈춘다. 저장 FAILED 또는 execution=null인 과거 완료 건도 폴링을 종료한다.
+- 같은 requestId/내용 재전송 및 FINALIZED 동일 내용 재클릭은 원래 작업/Case/최초 실행 연결을 반환한다. 실행이 FAILED여도 finalization 재전송으로 실행 대기를 초기화하거나 새 Run을 만들지 않는다. GET은 실행을 시작하지 않는다.
+- BE는 영속 실행 대기를 주기적으로 접수한다. 현재 요청 사용자/역할·회사 권한과 최종 Case 소유권을 DB에서 재확인한다. Case 잠금과 같은 transaction에서 Run 생성 및 작업의 실행 연결을 저장해 동시 BE 인스턴스·응답 유실·재시작으로 중복 생성하지 않는다. 먼저 별도 Run API가 실행한 이력이 있으면 그 실행을 연결하고 추가 실행하지 않는다.
+- 저장 성공 후 실행 접수 실패/모델 실패는 `status=SUCCEEDED`, 기존 caseId/files, `failure=null`을 유지하고 execution에만 실패를 표시한다. 파일/Case/Draft를 취소·삭제하지 않는다. 재실행은 사용자의 명시적 기존 Case Run 요청으로 처리하며 자동 재시도하지 않는다.
+- 실행 Job 전달 및 완료/실패·timeout은 기존 Run lifecycle을 재사용한다. 저장 직후 BE 중단은 남은 대기에서 재개한다. Run 확정 후 Job 전송 전 중단은 기존 timeout/reconciliation 대상이며 저장을 실패로 소급 변경하지 않는다. 이 변경은 DB와 Kubernetes 사이의 분산 transaction을 보장하지 않는다.
 
 ### 9.3 오류·실패/복구에서 FE가 할 일
 
@@ -596,7 +607,7 @@ SUCCEEDED는 새 INDEPENDENT Case/파일4개·고정 발행 연결·FINALIZED와
 | DB commit 응답 유실·서버 재시작 | 실제 DB 기록 확인 전 FAILED/완료 Case를 추정하지 않음. 같은 작업을 재조회. 성공 commit이면 같은 Case, rollback/실패가 확정되면 FAILED. QUEUED는 같은 요청으로 복구하고 종료된 RUNNING은 서버 실패 확정 후 새 ID로만 재시도(domain §5.3) |
 | timeout 확정 | FAILED/TIMEOUT, 직전 성공 Draft 유지. 접수부터 전체120초 상한/늦은worker 차단은 domain 규칙64·§5.3. FE timeout은 이 상태를 대신하지 못함 |
 | FAILED 조회/같은 요청 재전송 | 저장된 실패 결과 반환, 자동 재실행 없음. EDT-02로 현재 revision 확인 후 사용자가 재시도할 때 새 requestId |
-| SUCCEEDED 조회/같은 요청 재전송 | 같은 operation/Case 반환. FE는 finalizedCaseId/caseEndpoint로 이동, 별도 Run만 기존 흐름으로 요청 |
+| SUCCEEDED 조회/같은 요청 재전송 | 같은 operation/Case/최초 실행 연결 반환. FE는 별도 Run POST 없이 §9.2.1의 execution 상태를 조회. 실행 실패에도 저장 성공은 유지 |
 | 서버에서 아직 접수 여부도 확인 불가(5xx/통신 오류) | 안전한 공통 오류, 일부 Case ID/업로드 결과 미공개. 같은 요청을 나중에 확인하며 성공/실패 화면으로 단정하지 않음 |
 
 실제 DB/4파일·양식/Draft 성공 경계와 업로드 준비/정리·늦은PUT/worker 차단은 domain §5.2~5.3·DDL §6.3을 따른다. 기존 일반 원본 Case 업로드 뒤 별도 양식 등록 경계를 최종저장에 적용하지 않는다.
@@ -632,12 +643,13 @@ EDT-06 HTTP202 접수(기존 BaseResponse wrapper):
     "files": [],
     "caseEndpoint": null,
     "failure": null,
+    "execution": null,
     "statusEndpoint": "/api/v1/mi/fundamental-model/input-drafts/d16d2400-8b00-4d00-9000-000000000001/finalizations/b16d2400-8b00-4d00-9000-000000000006"
   }
 }
 ```
 
-EDT-07 HTTP200 성공의 data(동일 요청 재전송도 같은 결과):
+EDT-07 HTTP200 저장 성공·실행 대기의 data(동일 요청 재전송은 같은 Case/실행 연결):
 
 ```json
 {
@@ -656,6 +668,13 @@ EDT-07 HTTP200 성공의 data(동일 요청 재전송도 같은 결과):
   ],
   "caseEndpoint": "/api/v1/mi/fundamental-model/cases/4101",
   "failure": null,
+  "execution": {
+    "status": "QUEUED",
+    "statusLabel": "실행 대기",
+    "runId": null,
+    "statusEndpoint": "/api/v1/mi/fundamental-model/cases/4101/status",
+    "failureReason": null
+  },
   "statusEndpoint": "/api/v1/mi/fundamental-model/input-drafts/d16d2400-8b00-4d00-9000-000000000001/finalizations/b16d2400-8b00-4d00-9000-000000000006"
 }
 ```
@@ -674,15 +693,29 @@ EDT-07 HTTP200 실패의 data(같은 요청 재전송은 이 결과를 유지):
   "files": [],
   "caseEndpoint": null,
   "failure": {"reason": "PERSISTENCE_FAILED", "currentRevision": 1, "issues": []},
+  "execution": null,
   "statusEndpoint": "/api/v1/mi/fundamental-model/input-drafts/d16d2400-8b00-4d00-9000-000000000001/finalizations/b16d2400-8b00-4d00-9000-000000000006"
 }
 ```
 
 마지막 두 예시는 동일 식별의 **서로 다른 대안 시나리오**다. FAILED가 나중에 SUCCEEDED로 바뀐다는 뜻이 아니다. UUID·Case/fileNo는 문서용이며 실제 등록/실행 결과가 아니다.
 
+저장 성공 후 실행 접수 실패라면 성공 예시의 `status=SUCCEEDED`, Case/files와 `failure=null`을 유지하고 execution만 아래와 같이 반환한다. 모델 실행이 접수된 뒤 실패했다면 runId가 존재하며 failureReason은 §9.2.1의 해당 코드다.
+
+```json
+{
+  "status": "FAILED",
+  "statusLabel": "실행 실패",
+  "runId": null,
+  "statusEndpoint": "/api/v1/mi/fundamental-model/cases/4101/status",
+  "failureReason": "EXECUTION_REQUEST_FAILED"
+}
+```
+
 ### 9.5 인수 기준·OpenAPI 인계
 
 - 성공은 Case/4역할 fileNo·고정 양식·Draft/작업 상태의 동시 확정이며 revision 불변이다. 하나의 업로드/연결 실패도 부분 성공을 반환하지 않는다.
+- 저장 성공 후 실행 대기의 재시작 처리, Run/작업 연결의 동시 확정, 동시 BE와 수동 실행 경합, 저장 성공/실행 실패 구분, 최종저장 재전송으로 FAILED 실행이 재시작되지 않음, 현재 사용자/회사/Case 소유권 재검증을 확인한다. legacy 성공 건은 자동 실행하지 않는다.
 - 동시 최종저장·CHANGE 충돌, 같은 키/다른 종류 또는 내용, 성공 응답 유실/새 키 재클릭에도 최종 Case1건, 실패 기록 재전송과 새 키 재시도, QUEUED/RUNNING 재시작·timeout/늦은commit·준비파일 정리 시나리오를 제품에서 검증한다.
 - 표별 정책 미승인을 공통 계약 미완료로 바꾸지 않는다. 실제 해당 표 쓰기/구조·계산 경로가 미완비면 POLICY_INCOMPLETE/POLICY_UNSUPPORTED로 거부한다. 원본 보존만 하는 표에 새 쓰기 정책을 요구하지 않는다.
 - OpenAPI summary는 §3 EDT-06/07, description/Schema는 §9.1~9.3의 목적·부작용·멱등/재클릭·상태별 nullability, 202/200·Location/Retry-After·§6 오류와 §9.4 예시를 구조화한다. 구현·생성 OpenAPI/HTTP/worker 검증 현황과 실제 DB/storage 대기는 [기존 실행 기록](../work-notes/2026/2026-09-03-model-input-transfer-format.md#verification-result)을 참조한다.

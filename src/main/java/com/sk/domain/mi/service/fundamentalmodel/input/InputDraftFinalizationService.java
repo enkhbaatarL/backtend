@@ -36,7 +36,12 @@ final class InputDraftFinalizationService {
     record Job(Draft draft, Operation operation, WorkerOwner owner, List<FileRef> files,
             List<Revision> revisions) {}
     record SavedFile(String role, long fileNo) {}
-    record Result(long finalizedCaseId, List<SavedFile> files) {}
+    record Result(long finalizedCaseId, List<SavedFile> files, String executionStatus,
+            String executionRunId, String executionFailureReason) {
+        Result(long finalizedCaseId, List<SavedFile> files) {
+            this(finalizedCaseId, files, "QUEUED", null, null);
+        }
+    }
 
     /** A가 기존 source/fixed/restore 경계로 원본 접근·sourceVersion·고정 발행을 재검사한다. */
     interface BasisVerifier {

@@ -168,6 +168,49 @@ public class ModelInputDraftRepository {
             ORDER BY p.expr_dtm,p.prcs_id LIMIT 100
             """,this::operation,finalizations);
     }
+
+    /** 성공 저장 결과에 함께 기록한 실행 대기만 찾는다. 과거 성공 기록에는 이 필드가 없다. */
+    public List<Operation> queuedFinalizationExecutions() {
+        return jdbc.query("""
+            SELECT p.* FROM tmd_mdl_inptdrftprcsl p
+            WHERE p.prcs_type_cd='FINALIZE' AND p.prcs_stat_cd='SUCCEEDED'
+              AND p.rslt_json LIKE ?
+            ORDER BY p.end_dtm,p.prcs_id LIMIT 100
+            """, this::operation, "%\"executionStatus\"%\"QUEUED\"%");
+    }
+
+    public record FinalizationCase(long caseId, String status, String runId) {}
+
+    /** 요청 잠금 뒤 최종 Case도 잠근다. 수동 실행과 자동 실행이 같은 Case를 선점한다. */
+    public FinalizationCase lockFinalizationCase(Draft draft) {
+        requireTransaction();
+        if (!draft.status().equals("FINALIZED") || draft.finalizedCase() == null) throw InputDraftException.internal();
+        return jdbc.query("""
+            SELECT case_id,case_stat_cd,last_run_id FROM tmd_mdl_scnrcasem
+            WHERE case_id=? AND usr_no=? AND exec_type_cd='INDEPENDENT' AND del_yn='N' FOR UPDATE
+            """, (rs,n) -> new FinalizationCase(rs.getLong(1),rs.getString(2),rs.getString(3)),
+            draft.finalizedCase(),draft.user()).stream().findFirst().orElseThrow(InputDraftException::missing);
+    }
+
+    public void completeFinalizationExecution(Operation operation, String result) {
+        requireTransaction();
+        if (result.getBytes(java.nio.charset.StandardCharsets.UTF_8).length > 1_048_576) throw InputDraftException.internal();
+        int changed = jdbc.update("""
+            UPDATE tmd_mdl_inptdrftprcsl SET rslt_json=?,mod_dtm=CURRENT_TIMESTAMP
+            WHERE prcs_id=? AND drft_id=? AND prcs_type_cd='FINALIZE' AND prcs_stat_cd='SUCCEEDED' AND rslt_json=?
+            """, result,operation.id(),operation.draftId(),operation.result());
+        if (changed != 1) throw InputDraftException.internal();
+    }
+
+    public record FinalizationRun(String runId, String status, String failureReason) {}
+
+    public FinalizationRun finalizationRun(long caseId, String runId) {
+        return jdbc.query("""
+            SELECT run_id,exec_stat_cd,fail_rsn_cd FROM tmd_mdl_scnrcaseh
+            WHERE case_id=? AND run_id=? AND del_yn='N'
+            """, (rs,n) -> new FinalizationRun(rs.getString(1),rs.getString(2),rs.getString(3)),
+            caseId,runId).stream().findFirst().orElseThrow(InputDraftException::internal);
+    }
     public Operation claimChange(String draftId,String operationId) {
         return claimChange(draftId,operationId,UUID.randomUUID().toString());
     }
