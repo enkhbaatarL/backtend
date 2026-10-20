@@ -232,16 +232,16 @@ public class ModelInputDraftService {
     }
     @Transactional(propagation=Propagation.NOT_SUPPORTED)
     public Created create(long caseId,String requestedVersion) {
-        Actor actor=actor();Source basis=tx(true,()->source(actor,caseId,false));
-        Draft previous=tx(true,()->store.active(actor.company,actor.user,caseId));
-        if(previous!=null)return tx(false,()->{
+        Actor actor=actor();Source basis=InputDraftDiagnostics.during(InputDraftDiagnostics.Stage.CREATE_SOURCE,null,()->tx(true,()->source(actor,caseId,false)));
+        Draft previous=InputDraftDiagnostics.during(InputDraftDiagnostics.Stage.CREATE_SOURCE,null,()->tx(true,()->store.active(actor.company,actor.user,caseId)));
+        if(previous!=null)return InputDraftDiagnostics.during(InputDraftDiagnostics.Stage.CREATE_RESUME,null,()->tx(false,()->{
             Source current=source(actor,caseId,true);
             Draft existing=store.active(actor.company,actor.user,caseId);
             if(existing==null)throw InputDraftException.conflict("DRAFT_SOURCE_CONFLICT",previous.revision());
             existing=store.lockOwned(existing.id(),actor.company,actor.user);
             fixed(existing,current,requestedVersion);
             return new Created(summary(existing,restore(existing,current).source),false);
-        });
+        }));
         if(!basis.version.equals(requestedVersion))throw InputDraftException.conflict("SOURCE_CHANGED",null);
         List<RowRef> rows=new ArrayList<>();
         for(FileRef file:basis.files) {
@@ -265,8 +265,9 @@ public class ModelInputDraftService {
                     if(active)rows.add(new RowRef(table.id(),row,UUID.randomUUID().toString()));
                 }));
             }
-            if(regas.isEmpty())reader.read(file,actor.companyCode,windows);
-            else reader.withLocal(file,actor.companyCode,path->{
+            InputDraftDiagnostics.during(InputDraftDiagnostics.Stage.CREATE_READ,file.role(),()->{
+            if(regas.isEmpty()){reader.read(file,actor.companyCode,windows);return null;}
+            return reader.withLocal(file,actor.companyCode,path->{
                 try {
                     reader.readLocal(path,windows);
                     List<TableRef> masters=basis.catalog.tables().stream().filter(table->table.role().equals("SUPPLY")&&table.sheet().equals("BCRegasification")).toList();
@@ -281,17 +282,18 @@ public class ModelInputDraftService {
                     return null;
                 } catch(InputDraftException ex){throw ex;}
                 catch(InputDraftPreserveChange.Failure ex){throw InputDraftException.conflict("POLICY_INCOMPLETE",null);}
-                catch(Exception ex){throw InputDraftException.internal();}
+                catch(Exception ex){InputDraftDiagnostics.failure(InputDraftDiagnostics.Stage.WORKBOOK_PARSE,file.role(),ex);throw InputDraftException.internal();}
+            });
             });
         }
-        return tx(false,()->{
+        return InputDraftDiagnostics.during(InputDraftDiagnostics.Stage.CREATE_STORE,null,()->tx(false,()->{
             Source current=source(actor,caseId,true);
             if(!basis.version.equals(current.version))throw InputDraftException.conflict("SOURCE_CHANGED",null);
             Draft existing=store.active(actor.company,actor.user,caseId);
             if(existing!=null){existing=store.lockOwned(existing.id(),actor.company,actor.user);fixed(existing,current,requestedVersion);return new Created(summary(existing,restore(existing,current).source),false);}
             Draft created=store.create(actor.company,actor.user,caseId,current.catalog,current.version,current.files,rows,actor.login);
             return new Created(summary(created,current),true);
-        });
+        }));
     }
     private void fixed(Draft draft,Source source,String version) {
         if(draft.uploaded()){if(draft.templateId()!=source.catalog.templateId())throw InputDraftException.internal();return;}

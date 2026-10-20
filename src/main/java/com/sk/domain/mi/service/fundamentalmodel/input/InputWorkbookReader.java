@@ -59,7 +59,7 @@ public class InputWorkbookReader {
         }
     }
     public void read(FileRef file,String company,List<Window> windows) {
-        withLocal(file,company,path->{try {readLocal(path,windows);return null;}catch(InputDraftException ex){throw ex;}catch(Exception ex){throw InputDraftException.internal();}});
+        withLocal(file,company,path->{try {readLocal(path,windows);return null;}catch(InputDraftException ex){throw ex;}catch(Exception ex){InputDraftDiagnostics.failure(InputDraftDiagnostics.Stage.WORKBOOK_PARSE,file.role(),ex);throw InputDraftException.internal();}});
     }
     /** 저장소 원본은 공통 업로드 복호화 후 저장된 객체다. 임시 사본만 읽고 항상 제거한다. */
     <T>T withLocal(FileRef file,String company,java.util.function.Function<Path,T> action) {
@@ -88,7 +88,7 @@ public class InputWorkbookReader {
                 finally {java.util.Arrays.fill(encrypted,(byte)0);if(plain!=null)java.util.Arrays.fill(plain,(byte)0);}
             }
             } catch(InputDraftException ex) {throw ex;}
-            catch(Exception ex) {throw InputDraftException.internal();}
+            catch(Exception ex) {InputDraftDiagnostics.failure(InputDraftDiagnostics.Stage.WORKBOOK_DOWNLOAD,file.role(),ex);throw InputDraftException.internal();}
             InputTempFiles.checkpoint();
             return action.apply(temp);
         }
