@@ -25,8 +25,8 @@ public class EmailNotificationDispatcher extends AbstractNotificationDispatcher 
 
     static final String TEMPLATE = "event-keyword-alert";
 
-    /** 메일 [이벤트 상세보기] 링크의 FE 라우트 (server.domain 뒤에 붙음, %d = 이벤트 ID). 예: https://mi.parkjh.co.kr/mi/next-gen-mi/events/1704 */
-    static final String EVENT_DETAIL_PATH = "/mi/next-gen-mi/events/%d";
+    /** 메일 [이벤트 상세보기] 링크의 FE 라우트 (server.domain 뒤에 붙음, %d = 이벤트 ID, rdcn = 품목 코드(2014: 가스)). 예: https://mi.parkjh.co.kr/mi/next-gen-mi/events/1704?rdcn=2014 */
+    static final String EVENT_DETAIL_PATH = "/mi/next-gen-mi/events/%d?rdcn=2014";
 
     private static final DateTimeFormatter OCCURRED_AT_FORMAT = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm");
 
