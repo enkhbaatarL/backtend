@@ -11,13 +11,16 @@ import java.util.Map;
 import java.util.UUID;
 import java.time.LocalDateTime;
 import javax.sql.DataSource;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Repository;
 
 /** master transaction에 참여하는 명시적 SQL. 원본 projection과 초기 행 대응 bulk 저장에 사용한다. */
+@Slf4j
 @Repository
 public class ModelInputDraftRepository {
+    private static final int ORIGINAL_ROW_INSERT_SIZE = 500;
     private final JdbcTemplate jdbc;
     public ModelInputDraftRepository(@Qualifier("masterDataSource") DataSource master) { jdbc=new JdbcTemplate(master); }
     public record FileRef(String role,Long fileNo,String name,String location,long baseline,String sha256,Long size) {
@@ -395,10 +398,53 @@ public class ModelInputDraftRepository {
             """,id,company,user,caseId,catalog.templateId(),version,actor,actor);
         for(FileRef file:files) jdbc.update("INSERT INTO tmd_mdl_inptdrftfiled(drft_id,mdl_file_cd,file_no,crt_usr_logn_id,mod_usr_logn_id) VALUES(?,?,?,?,?)",id,file.role(),file.fileNo(),actor,actor);
         jdbc.update("INSERT INTO tmd_mdl_inptdrftrvsnl(drft_id,rvsn_no,json_rvsn_no,crt_usr_logn_id,mod_usr_logn_id) VALUES(?,0,2,?,?)",id,actor,actor);
-        jdbc.batchUpdate("INSERT INTO tmd_mdl_inptdrftrowm(row_id,drft_id,inpt_tbl_id,org_row_no,crt_usr_logn_id,mod_usr_logn_id) VALUES(?,?,?,?,?,?)",rows,500,
-            (ps,row)->{ps.setString(1,row.id());ps.setString(2,id);ps.setLong(3,row.table());ps.setInt(4,row.row());ps.setString(5,actor);ps.setString(6,actor);});
-        jdbc.batchUpdate("INSERT INTO tmd_mdl_inptdrftrowh(row_id,bgn_rvsn_no,drft_id,inpt_tbl_id,row_no,crt_usr_logn_id,mod_usr_logn_id) VALUES(?,0,?,?,?,?,?)",rows,500,
-            (ps,row)->{ps.setString(1,row.id());ps.setString(2,id);ps.setLong(3,row.table());ps.setInt(4,row.row());ps.setString(5,actor);ps.setString(6,actor);});
+        insertOriginalRows(id, rows, actor, "IDENTITY",
+            "INSERT INTO tmd_mdl_inptdrftrowm(row_id,drft_id,inpt_tbl_id,org_row_no,crt_usr_logn_id,mod_usr_logn_id) VALUES",
+            "(?,?,?,?,?,?)");
+        insertOriginalRows(id, rows, actor, "POSITION",
+            "INSERT INTO tmd_mdl_inptdrftrowh(row_id,bgn_rvsn_no,drft_id,inpt_tbl_id,row_no,crt_usr_logn_id,mod_usr_logn_id) VALUES",
+            "(?,0,?,?,?,?,?)");
         return owned(id,company,user);
+    }
+
+    /** 두 고정 INSERT만 사용한다. 행 값은 모두 바인딩하고 SQL 전송당 행 수를 제한한다. */
+    private void insertOriginalRows(String draft, List<RowRef> rows, String actor, String phase, String statement, String tuple) {
+        for (int offset = 0; offset < rows.size(); offset += ORIGINAL_ROW_INSERT_SIZE) {
+            List<RowRef> chunk = rows.subList(offset, Math.min(offset + ORIGINAL_ROW_INSERT_SIZE, rows.size()));
+            String sql = statement + String.join(",", Collections.nCopies(chunk.size(), tuple));
+            int rowsBefore = offset;
+            long started = System.nanoTime();
+            jdbc.update(sql, ps -> {
+                int parameter = 1;
+                for (RowRef row : chunk) {
+                    ps.setString(parameter++, row.id());
+                    ps.setString(parameter++, draft);
+                    ps.setLong(parameter++, row.table());
+                    ps.setInt(parameter++, row.row());
+                    ps.setString(parameter++, actor);
+                    ps.setString(parameter++, actor);
+                }
+                if (rowsBefore == 0) {
+                    log.info("Input Draft row insert started phase={} connectionId={} totalRows={} chunkRows={}",
+                        phase, mysqlConnectionId(ps), rows.size(), chunk.size());
+                } else if (log.isDebugEnabled()) {
+                    log.debug("Input Draft row insert sending phase={} connectionId={} rowsBefore={} chunkRows={}",
+                        phase, mysqlConnectionId(ps), rowsBefore, chunk.size());
+                }
+            });
+            log.info("Input Draft row insert progress phase={} completedRows={} totalRows={} chunkMs={}",
+                phase, offset + chunk.size(), rows.size(), (System.nanoTime() - started) / 1_000_000);
+        }
+    }
+
+    /** 현재 statement의 물리 연결 번호만 읽는다. 진단용 unwrap 실패는 저장 흐름에 영향을 주지 않는다. */
+    private static Object mysqlConnectionId(java.sql.PreparedStatement statement) {
+        try {
+            var connection = statement.getConnection();
+            if (connection.isWrapperFor(com.mysql.cj.jdbc.JdbcConnection.class)) {
+                return connection.unwrap(com.mysql.cj.jdbc.JdbcConnection.class).getId();
+            }
+        } catch (SQLException | RuntimeException ignored) { /* 민감한 provider 메시지는 기록하지 않는다. */ }
+        return "UNKNOWN";
     }
 }
