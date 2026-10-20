@@ -22,6 +22,44 @@ public interface ModelExecutionPreparationRepository extends JpaRepository<Model
 
     Optional<ModelExecutionPreparation> findFirstByScenarioIdAndIsDeletedFalseOrderByExecPrepIdDesc(Long scenarioId);
 
+    boolean existsByScenarioIdAndStatusAndExecPrepIdGreaterThanAndIsDeletedFalse(
+        Long scenarioId,
+        ModelExecutionPreparationStatus status,
+        Long execPrepId
+    );
+
+    /**
+     * 그룹에 적용된 MI Base 후보: 시나리오별로 마지막 RESET 이후 제안이 연결된 실행준비 행 중 최신 1건의 제안 mi_base_case_id (최신 제안 순).
+     * 최신 행이 제안 없는 행(생성 중·통신 중단·Agent 거절)이면 직전 제안 행을 보므로 그룹 기준이 사라지지 않고,
+     * 시나리오당 1건이라 같은 시나리오의 지난 제안은 섞이지 않는다. mi_base_case_id가 없는 이전 제안은 제외된다.
+     */
+    @Query("""
+        SELECT p.miBaseCaseId
+          FROM ModelExecutionPreparation e, AgentModelParamProposal p, MiScenario s
+         WHERE s.scenarioGroup.scenarioGroupId = :scenarioGroupId
+           AND s.isDeleted = false
+           AND e.scenarioId = s.scenarioId
+           AND e.execPrepId = (
+               SELECT MAX(latest.execPrepId)
+                 FROM ModelExecutionPreparation latest
+                WHERE latest.scenarioId = e.scenarioId
+                  AND latest.isDeleted = false
+                  AND latest.agentProposalId IS NOT NULL
+                  AND latest.execPrepId > COALESCE((
+                      SELECT MAX(reset.execPrepId)
+                        FROM ModelExecutionPreparation reset
+                       WHERE reset.scenarioId = e.scenarioId
+                         AND reset.status = com.sk.domain.shared.enums.nextgen.ModelExecutionPreparationStatus.RESET
+                         AND reset.isDeleted = false
+                  ), 0)
+           )
+           AND p.modelParamProposalId = e.agentProposalId
+           AND p.isDeleted = false
+           AND p.miBaseCaseId IS NOT NULL
+         ORDER BY p.modelParamProposalId DESC
+        """)
+    List<Long> findGroupMiBaseCaseIds(@Param("scenarioGroupId") Long scenarioGroupId);
+
     @Query("""
         SELECT p
           FROM ModelExecutionPreparation p

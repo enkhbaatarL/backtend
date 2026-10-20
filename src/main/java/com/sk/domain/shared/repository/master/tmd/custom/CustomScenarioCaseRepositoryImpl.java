@@ -205,7 +205,8 @@ public class CustomScenarioCaseRepositoryImpl implements CustomScenarioCaseRepos
             .select(new QMiBasePriceRow(
                 scenarioCaseRunPrice.periodKey,
                 scenarioCaseRunPrice.baseCasePrice,
-                scenarioCaseRunPrice.userAdjustedPrice
+                scenarioCaseRunPrice.userAdjustedPrice,
+                scenarioCase.title
             ))
             .from(scenarioCase)
             .innerJoin(scenarioCaseRunHistory).on(scenarioCaseRunHistory.runId.eq(scenarioCase.lastRunId))

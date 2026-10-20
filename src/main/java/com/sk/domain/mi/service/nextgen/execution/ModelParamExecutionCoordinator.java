@@ -123,6 +123,7 @@ public class ModelParamExecutionCoordinator {
                 )
                 .orElseThrow(() -> proposalPreparationNotFound(scenarioId, request.modelParamProposalId()));
             validateRepeatExecutionSource(latest, scenarioId);
+            rejectIfResetAfter(latest, scenarioId);
             try {
                 preparation = modelExecutionPreparationRepository.saveAndFlush(
                     ModelExecutionPreparation.createConfirmingExecution(
@@ -308,6 +309,22 @@ public class ModelParamExecutionCoordinator {
                 ResultCode.Error.BIZ_RULE_VIOLATION,
                 "model parameter proposal cannot be reused from current preparation status. scenarioId: %d"
                     .formatted(scenarioId)
+            );
+        }
+    }
+
+    /** 그룹 전체 초기화 이전 제안은 다시 실행할 수 없다 — 초기화 전 MI Base로 실행되는 것을 막는다 */
+    private void rejectIfResetAfter(ModelExecutionPreparation preparation, Long scenarioId) {
+        boolean resetAfter = modelExecutionPreparationRepository.existsByScenarioIdAndStatusAndExecPrepIdGreaterThanAndIsDeletedFalse(
+            scenarioId,
+            ModelExecutionPreparationStatus.RESET,
+            preparation.getExecPrepId()
+        );
+        if (resetAfter) {
+            throw AppHttpStatusException.of(
+                HttpStatus.CONFLICT,
+                ResultCode.Error.BIZ_RULE_VIOLATION,
+                "초기화 이전에 생성된 제안은 다시 실행할 수 없습니다. 다시 생성하세요. scenarioId: %d".formatted(scenarioId)
             );
         }
     }

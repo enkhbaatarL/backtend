@@ -6,6 +6,7 @@ import com.sk.common.annotation.RequiredPermissionRules;
 import com.sk.common.model.BaseResponse;
 import com.sk.common.model.BaseResponseFactory;
 import com.sk.domain.mi.dto.response.nextgen.GroupModelParamCompareRes;
+import com.sk.domain.mi.dto.response.nextgen.GroupModelParamProposalResetRes;
 import com.sk.domain.mi.dto.response.nextgen.GroupModelParamProposalsRes;
 import com.sk.domain.mi.service.nextgen.ModelParamProposalGroupService;
 import com.sk.domain.mi.service.nextgen.sse.registry.GroupModelParamProposalSseRegistry;
@@ -13,6 +14,8 @@ import com.sk.domain.shared.enums.PermissionCondition;
 import com.sk.domain.shared.enums.Role;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.media.Content;
+import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
@@ -21,6 +24,7 @@ import org.springframework.context.annotation.Profile;
 import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
@@ -110,6 +114,11 @@ public class ModelParamProposalGroupController {
 
             분기값·차원 헤더는 그룹 상세 API를 사용하세요.
             실행가능성 컬럼은 adjustedProbability(폐기 제외 비례 재분배, 폐기=0)를 표시하세요 — probability는 폐기해도 유지되는 원본입니다.
+
+            ### MI Base 변경 감지
+            - appliedMiBase: 그룹에 적용된 MI Base, currentMiBase: 현재 지정된 MI Base
+            - [초기화] 버튼: miBaseChanged=true이고 생성 결과가 있는 시나리오가 1개 이상일 때 노출
+            - [현재 MI Base 보기]: currentMiBase.caseId
             """
     )
     @ApiResponse(responseCode = "200", description = "조회 성공")
@@ -125,6 +134,29 @@ public class ModelParamProposalGroupController {
     }
 
     @ApiOrder(3)
+    @Operation(
+        summary = "그룹 파라미터 제안 전체 초기화 API",
+        description = """
+            그룹 내 모든 시나리오를 [생성] 전 상태(NOT_REQUESTED)로 되돌립니다. 이전 제안·실행 결과는 삭제하지 않습니다.
+            초기화 후 [생성]은 current MI Base로 생성되며, 초기화 이전 제안은 실행할 수 없습니다.
+            생성 중·실행 중인 시나리오가 있으면 409입니다. 성공 후 그룹 파라미터 제안 현황 일괄 조회 API를 재호출하세요.
+            """
+    )
+    @ApiResponse(responseCode = "200", description = "초기화 성공")
+    @ApiResponse(responseCode = "409", description = "BIZ_RULE_VIOLATION: 생성 중·실행 중인 시나리오가 있음 (additionalMessage에 scenarioIds)",
+        content = @Content(mediaType = MediaType.APPLICATION_JSON_VALUE, schema = @Schema(implementation = BaseResponse.class)))
+    @PostMapping(value = "/model-param-proposals/reset", produces = MediaType.APPLICATION_JSON_VALUE)
+    @RequiredPermissionRules(rules = {
+        @PermissionRule(role = Role.USER, conditions = {PermissionCondition.SKGAS_COMPANY_USER_ONLY}),
+        @PermissionRule(role = Role.ADMIN, conditions = {PermissionCondition.THIRD_PARTY_ADMIN_ONLY})
+    })
+    public BaseResponse<GroupModelParamProposalResetRes> resetGroupModelParamProposals(
+        @Parameter(description = "시나리오 그룹 ID", example = "61") @PathVariable Long scenarioGroupId
+    ) {
+        return BaseResponseFactory.create(modelParamProposalGroupService.resetGroupProposals(scenarioGroupId));
+    }
+
+    @ApiOrder(4)
     @Operation(
         summary = "그룹 파라미터 비교 그리드 조회 API",
         description = """
