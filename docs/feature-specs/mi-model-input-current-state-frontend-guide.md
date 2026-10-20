@@ -197,7 +197,7 @@ EDT-03의 `data`는 `{draftId, revision, sourceKey, sourceVersion, tableData, pa
 
 | page 필드 | 의미 |
 | --- | --- |
-| `totalBodyRows` | 표 전체의 본문 행 수. 빈 슬롯 포함, 헤더 제외 |
+| `totalBodyRows` | 표시 범위의 본문 행 수. 중간 빈 슬롯 포함, 헤더 제외. 끝 빈 행 제외 기준은 [Draft API §3.2](mi-fundamental-model-input-draft-editing-api-proposal.md) 참고 |
 | `returnedBodyRows` | 이번 응답의 본문 행 수. 최대 2,000 |
 | `startRow`, `endRow` | 이번 본문의 Excel 행 번호. 본문 없으면 null |
 | `hasNext` | 다음 본문 페이지 존재 여부 |

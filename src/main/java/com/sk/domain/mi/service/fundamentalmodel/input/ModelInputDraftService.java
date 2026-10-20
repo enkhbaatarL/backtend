@@ -613,20 +613,37 @@ public class ModelInputDraftService {
     private Table renderTable(Actor actor,State state,String key,Integer first,int limit) {
         TableRef table=state.source.catalog.tables().stream().filter(t->t.key().equals(key)).findFirst().orElseThrow(InputDraftException::missing);
         InputReadDefinition def=state.source.definitions.get(table.id());List<Integer> candidate=def.page(first,2000),headers=def.headerRows();
+        int[] lastDataRow={0};
         Map<Integer,Map<Integer,Cell>> rows=new HashMap<>();Set<Integer> wanted=new HashSet<>(candidate);wanted.addAll(headers);
         long[] budget={0};int[] cutoff={Integer.MAX_VALUE};
         Set<Integer> invalidRows=new HashSet<>(),invalidControls=new HashSet<>();
         FileRef file=state.source.files.stream().filter(f->f.role().equals(table.role())).findFirst().orElseThrow(InputDraftException::internal);
         List<Window> windows=new ArrayList<>();
         Map<Integer,List<Integer>> sourceRows=new HashMap<>();
-        for(int row:wanted){Integer original=state.history.sourceRow(table.id(),row);if(original!=null)sourceRows.computeIfAbsent(original,k->new ArrayList<>()).add(row);}
-        windows.add(new Window(table.sheet(),row->sourceRows.containsKey(row)&&sourceRows.get(row).stream().anyMatch(current->headers.contains(current)||current<=cutoff[0]),state.history.sourceColumns(table.id(),def.columns()),(original,sourceValues)->{
+        // 끝 행은 현재 페이지 밖도 확인하되, 셀 값은 요청 페이지에만 보관한다.
+        // 전체 행 목록/Set을 중복 생성하지 않고 발행 범위를 순회한다.
+        java.util.function.IntConsumer register=row->{
+            Integer original=state.history.sourceRow(table.id(),row);if(original!=null)sourceRows.computeIfAbsent(original,k->new ArrayList<>()).add(row);
+            if(def.body(row)){
+                Map<Integer,Cell> changed=new HashMap<>();state.history.overlay(table.id(),row,changed);
+                if(hasBodyData(def,changed))lastDataRow[0]=Math.max(lastDataRow[0],row);
+            }
+        };
+        headers.forEach(register::accept);
+        for(var range:def.bodyRanges())for(int row=range.startRow();row<=range.endRow();row++)register.accept(row);
+        windows.add(new Window(table.sheet(),sourceRows::containsKey,state.history.sourceColumns(table.id(),def.columns()),(original,sourceValues)->{
             Map<Integer,Cell> values=state.history.projectSource(table.id(),sourceValues);
             for(int row:sourceRows.get(original)) {
+                Map<Integer,Cell> currentValues=values;
+                if(def.body(row)){
+                    currentValues=new HashMap<>(values);state.history.overlay(table.id(),row,currentValues);
+                    if(hasBodyData(def,currentValues))lastDataRow[0]=Math.max(lastDataRow[0],row);
+                }
+                if(!wanted.contains(row))continue;
                 if(!headers.contains(row)&&row>cutoff[0])continue;
-                budget[0]+=json.bytes(values).length;
+                budget[0]+=json.bytes(currentValues).length;
                 if(budget[0]>InputDraftJson.RESPONSE_LIMIT&&!headers.contains(row)&&candidate.contains(row)&&!candidate.isEmpty()&&row!=candidate.get(0)){cutoff[0]=Math.min(cutoff[0],row-1);continue;}
-                rows.computeIfAbsent(row,k->new HashMap<>()).putAll(values);
+                rows.computeIfAbsent(row,k->new HashMap<>()).putAll(currentValues);
             }
         },original->invalidRows.addAll(sourceRows.get(original))));
         for(JsonNode control:def.controls()) {
@@ -637,17 +654,20 @@ public class ModelInputDraftService {
                 (row,values)->{if(values.containsKey(sourceCol))rows.computeIfAbsent(boundRow,k->new HashMap<>()).put(boundColumn,values.get(sourceCol));},invalidControls::add));
         }
         reader.read(file,actor.companyCode,windows);
+        if(!invalidRows.isEmpty())throw InputDraftException.internal();
+        InputReadDefinition displayDef=trimBody(def,lastDataRow[0]);
+        List<Integer> displayCandidate=displayDef.page(first,2000);
         for(int row:wanted)state.history.overlay(table.id(),row,rows.computeIfAbsent(row,k->new HashMap<>()));
         for(JsonNode control:def.controls()) {
             int row=control.path("binding").path("rowNumber").asInt(),col=control.path("binding").path("columnIndex").asInt()+1;
             Cell value=state.history.control(control.path("sourceTableId").asText(),row,col);
             if(value!=null)rows.computeIfAbsent(row,k->new HashMap<>()).put(col,value);
         }
-        List<Integer> page=new ArrayList<>(candidate.stream().filter(row->row<=cutoff[0]).toList());
+        List<Integer> page=new ArrayList<>(displayCandidate.stream().filter(row->row<=cutoff[0]).toList());
         Map<Integer,String> identities=state.history.bindings(table.id());
         Table result;
         while(true) {
-            result=project(state,table,def,page,rows,identities,invalidRows);
+            result=project(state,table,displayDef,page,rows,identities,invalidRows);
             if(json.bytes(BaseResponseFactory.create(result)).length<=limit)break;
             if(page.size()<=1)throw InputDraftException.responseLarge();page=new ArrayList<>(page.subList(0,Math.max(1,page.size()/2)));
         }
@@ -655,6 +675,16 @@ public class ModelInputDraftService {
         if(!invalidControls.isEmpty()||invalidRows.stream().anyMatch(headers::contains)
             ||page.stream().anyMatch(invalidRows::contains))throw InputDraftException.internal();
         return result;
+    }
+    private static boolean hasBodyData(InputReadDefinition def,Map<Integer,Cell> cells) {
+        return def.columns().stream().map(cells::get).anyMatch(value->value!=null&&value.raw()!=null
+            &&(!(value.raw() instanceof String text)||!text.isEmpty()));
+    }
+    private static InputReadDefinition trimBody(InputReadDefinition def,int lastRow) {
+        List<InputReadDefinition.Range> ranges=def.bodyRanges().stream().filter(range->range.startRow()<=lastRow)
+            .map(range->new InputReadDefinition.Range(range.startRow(),Math.min(range.endRow(),lastRow))).toList();
+        return new InputReadDefinition(def.columns(),def.headerRows(),ranges,def.identityColumns(),def.fields(),def.capabilities(),
+            def.inputGuideRules(),def.controls(),def.displayUpdateRules(),def.columnCreation());
     }
     @io.swagger.v3.oas.annotations.media.Schema(requiredProperties={"kind","draftId","revision","draftEndpoint","structure","selection"})
     public record UploadResult(String kind,String draftId,long revision,String draftEndpoint,Structure structure,
@@ -696,8 +726,10 @@ public class ModelInputDraftService {
             if(rowId!=null)edits.add(new EditValue(rowId,Map.copyOf(typed)));
         }
         List<JsonNode> fields=new ArrayList<>();for(JsonNode original:def.fields()){ObjectNode field=original.deepCopy();int col=field.remove("columnNumber").asInt();field.put("columnField","column"+(col-1));if("READY".equals(field.path("policyStatus").path("SET_HEADER").asText())&&!(changesEnabled&&InputWorkbookPolicy.supportsHeader(table,col)))((ObjectNode)field.path("policyStatus")).put("SET_HEADER","UNSUPPORTED");fields.add(field);}
-        Map<String,String> caps=new LinkedHashMap<>();def.capabilities().fields().forEachRemaining(e->caps.put(e.getKey(),"READY".equals(e.getValue().asText())
-            &&!(changesEnabled&&InputWorkbookEditor.supports(table,def,e.getKey()))?"UNSUPPORTED":e.getValue().asText()));
+        // 표시 행 축소로 ADD_ROW 등 원래 발행된 편집 정책의 지원 판정을 바꾸지 않는다.
+        InputReadDefinition policyDef=state.source.definitions.get(table.id());
+        Map<String,String> caps=new LinkedHashMap<>();policyDef.capabilities().fields().forEachRemaining(e->caps.put(e.getKey(),"READY".equals(e.getValue().asText())
+            &&!(changesEnabled&&InputWorkbookEditor.supports(table,policyDef,e.getKey()))?"UNSUPPORTED":e.getValue().asText()));
         List<JsonNode> controls=new ArrayList<>();for(JsonNode original:def.controls()){ObjectNode control=original.deepCopy();int row=control.path("binding").path("rowNumber").asInt(),col=control.path("binding").path("columnIndex").asInt()+1;Cell cell=values.getOrDefault(row,Map.of()).get(col);control.set("value",json.tree(cell==null?null:cell.raw()));control.put("editable",original.path("editable").asBoolean()&&"READY".equals(caps.get("SET"))&&InputWorkbookPolicy.supportsControl(table,original));controls.add(control);}
         Integer start=page.isEmpty()?null:page.get(0),end=page.isEmpty()?null:page.get(page.size()-1),next=null;
         if(end!=null) {List<Integer> after=def.page(end,2);if(after.size()>1)next=after.get(1);}

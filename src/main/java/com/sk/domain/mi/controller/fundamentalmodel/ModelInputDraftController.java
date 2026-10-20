@@ -170,7 +170,7 @@ public class ModelInputDraftController {
     }
 
     @GetMapping("/input-drafts/{draftId}/table-data")
-    @Operation(summary = "Draft 선택 표 조회", description = "구조 조회의 revision과 tableId를 보내 저장된 성공 값, 안정 행 ID와 현재 위치·편집 metadata를 조회합니다. 원본과 성공 이력을 복원하며 수식을 재계산하지 않습니다. 본문 최대 2,000행과 전체 응답 2MiB 범위에서 행을 나누며 다음 조회는 page.nextStartRow를 사용합니다. 헤더는 매번 포함됩니다. 실제 처리기와 worker 설정이 준비된 F-O-01 지정 표의 SET만 READY로 제공하며 다른 동작은 기존 미완비/미지원 상태를 유지합니다.")
+    @Operation(summary = "Draft 선택 표 조회", description = "구조 조회의 revision과 tableId를 보내 저장된 성공 값, 안정 행 ID와 현재 위치·편집 metadata를 조회합니다. 원본과 성공 이력을 복원하며 수식을 재계산하지 않습니다. 본문 최대 2,000행과 전체 응답 2MiB 범위에서 행을 나누며 다음 조회는 page.nextStartRow를 사용합니다. 헤더는 매번 포함됩니다. 모든 표는 발행된 표시 영역의 마지막 데이터 행까지만 반환하고 page도 해당 범위를 나타냅니다. 중간 빈 행은 유지하며 전체가 비면 헤더와 연결 control만 반환합니다. 마지막 데이터 행 이후의 startRow는 400입니다. 실제 처리기와 worker 설정이 준비된 F-O-01 지정 표의 SET만 READY로 제공하며 다른 동작은 기존 미완비/미지원 상태를 유지합니다.")
     @ApiResponse(responseCode = "200", description = "선택 표와 다음 페이지 위치", content = @Content(schema = @Schema(implementation = TableEnvelope.class)))
     @ApiResponse(responseCode = "400", description = "REQ_INVALID_PARAMETER: 잘못된 ID·revision·시작행", content = @Content(mediaType = MediaType.APPLICATION_JSON_VALUE, schema = @Schema(implementation = ProblemEnvelope.class)))
     @ApiResponse(responseCode = "404", description = "RSC_NOT_FOUND: 본인 Draft 또는 선택 표가 없음", content = @Content(mediaType = MediaType.APPLICATION_JSON_VALUE, schema = @Schema(implementation = ProblemEnvelope.class)))
