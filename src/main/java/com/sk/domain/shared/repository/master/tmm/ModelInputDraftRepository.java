@@ -38,6 +38,23 @@ public class ModelInputDraftRepository {
         public boolean uploaded(){return caseId==null;}
     }
     public record RowRef(long table,int row,String id) {}
+    public List<Long> findActiveTemplateIdsForUpdate(String modelCode) {
+        requireTransaction();
+        return jdbc.queryForList("""
+            SELECT tmplt_id FROM tmd_mdl_inpttmpltm
+            WHERE mdl_spt_cd=? AND tmplt_stat_cd='ACTIVE' AND del_yn='N'
+            FOR UPDATE
+            """, Long.class, modelCode);
+    }
+
+    public void bindCaseTemplate(long caseId, long templateId, String actor) {
+        requireTransaction();
+        jdbc.update("""
+            INSERT INTO tmd_mdl_scnrcasetmpltd(case_id,tmplt_id,crt_usr_logn_id,mod_usr_logn_id)
+            VALUES(?,?,?,?)
+            """, caseId, templateId, actor, actor);
+    }
+
     public void caseAccess(long id, boolean lock) {
         List<String> types=jdbc.query("SELECT exec_type_cd FROM tmd_mdl_scnrcasem WHERE case_id=? AND del_yn='N'"+(lock?" FOR UPDATE":""),
             (rs,n)->rs.getString(1),id);

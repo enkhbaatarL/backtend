@@ -185,6 +185,9 @@ public class FundamentalModelCaseServiceImpl implements FundamentalModelCaseServ
     @Value("${kubernetes.callback-base-url:}")
     private String callbackBaseUrl;
 
+    @Value("${mi.model-input.upload.model-code:}")
+    private String caseTemplateModelCode;
+
     @Override
     @Transactional(readOnly = true)
     public FundamentalModelCaseListRes listCases(FundamentalModelCaseListReq request) {
@@ -233,6 +236,15 @@ public class FundamentalModelCaseServiceImpl implements FundamentalModelCaseServ
         String companyCd = authorizationService.getCompanyCdWithPriority();
         Role role = authorizationService.getCurrentRole();
 
+        if (caseTemplateModelCode == null || caseTemplateModelCode.isBlank()) {
+            throw caseTemplateUnavailable();
+        }
+        List<Long> templateIds = modelInputDraftRepository.findActiveTemplateIdsForUpdate(caseTemplateModelCode);
+        if (templateIds.size() != 1) {
+            throw caseTemplateUnavailable();
+        }
+        long templateId = templateIds.get(0);
+
         ScenarioCase savedCase = scenarioCaseRepository.saveAndFlush(
             ScenarioCase.createPending(actorUserNo, normalizedTitle, description, actorLoginId)
         );
@@ -246,6 +258,7 @@ public class FundamentalModelCaseServiceImpl implements FundamentalModelCaseServ
                 files,
                 uploadedFileNos
             );
+            modelInputDraftRepository.bindCaseTemplate(savedCase.getCaseId(), templateId, actorLoginId);
 
             return new FundamentalModelCaseCreateRes(
                 savedCase.getCaseId(),
@@ -260,6 +273,14 @@ public class FundamentalModelCaseServiceImpl implements FundamentalModelCaseServ
             compensateUploadedFiles(uploadedFileNos);
             throw e;
         }
+    }
+
+    private AppHttpStatusException caseTemplateUnavailable() {
+        return AppHttpStatusException.of(
+            HttpStatus.CONFLICT,
+            ResultCode.Error.BIZ_RULE_VIOLATION,
+            "Case에 연결할 ACTIVE 입력 템플릿이 없습니다. 템플릿 설정과 발행 상태를 확인하세요."
+        );
     }
 
     @Override
