@@ -18,7 +18,7 @@
   - `SECURITY.md`
 - supersedes:
   - `docs/feature-specs/mi-fundamental-model-mi-base-designation-feature-spec.md`의 기존 `API Slice C — Input 내용 제공` 초안
-- last synced: 2026-10-16
+- last synced: 2026-10-19 (개발 시트 포함 파일 수용과 응답 제외를 domain 규칙39~40에 정렬)
 - open questions:
   - sheet/table projection의 원본 수식은 셀 표시 데이터로 전달하지 않는다. 별도 화면 갱신 규칙의 JSON 필드 이름·타입, 참조/대상 표현, 지원 계산 방식과 적용 순서를 확정해야 한다. 구체 범위는 §3.1C를 따른다.
   - 전체 구조와 선택 표 값을 같은 응답에 동봉할지, 초기 구조 조회와 후속 표 값 조회를 별도 operation으로 나눌지 확정해야 한다.
@@ -59,9 +59,7 @@
 - 개발 전용 시트의 설명에서 도출한 후보도 같은 개발본의 운영 대상 business sheet 구조와 대조·승인한 뒤에만 catalog seed로 등록한다.
 - 이 문서는 조회와 화면용 업로드 파싱 계약을 소유한다. `임시저장`과 `최종저장`은 별도 write 계약에서 정의하며 `미리보기` action은 두지 않는다.
 - 응답 범위와 공통 필드 이름/셀 표현은 §3과 같이 고정한다. endpoint와 operation별 필수/nullable·초기 선택은 아직 확정하지 않는다.
-- 첨부 개발본의 `SUMMARY`, `플랫폼 입력 안내`는 실제 운영 인풋에 없는 개발 전용 시트다.
-  runtime catalog, 조회 응답, Draft, 최종 XLSM과 모델 Job input에 포함하지 않는다.
-- 양식 기준본으로 별도 운영 파일은 수신하지 않는다. 현재 개발본에서 개발 전용 시트만 제거한 정규화본을 운영 template과 기준 source snapshot으로 사용한다. 이는 §3.3의 사용자 입력 파일 업로드를 금지하는 뜻이 아니다.
+- `SUMMARY`, `플랫폼 입력 안내`가 포함된 파일의 수용·원본 보존과 기준 정규화본의 역할은 [domain 규칙39~40](../design-docs/gas/mi-model-input-template-catalog-domain-model-design.md#6-business-rules)을 따른다. 두 개발 시트는 runtime catalog와 조회 응답에 포함하지 않으며, 파일 안에 있다는 이유만으로 호환 파일의 연결을 거부하지 않는다. 이 결정은 §3.3의 미구현 업로드 파싱 API가 구현됐다는 뜻이 아니다.
 - 운영 기준 정규화본의 hidden sheet는 조회 projection, Draft 변경, dependency 분석과 Backend 계산에서 제외한다.
   최종 XLSM 생성 시에는 source snapshot에서 순서·이름·숨김 상태와 worksheet/package 내용을 그대로 복사한다.
   hidden sheet를 삭제하거나 빈 sheet로 다시 만들지 않는다.
@@ -361,6 +359,7 @@ FE는 성공한 업로드의 해당 kind 구조/데이터만 교체한다. 다�
 - Given `SCENARIO` 또는 soft-deleted case일 때, then `404 RSC_NOT_FOUND`를 반환한다.
 - Given 기존 3파일 case가 cutover cleanup으로 soft delete됐을 때, then 목록에 노출되지 않고 input 조회도 `404 RSC_NOT_FOUND`를 반환한다.
 - Given 운영 template을 등록할 때, then `SUMMARY`와 `플랫폼 입력 안내`는 runtime sheet 목록과 구조 hash에 포함되지 않는다.
+- Given 네 역할과 승인 업무 구조가 호환되는 파일에 `SUMMARY` 또는 `플랫폼 입력 안내`가 남아 있을 때, then 두 시트의 존재나 기준 파일과 다른 내용 hash만으로 Case 연결을 거부하지 않고 조회 응답에서는 두 시트를 제외한다. 다른 접근·파일 유효성·판독 조건은 유지한다(domain 규칙39~40).
 - Given 운영 source snapshot에 hidden sheet가 있을 때, when 조회 projection을 만들면, then hidden sheet의 table/cell은 응답과 계산 대상에 포함하지 않는다.
 - Given Draft를 최종저장할 때, then source와 결과의 hidden sheet 집합·순서·이름·숨김 상태가 같고 hidden worksheet part는 원본 그대로 보존된다.
 - Given read-only 표시 sheet인 SUPPLY `LNG Summary` 1개를 조회할 때, then source snapshot 값은 반환하지만 수정 가능 field는 없고 Draft·Backend 재계산 대상에도 포함되지 않는다. TRADE `backupLNG_TradeRestrictionInput`은 화면 구조·선택 표 값 응답에 표시하지 않고 최종 XLSM에는 원본 보존한다(domain 규칙 43·57).
@@ -424,8 +423,8 @@ FE는 성공한 업로드의 해당 kind 구조/데이터만 교체한다. 다�
 - 2026-09-16: `INPUT-01`의 화면 후보/승인 경계를 반영하고, `INPUT-02`의 POI 전체 로딩 `NO-GO`에 따라 조회 구현 후보를 streaming 방식으로 제한했다.
 - 2026-09-28: 사용자 확인에 따라 `OUTPUT`을 기존 세 역할과 같은 필수 input으로 추가하고 4파일 snapshot·완전성 계약으로 갱신했다. 이 시점에는 기존 3파일 case 호환 정책을 open question으로 남겼다.
 - 2026-09-28: 후속 사용자 결정에 따라 기존 3파일 `INDEPENDENT | MI_BASE` case는 `OUTPUT` 보완 없이 cutover 전에 soft delete하고 화면·active API에서 제외한다. 연결 파일·실행이력·결과는 물리 삭제하지 않는다.
-- 2026-09-28: 첨부본의 `SUMMARY`와 `플랫폼 입력 안내`가 개발 전용이며 실제 운영 인풋에는 없음을 반영했다. 두 시트는 runtime catalog·응답·Draft·최종 XLSM·Job input에서 제외한다.
-- 2026-09-28: 별도 운영 파일은 수신하지 않고 현재 개발본에서 개발 전용 시트만 제거한 정규화본을 운영 기준으로 사용한다고 확정했다.
+- 2026-09-28: 당시 개발 시트를 runtime catalog·응답·Draft·최종 XLSM·Job input에서 제외하고 정규화본을 운영 기준으로 사용했다. 파일 수용·원본 보존 조건은 아래 2026-10-19 결정으로 대체됐다.
+- 2026-10-19: 사용자 승인에 따라 domain 규칙39~40의 개발 시트 포함 파일 수용을 반영했다. 조회 응답 제외는 유지하며 파일 수용·보존의 정본은 해당 domain 규칙이다.
 - 2026-09-28: 사용자 확인에 따라 운영 hidden sheet는 다른 시트 계산과 무관한 원본 보존 영역으로 확정했다. 조회·Draft·dependency·Backend 계산에서는 제외하고 최종 XLSM에는 source snapshot 그대로 복사한다.
 - 2026-09-28: `직접 입력 대상 아님.`인 visible sheet 중 수식·직접 참조가 없는 6개를 read-only 표시 대상으로 확정했다. source 값은 조회하되 write·Draft·dependency·Backend 재계산에서 제외하고 최종 XLSM에는 보존한다.
 - 2026-10-01: 사용자 확인에 따라 위 6개 중 값·수식이 없는 구분 탭 4개(DEMAND `Input Adjustment ->`, `기준정보 ->`, SUPPLY `Input Upstream ->`, `Input Midstream ->`)를 조회 응답에서 제외했다. read-only 표시는 SUPPLY `LNG Summary`, TRADE `backupLNG_TradeRestrictionInput` 2개로 줄었고, 6개 모두 계산 제외·최종 XLSM 원본 보존은 그대로다.

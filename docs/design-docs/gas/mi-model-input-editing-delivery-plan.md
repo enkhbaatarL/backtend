@@ -19,7 +19,7 @@
   - `docs/conventions/source-of-truth-governance.md`
   - `docs/design-docs/gas/mi-model-input-template-catalog-erd-ddl-draft.md`
 - supersedes: 없음
-- last synced: 2026-10-17 (공통 BE 1·2 상태를 최신 작업 노트 참조로 정리)
+- last synced: 2026-10-19 (F-O-01 실환경 기본 성공 흐름·C DRAFT 등록과 후속 검증 구분)
 - open questions:
   - F-S-06 제외 INPUT-02A는 §6A의 `DONE (CONDITIONAL)`이다. 계산/격리 비동기·운영 기준은 domain Q7·규칙63/64를 따른다. 공통 저장 구조/최종저장·복구 계약은 domain §3.4·§5.1~5.3/DDL §6.3·편집 API §9로 문서 범위 완료다. 표별 정책·DBA 적용 준비/제품 구현·INPUT-10의 API 전체 저장 응답 검증은 후속이다. 지정 사례 밖 계산 allowlist를 자동 승인하지 않는다. GDP/PIPELINE 오탐·UNIQUE 5셀 보존 판정은 유지한다.
 
@@ -423,11 +423,13 @@ Coordination:
 
 ## 7A. 공통 BE 1·2 첫 구현 계획 — 2026-10-16 사용자 채택
 
-- 2026-10-18 후속 EDT-04/05 공통 기반의 코드·수동 증분 DDL 및 승인된 독립 검토 수정 결과·남은 범위는 기존 작업 노트를 따른다. 실제 처리기 미연결 신규 요청 차단·지원 경계는 [편집 API §1.2](../../feature-specs/mi-fundamental-model-input-draft-editing-api-proposal.md), 증분 SQL은 [DDL §6.7](mi-model-input-template-catalog-erd-ddl-draft.md), 검증·독립 검토/수정 결과와 B 인수 결과는 [기존 작업 노트](../../work-notes/2026/2026-09-03-model-input-transfer-format.md#actual-result)가 소유한다. 아래 첫 구현 순서는 기존 EDT-01~03 계획 이력이다.
+- **현재 delivery 상태 — 2026-10-19:** QRY-01/EDT-01~07·F-O-01 처리·공통 worker/최종저장 연결의 구현에 이어, 사용자 Compose/testdb에서 Case105→106의 기본 성공 흐름을 확인했다. 상세 실행 결과와 시간대 설정 조치·미검증 범위는 [공용 작업 노트](../../work-notes/2026/2026-09-03-model-input-transfer-format.md#case105-106-smoke-20261019)가 소유한다. FE의 제한 범위 API 연결은 진행할 수 있고, 일반 표/구조·계산 확장과 실환경 경합/복구·Kubernetes 운영 검증은 별도 후속이다. 전체 INPUT-10/11 완료로 승격하지 않는다.
+- C의 92개 표는 [새 DRAFT 양식 등록](../../work-notes/2026/2026-09-03-model-input-transfer-format.md#c-structure-registration-20261019)만 완료했다. 발행·새 Case 연결·보류7개는 후속이며 기존 Case103·105 양식 교체나 시험 서버 model-code 변경을 포함하지 않는다.
+- 2026-10-18 EDT-04/05 공통 기반·후속 실제 처리/최종저장 지원 경계는 [편집 API §1.2](../../feature-specs/mi-fundamental-model-input-draft-editing-api-proposal.md), 증분 SQL은 [DDL §6.7](mi-model-input-template-catalog-erd-ddl-draft.md), 검증·독립 검토/수정 결과와 B 인수 결과는 [기존 작업 노트](../../work-notes/2026/2026-09-03-model-input-transfer-format.md#actual-result)가 소유한다. 아래 첫 구현 순서는 기존 EDT-01~03 계획 이력이다.
 
 - 2026-10-16 table prefix 변경: 현재 물리명과 수동 적용 절차는 [DDL §6.6](mi-model-input-template-catalog-erd-ddl-draft.md) 및 [rename SQL](../../model-input-draft-table-prefix-rename-draft.sql)이 소유한다. 새 이름 적용·API 확인의 실행 사실은 [기존 작업 노트의 최신 결과](../../work-notes/2026/2026-09-03-model-input-transfer-format.md#actual-result)를 참조한다.
 
-**첫 범위의 구현·검증 결과는 작업 노트 참조.** 사용자가 승인한 ① 공통 요청 처리와 ② Draft 생성·재개·조회는 최소 QRY-01과 EDT-01~03/revision0 범위다. 구현·Case103 기본 DB 연동 시험의 결과·환경·독립 검토와 남은 확인은 [기존 작업 노트의 최신 결과](../../work-notes/2026/2026-09-03-model-input-transfer-format.md#actual-result)를 참조한다. 구현 범위는 편집 API §1.2, 수동 적용 SQL은 DDL §6.5가 소유한다. 기본 시험과 실제 MySQL 경합/실패 등 추가 검증·전체 기능/운영 배포는 구분한다. ③ 임시저장/작업 복구 → ④ 최종저장/파일 복구와 표별 정책은 후속이며 PriceModel/Regas 추가 추천은 미승인이다.
+**첫 범위의 구현·검증 결과는 작업 노트 참조.** 사용자가 처음 승인한 ① 공통 요청 처리와 ② Draft 생성·재개·조회는 최소 QRY-01과 EDT-01~03/revision0 범위였다. 구현·Case103 기본 DB 연동 시험과 이후 ③ 임시저장 → ④ 최종저장의 F-O-01 기본 성공 결과는 [기존 작업 노트](../../work-notes/2026/2026-09-03-model-input-transfer-format.md#actual-result)를 참조한다. 구현 범위는 편집 API §1.2, 수동 적용 SQL은 DDL이 소유한다. 작업/파일 복구·경합의 추가 실환경 검증과 전체 기능/운영 배포는 구분한다. 표별 정책은 후속이며 PriceModel/Regas 추가 추천은 미승인이다.
 
 ### 범위·정본 연결
 
@@ -483,10 +485,10 @@ EDT-04~07 접수/처리, 변경 적용·계산/구조 명령·XLSM 생성, 격�
 | `INPUT-02B` | Done — 당시 3파일 기준 외부 참조 42,394셀 계산 제외·보존. 현재 외부 참조 정책은 domain 규칙 33·54 | `docs/work-notes/2026/2026-09-16-model-input-sheet-calculation-compatibility.md` |
 | `INPUT-02A` | Done — `CONDITIONAL`, F-S-06 제외. 2026-10-15 사용자 승인·조건/한계/전달은 §6A | `docs/work-notes/2026/2026-09-03-model-input-transfer-format.md` (초기 stage1 note는 당시 이력) |
 | `INPUT-03` | 공통 저장 구조/코드 연결 대조 — domain §5.4·DDL §6.3~6.4. DBA-01~05의 확인 범위/잔여는 기존 작업 노트 참조, 표별 정책·첫 범위 밖 구현/검증 후속 | `docs/work-notes/2026/2026-09-03-model-input-transfer-format.md` update |
-| `INPUT-04` | 공통 EDT-01~07/최종저장·실패 복구 계약 문서 — [편집 API Draft](../../feature-specs/mi-fundamental-model-input-draft-editing-api-proposal.md) §3~6·§9. 첫 구현/검증 결과는 §7A·기존 작업 노트 참조, EDT-04~07·전체 제품/운영 검증과 표별 정책은 후속 | `docs/work-notes/2026/2026-09-03-model-input-transfer-format.md` update |
-| `INPUT-06` / 공통 BE 1·2 | IN_PROGRESS — 승인된 첫 범위 QRY-01/EDT-01~03·기본 DB 연동 시험의 결과와 잔여는 §7A·기존 작업 노트 참조. 전체 persistence/운영 검증 완료와 구분 | `docs/work-notes/2026/2026-09-03-model-input-transfer-format.md` update |
-| `INPUT-07` | Do not dispatch — INPUT-03/04 완료 필요 | 선행 완료 후 지정 |
-| `INPUT-10` | Do not dispatch — 제품 구현/STRUCT-05 후 E2E. API 전체 저장 응답 검증 PENDING 포함 | 선행 완료 후 지정 |
+| `INPUT-04` | 공통 EDT-01~07/최종저장·실패 복구 계약 문서 — [편집 API Draft](../../feature-specs/mi-fundamental-model-input-draft-editing-api-proposal.md) §3~6·§9. F-O-01 한정 구현·실환경 성공은 §7A·기존 작업 노트 참조. 일반 표 계약·전체 제품/운영 검증 후속 | `docs/work-notes/2026/2026-09-03-model-input-transfer-format.md` update |
+| `INPUT-06` / 공통 BE | IN_PROGRESS — QRY-01/EDT-01~07 및 F-O-01 기본 성공 흐름 확인. 경합/복구·전체 persistence/운영 검증은 §7A·기존 작업 노트의 후속 범위 | `docs/work-notes/2026/2026-09-03-model-input-transfer-format.md` update |
+| `INPUT-07` | 일반 표/전체 범위는 INPUT-03/04 준비 후 배정. 별도 승인 F-O-01 한정 구현·실환경 결과는 §7A | 선행 완료 후 지정 |
+| `INPUT-10` | 전체 E2E는 제품 구현/STRUCT-05 후 배정. F-O-01 기본 성공 흐름만 확인했으며 API 전체 저장 응답·실환경 경합/복구 검증은 PENDING | 선행 완료 후 지정 |
 | `INPUT-11` | Do not dispatch — 4파일 E2E 완료와 운영 승인 필요 | 착수 시 별도 생성 |
 | 나머지 | Do not dispatch | 선행 티켓 완료 후 지정 |
 

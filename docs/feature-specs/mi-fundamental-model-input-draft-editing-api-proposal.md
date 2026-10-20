@@ -15,7 +15,7 @@
   - [Delivery Plan](../design-docs/gas/mi-model-input-editing-delivery-plan.md) §6A·§7·§9
   - [OpenAPI 규칙](../conventions/openapi-documentation-conventions.md), [보안 정책](../../SECURITY.md)
 - supersedes: 없음. QRY-01/02와 기존 조회/업로드 범위를 대체하지 않는다.
-- last synced: 2026-10-19 (첫 구현 상태 참조 유지·감사 시간 정밀도 DDL 연결)
+- last synced: 2026-10-19 (F-O-01 실환경 기본 성공 흐름·C DRAFT 등록 상태 참조 동기화)
 - open questions: §10. 2026-10-16 공통 BE 채택과 이번 공통 저장·최종저장/복구 계약(§9) 마무리를 반영한다. 표별 정책·DBA 적용 준비/제품 검증은 별도 후속이며 PriceModel/Regas 추천은 미승인이다. 문서 전체는 Draft다.
 
 ## 1. 목표·이번 slice
@@ -38,17 +38,22 @@ FE가 공통 그리드, 신규 행 입력, 저장 대기/성공/실패, 충돌 �
 
 ### 1.2 첫 구현 범위 — 2026-10-16
 
+- **현재 구현·실환경 상태:** QRY-01/EDT-01~07과 지정 F-O-01 처리·공통 worker/최종저장이 구현돼 있다. 사용자 테스트 서버에서 Case105의 임시저장·revision1 재조회→Case106 최종저장→새 Case 구조 재조회 기본 성공 흐름을 확인했다. 날짜/ID·DB 저장·시간대 설정 조치와 미검증 범위는 [공용 작업 노트의 실행 결과](../work-notes/2026/2026-09-03-model-input-transfer-format.md#case105-106-smoke-20261019)가 소유한다. QRY-02, 일반 표/구조·계산 처리, FE 화면·실환경 경합/장애 복구·Kubernetes 검증은 별도 후속이다. 아래 날짜별 구현 경계는 단계 이력이며 일반 지원 확대나 문서 전체 Approved를 뜻하지 않는다.
+- C의 92개 조회 표는 새 DRAFT 양식 등록만 완료했다. [등록 결과](../work-notes/2026/2026-09-03-model-input-transfer-format.md#c-structure-registration-20261019)를 참조하며 미발행·Case 미연결 상태를 유지한다. F-O-01 시험 양식과 기존 Case 연결을 대체하지 않는다.
+
 - 2026-10-16 물리 table prefix 변경은 [DDL §6.6](../design-docs/gas/mi-model-input-template-catalog-erd-ddl-draft.md)이 소유한다. endpoint/요청·응답은 유지한다. 새 이름 적용과 API 검증의 실행 사실은 [기존 작업 노트의 최신 결과](../work-notes/2026/2026-09-03-model-input-transfer-format.md#actual-result)를 참조한다.
 
-사용자는 공통 요청 처리와 EDT-01~03의 DB 연동 구현을 승인했다. `ModelInputDraftController`가 EDT-01~03과 sourceVersion 진입에 필요한 QRY-01을 제공한다. QRY-02·EDT-06/07, 계산/격리 worker, 값·행·열 변경과 최종저장은 후속이다. EDT-04/05의 공통 요청 기반 범위는 아래 2026-10-18 항목을 따른다. 조회는 고정 원본 revision 0과 지원하는 성공 CHANGE 이력을 복원한다. 진행 작업 중에는 직전 성공 revision을 조회한다. 저장 이력의 schema/참조·행 대응이 맞지 않으면 HTTP500/data:null로 차단하고 원본으로 대체하지 않는다. 전체 계약의 완료/배포를 뜻하지 않는다.
+2026-10-16 첫 구현은 공통 요청 처리와 EDT-01~03의 DB 연동, sourceVersion 진입에 필요한 QRY-01이었다. 이후 EDT-04/05 공통 기반·F-O-01 실제 처리·EDT-06/07 통합은 아래 날짜별 항목을 따른다. 조회는 고정 원본 revision 0과 지원하는 성공 CHANGE 이력을 복원한다. 진행 작업 중에는 직전 성공 revision을 조회한다. 저장 이력의 schema/참조·행 대응이 맞지 않으면 HTTP500/data:null로 차단하고 원본으로 대체하지 않는다. 전체 계약의 완료/배포를 뜻하지 않는다.
 
 - POST는 신규/재개 모두200, 회사·사용자·원본별 active Draft 1건이다. 원본 파일 읽기는 장기 DB transaction 밖에서 하고, 저장 직전 Case 잠금과 원본 기준 재검사를 거쳐 Draft·4파일·revision0·원본 행/위치이력을 한 master transaction에 저장한다. 재개 시 새 행ID를 만들지 않는다.
-- 조회 정의는 DDL §6.5의 발행 `qry_json`이다. 읽기 좌표/행 식별 근거와 확인된 metadata만 사용한다. 표별 정책이 미완비여도 읽기 정의는 준비할 수 있으며 해당 capability를 INCOMPLETE로 구분한다. 정의 누락을 빈 규칙으로 추정하지 않는다. 저장 API가 없는 첫 구현에서는 발행 capability READY를 공개 UNSUPPORTED로 내려 쓰기 버튼을 열지 않는다. 정책 채택 상태를 바꾸는 것이 아니다.
+- 조회 정의는 DDL §6.5의 발행 `qry_json`이다. 읽기 좌표/행 식별 근거와 확인된 metadata만 사용한다. 표별 정책이 미완비여도 읽기 정의는 준비할 수 있으며 해당 capability를 INCOMPLETE로 구분한다. 정의 누락을 빈 규칙으로 추정하지 않는다. 저장 API가 없던 첫 구현에서는 발행 capability READY도 공개 UNSUPPORTED로 제공했으며, 현재 F-O-01의 READY 조건은 아래 첫 실제 처리 연결 절을 따른다. 정책 채택 상태를 바꾸는 것이 아니다.
 - 원본 비교 키의 tenantKey는 인증 resolver로 확정한 회사 번호의 선행0 없는 10진 문자열이다. 다른 입력의 해시 순서/표현은 QRY §4.3~4.6을 유지한다. 각 호출에서 source와 개인 소유권을 다시 확인한다.
 - 요청 body는 wrapper가 먼저 전부 읽기 전에 이 경로의 HTTP body/MDC 캐싱·로그를 제외한다. 전용 JSON 경계에서 크기·중복 key·알 수 없는 필드·형식/후행 JSON을 검사하며 수치 직렬화는 정확한10진수를 유지한다. 내부 SQL/저장소/거부값 원문은 오류에 넣지 않는다.
 - **구현·검증 현황:** 첫 구현과 Case103 기본 DB 연동 시험의 결과·환경·독립 검토·남은 확인은 [기존 작업 노트의 최신 결과](../work-notes/2026/2026-09-03-model-input-transfer-format.md#actual-result)를 참조한다. 기본 시험과 실제 MySQL 경합/실패·접근 경계·큰 표의 추가 검증, 전체 기능/운영 배포는 구분한다. 타회사 원본 허용 지적은 domain §5.4의 사용자 범위 확인에 따라 적용하지 않는다. FE 조회 시점은 [QRY 상세 §5.1의 FE 구간 로딩 방식](mi-fundamental-model-input-query-api-proposal.md)을 따르며 FE 구현/화면 검증은 후속이다. 표별 정책은 후속, PriceModel/Regas 추가 추천은 미승인 유지.
 
 #### 2026-10-18 EDT-04/05 공통 기반 구현 경계
+
+이 절의 처리기 미연결·신규 요청 차단은 공통 기반 단계의 이력이다. 현재 지원 범위는 아래 F-O-01/EDT-06·07 연결 절과 위 최신 실행 결과를 따른다.
 
 EDT-04/05는 §3~6의 요청 파싱·동일 requestId 의미 비교·DB 작업/진행 슬롯·상태 조회 경계를 제공한다. 현재 표별 변경·계산 처리기는 연결하지 않는다. 새 요청의 표/동작 정책 미완비는 POLICY_INCOMPLETE, 준비된 정책이라도 실제 처리기가 없으면 POLICY_UNSUPPORTED로 접수 전에 거부하며 operation을 만들지 않는다. 비어 있는 처리를 SUCCEEDED로 기록하거나 요청만 저장해 무기한 QUEUED로 돌려주지 않는다. 따라서 현재 공개 API에서 신규202/실제 변경 성공을 검증했다는 뜻은 아니다. 공통 영속 접수·중복·claim·복구 경계는 격리 테스트에서 검증한다.
 
@@ -62,11 +67,11 @@ EDT-04/05는 §3~6의 요청 파싱·동일 requestId 의미 비교·DB 작업/�
 
 위 처리기 미연결 설명은 공통 기반 구현 당시 경계다. 이번 연결은 [domain §5.5](../design-docs/gas/mi-model-input-template-catalog-domain-model-design.md)의 지정 F-O-01만 지원한다. 별도 발행의 `OUTPUT/USCostofSupply/us_cost_of_supply`, B8 한 슬롯의 `breakevenPrice`에 한 개 SET으로 숫자0.35를 보내는 요청을 받는다. null은 기존 공통 요청 형식 검증의400, 문자열/다른 숫자값은422 VALIDATION_FAILED, 다른 준비된 동작은409 POLICY_UNSUPPORTED, 미완비 정책은 기존409 POLICY_INCOMPLETE다. `setConstraints`의 minimum/maximum은 모두0.35다. worker 사용 설정과 이 좁은 발행 정의가 함께 준비된 경우에만 SET을 공개 READY로 제공한다. 기존 Case103 발행은 바꾸지 않는다.
 
-신규 접수202→영속 QUEUED/RUNNING→검증·동일 master 성공 확정 뒤 SUCCEEDED/resultRevision=baseRevision+1로 연결한다. 추가 계산은 승인 사례상 해당 없음이며 B8 외 전체 OOXML member/수식·cache·서식/구조 보존과 저장 재읽기를 확인한다. 동일 요청 재송신·기한/실패·기존 조회/숫자 계약은 §5~6을 유지한다. 실제 DB/API 검증은 사용자 실행 결과를 별도로 확인하며 로컬 성공과 구분한다. EDT-06/07과 다른 표/값/구조·계산 지원을 뜻하지 않는다.
+신규 접수202→영속 QUEUED/RUNNING→검증·동일 master 성공 확정 뒤 SUCCEEDED/resultRevision=baseRevision+1로 연결한다. 추가 계산은 승인 사례상 해당 없음이며 B8 외 전체 OOXML member/수식·cache·서식/구조 보존과 저장 재읽기를 확인한다. 동일 요청 재송신·기한/실패·기존 조회/숫자 계약은 §5~6을 유지한다. 실제 DB/API 기본 성공 흐름은 위 실행 결과로 확인했으며 다른 표/값/구조·계산 지원을 뜻하지 않는다. EDT-06/07은 아래 통합 경계를 따른다.
 
 #### 2026-10-19 EDT-06/07 공통 통합 경계
 
-EDT-06/07은 §9 정본 계약으로 연결한다. 신규 준비파일 DDL의 수동 적용/검증 뒤 웹과 같은 단일 worker에 `mi.model-input.finalization.enabled=true`를 함께 지정한다(기본 false). 비활성화 중에는 신규 FINALIZE 접수를409 POLICY_UNSUPPORTED로 차단하고 기존 기록 조회/동일 요청 재전송은 유지한다. CHANGE와 FINALIZE의 작업 이력·requestId·진행 슬롯·120초/marker 복구 경계는 하나다. revision0의 원본4개와 지원하는 전체 성공 변경을 대상으로 하며, 현재 nonzero 파일 재생성은 지정 F-O-01 보존 이력만 지원한다. 지원되지 않는 성공 이력을 무시해 최종저장하지 않는다. 실제 DB/API/storage/worker 배포 결과는 별도 사용자 검증이며 로컬 구현 완료와 구분한다.
+EDT-06/07은 §9 정본 계약으로 연결한다. 신규 준비파일 DDL의 수동 적용/검증 뒤 웹과 같은 단일 worker에 `mi.model-input.finalization.enabled=true`를 함께 지정한다(기본 false). 비활성화 중에는 신규 FINALIZE 접수를409 POLICY_UNSUPPORTED로 차단하고 기존 기록 조회/동일 요청 재전송은 유지한다. CHANGE와 FINALIZE의 작업 이력·requestId·진행 슬롯·120초/marker 복구 경계는 하나다. revision0의 원본4개와 지원하는 전체 성공 변경을 대상으로 하며, 현재 nonzero 파일 재생성은 지정 F-O-01 보존 이력만 지원한다. 지원되지 않는 성공 이력을 무시해 최종저장하지 않는다. 사용자 시험에서 준비파일 DDL 적용·실제 최종저장과 새 Case 구조 재조회는 확인했다. 상세 증거와 중복·장애 복구 등 남은 실환경 검증은 위 실행 결과를 참조한다.
 
 ## 2. 호출 흐름·공통 접근 경계
 

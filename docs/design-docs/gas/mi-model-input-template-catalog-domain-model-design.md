@@ -6,6 +6,7 @@
 - canonical for: Business rules, ownership, lifecycle, and relationships of the MI model input template catalog, Draft and finalization; boundary to Case and Run
 - owner: BE
 - source documents:
+  - 2026-10-19 사용자 결정: 개발 시트가 남아 있어도 업무 구조가 호환되면 Case 파일 연결을 허용한다. 개발 시트의 원본 보존과 화면/편집 제외, 기준 정규화본과 실제 Case 파일의 구분은 규칙39~40을 따른다.
   - 2026-10-16 후속 구현 승인: 공통 요청 처리와 Draft 생성·재개·조회만 첫 구현한다. 실제 DB는 testdb/원본Case103, DDL은 사용자 검토·수동 적용이다. 제품 부분 구현/검증 경계는 편집 API §1.2·DDL §6.5, 실행 결과는 기존 stable note를 따른다. 표별 정책은 후속, PriceModel/Regas 추가 추천은 미승인 유지.
   - 2026-10-16 사용자 작업 전환: 표별 정책은 후속, PriceModel/Regas 추천은 미승인 유지. 공통 저장·최종저장/복구 계약만 이 문서 §3.4·§5.1~5.3 및 편집 API §9·DDL §6.3에 구체화한다. 구현/DB 적용 승인이 아니다.
   - 2026-10-16 사용자 두 업무 묶음 채택: Sector/Monthly 수요 비우기 금지·행 삭제로 해제, Monthly 필수/자유입력·연월·0 이상/FE0·중복·P blank/R=Q, BCPrices 기존 연도 수정/중복 금지·가격0 이상/비우기 금지·입력값 보존/추가 반올림 없음. 규칙45·§6.1을 따른다.
@@ -43,7 +44,7 @@
   - `docs/conventions/db-term-dictionary-sheet2.csv`
 - supersedes:
   - 없음
-- last synced: 2026-10-19 (감사 이름·정밀도 사용자 채택은 DDL §6.8 참조)
+- last synced: 2026-10-19 (개발 시트 포함 파일 수용은 규칙39~40; 감사 이름·정밀도 사용자 채택은 DDL §6.8 참조)
 - open questions:
   - 조사·설계 병행 범위와 미결정 사항별 필요한 근거는 §1A.3~1A.5를 따른다. 공통 초안 작성 가능과 구현 착수 가능은 별도로 판정한다.
   - 구조 변경은 이번 release에 포함하며 주된 추가 방식은 마지막 행·열 추가로 확정했다(규칙 13·26). 표별 추가 경계, 신규 셀 처리와 중간 삽입·삭제 예외의 참조 갱신은 write 계약·실파일 검증에서 구체화해야 한다.
@@ -107,7 +108,7 @@ Excel 파일 4개로 구성된다. `OUTPUT`도 다른 세 역할과 같은 input
 
 | 단계 | 입력 | 처리 책임 | 결과·유지되는 상태 | 다음 단계 진입 조건 |
 | --- | --- | --- | --- | --- |
-| 1. 원본·양식 선택 | 접근 가능한 기존 Case의 4역할 파일과 대응 양식 버전 | 기존 Case·파일 관리가 실제 파일을 소유하고 BE가 동일 source set과 양식을 식별한다. 기준본 준비 시의 개발 시트 제거와 런타임 편집을 구분한다(규칙 39~40) | 네 역할이 함께 식별된 원본 기준. 원본 bytes와 양식 정의는 사용자 편집으로 바뀌지 않음 | 4역할 완비·양식 구조 일치·접근 범위 확인. 불일치는 다른 버전으로 자동 fallback하지 않음(규칙 10) |
+| 1. 원본·양식 선택 | 접근 가능한 기존 Case의 4역할 파일과 대응 양식 버전 | 기존 Case·파일 관리가 실제 파일을 소유하고 BE가 동일 source set과 양식을 식별한다. 개발 시트 포함 파일의 수용과 화면/편집 제외는 규칙39~40을 따른다 | 네 역할이 함께 식별된 원본 기준. 원본 bytes와 양식 정의는 사용자 편집으로 바뀌지 않음 | 4역할 완비·양식 구조 일치·접근 범위 확인. 불일치는 다른 버전으로 자동 fallback하지 않음(규칙 10) |
 | 2. 화면 조회 | 선택한 source set·양식, 선택 표 | BE가 표시 정책으로 전체 탐색 구조와 선택 표 하나의 헤더·값·연결 control을 읽는다. FE는 값과 별도 화면 갱신 규칙을 소비 | 사용자에게 보인 원본 기준과 표 값. 조회만으로 Draft·Case를 생성하거나 원본을 수정하지 않음 | 편집할 때 조회 기준과 같은 원본·양식을 Draft에 고정할 수 있어야 함. 호출 분할·최초 선택은 API 정본의 미결정 |
 | 3. Draft 시작·재개 | 편집 사용자, source Case·정확한 4파일, 양식 버전 | Draft가 원본·양식의 고정 참조, revision(변경 버전), 사용자 편집 상태를 소유. current MI Base를 다시 선택하지 않음 | `DRAFT`와 고정 기준, 저장된 변경분·revision. 동일 사용자·source Case당 진행 중 1건을 재개(규칙 60) | 편집 소유권과 고정 기준을 확인할 수 있고 허용 정책이 확정된 표만 변경. 동시 생성·재개 계약은 Q8b, source 식별·API·저장 표현은 Q9 |
 | 4. 값·구조 변경 | Draft 기준과 사용자 입력·구조 동작 | FE가 허용 규칙으로 편집을 표현하고 BE는 저장 시 같은 정책으로 검증. 기존 셀 값, 신규 행 필수값, 표 끝 추가와 개별 삽입·삭제 예외를 구분(규칙 13·21~28) | 저장할 변경 후보. 화면의 아직 저장하지 않은 값은 영속 Draft 변경분이나 BE 계산 성공을 뜻하지 않음 | 대상/타입/필수값·구조 선행조건·revision을 검증할 수 있어야 임시저장. 실제 요청 단위·연결 동작의 원자성은 Q2~Q4·Q8 |
@@ -545,8 +546,8 @@ FINALIZE의 claim-null은 RUNNING이 없다는 증거가 아니다. 오류/불�
     - `INDEPENDENT | MI_BASE` 정리는 기존대로 case master만 바꾼다. `SCENARIO`만 연결 row를 함께 바꾸는 이유는 남은 execution-preparation이 삭제된 case를 가리키면 팝업 조회가 데이터 불일치로 실패하기 때문이다.
 37. 규칙 36의 정리는 physical delete가 아니다. 연결된 input/output 파일 metadata와 object, run history, 결과 row는 감사·복구를 위해 보존한다. 별도 보존기간과 승인된 purge 절차가 생기기 전에는 hard delete하지 않는다.
 38. 실행 중인 legacy case는 바로 soft delete하지 않는다. cutover pre-check에서 `INDEPENDENT | MI_BASE | SCENARIO` 대상의 `RUNNING`을 0건으로 확인하고, current `MI_BASE`가 legacy 대상이면 soft delete 후 active MI Base가 없을 수 있음을 운영자가 확인한다. 자동 대체 지정은 하지 않는다.
-39. 첨부본의 `SUMMARY`와 `플랫폼 입력 안내`는 개발 전용 시트이며 실제 운영 인풋 구성원이 아니다. 두 이름의 시트는 catalog 작성 evidence로만 사용하고 ACTIVE runtime catalog, source snapshot, Draft projection, 최종 XLSM, Case 파일 연결, Run 전달에서 제외한다.
-40. 별도 운영 파일은 수신하지 않는다. 현재 개발본 4개에서 개발 전용 시트를 제거해 만든 정규화본을 운영 template source와 source snapshot으로 등록하고, 그 정규화본으로 template version의 구조 hash를 만든다. 최종 materialization 때마다 개발 시트를 삭제하는 방식으로 보정하지 않는다.
+39. **2026-10-19 사용자 변경:** `SUMMARY`와 `플랫폼 입력 안내`가 남아 있어도 업무 구조가 승인 양식과 호환되면 네 역할 파일의 Case 연결과 source snapshot 등록을 허용한다. 두 시트의 존재만으로 파일을 거부하거나 제거/재업로드를 요구하지 않는다. 두 시트는 catalog 작성 evidence로 사용할 수 있지만 ACTIVE runtime catalog, 조회 응답, Draft 편집·projection과 입력폼 Backend 재계산 대상에는 포함하지 않는다. 원본에 있으면 시트·수식·저장값·서식 및 관련 package 구성을 보존하며 최종 XLSM 생성과 Run 전달의 전제조건으로 삭제하지 않는다. 이미 두 시트를 제거한 파일에는 다시 추가하지 않는다. 이 규칙은 해당 두 시트의 모델 사용 여부나 Run 실행 성공을 보장하지 않는다.
+40. 기존 정규화본은 양식 정의와 검증 근거를 만든 기준본으로 유지하며, 별도 운영 기준 파일 수신을 필수로 요구하지 않는다. 실제 Case 파일은 네 역할과 승인된 업무 구조의 호환성으로 연결한다(§3.2~3.3). 정규화 여부나 기준본과의 파일명·전체 내용 hash 일치는 요구하지 않으며 기존 역할 식별·접근 권한·파일 유효성·판독 조건은 유지한다. 개발 시트는 runtime sheet definition과 구조 hash 대상에서 제외하므로 두 시트의 포함 여부만으로 새 양식 버전을 만들지 않는다. 구조 hash의 구체 판별 방식은 기존 미결 범위를 유지하며 자동 판별 완료로 간주하지 않는다. 등록된 파일은 불변 원본으로 사용하고 연결/최종저장 시 개발 시트를 삭제해 보정하지 않는다. 기존 표별 쓰기 정책과 제한된 검증 fixture의 지원 범위는 이 파일 수용 결정으로 확대하지 않는다.
 41. hidden sheet 보존은 계산 엔진을 거치지 않는 package-copy 책임이다. worksheet part, sheet 순서·이름·`hidden/veryHidden` 상태, 관계, 수식, cached value, style과 연결 package를 source snapshot 그대로 유지하고 hidden sheet cell을 계산 engine input/output에 포함하지 않는다.
 42. 최종저장 검증은 source와 결과의 hidden sheet 집합·순서·상태가 같고 hidden worksheet part가 변경되지 않았음을 확인한다. hidden sheet 내부의 기존 formula error도 원본 보존 대상으로 취급하며 새 오류 검사나 재계산 대상으로 삼지 않는다.
 43. `SUMMARY` E열이 `직접 입력 대상 아님.`이고 수식·cell formula inbound/outbound·계산용 defined name이 모두 없는 것으로 확인된 visible sheet 6개는 write allowlist, Draft 변경, dependency graph와 Backend workbook 재계산에서 제외한다. 최종 XLSM에는 source snapshot 상태로 보존한다. 화면 표시는 아래와 같이 나눈다. 이 계산 제외는 입력폼 Backend 경계이며 이후 모델 실행 프로그램이 파일을 읽는 범위를 축소하지 않는다.
@@ -616,7 +617,7 @@ FINALIZE의 claim-null은 RUNNING이 없다는 증거가 아니다. 오류/불�
 
 56. 2026-10-07 사용자 확인: SUPPLY `BCProduction`의 T-111 `Production Year Count Reference` (`N7:T24`)는 **A — 원본 복제**이며 화면에 표시하지 않는다. 해당 표의 기존 값·수식·cached result와 관련 피벗 설정/캐시·외부 원본 관계를 그대로 보존한다. T-110 `Annual Gas Production Baseline`의 행 추가에도 T-111의 O열 재집계·Q/R/S 연쇄 갱신·수식 재계산·피벗 새로고침·원본 연결 변경은 하지 않는다. 이 보존 범위는 T-111이며 같은 시트 전체나 T-110의 정책을 A로 변경하지 않는다.
 
-57. 2026-10-07 사용자 확인: 기준 묶음 `2026-10-07-delivery-261006-v8-v6`의 원본 4파일 `SUMMARY` C열에서 표 전체가 `미표시`인 항목은 **A — 원본 복제**이며 화면에 표시하지 않는다. 해당 업무 표의 값·수식·cached result와 관련 원본 구성을 변경·재계산·확장하지 않는다. 표별 대응은 통합 판별대장에 기록한다. 같은 시트의 표시 표와 표 내부 일부 미표시 열에는 이 전체 표 분류를 확대하지 않는다. 워크북 밖 서버 LUT·외부 결과 연결 설명은 대장의 A 분류 기록으로 구분하고, 복제할 XLSM 시트·셀 범위를 새로 만들지 않는다. 개발 전용 `SUMMARY`·`플랫폼 입력 안내`의 X 제거 정책은 규칙 39를 유지한다.
+57. 2026-10-07 사용자 확인: 기준 묶음 `2026-10-07-delivery-261006-v8-v6`의 원본 4파일 `SUMMARY` C열에서 표 전체가 `미표시`인 항목은 **A — 원본 복제**이며 화면에 표시하지 않는다. 해당 업무 표의 값·수식·cached result와 관련 원본 구성을 변경·재계산·확장하지 않는다. 표별 대응은 통합 판별대장에 기록한다. 같은 시트의 표시 표와 표 내부 일부 미표시 열에는 이 전체 표 분류를 확대하지 않는다. 워크북 밖 서버 LUT·외부 결과 연결 설명은 대장의 A 분류 기록으로 구분하고, 복제할 XLSM 시트·셀 범위를 새로 만들지 않는다. 개발 전용 `SUMMARY`·`플랫폼 입력 안내`의 수용·보존과 화면/편집 제외는 규칙39~40을 따른다.
 
 규칙 57의 시트 전체 적용 확인(2026-10-08 사용자 재확인): TRADE `backup_MidstreamContractInput`(T-187)은 **시트 전체가 화면 미표시·A 원본 복제**다. 값·수식·저장된 계산 결과·서식·관련 원본 설정과 원본 시트의 Excel 표시/숨김 상태를 보존한다. 값 편집·구조 변경·재계산·새로고침 대상에서 제외하며, `CK4`·`CQ4`의 UNIQUE 수식과 배열 결과도 이 보존 범위에 포함한다.
 
