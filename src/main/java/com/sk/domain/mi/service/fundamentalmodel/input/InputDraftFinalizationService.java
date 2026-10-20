@@ -135,12 +135,14 @@ final class InputDraftFinalizationService {
         tx(() -> { store.prepare(job, refs); return null; });
         // 원본4역할을 순차 처리한다. 임시 workbook/화면 snapshot을 승격하지 않는다.
         for (int index = 0; index < ROLES.size(); index++) {
+            InputTempFiles.checkpoint();
             String role = ROLES.get(index);
             Reference planned = refs.get(index);
             files.withGenerated(job, role, generated -> {
                 Reference ready = planned.content(java.nio.file.Files.size(generated), InputDraftFinalizationFiles.digest(generated));
                 tx(() -> { store.content(job, role, ready); return null; }); // PUT보다 먼저 durable 기록
                 objects.upload(ready, generated);
+                InputTempFiles.checkpoint();
                 objects.verifyReadable(ready);
                 tx(() -> { store.uploaded(job, role); return null; });
                 return null;
@@ -148,6 +150,7 @@ final class InputDraftFinalizationService {
         }
         // 예외/응답 유실은 여기서 object 삭제나 FAILED 추정으로 바꾸지 않는다.
         // A가 worker/전송 종료를 확인한 뒤 recoverStopped에서 같은 쓰기 DB를 잠가 확정한다.
+        InputTempFiles.checkpoint();
         return tx(() -> store.commit(job));
     }
 

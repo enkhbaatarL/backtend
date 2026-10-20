@@ -72,7 +72,7 @@ final class InputDraftFinalizationFiles {
         try(InputStream input=Files.newInputStream(path)){return digest(input,checkpoint);}
     }
     static String digest(InputStream input) throws Exception {
-        return digest(input, () -> {});
+        return digest(input, InputTempFiles::checkpoint);
     }
 
     static String digest(InputStream input, Runnable checkpoint) throws Exception {
@@ -85,7 +85,7 @@ final class InputDraftFinalizationFiles {
 
     /** streaming CRC·크기·OOXML workbook 검증. revision0의 byte 동일성은 모든 수식/저장값/구조 보존도 보장한다. */
     static void validatePackage(Path path) throws Exception {
-        validatePackage(path, () -> {});
+        validatePackage(path, InputTempFiles::checkpoint);
     }
 
     static void validatePackage(Path path, Runnable checkpoint) throws Exception {

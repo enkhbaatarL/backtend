@@ -54,9 +54,10 @@ public class InputUploadRepository {
         return sql.query("SELECT * FROM tmd_mdl_inptupldfiled WHERE upld_file_id=?",this::upload,id)
             .stream().findFirst().orElseThrow(InputDraftException::internal);
     }
-    Upload operationFile(String operation) {
-        return sql.query("SELECT * FROM tmd_mdl_inptupldfiled WHERE prcs_id=?",this::upload,operation)
-            .stream().findFirst().orElseThrow(InputDraftException::internal);
+    List<Upload> operationFiles(String operation) {
+        List<Upload> files=sql.query("SELECT * FROM tmd_mdl_inptupldfiled WHERE prcs_id=? ORDER BY upld_file_id",this::upload,operation);
+        if(files.isEmpty()||files.size()>4)throw InputDraftException.internal();
+        return files;
     }
     List<Upload> files(String draft) {
         return sql.query("SELECT u.* FROM tmd_mdl_inptdrftfiled f JOIN tmd_mdl_inptupldfiled u ON u.upld_file_id=f.upld_file_id AND u.drft_id=f.drft_id WHERE f.drft_id=? AND f.del_yn='N' AND u.prcs_stat_cd='COMMITTED' ORDER BY f.mdl_file_cd",this::upload,draft);
@@ -91,18 +92,18 @@ public class InputUploadRepository {
         return sql.query("SELECT * FROM tmd_mdl_inptdrftprcsl WHERE cust_cpny_no=? AND usr_no=? AND crt_req_id=?",this::mapOperation,company,user,request)
             .stream().findFirst().orElse(null);
     }
-    Operation accept(Upload file,String draft,String request,Long revision,String role,String actor,String payload) {
-        requireTransaction();String id=UUID.randomUUID().toString();var now=common.databaseTime().withNano(0);
+    Operation accept(List<Upload> files,String draft,String request,Long revision,String role,String actor,String payload) {
+        requireTransaction();Upload file=files.get(0);String id=UUID.randomUUID().toString();var now=common.databaseTime().withNano(0);
         sql.update("INSERT INTO tmd_mdl_inptdrftprcsl(prcs_id,cust_cpny_no,usr_no,drft_id,req_id,prcs_type_cd,usr_role_cd,base_rvsn_no,prcs_stat_cd,json_rvsn_no,req_json,expr_dtm,crt_dtm,mod_dtm,crt_usr_logn_id,mod_usr_logn_id) VALUES(?,?,?,?,?,?,?,?,'QUEUED',2,?,?,?,?,?,?)",
             id,file.company,file.user,draft,request,draft==null?"UPLOAD_CREATE":"UPLOAD_FILE",role,revision,payload,now.plusSeconds(120),now,now,actor,actor);
-        one(sql.update("UPDATE tmd_mdl_inptupldfiled SET prcs_id=? WHERE upld_file_id=? AND prcs_id IS NULL AND prcs_stat_cd='RECEIVED'",id,file.id));
+        for(Upload incoming:files)one(sql.update("UPDATE tmd_mdl_inptupldfiled SET prcs_id=? WHERE upld_file_id=? AND prcs_id IS NULL AND prcs_stat_cd='RECEIVED'",id,incoming.id));
         if(draft==null)one(sql.update("UPDATE tmd_mdl_inptupldactvm SET prcs_id=? WHERE cust_cpny_no=? AND usr_no=? AND prcs_id IS NULL AND drft_id IS NULL",id,file.company,file.user));
         else one(sql.update("UPDATE tmd_mdl_inptdrftm SET actv_prcs_id=? WHERE drft_id=? AND actv_prcs_id IS NULL AND rvsn_no=? AND drft_stat_cd='DRAFT'",id,draft,revision));
         return operation(id);
     }
     List<Operation> pending() { return sql.query("SELECT * FROM tmd_mdl_inptdrftprcsl WHERE prcs_type_cd IN ('UPLOAD_CREATE','UPLOAD_FILE') AND prcs_stat_cd IN ('QUEUED','RUNNING') ORDER BY expr_dtm,prcs_id LIMIT 100",this::mapOperation); }
     Operation lock(Operation observed) {
-        Upload u=operationFile(observed.id());lockSlot(u.company,u.user,observed.actor());
+        Upload u=operationFiles(observed.id()).get(0);lockSlot(u.company,u.user,observed.actor());
         if(observed.draftId()!=null)common.lockForRecovery(observed.draftId());
         return sql.queryForObject("SELECT * FROM tmd_mdl_inptdrftprcsl WHERE prcs_id=? FOR UPDATE",this::mapOperation,observed.id());
     }
@@ -125,13 +126,16 @@ public class InputUploadRepository {
         sql.update("INSERT INTO tmd_mdl_inptdrftm(drft_id,cust_cpny_no,usr_no,src_spt_cd,org_case_id,org_rvsn_val,tmplt_id,drft_stat_cd,rvsn_no,crt_usr_logn_id,mod_usr_logn_id) VALUES(?,?,?,'UPLOAD',NULL,NULL,?,'DRAFT',0,?,?)",draft,u.company,u.user,catalog.templateId(),actor,actor);
         sql.update("INSERT INTO tmd_mdl_inptdrftrvsnl(drft_id,rvsn_no,json_rvsn_no,crt_usr_logn_id,mod_usr_logn_id) VALUES(?,0,2,?,?)",draft,actor,actor);
     }
-    void complete(Operation op,String draft,String kind,long revision,String result,String delta,List<RowRef> rows,Catalog catalog) {
-        Upload u=operationFile(op.id());
+    void complete(Operation op,String draft,long revision,String result,String delta,List<RowRef> rows,Catalog catalog) {
+        List<Upload> incoming=operationFiles(op.id());Upload u=incoming.get(0);
         one(sql.update("UPDATE tmd_mdl_inptdrftprcsl SET drft_id=?,prcs_stat_cd='SUCCEEDED',rslt_json=?,end_dtm=CURRENT_TIMESTAMP(6) WHERE prcs_id=? AND prcs_stat_cd='RUNNING' AND try_tokn=? AND expr_dtm>CURRENT_TIMESTAMP(6)",draft,result,op.id(),op.token()));
         if(revision>0)sql.update("INSERT INTO tmd_mdl_inptdrftrvsnl(drft_id,rvsn_no,base_rvsn_no,prcs_id,json_rvsn_no,dlta_json,crt_usr_logn_id,mod_usr_logn_id) VALUES(?,?,?,?,2,?,?,?)",draft,revision,revision-1,op.id(),delta,op.actor(),op.actor());
-        one(sql.update("UPDATE tmd_mdl_inptupldfiled SET drft_id=?,file_rvsn_no=?,prcs_stat_cd='COMMITTED' WHERE upld_file_id=? AND prcs_stat_cd='RECEIVED'",draft,revision,u.id));
-        sql.update("INSERT INTO tmd_mdl_inptdrftfiled(drft_id,mdl_file_cd,file_no,upld_file_id,crt_usr_logn_id,mod_usr_logn_id) VALUES(?,?,NULL,?,?,?) ON DUPLICATE KEY UPDATE upld_file_id=VALUES(upld_file_id),mod_usr_logn_id=VALUES(mod_usr_logn_id)",draft,kind,u.id,op.actor(),op.actor());
-        var affected=catalog.tables().stream().filter(t->t.role().equals(kind)).map(TableRef::id).collect(java.util.stream.Collectors.toSet());
+        for(Upload file:incoming) {
+            one(sql.update("UPDATE tmd_mdl_inptupldfiled SET drft_id=?,file_rvsn_no=?,prcs_stat_cd='COMMITTED' WHERE upld_file_id=? AND prcs_stat_cd='RECEIVED'",draft,revision,file.id));
+            sql.update("INSERT INTO tmd_mdl_inptdrftfiled(drft_id,mdl_file_cd,file_no,upld_file_id,crt_usr_logn_id,mod_usr_logn_id) VALUES(?,?,NULL,?,?,?) ON DUPLICATE KEY UPDATE upld_file_id=VALUES(upld_file_id),mod_usr_logn_id=VALUES(mod_usr_logn_id)",draft,file.kind,file.id,op.actor(),op.actor());
+        }
+        var kinds=incoming.stream().map(Upload::kind).collect(java.util.stream.Collectors.toSet());
+        var affected=catalog.tables().stream().filter(t->kinds.contains(t.role())).map(TableRef::id).collect(java.util.stream.Collectors.toSet());
         List<RowPosition> active=common.rowPositions(draft).stream().filter(p->affected.contains(p.table())&&p.end()==null&&p.row()!=null).toList();
         sql.batchUpdate("UPDATE tmd_mdl_inptdrftrowh SET end_rvsn_no=? WHERE row_id=? AND end_rvsn_no IS NULL",active,500,
             (s,p)->{s.setLong(1,revision);s.setString(2,p.id());});
@@ -151,7 +155,7 @@ public class InputUploadRepository {
         one(sql.update("UPDATE tmd_mdl_inptdrftprcsl SET prcs_stat_cd='FAILED',fail_json=?,end_dtm=CURRENT_TIMESTAMP(6) WHERE prcs_id=? AND prcs_stat_cd IN ('QUEUED','RUNNING')",failure,op.id()));
         if(op.draftId()==null)sql.update("UPDATE tmd_mdl_inptupldactvm SET prcs_id=NULL WHERE prcs_id=?",op.id());
         else one(sql.update("UPDATE tmd_mdl_inptdrftm SET actv_prcs_id=NULL WHERE drft_id=? AND actv_prcs_id=?",op.draftId(),op.id()));
-        cleanup(operationFile(op.id()).id);
+        for(Upload file:operationFiles(op.id()))cleanup(file.id);
     }
     void cleanup(String file) { sql.update("UPDATE tmd_mdl_inptupldfiled SET prcs_stat_cd='CLEANUP_PENDING' WHERE upld_file_id=? AND prcs_stat_cd IN ('PREPARED','RECEIVED') AND (prcs_id IS NULL OR EXISTS(SELECT 1 FROM tmd_mdl_inptdrftprcsl p WHERE p.prcs_id=tmd_mdl_inptupldfiled.prcs_id AND p.prcs_stat_cd='FAILED'))",file); }
     void stoppedIntake(String file) {

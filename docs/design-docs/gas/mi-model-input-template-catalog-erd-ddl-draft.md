@@ -3,7 +3,7 @@
 ## Document Control
 
 - status: Draft
-- canonical for: Schema rollout — model input template catalog tables, columns, keys, indexes, nullability, migration, rollback, and verify SQL; §6.1/§10A의 기존 불변 파일 참조와 §6.2/§10B의 발행 양식/catalog·Case 연결, §6.3의 Draft 공통 저장 및 §6.10의 직접 업로드 확장 물리 정의, §6.11의 A 실행기 상태 저장 제안. 기존 공통 파일 table 전체 DDL은 재정의하지 않는다.
+- canonical for: Schema rollout — model input template catalog tables, columns, keys, indexes, nullability, migration, rollback, and verify SQL; §6.1/§10A의 기존 불변 파일 참조와 §6.2/§10B의 발행 양식/catalog·Case 연결, §6.3의 Draft 공통 저장 및 §6.10의 직접 업로드 확장 물리 정의, §6.11의 A 실행기 상태 저장. 기존 공통 파일 table 전체 DDL은 재정의하지 않는다.
 - owner: BE / DBA
 - source documents:
   - `docs/work-notes/2026/2026-09-03-model-input-transfer-format.md`
@@ -14,9 +14,9 @@
   - `docs/conventions/db-term-dictionary-sheet2.csv`
 - supersedes:
   - 이 문서의 2026-09-04 `양식 → 테이블` 2단계 초안
-- last synced: 2026-10-20 (§6.11 A 실행기 상태 table 승인 전 제안; §6.10 직접 업로드 저장 확장/증분 DDL 초안; §6.9 미배포 v2 단일 저장/복원 형식·Draft 초기화 SQL 확정; §6.8 감사 초 정밀도 정렬·증분 적용 준비; §6.3.4.1 성공값 좌표 이동·저장 이력 오류 처리 보완; 사용자 제공 midb 정의에 따른 §6.4 파일 metadata 매핑 정렬 유지; 나머지 DBA 후속은 §13)
+- last synced: 2026-10-20 (§6.11 A 실행기 상태 table 사용자 승인; §6.10 직접 업로드 저장 확장/증분 DDL 초안; §6.9 미배포 v2 단일 저장/복원 형식·Draft 초기화 SQL 확정; §6.8 감사 초 정밀도 정렬·증분 적용 준비; §6.3.4.1 성공값 좌표 이동·저장 이력 오류 처리 보완; 사용자 제공 midb 정의에 따른 §6.4 파일 metadata 매핑 정렬 유지; 나머지 DBA 후속은 §13)
 - open questions:
-  - §6.11의 A 실행기 전용 상태 table1개 추가는 사용자 승인 대기다. 기존 DB 구조에 소비자 수명 전체의 종료/복구 승인 기록이 없어 제품 구현을 보류했다. 실제 DB 조회·DDL 적용은 하지 않았다.
+  - §6.11의 상태 table1개 추가는 2026-10-20 사용자 후속 승인됐다. 실제 DB 조회·DDL 적용/경합 검증은 별도이며 아직 수행하지 않았다.
   - 직접 업로드의 물리 설계/증분 SQL은 §6.10에 정리했다. 실제 환경 제약명·타입·수동 적용, MySQL 제약/동시성 및 새 저장 형식 reader/writer 검증은 미실행이며 이 확인 전에는 적용 준비 완료로 판정하지 않는다.
   - Q2 §6.2/§10B의 기존 catalog table/승인 GET 정의·seed·발행과 신규/기존 Case-template 관계 등록 결과를 확인해야 한다. field/control/options/화면 규칙의 실제 저장 구조/정의는 기존 후속이며 root ID만으로 완비를 가정하지 않는다.
   - 3파일 `SCENARIO` legacy cleanup의 apply/verify/rollback DML(case master + run history + 연결 execution-preparation + active 가격전망해석)은 미작성이다. `INPUT-11` 착수 시 작성해 DBA 검토를 받는다.
@@ -873,7 +873,7 @@ DDL은 암묵 commit되므로 reset의 DELETE transaction을 검증·COMMIT/ROLL
 - Draft: 기존 Case별 활성 UK 유지. 추가 generated `actv_upld_usr_no=IF(src_spt_cd='UPLOAD' AND drft_stat_cd='DRAFT' AND del_yn='N',usr_no,NULL)`와 `(cust_cpny_no,actv_upld_usr_no)` UK로 직접 업로드 활성 Draft도1건을 보장한다. 최초 검증 전에는 Draft가 없으므로 이 UK만으로 충분하지 않으며 위 단일 작성 행을 함께 사용한다.
 - 요청: 기존 `(drft_id,req_id)`/활성 drft_id UK는 후속 업로드·편집·최종저장을 함께 묶는다. 최초 전용 generated `crt_req_id`와 `(cust_cpny_no,usr_no,crt_req_id)` UK를 추가한다. 최초 requestId 범위는 인증된 회사/사용자이며 sourceKey/파일/metadata는 동일 내용 비교 대상이다. 후속은 기존 Draft/requestId 범위다. 최초 성공 뒤에도 같은 초기 키/작업을 유지한다.
 - 요청/단일 작성의 owner 복합 FK는 같은 회사·사용자의 Draft/요청만 참조한다. private 파일의 성공 `(drft_id,prcs_id)` 및 `(drft_id,file_rvsn_no)` FK, 현재 파일의 `(drft_id,upld_file_id)` FK를 사용한다. 역할·고정 양식·성공 상태·현재 파일과 해당 baseline 소속 등은 DB FK만으로 표현되지 않으므로 짧은 확정 transaction과 검증 SQL로 확인한다.
-- 파일은 요청당 하나(널 허용 prcs_id UK), 성공 역할/revision당 하나이며 교체 전 참조도 유지한다. 정리 index는 `(prcs_stat_cd,mod_dtm)`. 신규 단독 상태 index·목록 검색 index·캐시는 추가하지 않는다.
+- 2026-10-20 최초 다중 업로드 사용자 승인: 최초 요청당 파일1~4개, 후속 요청당 하나다. 기존 널 허용 `prcs_id` UK는 일반 `prcs_id` index로 대체한다. 성공 역할/revision당 UK와 교체 전 참조는 유지한다. 증분 적용/검증/롤백은 [model-input-multi-upload-ddl-draft.sql](../../model-input-multi-upload-ddl-draft.sql)이 소유하며 기존 설치와 신규 설치 모두 기본 업로드 DDL 다음에 적용한다. 정리 index `(prcs_stat_cd,mod_dtm)`는 유지한다.
 - 1NF/2NF/3NF 검토: 역할은 배열 컬럼 대신 현재 역할 row와 파일별 baseline으로 분리했다. 단일 작성은 owner당 한 row다. JSON은 기존 원자 요청/결과 및 provider 저장 참조에만 사용한다. 요청/파일의 owner와 고정 양식은 독립 접수·권한 확인/파일 검증 시점의 증거이며 복합 FK/확정 검증으로 일치시킨다. 전체 workbook·현재 readiness를 중복 저장하지 않는다.
 
 #### 6.10.3 접수·성공·교체/복원 경계
@@ -886,7 +886,7 @@ DDL은 암묵 commit되므로 reset의 DELETE transaction을 검증·COMMIT/ROLL
 6. **조회/편집/최종 복원:** 역할별로 목표 revision 이하의 마지막 성공 파일 baseline을 선택하고, 그 역할에 속한 **baseline 이후** 성공 CHANGE의 승인 결과만 복원한다. 예전 파일의 셀·행·열·구조 delta를 새 파일에 다시 적용하지 않는다. 다른 역할의 기존 delta는 유지한다. snapshot/cache도 같은 기준점으로 판별하며 실패·진행 파일을 사용하지 않는다. 기존 Case 경로는 baseline0/기존 고정4파일을 유지한다.
 7. **취소·최종저장:** 진행 없음/확인된 취소는 같은 단일 작성→Draft 잠금에서 DISCARDED와 단일 작성 포인터 해제를 함께 확정한다. 최종저장은 기존4파일·Case/file metadata/고정 template/FINALIZED/요청 성공 확정 transaction에 슬롯 해제를 포함한다. 이때만 실제 Case 및 tcm_filel4건을 만든다. 취소 A는 새 최초 B의 실패/timeout으로 복구하지 않는다. 종료/실패 후 동일 요청 결과는 불변이며 새 작성을 가리키는 포인터를 과거 실패 처리로 해제하지 않는다.
 
-UPLOAD_FILE의 v2 dlta_json은 닫힌 형식 `{policyTemplateId,uploadFileId,kind}`이며 세 key가 필수다. file baseline·행 identity/위치는 관계형 성공 기록과 대조한다. CHANGE의 v2 형식은 §6.9를 그대로 사용한다. 읽기/최종저장 reader는 연결 요청 종류로 분기하며 업로드 delta를 CHANGE로 해석하거나 무시하지 않는다. UPLOAD_CREATE/UPLOAD_FILE의 req_json은 파일 바이트/경로 대신 정규화 metadata와 실제 파일 크기·내용 digest/의미 있는 파일명을 포함하고 기존1MiB 한도를 유지한다. 랜덤 수신 UUID·object key·multipart boundary를 동일성 비교에 넣지 않는다. 파일 형식/크기/개인 경로를 성공 응답으로 무조건 노출하지 않으며 API 필드 추가는 해당 정본에서 결정한다.
+UPLOAD_FILE의 v2 dlta_json은 닫힌 형식 `{policyTemplateId,uploadFileId,kind}`이며 세 key가 필수다. file baseline·행 identity/위치는 관계형 성공 기록과 대조한다. CHANGE의 v2 형식은 §6.9를 그대로 사용한다. 읽기/최종저장 reader는 연결 요청 종류로 분기하며 업로드 delta를 CHANGE로 해석하거나 무시하지 않는다. UPLOAD_CREATE/UPLOAD_FILE의 req_json은 파일 바이트/경로 대신 정규화 metadata와 실제 파일 크기·내용 digest/의미 있는 파일명을 포함하고 기존1MiB 한도를 유지한다. 2026-10-20 다중 최초 요청은 `files` 배열을 파일명/MIME/크기/hash 순으로 정렬해 저장한다. 단일 요청은 기존 `file` object를 유지해 과거 재전송과 호환한다. 최초 배치의 모든 성공 파일과 원본 행은 같은 revision0에 연결되며 UPLOAD_FILE delta 형식은 변경하지 않는다. 전체 후보의 연결/성공 확정은 같은 transaction, 실패 정리는 요청의 모든 후보를 대상으로 한다. 랜덤 수신 UUID·object key·multipart boundary를 동일성 비교에 넣지 않는다. 파일 형식/크기/개인 경로를 성공 응답으로 무조건 노출하지 않으며 API 필드 추가는 해당 정본에서 결정한다.
 
 #### 6.10.4 코드 영향·보관·배포/검증
 
@@ -908,9 +908,9 @@ UPLOAD_FILE의 v2 dlta_json은 닫힌 형식 `{policyTemplateId,uploadFileId,kin
 
 <a id="in-process-runner-state-proposal-20261020"></a>
 
-### 6.11 A 웹 실행기 상태 저장 — 2026-10-20 승인 전 제안
+### 6.11 A 웹 실행기 상태 저장 — 2026-10-20 사용자 승인
 
-**상태: Draft / 사용자 승인 전, 구현·SQL 적용 없음.** 수명/인계 순서는 [domain §5.5.3](mi-model-input-template-catalog-domain-model-design.md#worker-execution-direction-20261019)이 소유한다. 이 절은 기존 구조 적합성 검토와 최소 물리 변경 제안이다.
+**상태: 사용자 방향 승인 / 실제 SQL 적용 없음.** 수명/인계 순서는 [domain §5.5.3](mi-model-input-template-catalog-domain-model-design.md#worker-execution-direction-20261019)이 소유한다. 이 절은 기존 구조 적합성 검토와 승인된 최소 물리 변경을 정의한다.
 
 #### 기존 구조로 표현할 수 없는 이유
 
@@ -920,7 +920,7 @@ UPLOAD_FILE의 v2 dlta_json은 닫힌 형식 `{policyTemplateId,uploadFileId,kin
 
 #### 최소 변경안 — 신규 table1개, 기존 table ALTER 없음
 
-`tmd_mdl_inptexecm`을 같은 master schema에 두고 queue당 고정1행을 유지한다. 사용자 입력으로 queue/tenant를 선택하지 않는다. 표의 값은 승인 전 제안이며 증분 SQL은 승인 후 작성한다.
+`tmd_mdl_inptexecm`을 같은 master schema에 두고 queue당 고정1행을 유지한다. 사용자 입력으로 queue/tenant를 선택하지 않는다. 물리 정의/수동 적용 SQL은 [model-input-web-runner-ddl-draft.sql](../../model-input-web-runner-ddl-draft.sql)이다.
 
 | 컬럼 | 제안 타입·제약 | 책임 |
 | --- | --- | --- |
@@ -946,7 +946,7 @@ UPLOAD_FILE의 v2 dlta_json은 닫힌 형식 `{policyTemplateId,uploadFileId,kin
 - **Verify/rollback:** 고정1행·CHECK/FK·기존 table 정의와 데이터 불변·120초 ck09 유지, 실제 두 연결의 세션 잠금/행 잠금 경쟁을 확인한다. rollback은 A 비활성화와 새 행/기존 이력 보존이며 DROP/reset을 사용하지 않는다. A가 시작된 뒤 예전 worker로 돌아가는 절차는 이 승인에 포함하지 않는다.
 - 승인 후 증분 SQL에 pre-check/apply/초기화/verify/보존 rollback/DBA 순서를 작성한다. 실제 MySQL 실행계획/제약/잠금 검증은 아직 없다. 고정 PK 조회 외 새 대량 조회 index는 이번 상태 table에 필요하지 않다.
 
-**Open Questions:** 신규 table1개와 위 초기화/인계 방식의 사용자 승인. `implementation readiness: blocked by open questions` — 기존 DB 구조로 계약을 충족하지 못하므로 승인 전 제품 구현·DDL 적용을 진행하지 않는다.
+**Open Questions:** 실제 MySQL의 정의/제약/잠금 경쟁 수동 검증. `implementation readiness: ready` — table1개와 위 초기화/인계 방식은 사용자 승인됐으며 제품 구현/대역 검증을 진행한다. 실제 DB 적용/배포 승인을 뜻하지 않는다.
 
 ## 7. ERD review
 

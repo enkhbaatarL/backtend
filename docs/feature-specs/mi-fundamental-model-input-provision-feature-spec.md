@@ -45,7 +45,7 @@
   - `SECURITY.md`
 - supersedes:
   - `docs/feature-specs/mi-fundamental-model-mi-base-designation-feature-spec.md`의 기존 `API Slice C — Input 내용 제공` 초안
-- last synced: 2026-10-19 (개발 시트 규칙39~40 유지; 규칙67의 순차 업로드·편집 진입 요구 반영)
+- last synced: 2026-10-20 (최초 1~4개 파일·전체 성공/전체 실패 계약 반영)
 - open questions:
   - 직접 업로드 계약·저장/복구 경계는 §3.3·domain §5.6·DDL §6.10으로 완결했다. 실제 MySQL 제약/DDL 적용·실제 저장소와 대표 대용량 파일 성능·고객 배포 실행 위치는 배포 전 확인 대상이며 구현 미결과 구분한다.
   - sheet/table projection의 원본 수식은 셀 표시 데이터로 전달하지 않는다. 별도 화면 갱신 규칙의 JSON 필드 이름·타입, 참조/대상 표현, 지원 계산 방식과 적용 순서를 확정해야 한다. 구체 범위는 §3.1C를 따른다.
@@ -263,7 +263,20 @@ BaseResponse.data
 
 <a id="incremental-input-upload-api-20261019"></a>
 
-### 3.3 업로드 초안 생성·파일 추가 API — 파일명 역할 판별·순차 업로드
+### 3.3 업로드 초안 생성·파일 추가 API — 최초 다중 파일·후속 개별 업로드
+
+#### 2026-10-20 최초 다중 파일 계약 (사용자 채택)
+
+이 절의 최초 다중 파일 계약은 아래 2026-10-19의 최초 단일 파일/두 part 설명을 대체한다. 후속 추가·교체는 파일 하나를 유지한다. 업무 원자성은 domain 규칙67의 같은 날짜 결정을 따른다.
+
+- 최초 `POST /input-upload-drafts`는 같은 이름 `file`의 binary part를 **1~4개**와 `metadata` application/json part **1개**로 받는다. 기존 file 1개 요청은 그대로 유효하다. `files` 등 다른 part 이름, 파일 없음/5개 이상, 중복 metadata는400이다. sourceKey/requestId와 최초 baseRevision/replaceConfirmed 생략 규칙은 유지한다.
+- 하나의 operationId로 접수하고 전 파일 검증 성공 후 초안 하나를 revision0으로 생성한다. 한 파일이라도 검증/저장에 실패하면 작업 전체가 FAILED이며 초안·Case·일부 성공 파일을 공개하지 않는다. 확인 가능한 기존 issues 형식으로 문제를 반환하며 최초 currentRevision은null이다.
+- DEMAND/SUPPLY/TRADE/OUTPUT 중 같은 역할을 여러 번 제출하면 비동기 `STRUCTURE_VALIDATION_FAILED`, FILE issue `DUPLICATE_ROLE`로 전체 실패한다. 기존 파일명 역할/실제 형식/고정 양식 검증은 각 파일에 적용한다.
+- 파일당50MiB와 작업 접수부터 대기열 포함120초는 유지한다. 파일 수신은 접수 전 완료하며 한 묶음 안의 모든 파일은 같은 ACTIVE 양식 버전으로 검증한다.
+- 같은 requestId의 동일 파일 집합은 전송 순서가 달라도 같은 작업/저장 결과를 반환한다. 정규화 metadata와 각 파일의 정규화 파일명/MIME·실제 크기·SHA-256을 비교하며 개수/파일 내용 변경은409 IDEMPOTENCY_CONFLICT다. 과거 단일 파일 요청 기록과 재전송도 유지한다. FAILED 재시도에는 새 requestId가 필요하다.
+- 성공 result의 기존 필드를 유지한다. `structure`에는 이번에 성공한 모든 역할과 준비 상태를 포함한다. `kind`와 `selection`은 이번에 업로드한 역할 중 화면 순서 DEMAND→SUPPLY→TRADE→OUTPUT의 첫 역할 및 첫 표시 표를 뜻한다. 단일 파일 결과는 기존 의미와 같다. readiness/공통 조회·편집·최종저장 규칙은 유지하며 업로드만으로 Case/Run을 생성하지 않는다.
+- FE 예: `formData.append("file", demandFile)`와 `formData.append("file", supplyFile)`를 반복하고 `formData.append("metadata", new Blob([JSON.stringify({sourceKey, requestId})], {type:"application/json"}))`를 한 번 추가한다. `Content-Type`의 multipart boundary는 브라우저가 설정한다.
+- 검증: 1/2/4개 성공, 단일 호출/기록 재전송 호환, 순서 변경 재전송, 파일 하나 변경 충돌, 역할 중복, 중간 파일 검증 실패/저장 실패/timeout 시 전체 미생성 및 전체 후보 정리, 성공 이후 개별 교체·공통 편집·최종저장을 확인한다.
 
 #### 구현용 잔여 계약 확정 — 성공·취소·접수 전 오류
 

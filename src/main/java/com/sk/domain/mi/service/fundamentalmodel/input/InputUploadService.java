@@ -88,29 +88,28 @@ public class InputUploadService {
         return new Metadata(sourceKey,id,revision,value.path("replaceConfirmed").asBoolean(false));
     }
     public View accept(String draft,MultipartFile file,String metadata) {
+        if(file==null)throw InputDraftException.invalid();
+        return acceptFiles(draft,List.of(file),metadata);
+    }
+    public View acceptFirst(List<MultipartFile> files,String metadata) {
+        return acceptFiles(null,files,metadata);
+    }
+    private View acceptFiles(String draft,List<MultipartFile> files,String metadata) {
         configured();var actor=drafts.actor();Metadata request=metadata(metadata,draft!=null);
         if(draft!=null){uuid(draft);common.owned(draft,actor.company(),actor.user());}
-        if(file==null||file.isEmpty())throw InputDraftException.invalid();if(file.getSize()>FILE_LIMIT)throw InputDraftException.large();
-        String name=filename(file.getOriginalFilename()),extension=name.substring(name.lastIndexOf('.')+1).toLowerCase(Locale.ROOT);
-        if(!Set.of("xlsx","xlsm").contains(extension))throw InputDraftException.invalid();
-        String mime=Objects.requireNonNullElse(file.getContentType(),"application/octet-stream").toLowerCase(Locale.ROOT);
-        if(mime.length()>100)throw InputDraftException.invalid();
+        if(files==null||files.isEmpty()||files.size()>(draft==null?4:1))throw InputDraftException.invalid();
         if(authorization==null||!Set.of("USER","ADMIN").contains(authorization.getCurrentRole().name()))throw InputDraftException.missing();
-        String role=authorization.getCurrentRole().name(),id=UUID.randomUUID().toString();Path local=null,intake=null;
+        String role=authorization.getCurrentRole().name();List<String> intakes=new ArrayList<>();
         try {
-            local=scratch.create();MessageDigest digest=MessageDigest.getInstance("SHA-256");long size=0;
-            try(var input=file.getInputStream();var output=Files.newOutputStream(local)) {
-                byte[] buffer=new byte[65536];int read;
-                while((read=input.read(buffer))!=-1){size+=read;if(size>FILE_LIMIT)throw InputDraftException.large();digest.update(buffer,0,read);output.write(buffer,0,read);}
-            }
-            if(size==0)throw InputDraftException.invalid();
-            intake=scratch.registerUpload(id);
-            var ref=objects.plan(actor.companyCode(),role,id);
-            tx(()->{uploads.prepare(id,actor.company(),actor.user(),actor.login(),text(ref),name,extension,mime);return null;});
-            objects.put(ref,actor.companyCode(),local,mime);
-            final long bytes=size;final String hash=HexFormat.of().formatHex(digest.digest());
-            tx(()->{uploads.received(id,bytes,hash);return null;});
-            ObjectNode payload=(ObjectNode)json.tree(java.util.Map.of("metadata",request,"file",java.util.Map.of("name",name,"mime",mime,"size",bytes,"sha256",hash)));
+            List<InputUploadRepository.Upload> received=new ArrayList<>();
+            for(MultipartFile file:files)received.add(receive(actor,role,file,intakes));
+            received.sort(java.util.Comparator.comparing(InputUploadRepository.Upload::name)
+                .thenComparing(InputUploadRepository.Upload::mime).thenComparing(InputUploadRepository.Upload::size)
+                .thenComparing(InputUploadRepository.Upload::hash));
+            var descriptors=received.stream().map(u->java.util.Map.of("name",u.name(),"mime",u.mime(),"size",u.size(),"sha256",u.hash())).toList();
+            ObjectNode payload=(ObjectNode)json.tree(java.util.Map.of("metadata",request));
+            if(received.size()==1)payload.set("file",json.tree(descriptors.get(0)));
+            else payload.set("files",json.tree(descriptors));
             Operation accepted=tx(()->{
                 var slot=uploads.lockSlot(actor.company(),actor.user(),actor.login());
                 Operation previous=uploads.previous(actor.company(),actor.user(),draft,request.requestId());
@@ -125,20 +124,42 @@ public class InputUploadService {
                     if(!current.status().equals("DRAFT"))throw InputDraftException.conflict("DRAFT_NOT_EDITABLE",current.revision());
                     if(current.activeOperation()!=null)throw InputDraftException.conflict("DRAFT_BUSY",current.revision());
                     if(current.revision()!=request.baseRevision())throw InputDraftException.conflict("REVISION_CONFLICT",current.revision());
-                    String kind=null;try{kind=InputUploadValidation.kind(name);}catch(InputUploadValidation.Failure ignored){/* 판별 실패는 비동기 FILE issue로 확정한다. */}
+                    String kind=null;try{kind=InputUploadValidation.kind(received.get(0).name());}catch(InputUploadValidation.Failure ignored){/* Async FILE issue. */}
                     final String detected=kind;
                     if(detected!=null&&uploads.files(draft).stream().anyMatch(u->detected.equals(u.kind()))&&!request.replaceConfirmed())throw InputDraftException.conflict("REPLACEMENT_NOT_CONFIRMED",current.revision());
                 }
-                return uploads.accept(uploads.file(id),draft,request.requestId(),request.baseRevision(),role,actor.login(),text(payload));
+                return uploads.accept(received,draft,request.requestId(),request.baseRevision(),role,actor.login(),text(payload));
             });
             return view(accepted);
         } catch(InputDraftException ex){throw ex;}
         catch(Exception ex){throw InputDraftException.internal();}
         finally {
-            if(intake!=null)try{tx(()->{uploads.stoppedIntake(id);return null;});scratch.acknowledgedUpload(id);}
+            for(String id:intakes)try{tx(()->{uploads.stoppedIntake(id);return null;});scratch.acknowledgedUpload(id);}
             catch(Exception ex){log.warn("Input upload intake recovery remains pending");}
-            if(local!=null)try{Files.deleteIfExists(local);}catch(Exception ex){throw InputDraftException.internal();}
         }
+    }
+    private InputUploadRepository.Upload receive(ModelInputDraftService.Actor actor,String role,MultipartFile file,List<String> intakes)throws Exception {
+        if(file==null||file.isEmpty())throw InputDraftException.invalid();if(file.getSize()>FILE_LIMIT)throw InputDraftException.large();
+        String name=filename(file.getOriginalFilename()),extension=name.substring(name.lastIndexOf('.')+1).toLowerCase(Locale.ROOT);
+        if(!Set.of("xlsx","xlsm").contains(extension))throw InputDraftException.invalid();
+        String mime=Objects.requireNonNullElse(file.getContentType(),"application/octet-stream").toLowerCase(Locale.ROOT);
+        if(mime.length()>100)throw InputDraftException.invalid();
+        String id=UUID.randomUUID().toString();Path local=scratch.create();
+        try {
+            MessageDigest digest=MessageDigest.getInstance("SHA-256");long size=0;
+            try(var input=file.getInputStream();var output=Files.newOutputStream(local)) {
+                byte[] buffer=new byte[65536];int read;
+                while((read=input.read(buffer))!=-1){size+=read;if(size>FILE_LIMIT)throw InputDraftException.large();digest.update(buffer,0,read);output.write(buffer,0,read);}
+            }
+            if(size==0)throw InputDraftException.invalid();
+            intakes.add(id);scratch.registerUpload(id);
+            var ref=objects.plan(actor.companyCode(),role,id);
+            tx(()->{uploads.prepare(id,actor.company(),actor.user(),actor.login(),text(ref),name,extension,mime);return null;});
+            objects.put(ref,actor.companyCode(),local,mime);
+            final long bytes=size;final String hash=HexFormat.of().formatHex(digest.digest());
+            tx(()->{uploads.received(id,bytes,hash);return null;});
+            return uploads.file(id);
+        } finally {Files.deleteIfExists(local);}
     }
     public View operation(String id) {
         uuid(id);var actor=drafts.actor();return view(uploads.ownedOperation(id,actor.company(),actor.user()));
@@ -170,27 +191,45 @@ public class InputUploadService {
         tx(()->{Operation op=uploads.lock(observed);if(op.status().equals("QUEUED")&&!common.databaseTime().isBefore(op.expires()))uploads.fail(op,text(new Problem("TIMEOUT",revision(op),List.of())));return null;});
     }
     boolean terminal(String id){return uploads.operation(id).terminal();}
+    void process(String operation,String token) { process(uploads.operation(operation),token); }
+    void expireQueued(String operation) { expireQueued(uploads.operation(operation)); }
+    void failStopped(String operation,String token,String reason) { fail(uploads.operation(operation),token,reason,List.of()); }
+    boolean cleanupComplete() { return uploads.cleanupFiles().isEmpty(); }
     private static void requestKeys(JsonNode value,Set<String> allowed){value.fieldNames().forEachRemaining(key->{if(!allowed.contains(key))throw InputDraftException.invalid();});}
     void process(Operation observed,String token) {
         Operation op=tx(()->uploads.claim(observed,token));if(op==null)return;
         try {
             var owner=uploads.owner(op);var actor=new ModelInputDraftService.Actor(owner.company(),owner.user(),owner.companyCode(),owner.login());
-            var u=uploads.operationFile(op.id());String kind=InputUploadValidation.kind(u.name());
+            List<InputUploadRepository.Upload> incoming=uploads.operationFiles(op.id());
+            if(op.draftId()!=null&&incoming.size()!=1)throw InputDraftException.internal();
+            java.util.Map<String,InputUploadRepository.Upload> byKind=new java.util.LinkedHashMap<>();
+            for(var item:incoming) {
+                String detected=InputUploadValidation.kind(item.name());
+                if(byKind.putIfAbsent(detected,item)!=null)throw InputUploadValidation.issue("FILE",detected,null,null,null,"DUPLICATE_ROLE");
+            }
+            List<String> kinds=InputUploadValidation.KINDS.stream().filter(byKind::containsKey).toList();
+            String kind=kinds.get(0);var u=byKind.get(kind);
             Draft old=op.draftId()==null?null:common.owned(op.draftId(),owner.company(),owner.user());
             Catalog catalog=uploads.template(old==null?u.template():Long.valueOf(old.templateId()),modelCode);
-            tx(()->{uploads.validation(u,kind,catalog.templateId());return null;});
-            String location=json.payload(u.reference()).path("location").asText();
             long next=old==null?0:op.baseRevision()+1;String draft=old==null?UUID.randomUUID().toString():old.id();
-            FileRef file=new FileRef(kind,null,u.name(),location,next,u.hash(),u.size());
-            List<RowRef> newRows=validation.validate(file,owner.companyCode(),catalog,u.extension(),u.mime());
-            List<FileRef> files=new ArrayList<>();if(old!=null)for(var item:uploads.files(old.id()))if(!item.kind().equals(kind))files.add(item.file(json.payload(item.reference()).path("location").asText()));files.add(file);
+            List<RowRef> newRows=new ArrayList<>();List<FileRef> files=new ArrayList<>();
+            if(old!=null)for(var item:uploads.files(old.id()))if(!kinds.contains(item.kind()))files.add(item.file(json.payload(item.reference()).path("location").asText()));
+            for(String detected:kinds) {
+                InputTempFiles.checkpoint();
+                if(!common.databaseTime().isBefore(op.expires()))throw InputDraftException.conflict("TIMEOUT",old==null?null:old.revision());
+                var item=byKind.get(detected);
+                tx(()->{uploads.validation(item,detected,catalog.templateId());return null;});
+                String location=json.payload(item.reference()).path("location").asText();
+                FileRef file=new FileRef(detected,null,item.name(),location,next,item.hash(),item.size());
+                newRows.addAll(validation.validate(file,owner.companyCode(),catalog,item.extension(),item.mime()));files.add(file);
+            }
             List<Revision> chain=new ArrayList<>(old==null?List.of():common.revisions(draft));
             String delta=text(java.util.Map.of("policyTemplateId",catalog.templateId(),"uploadFileId",u.id(),"kind",kind));
             if(old==null)chain.add(new Revision(0,null,null,2,null,null,null,0,null,null,null));
             else chain.add(new Revision(next,next-1,op.id(),2,delta,"UPLOAD_FILE","SUCCEEDED",2,op.baseRevision(),op.request(),"{}"));
             List<RowIdentity> identities=new ArrayList<>(old==null?List.of():common.rowIdentities(draft));
             List<RowPosition> positions=new ArrayList<>(old==null?List.of():common.rowPositions(draft));
-            Set<Long> affected=catalog.tables().stream().filter(t->t.role().equals(kind)).map(TableRef::id).collect(java.util.stream.Collectors.toSet());
+            Set<Long> affected=catalog.tables().stream().filter(t->kinds.contains(t.role())).map(TableRef::id).collect(java.util.stream.Collectors.toSet());
             List<RowPosition> closed=new ArrayList<>();
             for(int i=0;i<positions.size();i++){var p=positions.get(i);if(affected.contains(p.table())&&p.end()==null&&p.row()!=null){positions.set(i,new RowPosition(p.table(),p.id(),p.begin(),next,p.row()));closed.add(new RowPosition(p.table(),p.id(),next,null,null));}}
             positions.addAll(closed);
@@ -204,7 +243,7 @@ public class InputUploadService {
                 if(!current.status().equals("RUNNING")||!token.equals(current.token())||!common.databaseTime().isBefore(current.expires()))throw InputDraftException.conflict("TIMEOUT",old==null?null:old.revision());
                 if(old==null) {if(!op.id().equals(slot.operation())||slot.draft()!=null)throw InputDraftException.internal();uploads.createDraft(draft,u,catalog,op.actor());}
                 else {var actual=common.lockForRecovery(draft);if(!draft.equals(slot.draft())||!actual.status().equals("DRAFT")||actual.revision()!=op.baseRevision()||!op.id().equals(actual.activeOperation()))throw InputDraftException.conflict("REVISION_CONFLICT",actual.revision());}
-                uploads.complete(current,draft,kind,next,encoded,delta,newRows,catalog);return null;
+                uploads.complete(current,draft,next,encoded,delta,newRows,catalog);return null;
             });
         } catch(InputUploadValidation.Failure ex){fail(op,token,ex.problem.reason(),ex.problem.issues());}
         catch(InputDraftException ex){fail(op,token,ex.getReason()==null?"PERSISTENCE_FAILED":ex.getReason(),List.of());}

@@ -63,6 +63,7 @@ public class InputWorkbookReader {
     }
     /** 저장소 원본은 공통 업로드 복호화 후 저장된 객체다. 임시 사본만 읽고 항상 제거한다. */
     <T>T withLocal(FileRef file,String company,java.util.function.Function<Path,T> action) {
+        InputTempFiles.checkpoint();
         Path temp=null;
         try {
             try {
@@ -76,7 +77,7 @@ public class InputWorkbookReader {
             try(var object=storage.getObject(parts[1],parts[2]);InputStream stream=object.getObjectContent();var out=Files.newOutputStream(temp)) {
                 byte[] buffer=new byte[65536];long size=0;int len;
                 var digest=java.security.MessageDigest.getInstance("SHA-256");
-                while((len=stream.read(buffer))!=-1) { size+=len;if(size>300L*1024*1024||(file.size()!=null&&size>file.size()))throw InputDraftException.internal();digest.update(buffer,0,len);out.write(buffer,0,len); }
+                while((len=stream.read(buffer))!=-1) { InputTempFiles.checkpoint();size+=len;if(size>300L*1024*1024||(file.size()!=null&&size>file.size()))throw InputDraftException.internal();digest.update(buffer,0,len);out.write(buffer,0,len); }
                 if(file.size()!=null&&size!=file.size())throw InputDraftException.internal();
                 if(file.sha256()!=null&&!java.util.HexFormat.of().formatHex(digest.digest()).equals(file.sha256()))throw InputDraftException.internal();
             }
@@ -88,6 +89,7 @@ public class InputWorkbookReader {
             }
             } catch(InputDraftException ex) {throw ex;}
             catch(Exception ex) {throw InputDraftException.internal();}
+            InputTempFiles.checkpoint();
             return action.apply(temp);
         }
         finally { if(temp!=null)try { Files.deleteIfExists(temp); }catch(IOException ex) {throw InputDraftException.internal();} }

@@ -19,6 +19,36 @@ import org.springframework.stereotype.Component;
 /** 소유한 작업 디렉터리만 정리한다. 다른 살아 있는 JVM의 lock은 건드리지 않는다. */
 @Component
 public class InputTempFiles {
+    static void checkpoint() {
+        if (Thread.currentThread().isInterrupted()) throw new InputDraftPreserveChange.Failure("TIMEOUT");
+    }
+    private final ThreadLocal<Scope> taskScope = new ThreadLocal<>();
+    private final java.util.Set<Scope> activeScopes = java.util.concurrent.ConcurrentHashMap.newKeySet();
+
+    /** 처리 본문/finally가 끝난 호출 스레드만 닫는다. 웹 요청의 다른 파일은 포함하지 않는다. */
+    final class Scope implements AutoCloseable {
+        private final Path directory;
+        private Scope(Path directory) { this.directory = directory; }
+        Path directory() { return directory; }
+        @Override public void close() throws IOException {
+            if (taskScope.get() != this) throw new IllegalStateException("temporary scope owner mismatch");
+            try {
+                deleteContents(directory);
+                Files.delete(directory);
+                activeScopes.remove(this);
+            } finally { taskScope.remove(); }
+        }
+    }
+
+    Scope beginTask() throws IOException {
+        if (taskScope.get() != null) throw new IllegalStateException("temporary scope already active");
+        Path dir = workspace.resolve("task-" + UUID.randomUUID());
+        Scope scope = new Scope(posix ? Files.createDirectory(dir,
+                PosixFilePermissions.asFileAttribute(PosixFilePermissions.fromString("rwx------"))) : Files.createDirectory(dir));
+        activeScopes.add(scope);
+        taskScope.set(scope);
+        return scope;
+    }
     private final java.util.Set<String> stoppedUploads=java.util.concurrent.ConcurrentHashMap.newKeySet();
     Path registerUpload(String id)throws IOException {
         if(!id.matches("[0-9a-f-]{36}"))throw InputDraftException.internal();
@@ -48,7 +78,8 @@ public class InputTempFiles {
         } catch(IOException ex) { throw InputDraftException.internal(); }
     }
     public Path create() throws IOException {
-        return posix?Files.createTempFile(workspace,"source-",".xlsm",PosixFilePermissions.asFileAttribute(PosixFilePermissions.fromString("rw-------"))):Files.createTempFile(workspace,"source-",".xlsm");
+        Path directory=taskScope.get()==null?workspace:taskScope.get().directory;
+        return posix?Files.createTempFile(directory,"source-",".xlsm",PosixFilePermissions.asFileAttribute(PosixFilePermissions.fromString("rw-------"))):Files.createTempFile(directory,"source-",".xlsm");
     }
     boolean plaintextRemains()throws IOException {
         try(var files=Files.list(workspace)){return files.anyMatch(path->!path.getFileName().toString().equals(".lock")
@@ -88,6 +119,8 @@ public class InputTempFiles {
     }
     @PreDestroy
     public void close() {
+        // Spring shutdown 제한시간 뒤에도 작업이 남으면 잠금/평문을 보존한다. 종료 증거를 만들지 않는다.
+        if (!activeScopes.isEmpty()) return;
         try {
             boolean markers;
             try(var files=Files.list(workspace)){markers=files.anyMatch(p->p.getFileName().toString().matches("\\.upload-[0-9a-f-]{36}\\.marker"));}

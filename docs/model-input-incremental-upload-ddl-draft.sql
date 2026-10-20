@@ -1,3 +1,4 @@
+-- Multi-file upload requires docs/model-input-multi-upload-ddl-draft.sql AFTER this baseline.
 -- Document Control
 -- status: Draft / MANUAL REVIEW AND APPLY ONLY; NOT EXECUTED
 -- canonical for: Schema rollout — incremental upload precheck/apply/backfill/verify/preserving rollback SQL

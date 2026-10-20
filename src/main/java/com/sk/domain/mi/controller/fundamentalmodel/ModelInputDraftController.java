@@ -46,21 +46,26 @@ public class ModelInputDraftController {
         @Schema(description="기존 역할 교체에 사용자 동의 후 true. 최초에는 생략") Boolean replaceConfirmed) {}
     @Schema(requiredProperties={"file","metadata"})
     public record UploadRequest(@Schema(type="string",format="binary",description="xlsx/xlsm 원본 하나, 최대50MiB") String file,UploadMetadata metadata) {}
+    @Schema(requiredProperties={"file","metadata"})
+    public record UploadCreateRequest(
+        @io.swagger.v3.oas.annotations.media.ArraySchema(minItems=1,maxItems=4,
+            arraySchema=@Schema(description="서로 다른 역할의 xlsx/xlsm 1~4개. 같은 file part를 반복 전송하며 파일당 최대50MiB"),
+            schema=@Schema(type="string",format="binary")) java.util.List<String> file,UploadMetadata metadata) {}
     public record DiscardRequest(@Schema(minimum="0",maximum="9007199254740991",requiredMode=Schema.RequiredMode.REQUIRED) long baseRevision,
         @Schema(allowableValues={"true"},requiredMode=Schema.RequiredMode.REQUIRED) boolean discardConfirmed) {}
 
     @PostMapping(value="/input-upload-drafts",consumes=MediaType.MULTIPART_FORM_DATA_VALUE)
-    @Operation(summary="첫 파일의 업로드 검증 접수",description="기존 Case 없이 xlsx/xlsm 하나를 수신합니다. metadata는 application/json입니다. 같은 사용자는 직접 업로드 Case 하나만 작성하며 같은 requestId/동일 파일·내용은 기존 작업을 반환합니다. 파일당50MiB이고 실제 검증/파싱 성공 뒤에만 초안을 생성합니다. statusEndpoint를2초 간격 조회하며 SUCCEEDED/FAILED에서 종료합니다. 성공 뒤 공통 Draft 조회/편집 API를 사용합니다.")
-    @io.swagger.v3.oas.annotations.parameters.RequestBody(required=true,content=@Content(schema=@Schema(implementation=UploadRequest.class),encoding=@io.swagger.v3.oas.annotations.media.Encoding(name="metadata",contentType=MediaType.APPLICATION_JSON_VALUE)))
+    @Operation(summary="입력 파일 묶음의 업로드 검증 접수",description="기존 Case 없이 xlsx/xlsm 1~4개를 같은 file part로 반복 전송하고 metadata는 application/json으로 한 번 보냅니다. 역할 중복은 실패하며 모든 파일의 검증/파싱이 성공한 경우에만 초안 하나를 revision0으로 생성합니다. 하나라도 실패하면 전체 실패로 초안을 만들지 않습니다. 같은 사용자는 직접 업로드 Case 하나만 작성하며 같은 requestId/동일 파일 집합은 순서가 달라도 기존 작업을 반환합니다. 파일당50MiB, 접수 후 전체 처리 기한120초입니다. statusEndpoint를2초 간격 조회하며 SUCCEEDED/FAILED에서 종료합니다. 성공 result.structure는 모든 성공 역할을, kind/selection은 DEMAND→SUPPLY→TRADE→OUTPUT 순서 중 업로드한 첫 역할/첫 표를 제공합니다. 성공 뒤 공통 Draft 조회/편집 API를 사용합니다.")
+    @io.swagger.v3.oas.annotations.parameters.RequestBody(required=true,content=@Content(schema=@Schema(implementation=UploadCreateRequest.class),encoding=@io.swagger.v3.oas.annotations.media.Encoding(name="metadata",contentType=MediaType.APPLICATION_JSON_VALUE)))
     @ApiResponse(responseCode="202",description="접수/진행 중 동일 요청. 초안 생성 완료 아님",content=@Content(schema=@Schema(implementation=UploadEnvelope.class),examples=@ExampleObject(value="{\"status\":true,\"code\":\"SUC-000\",\"message\":\"Success.\",\"data\":{\"operationId\":\"19ea2ef1-7a4c-4c01-b3be-de451e024234\",\"requestId\":\"d0dcf4f3-dbbb-4c69-a9b0-6846c05d2c05\",\"status\":\"QUEUED\",\"statusEndpoint\":\"/api/v1/mi/fundamental-model/input-upload-requests/19ea2ef1-7a4c-4c01-b3be-de451e024234\",\"result\":null,\"failure\":null}}")))
     @ApiResponse(responseCode="200",description="종료된 동일 요청의 원래 성공/실패 결과",content=@Content(schema=@Schema(implementation=UploadEnvelope.class)))
     @ApiResponse(responseCode="400",description="REQ-003/REQ-005: 파일/metadata 형식 오류",content=@Content(schema=@Schema(implementation=ProblemEnvelope.class)))
     @ApiResponse(responseCode="409",description="BIZ-001: UPLOAD_IN_PROGRESS/IDEMPOTENCY_CONFLICT/정책 미완비",content=@Content(schema=@Schema(implementation=ProblemEnvelope.class)))
     @ApiResponse(responseCode="413",description="REQ-003: 파일당50MiB 초과",content=@Content(schema=@Schema(implementation=ProblemEnvelope.class)))
     @RequiredPermissionRules(rules={@PermissionRule(role=Role.USER,conditions={PermissionCondition.SKGAS_COMPANY_USER_ONLY}),@PermissionRule(role=Role.ADMIN,conditions={PermissionCondition.THIRD_PARTY_ADMIN_ONLY})})
-    public ResponseEntity<byte[]> uploadFirst(@RequestPart("file") org.springframework.web.multipart.MultipartFile file,
+    public ResponseEntity<byte[]> uploadFirst(@RequestPart("file") java.util.List<org.springframework.web.multipart.MultipartFile> file,
             @RequestPart("metadata") String metadata,HttpServletRequest request)throws Exception {
-        uploadParts(request);return uploadResponse(uploadService().accept(null,file,metadata));
+        uploadParts(request,4);return uploadResponse(uploadService().acceptFirst(file,metadata));
     }
     @PostMapping(value="/input-upload-drafts/{draftId}/files",consumes=MediaType.MULTIPART_FORM_DATA_VALUE)
     @Operation(summary="초안 파일 추가 또는 확인한 교체 접수",description="metadata JSON에 requestId/sourceKey/baseRevision을 보냅니다. 기존 역할의 파일 교체는 편집 초기화 안내 후 replaceConfirmed:true가 필요합니다. 검증 성공 때만 해당 역할 파일/편집과 revision+1을 함께 확정하며 실패하면 기존 상태를 유지합니다. 다른 변경 작업과 동시 접수하지 않습니다. 형식·크기·상태 조회는 최초 업로드와 같습니다.")
@@ -74,7 +79,7 @@ public class ModelInputDraftController {
     @RequiredPermissionRules(rules={@PermissionRule(role=Role.USER,conditions={PermissionCondition.SKGAS_COMPANY_USER_ONLY}),@PermissionRule(role=Role.ADMIN,conditions={PermissionCondition.THIRD_PARTY_ADMIN_ONLY})})
     public ResponseEntity<byte[]> uploadFile(@PathVariable String draftId,@RequestPart("file") org.springframework.web.multipart.MultipartFile file,
             @RequestPart("metadata") String metadata,HttpServletRequest request)throws Exception {
-        uploadParts(request);return uploadResponse(uploadService().accept(uuid(draftId),file,metadata));
+        uploadParts(request,1);return uploadResponse(uploadService().accept(uuid(draftId),file,metadata));
     }
     @GetMapping("/input-upload-requests/{operationId}")
     @Operation(summary="업로드 검증 결과 조회",description="최초 요청은 초안이 없어도 operationId로 조회합니다. 진행 중 result/failure는null, 성공은 기존 공통 구조·첫 표 스냅샷의 result, 실패는 안전한 reason/currentRevision/issues의 failure입니다. FAILED 조회도 HTTP200이며 새 처리/파일 연결을 시작하지 않습니다. 종료 결과는 이후 편집으로 변경되지 않습니다.")
@@ -98,8 +103,9 @@ public class ModelInputDraftController {
         return ResponseEntity.status(view.status().equals("QUEUED")||view.status().equals("RUNNING")?HttpStatus.ACCEPTED:HttpStatus.OK)
             .contentType(MediaType.APPLICATION_JSON).body(json.bytes(BaseResponseFactory.create(view)));
     }
-    private static void uploadParts(HttpServletRequest request)throws Exception {
-        var parts=request.getParts();if(parts.size()!=2||parts.stream().filter(p->p.getName().equals("file")).count()!=1||parts.stream().filter(p->p.getName().equals("metadata")).count()!=1)throw InputDraftException.invalid();
+    private static void uploadParts(HttpServletRequest request,int maximumFiles)throws Exception {
+        var parts=request.getParts();long files=parts.stream().filter(p->p.getName().equals("file")).count();
+        if(files<1||files>maximumFiles||parts.size()!=files+1||parts.stream().filter(p->p.getName().equals("metadata")).count()!=1)throw InputDraftException.invalid();
         var metadata=parts.stream().filter(p->p.getName().equals("metadata")).findFirst().orElseThrow();
         try {if(metadata.getContentType()==null||!MediaType.APPLICATION_JSON.isCompatibleWith(MediaType.parseMediaType(metadata.getContentType())))throw InputDraftException.invalid();}
         catch(org.springframework.http.InvalidMediaTypeException ex){throw InputDraftException.invalid();}

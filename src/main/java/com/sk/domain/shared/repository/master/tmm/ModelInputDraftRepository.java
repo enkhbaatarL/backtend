@@ -155,6 +155,21 @@ public class ModelInputDraftRepository {
             .stream().findFirst().orElseThrow(InputDraftException::missing);
     }
     public LocalDateTime databaseTime(){return jdbc.queryForObject("SELECT CURRENT_TIMESTAMP(6)",LocalDateTime.class);}
+    /** 웹 실행기의 저장 결과 재확인. UPLOAD_CREATE는 아직 draft가 없을 수 있다. */
+    public Operation workerOperation(String operationId) {
+        return jdbc.query("SELECT * FROM tmd_mdl_inptdrftprcsl WHERE prcs_id=?",this::operation,operationId)
+                .stream().findFirst().orElseThrow(InputDraftException::missing);
+    }
+    /** 종료 증거를 가진 실행기만 사용한다. 실패 확정 직후/정리 중 재시작도 포함한다. */
+    public List<Operation> stoppedWorkerOperations() {
+        return jdbc.query("""
+            SELECT p.* FROM tmd_mdl_inptdrftprcsl p WHERE p.prcs_stat_cd='RUNNING'
+            OR (p.prcs_type_cd='FINALIZE' AND p.prcs_stat_cd='FAILED' AND EXISTS (
+                SELECT 1 FROM tmd_mdl_inptfnsvfiled f WHERE f.prcs_id=p.prcs_id AND f.try_tokn=p.try_tokn
+                    AND f.prcs_stat_cd='CLEANUP_PENDING'))
+            ORDER BY p.expr_dtm,p.prcs_id LIMIT 100
+            """,this::operation);
+    }
     public Operation enqueueChange(Draft draft,String requestId,long baseRevision,String request,String role,String actor) {
         Draft current=lockDraft(draft.id());
         if(!current.status().equals("DRAFT"))throw InputDraftException.conflict("DRAFT_NOT_EDITABLE",current.revision());
