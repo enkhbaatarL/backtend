@@ -52,15 +52,27 @@ public class InputWorkbookReader {
     @org.springframework.beans.factory.annotation.Autowired(required=false)
     private com.sk.domain.shared.client.FileCryptoApiClient uploadCrypto;
     public record Cell(Object raw,Object display,boolean formula) {}
+    /** lastRow: 이 창이 필요로 하는 마지막 원본 행. 시트의 모든 창이 값을 주면 그 행 뒤는 판독하지 않는다. */
     public record Window(String sheet,IntPredicate rows,Set<Integer> columns,
-            BiConsumer<Integer,Map<Integer,Cell>> accept,IntConsumer invalidRow) {
+            BiConsumer<Integer,Map<Integer,Cell>> accept,IntConsumer invalidRow,int lastRow) {
         public Window(String sheet,IntPredicate rows,Set<Integer> columns,BiConsumer<Integer,Map<Integer,Cell>> accept) {
             this(sheet,rows,columns,accept,row->{throw InputDraftException.internal();});
+        }
+        public Window(String sheet,IntPredicate rows,Set<Integer> columns,BiConsumer<Integer,Map<Integer,Cell>> accept,IntConsumer invalidRow) {
+            this(sheet,rows,columns,accept,invalidRow,Integer.MAX_VALUE);
         }
     }
     public void read(FileRef file,String company,List<Window> windows) {
         withLocal(file,company,path->InputDraftDiagnostics.timed(InputDraftDiagnostics.Stage.WORKBOOK_PARSE,file.role(),()->{
             try {readLocal(path,windows);return null;}
+            catch(InputDraftException ex){throw ex;}
+            catch(Exception ex){InputDraftDiagnostics.failure(InputDraftDiagnostics.Stage.WORKBOOK_PARSE,file.role(),ex);throw InputDraftException.internal();}
+        }));
+    }
+    /** 원본 구조 확인 전용: 객체와 요청 시트의 표시 상태·본문 part 존재만 확인하고 셀 XML은 판독하지 않는다. */
+    public void verifySheets(FileRef file,String company,Set<String> sheets) {
+        withLocal(file,company,path->InputDraftDiagnostics.timed(InputDraftDiagnostics.Stage.WORKBOOK_PARSE,file.role(),()->{
+            try {verifyLocal(path,sheets);return null;}
             catch(InputDraftException ex){throw ex;}
             catch(Exception ex){InputDraftDiagnostics.failure(InputDraftDiagnostics.Stage.WORKBOOK_PARSE,file.role(),ex);throw InputDraftException.internal();}
         }));
@@ -103,7 +115,35 @@ public class InputWorkbookReader {
         finally { if(temp!=null)try { Files.deleteIfExists(temp); }catch(IOException ex) {throw InputDraftException.internal();} }
     }
     void readLocal(Path file,List<Window> windows)throws Exception {
-        // 압축 해제 후 공유 문자열/스타일의 일괄 메모리 적재 상한. 전역 POI 설정은 변경하지 않는다.
+        checkArchive(file);
+        try(OPCPackage pkg=OPCPackage.open(file.toFile(),PackageAccess.READ)) {
+            XSSFReader reader=new XSSFReader(pkg);StylesTable styles=reader.getStylesTable();
+            ReadOnlySharedStringsTable strings=new ReadOnlySharedStringsTable(pkg);
+            Set<String> visible=new HashSet<>();boolean date1904=workbook(reader,visible);
+            for(Window window:windows)if(!visible.contains(window.sheet()))throw InputDraftException.conflict("POLICY_INCOMPLETE",null);
+            XSSFReader.SheetIterator sheets=(XSSFReader.SheetIterator)reader.getSheetsData();Set<String> found=new HashSet<>();
+            while(sheets.hasNext())try(InputStream data=sheets.next()) {
+                String name=sheets.getSheetName();List<Window> selected=windows.stream().filter(w->w.sheet().equals(name)).toList();
+                if(selected.isEmpty())continue;found.add(name);
+                var parser=XMLHelper.newXMLReader();parser.setContentHandler(new SheetHandler(selected,styles,strings,date1904));
+                try {parser.parse(new InputSource(data));}
+                catch(org.xml.sax.SAXException ex){if(!(ex instanceof StopReading)&&!(ex.getException() instanceof StopReading))throw ex;}
+            }
+            if(windows.stream().anyMatch(w->!found.contains(w.sheet())))throw InputDraftException.conflict("POLICY_INCOMPLETE",null);
+        }
+    }
+    void verifyLocal(Path file,Set<String> requested)throws Exception {
+        checkArchive(file);
+        try(OPCPackage pkg=OPCPackage.open(file.toFile(),PackageAccess.READ)) {
+            XSSFReader reader=new XSSFReader(pkg);Set<String> visible=new HashSet<>();workbook(reader,visible);
+            if(!visible.containsAll(requested))throw InputDraftException.conflict("POLICY_INCOMPLETE",null);
+            XSSFReader.SheetIterator sheets=(XSSFReader.SheetIterator)reader.getSheetsData();Set<String> found=new HashSet<>();
+            while(sheets.hasNext())try(InputStream ignored=sheets.next()) {if(requested.contains(sheets.getSheetName()))found.add(sheets.getSheetName());}
+            if(!found.containsAll(requested))throw InputDraftException.conflict("POLICY_INCOMPLETE",null);
+        }
+    }
+    // 압축 해제 후 공유 문자열/스타일의 일괄 메모리 적재 상한. 전역 POI 설정은 변경하지 않는다.
+    private static void checkArchive(Path file)throws IOException {
         try (java.util.zip.ZipFile zip = new java.util.zip.ZipFile(file.toFile())) {
             if (zip.size() > 10000) throw InputDraftException.internal();
             var entries = zip.entries();
@@ -114,36 +154,45 @@ public class InputWorkbookReader {
                 if (entry.getSize() < 0 || entry.getSize() > maximum) throw InputDraftException.internal();
             }
         }
-        try(OPCPackage pkg=OPCPackage.open(file.toFile(),PackageAccess.READ)) {
-            XSSFReader reader=new XSSFReader(pkg);StylesTable styles=reader.getStylesTable();
-            ReadOnlySharedStringsTable strings=new ReadOnlySharedStringsTable(pkg);
-            Set<String> visible=new HashSet<>();boolean[] date1904={false};
-            var xml=XMLHelper.newXMLReader();xml.setContentHandler(new DefaultHandler(){
-                @Override public void startElement(String uri,String local,String name,Attributes a) {
-                    if("sheet".equals(local)&& (a.getValue("state")==null||"visible".equals(a.getValue("state")))) visible.add(a.getValue("name"));
-                    if("workbookPr".equals(local)) date1904[0]="1".equals(a.getValue("date1904"))||"true".equals(a.getValue("date1904"));
-                }});
-            try(InputStream workbook=reader.getWorkbookData()){xml.parse(new InputSource(workbook));}
-            for(Window window:windows)if(!visible.contains(window.sheet()))throw InputDraftException.conflict("POLICY_INCOMPLETE",null);
-            XSSFReader.SheetIterator sheets=(XSSFReader.SheetIterator)reader.getSheetsData();Set<String> found=new HashSet<>();
-            while(sheets.hasNext())try(InputStream data=sheets.next()) {
-                String name=sheets.getSheetName();List<Window> selected=windows.stream().filter(w->w.sheet().equals(name)).toList();
-                if(selected.isEmpty())continue;found.add(name);
-                var parser=XMLHelper.newXMLReader();parser.setContentHandler(new SheetHandler(selected,styles,strings,date1904[0]));parser.parse(new InputSource(data));
-            }
-            if(windows.stream().anyMatch(w->!found.contains(w.sheet())))throw InputDraftException.conflict("POLICY_INCOMPLETE",null);
-        }
+    }
+    /** 표시 시트 이름을 모으고 1904 날짜 체계 여부를 반환한다. */
+    private static boolean workbook(XSSFReader reader,Set<String> visible)throws Exception {
+        boolean[] date1904={false};
+        var xml=XMLHelper.newXMLReader();xml.setContentHandler(new DefaultHandler(){
+            @Override public void startElement(String uri,String local,String name,Attributes a) {
+                if("sheet".equals(local)&& (a.getValue("state")==null||"visible".equals(a.getValue("state")))) visible.add(a.getValue("name"));
+                if("workbookPr".equals(local)) date1904[0]="1".equals(a.getValue("date1904"))||"true".equals(a.getValue("date1904"));
+            }});
+        try(InputStream workbook=reader.getWorkbookData()){xml.parse(new InputSource(workbook));}
+        return date1904[0];
+    }
+    /** 필요한 마지막 행 뒤의 판독 중단 신호. 오류가 아니며 원문/스택을 만들지 않는다. */
+    private static final class StopReading extends org.xml.sax.SAXException {
+        StopReading(){super("stop");}
+        @Override public synchronized Throwable fillInStackTrace(){return this;}
     }
     private static final class SheetHandler extends DefaultHandler {
         private final List<Window> windows;private final StylesTable styles;private final ReadOnlySharedStringsTable strings;
         private final DataFormatter formatter=new DataFormatter(Locale.US);private final boolean date1904;
-        private final Set<Integer> invalidColumns=new HashSet<>();
+        private final Set<Integer> invalidColumns=new HashSet<>();private final int stopAfter;private int previousRow;
         private Map<Integer,Cell> cells;private List<Window> selected=List.of();private int row,col,style;
         private String type,element;private boolean wanted,formula,hasValue;private final StringBuilder value=new StringBuilder(),inline=new StringBuilder();
-        SheetHandler(List<Window> windows,StylesTable styles,ReadOnlySharedStringsTable strings,boolean date1904){this.windows=windows;this.styles=styles;this.strings=strings;this.date1904=date1904;}
-        @Override public void startElement(String uri,String local,String q,Attributes a) {
+        SheetHandler(List<Window> windows,StylesTable styles,ReadOnlySharedStringsTable strings,boolean date1904){
+            this.windows=windows;this.styles=styles;this.strings=strings;this.date1904=date1904;
+            stopAfter=windows.stream().mapToInt(Window::lastRow).max().orElse(Integer.MAX_VALUE);
+        }
+        @Override public void startElement(String uri,String local,String q,Attributes a)throws org.xml.sax.SAXException {
             element=local;
-            if("row".equals(local)){row=Integer.parseInt(a.getValue("r"));selected=windows.stream().filter(w->w.rows().test(row)).toList();cells=new HashMap<>();invalidColumns.clear();}
+            if("row".equals(local)){
+                row=Integer.parseInt(a.getValue("r"));
+                if(stopAfter!=Integer.MAX_VALUE) {
+                    // 중단은 행이 오름차순일 때만 안전하다. Excel과 편집 저장(InputWorkbookXml)은 이 순서를 지킨다.
+                    if(row<=previousRow)throw InputDraftException.internal();
+                    previousRow=row;
+                    if(row>stopAfter)throw new StopReading();
+                }
+                selected=windows.stream().filter(w->w.rows().test(row)).toList();cells=new HashMap<>();invalidColumns.clear();
+            }
             if("c".equals(local)) {
                 CellReference ref=new CellReference(a.getValue("r"));col=ref.getCol()+1;
                 if(ref.getRow()+1!=row)throw InputDraftException.internal();

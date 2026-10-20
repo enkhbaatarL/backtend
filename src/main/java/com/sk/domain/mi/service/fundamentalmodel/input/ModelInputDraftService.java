@@ -302,16 +302,22 @@ public class ModelInputDraftService {
         if(!expected.equals(tx(true,()->store.fixedFiles(draft.id()))))throw InputDraftException.conflict("SOURCE_CHANGED",draft.revision());
     }
     private State state(Actor actor,String id) {
-        return state(actor,InputDraftDiagnostics.timed(InputDraftDiagnostics.Stage.SNAPSHOT_LOCK,null,
-            ()->store.lockOwned(id,actor.company,actor.user)));
+        return state(actor,lockSnapshot(actor,id));
+    }
+    private Draft lockSnapshot(Actor actor,String id) {
+        return InputDraftDiagnostics.timed(InputDraftDiagnostics.Stage.SNAPSHOT_LOCK,null,()->store.lockOwned(id,actor.company,actor.user));
     }
     private State state(Actor actor,Draft draft) {
+        return restore(draft,checkedSource(actor,draft));
+    }
+    /** 소유/원본 접근, 원본 기준값과 고정 파일만 확인한다. 행/이력은 읽지 않는다. */
+    private Source checkedSource(Actor actor,Draft draft) {
         Source source=InputDraftDiagnostics.timed(InputDraftDiagnostics.Stage.SOURCE_LOAD,null,()->source(actor,draft));
         if(!java.util.Objects.equals(draft.sourceVersion(),source.version)) throw InputDraftException.conflict("SOURCE_CHANGED",draft.revision());
         InputDraftDiagnostics.timed(InputDraftDiagnostics.Stage.FIXED_FILES,null,()->{
             fixed(draft,source,draft.sourceVersion());return null;
         });
-        return restore(draft,source);
+        return source;
     }
     private State restore(Draft draft,Source source) {
         var revisions=InputDraftDiagnostics.timed(InputDraftDiagnostics.Stage.REVISION_LOAD,null,()->store.revisions(draft.id()));
@@ -582,10 +588,10 @@ public class ModelInputDraftService {
     @Transactional(propagation=Propagation.NOT_SUPPORTED)
     public SourceStructure sourceStructure(long caseId) {
         Actor actor=actor();Source source=tx(true,()->source(actor,caseId,false));
-        // sourceVersion 진입점도 네 객체의 존재/표 소속을 확인한다.
+        // sourceVersion 진입점도 네 객체의 존재/표 소속을 확인한다. 셀 값은 이 API의 응답이 아니므로 판독하지 않는다.
         for(FileRef file:source.files) {
-            List<Window> windows=source.catalog.tables().stream().filter(t->t.role().equals(file.role())).map(t->new Window(t.sheet(),row->false,Set.<Integer>of(),(row,cells)->{})).toList();
-            reader.read(file,actor.companyCode,windows);
+            Set<String> sheets=source.catalog.tables().stream().filter(t->t.role().equals(file.role())).map(TableRef::sheet).collect(java.util.stream.Collectors.toSet());
+            reader.verifySheets(file,actor.companyCode,sheets);
         }
         Source finalSource=tx(true,()->source(actor,caseId,false));if(!source.version.equals(finalSource.version))throw InputDraftException.conflict("SOURCE_CHANGED",null);
         return new SourceStructure(source.key,source.version,sections(source),null);
@@ -601,12 +607,22 @@ public class ModelInputDraftService {
     }
     @Transactional(propagation=Propagation.NOT_SUPPORTED)
     public Table table(String id,long revision,String key,Integer first) {
-        Actor actor=actor();State state=InputDraftDiagnostics.timed(InputDraftDiagnostics.Stage.TABLE_STATE_BEFORE,null,()->tx(false,()->state(actor,id)));
-        if(revision!=state.draft.revision())throw InputDraftException.conflict("REVISION_CONFLICT",state.draft.revision());
+        Actor actor=actor();State state=InputDraftDiagnostics.timed(InputDraftDiagnostics.Stage.TABLE_STATE_BEFORE,null,()->tx(false,()->{
+            Draft draft=lockSnapshot(actor,id);Source source=checkedSource(actor,draft);
+            // 오래된 revision과 없는 표는 행/이력 복원 전에 거절한다. 표 키는 성공 이력 적용으로 바뀌지 않는다.
+            if(revision!=draft.revision())throw InputDraftException.conflict("REVISION_CONFLICT",draft.revision());
+            if(source.catalog.tables().stream().noneMatch(t->t.key().equals(key)))throw InputDraftException.missing();
+            return restore(draft,source);
+        }));
         Table result=InputDraftDiagnostics.timed(InputDraftDiagnostics.Stage.TABLE_RENDER,null,()->renderTable(actor,state,key,first));
-        State current=InputDraftDiagnostics.timed(InputDraftDiagnostics.Stage.TABLE_STATE_AFTER,null,()->tx(false,()->state(actor,id)));
-        if(current.draft.revision()!=revision)throw InputDraftException.conflict("REVISION_CONFLICT",current.draft.revision());
-        if(!java.util.Objects.equals(state.source.version,current.source.version))throw InputDraftException.conflict("SOURCE_CHANGED",revision);
+        // 행·이력·파일을 바꾸는 모든 저장은 revision을 올리므로, 같은 revision·원본 기준·파일이면 렌더 기준과 같다.
+        // 전체 행 복원을 반복하지 않고 소유/원본 접근·고정 파일과 이 값들만 다시 확인한다.
+        InputDraftDiagnostics.timed(InputDraftDiagnostics.Stage.TABLE_STATE_AFTER,null,()->tx(false,()->{
+            Draft draft=lockSnapshot(actor,id);Source source=checkedSource(actor,draft);
+            if(draft.revision()!=revision)throw InputDraftException.conflict("REVISION_CONFLICT",draft.revision());
+            if(!java.util.Objects.equals(state.source.version,source.version)||!state.source.files.equals(source.files))throw InputDraftException.conflict("SOURCE_CHANGED",revision);
+            return null;
+        }));
         return result;
     }
     private Table renderTable(Actor actor,State state,String key,Integer first) {return renderTable(actor,state,key,first,InputDraftJson.RESPONSE_LIMIT);}
@@ -631,6 +647,8 @@ public class ModelInputDraftService {
         };
         headers.forEach(register::accept);
         for(var range:def.bodyRanges())for(int row=range.startRow();row<=range.endRow();row++)register.accept(row);
+        // 이동 전 원본 좌표 기준으로 필요한 마지막 행까지만 판독한다(헤더·끝 행 확인용 본문 포함).
+        int lastSourceRow=sourceRows.keySet().stream().mapToInt(Integer::intValue).max().orElse(0);
         windows.add(new Window(table.sheet(),sourceRows::containsKey,state.history.sourceColumns(table.id(),def.columns()),(original,sourceValues)->{
             Map<Integer,Cell> values=state.history.projectSource(table.id(),sourceValues);
             for(int row:sourceRows.get(original)) {
@@ -645,13 +663,13 @@ public class ModelInputDraftService {
                 if(budget[0]>InputDraftJson.RESPONSE_LIMIT&&!headers.contains(row)&&candidate.contains(row)&&!candidate.isEmpty()&&row!=candidate.get(0)){cutoff[0]=Math.min(cutoff[0],row-1);continue;}
                 rows.computeIfAbsent(row,k->new HashMap<>()).putAll(currentValues);
             }
-        },original->invalidRows.addAll(sourceRows.get(original))));
+        },original->invalidRows.addAll(sourceRows.get(original)),lastSourceRow));
         for(JsonNode control:def.controls()) {
             int boundRow=control.path("binding").path("rowNumber").asInt(),boundColumn=control.path("binding").path("columnIndex").asInt()+1;
             JsonNode original=state.history.originalControl(table.id(),control.path("id").asText());
             int sourceRow=original.path("binding").path("rowNumber").asInt(),sourceCol=original.path("binding").path("columnIndex").asInt()+1;
             windows.add(new Window(table.sheet(),row->row==sourceRow,Set.of(sourceCol),
-                (row,values)->{if(values.containsKey(sourceCol))rows.computeIfAbsent(boundRow,k->new HashMap<>()).put(boundColumn,values.get(sourceCol));},invalidControls::add));
+                (row,values)->{if(values.containsKey(sourceCol))rows.computeIfAbsent(boundRow,k->new HashMap<>()).put(boundColumn,values.get(sourceCol));},invalidControls::add,sourceRow));
         }
         reader.read(file,actor.companyCode,windows);
         if(!invalidRows.isEmpty())throw InputDraftException.internal();
