@@ -9,12 +9,12 @@ import java.util.Set;
 /** 고정 발행 묶음의 내부 조회 정의. 누락된 업무 정책을 추정하지 않는다. */
 public record InputReadDefinition(List<Integer> columns,List<Integer> headerRows,List<Range> bodyRanges,
         List<Integer> identityColumns,JsonNode fields,JsonNode capabilities,JsonNode inputGuideRules,
-        JsonNode controls,JsonNode displayUpdateRules) {
+        JsonNode controls,JsonNode displayUpdateRules,JsonNode columnCreation) {
     public record Range(int startRow,int endRow) {}
     public static InputReadDefinition parse(JsonNode root) {
         if(root==null || !root.isObject()) throw incomplete();
         InputDraftJson.keys(root,Set.of("schemaVersion","columns","headerRows","bodyRanges","identityColumns",
-            "fields","capabilities","inputGuideRules","controls","displayUpdateRules"));
+            "fields","capabilities","inputGuideRules","controls","displayUpdateRules","columnCreation"));
         if(!root.path("schemaVersion").isIntegralNumber()) throw incomplete();
         if(!root.path("schemaVersion").canConvertToInt() || root.path("schemaVersion").intValue()!=1) throw InputDraftException.conflict("POLICY_UNSUPPORTED",null);
         List<Integer> columns=ints(root.path("columns"),16384), headers=ints(root.path("headerRows"),1048576),
@@ -31,16 +31,23 @@ public record InputReadDefinition(List<Integer> columns,List<Integer> headerRows
         }
         if(!columns.containsAll(identity)||(!body.isEmpty()&&identity.isEmpty())) throw incomplete();
         for(String name:List.of("fields","inputGuideRules","controls","displayUpdateRules")) if(!root.path(name).isArray()) throw incomplete();
-        JsonNode caps=root.path("capabilities"); InputDraftJson.keys(caps,Set.of("SET","CLEAR","ADD_ROW","DELETE_ROW"));
+        JsonNode caps=root.path("capabilities").deepCopy(); InputDraftJson.keys(caps,Set.of("SET","CLEAR","ADD_ROW","DELETE_ROW","ADD_COLUMN","DELETE_COLUMN"));
+        for(String name:List.of("ADD_COLUMN","DELETE_COLUMN")) {
+            if(!caps.has(name))((com.fasterxml.jackson.databind.node.ObjectNode)caps).put(name,"INCOMPLETE");
+            status(caps.path(name));
+        }
+        JsonNode fields=root.path("fields").deepCopy();
         for(String name:List.of("SET","CLEAR","ADD_ROW","DELETE_ROW")) status(caps.path(name));
         Set<String> fieldKeys=new HashSet<>(); Set<Integer> fieldColumns=new HashSet<>();
-        for(JsonNode field:root.path("fields")) {
+        for(JsonNode field:fields) {
             InputDraftJson.keys(field,Set.of("fieldKey","columnNumber","dataType","policyStatus","create","setConstraints"));
             if(!field.path("columnNumber").isIntegralNumber()||!field.path("columnNumber").canConvertToInt()) throw incomplete();
             String key=field.path("fieldKey").asText(); int col=field.path("columnNumber").asInt();
             if(!key.matches("[A-Za-z][A-Za-z0-9_-]{0,63}")||!fieldKeys.add(key)||!columns.contains(col)||!fieldColumns.add(col)
                 ||!Set.of("INTEGER","DECIMAL","TEXT").contains(field.path("dataType").asText())) throw incomplete();
-            JsonNode policy=field.path("policyStatus"); InputDraftJson.keys(policy,Set.of("CREATE","SET","CLEAR"));
+            JsonNode policy=field.path("policyStatus"); InputDraftJson.keys(policy,Set.of("CREATE","SET","CLEAR","DELETE_COLUMN"));
+            if(!policy.has("DELETE_COLUMN"))((com.fasterxml.jackson.databind.node.ObjectNode)policy).put("DELETE_COLUMN","INCOMPLETE");
+            status(policy.path("DELETE_COLUMN"));
             for(String name:List.of("CREATE","SET","CLEAR")) status(policy.path(name));
             if("READY".equals(policy.path("CREATE").asText()) && (!field.path("create").isObject()
                 ||!field.path("create").path("required").isBoolean()||!field.path("create").path("constraints").isObject()
@@ -51,6 +58,15 @@ public record InputReadDefinition(List<Integer> columns,List<Integer> headerRows
             if("VALUE".equals(field.path("create").path("initial").path("kind").asText())
                 &&(!field.path("create").path("initial").hasNonNull("value"))) throw incomplete();
         }
+        JsonNode creation=root.get("columnCreation");
+        if("READY".equals(caps.path("ADD_COLUMN").asText())) {
+            if(creation==null)throw incomplete();
+            InputDraftJson.keys(creation,Set.of("headerValues","body"));
+            if(creation.size()!=2||!creation.path("headerValues").isObject())throw incomplete();
+            InputDraftJson.keys(creation.path("headerValues"),Set.of("year","month"));
+            for(JsonNode header:creation.path("headerValues"))creation(header);
+            creation(creation.path("body"));
+        } else if(creation!=null)throw incomplete();
         Set<String> controlIds=new HashSet<>();
         for(JsonNode control:root.path("controls")) {
             InputDraftJson.keys(control,Set.of("id","type","label","position","sourceTableId","binding","options","editable"));
@@ -72,7 +88,21 @@ public record InputReadDefinition(List<Integer> columns,List<Integer> headerRows
             }
         }
         return new InputReadDefinition(List.copyOf(columns),List.copyOf(headers),List.copyOf(body),List.copyOf(identity),
-            root.get("fields"),caps,root.get("inputGuideRules"),root.get("controls"),root.get("displayUpdateRules"));
+            fields,caps,root.get("inputGuideRules"),root.get("controls"),root.get("displayUpdateRules"),creation);
+    }
+    private static void creation(JsonNode value) {
+        InputDraftJson.keys(value,Set.of("dataType","create"));
+        if(value.size()!=2||!Set.of("INTEGER","DECIMAL","TEXT").contains(value.path("dataType").asText()))throw incomplete();
+        JsonNode create=value.path("create");InputDraftJson.keys(create,Set.of("required","initial","constraints"));
+        if(create.size()!=3||!create.path("required").isBoolean()||!create.path("constraints").isObject())throw incomplete();
+        JsonNode initial=create.path("initial");InputDraftJson.keys(initial,Set.of("kind","value"));
+        String kind=initial.path("kind").asText();
+        if(kind.equals("EMPTY")){if(initial.size()!=1)throw incomplete();}
+        else if(kind.equals("VALUE")) {
+            JsonNode scalar=initial.path("value");
+            if(initial.size()!=2||!(value.path("dataType").asText().equals("TEXT")?scalar.isTextual():scalar.isNumber()))throw incomplete();
+            if(value.path("dataType").asText().equals("INTEGER"))try{scalar.decimalValue().toBigIntegerExact();}catch(ArithmeticException ex){throw incomplete();}
+        } else throw incomplete();
     }
     private static List<Integer> ints(JsonNode node,int maximum) {
         if(!node.isArray()) throw incomplete(); List<Integer> values=new ArrayList<>(); int previous=0;

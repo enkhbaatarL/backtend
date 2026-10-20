@@ -59,7 +59,9 @@ public final class ModelInputDraftResponses {
     @Schema(requiredProperties={"rowId","values"})
     public record EditValue(String rowId,Map<String,Object> values) {}
     @Schema(requiredProperties={"capabilities","fields","rowBindings","editValues"})
-    public record Editing(Map<String,String> capabilities,List<JsonNode> fields,List<RowBinding> rowBindings,List<EditValue> editValues) {}
+    public record Editing(@Schema(description="SET/CLEAR/ADD_ROW/DELETE_ROW/ADD_COLUMN/DELETE_COLUMN의 READY/INCOMPLETE/NOT_ALLOWED/UNSUPPORTED. READY만 호출 가능") Map<String,String> capabilities,List<JsonNode> fields,List<RowBinding> rowBindings,List<EditValue> editValues,
+        @com.fasterxml.jackson.annotation.JsonInclude(com.fasterxml.jackson.annotation.JsonInclude.Include.NON_NULL)
+        @Schema(description="ADD_COLUMN READY일 때만 제공하는 headerValues/body 생성 정책") JsonNode columnCreation) {}
     @Schema(requiredProperties={"draftId","revision","sourceKey","sourceVersion","tableData","page","editing"})
     public record Table(@Schema(format="uuid") String draftId,
         @Schema(description="조회한 성공 저장 번호",minimum="0",maximum="9007199254740991") long revision,
@@ -68,7 +70,7 @@ public final class ModelInputDraftResponses {
     public record Problem(@Schema(description="클라이언트 분기용 오류 사유") String reason,
         @Schema(description="현재 성공 저장 번호. 판단할 수 없으면 null",nullable=true,types={"integer","null"},minimum="0",maximum="9007199254740991") Long currentRevision,
         @Schema(description="명령별 상세 오류. 이 조회 slice는 빈 배열") List<Object> issues) {}
-    @Schema(requiredProperties={"operationId","requestId","draftId","status","statusLabel","baseRevision","resultRevision","rowMappings","affectedTableIds","failure","statusEndpoint"})
+    @Schema(requiredProperties={"operationId","requestId","draftId","status","statusLabel","baseRevision","resultRevision","rowMappings","columnMappings","affectedTableIds","failure","statusEndpoint"})
     public record OperationView(
         @Schema(description="서버 작업 ID",format="uuid") String operationId,
         @Schema(description="클라이언트 중복 식별 ID",format="uuid") String requestId,
@@ -78,9 +80,15 @@ public final class ModelInputDraftResponses {
         @Schema(description="접수한 기준 성공 번호",minimum="0",maximum="9007199254740991") long baseRevision,
         @Schema(description="SUCCEEDED에만 기준+1. 다른 상태는 null",nullable=true,types={"integer","null"},minimum="1",maximum="9007199254740991") Long resultRevision,
         @Schema(description="성공한 신규 행 대응. 성공 전/실패는 빈 배열") List<JsonNode> rowMappings,
+        @io.swagger.v3.oas.annotations.media.ArraySchema(arraySchema=@Schema(description="성공 신규 열 대응. 진행·실패·추가 없음은 빈 배열"),schema=@Schema(implementation=ColumnMapping.class)) List<JsonNode> columnMappings,
         @Schema(description="성공 후 다시 조회할 표 ID. 성공 전/실패는 빈 배열") List<String> affectedTableIds,
         @Schema(description="FAILED의 안전한 오류. 다른 상태는 null",nullable=true,types={"object","null"},schemaResolution=Schema.SchemaResolution.INLINE) Problem failure,
         @Schema(description="이 작업 결과 조회의 상대 경로") String statusEndpoint) {}
+    @Schema(requiredProperties={"commandId","clientColumnKey","tableId","fieldKey","columnState"},additionalProperties=Schema.AdditionalPropertiesValue.FALSE)
+    public record ColumnMapping(@Schema(pattern="^[A-Za-z][A-Za-z0-9_-]{0,63}$") String commandId,
+        @Schema(pattern="^[A-Za-z][A-Za-z0-9_-]{0,63}$") String clientColumnKey,String tableId,
+        @Schema(description="서버가 발급한 안정 열 키",pattern="^[A-Za-z][A-Za-z0-9_-]{0,63}$") String fieldKey,
+        @Schema(allowableValues={"ACTIVE","DELETED"}) String columnState) {}
     @Schema(requiredProperties={"status","code","message","data"})
     public record OperationEnvelope(boolean status,String code,String message,OperationView data) {}
     @Schema(requiredProperties={"role","fileNo"})

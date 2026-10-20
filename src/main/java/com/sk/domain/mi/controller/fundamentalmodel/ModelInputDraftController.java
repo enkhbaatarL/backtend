@@ -125,7 +125,7 @@ public class ModelInputDraftController {
             pattern="^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$") String requestId,
         @Schema(description="EDT-02/03의 성공 저장 번호",minimum="0",maximum="9007199254740991",type="integer",format="int64") long baseRevision,
         @io.swagger.v3.oas.annotations.media.ArraySchema(minItems=1,maxItems=500,
-            schema=@Schema(oneOf={AddRowCommand.class,SetCommand.class,ClearCommand.class,DeleteRowCommand.class}))
+            schema=@Schema(oneOf={AddRowCommand.class,SetCommand.class,ClearCommand.class,DeleteRowCommand.class,AddColumnCommand.class,DeleteColumnCommand.class,SetAddedColumnCommand.class,ClearAddedColumnCommand.class,DeleteAddedColumnCommand.class}))
         List<Object> operations) {}
     @Schema(requiredProperties={"type","commandId","tableId","clientRowKey","values"},additionalProperties=Schema.AdditionalPropertiesValue.FALSE)
     public record AddRowCommand(@Schema(allowableValues={"ADD_ROW"}) String type,
@@ -145,12 +145,37 @@ public class ModelInputDraftController {
     @Schema(requiredProperties={"type","commandId","tableId","rowRef"},additionalProperties=Schema.AdditionalPropertiesValue.FALSE)
     public record DeleteRowCommand(@Schema(allowableValues={"DELETE_ROW"}) String type,
         @Schema(pattern="^[A-Za-z][A-Za-z0-9_-]{0,63}$") String commandId,String tableId,RowReference rowRef) {}
+    @Schema(requiredProperties={"type","commandId","tableId","clientColumnKey","headerValues"},additionalProperties=Schema.AdditionalPropertiesValue.FALSE)
+    public record AddColumnCommand(@Schema(allowableValues={"ADD_COLUMN"}) String type,
+        @Schema(pattern="^[A-Za-z][A-Za-z0-9_-]{0,63}$") String commandId,String tableId,
+        @Schema(pattern="^[A-Za-z][A-Za-z0-9_-]{0,63}$",description="이 요청 안에서 유일한 임시 열 키") String clientColumnKey,
+        @Schema(description="columnCreation.headerValues의 사용자 입력만 제출. 자동 헤더는 제출하지 않음") ColumnHeaders headerValues) {}
+    @Schema(additionalProperties=Schema.AdditionalPropertiesValue.FALSE)
+    public record ColumnHeaders(@Schema(description="수동 연도 정책에서 필수. 정수의 범위를 제한하지 않음",types={"integer"},implementation=Object.class) java.math.BigInteger year,
+        @Schema(description="수동 월 정책에서 필수",minimum="1",maximum="12") Integer month) {}
+    @Schema(requiredProperties={"type","commandId","tableId","fieldKey"},additionalProperties=Schema.AdditionalPropertiesValue.FALSE)
+    public record DeleteColumnCommand(@Schema(allowableValues={"DELETE_COLUMN"}) String type,
+        @Schema(pattern="^[A-Za-z][A-Za-z0-9_-]{0,63}$") String commandId,String tableId,
+        @Schema(pattern="^[A-Za-z][A-Za-z0-9_-]{0,63}$") String fieldKey) {}
+    @Schema(requiredProperties={"type","commandId","tableId","rowRef","clientColumnKey","value"},additionalProperties=Schema.AdditionalPropertiesValue.FALSE)
+    public record SetAddedColumnCommand(@Schema(allowableValues={"SET"}) String type,
+        @Schema(pattern="^[A-Za-z][A-Za-z0-9_-]{0,63}$") String commandId,String tableId,RowReference rowRef,
+        @Schema(pattern="^[A-Za-z][A-Za-z0-9_-]{0,63}$",description="같은 표의 앞선 ADD_COLUMN 임시키") String clientColumnKey,
+        @Schema(description="TEXT 또는 정확한 JSON number. null/boolean 금지") Object value) {}
+    @Schema(requiredProperties={"type","commandId","tableId","rowRef","clientColumnKey"},additionalProperties=Schema.AdditionalPropertiesValue.FALSE)
+    public record ClearAddedColumnCommand(@Schema(allowableValues={"CLEAR"}) String type,
+        @Schema(pattern="^[A-Za-z][A-Za-z0-9_-]{0,63}$") String commandId,String tableId,RowReference rowRef,
+        @Schema(pattern="^[A-Za-z][A-Za-z0-9_-]{0,63}$") String clientColumnKey) {}
+    @Schema(requiredProperties={"type","commandId","tableId","clientColumnKey"},additionalProperties=Schema.AdditionalPropertiesValue.FALSE)
+    public record DeleteAddedColumnCommand(@Schema(allowableValues={"DELETE_COLUMN"}) String type,
+        @Schema(pattern="^[A-Za-z][A-Za-z0-9_-]{0,63}$") String commandId,String tableId,
+        @Schema(pattern="^[A-Za-z][A-Za-z0-9_-]{0,63}$") String clientColumnKey) {}
     @Schema(description="rowId 또는 앞선 ADD_ROW의 clientRowKey 중 정확히 하나",minProperties=1,maxProperties=1,additionalProperties=Schema.AdditionalPropertiesValue.FALSE)
     public record RowReference(@Schema(format="uuid",description="기존 논리 행의 소문자 UUID") String rowId,
         @Schema(pattern="^[A-Za-z][A-Za-z0-9_-]{0,63}$",description="같은 표의 앞선 ADD_ROW 임시키") String clientRowKey) {}
 
     @PostMapping(value="/input-drafts/{draftId}/change-requests",consumes=MediaType.APPLICATION_JSON_VALUE)
-    @Operation(summary="Draft 변경 임시저장 접수",description="EDT-02/03의 성공 revision과 순서 있는 명령을 제출합니다. 같은 requestId의 같은 의미 요청은 기존 작업을 반환하며 숫자3.20과3.2는 같습니다. 진행 중202, 종료 후 재전송200입니다. 202는 저장 성공이 아니며 statusEndpoint로 결과를 조회합니다. 현재는 별도 발행의 F-O-01(USCostofSupply B8 한 슬롯, breakevenPrice 숫자0.35 SET)만 지원합니다. 승인 사례는 추가 계산 없이 다른 원본 셀·수식·저장값·구조를 보존합니다. 다른 동작은 정책 미완비/미지원 오류로 거부됩니다. 본문은 UTF-8 1MiB, 깊이8, ADD_ROW 최대100개입니다. 회사·사용자는 인증 문맥에서 결정합니다.")
+    @Operation(summary="Draft 변경 임시저장 접수",description="EDT-02/03의 성공 revision과 순서 있는 SET/CLEAR/ADD_ROW/DELETE_ROW/ADD_COLUMN/DELETE_COLUMN 명령을 제출합니다. 열 참조는 fieldKey 또는 앞선 ADD_COLUMN의 clientColumnKey 중 하나이며 성공 신규 열의 키는 columnMappings로 반환합니다. 같은 requestId의 같은 의미 요청은 기존 작업을 반환하며 숫자3.20과3.2는 같습니다. 진행 중202, 종료 후 재전송200입니다. 202는 저장 성공이 아니며 statusEndpoint로 결과를 조회합니다. 현재는 별도 발행의 F-O-01(USCostofSupply B8 한 슬롯, breakevenPrice 숫자0.35 SET)만 지원합니다. 승인 사례는 추가 계산 없이 다른 원본 셀·수식·저장값·구조를 보존합니다. 다른 동작은 정책 미완비/미지원 오류로 거부됩니다. 본문은 UTF-8 1MiB, 깊이8, ADD_ROW 최대100개입니다. 회사·사용자는 인증 문맥에서 결정합니다.")
     @io.swagger.v3.oas.annotations.parameters.RequestBody(required=true,content=@Content(schema=@Schema(implementation=ChangeRequestSchema.class)))
     @ApiResponse(responseCode="202",description="SUC-000: 신규 또는 진행 중 동일 요청 접수. 실제 임시저장 성공 아님",content=@Content(schema=@Schema(implementation=OperationEnvelope.class)))
     @ApiResponse(responseCode="200",description="SUC-000: 종료된 동일 요청의 기존 결과",content=@Content(schema=@Schema(implementation=OperationEnvelope.class)))
@@ -173,7 +198,7 @@ public class ModelInputDraftController {
     @GetMapping("/input-drafts/{draftId}/change-requests/{operationId}")
     @Operation(summary="Draft 임시저장 처리 결과 조회",description="접수 응답 유실 또는 대기 중인 작업을 같은 회사·사용자 문맥으로 조회합니다. QUEUED/RUNNING은2초 간격으로 조회하고 SUCCEEDED/FAILED면 종료합니다. 실패 작업 조회도 HTTP200/SUC-000이며 data.failure에 사유가 있습니다. SUCCEEDED일 때만 resultRevision으로 Draft를 다시 조회합니다. source 기준 변경 뒤에도 기존 기록을 읽을 수 있고 원본 접근권한 상실은404입니다. 기한 경과는 DB의 실제 상태 확인 뒤 TIMEOUT으로 확정합니다.")
     @ApiResponse(responseCode="200",description="SUC-000: 기록된 작업 결과. FAILED도 조회 성공",content=@Content(schema=@Schema(implementation=OperationEnvelope.class),examples=@ExampleObject(value="""
-        {"status":true,"code":"SUC-000","message":"Success.","data":{"operationId":"aefb60dc-18b8-4ac2-beb4-a4d499950766","requestId":"aefb60dc-18b8-4ac2-beb4-a4d499950767","draftId":"aefb60dc-18b8-4ac2-beb4-a4d499950765","status":"FAILED","statusLabel":"저장 실패","baseRevision":0,"resultRevision":null,"rowMappings":[],"affectedTableIds":[],"failure":{"reason":"TIMEOUT","currentRevision":0,"issues":[]},"statusEndpoint":"/api/v1/mi/fundamental-model/input-drafts/aefb60dc-18b8-4ac2-beb4-a4d499950765/change-requests/aefb60dc-18b8-4ac2-beb4-a4d499950766"}}
+        {"status":true,"code":"SUC-000","message":"Success.","data":{"operationId":"aefb60dc-18b8-4ac2-beb4-a4d499950766","requestId":"aefb60dc-18b8-4ac2-beb4-a4d499950767","draftId":"aefb60dc-18b8-4ac2-beb4-a4d499950765","status":"FAILED","statusLabel":"저장 실패","baseRevision":0,"resultRevision":null,"rowMappings":[],"columnMappings":[],"affectedTableIds":[],"failure":{"reason":"TIMEOUT","currentRevision":0,"issues":[]},"statusEndpoint":"/api/v1/mi/fundamental-model/input-drafts/aefb60dc-18b8-4ac2-beb4-a4d499950765/change-requests/aefb60dc-18b8-4ac2-beb4-a4d499950766"}}
         """)))
     @ApiResponse(responseCode="400",description="REQ-003: 잘못된 UUID",content=@Content(schema=@Schema(implementation=ProblemEnvelope.class)))
     @ApiResponse(responseCode="404",description="RSC-001: 본인 Draft/CHANGE 작업 또는 접근 가능한 원본 없음. data:null",content=@Content(schema=@Schema(implementation=ProblemEnvelope.class)))

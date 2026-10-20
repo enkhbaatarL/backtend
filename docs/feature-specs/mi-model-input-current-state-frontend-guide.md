@@ -8,7 +8,7 @@
 - source documents: §10의 백엔드·프론트엔드 커밋 고정 링크와 [공용 작업 노트의 Case105→106 실환경 검증][be-smoke-result]·[C 양식 DRAFT 등록 결과][be-c-registration]. FE 문서는 협의 전 제안 자료이며 최신 합의의 정본이 아니다.
 - depends on: 기존 입력 조회·Draft 편집 계약. 이 문서는 새 API나 업무 정책을 승인하지 않는다.
 - supersedes: 없음. FE 제안 스펙을 자동으로 대체하지 않는다.
-- last synced: 2026-10-19
+- last synced: 2026-10-19 (FE 최종 JSON·확정 계약/현재 구현 차이 및 열 저장 DB 영향 연결)
 - open questions: §9의 출처 기본값, 업로드 미리보기, 표별 편집·구조 변경, FE 화면 연결과 실환경 경합·장애 복구·Kubernetes 검증. F-O-01 기본 성공 흐름은 사용자 시험으로 확인했다.
 
 ## 1. 먼저 알아야 할 현재 상태
@@ -257,7 +257,7 @@ Regas처럼 다른 표를 참조하는 화면은 그 표도 같은 Draft·revisi
 - `fields[].columnField`로 화면 열을 찾고 `fields[].fieldKey`로 저장한다. `column1`이나 `B8`을 `fieldKey`로 보내지 않는다.
 - 편집 시작값은 `editValues[].values[fieldKey]`다. 반올림·쉼표·퍼센트가 포함될 수 있는 표시 문자열을 역변환해 전체 행을 보내지 않는다.
 - 타입은 `TEXT`, `INTEGER`, `DECIMAL`이다. 숫자는 JSON number이며 숫자 문자열·null·boolean·객체·배열을 숫자 입력으로 보내지 않는다. 큰 정수/소수는 기본 JavaScript number 파싱으로 자릿수가 손실될 수 있으므로 손실 없는 파싱·직렬화 방식을 확인해야 한다.
-- `CLEAR`, `ADD_ROW`, `DELETE_ROW`는 공통 요청 스키마에 존재하지만 이 커밋의 실제 처리 범위는 F-O-01 SET뿐이다. 열 추가/삭제와 control 쓰기는 이 요청 스키마에도 없다.
+- `CLEAR`, `ADD_ROW`, `DELETE_ROW`는 공통 요청 스키마에 존재하지만 실제 처리 범위는 F-O-01 SET뿐이다. 확정된 열 계약과 현재 구현 차이는 §9를 따른다. 열 capability/field 상태가 누락되면 기능을 비활성화한다. ADD_COLUMN은 표 READY, DELETE_COLUMN은 표와 선택 field가 모두 READY인 경우에만 연다. control 쓰기는 별도 후속이다.
 
 ### 5.2 현재 지원하는 SET 예시
 
@@ -387,6 +387,37 @@ FE에서 특히 대조할 부분:
 
 ## 9. 권장 연동 범위와 확인 순서
 
+2026-10-19 행·열 형식의 사용자 필수 결정은 완료됐으며, FE 전달용 최종 JSON은 [편집 명세의 값·행 사례 목록](mi-fundamental-model-input-draft-editing-api-proposal.md#fe-change-cases-20261019)과 [열 추가·삭제·결과·오류 JSON](mi-fundamental-model-input-draft-editing-api-proposal.md#fe-final-column-json-20261019)을 사용한다. 표별 대상은 [SUMMARY 검토표](../references/model-input/2026-10-19-summary-structure-review.md)의 원문과 후속 확정 정책을 함께 본다. **계약은 확정됐지만 현재 서버는 열 쓰기를 지원하지 않는다.** 실제 FE 담당자의 확인/연동 시험 완료로 간주하지 않는다.
+
+### FE 전달용 최종 JSON 안내
+
+| FE에서 준비할 케이스 | 정본 예시 | 적용할 핵심 |
+| --- | --- | --- |
+| 기존 값 수정·행 추가/삭제·CLEAR·충돌/실패 | 편집 명세 §7.3~7.11 | 기존4명령·rowId/clientRowKey·revision/requestId·Problem 유지 |
+| LiqUtil 새 월 | §7.13 | headerValues:{}; 자동 Year/Month/Period, 본문은 빈칸 |
+| LiqProd 새 월 | §7.13 | year/month 직접 입력, Period 서버 생성. SET0과 미입력 구분 |
+| 연도8표의 새 열 | §7.14 | year 직접 입력. 기본값/필수/계산은 표별 정책; BCRegas0을 전체에 적용하지 않음 |
+| 기존 열 삭제 | §7.15 | fieldKey로 선택. 삭제 뒤 같은 키로 남은 열을 다시 연결하고 현재 좌표 재조회 |
+| 같은 요청의 추가→삭제·같은 연월 두 열 | §7.16 | clientColumnKey, DELETED mapping 유지·키 미재사용; 같은 날짜도 별개 fieldKey |
+| 입력 오류·새 열 생성 안내 | §7.17~7.18·§3.3 | 기존 Problem·headerValues/body metadata, READY 조건 충족 때만 입력창 활성화 |
+
+공통 전송은 기존 EDT-04의 operations다. SET/CLEAR/DELETE_COLUMN은 fieldKey 또는 같은 요청에서 앞서 만든 clientColumnKey 중 하나만 보낸다. 신규 행×신규 열은 두 ADD 뒤 SET한다. 성공 후 mapping을 반영하고 EDT-02/03의 revision·구조/영향 표를 재조회한다. 진행/실패·신규 열 없는 성공에도 최종 계약의 columnMappings는[]다. 과거 서버가 이 필드를 생략하는 것은 이번 확장의 미구현 상태이므로 그 응답으로 열 쓰기를 활성화하지 않는다.
+
+### 확정 계약과 현재 BE 구현 차이
+
+2026-10-19 작업 폴더 코드를 확인한 결과다. 상세 코드 근거는 [편집 명세 §10.2](mi-fundamental-model-input-draft-editing-api-proposal.md#fe-contract-implementation-gap-20261019)에 있다.
+
+| 구간 | 확정 계약 | 현재 코드·FE 주의점 |
+| --- | --- | --- |
+| 요청 | 6명령·headerValues/clientColumnKey | 공통 parser는6명령/임시 열 참조 수용. 형식400·정책 누락409 INCOMPLETE·실제 처리기 부재409 UNSUPPORTED. 일반 열/행 처리는 미지원 |
+| 조회 | 6capabilities·필드 DELETE_COLUMN·columnCreation | 6capabilities/필드 DELETE_COLUMN 제공. 누락 열 정책은 INCOMPLETE, 실제 처리기가 없는 READY는 UNSUPPORTED. columnCreation은 공개 ADD_COLUMN READY일 때만 제공 |
+| 결과 | OperationView.columnMappings 항상 배열 | 공통 DTO/성공 저장 결과에 구현. 진행/실패/신규 열 없는 성공은[] 제공. 미배포 v1 Draft/요청 이력은 수동 초기화 후 새 Draft 사용 |
+| 처리·재조회·최종파일 | 안정 열 키와 값/헤더/위치 보존 | v2 공통 열 출처/이동·삭제/overlay·신규 행×열 복원은 격리 fixture 검증. 실제 처리기는 지정 F-O-01 SET 한 건·v2 최종4파일 회귀. 실제 열 처리·최종파일 지원은 후속 |
+| DB | 새 열과 삭제 이력을 영속 보관 | 기존 JSON 저장을 v2 단일 형식으로 사용. Draft 관련 데이터 초기화·CHECK1개 변경; 새 열 테이블 불필요 |
+
+DB 형식과 초기화·수동 적용 준비는 [DDL §6.9](../design-docs/gas/mi-model-input-template-catalog-erd-ddl-draft.md#column-storage-impact-20261019)가 소유한다. 공통 구현은 로컬 H2 저장·재시작 및 생성 OpenAPI로 검증했으며 실제 DB 직접 조회/적용·실서버 HTTP 검증은 하지 않았다. 미배포 상태에서 Draft·변경 요청·저장 이력만 초기화하고 원본 Case·입력 파일·카탈로그는 유지한다. 전환 후 FE는 기존 draftId/operationId/rowId/새 열 키·로컬 저장 요청을 재사용하지 않고 원본 Case에서 새 Draft를 연다. 이전 임시저장 내용을 자동 재전송하지 않는다.
+
+
 ### 바로 진행할 FE 연결 범위
 
 1. BE가 제공한 조회 가능한 Case로 목록의 `draftId` 유무에 따른 §4.1의 두 진입 경로와 표 페이지 조회를 연결한다.
@@ -417,7 +448,7 @@ FE에서 특히 대조할 부분:
 - 같은 requestId 재전송으로 중복 저장하지 않으며, 충돌/원본 변경/접근 상실 시 자동 덮어쓰기하지 않는다.
 - 최종저장 완료 후 BE가 새 Case의 입력 파일로 Run을 자동 접수한다(§6). 원래 로컬 File을 다시 업로드하는 경로와 섞이지 않는다.
 
-이 문서로 현재 조회와 제한 저장의 연결 방법을 식별할 수 있다. **전체 입력편집의 implementation readiness는 `blocked by open questions`**이며, F-O-01 성공을 전체 표·FE 화면·운영 검증 완료로 확대하지 않는다. 표별 정책은 후속, PriceModel 비계약 물량·Regas 신규 설비 추가 추천은 미승인으로 유지한다.
+이 문서로 현재 조회와 제한 저장의 연결 방법을 식별할 수 있다. **전체 입력편집은 표별 처리·구조/계산/보존 검증과 실제 연동이 남아 있으며**, F-O-01 성공을 전체 표·FE 화면·운영 검증 완료로 확대하지 않는다. 확정된 행·열 결정은 재질문하지 않고 해당 정책 데이터와 구현을 준비한다. 별도 범위인 PriceModel 비계약 물량·Regas 신규 설비 추가 추천은 미승인으로 유지한다.
 
 ## 10. 근거 링크
 

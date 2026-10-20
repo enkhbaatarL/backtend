@@ -16,6 +16,7 @@ import java.util.Set;
 /** 고정 발행/원본 행과 성공 delta만 합성한다. workbook 계산이나 영속 cache는 만들지 않는다. */
 final class InputDraftHistory {
     private final InputDraftJson json;
+    private final InputDraftColumns columns;
     private final Catalog basis;
     private final Map<Long,InputReadDefinition> originalDefinitions;
     private final Map<Long,TableRef> tables=new LinkedHashMap<>();
@@ -32,6 +33,7 @@ final class InputDraftHistory {
 
     private InputDraftHistory(Catalog basis,Map<Long,InputReadDefinition> definitions,InputDraftJson json) {
         this.basis=basis;this.json=json;this.originalDefinitions=definitions;
+        this.columns=new InputDraftColumns(basis.tables(),definitions);
         basis.tables().forEach(table->tables.put(table.id(),table));this.definitions.putAll(definitions);
     }
     static InputDraftHistory restore(Draft draft,Catalog basis,Map<Long,InputReadDefinition> definitions,
@@ -47,13 +49,13 @@ final class InputDraftHistory {
         require(revisions.size()==draft.revision()+1);
         long expected=0;
         for(Revision revision:revisions) {
-            require(revision.number()==expected++&&revision.schema()==1);
+            require(revision.number()==expected++&&revision.schema()==2);
             if(revision.number()==0) {
                 require(revision.base()==null&&revision.operation()==null&&revision.delta()==null);
                 continue;
             }
             require(revision.base()!=null&&revision.base()==revision.number()-1&&uuid(revision.operation())
-                &&"CHANGE".equals(revision.type())&&"SUCCEEDED".equals(revision.status())&&revision.operationSchema()==1
+                &&"CHANGE".equals(revision.type())&&"SUCCEEDED".equals(revision.status())&&revision.operationSchema()==2
                 &&revision.base().equals(revision.operationBase()));
             Applied applied=history.apply(json.delta(revision.delta()),revision.request(),revision.operation(),revision.number());
             require(json.sameValue(json.payload(revision.result()),json.payload(applied.result())));
@@ -66,27 +68,29 @@ final class InputDraftHistory {
         return history;
     }
     Applied apply(JsonNode delta,String storedRequest,String operation,long revision) {
-        exact(delta,"policyTemplateId","commands","tables","rows","cells");
+        exact(delta,"policyTemplateId","commands","tables","rows","columns","cells");
         require(integer(delta.get("policyTemplateId"),1,Integer.MAX_VALUE)==basis.templateId());
-        for(String field:List.of("commands","tables","rows","cells"))require(delta.path(field).isArray());
+        for(String field:List.of("commands","tables","rows","columns","cells"))require(delta.path(field).isArray());
         InputDraftJson.ChangeRequest request;
         try {request=json.changeRequest(new java.io.ByteArrayInputStream(storedRequest.getBytes(StandardCharsets.UTF_8)));}
         catch(RuntimeException ex){throw InputDraftException.internal();}
         require(request.baseRevision()==revision-1&&json.sameValue(json.tree(request.operations()),delta.path("commands")));
+        InputDraftColumns beforeColumns=new InputDraftColumns(columns);
         Map<String,LogicalRow> before=new LinkedHashMap<>(rows);
         Map<Long,InputReadDefinition> previousDefinitions=new LinkedHashMap<>(definitions);
         Set<String> affected=new LinkedHashSet<>(),changedTables=new HashSet<>();
         for(JsonNode command:delta.path("commands"))affected.add(command.path("tableId").asText());
         for(JsonNode change:delta.path("tables")) {
-            exact(change,"tableId","startRow","endRow","dataStart","definition","scopes");
+            exact(change,"tableId","startRow","endRow","startColumn","endColumn","dataStart","definition","scopes");
             TableRef old=table(change.path("tableId").asText());require(changedTables.add(old.key()));
             int start=integer(change.get("startRow"),1,1048576),end=integer(change.get("endRow"),start,1048576),data=integer(change.get("dataStart"),start,1048576);
             InputReadDefinition def;
             try {def=InputReadDefinition.parse(change.get("definition"));}
             catch(InputDraftException ex){throw InputDraftException.internal();}
             InputReadDefinition previous=definitions.get(old.id());
-            for(String field:List.of("schemaVersion","columns","identityColumns","fields","capabilities","inputGuideRules","displayUpdateRules"))
+            for(String field:List.of("schemaVersion","capabilities","columnCreation"))
                 require(json.sameValue(json.definition(old.definition()).path(field),change.path("definition").path(field)));
+            int startCol=integer(change.get("startColumn"),1,16384),endCol=integer(change.get("endColumn"),startCol,16384);
             require(def.controls().size()==previous.controls().size());
             for(int n=0;n<def.controls().size();n++) {
                 ObjectNode a=def.controls().get(n).deepCopy(),b=previous.controls().get(n).deepCopy();a.remove("binding");b.remove("binding");require(json.sameValue(a,b));
@@ -97,16 +101,24 @@ final class InputDraftHistory {
             for(JsonNode scope:change.path("scopes")) {
                 exact(scope,"startRow","endRow","startColumn","endColumn");
                 int first=integer(scope.get("startRow"),start,end),last=integer(scope.get("endRow"),first,end);
-                int col=integer(scope.get("startColumn"),old.startColumn(),old.endColumn()),lastCol=integer(scope.get("endColumn"),col,old.endColumn());
+                int col=integer(scope.get("startColumn"),startCol,endCol),lastCol=integer(scope.get("endColumn"),col,endCol);
                 scopes.add(new Scope(first,last,col,lastCol));
             }
-            tables.put(old.id(),new TableRef(old.id(),old.role(),old.sheet(),old.name(),old.description(),start,end,old.startColumn(),old.endColumn(),
+            tables.put(old.id(),new TableRef(old.id(),old.role(),old.sheet(),old.name(),old.description(),start,end,startCol,endCol,
                 def.headerRows().isEmpty()?0:def.headerRows().get(0),def.headerRows().isEmpty()?0:def.headerRows().get(def.headerRows().size()-1),data,
                 old.rowAdd(),old.columnAdd(),change.path("definition").toString(),List.copyOf(scopes)));
             definitions.put(old.id(),def);affected.add(old.key());
         }
+        Map<Long,Map<String,InputDraftColumns.Column>> columnAdditions=new HashMap<>();Set<String> touchedColumns=new HashSet<>();
+        for(JsonNode change:delta.path("columns"))table(change.path("tableId").asText());
+        for(TableRef table:tables.values()) {
+            columnAdditions.put(table.id(),columns.apply(table,delta.path("columns"),touchedColumns));
+            columns.validate(table,definitions.get(table.id()));
+        }
+        validateDefinitionChanges(previousDefinitions,beforeColumns,columnAdditions);
         validateControls();
-        if(!changedTables.isEmpty())relocateFixedCells(previousDefinitions,delta.path("cells"));
+        relocateRowCells(beforeColumns);
+        relocateFixedCells(previousDefinitions,beforeColumns,delta.path("cells"));
         List<RowWrite> writes=new ArrayList<>();Map<String,JsonNode> additions=new LinkedHashMap<>();Set<String> changedRows=new HashSet<>();
         for(JsonNode change:delta.path("rows")) {
             exact(change,"tableId","rowId","clientRowKey","rowNumber");
@@ -131,9 +143,12 @@ final class InputDraftHistory {
             positions.add(new RowPosition(table.id(),id,revision,null,position));
         }
         validatePositions();
+        Set<String> cellKeys=new HashSet<>();
         for(JsonNode cell:delta.path("cells")) {
             exact(cell,"tableId","rowId","rowNumber","columnNumber","raw","display","formula");
             TableRef table=table(cell.path("tableId").asText());int col=integer(cell.get("columnNumber"),table.startColumn(),table.endColumn());
+            require(columns.active(table.id(),col));
+            require(cellKeys.add(table.id()+"/"+cell.path("rowId")+"/"+cell.path("rowNumber")+"/"+col));
             require(scalar(cell.get("raw"))&&scalar(cell.get("display"))&&cell.path("formula").isBoolean());
             require(!cell.path("raw").isNull()||(cell.path("display").isNull()&&!cell.path("formula").booleanValue()));
             InputWorkbookReader.Cell value=new InputWorkbookReader.Cell(value(cell.get("raw")),value(cell.get("display")),cell.path("formula").booleanValue());
@@ -146,12 +161,16 @@ final class InputDraftHistory {
             }
             affected.add(table.key());
         }
-        List<Map<String,Object>> mappings=validateCommands(request.operations(),before,additions);
-        Map<String,Object> result=new LinkedHashMap<>();result.put("resultRevision",revision);result.put("rowMappings",mappings);result.put("affectedTableIds",List.copyOf(affected));
+        List<Map<String,Object>> columnMappings=columns.commands(request.operations(),beforeColumns,tables,columnAdditions);
+        List<Map<String,Object>> mappings=validateCommands(request.operations(),before,additions,columnAdditions);
+        validateCreatedValues(request.operations(),columnAdditions,additions);
+        Map<String,Object> result=new LinkedHashMap<>();result.put("resultRevision",revision);result.put("rowMappings",mappings);result.put("columnMappings",columnMappings);
+        tables.values().stream().map(TableRef::key).filter(affected::contains).filter(key->request.operations().stream().noneMatch(c->key.equals(c.path("tableId").asText()))).sorted().forEach(key->{affected.remove(key);affected.add(key);});
+        result.put("affectedTableIds",List.copyOf(affected));
         byte[] encoded=json.bytes(result);require(encoded.length<=InputDraftJson.BODY_LIMIT);
         return new Applied(json.deltaText(delta),new String(encoded,StandardCharsets.UTF_8),List.copyOf(writes));
     }
-    private List<Map<String,Object>> validateCommands(List<JsonNode> commands,Map<String,LogicalRow> before,Map<String,JsonNode> additions) {
+    private List<Map<String,Object>> validateCommands(List<JsonNode> commands,Map<String,LogicalRow> before,Map<String,JsonNode> additions,Map<Long,Map<String,InputDraftColumns.Column>> columnAdditions) {
         Set<String> live=new HashSet<>();before.values().stream().filter(row->row.position!=null).forEach(row->live.add(row.id));
         Map<String,Map<String,JsonNode>> expected=new LinkedHashMap<>();List<Map<String,Object>> mappings=new ArrayList<>();Set<String> used=new HashSet<>();
         for(JsonNode command:commands) {
@@ -162,12 +181,12 @@ final class InputDraftHistory {
                 Map<String,Object> mapping=new LinkedHashMap<>();mapping.put("commandId",command.path("commandId").asText());mapping.put("clientRowKey",client);mapping.put("tableId",table.key());mapping.put("rowId",id);
                 mapping.put("rowState",rows.get(id).position==null?"DELETED":"ACTIVE");mappings.add(mapping);
                 var values=command.path("values").fields();while(values.hasNext()){var value=values.next();expected.computeIfAbsent(id,k->new LinkedHashMap<>()).put(value.getKey(),value.getValue());}
-            } else {
+            } else if(!type.equals("ADD_COLUMN")&&!type.equals("DELETE_COLUMN")) {
                 JsonNode ref=command.path("rowRef");JsonNode added=additions.get(ref.path("clientRowKey").asText());
                 id=ref.has("rowId")?ref.path("rowId").asText():added==null?null:added.path("rowId").asText();
                 LogicalRow row=rows.get(id);require(row!=null&&row.table==table.id()&&live.contains(id));
                 if(type.equals("DELETE_ROW"))live.remove(id);
-                else expected.computeIfAbsent(id,k->new LinkedHashMap<>()).put(command.path("fieldKey").asText(),type.equals("CLEAR")?json.tree(null):command.get("value"));
+                else expected.computeIfAbsent(id,k->new LinkedHashMap<>()).put(command.has("fieldKey")?command.path("fieldKey").asText():columnAdditions.get(table.id()).get(command.path("clientColumnKey").asText()).field(),type.equals("CLEAR")?json.tree(null):command.get("value"));
             }
         }
         require(used.equals(additions.keySet()));
@@ -176,7 +195,7 @@ final class InputDraftHistory {
             if(!live.contains(row.getKey()))continue;LogicalRow logical=rows.get(row.getKey());
             for(var field:row.getValue().entrySet()) {
                 JsonNode definition=null;for(JsonNode candidate:definitions.get(logical.table).fields())if(candidate.path("fieldKey").asText().equals(field.getKey()))definition=candidate;
-                require(definition!=null);InputWorkbookReader.Cell cell=rowCells.getOrDefault(logical.id,Map.of()).get(definition.path("columnNumber").asInt());
+                if(definition==null){require(columns.field(logical.table,field.getKey())!=null&&columns.field(logical.table,field.getKey()).position()==null);continue;}InputWorkbookReader.Cell cell=rowCells.getOrDefault(logical.id,Map.of()).get(definition.path("columnNumber").asInt());
                 require(cell!=null&&!cell.formula()&&json.sameValue(json.tree(cell.raw()),field.getValue()));
                 if(!field.getValue().isNull()) {
                     String type=definition.path("dataType").asText();
@@ -187,6 +206,50 @@ final class InputDraftHistory {
         }
         return List.copyOf(mappings);
     }
+    private void validateCreatedValues(List<JsonNode> commands,Map<Long,Map<String,InputDraftColumns.Column>> columnAdditions,Map<String,JsonNode> rowAdditions) {
+        for(JsonNode command:commands)if(command.path("type").asText().equals("ADD_COLUMN")) {
+            TableRef table=table(command.path("tableId").asText());JsonNode creation=definitions.get(table.id()).columnCreation();require(creation!=null);
+            JsonNode submitted=command.path("headerValues");
+            submitted.fieldNames().forEachRemaining(key->require(creation.path("headerValues").has(key)));
+            var headers=creation.path("headerValues").fields();while(headers.hasNext()) {
+                var entry=headers.next();JsonNode rule=entry.getValue(),value=submitted.get(entry.getKey());
+                if(value==null)require(!rule.path("create").path("required").asBoolean());
+                else require(typeMatches(rule.path("dataType").asText(),value));
+            }
+            InputDraftColumns.Column column=columnAdditions.get(table.id()).get(command.path("clientColumnKey").asText());
+            if(column.position()==null)continue;
+            JsonNode field=null;for(JsonNode candidate:definitions.get(table.id()).fields())if(column.field().equals(candidate.path("fieldKey").asText()))field=candidate;
+            require(field!=null&&field.path("dataType").equals(creation.path("body").path("dataType")));
+            for(LogicalRow row:rows.values())if(row.table==table.id()&&row.position!=null)
+                validateInitial(row,column.field(),column.position(),creation.path("body").path("create"),commands,columnAdditions,rowAdditions);
+        }
+        for(JsonNode addition:rowAdditions.values()) {
+            LogicalRow row=rows.get(addition.path("rowId").asText());if(row.position==null)continue;
+            for(JsonNode field:definitions.get(row.table).fields())if("READY".equals(field.path("policyStatus").path("CREATE").asText()))
+                validateInitial(row,field.path("fieldKey").asText(),field.path("columnNumber").asInt(),field.path("create"),commands,columnAdditions,rowAdditions);
+        }
+    }
+    private void validateInitial(LogicalRow row,String field,int column,JsonNode create,List<JsonNode> commands,
+            Map<Long,Map<String,InputDraftColumns.Column>> columnAdditions,Map<String,JsonNode> rowAdditions) {
+        boolean explicit=false;
+        for(JsonNode command:commands)if(table(command.path("tableId").asText()).id()==row.table) {
+            String type=command.path("type").asText();
+            if(type.equals("ADD_ROW")&&row.id.equals(rowAdditions.get(command.path("clientRowKey").asText()).path("rowId").asText())&&command.path("values").has(field))explicit=true;
+            if(type.equals("SET")||type.equals("CLEAR")) {
+                JsonNode ref=command.path("rowRef");String id=ref.has("rowId")?ref.path("rowId").asText():rowAdditions.get(ref.path("clientRowKey").asText()).path("rowId").asText();
+                String key=command.has("fieldKey")?command.path("fieldKey").asText():columnAdditions.get(row.table).get(command.path("clientColumnKey").asText()).field();
+                if(row.id.equals(id)&&field.equals(key))explicit=true;
+            }
+        }
+        InputWorkbookReader.Cell cell=rowCells.getOrDefault(row.id,Map.of()).get(column);
+        if(create.path("required").asBoolean())require(cell!=null&&cell.raw()!=null&&(!(cell.raw() instanceof String text)||!text.isBlank()));
+        if(!explicit&&"VALUE".equals(create.path("initial").path("kind").asText()))
+            require(cell!=null&&!cell.formula()&&json.sameValue(json.tree(cell.raw()),create.path("initial").get("value")));
+    }
+    private static boolean typeMatches(String type,JsonNode value) {
+        if(type.equals("TEXT"))return value.isTextual();if(!value.isNumber())return false;
+        if(type.equals("INTEGER"))try{value.decimalValue().toBigIntegerExact();}catch(ArithmeticException ex){return false;}return true;
+    }
     private void validateControls() {
         Map<String,JsonNode> shared=new HashMap<>();
         for(TableRef table:tables.values())for(JsonNode control:definitions.get(table.id()).controls()) {
@@ -196,7 +259,7 @@ final class InputDraftHistory {
             JsonNode previous=shared.putIfAbsent(table.role()+"/"+table.sheet()+"/"+control.path("id").asText(),control);require(previous==null||json.sameValue(previous,control));
         }
     }
-    private void relocateFixedCells(Map<Long,InputReadDefinition> previous,JsonNode currentCells) {
+    private void relocateFixedCells(Map<Long,InputReadDefinition> previous,InputDraftColumns beforeColumns,JsonNode currentCells) {
         Map<CellLocation,Set<CellLocation>> moves=new LinkedHashMap<>();
         for(var entry:previous.entrySet()) {
             long id=entry.getKey();InputReadDefinition old=entry.getValue(),current=definitions.get(id);
@@ -204,7 +267,8 @@ final class InputDraftHistory {
                 int source=old.headerRows().get(n);
                 for(int col:fixedCells.getOrDefault(id,Map.of()).getOrDefault(source,Map.of()).keySet()) {
                     var targets=moves.computeIfAbsent(new CellLocation(id,source,col),ignored->new LinkedHashSet<>());
-                    if(n<current.headerRows().size())targets.add(new CellLocation(id,current.headerRows().get(n),col));
+                    Integer moved=columns.moved(id,col,beforeColumns);
+                    if(n<current.headerRows().size()&&moved!=null)targets.add(new CellLocation(id,current.headerRows().get(n),moved));
                 }
             }
             for(int n=0;n<old.controls().size();n++) {
@@ -213,6 +277,13 @@ final class InputDraftHistory {
                 var source=new CellLocation(owner,from.path("binding").path("rowNumber").asInt(),from.path("binding").path("columnIndex").asInt()+1);
                 var target=new CellLocation(owner,to.path("binding").path("rowNumber").asInt(),to.path("binding").path("columnIndex").asInt()+1);
                 moves.computeIfAbsent(source,ignored->new LinkedHashSet<>()).add(target);
+            }
+        }
+        for(var table:fixedCells.entrySet())for(var row:table.getValue().entrySet())for(int col:row.getValue().keySet()) {
+            CellLocation source=new CellLocation(table.getKey(),row.getKey(),col);
+            if(!moves.containsKey(source)) {
+                Set<CellLocation> targets=new LinkedHashSet<>();Integer moved=columns.moved(table.getKey(),col,beforeColumns);
+                if(moved!=null)targets.add(new CellLocation(table.getKey(),row.getKey(),moved));moves.put(source,targets);
             }
         }
         Set<CellLocation> replaced=new HashSet<>();
@@ -236,6 +307,45 @@ final class InputDraftHistory {
                 .computeIfAbsent(target.row,ignored->new HashMap<>()).put(target.column,entry.getValue());
         }
         // 이번 revision의 명시 cells는 apply의 아래 단계에서 마지막에 적용된다.
+    }
+    private void relocateRowCells(InputDraftColumns before) {
+        for(var entry:rowCells.entrySet()) {
+            LogicalRow row=rows.get(entry.getKey());Map<Integer,InputWorkbookReader.Cell> moved=new HashMap<>();
+            for(var cell:entry.getValue().entrySet()) {
+                Integer target=columns.moved(row.table,cell.getKey(),before);if(target!=null)require(moved.putIfAbsent(target,cell.getValue())==null);
+            }
+            entry.setValue(moved);
+        }
+    }
+    private void validateDefinitionChanges(Map<Long,InputReadDefinition> before,InputDraftColumns previous,Map<Long,Map<String,InputDraftColumns.Column>> additions) {
+        for(TableRef table:tables.values()) {
+            InputReadDefinition old=before.get(table.id()),current=definitions.get(table.id());
+            for(JsonNode field:old.fields()) {
+                String key=field.path("fieldKey").asText();InputDraftColumns.Column column=columns.field(table.id(),key);
+                if(column.position()==null)continue;
+                JsonNode updated=null;for(JsonNode candidate:current.fields())if(key.equals(candidate.path("fieldKey").asText()))updated=candidate;
+                require(updated!=null);ObjectNode a=field.deepCopy(),b=updated.deepCopy();a.remove("columnNumber");b.remove("columnNumber");require(json.sameValue(a,b));
+            }
+            Set<Integer> visible=new java.util.TreeSet<>();for(int col:old.columns()){Integer moved=columns.moved(table.id(),col,previous);if(moved!=null)visible.add(moved);}
+            for(var column:additions.get(table.id()).values())if(column.position()!=null)visible.add(column.position());
+            require(current.columns().equals(List.copyOf(visible)));
+            List<Integer> identity=new ArrayList<>();for(int col:old.identityColumns()){Integer moved=columns.moved(table.id(),col,previous);if(moved!=null)identity.add(moved);}
+            require(current.identityColumns().equals(identity.stream().sorted().toList()));
+            for(int n=0;n<old.controls().size();n++) {
+                JsonNode from=old.controls().get(n),to=current.controls().get(n);long owner=table(from.path("sourceTableId").asText()).id();
+                Integer moved=columns.moved(owner,from.path("binding").path("columnIndex").asInt()+1,previous);
+                require(moved!=null&&moved==to.path("binding").path("columnIndex").asInt()+1);
+            }
+        }
+    }
+    Integer sourceColumn(long table,int current) {return columns.source(table,current);}
+    Set<Integer> sourceColumns(long table,List<Integer> current) {
+        Set<Integer> result=new HashSet<>();for(int col:current){Integer source=sourceColumn(table,col);if(source!=null)result.add(source);}return Set.copyOf(result);
+    }
+    Map<Integer,InputWorkbookReader.Cell> projectSource(long table,Map<Integer,InputWorkbookReader.Cell> source) {
+        Map<Integer,InputWorkbookReader.Cell> result=new HashMap<>();
+        for(int col:definitions.get(table).columns()){Integer original=sourceColumn(table,col);if(original!=null&&source.containsKey(original))result.put(col,source.get(original));}
+        return result;
     }
     private void validatePositions() {
         activeRows.clear();

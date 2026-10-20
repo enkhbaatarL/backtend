@@ -93,7 +93,7 @@ public class ModelInputDraftService {
         });
     }
     private FinalizationView finalizationView(ModelInputDraftRepository.Operation op) {
-        if(!op.type().equals("FINALIZE")||op.schemaVersion()!=1)throw InputDraftException.internal();
+        if(!op.type().equals("FINALIZE")||op.schemaVersion()!=2)throw InputDraftException.internal();
         String label=switch(op.status()){case "QUEUED"->"대기 중";case "RUNNING"->"처리 중";case "SUCCEEDED"->"최종저장 완료";case "FAILED"->"최종저장 실패";default->throw InputDraftException.internal();};
         Long caseId=null;List<FinalizedFile> files=List.of();Problem failure=null;FinalizationExecution execution=null;
         if(op.status().equals("SUCCEEDED")) {
@@ -276,7 +276,7 @@ public class ModelInputDraftService {
             Draft draft=store.lockOwned(id,actor.company,actor.user);store.caseAccess(draft.caseId(),false);
             var previous=store.request(id,request.requestId());
             if(previous!=null) {
-                if(previous.schemaVersion()!=1)throw InputDraftException.internal();
+                if(previous.schemaVersion()!=2)throw InputDraftException.internal();
                 if(!previous.type().equals("CHANGE")||!json.sameRequest(previous.request(),request))throw InputDraftException.conflict("IDEMPOTENCY_CONFLICT",draft.revision());
                 return operationView(previous);
             }
@@ -295,19 +295,60 @@ public class ModelInputDraftService {
         });
     }
     void validateChange(Source source,InputDraftJson.ChangeRequest request,Draft draft) {
+        // 모든 표 접근을 먼저 확인해 필드 검증이 다른 표의 존재를 드러내지 않게 한다.
+        Map<String,TableRef> requested=new HashMap<>();
         for(JsonNode command:request.operations()) {
-            TableRef table=source.catalog.tables().stream().filter(t->t.key().equals(command.path("tableId").asText())).findFirst().orElseThrow(InputDraftException::missing);
-            InputReadDefinition definition=source.definitions.get(table.id());
-            String capability=definition.capabilities().path(command.path("type").asText()).asText();
-            if(capability.equals("INCOMPLETE"))throw InputDraftException.conflict("POLICY_INCOMPLETE",draft.revision());
-            if(capability.equals("NOT_ALLOWED"))throw InputDraftException.validation(draft.revision(),List.of(Map.of(
-                "commandId",command.path("commandId").asText(),"tableId",table.key(),
-                "path","/operations/"+request.operations().indexOf(command),"reason","ACTION_NOT_ALLOWED")));
-            if(!capability.equals("READY"))throw InputDraftException.conflict("POLICY_UNSUPPORTED",draft.revision());
+            String key=command.path("tableId").asText();requested.put(key,source.catalog.tables().stream().filter(t->t.key().equals(key)).findFirst().orElseThrow(InputDraftException::missing));
+        }
+        Map<String,JsonNode> newColumns=new HashMap<>();Set<String> deletedFields=new HashSet<>();
+        for(JsonNode command:request.operations()) {
+            TableRef table=requested.get(command.path("tableId").asText());InputReadDefinition definition=source.definitions.get(table.id());
+            String type=command.path("type").asText();JsonNode field=null;
+            if(command.has("fieldKey")) {
+                String key=command.path("fieldKey").asText();
+                for(JsonNode candidate:definition.fields())if(key.equals(candidate.path("fieldKey").asText()))field=candidate;
+                if(field==null||deletedFields.contains(table.key()+"/"+key))throw InputDraftException.invalid();
+            }
+            if(type.equals("ADD_ROW")) {
+                var values=command.path("values").fields();while(values.hasNext()) {
+                    var entry=values.next();JsonNode target=null;for(JsonNode candidate:definition.fields())if(entry.getKey().equals(candidate.path("fieldKey").asText()))target=candidate;
+                    if(target==null||deletedFields.contains(table.key()+"/"+entry.getKey())||!inputType(target.path("dataType").asText(),entry.getValue()))throw InputDraftException.invalid();
+                }
+            }
+            policy(definition.capabilities().path(type).asText(),draft,command,request,"ACTION_NOT_ALLOWED");
+            if(field!=null)policy(field.path("policyStatus").path(type).asText(),draft,command,request,type.equals("CLEAR")?"CLEAR_NOT_ALLOWED":"ACTION_NOT_ALLOWED");
+            if(type.equals("ADD_COLUMN")) {
+                JsonNode rules=definition.columnCreation().path("headerValues"),values=command.path("headerValues");
+                var names=values.fieldNames();while(names.hasNext())if(!rules.has(names.next()))throw InputDraftException.invalid();
+                var headers=rules.fields();while(headers.hasNext()) {
+                    var entry=headers.next();JsonNode rule=entry.getValue();String key=entry.getKey();
+                    if(!values.has(key)) {
+                        if(rule.path("create").path("required").asBoolean())throw InputDraftException.validation(draft.revision(),List.of(Map.of(
+                            "commandId",command.path("commandId").asText(),"tableId",table.key(),"path","/operations/"+request.operations().indexOf(command)+"/headerValues/"+key,"reason","REQUIRED")));
+                    } else typed(rule.path("dataType").asText(),values.path(key).decimalValue());
+                }
+                newColumns.put(command.path("clientColumnKey").asText(),definition.columnCreation().path("body"));
+            } else if(type.equals("DELETE_COLUMN")&&command.has("fieldKey"))deletedFields.add(table.key()+"/"+command.path("fieldKey").asText());
+            if(type.equals("SET")) {
+                JsonNode target=field==null?newColumns.get(command.path("clientColumnKey").asText()):field;
+                if(target==null)throw InputDraftException.invalid();JsonNode value=command.path("value");String dataType=target.path("dataType").asText();
+                if(!inputType(dataType,value))throw InputDraftException.invalid();
+            }
         }
         if(!changesEnabled)throw InputDraftException.conflict("POLICY_UNSUPPORTED",draft.revision());
         InputDraftPreserveChange.validate(source,request,draft,store.rowPositions(draft.id()));
         InputDraftPreserveChange.validateHistory(store.revisions(draft.id()),json);
+    }
+    private boolean inputType(String type,JsonNode value) {
+        if(type.equals("TEXT"))return value.isTextual();if(!value.isNumber())return false;
+        if(type.equals("INTEGER"))try{value.decimalValue().toBigIntegerExact();}catch(ArithmeticException ex){return false;}return true;
+    }
+    private void policy(String status,Draft draft,JsonNode command,InputDraftJson.ChangeRequest request,String reason) {
+        if(status.equals("INCOMPLETE")||status.isEmpty())throw InputDraftException.conflict("POLICY_INCOMPLETE",draft.revision());
+        if(status.equals("NOT_ALLOWED"))throw InputDraftException.validation(draft.revision(),List.of(Map.of(
+            "commandId",command.path("commandId").asText(),"tableId",command.path("tableId").asText(),
+            "path","/operations/"+request.operations().indexOf(command),"reason",reason)));
+        if(!status.equals("READY"))throw InputDraftException.conflict("POLICY_UNSUPPORTED",draft.revision());
     }
     record PreparedChange(String draftId,String operationId,String token,String company,FileRef file,
             long templateId,TableRef table,String rowId,InputDraftJson.ChangeRequest request,BigDecimal previous) {}
@@ -416,15 +457,17 @@ public class ModelInputDraftService {
         }
     }
     private OperationView operationView(ModelInputDraftRepository.Operation op) {
-        if(op.schemaVersion()!=1)throw InputDraftException.internal();
+        if(op.schemaVersion()!=2)throw InputDraftException.internal();
         String label=switch(op.status()){case "QUEUED"->"대기 중";case "RUNNING"->"처리 중";case "SUCCEEDED"->"저장 완료";case "FAILED"->"저장 실패";default->throw InputDraftException.internal();};
-        Long resultRevision=null;List<JsonNode> mappings=List.of();List<String> affected=List.of();Problem failure=null;
+        Long resultRevision=null;List<JsonNode> mappings=List.of(),columnMappings=List.of();List<String> affected=List.of();Problem failure=null;
         if(op.status().equals("SUCCEEDED")) {
             JsonNode result=json.payload(op.result());
-            if(!result.path("resultRevision").isIntegralNumber()||result.path("resultRevision").longValue()!=op.baseRevision()+1
-                ||!result.path("rowMappings").isArray()||!result.path("affectedTableIds").isArray())throw InputDraftException.internal();
+            if(!result.isObject()||result.size()!=4||!result.path("resultRevision").isIntegralNumber()||!result.path("resultRevision").canConvertToLong()||result.path("resultRevision").longValue()!=op.baseRevision()+1
+                ||!result.path("columnMappings").isArray()||!result.path("rowMappings").isArray()||!result.path("affectedTableIds").isArray())throw InputDraftException.internal();
+            validateMappings(result.path("rowMappings"),false);validateMappings(result.path("columnMappings"),true);
             resultRevision=result.path("resultRevision").longValue();
             List<JsonNode> rowList=new ArrayList<>();result.path("rowMappings").forEach(rowList::add);mappings=List.copyOf(rowList);
+            List<JsonNode> columnList=new ArrayList<>();result.path("columnMappings").forEach(columnList::add);columnMappings=List.copyOf(columnList);
             List<String> tableList=new ArrayList<>();for(JsonNode table:result.path("affectedTableIds")){if(!table.isTextual())throw InputDraftException.internal();tableList.add(table.asText());}affected=List.copyOf(tableList);
         } else if(op.status().equals("FAILED")) {
             JsonNode problem=json.payload(op.failure());
@@ -433,8 +476,21 @@ public class ModelInputDraftService {
             List<Object> issues=new ArrayList<>();problem.path("issues").forEach(issues::add);
             failure=new Problem(problem.path("reason").asText(),problem.path("currentRevision").isNull()?null:problem.path("currentRevision").longValue(),List.copyOf(issues));
         }
-        return new OperationView(op.id(),op.requestId(),op.draftId(),op.status(),label,op.baseRevision(),resultRevision,mappings,affected,failure,
+        return new OperationView(op.id(),op.requestId(),op.draftId(),op.status(),label,op.baseRevision(),resultRevision,mappings,columnMappings,affected,failure,
             "/api/v1/mi/fundamental-model/input-drafts/"+op.draftId()+"/change-requests/"+op.id());
+    }
+    private void validateMappings(JsonNode mappings,boolean column) {
+        Set<String> clients=new HashSet<>(),identities=new HashSet<>(),commands=new HashSet<>();
+        String clientKey=column?"clientColumnKey":"clientRowKey",identityKey=column?"fieldKey":"rowId",stateKey=column?"columnState":"rowState";
+        for(JsonNode mapping:mappings) {
+            if(!mapping.isObject()||mapping.size()!=5||!mapping.path("tableId").isTextual()||mapping.path("tableId").asText().isBlank()
+                ||!mapping.path("commandId").asText().matches("[A-Za-z][A-Za-z0-9_-]{0,63}")
+                ||!mapping.path(clientKey).asText().matches("[A-Za-z][A-Za-z0-9_-]{0,63}")
+                ||!mapping.path(identityKey).asText().matches(column?"[A-Za-z][A-Za-z0-9_-]{0,63}":"[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}")
+                ||!Set.of("ACTIVE","DELETED").contains(mapping.path(stateKey).asText())
+                ||!clients.add(mapping.path(clientKey).asText())||!commands.add(mapping.path("commandId").asText())
+                ||!identities.add(mapping.path("tableId").asText()+"/"+mapping.path(identityKey).asText()))throw InputDraftException.internal();
+        }
     }
     private List<Section> sections(Source source) {
         List<Section> result=new ArrayList<>();
@@ -485,7 +541,8 @@ public class ModelInputDraftService {
         List<Window> windows=new ArrayList<>();
         Map<Integer,List<Integer>> sourceRows=new HashMap<>();
         for(int row:wanted){Integer original=state.history.sourceRow(table.id(),row);if(original!=null)sourceRows.computeIfAbsent(original,k->new ArrayList<>()).add(row);}
-        windows.add(new Window(table.sheet(),row->sourceRows.containsKey(row)&&sourceRows.get(row).stream().anyMatch(current->headers.contains(current)||current<=cutoff[0]),Set.copyOf(def.columns()),(original,values)->{
+        windows.add(new Window(table.sheet(),row->sourceRows.containsKey(row)&&sourceRows.get(row).stream().anyMatch(current->headers.contains(current)||current<=cutoff[0]),state.history.sourceColumns(table.id(),def.columns()),(original,sourceValues)->{
+            Map<Integer,Cell> values=state.history.projectSource(table.id(),sourceValues);
             for(int row:sourceRows.get(original)) {
                 if(!headers.contains(row)&&row>cutoff[0])continue;
                 budget[0]+=json.bytes(values).length;
@@ -555,7 +612,7 @@ public class ModelInputDraftService {
         if(end!=null) {List<Integer> after=def.page(end,2);if(after.size()>1)next=after.get(1);}
         return new Table(state.draft.id(),state.draft.revision(),state.source.key,state.source.version,
             new TableData(table.key(),columns,grid,inputs,def.inputGuideRules(),controls,def.displayUpdateRules()),
-            new Page(def.totalRows(),page.size(),start,end,next!=null,next),new Editing(caps,fields,bindings,edits));
+            new Page(def.totalRows(),page.size(),start,end,next!=null,next),new Editing(caps,fields,bindings,edits,caps.get("ADD_COLUMN").equals("READY")?def.columnCreation():null));
     }
     private Object typed(String type,Object value) {
         if("TEXT".equals(type)&&value instanceof String)return value;

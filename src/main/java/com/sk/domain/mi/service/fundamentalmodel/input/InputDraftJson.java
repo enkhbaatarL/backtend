@@ -121,15 +121,19 @@ public class InputDraftJson {
                 ||!node.path("baseRevision").isIntegralNumber()||!node.path("baseRevision").canConvertToLong()
                 ||node.path("baseRevision").longValue()<0||node.path("baseRevision").longValue()>9007199254740991L
                 ||!node.path("operations").isArray()||node.path("operations").isEmpty()||node.path("operations").size()>500)throw InputDraftException.invalid();
-            Set<String> commands=new HashSet<>(),deleted=new HashSet<>();Map<String,String> added=new HashMap<>();
+            Set<String> commands=new HashSet<>(),deletedRows=new HashSet<>(),deletedColumns=new HashSet<>();
+            Map<String,String> addedRows=new HashMap<>(),addedColumns=new HashMap<>();
             List<JsonNode> operations=new ArrayList<>();int adds=0;
             for(JsonNode op:node.path("operations")) {
                 String type=op.path("type").asText();
+                String column=op.has("fieldKey")?"fieldKey":"clientColumnKey";
                 Set<String> fields=switch(type) {
                     case "ADD_ROW"->Set.of("type","commandId","tableId","clientRowKey","values");
-                    case "SET"->Set.of("type","commandId","tableId","rowRef","fieldKey","value");
-                    case "CLEAR"->Set.of("type","commandId","tableId","rowRef","fieldKey");
+                    case "SET"->Set.of("type","commandId","tableId","rowRef",column,"value");
+                    case "CLEAR"->Set.of("type","commandId","tableId","rowRef",column);
                     case "DELETE_ROW"->Set.of("type","commandId","tableId","rowRef");
+                    case "ADD_COLUMN"->Set.of("type","commandId","tableId","clientColumnKey","headerValues");
+                    case "DELETE_COLUMN"->Set.of("type","commandId","tableId",column);
                     default->throw InputDraftException.invalid();
                 };
                 requestKeys(op,fields);
@@ -138,23 +142,39 @@ public class InputDraftJson {
                 String table=op.path("tableId").asText();
                 if(type.equals("ADD_ROW")) {
                     if(++adds>100||!key(op.path("clientRowKey"))||!op.path("values").isObject()
-                        ||added.putIfAbsent(op.path("clientRowKey").asText(),table)!=null)throw InputDraftException.invalid();
+                        ||addedRows.putIfAbsent(op.path("clientRowKey").asText(),table)!=null)throw InputDraftException.invalid();
                     var values=op.path("values").fields();
-                    while(values.hasNext()){var entry=values.next();if(!entry.getKey().matches(KEY_PATTERN))throw InputDraftException.invalid();scalar(entry.getValue());}
+                    while(values.hasNext()){var entry=values.next();if(!entry.getKey().matches(KEY_PATTERN))throw InputDraftException.invalid();scalar(entry.getValue());
+                        if(deletedColumns.contains(table+"/id:"+entry.getKey()))throw InputDraftException.invalid();}
+                } else if(type.equals("ADD_COLUMN")) {
+                    if(!key(op.path("clientColumnKey"))||addedColumns.putIfAbsent(op.path("clientColumnKey").asText(),table)!=null)throw InputDraftException.invalid();
+                    requestKeys(op.path("headerValues"),Set.of("year","month"));
+                    for(JsonNode value:op.path("headerValues"))if(!value.isIntegralNumber())throw InputDraftException.invalid();
+                    if(op.path("headerValues").has("month")&&(op.path("headerValues").path("month").bigIntegerValue().compareTo(java.math.BigInteger.ONE)<0
+                        ||op.path("headerValues").path("month").bigIntegerValue().compareTo(java.math.BigInteger.valueOf(12))>0))throw InputDraftException.invalid();
                 } else {
-                    JsonNode ref=op.path("rowRef");requestKeys(ref,Set.of("rowId","clientRowKey"));
-                    if(ref.size()!=1)throw InputDraftException.invalid();
-                    String row;
-                    if(ref.has("rowId")) {
-                        if(!ref.path("rowId").isTextual()||!ref.path("rowId").asText().matches(UUID_PATTERN))throw InputDraftException.invalid();
-                        row="id:"+ref.path("rowId").asText();
-                    } else {
-                        if(!key(ref.path("clientRowKey"))||!table.equals(added.get(ref.path("clientRowKey").asText())))throw InputDraftException.invalid();
-                        row="key:"+ref.path("clientRowKey").asText();
+                    if(!type.equals("DELETE_COLUMN")) {
+                        JsonNode ref=op.path("rowRef");requestKeys(ref,Set.of("rowId","clientRowKey"));
+                        if(ref.size()!=1)throw InputDraftException.invalid();
+                        String row;
+                        if(ref.has("rowId")) {
+                            if(!ref.path("rowId").isTextual()||!ref.path("rowId").asText().matches(UUID_PATTERN))throw InputDraftException.invalid();
+                            row="id:"+ref.path("rowId").asText();
+                        } else {
+                            if(!key(ref.path("clientRowKey"))||!table.equals(addedRows.get(ref.path("clientRowKey").asText())))throw InputDraftException.invalid();
+                            row="key:"+ref.path("clientRowKey").asText();
+                        }
+                        if(deletedRows.contains(table+"/"+row))throw InputDraftException.invalid();
+                        if(type.equals("DELETE_ROW"))deletedRows.add(table+"/"+row);
                     }
-                    if(deleted.contains(table+"/"+row))throw InputDraftException.invalid();
-                    if(type.equals("DELETE_ROW"))deleted.add(table+"/"+row);
-                    else {if(!key(op.path("fieldKey")))throw InputDraftException.invalid();if(type.equals("SET"))scalar(op.path("value"));}
+                    if(!type.equals("DELETE_ROW")) {
+                        if(!key(op.path(column)))throw InputDraftException.invalid();
+                        String reference=(column.equals("fieldKey")?"id:":"key:")+op.path(column).asText();
+                        if(column.equals("clientColumnKey")&&!table.equals(addedColumns.get(op.path(column).asText())))throw InputDraftException.invalid();
+                        if(deletedColumns.contains(table+"/"+reference))throw InputDraftException.invalid();
+                        if(type.equals("DELETE_COLUMN"))deletedColumns.add(table+"/"+reference);
+                        if(type.equals("SET"))scalar(op.path("value"));
+                    }
                 }
                 operations.add(op.deepCopy());
             }

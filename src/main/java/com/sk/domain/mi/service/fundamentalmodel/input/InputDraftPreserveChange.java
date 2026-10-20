@@ -61,9 +61,11 @@ final class InputDraftPreserveChange {
     }
 
     static void validateHistory(List<Revision> revisions,InputDraftJson json) {
-        for(Revision revision:revisions)if(revision.number()>0) {
+        for(Revision revision:revisions) {
+            if(revision.schema()!=2||(revision.number()>0&&revision.operationSchema()!=2))throw InputDraftException.internal();
+            if(revision.number()==0)continue;
             JsonNode delta=json.delta(revision.delta());
-            if(delta.path("commands").size()!=1||!delta.path("tables").isEmpty()||!delta.path("rows").isEmpty()||delta.path("cells").size()!=1)
+            if(delta.path("commands").size()!=1||!delta.path("tables").isEmpty()||!delta.path("columns").isArray()||!delta.path("columns").isEmpty()||!delta.path("rows").isEmpty()||delta.path("cells").size()!=1)
                 throw InputDraftException.conflict("POLICY_UNSUPPORTED",revision.number());
             JsonNode command=delta.path("commands").get(0),cell=delta.path("cells").get(0);
             if(!TABLE.equals(command.path("tableId").asText())||!"SET".equals(command.path("type").asText())
@@ -80,7 +82,7 @@ final class InputDraftPreserveChange {
             try {
                 saved=scratch.create();
                 InputWorkbookReader.Cell actual=generate(source,saved,job.previous(),reader,json);
-                ObjectNode delta=(ObjectNode)json.tree(Map.of("policyTemplateId",job.templateId(),"commands",job.request().operations(),"tables",List.of(),"rows",List.of(),"cells",List.of()));
+                ObjectNode delta=(ObjectNode)json.tree(Map.of("policyTemplateId",job.templateId(),"commands",job.request().operations(),"tables",List.of(),"rows",List.of(),"columns",List.of(),"cells",List.of()));
                 ObjectNode cell=delta.withArray("cells").addObject();
                 cell.put("tableId",TABLE);cell.put("rowId",job.rowId());cell.putNull("rowNumber");cell.put("columnNumber",2);
                 cell.set("raw",json.tree(actual.raw()));cell.set("display",json.tree(actual.display()));cell.put("formula",false);

@@ -152,7 +152,7 @@ public class ModelInputDraftRepository {
         LocalDateTime now=databaseTime().withNano(0);String id=UUID.randomUUID().toString();
         jdbc.update("""
             INSERT INTO tmd_mdl_inptdrftprcsl(prcs_id,drft_id,req_id,prcs_type_cd,usr_role_cd,base_rvsn_no,prcs_stat_cd,json_rvsn_no,req_json,expr_dtm,crt_dtm,mod_dtm,crt_usr_logn_id,mod_usr_logn_id)
-            VALUES(?,?,?,'CHANGE',?,?,'QUEUED',1,?,?,?,?,?,?)
+            VALUES(?,?,?,'CHANGE',?,?,'QUEUED',2,?,?,?,?,?,?)
             """,id,current.id(),requestId,role,baseRevision,request,now.plusSeconds(120),now,now,actor,actor);
         int changed=jdbc.update("UPDATE tmd_mdl_inptdrftm SET actv_prcs_id=?,mod_usr_logn_id=?,mod_dtm=? WHERE drft_id=? AND actv_prcs_id IS NULL AND rvsn_no=? AND drft_stat_cd='DRAFT'",id,actor,now,current.id(),baseRevision);
         if(changed!=1)throw InputDraftException.internal();
@@ -218,7 +218,7 @@ public class ModelInputDraftRepository {
     public Operation claimChange(String draftId,String operationId,String token) {
         if(token==null||!UUID.fromString(token).toString().equals(token))throw InputDraftException.internal();
         Draft draft=lockDraft(draftId);Operation op=operation(draftId,operationId,true);
-        if(op.schemaVersion()!=1||!op.type().equals("CHANGE"))throw InputDraftException.internal();
+        if(op.schemaVersion()!=2||!op.type().equals("CHANGE"))throw InputDraftException.internal();
         if(!op.status().equals("QUEUED")||!draft.status().equals("DRAFT")||!operationId.equals(draft.activeOperation())
             ||draft.revision()!=op.baseRevision()||!databaseTime().isBefore(op.expires()))return null;
         int changed=jdbc.update("UPDATE tmd_mdl_inptdrftprcsl SET prcs_stat_cd='RUNNING',try_tokn=?,bgn_dtm=CURRENT_TIMESTAMP(6),mod_dtm=CURRENT_TIMESTAMP WHERE drft_id=? AND prcs_id=? AND prcs_stat_cd='QUEUED' AND expr_dtm>CURRENT_TIMESTAMP(6)",token,draftId,operationId);
@@ -241,7 +241,7 @@ public class ModelInputDraftRepository {
     /** 성공 기록도 이 잠금/기준 아래 같은 transaction에서 delta·행·revision과 함께 확정해야 한다. */
     public Operation lockRunningChange(String draftId,String operationId,String token) {
         Draft draft=lockDraft(draftId);Operation op=operation(draftId,operationId,true);
-        return op.schemaVersion()==1&&op.type().equals("CHANGE")&&op.status().equals("RUNNING")&&token!=null&&token.equals(op.token())
+        return op.schemaVersion()==2&&op.type().equals("CHANGE")&&op.status().equals("RUNNING")&&token!=null&&token.equals(op.token())
             &&draft.status().equals("DRAFT")&&operationId.equals(draft.activeOperation())&&draft.revision()==op.baseRevision()
             &&databaseTime().isBefore(op.expires())?op:null;
     }
@@ -283,7 +283,7 @@ public class ModelInputDraftRepository {
         if(next>9007199254740991L)throw InputDraftException.internal();
         jdbc.update("""
             INSERT INTO tmd_mdl_inptdrftrvsnl(drft_id,rvsn_no,json_rvsn_no,base_rvsn_no,prcs_id,dlta_json,crt_usr_logn_id,mod_usr_logn_id)
-            VALUES(?,?,1,?,?,?,?,?)
+            VALUES(?,?,2,?,?,?,?,?)
             """,draftId,next,op.baseRevision(),op.id(),delta,op.actor(),op.actor());
         for(RowWrite row:rows)if(row.added())jdbc.update("""
             INSERT INTO tmd_mdl_inptdrftrowm(row_id,drft_id,inpt_tbl_id,prcs_id,clnt_row_id,crt_usr_logn_id,mod_usr_logn_id)
@@ -347,7 +347,7 @@ public class ModelInputDraftRepository {
             VALUES(?,?,?,?,?,?,'DRAFT',0,?,?)
             """,id,company,user,caseId,catalog.templateId(),version,actor,actor);
         for(FileRef file:files) jdbc.update("INSERT INTO tmd_mdl_inptdrftfiled(drft_id,mdl_file_cd,file_no,crt_usr_logn_id,mod_usr_logn_id) VALUES(?,?,?,?,?)",id,file.role(),file.fileNo(),actor,actor);
-        jdbc.update("INSERT INTO tmd_mdl_inptdrftrvsnl(drft_id,rvsn_no,json_rvsn_no,crt_usr_logn_id,mod_usr_logn_id) VALUES(?,0,1,?,?)",id,actor,actor);
+        jdbc.update("INSERT INTO tmd_mdl_inptdrftrvsnl(drft_id,rvsn_no,json_rvsn_no,crt_usr_logn_id,mod_usr_logn_id) VALUES(?,0,2,?,?)",id,actor,actor);
         jdbc.batchUpdate("INSERT INTO tmd_mdl_inptdrftrowm(row_id,drft_id,inpt_tbl_id,org_row_no,crt_usr_logn_id,mod_usr_logn_id) VALUES(?,?,?,?,?,?)",rows,500,
             (ps,row)->{ps.setString(1,row.id());ps.setString(2,id);ps.setLong(3,row.table());ps.setInt(4,row.row());ps.setString(5,actor);ps.setString(6,actor);});
         jdbc.batchUpdate("INSERT INTO tmd_mdl_inptdrftrowh(row_id,bgn_rvsn_no,drft_id,inpt_tbl_id,row_no,crt_usr_logn_id,mod_usr_logn_id) VALUES(?,0,?,?,?,?,?)",rows,500,

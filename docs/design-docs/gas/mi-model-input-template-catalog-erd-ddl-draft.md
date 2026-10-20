@@ -14,11 +14,11 @@
   - `docs/conventions/db-term-dictionary-sheet2.csv`
 - supersedes:
   - 이 문서의 2026-09-04 `양식 → 테이블` 2단계 초안
-- last synced: 2026-10-19 (§6.8 감사 초 정밀도 정렬·증분 적용 준비; §6.3.4.1 성공값 좌표 이동·저장 이력 오류 처리 보완; 사용자 제공 midb 정의에 따른 §6.4 파일 metadata 매핑 정렬 유지; 나머지 DBA 후속은 §13)
+- last synced: 2026-10-19 (§6.9 공통 v2 저장/복원·초기화/CHECK 수동 SQL; §6.8 감사 초 정밀도 정렬·증분 적용 준비; §6.3.4.1 성공값 좌표 이동·저장 이력 오류 처리 보완; 사용자 제공 midb 정의에 따른 §6.4 파일 metadata 매핑 정렬 유지; 나머지 DBA 후속은 §13)
 - open questions:
   - Q2 §6.2/§10B의 기존 catalog table/승인 GET 정의·seed·발행과 신규/기존 Case-template 관계 등록 결과를 확인해야 한다. field/control/options/화면 규칙의 실제 저장 구조/정의는 기존 후속이며 root ID만으로 완비를 가정하지 않는다.
   - 3파일 `SCENARIO` legacy cleanup의 apply/verify/rollback DML(case master + run history + 연결 execution-preparation + active 가격전망해석)은 미작성이다. `INPUT-11` 착수 시 작성해 DBA 검토를 받는다.
-  - domain 규칙 47의 LiqUtilAdjustment 행·열 삭제 허용 정책을 카탈로그에 저장할 물리 표현을 확정해야 한다. 현재 SQL의 행·열 추가 플래그만으로 삭제 허용을 표현하지 않는다.
+  - domain 규칙47의 삭제 정책은 현재 추가 플래그만으로 표현하지 않는다. 열 capability/field 상태·생성 정의는 기존 qry_json 확장으로 표현하며 §6.9를 따른다. 실제 표별 정책/처리기 연결과 catalog DML은 후속이다.
   - domain 규칙 46에서 확정한 별도 화면 갱신 규칙의 DB 저장 단위, 양식 version/표/필드 연결, 물리 테이블·컬럼·키는 후속 설계 대상이다. 아래 기존 6개 table DDL은 아직 이 저장 구조를 포함하지 않는다.
   - 이번 release의 구조 변경 포함과 마지막 행·열 추가 중심 원칙은 domain 규칙 13·26에서 확정했다. 표별 추가 경계와 중간 삽입·삭제 예외를 저장할 물리 표현, 신규 셀의 수식·서식 복제 규칙은 미정이다.
   - 감사 이름/초 정밀도는 §6.8의 사용자 결정으로 확정했다. 실제 적용·백업/손실 확인·환경별 시간대와 외부 DBA 표준 확인은 남아 있다.
@@ -102,7 +102,7 @@ supply.xlsm의 `LiqUtilAdjustment_backup`(60,216셀)은 basecase의 `LiqUtilAdju
 
 - 분류: catalog는 `new table`, Q2 파일 내용 식별은 `no schema change`
 - 범위: 기존 catalog 신규 master/detail/relation 6개. Q2는 기존 파일 등록/객체 참조 사용
-- 기존 table alter: 없음. Q2용 내용 해시/등록 시각 컬럼 추가안은 철회(§6.1)
+- 기존 table alter: Q2용 내용 해시/등록 시각 컬럼 추가안은 철회(§6.1). Draft 열 저장 v2의 요청 이력 CHECK 변경·7table 초기화는 §6.9/전용 SQL이 소유한다.
 - 초기 seed: 필요
 - 기존 case backfill: 구조 검증된 대상만 필요
 
@@ -488,6 +488,310 @@ ERD 검토: 기존 승인 물리 정의를 재사용한다. 요청의 원자적 
 증분 적용·사전/사후 조회의 정본은 [감사 시간 증분 SQL](../../model-input-audit-precision-ddl-draft.sql)이다. 모든 writer 중단·진행 작업0·PK별 백업과 손실 확인 뒤, 호환 코드 배포→기존 감사 소수점 명시 절삭(요청은 생성/만료를 같은 UPDATE로 정렬)→단계별 ALTER→정의/건수/기준 Case103·Draft/행ID 보존 확인 순서다. request crt_dtm의 ck09는 같은 ALTER에서 drop/re-add하여 MySQL의 CHECK 참조 컬럼 변경 규칙을 지킨다. 처리 시작/종료 시간은 보존하며 과거 종료 요청의 만료만 생성 소수점만큼 앞당겨 ck09를 유지한다. 손실은 타입 재확대로 복원되지 않으며 정확 복원은 백업이 필요하다. DDL은 자동 commit되므로 일괄 transaction rollback으로 간주하지 않는다. 생성/변경 SQL 파일은 빈 환경/누락 table용 최신 정의이며 기존 적용 DB에는 재실행하지 않는다.
 
 ERD/code 영향은 감사 정밀도와 접수 기준의 연계 수정에 한정한다. 직접 SQL Repository 경로이며 JPA BaseEntity/기존 엔티티·tenant 조회/DTO를 변경하지 않는다. 이름 CRT/MOD/DTM은 기존 사전 용어이고 새 등록은 없다. 사용자 채택은 외부 DBA 공식 승인이나 실제 MySQL 적용 성공을 뜻하지 않는다. 구현 입력은 `ready`, 수동 적용은 SQL pre-check/백업·손실 확인/유지보수 조건을 충족한 뒤 `ready`다. UTC/한국 시간 설정·외부 표준 확인은 DBA-04 잔여이며 이번 정밀도 수정에서 바꾸지 않는다. [MySQL 소수점 처리](https://dev.mysql.com/doc/refman/8.0/en/fractional-seconds.html)와 [CHECK 참조 컬럼 ALTER 제약](https://dev.mysql.com/doc/refman/8.0/en/alter-table.html)을 적용 근거로 한다.
+
+<a id="column-storage-impact-20261019"></a>
+
+### 6.9 열 저장·복원 v2 — 미배포 단일 형식 / Draft 초기화
+
+**2026-10-19 사용자 정정·확정:** 이 기능은 미배포 구현 중이다. v1 이력을 유지하는 이중 reader/변환/backfill은 만들지 않는다. 초기화 범위는 **Draft·변경 요청·저장 이력**이며 원본/최종 Case·입력 파일·공통 파일 정보·카탈로그·Case-template 연결은 보존한다. v2는 Draft 저장 JSON 형식의 번호이며 이 보존 대상 전체의 버전이 아니다. 앞선 v1/v2 공존·`IN (1,2)` 권고는 이 결정으로 대체한다. 실제 DB 적용은 이번 작업에 포함하지 않는다.
+
+#### 6.9.1 물리 저장·버전·코드 경계
+
+- 기존 `tmd_mdl_inptdrftprcsl`의 req_json/rslt_json/fail_json(각1 MiB), `tmd_mdl_inptdrftrvsnl`의 dlta_json(16 MiB)을 재사용한다. 새 열 table/관계형 column/index/FK는 없다. 저장 JSON은 전체 workbook이 아닌 검증된 변경 결과와 필요한 구조 metadata다.
+- 새 Draft의 revision0과 모든 후속 성공 revision, CHANGE/FINALIZE 요청의 `json_rvsn_no`는 **2**다. revision0은 기존처럼 base/prcs/delta=NULL이다. 이 숫자는 사용자 Draft revision과 독립이다. 저장 버전1/알 수 없는 버전은 자동 변환하지 않고 안전한 저장 이력 오류로 차단한다.
+- 요청 이력 ck03은 `base_rvsn_no<=9007199254740991 AND json_rvsn_no=2`로 교체한다. revision table에는 버전1 전용 CHECK가 없어 ALTER하지 않고 reader/writer 검증과 배포 후 조회로2를 확인한다. 기존 키/크기/JSON_VALID/감사/상태 제약은 유지한다.
+- `qry_json.schemaVersion`은 **기존 조회 정의의1을 유지**한다. 아직 배포 전이므로 그 정의 parser에 편집 명세 §3.3의 열 metadata를 확장한다. 기존 catalog를 저장 이력 v2로 일괄 치환하지 않는다. 기존 정의에 없는 두 열 capability/필드 DELETE_COLUMN은 INCOMPLETE로 취급하며 READY로 추정하지 않는다. 신규 열 지원 정의에는6capabilities·4field policyStatus와 READY일 때 columnCreation이 필요하다. 기존 타입·서식/입력/갱신 규칙을 재사용한다.
+- 따라서 이 저장 전환의 catalog DML/seed는 **없다**. 각 표의 실제 열 생성/계산·보존 정책을 연결하는 catalog 작성은 해당 처리기 구현과 함께 수행하며, 이 SQL로 미지원 표를 READY로 열지 않는다.
+- 구현 지점: InputDraftJson/Controller 요청 해석, InputReadDefinition/ModelInputDraftResponses, ModelInputDraftService의 접수·결과·현재 값 조회, InputDraftHistory의 구조/값 복원, ModelInputDraftRepository의 요청/revision0/성공 version 및 claim/완료 검사, worker·최종저장의 동일 version 처리. 공통 코드에서 저장 번호2와 열 identity 복원을 구현하며 catalog schemaVersion1은 유지한다. 실제 표별 열 처리와 catalog READY 확대는 별도다. FINALIZE 공개 결과 형태는 기존 명세를 유지하고 저장 번호만2로 일치시킨다.
+
+#### 6.9.2 요청·성공 결과·delta의 정확한 형식
+
+명시한 모든 key는 필수이고 다른 key/중복 key는 거부한다. nullable 필드도 생략하지 않는다. ID/정확 수치·순서/원자성·접근 경계는 [편집 API §4~6](../../feature-specs/mi-fundamental-model-input-draft-editing-api-proposal.md)이 소유한다. 아래는 BE 내부 성공 저장 형식이며 FE가 delta를 작성하지 않는다.
+
+| 저장 위치 | v2 형식 |
+| --- | --- |
+| CHANGE req_json | 공개 `{requestId,baseRevision,operations}` 그대로. 기존6명령의 의미/순서·정확 숫자 보존 |
+| CHANGE rslt_json | `{resultRevision,rowMappings,columnMappings,affectedTableIds}`. 신규 열마다 공개 mapping5필드; 진행/실패는 성공 result를 저장하지 않음 |
+| fail_json | 기존 Problem. 실패 요청의 새 열/row mapping을 성공 이력에 넣지 않음 |
+| dlta_json top-level | `{policyTemplateId,commands,tables,rows,columns,cells}`. policyTemplateId는 고정 양식 ID, commands는 저장 요청 operations와 의미/순서 동일. 다섯 배열은 비어도 필수 |
+| tables[] | `{tableId,startRow,endRow,startColumn,endColumn,dataStart,definition,scopes}`. 구조가 바뀐 표의 **변경 후 전체 구조 정의**. definition은 확장된 조회 정의, scopes는 기존4좌표 object 배열. 기존행/열 구간·header/body/fields/controls/갱신 규칙의 이동과 파생표 변경을 함께 기술 |
+| rows[] | 기존 `{tableId,rowId,clientRowKey,rowNumber}` 유지. 새 행의 clientRowKey만 값, 기존 행은null. 삭제는 rowNumber:null. relational row identity/history와 대조 |
+| columns[] | `{tableId,fieldKey,sourceColumnNumber,columnNumber,clientColumnKey}`. 추가/이동/삭제된 열만 한 번씩. 아래 identity 규칙 적용 |
+| cells[] | 기존 `{tableId,rowId,rowNumber,columnNumber,raw,display,formula}` 유지. 최종 위치의 값 덮어쓰기. 활성 논리 행은 rowId만, header/control/비활성 슬롯은 rowNumber만 지정하고 다른 행 참조는null. raw/display는 기존 scalar 또는null, formula boolean. 빈칸은 raw/display:null·formula:false |
+
+**열 identity와 초기 상태**
+
+1. Draft revision0에서 표 경계의 원본 열 대응을 고정 catalog로부터 구성한다. 기존 편집 field는 catalog fieldKey를 그대로 쓰고 sourceColumnNumber는 원본 Excel1-based 열 번호다. 편집 field가 없는 읽기 전용 원본 열은 fieldKey:null이며 sourceColumnNumber로 내부에서 식별한다. 이는 새 공개 columnId를 추가한 것이 아니다. 전체 표시/고정 열을 포함하되 각 표의 경계 밖 값까지 소유하지 않는다.
+2. 신규 열은 서버의 새 fieldKey(공개 key 형식)를 가지며 sourceColumnNumber:null, clientColumnKey는 해당 ADD_COLUMN의 임시키다. 기존 열의 변경은 clientColumnKey:null이며 sourceColumnNumber/fieldKey는 불변이다. sourceColumnNumber와 fieldKey가 둘 다null인 열은 금지한다.
+3. columnNumber는 최종 Excel1-based 위치(1~16384) 또는 삭제표시 null이다. sourceColumnNumber가 있는 열은 그 원본 열 identity로, 신규 열은 fieldKey로 이전 상태를 찾는다. fieldKey가 있는 기존 열도 기존 source 대응을 함께 검증한다. 동일 표의 source 번호/nonnull fieldKey는 유일하며 삭제 상태까지 충돌 검사를 유지한다. 활성 columnNumber는 서로 달라야 한다.
+4. 삭제한 키는 다시 활성화/재사용하지 않는다. 같은 연월 재추가는 sourceColumnNumber:null인 새 fieldKey다. ADD→DELETE는 columns에 새 키/clientColumnKey/columnNumber:null을 남기고 rslt_json의 columnMappings에 DELETED를 남긴다. fieldKey:null인 원본 읽기 전용 열은 공개 SET/DELETE_COLUMN 대상이 아니다.
+5. 생존 열의 이동도 columns에 기록한다. 전체 적용 후 definition.columns/fields.columnNumber·scopes·bounds·control binding이 최종 활성 위치와 맞아야 한다. 표시에서 제외된 빈 꼬리 슬롯을 원본 열 identity로 다시 활성화하지 않는다. 물리 파일의 남는 서식/빈 슬롯 보존은 각 표의 승인 STRUCT 처리기가 담당한다.
+6. 원본 catalog는 불변이다. 새 fieldKey/현재 위치·삭제 표시는 해당 Draft의 delta chain에만 남긴다. readonly MAX 등 파생 열의 이동은 원본 source identity를 유지한다. FE의 명령만 보고 고정 열/다른 표의 정책을 새로 허용하지 않는다.
+
+**값 복원 순서 — 좌표 이동 전에 이전 값을 읽는다**
+
+1. 소유 Draft/원본·고정 양식 검증 뒤 revision0부터 요청·성공 revision의 연속성(parent=n-1), SUCCEEDED CHANGE, base/result/version2를 확인한다.
+2. commands를 순서대로 해석해 임시 행/열 참조와 삭제 후 참조를 검증한다. 직접 추가한 rows/columns의 신규 identity가 각 공개 ADD와 정확히1대1인지 확인한다. 기존 키의 출처 바꾸기·이동 충돌·삭제 부활은 저장 오류다. 아래의 자동 연결 행은 기존 행 저장 규칙의 후속 보완 대상이다.
+3. 이번 revision의 최종 rows/columns/구조를 먼저 검증하되, **이전 성공 셀 overlay 전체를 이전 상태에서 수집**한다. rowId는 유지하고 열 값은 이전 열 identity→새 columnNumber로 이동한다. 삭제 열의 값은 버리고 신규 열에는 이전 물리 위치의 값을 복사하지 않는다. 고정 셀은 기존 header 순번/control ID의 행 이동과 열 이동을 함께 적용한다. 공유 control은 owner 기준 한 번만 이동하고 상충하는 목적지 값은 실패시킨다.
+4. 이동을 마친 뒤 이번 cells를 최종 좌표에 덮어쓴다. 명시 blank도 값이므로 이동값/원본 값을 가린다. 현재 commands의 마지막 SET/CLEAR, 생성 기본값·자동 header/계산 결과가 이 최종 cells/상태와 맞는지 검증한다. 이미 삭제된 행/열에는 최종 cells를 남기지 않는다.
+5. 조회 시 원본 셀을 읽는 주소는 **sourceRow와 sourceColumnNumber의 교차점**이다. 현재 columnNumber로 원본 파일을 읽지 않는다. 둘 중 하나라도 신규라 원본 대응이 없으면 시작은 빈칸이다. 그 위에 누적 성공 overlay를 적용한다. 새 열 빈칸/명시0·이동된 값·삭제 후 같은 위치 재사용을 구분한다.
+6. 새 열의 미입력 칸은 승인된 빈칸 정책일 때 생략 가능하다. BCRegas0 등 확정 기본값·필수값·자동 header/계산값은 처리기가 materialize한 cells로 명시한다. 복원 시 현재 catalog의 기본값/Period를 다시 계산하지 않는다. 숫자를 display 문자열에서 역변환하지 않는다.
+7. 동일 성공 transaction으로 delta·row history·result의 두 mapping·Draft revision·요청 SUCCEEDED를 확정한다. 결과는 ADD 순서의 rowMappings/columnMappings, commands 순서로 처음 나타난 표 뒤에 추가 영향 표를 tableId 순서로 붙인 affectedTableIds로 결정한다. 복원한 결과와 rslt_json을 대조한다. 동일 requestId 재전송은 이 저장 결과를 사용하고 새 키를 발급하지 않는다.
+8. 최종 파일 생성도 원본+같은 v2 성공 chain으로 재현한다. 수식 재배치/계산은 승인된 처리기가 소유하며 조회에서 계산하지 않는다. 실패/timeout은 전체 변경을 공개하지 않고 직전 성공을 유지한다. 알 수 없는 형식/불일치의 읽기는 기존 안전한500, 접수 후 저장 검증 실패는 PERSISTENCE_FAILED다.
+
+#### 6.9.3 작은 형식 예시 — 실제 workbook/seed 아님
+
+가상 `FIXTURE/Monthly/input`의 원본 B열 식별값·C열 월 입력 뒤 D열을 추가한 revision1 예시다. 아래 정책은 형식 검증용 fixture이며 실제 표 허용 범위를 넓히지 않는다. 양식 ID7001·rowId·좌표도 가상이다. sourceColumnNumber:null이므로 D열의 미입력 본문은 원본 D열을 읽지 않는다.
+
+```json
+{
+  "policyTemplateId": 7001,
+  "commands": [
+    {
+      "commandId": "addMonth",
+      "type": "ADD_COLUMN",
+      "tableId": "FIXTURE/Monthly/input",
+      "clientColumnKey": "newMonth",
+      "headerValues": {
+        "year": 2032,
+        "month": 3
+      }
+    },
+    {
+      "commandId": "setZero",
+      "type": "SET",
+      "tableId": "FIXTURE/Monthly/input",
+      "rowRef": {
+        "rowId": "a0000000-0000-4000-8000-000000000011"
+      },
+      "clientColumnKey": "newMonth",
+      "value": 0
+    }
+  ],
+  "tables": [
+    {
+      "tableId": "FIXTURE/Monthly/input",
+      "startRow": 1,
+      "endRow": 4,
+      "startColumn": 2,
+      "endColumn": 4,
+      "dataStart": 4,
+      "definition": {
+        "schemaVersion": 1,
+        "columns": [
+          2,
+          3,
+          4
+        ],
+        "headerRows": [
+          1,
+          2,
+          3
+        ],
+        "bodyRanges": [
+          {
+            "startRow": 4,
+            "endRow": 4
+          }
+        ],
+        "identityColumns": [
+          2
+        ],
+        "fields": [
+          {
+            "fieldKey": "name",
+            "columnNumber": 2,
+            "dataType": "TEXT",
+            "policyStatus": {
+              "CREATE": "INCOMPLETE",
+              "SET": "READY",
+              "CLEAR": "INCOMPLETE",
+              "DELETE_COLUMN": "NOT_ALLOWED"
+            },
+            "setConstraints": {}
+          },
+          {
+            "fieldKey": "month_old",
+            "columnNumber": 3,
+            "dataType": "DECIMAL",
+            "policyStatus": {
+              "CREATE": "INCOMPLETE",
+              "SET": "READY",
+              "CLEAR": "INCOMPLETE",
+              "DELETE_COLUMN": "READY"
+            },
+            "setConstraints": {}
+          },
+          {
+            "fieldKey": "month_new",
+            "columnNumber": 4,
+            "dataType": "DECIMAL",
+            "policyStatus": {
+              "CREATE": "INCOMPLETE",
+              "SET": "READY",
+              "CLEAR": "INCOMPLETE",
+              "DELETE_COLUMN": "READY"
+            },
+            "setConstraints": {}
+          }
+        ],
+        "capabilities": {
+          "SET": "READY",
+          "CLEAR": "INCOMPLETE",
+          "ADD_ROW": "INCOMPLETE",
+          "DELETE_ROW": "INCOMPLETE",
+          "ADD_COLUMN": "READY",
+          "DELETE_COLUMN": "READY"
+        },
+        "inputGuideRules": [],
+        "controls": [],
+        "displayUpdateRules": [],
+        "columnCreation": {
+          "headerValues": {
+            "year": {
+              "dataType": "INTEGER",
+              "create": {
+                "required": true,
+                "initial": {
+                  "kind": "EMPTY"
+                },
+                "constraints": {}
+              }
+            },
+            "month": {
+              "dataType": "INTEGER",
+              "create": {
+                "required": true,
+                "initial": {
+                  "kind": "EMPTY"
+                },
+                "constraints": {
+                  "minimum": 1,
+                  "maximum": 12
+                }
+              }
+            }
+          },
+          "body": {
+            "dataType": "DECIMAL",
+            "create": {
+              "required": false,
+              "initial": {
+                "kind": "EMPTY"
+              },
+              "constraints": {}
+            }
+          }
+        }
+      },
+      "scopes": [
+        {
+          "startRow": 4,
+          "endRow": 4,
+          "startColumn": 2,
+          "endColumn": 4
+        }
+      ]
+    }
+  ],
+  "rows": [],
+  "columns": [
+    {
+      "tableId": "FIXTURE/Monthly/input",
+      "fieldKey": "month_new",
+      "sourceColumnNumber": null,
+      "columnNumber": 4,
+      "clientColumnKey": "newMonth"
+    }
+  ],
+  "cells": [
+    {
+      "tableId": "FIXTURE/Monthly/input",
+      "rowId": null,
+      "rowNumber": 1,
+      "columnNumber": 4,
+      "raw": 2032,
+      "display": "2032",
+      "formula": false
+    },
+    {
+      "tableId": "FIXTURE/Monthly/input",
+      "rowId": null,
+      "rowNumber": 2,
+      "columnNumber": 4,
+      "raw": 3,
+      "display": "3",
+      "formula": false
+    },
+    {
+      "tableId": "FIXTURE/Monthly/input",
+      "rowId": null,
+      "rowNumber": 3,
+      "columnNumber": 4,
+      "raw": 171,
+      "display": "171",
+      "formula": false
+    },
+    {
+      "tableId": "FIXTURE/Monthly/input",
+      "rowId": "a0000000-0000-4000-8000-000000000011",
+      "rowNumber": null,
+      "columnNumber": 4,
+      "raw": 0,
+      "display": "0",
+      "formula": false
+    }
+  ]
+}
+```
+
+성공 rslt_json은 다음과 같다. QUEUED/RUNNING/FAILED에는 이 result가 없으며 공개 OperationView의 columnMappings는[]다.
+
+```json
+{
+  "resultRevision": 1,
+  "rowMappings": [],
+  "columnMappings": [
+    {
+      "commandId": "addMonth",
+      "clientColumnKey": "newMonth",
+      "tableId": "FIXTURE/Monthly/input",
+      "fieldKey": "month_new",
+      "columnState": "ACTIVE"
+    }
+  ],
+  "affectedTableIds": [
+    "FIXTURE/Monthly/input"
+  ]
+}
+```
+
+#### 6.9.4 개발계·운영계 수동 적용과 복구
+
+실행 SQL 정본은 [Draft v2 reset/apply/verify/rollback SQL](../../model-input-draft-column-v2-ddl-draft.sql)이다. 변경 구문은 명명된 MANUAL 블록으로 분리했으며 전체 파일 일괄 실행 대상이 아니다. 삭제 대상7개는 Draft master/file/revision/row identity/row position/request/finalization preparation이다. 마지막 항목도 Draft 소유 처리 metadata이며 COMMITTED 파일 자체/Case는 보존한다.
+
+| 단계 | 개발계 | 운영계 | 통과 기준/담당 |
+| --- | --- | --- | --- |
+| 준비 | 실제 master schema·기존 정의·미적용 table 확인 | 별도 운영 연결에서 같은 확인. 개발계 이름/ID/백업을 복사하지 않음 | BE/DBA: 환경 식별, MySQL8 CHECK 강제·InnoDB, schema diff 확인 |
+| 중지·보관 | 신규 접수 중지→진행 작업/준비파일 정리→모든 writer/worker 중지→7table backup | 같은 순서. 아직 미배포라도 외부 시험 writer 없음 확인 | active pointer/QUEUED/RUNNING/미정리 준비파일0. 보존 대상과 FK/trigger 검토 |
+| 초기화 | SQL §2 transaction·§3 검증 후 명시 COMMIT | 개발계 검증 후 같은 SQL을 운영계에서 별도 실행 | 7table0, 원본 Case/파일/catalog/연결 불변. 예외면 ROLLBACK |
+| schema | 비어 있는 요청 table의 ck03을 =2로 교체 | 동일한 승인 SQL·결과 대조 | upper bound/나머지 제약 불변. DDL 결과 불명은 정의 조회 후 판단 |
+| 배포·확인 | v2 전용 writer/reader/worker/FINALIZE 전체 교체 후 새 Draft 시험 | 개발계 동작 검증 결과를 확인한 같은 구현을 배포 | 기존1 하드코딩 제거·전체 소비자 동일. 구 코드와 혼합 가동 금지 |
+| 열 활성화 | 실제 표별 정책/처리·파일 검증 뒤 READY | 검증된 범위만 READY | 저장 형식/SQL 준비만으로 전체 열 기능 완료로 판정하지 않음 |
+
+신규 환경은 기존 read→change-request→finalization DDL의 **없는 table/FK만** 먼저 생성하고 이 v2 SQL을 적용한다. 기존 table은 재생성하지 않는다. 기존 audit 정밀도 등 별도 승인 변경은 그 정본을 따르며 이번 SQL에서 임의로 합치지 않는다. 신규 열 정책을 배포하는 catalog DML은 이번 reset SQL과 분리한다.
+
+DDL은 암묵 commit되므로 reset의 DELETE transaction을 검증·COMMIT/ROLLBACK으로 끝낸 뒤 ALTER한다. 최신 revision부터 지우는 single-table ORDER BY DELETE로 self-FK를 지키며 FK 검사를 끄거나 TRUNCATE하지 않는다. [MySQL DELETE](https://dev.mysql.com/doc/refman/8.0/en/delete.html), [ALTER TABLE](https://dev.mysql.com/doc/refman/8.0/en/alter-table.html), [암묵 commit](https://dev.mysql.com/doc/refman/8.0/en/implicit-commit.html)을 따른다.
+
+롤백 경계는 다음과 같다. reset COMMIT 전에는 transaction ROLLBACK으로 기존 Draft를 복구한다. COMMIT 후에는 초기화가 확정되며 DDL 원복만으로 데이터가 돌아오지 않는다. 새 v2 데이터가 하나도 없는 경우에만 ck03을1로 되돌려 **빈 구 코드 환경**으로 복구할 수 있다. 새 v2 데이터가 생기면 쓰기를 멈추고 v2 수정 배포로 복구한다. 이번 초기화 승인이 이후 새 데이터의 자동 삭제/재초기화를 허용하지 않는다. 오대상 삭제의 backup 복구는 모든 writer 중지·빈 대상 확인 후 부모부터 수행하는 DBA 수동 절차이며, v1을 v2로 변환하거나 버전 번호만 바꾸는 복구는 없다.
+
+#### 6.9.5 검증·준비도
+
+- 기존 행 저장 규칙의 후속 한계: BCRegasification ADD_ROW가 자동 생성하는 RegasAdjustment 연결 행(domain 규칙51)은 공개 ADD_ROW와1대1이 아니므로 현재 rows/clientRowKey 규칙만으로 저장할 수 없다. 해당 처리기 구현 전에 파생 행 identity와 관계형 저장·공개 rowMappings 경계를 보완해야 한다. 이번 열 형식 확정을 전체 행 처리 지원 완료로 보지 않으며, 해당 행×열 조합은 그 보완 뒤 검증한다.
+- 필수 구현 검증: 첫 월 추가·헤더/빈칸/명시0, 중간/끝 월 삭제 후 source→현재 열 매핑, 같은 연월 두 키, 삭제 후 같은 연월 새 키, ADD→DELETE의 tombstone/mapping, 신규 행×신규 열, 기존/신규 row의 열 이동·고정 header/control/파생 MAX 이동, 페이지/재시작 동일 결과, 동일 요청 재전송·실패 원자성·최종4파일.
+- SQL 검증: reset transaction rollback·child-first/self-FK 순서·commit 뒤7table0 및 보존 대상 비교, CHECK2/상한/기존 제약, 신규 request/revision0/성공 version2·mapping/columns 배열, 빈 환경에서의 CHECK 원복. SQL의 JSON 배열 확인만으로 논리 복원 검증을 대신하지 않는다.
+- ERD 영향은 CHECK1개 교체와 승인된7table 데이터 초기화뿐이다. 기존 JSON은 Draft별 순서 있는 변경 기록으로 쓰며 새 JSON 검색/index나 관계형 열 저장을 추가하지 않는다. 기존 오브젝트/단어를 재사용하고 이름/사전 추가는 없다. JPA/MyBatis/QueryDSL 모델 변경 없이 기존 master JDBC 경로를 수정하는 구현 입력이다.
+- **형식·SQL 준비도: ready. 공통 v2 코드/격리 fixture·F-O-01 최종4파일 검증과 실제 표별 열 처리·DB 적용은 분리한다. 실제 표별 열 처리/실제 적용: 후속.** 환경별 schema/실제 데이터·백업/미정리 파일 상태는 SQL pre-check 결과로 확인한다. 실제 개발/운영 접속·적용·열 동작 성공은 이 문서 작성으로 확인한 것이 아니다.
 
 ## 7. ERD review
 

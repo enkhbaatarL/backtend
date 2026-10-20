@@ -42,7 +42,7 @@ final class InputDraftFinalizationRepository {
         Draft draft = common.lockOwned(id, company, user);
         if (actor == null || actor.isBlank() || actor.length() > 50) throw InputDraftException.missing();
         Operation candidate = new Operation(UUID.randomUUID().toString(), id, request.requestId(), "FINALIZE", role,
-                request.baseRevision(), "QUEUED", 1, encode(request), null, common.databaseTime().withNano(0).plusSeconds(120), null, null, actor);
+                request.baseRevision(), "QUEUED", 2, encode(request), null, common.databaseTime().withNano(0).plusSeconds(120), null, null, actor);
         common.workerOwner(draft, candidate);
         common.caseAccess(draft.caseId(), false);
         Operation existing = common.request(id, request.requestId());
@@ -68,7 +68,7 @@ final class InputDraftFinalizationRepository {
         sql.update("""
                 INSERT INTO tmd_mdl_inptdrftprcsl(prcs_id,drft_id,req_id,prcs_type_cd,usr_role_cd,base_rvsn_no,
                     prcs_stat_cd,json_rvsn_no,req_json,expr_dtm,crt_dtm,mod_dtm,crt_usr_logn_id,mod_usr_logn_id)
-                VALUES(?,?,?,'FINALIZE',?,?,'QUEUED',1,?,?,?,?,?,?)
+                VALUES(?,?,?,'FINALIZE',?,?,'QUEUED',2,?,?,?,?,?,?)
                 """, candidate.id(), id, request.requestId(), role, request.baseRevision(), candidate.request(), candidate.expires(), now, now, actor, actor);
         one(sql.update("UPDATE tmd_mdl_inptdrftm SET actv_prcs_id=?,mod_usr_logn_id=?,mod_dtm=CURRENT_TIMESTAMP WHERE drft_id=? AND drft_stat_cd='DRAFT' AND actv_prcs_id IS NULL AND rvsn_no=?",
                 candidate.id(), actor, id, request.baseRevision()));
@@ -263,7 +263,7 @@ final class InputDraftFinalizationRepository {
     private Operation finalization(String draft, String operation) {
         Operation op = common.operation(draft, operation, true);
         if (!op.type().equals("FINALIZE")) throw InputDraftException.missing();
-        if (op.schemaVersion() != 1) throw InputDraftException.internal();
+        if (op.schemaVersion() != 2) throw InputDraftException.internal();
         readRequest(op);
         return op;
     }
