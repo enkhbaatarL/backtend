@@ -23,7 +23,7 @@
 -- 파일 전체의 기본 끝은 ROLLBACK이다. 검증 결과를 읽고 그때만 마지막 결정을 COMMIT으로 교체한다.
 
 -- 1. 사전 확인 (사용자 실행; Codex는 실행하지 않음)
--- 세 NULL은 실제 설정의 model-code / 미사용 버전(1..65535) / 감사 login으로 명시 지정한다.
+-- 세 NULL은 등록할 양식의 모델 코드 / 미사용 버전(1..65535) / 감사 login으로 명시 지정한다.
 -- DRAFT_API_SMOKE나 기존 양식 모델/버전을 임의 재사용하지 않는다. MAX(version)+1 자동 선택 없음.
 SET @c_model = NULL;
 SET @c_version = NULL;

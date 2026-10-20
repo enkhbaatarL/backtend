@@ -262,7 +262,7 @@
 
 ## 사용자의 수동 적용·검증 순서
 
-1. SQL §1에서 대상 master·MySQL8+·실제 `SHOW CREATE TABLE`·기존 audit DDL 정합성을 확인한다. audit은 `crt_*/mod_*`, `DATETIME` 초 단위이며 ID는 auto_increment다. 코드의 실제 `mi.model-input.model-code`, 미사용 version, 감사 login을 NULL 자리3곳에 지정한다. 파일은 manifest 해시로 다시 확인한다.
+1. SQL §1에서 대상 master·MySQL8+·실제 `SHOW CREATE TABLE`·기존 audit DDL 정합성을 확인한다. audit은 `crt_*/mod_*`, `DATETIME` 초 단위이며 ID는 auto_increment다. 등록할 양식의 모델 코드(`mdl_spt_cd`), 미사용 version, 감사 login을 NULL 자리3곳에 지정한다. 파일은 manifest 해시로 다시 확인한다.
 2. 동일 version 또는 동일 marker가 있으면 재등록하지 않는다. SQL §2는 이번에 새 root1건을 만들었을 때만 실제 DB의 부모행을 조회해 하위 INSERT를 진행한다. 같은 연결에서 stop-on-error(오류 즉시 중단)로 한 등록자가 실행한다. 임의 고정 ID·MAX(version)+1·오래된 LAST_INSERT_ID·IGNORE/upsert를 사용하지 않는다.
 3. 같은 transaction 안에서 §3을 실행한다. root1/DRAFT·역할4·시트70(25/23/17/5)·표92(40/15/32/5)·수정범위0, 잘못된 시트/중복/JSON/seed 차이0건을 확인한다. JSON92개와 파일/시트의 실제 부모·순서·이름/상태를 대조하는 SQL이 포함돼 있다. 한 건이라도 다르거나 SQL 오류가 나면 ROLLBACK한다.
 4. 파일 끝의 기본 명령은 `ROLLBACK`이다. 첫 실행 결과를 확인하고 부분 DRAFT 등록을 보존하려는 경우에만 마지막 결정을 `COMMIT`으로 교체한다. SQL은 자동 발행하지 않으며 기존 Case/Draft를 새 양식으로 전환하지 않는다.

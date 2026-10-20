@@ -46,7 +46,7 @@
 --    max_allowed_packet과 연결 설정도 JSON 저장 한도에 맞는지 확인한다.
 -- 5) 사용자 채택 crt_*/mod_*·감사 DATETIME 정렬은 별도 증분 SQL을 따른다. 실제 길이/환경 시간대·외부 표준 확인은 DBA-04다.
 -- 6) 기준 Case103의 4역할 파일/유효 metadata·저장소 접근, Case-양식 연결·조회 정의와
---    mi.model-input.model-code의 실제 등록값을 확인한다. 이 파일에 production 등록 데이터는 없다.
+--    Case에 연결된 양식의 발행 상태와 실제 등록값을 확인한다. 이 파일에 production 등록 데이터는 없다.
 --    qry_json은 조회할 열/헤더/본문 등을 정하는 정보다. NULL 저장은 허용하지만 미완비면 API 조회는 거절된다.
 --    새 DRAFT 발행에서 준비하며 기존 ACTIVE/DEPRECATED 정의나 Case 연결을 덮어쓰지 않는다.
 -- 7) 위 결과를 반영한 적용 대상 구간·실행 권한·수동 적용/검증·복구 순서를 사용자/DBA가 검토한다.

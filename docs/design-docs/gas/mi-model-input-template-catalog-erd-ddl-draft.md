@@ -438,7 +438,7 @@ Draft 존속 중 기준 참조/성공 chain/행이력/종료 요청·중복 키�
 
 조회 정의 version1의 필수 key는 schemaVersion(1), columns(1기반 표시 열번호 배열), headerRows(반복 헤더 행번호 배열), bodyRanges(startRow/endRow), identityColumns(활성 원본 행을 식별할 비수식 입력 열번호 배열), fields(편집 API field metadata와 columnNumber), capabilities(SET/CLEAR/ADD_ROW/DELETE_ROW의 승인 준비도), inputGuideRules/controls/displayUpdateRules(확인된 조회 규칙 배열)다. 빈 규칙 배열은 실제로 없음이 확인된 경우만 등록한다. identityColumns는 업무 중복 키/행ID가 아니며 해당 행의 식별 입력이 모두 빈 경우 EMPTY_SLOT로 분류하는 읽기 근거다. 미확인 행/표·필드를 임의 추정하지 않는다. 기존 승인 정책 밖 동작은 발행 READY로 만들지 않는다.
 
-발행 모델 구분은 서버 설정 `mi.model-input.model-code`와 일치해야 한다. 미설정/불일치/양식 미연결은 POLICY_INCOMPLETE이며 임의 코드/현재 ACTIVE로 대체하지 않는다. 실제 값은 DBA-01의 기존 등록값에서 확인한다. 이 설정은 사용자 업무 정책이 아니다.
+입력 양식은 Case에 연결된 ACTIVE/DEPRECATED 발행으로 결정한다. application model-code 설정과의 일치는 요구하지 않는다. 양식 미연결/삭제/미발행은 POLICY_INCOMPLETE이며 현재 ACTIVE/MAX로 대체하지 않는다. DB의 mdl_spt_cd와 모델별 버전/ACTIVE 유일성 제약은 유지한다. worker의 모델 코드 간 처리 범위와 고정 기준 검증은 domain §5.5를 따른다.
 
 기존 table의 ck01은 일반 grid의 헤더/본문 순서를 전제했다. 수동 SQL §3은 기존 유효 행을 유지하면서 헤더0/본문0 또는1인 control 전용 단일행 사각형도 저장하도록 그 제약만 완화한다. 실제 grid는 qry_json의 columns/headerRows/bodyRanges로 명시하며 control 값은 grid에 중복하지 않는다. 같은 발행/역할/sheet의 sourceTableId 소유 사각형과 binding·공유 정의 일치를 검사한다. 신규 schema 변경을 자동 적용하거나 기존 발행을 다시 쓰지 않는다.
 
@@ -727,7 +727,6 @@ FROM tmd_mdl_scnrcasetmpltd r
 JOIN tmd_mdl_inpttmpltm t ON t.tmplt_id = r.tmplt_id
 WHERE r.case_id = :authorized_case_id
   AND r.del_yn = 'N' AND t.del_yn = 'N'
-  AND t.mdl_spt_cd = :server_model_cd
   AND t.tmplt_stat_cd IN ('ACTIVE', 'DEPRECATED');
 
 -- DRAFT/누락/삭제 양식을 가리키는 활성 관계: 조회 제공 대상으로 선정한 Case에서 예상 0건

@@ -42,12 +42,11 @@
 
 현재 실제 변경 처리 범위인 **F-O-01**은 별도로 준비한 `OUTPUT/USCostofSupply/us_cost_of_supply` 표의 **B8 한 셀**, `fieldKey=breakevenPrice`에 **숫자 `0.35`를 SET 한 건으로 보내는 경우**다. 지정 원본과 발행 정의가 있어야 하며 같은 이름의 임의 파일은 대상이 아니다. 보통의 가격 입력이나 US Cost of Supply 전체 표 편집을 뜻하지 않는다. 이 경로는 다른 원본 내용과 수식을 보존하며 일반 수식 재계산 기능을 제공하지 않는다. [처리 범위 근거][be-preserve]
 
-2026-10-19 사용자 시험은 다음 활성화 값으로 진행했다. 웹은 Compose의 Spring 실행 인수로 기본 `false`를 덮어쓰고, 별도 worker는 외부 `worker.yml`을 직접 읽었다. 아래 YAML은 시험에 사용한 설정값 요약이며 저장소의 `application-testdb.yml`을 수정했다는 뜻은 아니다.
+2026-10-19 사용자 시험은 다음 활성화 값으로 진행했다. 웹은 Compose의 Spring 실행 인수로 기본 `false`를 덮어쓰고, 별도 worker는 외부 `worker.yml`을 직접 읽었다. 양식은 Case 연결로 결정하며 현재 application model-code 설정은 필요 없다. 아래 YAML은 활성화 설정값 요약이며 저장소의 `application-testdb.yml`을 수정했다는 뜻은 아니다.
 
 ```yaml
 mi:
   model-input:
-    model-code: DRAFT_FO01_SMOKE
     change-worker:
       enabled: true
     finalization:
@@ -365,7 +364,7 @@ QRY-01 원본 구조 오류는 **항상 `data:null`**이므로 `data.reason`을 
 
 ## 8. 표 목록의 준비 상태와 FE 화면 연결 과제
 
-최신 [카탈로그 구조 조사][be-catalog]의 99개 표시 항목 중 **92개 조회 표**는 사용자 SQL 실행으로 `DRAFT_C_STRUCTURE` version1의 새 DRAFT 양식에 등록됐다. 역할4·시트70·표92·수정범위0·Case 연결0·관련 Draft0을 확인한 [등록 결과][be-c-registration]를 따른다. ACTIVE 발행과 Case 연결은 하지 않았다. 현재 Repository는 설정의 model-code와 연결된 `ACTIVE/DEPRECATED` 양식만 읽으므로, 이 등록만으로 FE에 92개 표가 나타나지 않는다. 시험 서버의 `DRAFT_FO01_SMOKE`와 기존 Case103·105 연결을 C 양식으로 바꾸지 않는다.
+최신 [카탈로그 구조 조사][be-catalog]의 99개 표시 항목 중 **92개 조회 표**는 사용자 SQL 실행으로 `DRAFT_C_STRUCTURE` version1의 새 DRAFT 양식에 등록됐다. 역할4·시트70·표92·수정범위0·Case 연결0·관련 Draft0을 확인한 [등록 결과][be-c-registration]를 따른다. ACTIVE 발행과 Case 연결은 하지 않았다. 현재 Repository는 각 Case에 연결된 `ACTIVE/DEPRECATED` 양식을 읽으므로, DRAFT 등록만으로 FE에 92개 표가 나타나지 않는다. application model-code 설정은 필요 없으며 기존 Case103·105 연결을 C 양식으로 바꾸지 않는다.
 
 SQL 초안은 일반 표의 capability/필드 정책을 `INCOMPLETE`, 읽기 전용 LNG Summary를 `NOT_ALLOWED`로 기록하며 수정 범위를 등록하지 않는다. 표가 표시되는 것과 저장할 수 있는 것은 별개다. 아래 7개는 초안의 표 등록에서 보류됐다.
 

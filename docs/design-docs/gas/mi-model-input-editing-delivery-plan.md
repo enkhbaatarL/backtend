@@ -424,7 +424,7 @@ Coordination:
 ## 7A. 공통 BE 1·2 첫 구현 계획 — 2026-10-16 사용자 채택
 
 - **현재 delivery 상태 — 2026-10-19:** QRY-01/EDT-01~07·F-O-01 처리·공통 worker/최종저장 연결의 구현에 이어, 사용자 Compose/testdb에서 Case105→106의 기본 성공 흐름을 확인했다. 상세 실행 결과와 시간대 설정 조치·미검증 범위는 [공용 작업 노트](../../work-notes/2026/2026-09-03-model-input-transfer-format.md#case105-106-smoke-20261019)가 소유한다. FE의 제한 범위 API 연결은 진행할 수 있고, 일반 표/구조·계산 확장과 실환경 경합/복구·Kubernetes 운영 검증은 별도 후속이다. 전체 INPUT-10/11 완료로 승격하지 않는다.
-- C의 92개 표는 [새 DRAFT 양식 등록](../../work-notes/2026/2026-09-03-model-input-transfer-format.md#c-structure-registration-20261019)만 완료했다. 발행·새 Case 연결·보류7개는 후속이며 기존 Case103·105 양식 교체나 시험 서버 model-code 변경을 포함하지 않는다.
+- C의 92개 표는 [새 DRAFT 양식 등록](../../work-notes/2026/2026-09-03-model-input-transfer-format.md#c-structure-registration-20261019)만 완료했다. 발행·새 Case 연결·보류7개는 후속이며 기존 Case103·105 양식을 교체하지 않는다. application model-code 설정은 사용하지 않으며 각 Case 연결 양식을 따른다.
 - 2026-10-18 EDT-04/05 공통 기반·후속 실제 처리/최종저장 지원 경계는 [편집 API §1.2](../../feature-specs/mi-fundamental-model-input-draft-editing-api-proposal.md), 증분 SQL은 [DDL §6.7](mi-model-input-template-catalog-erd-ddl-draft.md), 검증·독립 검토/수정 결과와 B 인수 결과는 [기존 작업 노트](../../work-notes/2026/2026-09-03-model-input-transfer-format.md#actual-result)가 소유한다. 아래 첫 구현 순서는 기존 EDT-01~03 계획 이력이다.
 
 - 2026-10-16 table prefix 변경: 현재 물리명과 수동 적용 절차는 [DDL §6.6](mi-model-input-template-catalog-erd-ddl-draft.md) 및 [rename SQL](../../model-input-draft-table-prefix-rename-draft.sql)이 소유한다. 새 이름 적용·API 확인의 실행 사실은 [기존 작업 노트의 최신 결과](../../work-notes/2026/2026-09-03-model-input-transfer-format.md#actual-result)를 참조한다.

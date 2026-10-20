@@ -12,7 +12,6 @@ import java.util.UUID;
 import java.time.LocalDateTime;
 import javax.sql.DataSource;
 import org.springframework.beans.factory.annotation.Qualifier;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Repository;
 
@@ -20,8 +19,6 @@ import org.springframework.stereotype.Repository;
 @Repository
 public class ModelInputDraftRepository {
     private final JdbcTemplate jdbc;
-    @Value("${mi.model-input.model-code:}")
-    private String modelCode;
     public ModelInputDraftRepository(@Qualifier("masterDataSource") DataSource master) { jdbc=new JdbcTemplate(master); }
     public record FileRef(String role,long fileNo,String name,String location) {}
     public record Scope(int startRow,int endRow,int startColumn,int endColumn) {
@@ -50,12 +47,11 @@ public class ModelInputDraftRepository {
             Math.toIntExact(caseId),java.time.LocalDate.now(java.time.ZoneId.of("Asia/Seoul")).format(java.time.format.DateTimeFormatter.BASIC_ISO_DATE));
     }
     public Catalog catalog(long caseId) {
-        if(modelCode==null||modelCode.isBlank()) throw InputDraftException.conflict("POLICY_INCOMPLETE",null);
         List<long[]> root=jdbc.query("""
             SELECT t.tmplt_id,t.tmplt_ver_no FROM tmd_mdl_scnrcasetmpltd c
             JOIN tmd_mdl_inpttmpltm t ON t.tmplt_id=c.tmplt_id
-            WHERE c.case_id=? AND c.del_yn='N' AND t.del_yn='N' AND t.mdl_spt_cd=? AND t.tmplt_stat_cd IN ('ACTIVE','DEPRECATED')
-            """,(rs,n)->new long[]{rs.getLong(1),rs.getInt(2)},caseId,modelCode);
+            WHERE c.case_id=? AND c.del_yn='N' AND t.del_yn='N' AND t.tmplt_stat_cd IN ('ACTIVE','DEPRECATED')
+            """,(rs,n)->new long[]{rs.getLong(1),rs.getInt(2)},caseId);
         if(root.size()!=1) throw InputDraftException.conflict("POLICY_INCOMPLETE",null);
         long template=root.get(0)[0];
         List<String> roles=jdbc.query("SELECT mdl_file_cd FROM tmd_mdl_inptfiled WHERE tmplt_id=? AND del_yn='N' ORDER BY file_ord",(rs,n)->rs.getString(1),template);
@@ -168,9 +164,9 @@ public class ModelInputDraftRepository {
         return jdbc.query("""
             SELECT p.* FROM tmd_mdl_inptdrftprcsl p
             JOIN tmd_mdl_inptdrftm d ON d.drft_id=p.drft_id JOIN tmd_mdl_inpttmpltm t ON t.tmplt_id=d.tmplt_id
-            WHERE p.prcs_stat_cd='QUEUED' AND (p.prcs_type_cd='CHANGE' OR (? AND p.prcs_type_cd='FINALIZE')) AND t.mdl_spt_cd=?
+            WHERE p.prcs_stat_cd='QUEUED' AND (p.prcs_type_cd='CHANGE' OR (? AND p.prcs_type_cd='FINALIZE'))
             ORDER BY p.expr_dtm,p.prcs_id LIMIT 100
-            """,this::operation,finalizations,modelCode);
+            """,this::operation,finalizations);
     }
     public Operation claimChange(String draftId,String operationId) {
         return claimChange(draftId,operationId,UUID.randomUUID().toString());

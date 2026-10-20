@@ -293,7 +293,6 @@ kubernetes:
 
 mi:
   model-input:
-    model-code: DRAFT_FO01_SMOKE
     change-worker:
       enabled: true
     finalization:

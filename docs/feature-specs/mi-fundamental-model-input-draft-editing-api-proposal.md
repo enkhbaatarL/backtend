@@ -89,6 +89,8 @@ Case 목록에서 개인 Draft ID를 받은 경우 EDT-02로 바로 재조회해
 
 worker는 접수 당시 서버가 확인한 actor/tenant/고정 기준을 전달받고 종료 때 context를 정리한다. 사용자/tenant/fileNo/bucket/object key/수식/저장 경로는 공개 요청으로 받지 않는다. payload·셀값·거부값·원문 예외는 HTTP/worker 로그와 오류에 남기지 않는다. 평문 작업사본/기존 암복호화는 domain 규칙63, 자원·비동기·전체120초 상한은 규칙64를 그대로 따른다. QRY JSON DRM 비적용의 기존 결정을 재심의하지 않는다.
 
+입력 양식 선택은 [조회 API §4.6](mi-fundamental-model-input-query-api-proposal.md)의 Case 연결 기준을 따른다. application model-code 설정으로 제한하지 않으며, 기존 Draft의 고정 양식·원본과 현재 Case 연결이 다르면 기존 충돌 오류를 유지한다.
+
 ## 3. 채택한 공통 Endpoint
 
 공통 root는 `/api/v1/mi/fundamental-model`이다. body/response는 `application/json`, 인증은 기존 방식이다. 아래 GET은 body가 없다.
