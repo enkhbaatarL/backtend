@@ -246,8 +246,11 @@ public class ModelInputDraftService {
         List<RowRef> rows=new ArrayList<>();
         for(FileRef file:basis.files) {
             List<Window> windows=new ArrayList<>();
+            // B:F 연결 수식을 식별 열로 발행한 정의에만 예외를 적용한다.
+            // H:AE 등 비수식 식별 열을 쓰는 기존 카탈로그는 일반 행 판정을 유지한다.
             List<TableRef> regas=basis.catalog.tables().stream().filter(table->table.role().equals(file.role())
-                &&InputWorkbookPolicy.kind(table)==InputWorkbookPolicy.Kind.REGAS_MONTHLY).toList();
+                &&InputWorkbookPolicy.kind(table)==InputWorkbookPolicy.Kind.REGAS_MONTHLY
+                &&basis.definitions.get(table.id()).identityColumns().equals(List.of(2,3,4,5,6))).toList();
             if(regas.size()>1)throw InputDraftException.conflict("POLICY_INCOMPLETE",null);
             for(TableRef table:basis.catalog.tables())if(table.role().equals(file.role())) {
                 InputReadDefinition def=basis.definitions.get(table.id());
@@ -268,7 +271,7 @@ public class ModelInputDraftService {
                     reader.readLocal(path,windows);
                     List<TableRef> masters=basis.catalog.tables().stream().filter(table->table.role().equals("SUPPLY")&&table.sheet().equals("BCRegasification")).toList();
                     TableRef monthly=regas.get(0);
-                    if(masters.size()!=1||!basis.definitions.get(monthly.id()).identityColumns().equals(List.of(2,3,4,5,6)))throw InputDraftException.conflict("POLICY_INCOMPLETE",null);
+                    if(masters.size()!=1)throw InputDraftException.conflict("POLICY_INCOMPLETE",null);
                     TableRef master=masters.get(0);
                     Set<Integer> masterRows=rows.stream().filter(row->row.table()==master.id()).map(RowRef::row).collect(java.util.stream.Collectors.toSet());
                     for(int row:InputWorkbookRegas.linkedSourceRows(path,master,monthly,masterRows,()->{})) {
