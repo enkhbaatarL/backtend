@@ -301,3 +301,5 @@ mi:
       enabled: true
       source-key: DRAFT_C_STRUCTURE_V1
       model-code: DRAFT_C_STRUCTURE
+    shared-baseline:
+      enabled: true
