@@ -4,9 +4,11 @@ import com.sk.domain.shared.repository.master.tmm.ModelInputDraftRepository;
 import com.sk.domain.shared.repository.master.tmm.ModelInputDraftRepository.*;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.util.Collections;
 import java.util.List;
 import java.util.UUID;
 import javax.sql.DataSource;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Repository;
@@ -14,7 +16,9 @@ import org.springframework.transaction.support.TransactionSynchronizationManager
 
 /** 직접 업로드도 공통 operation/revision을 사용한다. 모든 변경은 owner-slot → Draft → operation 순서다. */
 @Repository
+@Slf4j
 public class InputUploadRepository {
+    private static final int ROW_INSERT_SIZE = 500;
     private final JdbcTemplate sql;
     private final ModelInputDraftRepository common;
 
@@ -141,14 +145,40 @@ public class InputUploadRepository {
             (s,p)->{s.setLong(1,revision);s.setString(2,p.id());});
         sql.batchUpdate("INSERT INTO tmd_mdl_inptdrftrowh(row_id,drft_id,inpt_tbl_id,bgn_rvsn_no,row_no,crt_usr_logn_id,mod_usr_logn_id) VALUES(?,?,?,?,NULL,?,?)",active,500,
             (s,p)->{s.setString(1,p.id());s.setString(2,draft);s.setLong(3,p.table());s.setLong(4,revision);s.setString(5,op.actor());s.setString(6,op.actor());});
-        sql.batchUpdate("INSERT INTO tmd_mdl_inptdrftrowm(row_id,drft_id,inpt_tbl_id,org_row_no,file_rvsn_no,crt_usr_logn_id,mod_usr_logn_id) VALUES(?,?,?,?,?,?,?)",rows,500,
-            (s,row)->{s.setString(1,row.id());s.setString(2,draft);s.setLong(3,row.table());s.setInt(4,row.row());s.setLong(5,revision);s.setString(6,op.actor());s.setString(7,op.actor());});
-        sql.batchUpdate("INSERT INTO tmd_mdl_inptdrftrowh(row_id,drft_id,inpt_tbl_id,bgn_rvsn_no,row_no,crt_usr_logn_id,mod_usr_logn_id) VALUES(?,?,?,?,?,?,?)",rows,500,
-            (s,row)->{s.setString(1,row.id());s.setString(2,draft);s.setLong(3,row.table());s.setLong(4,revision);s.setInt(5,row.row());s.setString(6,op.actor());s.setString(7,op.actor());});
+        insertOriginalRows(draft,revision,op.actor(),rows);
         if(revision>0)one(sql.update("UPDATE tmd_mdl_inptdrftm SET rvsn_no=?,actv_prcs_id=NULL WHERE drft_id=? AND actv_prcs_id=? AND rvsn_no=?",revision,draft,op.id(),revision-1));
         else one(sql.update("UPDATE tmd_mdl_inptupldactvm SET prcs_id=NULL,drft_id=? WHERE cust_cpny_no=? AND usr_no=? AND prcs_id=?",draft,u.company,u.user,op.id()));
         if(sql.update("UPDATE tmd_mdl_inptdrftprcsl SET end_dtm=CURRENT_TIMESTAMP(6) WHERE prcs_id=? AND prcs_stat_cd='SUCCEEDED' AND try_tokn=? AND expr_dtm>CURRENT_TIMESTAMP(6)",op.id(),op.token())!=1)
             throw InputDraftException.conflict("TIMEOUT",revision==0?null:revision-1);
+    }
+    /** 한 SQL에 500행만 바인딩하여 대량 업로드의 행별 DB 왕복을 피한다. */
+    private void insertOriginalRows(String draft,long revision,String actor,List<RowRef> rows) {
+        long started=System.nanoTime();
+        log.info("Input upload row insert started phase=IDENTITY totalRows={}",rows.size());
+        for(int offset=0;offset<rows.size();offset+=ROW_INSERT_SIZE) {
+            InputTempFiles.checkpoint();
+            List<RowRef> chunk=rows.subList(offset,Math.min(offset+ROW_INSERT_SIZE,rows.size()));
+            String tuples=String.join(",",Collections.nCopies(chunk.size(),"(?,?,?,?,?,?,?)"));
+            sql.update("INSERT INTO tmd_mdl_inptdrftrowm(row_id,drft_id,inpt_tbl_id,org_row_no,file_rvsn_no,crt_usr_logn_id,mod_usr_logn_id) VALUES"+tuples,statement->{
+                int parameter=1;
+                for(RowRef row:chunk){statement.setString(parameter++,row.id());statement.setString(parameter++,draft);statement.setLong(parameter++,row.table());statement.setInt(parameter++,row.row());statement.setLong(parameter++,revision);statement.setString(parameter++,actor);statement.setString(parameter++,actor);}
+            });
+            if((offset+chunk.size())%10000==0||offset+chunk.size()==rows.size())
+                log.info("Input upload row insert progress phase=IDENTITY completedRows={} totalRows={} elapsedMs={}",offset+chunk.size(),rows.size(),(System.nanoTime()-started)/1_000_000);
+        }
+        started=System.nanoTime();
+        log.info("Input upload row insert started phase=POSITION totalRows={}",rows.size());
+        for(int offset=0;offset<rows.size();offset+=ROW_INSERT_SIZE) {
+            InputTempFiles.checkpoint();
+            List<RowRef> chunk=rows.subList(offset,Math.min(offset+ROW_INSERT_SIZE,rows.size()));
+            String tuples=String.join(",",Collections.nCopies(chunk.size(),"(?,?,?,?,?,?,?)"));
+            sql.update("INSERT INTO tmd_mdl_inptdrftrowh(row_id,drft_id,inpt_tbl_id,bgn_rvsn_no,row_no,crt_usr_logn_id,mod_usr_logn_id) VALUES"+tuples,statement->{
+                int parameter=1;
+                for(RowRef row:chunk){statement.setString(parameter++,row.id());statement.setString(parameter++,draft);statement.setLong(parameter++,row.table());statement.setLong(parameter++,revision);statement.setInt(parameter++,row.row());statement.setString(parameter++,actor);statement.setString(parameter++,actor);}
+            });
+            if((offset+chunk.size())%10000==0||offset+chunk.size()==rows.size())
+                log.info("Input upload row insert progress phase=POSITION completedRows={} totalRows={} elapsedMs={}",offset+chunk.size(),rows.size(),(System.nanoTime()-started)/1_000_000);
+        }
     }
     void fail(Operation observed,String failure) {
         Operation op=lock(observed);if(op.terminal())return;
