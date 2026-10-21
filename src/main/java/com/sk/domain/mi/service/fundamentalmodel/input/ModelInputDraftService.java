@@ -411,14 +411,14 @@ public class ModelInputDraftService {
             if(draft.activeOperation()!=null)throw InputDraftException.conflict("DRAFT_BUSY",draft.revision());
             if(draft.revision()!=request.baseRevision())throw InputDraftException.conflict("REVISION_CONFLICT",draft.revision());
             State state=restore(draft,current);
-            validateChange(state.source,request,draft);
+            validateChange(state.source,state.history,request,draft);
             var role=authorization.getCurrentRole();
             if(role!=com.sk.domain.shared.enums.Role.USER&&role!=com.sk.domain.shared.enums.Role.ADMIN)throw InputDraftException.missing();
             var op=store.enqueueChange(draft,request.requestId(),request.baseRevision(),new String(json.changeBytes(request),StandardCharsets.UTF_8),role.name(),actor.login);
             return operationView(op);
         });
     }
-    void validateChange(Source source,InputDraftJson.ChangeRequest request,Draft draft) {
+    void validateChange(Source source,InputDraftHistory history,InputDraftJson.ChangeRequest request,Draft draft) {
         // 모든 표 접근을 먼저 확인해 필드 검증이 다른 표의 존재를 드러내지 않게 한다.
         Map<String,TableRef> requested=new HashMap<>();
         for(JsonNode command:request.operations()) {
@@ -460,10 +460,17 @@ public class ModelInputDraftService {
             }
         }
         if(!changesEnabled)throw InputDraftException.conflict("POLICY_UNSUPPORTED",draft.revision());
+        var logicalRows=store.logicalRows(draft);
         Map<Long,Map<Integer,String>> bindings=new HashMap<>();
-        for(var row:store.logicalRows(draft).positions())if(row.end()==null&&row.row()!=null)
+        for(var row:logicalRows.positions())if(row.end()==null&&row.row()!=null)
             bindings.computeIfAbsent(row.table(),ignored->new HashMap<>()).put(row.row(),row.id());
-        InputWorkbookEditor.validate(source,bindings,request,draft.revision());
+        Set<String> addedRows=new HashSet<>();
+        for(var row:logicalRows.identities())if(row.original()==null)addedRows.add(row.id());
+        Set<String> addedFields=new HashSet<>();
+        for(TableRef table:source.catalog.tables())for(JsonNode field:source.definitions.get(table.id()).fields())
+            if(history.sourceColumn(table.id(),field.path("columnNumber").asInt())==null)
+                addedFields.add(table.key()+"/"+field.path("fieldKey").asText());
+        InputWorkbookEditor.validate(source,bindings,addedRows,addedFields,request,draft.revision());
         InputWorkbookEditor.validateHistory(source(actor(),draft),store.revisions(draft.id()),json);
     }
     private boolean inputType(String type,JsonNode value) {

@@ -60,36 +60,54 @@ final class InputWorkbookCapacity {
     /** 기존 외부/Helper cache는 보존한다. 원본 예약 C가 없는 신규 행만 R&S 식을 만든다. */
     static Result infrastructure(Path source, int styleRow, Set<Integer> created, InputWorkbookXml.SheetPatch patch,
             InputWorkbookReader reader, InputWorkbookXml.Checkpoint checkpoint) throws Exception {
-        if (created.isEmpty()) return new Result(Set.of(), List.of());
-        Set<String> targets = new HashSet<>(); created.forEach(row -> targets.add("C" + row));
+        return infrastructure(source, styleRow, created, Set.of(), patch, reader, checkpoint);
+    }
+
+    static Result infrastructure(Path source, int styleRow, Set<Integer> created, Set<Integer> shifted,
+            InputWorkbookXml.SheetPatch patch, InputWorkbookReader reader, InputWorkbookXml.Checkpoint checkpoint) throws Exception {
+        if (created.isEmpty() && shifted.isEmpty()) return new Result(Set.of(), List.of());
+        Set<Integer> affected = new HashSet<>(created); affected.addAll(shifted);
+        Set<String> targets = new HashSet<>(); affected.forEach(row -> targets.add("C" + row));
         var originals = InputWorkbookStructure.formulas(source, SHEET, a -> a.equals("C11") || targets.contains(a), checkpoint);
         if (!"R11&S11".equals(originals.get("C11"))) throw invalid();
         Map<Integer, String> cells = new HashMap<>();
         InputWorkbookXml.rows(source, InputWorkbookXml.sheetParts(source).get(SHEET), checkpoint, row -> {
-            if (created.contains(row.number()) || row.number() == styleRow) {
+            if (affected.contains(row.number()) || row.number() == styleRow) {
                 String cell = InputWorkbookXml.cells(row.xml()).get(3); if (cell != null) cells.put(row.number(), cell);
             }
         });
         Map<InputWorkbookCalculation.Address, String> formulas = new LinkedHashMap<>();
-        Map<InputWorkbookCalculation.Address, Object> constants = new LinkedHashMap<>(); List<String> added = new ArrayList<>();
-        for (int row : created) {
+        Map<InputWorkbookCalculation.Address, Object> constants = new LinkedHashMap<>(); List<String> added = new ArrayList<>(); Set<String> calculated = new HashSet<>();
+        for (int row : affected) {
             String target = "C" + row, expected = "R" + row + "&S" + row;
-            if (originals.containsKey(target)) { if (!expected.equals(originals.get(target))) throw invalid(); continue; }
-            String template = cells.get(row);
-            if (template != null && java.util.regex.Pattern.compile("<(?:f|v|is)(?=\\s|/?>)").matcher(template).find()) throw invalid();
-            if (template == null) template = cells.get(styleRow); if (template == null) throw invalid();
-            String cell = InputWorkbookXml.valueCell(template, target, null).replace("</c>", "<f>" + InputWorkbookXml.escape(expected) + "</f><v>0</v></c>");
-            patch.raw(row, 3, cell); formulas.put(address(row, 3), expected); added.add(target);
+            if (row <= 400) {
+                if (!created.contains(row) || !expected.equals(originals.get(target))) throw invalid();
+                continue;
+            }
+            String patched = patch.raw.getOrDefault(row, Map.of()).get(3);
+            if (shifted.contains(row)) {
+                if (patched == null || !patched.contains("<f>" + InputWorkbookXml.escape(expected) + "</f>")) throw invalid();
+            } else {
+                if (patched != null && java.util.regex.Pattern.compile("<(?:f|v|is)(?=\\s|/?>)").matcher(patched).find()) throw invalid();
+                String template = patched == null ? cells.get(row) : patched;
+                if (template != null && java.util.regex.Pattern.compile("<(?:f|v|is)(?=\\s|/?>)").matcher(template).find()) throw invalid();
+                if (template == null) template = cells.get(styleRow); if (template == null) throw invalid();
+                patch.raw(row, 3, InputWorkbookXml.valueCell(template, target, null)
+                    .replace("</c>", "<f>" + InputWorkbookXml.escape(expected) + "</f><v>0</v></c>"));
+                added.add(target);
+            }
+            formulas.put(address(row, 3), expected);
+            calculated.add(target);
             constants.put(address(row, 18), null); constants.put(address(row, 19), null);
         }
         if (formulas.isEmpty()) return new Result(Set.of(), List.of());
-        reader.readLocal(source, List.of(new InputWorkbookReader.Window(SHEET, created::contains, Set.of(18, 19), (row, values) -> values.forEach((column, cell) -> {
+        reader.readLocal(source, List.of(new InputWorkbookReader.Window(SHEET, affected::contains, Set.of(18, 19), (row, values) -> values.forEach((column, cell) -> {
             var key = address(row, column); if (constants.containsKey(key)) constants.put(key, cell.raw());
         }))));
         InputWorkbookCalculation.evaluate(constants, formulas, checkpoint).forEach((address, value) -> {
             int row = new CellReference(address.cell()).getRow() + 1; patch.raw(row, 3, InputWorkbookCalculation.cache(patch.raw.get(row).get(3), value));
         });
-        return new Result(Set.copyOf(added), List.copyOf(added));
+        return new Result(Set.copyOf(calculated), List.copyOf(added));
     }
 
     private static InputWorkbookCalculation.Address address(int row, int column) { return new InputWorkbookCalculation.Address(SHEET, InputWorkbookXml.address(row, column)); }

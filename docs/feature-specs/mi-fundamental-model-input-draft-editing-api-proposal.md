@@ -324,6 +324,8 @@ EDT-03의 data는 `draftId/revision/sourceKey/sourceVersion/tableData/page/editi
 
 capabilities는 표/동작 공통 구조·계산/보존 정책의 준비도, fields의 policyStatus는 필드별 준비도다. SET/CLEAR는 둘 다 READY인 대상만 허용한다. §1.1 채택한 ADD_COLUMN 버튼은 표 capability가 READY일 때, DELETE_COLUMN 버튼은 표 capability와 선택 field policyStatus가 모두 READY일 때 활성화하며 서버도 같은 조건을 검증한다. ADD_ROW는 공통 정책과 필요한 신규 필드 정책이 모두 완비돼야 한다. 불허/미완비 field가 있다고 정상 조회를 빈 성공으로 바꾸지 않는다.
 
+**PNG Infrastructure 삭제 — 2026-10-21:** 새 정책 양식에서 `DELETE_ROW`는 저장된 추가 행(`rowBindings.origin=ADDED`) 또는 같은 요청의 앞선 `ADD_ROW`만 허용한다. 원본 행·`EMPTY_SLOT`은 거부한다. `DELETE_COLUMN`은 저장된 추가 연도 field 또는 같은 요청의 앞선 `ADD_COLUMN`만 허용한다. 원본 field는 `policyStatus.DELETE_COLUMN=NOT_ALLOWED`, 추가 연도 field는 `READY`이며, 두 삭제 명령 모두 표 capability가 `READY`여야 한다. 서버는 원본/추가 출처를 재검증하며 기존 양식의 Case/Draft를 새 정책으로 전환하지 않는다. 삭제 성공 후 구조·페이지·rowBindings·fields는 활성 항목 기준으로 반환하고 삭제된 ID/key의 이력·성공 mapping은 기존 계약을 따른다.
+
 FE는 표시값을 숫자로 재해석해 전체 행을 되보내지 않는다. `editValues`와 사용자가 실제 변경한 값만 delta(변경분)로 보낸다. 서버도 생략된 기존 값을 유지한다. 숫자는 JSON number, 연도는 정수, 가격은 유한 10진수이며 숫자 문자열·null·수식은 허용하지 않는다. Decimal은 exponent 없는 JSON number로 채택했으며 FE는 손실 없는 10진 입력 처리를 준비한다. IEEE-754 변환으로 자릿수가 손실되는 값을 조용히 변환해 보내지 않는다. 서버는 10진 값을 보존하고 임의 반올림하지 않는다. BCPrices는 별도 업무 소수 자릿수 제한/저장 반올림을 추가하지 않는 것으로 채택했다. 숫자 정확도·전송/저장 표현 상한의 제품 검증은 §10의 BE 후속이다.
 
 Sector 국가/하위부문은 domain 규칙45의 필수 자유입력 TEXT다. `create.required:true`, `initial:{kind:"EMPTY"}`로 표현하고 CREATE/SET의 constraints에 options를 제공하지 않는다. 별도 열거값 제약은 없으므로 해당 constraints는 `{}`이며 §4의 공통 TEXT 타입/크기 제한과 §4.1의 필수 검증은 유지한다. 목록/seed 부재로 CREATE/SET을 INCOMPLETE로 만들거나 POLICY_INCOMPLETE를 반환하지 않는다. 실제 동작의 준비도는 다른 필수 구조/계산·보존 정책을 별도로 따른다. 모델의 명칭 인식 제약은 §10의 후속 확인이며 임의 명칭의 모델 반영 성공을 보장하지 않는다. 기존 QRY-01/02 응답은 변경하지 않는다.
@@ -846,7 +848,7 @@ BCPrices hh는0 이상 숫자이며 CLEAR는 금지다. 정책과 검증기가 �
 
 ### 7.12 열 명령의 현재 접수 경계 — 공통 v2 구현
 
-공통 파서는 ADD_ROW/SET/CLEAR/DELETE_ROW/ADD_COLUMN/DELETE_COLUMN을 수용한다. 형식/임시키/열 참조 오류는400이며, 형식이 맞아도 접근 가능한 표의 열 정책이 누락되면409 POLICY_INCOMPLETE, 실제 처리기가 없으면409 POLICY_UNSUPPORTED다. 접수 전 거부에는 operation을 생성하지 않는다. 공개 metadata도 실제 열 처리기가 없는 READY 정책은 UNSUPPORTED로 반환한다. 현재 실제 처리기는 F-O-01 SET 한 건이며 열 편집 버튼을 열지 않는다. 로컬 공통 구현 검증과 실서버 배포 상태는 구분한다.
+공통 파서는 ADD_ROW/SET/CLEAR/DELETE_ROW/ADD_COLUMN/DELETE_COLUMN을 수용한다. 형식/임시키/열 참조 오류는400이며, 형식이 맞아도 접근 가능한 표의 열 정책이 누락되면409 POLICY_INCOMPLETE, 실제 처리기가 없으면409 POLICY_UNSUPPORTED다. 접수 전 거부에는 operation을 생성하지 않는다. 공개 metadata도 실제 열 처리기가 없는 READY 정책은 UNSUPPORTED로 반환한다. 표별 지원은 Draft에 고정된 양식 정책과 처리기 지원의 교집합으로 결정한다. PNG Infrastructure의 새 정책 양식에서만 §3.3의 추가 항목 삭제가 READY이며 기존 양식은 기존 상태를 유지한다. 로컬 검증과 실서버 배포 상태는 구분한다.
 
 기존 정의에 ADD_COLUMN 정책이 누락된 표의 예시(현재 revision0):
 
@@ -1398,7 +1400,7 @@ LiqProd Period 산식과 월 건너뛰기/중복 허용은 [domain 규칙65](../
 
 ### 10.2 확정 계약–공통 v2 구현 및 실제 표별 후속 — 2026-10-19
 
-아래는 현재 작업 폴더의 공통 구현과 격리 검증 기준이다. 실제 DB 적용·실서버 배포·FE 연동 완료를 뜻하지 않는다.
+아래 표는 2026-10-19 당시 공통 v2 구현과 격리 검증 기록이다. 이후 표별 처리기 지원이 확대됐으며, 현재 PNG Infrastructure 추가 항목 삭제 범위는 §3.3과 새 양식 정책을 따른다. 실제 DB 적용·실서버 배포·FE 연동 완료를 뜻하지 않는다.
 
 | 영역 | 공통 구현 | 남은 경계 |
 | --- | --- | --- |
@@ -1409,4 +1411,4 @@ LiqProd Period 산식과 월 건너뛰기/중복 허용은 [domain 규칙65](../
 | worker/FINALIZE | 기존 F-O-01 저장→재조회→최종4파일을 같은 저장 version2로 유지. 미지원 열 성공 이력은 최종저장에서 무시하지 않고 거부 | 월/연도 실제 처리기·원본/계산·최종 파일 검증 후 지원 확대 |
 | DB | 기존 JSON 저장/관계형 행 이력 재사용. 새 열 테이블 없음. CHECK2 수동 SQL 준비 | 실제 개발/운영 DB 미적용. 승인7table 초기화·CHECK2·전체 v2 코드 교체 순서와 구 코드 혼합 금지는 DDL §6.9/전용 SQL 참조 |
 
-**준비도:** 공통 v2 기반은 관련 행동 테스트·생성 OpenAPI로 확인하며 상세 명령/결과는 stable work note가 소유한다. 실제 열 편집과 배포는 별도 후속이다. FE는 응답 READY만 호출하고 추가 열 기능을 이번 공통 구현만으로 활성화하지 않는다. 미배포 v1 이중 reader/변환은 제공하지 않는다.
+**준비도:** 위 표의 2026-10-19 판정은 당시 기록이다. FE는 조회 응답의 READY만 호출하며 현재 작업 폴더의 PNG 삭제 구현·신규 양식 SQL 초안은 실제 DB 발행이나 실서버 배포 증거가 아니다. 미배포 v1 이중 reader/변환은 제공하지 않는다.

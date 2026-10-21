@@ -230,13 +230,14 @@ final class InputWorkbookPolicy {
             case "ADD_ROW" -> (Set.of(Kind.ROWS, Kind.COST, Kind.MACRO, Kind.SHIPPING_COST, Kind.SHIPPING_DISRUPTION, Kind.SHIPPING_ROUTE, Kind.ALLOCATION, Kind.HYDROGEN, Kind.BCINPUT, Kind.BCPRODUCTION, Kind.PRODUCTION, Kind.HURRICANE_ADJUSTMENT, Kind.ANNUAL, Kind.SECTOR, Kind.MONTHLY, Kind.LIQPROD, Kind.LIQUTIL).contains(kind)
                 || kind == Kind.UPSTREAM && table.startColumn() == 20 || kind == Kind.WEATHER_LOGIC && table.startColumn() >= 12 || kind == Kind.REGAS && table.startColumn() == 1) && table.rowAdd();
             case "ADD_COLUMN" -> (kind == Kind.ANNUAL || kind == Kind.LNG || kind == Kind.REGAS || months(table)) && table.columnAdd();
-            case "DELETE_ROW" -> kind == Kind.SECTOR || kind == Kind.MONTHLY || kind == Kind.LIQUTIL || kind == Kind.REGAS && table.startColumn() == 1;
-            case "DELETE_COLUMN" -> months(table);
+            case "DELETE_ROW" -> infrastructure(table) || kind == Kind.SECTOR || kind == Kind.MONTHLY || kind == Kind.LIQUTIL || kind == Kind.REGAS && table.startColumn() == 1;
+            case "DELETE_COLUMN" -> infrastructure(table) || months(table);
             default -> false;
         };
     }
 
     static void validate(ModelInputDraftService.Source source, Map<Long, Map<Integer, String>> bindings,
+            Set<String> addedRowIds, Set<String> addedFieldKeys,
             InputDraftJson.ChangeRequest request, long revision) {
         Map<String, String> addedRows = new HashMap<>();
         Map<String, JsonNode> addedColumns = new HashMap<>();
@@ -290,7 +291,7 @@ final class InputWorkbookPolicy {
                 }
                 Set<String> headers = kind(table) == Kind.LIQUTIL ? Set.of() : kind(table) == Kind.LIQPROD ? Set.of("year", "month") : Set.of("year");
                 if (!allowed.equals(headers) || headers.stream().anyMatch(key -> !command.path("headerValues").has(key))) throw InputDraftException.conflict("POLICY_INCOMPLETE", revision);
-                ObjectNode created = createdField(creation, months(table));
+                ObjectNode created = createdField(creation, deletableAddedColumn(table, definition));
                 ((ObjectNode) created.path("policyStatus")).put("SET_HEADER", newHeaderPolicy(table, definition));
                 addedColumns.put(command.path("clientColumnKey").asText(), created);
                 continue;
@@ -301,6 +302,8 @@ final class InputWorkbookPolicy {
                 JsonNode field = command.has("fieldKey") ? field(definition, command.path("fieldKey").asText()) : addedColumns.get(command.path("clientColumnKey").asText());
                 if (field == null) throw InputDraftException.invalid();
                 if (command.has("fieldKey") && field.path("columnNumber").asInt() < 7) throw invalid(command, request, revision, "ACTION_NOT_ALLOWED");
+                if (infrastructure(table) && command.has("fieldKey") && !addedFieldKeys.contains(table.key() + "/" + command.path("fieldKey").asText()))
+                    throw invalid(command, request, revision, "ACTION_NOT_ALLOWED");
                 policy(field.path("policyStatus").path(action).asText(), revision, command, request, "ACTION_NOT_ALLOWED");
                 deletedColumns.add(columnIdentity); continue;
             }
@@ -319,7 +322,11 @@ final class InputWorkbookPolicy {
             else if (!table.key().equals(addedRows.get(client))) throw InputDraftException.invalid();
             String identity = ref.has("rowId") ? ref.path("rowId").asText() : client;
             if (deletedRows.contains(identity)) throw InputDraftException.invalid();
-            if (action.equals("DELETE_ROW")) { deletedRows.add(identity); continue; }
+            if (action.equals("DELETE_ROW")) {
+                if (infrastructure(table) && ref.has("rowId") && !addedRowIds.contains(ref.path("rowId").asText()))
+                    throw invalid(command, request, revision, "ACTION_NOT_ALLOWED");
+                deletedRows.add(identity); continue;
+            }
             JsonNode field = command.has("fieldKey") ? field(definition, command.path("fieldKey").asText()) : addedColumns.get(command.path("clientColumnKey").asText());
             if (field == null) throw InputDraftException.invalid();
             // 기존 master 입력은 A Helper를 포함한 연결 정의에서만 처리한다.
@@ -353,6 +360,9 @@ final class InputWorkbookPolicy {
         return createdField(creation, false);
     }
     static boolean months(TableRef table) { return kind(table) == Kind.LIQPROD || kind(table) == Kind.LIQUTIL; }
+    static boolean deletableAddedColumn(TableRef table, InputReadDefinition definition) {
+        return months(table) || infrastructure(table) && definition.capabilities().path("DELETE_COLUMN").asText().equals("READY");
+    }
     static ObjectNode createdField(JsonNode creation, boolean delete) {
         ObjectNode field = creation.path("body").deepCopy();
         boolean required = field.path("create").path("required").asBoolean();

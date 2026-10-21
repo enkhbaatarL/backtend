@@ -75,6 +75,7 @@ final class InputWorkbookCommands {
             shifted.keySet().forEach(rows::remove); shifted.forEach((from, value) -> rows.put(from - 1, value));
             for (int position = row; position < last; position++) slots.put(position, slots.get(position + 1));
             slots.put(last, null);
+            if (InputWorkbookPolicy.infrastructure(original)) fitRows();
         }
         void shiftBlock(int shift) {
             rowOffset = shift;
@@ -104,6 +105,8 @@ final class InputWorkbookCommands {
                 if (target == null) fields.remove(i); else item.put("columnNumber", target);
             }
             var columns = definition.putArray("columns"); columnPositions.values().stream().filter(java.util.Objects::nonNull).sorted().forEach(columns::add);
+            if (InputWorkbookPolicy.infrastructure(original)) endColumn = Math.max(17,
+                columnPositions.values().stream().filter(java.util.Objects::nonNull).mapToInt(Integer::intValue).max().orElse(17));
         }
     }
 
@@ -207,7 +210,7 @@ final class InputWorkbookCommands {
                     }
                     int column = last + 1; if (column > 16384) throw invalid();
                     lastColumns.put(ref.sheet(), column); columnClients.put(client, fieldKey);
-                    ObjectNode field = InputWorkbookPolicy.createdField(table.current().columnCreation(), InputWorkbookPolicy.months(ref));
+                    ObjectNode field = InputWorkbookPolicy.createdField(table.current().columnCreation(), InputWorkbookPolicy.deletableAddedColumn(ref, table.current()));
                     field.put("fieldKey", fieldKey).put("columnNumber", column);
                     ((ObjectNode) field.path("policyStatus")).put("SET_HEADER", InputWorkbookPolicy.newHeaderPolicy(ref, table.before));
                     Map<Integer, Object> headers = headers(table, source, baseline, command);
@@ -233,9 +236,15 @@ final class InputWorkbookCommands {
                     submittedValues.put(new Cell(ref.id(), id, table.row(id), column), type.equals("CLEAR") ? null : scalar(command.path("value")));
                     if (ref.sheet().equals("BCPrices") && column == 2 || overwrite(table)) table.changedYears.put(id, command);
                 }
-                case "DELETE_COLUMN" -> table.deleteColumn(command.has("fieldKey") ? command.path("fieldKey").asText() : columnClients.get(command.path("clientColumnKey").asText()));
+                case "DELETE_COLUMN" -> {
+                    String field = command.has("fieldKey") ? command.path("fieldKey").asText() : columnClients.get(command.path("clientColumnKey").asText());
+                    if (InputWorkbookPolicy.infrastructure(ref) && command.has("fieldKey")
+                            && history.sourceColumn(ref.id(), InputWorkbookPolicy.field(table.before, field).path("columnNumber").asInt()) != null) throw invalid();
+                    table.deleteColumn(field);
+                }
                 case "DELETE_ROW" -> {
                     String id = command.path("rowRef").has("rowId") ? command.path("rowRef").path("rowId").asText() : rowClients.get(command.path("rowRef").path("clientRowKey").asText());
+                    if (InputWorkbookPolicy.infrastructure(ref) && !table.addedRows.containsValue(id) && !history.origin(id).equals("ADDED")) throw invalid();
                     table.deleteRow(id);
                     if (table == linkedMaster) linkedMonthly.deleteRow(regasLinks.get(id));
                 }
@@ -282,6 +291,7 @@ final class InputWorkbookCommands {
         Set<Cell> readBack = new java.util.LinkedHashSet<>(values.keySet());
         Map<String, List<InputWorkbookStructure.Move>> moves = new LinkedHashMap<>();
         Map<String, List<InputWorkbookStructure.Area>> deleted = new LinkedHashMap<>();
+        Map<Long, Set<Integer>> shiftedInfrastructureHelpers = new HashMap<>();
         for (Table table : tables.values()) if (table.columnsMoved() || !table.removed.isEmpty() || table.rowOffset != 0) {
             String sheet = table.original.sheet();
             Map<Integer, Integer> sourceRows = new TreeMap<>(), sourceColumns = new TreeMap<>();
@@ -290,6 +300,19 @@ final class InputWorkbookCommands {
             table.slots.forEach((position, original) -> { if (original != null) sourceRows.put(original, position); });
             if (overwrite(table)) for (int column = table.original.startColumn(); column <= table.original.endColumn(); column++) sourceColumns.put(column, column);
             else table.sourceColumns.keySet().forEach(column -> sourceColumns.put(column, table.columnPositions.get(column)));
+            if (InputWorkbookPolicy.infrastructure(table.original) && table.rowsChanged()) {
+                Map<Integer, Integer> helperTargets = new HashMap<>();
+                table.slots.forEach((position, sourceRow) -> { if (sourceRow != null && sourceRow > 400 && position > 400) helperTargets.put(sourceRow, position); });
+                for (var range : table.before.bodyRanges()) for (int row = Math.max(401, range.startRow()); row <= range.endRow(); row++) {
+                    Integer targetRow = helperTargets.get(row);
+                    var helper = new InputWorkbookStructure.Area(row, row, 3, 3);
+                    if (targetRow == null) deleted.computeIfAbsent(sheet, ignored -> new ArrayList<>()).add(helper);
+                    else if (targetRow != row) {
+                        moves.computeIfAbsent(sheet, ignored -> new ArrayList<>()).add(new InputWorkbookStructure.Move(helper, targetRow - row, 0));
+                        shiftedInfrastructureHelpers.computeIfAbsent(table.original.id(), ignored -> new HashSet<>()).add(targetRow);
+                    }
+                }
+            }
             // 행과 열을 따로 옮겨 교차 셀을 두 번 처리하지 않고 원본 사각형의 최종 위치를 한 번에 정한다.
             for (Axis rows : axes(sourceRows)) for (Axis columns : axes(sourceColumns)) {
                 var area = new InputWorkbookStructure.Area(rows.first, rows.last, columns.first, columns.last);
@@ -390,7 +413,8 @@ final class InputWorkbookCommands {
         for (Table table : tables.values()) if (InputWorkbookPolicy.infrastructure(table.original)) {
             Set<Integer> created = new HashSet<>();
             for (String id : table.addedRows.values()) { Integer row = table.position(id); if (row != null) created.add(row); }
-            var result = InputWorkbookCapacity.infrastructure(source, table.styleRow, created, sheets.get(table.original.sheet()), reader, checkpoint);
+            var result = InputWorkbookCapacity.infrastructure(source, table.styleRow, created,
+                shiftedInfrastructureHelpers.getOrDefault(table.original.id(), Set.of()), sheets.get(table.original.sheet()), reader, checkpoint);
             for (String address : result.calculated()) {
                 var ref = new org.apache.poi.ss.util.CellReference(address); int row = ref.getRow() + 1;
                 readBack.add(new Cell(table.original.id(), table.rows.get(row), row, 3));

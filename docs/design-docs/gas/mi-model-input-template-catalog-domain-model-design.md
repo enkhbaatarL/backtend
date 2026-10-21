@@ -424,6 +424,8 @@ ModelInputDraft 0..1 ── 1 finalized ScenarioCase
 - 한 테이블은 여러 수정 가능 범위를 가질 수 있다. 범위가 없으면 읽기 전용이다.
 - case는 양식 버전 하나에 고정된다. 양식이 나중에 바뀌어도 과거 case 해석은 바뀌지 않는다.
 - Draft는 source case, source input 파일 4개, template version을 생성 시점에 고정한다. current MI Base가 바뀌어도 기존 Draft의 source는 바뀌지 않는다.
+- **2026-10-21 PNG Infrastructure 삭제 적용 범위 — 사용자 확인:** 저장된 추가 행·연도 열 삭제 정책은 이를 발행한 새 양식에 묶인 Case/업로드 Draft부터 적용한다. 기존 Case/Draft의 양식·성공 이력은 전환하거나 다시 해석하지 않는다. 기존 양식은 기존 정책 상태를 그대로 반환한다. 조회/호출 허용 여부는 편집 API §3.3을 따르며 기존 조회·허용 편집·최종저장에 오류가 없는지 회귀 확인한다.
+- **PNG Infrastructure 추가 항목 삭제 보존 규칙:** 원본 행·원본 연도 열은 삭제하지 않는다. 추가 행 삭제는 해당 표의 입력 셀만 압축하며 다른 표·외부 입력 셀을 이동하지 않는다. 원본 예약 Helper `C208:C400` 좌표는 보존하고, 그 밖에서 추가 행 때문에 생성된 C 식은 삭제·이동된 활성 행에 맞춰 정리한다. 추가 연도 열 삭제는 해당 표의 헤더·본문과 활성 열 위치를 함께 갱신한다. 마지막 추가 항목을 삭제하면 표의 조회 범위를 원본 하한으로 되돌린다.
 - 행 대응은 원본/신규 행과 사용자 편집값을 구분해야 한다. Midstream의 입력값 전체 중복과 AJ Helper 중복은 값 조합·Helper를 영속 identity로 재사용할 수 없다는 근거다. ID 발급/보관 방식은 Q2·Q8d·Q9에 남긴다.
 - Finalized Draft는 새 독립실행 case 하나를 가리키며 재시도 시 같은 case를 반환한다.
 - 관계도의 `ScenarioCase 1:N ModelInputDraft`는 사용자별·과거 Draft를 포함한 관계다. 동일 사용자·source Case당 진행 중 Draft는 1건이며 재개한다(규칙 60). 동시성/저장 보장 수단은 Q8b에서 검토한다.

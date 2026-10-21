@@ -33,12 +33,20 @@ final class InputWorkbookEditor {
             InputDraftJson.ChangeRequest request, long revision) {
         Map<Long, Map<Integer, String>> bindings = new HashMap<>();
         source.catalog().tables().forEach(table -> bindings.put(table.id(), history.bindings(table.id())));
-        validate(source, bindings, request, revision);
+        Set<String> addedRows = bindings.values().stream().flatMap(rows -> rows.values().stream()).filter(id -> history.origin(id).equals("ADDED"))
+            .collect(java.util.stream.Collectors.toSet());
+        Set<String> addedFields = new java.util.HashSet<>();
+        source.catalog().tables().forEach(table -> source.definitions().get(table.id()).fields().forEach(field -> {
+            int column = field.path("columnNumber").asInt();
+            if (history.sourceColumn(table.id(), column) == null) addedFields.add(table.key() + "/" + field.path("fieldKey").asText());
+        }));
+        validate(source, bindings, addedRows, addedFields, request, revision);
     }
 
     static void validate(ModelInputDraftService.Source source, Map<Long, Map<Integer, String>> bindings,
+            Set<String> addedRows, Set<String> addedFields,
             InputDraftJson.ChangeRequest request, long revision) {
-        InputWorkbookPolicy.validate(source, bindings, request, revision);
+        InputWorkbookPolicy.validate(source, bindings, addedRows, addedFields, request, revision);
     }
 
     static void validateHistory(ModelInputDraftService.Source source, List<Revision> revisions, InputDraftJson json) {
