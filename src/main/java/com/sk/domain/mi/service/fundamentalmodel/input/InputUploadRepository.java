@@ -18,6 +18,7 @@ import org.springframework.transaction.support.TransactionSynchronizationManager
 @Repository
 @Slf4j
 public class InputUploadRepository {
+    private static final int UPLOAD_DEADLINE_SECONDS = 600;
     private static final int ROW_INSERT_SIZE = 500;
     private final JdbcTemplate sql;
     private final ModelInputDraftRepository common;
@@ -99,7 +100,7 @@ public class InputUploadRepository {
     Operation accept(List<Upload> files,String draft,String request,Long revision,String role,String actor,String payload) {
         requireTransaction();Upload file=files.get(0);String id=UUID.randomUUID().toString();var now=common.databaseTime().withNano(0);
         sql.update("INSERT INTO tmd_mdl_inptdrftprcsl(prcs_id,cust_cpny_no,usr_no,drft_id,req_id,prcs_type_cd,usr_role_cd,base_rvsn_no,prcs_stat_cd,json_rvsn_no,req_json,expr_dtm,crt_dtm,mod_dtm,crt_usr_logn_id,mod_usr_logn_id) VALUES(?,?,?,?,?,?,?,?,'QUEUED',2,?,?,?,?,?,?)",
-            id,file.company,file.user,draft,request,draft==null?"UPLOAD_CREATE":"UPLOAD_FILE",role,revision,payload,now.plusSeconds(120),now,now,actor,actor);
+            id,file.company,file.user,draft,request,draft==null?"UPLOAD_CREATE":"UPLOAD_FILE",role,revision,payload,now.plusSeconds(UPLOAD_DEADLINE_SECONDS),now,now,actor,actor);
         for(Upload incoming:files)one(sql.update("UPDATE tmd_mdl_inptupldfiled SET prcs_id=? WHERE upld_file_id=? AND prcs_id IS NULL AND prcs_stat_cd='RECEIVED'",id,incoming.id));
         if(draft==null)one(sql.update("UPDATE tmd_mdl_inptupldactvm SET prcs_id=? WHERE cust_cpny_no=? AND usr_no=? AND prcs_id IS NULL AND drft_id IS NULL",id,file.company,file.user));
         else one(sql.update("UPDATE tmd_mdl_inptdrftm SET actv_prcs_id=? WHERE drft_id=? AND actv_prcs_id IS NULL AND rvsn_no=? AND drft_stat_cd='DRAFT'",id,draft,revision));

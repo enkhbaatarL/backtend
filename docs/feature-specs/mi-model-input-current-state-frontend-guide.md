@@ -268,7 +268,7 @@ UP-02 추가/교체는 현재 Draft의 baseRevision이 필수다. 이미 같은 
 - 같은 사용자는 직접 업로드 Case 하나만 작성한다. 새 requestId/탭으로 두 번째 작성을 만들지 않는다. 첫 요청의 operationId/requestId와 성공 후 draftId는 기존 화면 복원 방식으로 보관한다. 별도 현재 작성 목록/검색 API는 없다.
 - 응답 유실 때 같은 requestId·동일 metadata·동일 파일로 재전송한다. 기존 SUCCEEDED/FAILED 결과는 당시 snapshot이며 이후 편집으로 다시 계산되지 않는다. 재개할 때 draftEndpoint로 현재 revision을 다시 받아 오래된 result를 덮어쓰지 않는다.
 - FAILED 재시도는 새 requestId를 만들고 후속 요청의 현재 baseRevision을 다시 받는다. 검증 불일치 시 새 Case나 파일 연결을 만들지 않으며 기존 역할 교체도 확정하지 않는다.
-- 업로드 처리 상한은 파일 전송 후 접수부터 대기열 포함120초다. TIMEOUT은 서버의 종료 결과로 확인하며 FE 대기시간만으로 실패를 확정하거나 새 작업을 만들지 않는다. 실제 대용량 성능 보장으로 해석하지 않는다.
+- 업로드 처리 상한은 파일 전송 후 접수부터 대기열 포함600초다. `statusEndpoint`를2초 간격으로 조회하고 `SUCCEEDED` 또는 `FAILED`에서 멈춘다. TIMEOUT은 서버의 종료 결과로 확인하며 FE 대기시간만으로 실패를 확정하거나 새 작업을 만들지 않는다. 실제 대용량 성능 보장으로 해석하지 않는다.
 
 작성 전체 취소는 진행 작업이 없고 사용자 확인을 받은 뒤 UP-04로 보낸다.
 

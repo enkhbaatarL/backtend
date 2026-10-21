@@ -863,7 +863,7 @@ DDL은 암묵 commit되므로 reset의 DELETE transaction을 검증·COMMIT/ROLL
 | 테이블 | 변경·소유 데이터 |
 | --- | --- |
 | `tmd_mdl_inptdrftm` | `src_spt_cd VARCHAR(20) ascii_bin NOT NULL DEFAULT 'CASE'` 추가. CASE는 기존 `org_case_id/org_rvsn_val` 필수, UPLOAD는 둘 다 NULL CHECK. template/owner/revision/state는 공통 사용. `org_case_id`와 `org_rvsn_val`만 NULL 허용으로 확장하며 최종 Case는 기존 fnsv_case_id 사용 |
-| `tmd_mdl_inptdrftprcsl` | CHANGE/FINALIZE에 UPLOAD_CREATE/UPLOAD_FILE 추가. 소유 회사/사용자 NOT NULL 추가(기존 요청은 Draft에서 backfill). 최초 요청은 base_rvsn_no=NULL, 성공 전 drft_id=NULL; 최초 성공 때만 생성된 drft_id 기록. 나머지 종류는 둘 다 필수. 상태·토큰·120초 기한/종료 결과·payload 한도는 기존 공통 구조 사용 |
+| `tmd_mdl_inptdrftprcsl` | CHANGE/FINALIZE에 UPLOAD_CREATE/UPLOAD_FILE 추가. 소유 회사/사용자 NOT NULL 추가(기존 요청은 Draft에서 backfill). 최초 요청은 base_rvsn_no=NULL, 성공 전 drft_id=NULL; 최초 성공 때만 생성된 drft_id 기록. 나머지 종류는 둘 다 필수. 상태·토큰·종료 결과·payload 한도는 기존 공통 구조 사용. 신규 업로드의 접수 후 기한은600초, 기존 이력과 CHANGE/FINALIZE는120초다. `ck09`의 호환 변경은 [업로드 기한 증분 DDL](../../model-input-upload-deadline-ddl-draft.sql)이 소유한다 |
 | 신규 `tmd_mdl_inptupldactvm` | PK `(cust_cpny_no,usr_no)`. 현재 최초 접수 prcs_id 또는 성공한 drft_id 중 하나만 보유하고 둘 다 NULL이면 비어 있음. 사용자별 잠금 기준이며 과거 초안 목록이 아님. 최초 접수 이전에도 행을 안전하게 생성/잠금해 경쟁을 직렬화 |
 | 신규 `tmd_mdl_inptupldfiled` | PK `upld_file_id UUID`. private 원본 객체의 서버 참조(최대16KiB JSON), 소유 회사/사용자, 원본 파일명300·확장자20·MIME100, 실제 수신 크기/내용 SHA-256, 요청·검증 양식·역할·성공 Draft/revision. 상태 PREPARED/RECEIVED/COMMITTED/CLEANUP_PENDING/CLEANED. 파일 바이트는 DB에 넣지 않음 |
 | `tmd_mdl_inptdrftfiled` | 기존 `(drft_id,mdl_file_cd)` PK 유지. file_no를 NULL 허용하고 upld_file_id UUID? 추가. 정확히 하나만 존재하는 XOR CHECK. CASE는 기존 tcm_filel, UPLOAD는 새 private 원본 참조 사용. 업로드 중/실패 후보는 여기에 넣지 않음 |
@@ -883,7 +883,7 @@ DDL은 암묵 commit되므로 reset의 DELETE transaction을 검증·COMMIT/ROLL
 #### 6.10.3 접수·성공·교체/복원 경계
 
 1. **수신 준비:** 서버 UUID로 생성한 private 객체 참조를 PREPARED로 먼저 기록한 뒤 저장한다. 아직 operation/초안/Case가 아니며 조회·다운로드에 공개하지 않는다. 수신 완료 바이트의 크기·SHA-256을 기록하고 RECEIVED로 바꾼다. 요청/파일 기본 검증 실패·중복 재전송의 새 사본은 현재 파일에 연결하지 않고 별도 정리한다. 실제 수신 파일은 `0<size<=52428800`. 새 digest는 업로드 동일성 판별용이며 기존 tcm_filel.file_hash_val의 의미를 바꾸지 않는다.
-2. **접수:** 현재 요청의 재전송 여부를 먼저 대조하고, 단일 작성 행 잠금 뒤 같은 키를 다시 조회한 후에만 busy/revision을 판정한다. UK 경쟁이 발생하면 해당 transaction을 rollback한 뒤 같은 잠금/원 요청 재조회로 동일 내용의 원래 결과를 반환한다. 새 최초 요청은 단일 작성 행이 비어 있는 경우만 UPLOAD_CREATE/파일 요청 연결/최초 진행 포인터를 한 transaction에 기록한다. 후속은 단일 작성→Draft→요청 순으로 잠가 현재 revision/소유/교체 확인/진행 없음 확인 후 UPLOAD_FILE과 공통 진행 포인터를 확정한다. **직접 업로드의 CHANGE/FINALIZE·claim/완료·timeout/재시작 복구·취소도 같은 잠금 순서를 사용**하며 Draft/요청을 먼저 잠근 뒤 단일 작성 행을 얻지 않는다. 원본 Case 경로의 기존 순서는 유지한다. 파일 수신 중 DB 잠금을 유지하지 않는다. crt_dtm/expr_dtm은 파일 수신 후 이 접수의 DB 시각으로 정하고 기존120초 정책을 적용한다.
+2. **접수:** 현재 요청의 재전송 여부를 먼저 대조하고, 단일 작성 행 잠금 뒤 같은 키를 다시 조회한 후에만 busy/revision을 판정한다. UK 경쟁이 발생하면 해당 transaction을 rollback한 뒤 같은 잠금/원 요청 재조회로 동일 내용의 원래 결과를 반환한다. 새 최초 요청은 단일 작성 행이 비어 있는 경우만 UPLOAD_CREATE/파일 요청 연결/최초 진행 포인터를 한 transaction에 기록한다. 후속은 단일 작성→Draft→요청 순으로 잠가 현재 revision/소유/교체 확인/진행 없음 확인 후 UPLOAD_FILE과 공통 진행 포인터를 확정한다. **직접 업로드의 CHANGE/FINALIZE·claim/완료·timeout/재시작 복구·취소도 같은 잠금 순서를 사용**하며 Draft/요청을 먼저 잠근 뒤 단일 작성 행을 얻지 않는다. 원본 Case 경로의 기존 순서는 유지한다. 파일 수신 중 DB 잠금을 유지하지 않는다. crt_dtm/expr_dtm은 파일 수신 후 이 접수의 DB 시각으로 정하고 업로드 유형에600초를 적용한다. 기존120초 이력과 다른 작업 유형은 [업로드 기한 증분 DDL](../../model-input-upload-deadline-ddl-draft.sql)의 `ck09`에서 함께 허용한다.
 3. **검증:** 첫 요청의 worker가 실제 검증을 시작할 때 선택한 ACTIVE tmplt_id를 파일 검증 기록에 한 번 고정한다. 이후 ACTIVE 변경으로 다시 선택하지 않는다. 후속은 Draft의 tmplt_id를 그대로 쓴다. 파일명 역할과 실제 형식/MIME·구조를 대조하고 필요 행/표를 파싱한다. private 파일이 RECEIVED라는 이유로 유효 역할에 포함하지 않는다.
 4. **첫 성공:** 단일 작성→요청 잠금 아래 토큰/기한/현재 최초 포인터·소유/정책를 대조하고 새 UPLOAD Draft·revision0·해당 파일의 행ID/위치·현재 역할 연결, 파일 COMMITTED/baseline0, 작업 SUCCEEDED/결과, 단일 작성의 최초 포인터→Draft 전환을 한 master transaction에 commit한다. 최초 검증 실패는 Draft/Case가 없고 실패 기록/자기 후보 정리만 남기며 최초 슬롯을 해제한다. 기존 성공 replay는 이후 상태를 초기화하지 않는다.
 5. **추가/교체 성공:** 같은 잠금 순서 아래 현재 baseRevision/진행 포인터/토큰/기한을 다시 대조한다. revision=n+1·baseline 파일 COMMITTED·현재 역할 참조·해당 역할의 행/구조 초기화·성공 결과와 포인터 해제를 함께 확정한다. 교체 전 파일 객체/성공 이력은 보존하며 이전 역할의 활성 행 위치를 새 revision에서 tombstone으로 닫고 새 파일 기준 rowId를 만든다. 다른 역할의 행/열/값/계산은 바꾸지 않는다. 실패는 기존 참조/revision/편집을 그대로 둔다.
@@ -906,7 +906,7 @@ UPLOAD_FILE의 v2 dlta_json은 닫힌 형식 `{policyTemplateId,uploadFileId,kin
 
 #### 6.10.5 Open Questions / implementation readiness
 
-- 사용자 업무 선택: 현재 저장 설계에서 추가로 필요한 미결 없음. 확정된 단일 작성·부분 편집·교체/취소·형식/120초 기준을 재질문하지 않는다.
+- 사용자 업무 선택: 현재 저장 설계에서 추가로 필요한 미결 없음. 확정된 단일 작성·부분 편집·교체/취소·형식 및 작업 유형별 기한을 재질문하지 않는다.
 - 기술 후속: 실제 SHOW CREATE와 SQL 제약명/타입 대조, MySQL 실행/경합 검증, 위 공통 reader/writer/worker의 새 분기와 API 조회/취소/완료 DTO 구체화, 환경별 private 저장소/정리 실행 연결이 남는다. 실제 DB를 확인하지 않고 DBA 적용 ready로 승인하지 않는다.
 - **Implementation readiness: ready** — 저장 구조의 구현 입력. **DBA apply readiness: blocked by open questions** — 위 환경/실행 검증을 충족한 뒤 수동 적용한다. 전체 업로드 제품 기능/관련 API가 완료됐다는 판정이 아니다.
 

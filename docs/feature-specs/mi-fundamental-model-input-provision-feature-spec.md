@@ -7,6 +7,7 @@
 - owner: Shared (BE / FE / Security·DRM)
 - source documents:
   - 2026-10-19 업로드 처리 상한 사용자 초기 채택: 일단120초를 적용한다. 접수 후 대기열 포함·전송 시간 제외와 TIMEOUT은 §3.3·domain 규칙67을 따르며 실제 성능 검증은 남는다.
+  - 2026-10-21 업로드 처리 상한 후속 채택: testdb 4파일 실측에 따라 최초·후속 업로드의 접수 후 기한을600초로 변경한다. 위 초기120초 수치를 대체하며 CHANGE/FINALIZE의120초는 유지한다(§3.3·domain 규칙67).
   - 2026-10-19 취소 후 새 첫 파일 실패 사용자 확정: A의 취소를 유지하고 B 최초 파일 검증 실패 시 다시 업로드한다. A 자동 복구 없이 §3.3·domain 규칙67을 따른다.
   - 2026-10-19 미완료 작성 취소/새 시작 사용자1안 채택: 진행 작업이 없을 때 취소 안내/확인 후 새 Case를 시작하고 확인 전 기존 내용을 유지한다. §3.3·domain 규칙67을 따른다.
   - 2026-10-19 사용자 최종 결정: 파일 직접 업로드 초안은 같은 사용자가 한 번에 Case 하나를 작성한다. 과거 복수 허용/재검토를 대체하며 §3.3·domain 규칙67을 따른다.
@@ -272,7 +273,7 @@ BaseResponse.data
 - 최초 `POST /input-upload-drafts`는 같은 이름 `file`의 binary part를 **1~4개**와 `metadata` application/json part **1개**로 받는다. 기존 file 1개 요청은 그대로 유효하다. `files` 등 다른 part 이름, 파일 없음/5개 이상, 중복 metadata는400이다. sourceKey/requestId와 최초 baseRevision/replaceConfirmed 생략 규칙은 유지한다.
 - 하나의 operationId로 접수하고 전 파일 검증 성공 후 초안 하나를 revision0으로 생성한다. 한 파일이라도 검증/저장에 실패하면 작업 전체가 FAILED이며 초안·Case·일부 성공 파일을 공개하지 않는다. 확인 가능한 기존 issues 형식으로 문제를 반환하며 최초 currentRevision은null이다.
 - DEMAND/SUPPLY/TRADE/OUTPUT 중 같은 역할을 여러 번 제출하면 비동기 `STRUCTURE_VALIDATION_FAILED`, FILE issue `DUPLICATE_ROLE`로 전체 실패한다. 기존 파일명 역할/실제 형식/고정 양식 검증은 각 파일에 적용한다.
-- 파일당50MiB와 작업 접수부터 대기열 포함120초는 유지한다. 파일 수신은 접수 전 완료하며 한 묶음 안의 모든 파일은 같은 ACTIVE 양식 버전으로 검증한다.
+- 파일당50MiB와 작업 접수부터 대기열 포함600초를 적용한다. 파일 수신은 접수 전 완료하며 한 묶음 안의 모든 파일은 같은 ACTIVE 양식 버전으로 검증한다.
 - 같은 requestId의 동일 파일 집합은 전송 순서가 달라도 같은 작업/저장 결과를 반환한다. 정규화 metadata와 각 파일의 정규화 파일명/MIME·실제 크기·SHA-256을 비교하며 개수/파일 내용 변경은409 IDEMPOTENCY_CONFLICT다. 과거 단일 파일 요청 기록과 재전송도 유지한다. FAILED 재시도에는 새 requestId가 필요하다.
 - 성공 result의 기존 필드를 유지한다. `structure`에는 이번에 성공한 모든 역할과 준비 상태를 포함한다. `kind`와 `selection`은 이번에 업로드한 역할 중 화면 순서 DEMAND→SUPPLY→TRADE→OUTPUT의 첫 역할 및 첫 표시 표를 뜻한다. 단일 파일 결과는 기존 의미와 같다. readiness/공통 조회·편집·최종저장 규칙은 유지하며 업로드만으로 Case/Run을 생성하지 않는다.
 - FE 예: `formData.append("file", demandFile)`와 `formData.append("file", supplyFile)`를 반복하고 `formData.append("metadata", new Blob([JSON.stringify({sourceKey, requestId})], {type:"application/json"}))`를 한 번 추가한다. `Content-Type`의 multipart boundary는 브라우저가 설정한다.
@@ -331,13 +332,13 @@ FE는 반환된 statusEndpoint를 **2초 간격**으로 조회한다. QUEUED/RUN
 }
 ```
 
-**2026-10-19 업로드 처리 상한 사용자 초기 채택 — 120초:** domain 규칙67에 따라 최초 업로드와 후속 파일 추가·교체 모두 **파일 수신 후 서버의 작업 접수 시점부터120초**를 초기 상한으로 사용한다. 대기열 시간, 고정 양식 검증·파싱과 초안 생성/파일 연결·교체/성공 revision 확정까지 포함한다. 파일을 서버에 보내는 전송 시간은 포함하지 않으며 FE의 HTTP 대기시간이나2초 조회 간격을 처리 기한으로 대신하지 않는다.
+**2026-10-21 업로드 처리 상한 후속 채택 — 600초:** testdb 4파일 실측에 따라 최초 업로드와 후속 파일 추가·교체 모두 **파일 수신 후 서버의 작업 접수 시점부터600초**를 적용한다. 2026-10-19 초기120초 수치를 대체한다. 대기열 시간, 고정 양식 검증·파싱과 초안 생성/파일 연결·교체/성공 revision 확정까지 포함한다. 파일을 서버에 보내는 전송 시간은 포함하지 않으며 FE의 HTTP 대기시간이나2초 조회 간격을 처리 기한으로 대신하지 않는다. CHANGE/FINALIZE 작업의120초는 그대로다.
 
 기한까지 성공 확정되지 않은 작업은 기한 만료 대상으로 판단한다. 대기 중이면 새 실행을 시작하지 않고, 실행 중이면 실제 실행 종료와 저장 확정 여부를 확인해 **status:FAILED, failure.reason:TIMEOUT**으로 확정한다. 기한 뒤에 도착한 결과로 초안 생성/파일 연결·교체/편집 초기화·revision 증가를 성공 반영하지 않는다. 반대로 기한 내 이미 성공 확정된 작업은 응답/조회가 늦었다는 이유로 TIMEOUT으로 바꾸지 않는다. 종료/저장 여부를 확인할 수 없는데 FE 대기시간 경과만으로 실패나 재실행을 단정하지 않으며 구체 중단/복구 구현은 후속 검증 대상이다.
 
 TIMEOUT의 failure는 기존 확정 Problem을 사용하며 입력 위치의 문제가 아니므로 issues는 []다. 최초 업로드는 currentRevision:null과 초안/Case 미생성, 후속 업로드는 판정 시점의 성공 revision과 기존 파일·편집 보존을 적용한다. 상태 GET은 HTTP200으로 실패 결과를 제공하고 FE는 FAILED에서 반복 조회를 멈춘다. 같은 requestId·동일 내용 재전송은 이 실패 결과를 반환하며 실제 재시도는 새 requestId/후속 현재 baseRevision을 사용한다. 취소 확정된 A 뒤에 B 최초 업로드가 TIMEOUT이어도 A를 복구하지 않는다.
 
-이 수치는 **사용자가 우선 채택한 초기 기준**이며 업로드 파일의 실측 성능으로 검증된 값이 아니다. 기준 파일·50MiB에 가까운 대표 파일의 처리 시간/자원, 대기열 만료·실행 중 종료·늦은 성공 차단을 실제로 확인해야 한다. 규칙64의 편집 worker CPU/메모리/전체 동시 처리 수나30초 목표까지 새 업로드에 자동 적용하는 결정은 아니다.
+600초 안의 완료 여부는 배포 후 실측으로 검증한다. 기준 파일·50MiB에 가까운 대표 파일의 처리 시간/자원, 대기열 만료·실행 중 종료·늦은 성공 차단을 실제로 확인해야 한다. 규칙64의 편집 worker CPU/메모리/전체 동시 처리 수나30초 목표까지 새 업로드에 자동 적용하는 결정은 아니다.
 
 **2026-10-19 업로드 오류 상세 사용자 확정:** 작업 응답은 `failure`를 필수로 포함하며 FAILED이면 object, QUEUED/RUNNING/SUCCEEDED이면 `null`이다. 바깥 구조는 기존 편집 API §6의 `Problem = {reason, currentRevision, issues}`를 재사용한다. `reason`은 FE가 분기할 사유 코드이고, 양식 구조 검증 실패의 대표 사유는 `STRUCTURE_VALIDATION_FAILED`다. 이는 failure 안의 업무 사유이며 새 전역 ResultCode를 뜻하지 않는다. `currentRevision`은 실패를 판정한 대상 초안의 성공 번호이며 최초 업로드처럼 아직 초안이 없으면 `null`이다. 과거 실패 기록의 번호를 현재 초안 번호로 덮어쓰지 않는다.
 
@@ -596,7 +597,7 @@ FE는 성공한 업로드의 해당 kind 구조/데이터만 반영하고 다른
 - FE와 동일한 `sourceKey/sections/kind/inputId/sheetName/tables` 및 `tableData.columns/rows/inputCells/inputGuideRules`를 유지하고 새 `controlIds/controls` 계약을 기술한다. `sheets[].data`는 제공하지 않고 grid 헤더는 rows에 포함한다. 일반 표·표와 control·control 전용 영역의 예시를 구분하고 공통 `BaseResponse`까지 포함한 최종 schema로 FE 인터페이스를 생성한다.
 - operation을 분리할 경우 구조 조회와 표 값 조회의 책임, paging/default/snapshot 의미를 구분한다.
 - 대표 200/400/401/403/404/409/500 응답을 `@ApiResponses`로 구조화한다.
-- 업로드는 §3.3의 확정된 최초 생성/후속 파일 추가 두 POST 경로를 각각 기술한다. 파일 수신 후의 비동기 접수 응답, 상태 조회와 성공 결과를 구분해 기술하고 접수만으로 초안 생성/연결이 끝났다고 표시하지 않는다. 같은 초안의 새 변경 거절과 기존 성공 상태/결과 조회 허용·동일 요청 재전송의 구분과 replaceConfirmed의 조건부 true 필수·생략/false 거절을 기술한다. 후속 파일 요청의 baseRevision 필수 검증·성공 revision과 실패/재조회 시 유지·충돌 후 재조회 흐름 및 FAILED의 기존 결과200/새 requestId 재시도·현재 baseRevision을 기술한다. 업로드 접수 후120초/전송 제외·FAILED/TIMEOUT/늦은 성공 차단과 실제 검증 미완료를 구분하고, 업로드 성공 결과의 첫 표시 표 자동 선택/tableData 동봉·접수/진행 응답과의 차이, 초안의 uploadedKinds/missingKinds/canFinalize와 처리 중/교체 사례, failure의 상태별 null/object·reason/currentRevision/issues·업로드 위치 schema/대표 실패 예시를 기술한다. multipart file/metadata(JSON object), metadata의 sourceKey/requestId/baseRevision/replaceConfirmed와 후속 경로 draftId, 파일명에서 판별한 kind와 해당 역할 sections·선택 영역 데이터 예시를 맞춘다. 확정된 접수202·상태 GET200/2초 조회·operationId/status/statusEndpoint와 잔여 세부 DTO/오류·재전송·.xlsm/.xlsx 실제 형식 검증/용량·구조 불일치/양식 부재/접근 오류는 Open Questions 확정 후 schema/ResultCode까지 맞춘다. FE의 임의 문자열 오류코드를 기존 ResultCode에 검토 없이 추가하지 않는다.
+- 업로드는 §3.3의 확정된 최초 생성/후속 파일 추가 두 POST 경로를 각각 기술한다. 파일 수신 후의 비동기 접수 응답, 상태 조회와 성공 결과를 구분해 기술하고 접수만으로 초안 생성/연결이 끝났다고 표시하지 않는다. 같은 초안의 새 변경 거절과 기존 성공 상태/결과 조회 허용·동일 요청 재전송의 구분과 replaceConfirmed의 조건부 true 필수·생략/false 거절을 기술한다. 후속 파일 요청의 baseRevision 필수 검증·성공 revision과 실패/재조회 시 유지·충돌 후 재조회 흐름 및 FAILED의 기존 결과200/새 requestId 재시도·현재 baseRevision을 기술한다. 업로드 접수 후600초/전송 제외·FAILED/TIMEOUT/늦은 성공 차단과 실제 검증 미완료를 구분하고, 업로드 성공 결과의 첫 표시 표 자동 선택/tableData 동봉·접수/진행 응답과의 차이, 초안의 uploadedKinds/missingKinds/canFinalize와 처리 중/교체 사례, failure의 상태별 null/object·reason/currentRevision/issues·업로드 위치 schema/대표 실패 예시를 기술한다. multipart file/metadata(JSON object), metadata의 sourceKey/requestId/baseRevision/replaceConfirmed와 후속 경로 draftId, 파일명에서 판별한 kind와 해당 역할 sections·선택 영역 데이터 예시를 맞춘다. 확정된 접수202·상태 GET200/2초 조회·operationId/status/statusEndpoint와 잔여 세부 DTO/오류·재전송·.xlsm/.xlsx 실제 형식 검증/용량·구조 불일치/양식 부재/접근 오류는 Open Questions 확정 후 schema/ResultCode까지 맞춘다. FE의 임의 문자열 오류코드를 기존 ResultCode에 검토 없이 추가하지 않는다.
 
 ## 8. Data and Implementation Impact
 
@@ -611,7 +612,7 @@ FE는 성공한 업로드의 해당 kind 구조/데이터만 반영하고 다른
 
 ## 9. Acceptance Criteria — Common Draft
 
-- Given 파일 전송이 끝나 작업이 접수됐을 때, then 대기열·검증/파싱·성공 확정을 합친120초 기한을 적용한다. 업로드 전송 시간과 FE 조회 간격을 기한에 섞지 않는다.
+- Given 파일 전송이 끝나 작업이 접수됐을 때, then 대기열·검증/파싱·성공 확정을 합친600초 기한을 적용한다. 업로드 전송 시간과 FE 조회 간격을 기한에 섞지 않는다.
 - Given 기한까지 성공 확정되지 않은 작업일 때, then 실행 종료/저장 여부를 확인해 FAILED/TIMEOUT으로 확정하고 늦은 성공 반영을 차단한다. 최초는 초안/Case를 만들지 않고 후속은 기존 파일·편집·revision을 유지한다.
 - Given 기한 안에 성공이 확정됐지만 응답/조회가 기한 뒤에 도착했을 때, then 원래 성공을 유지한다. TIMEOUT은 HTTP200 상태 조회/failure.issues:[]로 제공하며 재시도에는 기존 새 requestId 정책을 적용한다.
 
@@ -753,7 +754,9 @@ FE는 성공한 업로드의 해당 kind 구조/데이터만 반영하고 다른
 
 ## 12. Change Log
 
-- 2026-10-19 업로드 처리120초 초기 채택: 사용자가 일단120초로 결정했다. 파일 수신 후 접수부터 대기열·검증/파싱·성공 확정까지 포함하고 전송 시간은 제외한다. TIMEOUT/실제 종료·저장 확인·늦은 성공 차단과 기존 성공 상태 보존을 명시했다. 실측/경계 검증과 worker 구성은 후속이며 아래 시간 상한 미승인은 채택 전 이력이다.
+- 2026-10-21 업로드 처리600초 후속 채택: 정규화 XLSM 4파일(원본 행226,102건)의 testdb 실측에서 초기120초가 첫 행 저장 단계 도중 끝나 `FAILED/TIMEOUT`이 났다. 사용자가 업로드의 접수 후 기한600초 변경을 승인했다. 기존 파일 수신 제외·대기열 포함·늦은 성공 차단은 유지하고 CHANGE/FINALIZE의120초는 유지한다. DB `ck09` 증분 변경과 배포 후 실측 검증이 필요하다.
+
+- 2026-10-19 업로드 처리120초 초기 채택(위 후속 결정으로 수치 대체): 사용자가 일단120초로 결정했다. 파일 수신 후 접수부터 대기열·검증/파싱·성공 확정까지 포함하고 전송 시간은 제외한다. TIMEOUT/실제 종료·저장 확인·늦은 성공 차단과 기존 성공 상태 보존을 명시했다. 실측/경계 검증과 worker 구성은 후속이며 아래 시간 상한 미승인은 채택 전 이력이다.
 
 - 2026-10-19 취소 후 새 첫 파일 실패 후속: 사용자가 A 취소 상태 유지·B 첫 파일 실패 시 다시 업로드를 확정했다. 취소와 새 최초 업로드를 분리하고 B 실패는 초안/Case 미생성·A 비복구·새 requestId/최초 baseRevision 생략으로 정리했다. 아래 취소/새 파일의 결합·복구 미결은 과거 이력이며 새 복구 기능을 요구하지 않는다.
 
