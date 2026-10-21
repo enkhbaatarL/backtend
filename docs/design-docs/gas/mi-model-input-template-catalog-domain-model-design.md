@@ -70,7 +70,7 @@
   - `docs/conventions/db-term-dictionary-sheet2.csv`
 - supersedes:
   - 없음
-- last synced: 2026-10-20 (§5.5.3 A 실행기 계약·상태 table 승인·운영 복구 절차, 규칙64 실행 위치 대체; 2026-10-19 반영: §5.5.3 worker 비분리 방향·처리기 요구사항, 규칙64 120초 성격; 개발 시트 포함 파일 수용은 규칙39~40; 감사 이름·정밀도 사용자 채택은 DDL §6.8 참조; LiqProd 중복 허용·입력 제한 근거 원칙·새 열 식별·임시 키 연결/성공 대응·기존 저장 API 열 명령 연결·headerValues 형식·LiqProd 월 삭제·같은 저장의 열 추가 후 삭제·삭제된 새 열의 성공 식별 대응 유지·삭제 키 미재사용·LiqProd/LiqUtil 새 월 본문 빈칸/0 구분 사용자 채택)
+- last synced: 2026-10-21 (§5.7 Case 초기 기준 행 공유 설계; §5.5.3 A 실행기 계약·상태 table 승인·운영 복구 절차, 규칙64 실행 위치 대체; 2026-10-19 반영: §5.5.3 worker 비분리 방향·처리기 요구사항, 규칙64 120초 성격; 개발 시트 포함 파일 수용은 규칙39~40; 감사 이름·정밀도 사용자 채택은 DDL §6.8 참조; LiqProd 중복 허용·입력 제한 근거 원칙·새 열 식별·임시 키 연결/성공 대응·기존 저장 API 열 명령 연결·headerValues 형식·LiqProd 월 삭제·같은 저장의 열 추가 후 삭제·삭제된 새 열의 성공 식별 대응 유지·삭제 키 미재사용·LiqProd/LiqUtil 새 월 본문 빈칸/0 구분 사용자 채택)
 - open questions:
   - A 실행기의 인계 정책은 정상 종료 증거에 따른 자동 인계·비정상 종료의 운영자 확인 후 수동 복구로 확정했다(§5.5.3). 2026-10-20 저장소 DDL/코드 확인에서 기존 구조는 소비자의 claim 전/idle 수명과 종료/승인 증거를 표현하지 못했다. 전용 상태 table1개(ERD §6.11)는 2026-10-20 사용자 후속으로 승인됐으며 아래 최초 활성화/인계 순서로 구현한다.
   - 순차 업로드의 생성 시점·첫 ACTIVE 버전 고정·교체/실패 보존·부분 편집·형식 유지와 동일 사용자당 한 번에 Case 하나 작성은 규칙67을 따른다. 원본 Case 없는 초안의 소유·보존/파일 기준점 복원은 §5.6, 물리 연결은 DDL §6.10에 구체화했다. 실제 저장/경합·형식 보존 검증과 동작별 필요 역할 연결은 기술 후속이다. 기존 sourceCase 기반 Draft 계약을 부분 파일에 그대로 적용하지 않는다.
@@ -455,7 +455,7 @@ Draft 1 ── N FINALIZE 요청 ── N 시도별 4역할 준비 기록
 Draft 1 ── 0..1 최종 Case (성공 때만 연결)
 ```
 
-- 신규 Draft의 원본 논리 행에 서버 ID를 한 번 배정하고 대응을 보존한다. 전체 셀 복사가 아니라 표/논리 행 대응이다. 생성 중 실패하면 부분 Draft를 공개하지 않는다. 실제 데이터 행만 배정하고 빈 슬롯/표 밖/숨김 보존 영역은 제외한다. Draft·4원본 참조·revision0·원본 행 대응을 하나의 짧은 DB transaction으로 생성하며 부분 생성은 rollback한다. 물리 키는 DDL §6.3을 따른다. 같은 Draft/표/원본 논리 행은 반복 조회·페이지 이동에도 같은 ID다. 다른 Draft·표·최종 Case에서 같은 ID 사용을 보장하지 않는다.
+- 신규 Draft의 원본 논리 행에 서버 ID를 한 번 배정하고 대응을 보존한다. 전체 셀 복사가 아니라 표/논리 행 대응이다. 생성 중 실패하면 부분 Draft를 공개하지 않는다. 실제 데이터 행만 배정하고 빈 슬롯/표 밖/숨김 보존 영역은 제외한다. Draft·4원본 참조·revision0·원본 행 대응을 하나의 짧은 DB transaction으로 생성하며 부분 생성은 rollback한다. 신규 Case 공유 저장은 §5.7의 가상 원본 대응과 baseline 참조로 이 원자성을 만족하며 기존/직접 업로드 저장은 유지한다. 물리 키는 DDL §6.3·§6.12를 따른다. 같은 Draft/표/원본 논리 행은 반복 조회·페이지 이동에도 같은 ID다. 다른 Draft·표·최종 Case에서 같은 ID 사용을 보장하지 않는다.
 - 새 행은 요청 안의 임시키와 성공 시 발급된 행ID를 대응시킨다. 성공 전에는 영속 행으로 공개하지 않으며 실패한 임시키는 성공 변경분으로 남기지 않는다. 요청 중복 식별과 업무상 같은 값의 행 허용은 독립적이다.
 - 편집 lifecycle `DRAFT/FINALIZED/DISCARDED`와 처리 상태 `QUEUED/RUNNING/SUCCEEDED/FAILED`를 분리한다. 뒤의 네 상태 이름은 2026-10-16 공통 BE 추천 묶음에서 채택했다. `QUEUED → RUNNING → SUCCEEDED/FAILED`, 대기 중 timeout은 `QUEUED → FAILED`다. 생성/재개만으로 계산하지 않고, 임시저장 성공/실패 모두 lifecycle은 DRAFT로 유지한다. 폐기 API는 후속이다. 보존은 §3.4의 자동 삭제 없음 기준을 따른다.
 - Draft당 진행 처리 요청은 한 건으로 채택했다. 접수는 중복 식별 예약과 작업 기록 저장까지이며 성공 revision 증가가 아니다. 요청은 고정 기준/현재 성공 revision에서 검증·계산하고 짧은 성공 확정 경계에서 변경분·행 대응·파생 결과와 revision을 함께 반영한다. 파일 계산 중 장시간 DB transaction을 유지하지 않는다. 동시 생성/접수/확정은 관계형 유일성·기준 대조로 보장하는 방향이다.
@@ -625,6 +625,84 @@ java -cp 'build/input-draft-worker/classes:build/input-draft-worker/lib/*' \
 7. **종료:** 확인된 취소 또는 최종저장 성공과 현재 작성 해제를 같은 DB 성공 경계로 묶는다. 실제 Case/최종4파일/고정 양식 연결과 실행 대기는 기존 §5.2를 재사용한다. A 취소 뒤 B 첫 검증 실패는 규칙67대로 A 비복구/B 초안 미생성이다. 실패 결과 불변·120초·실제 종료/commit 확인·늦은 성공 차단은 기존 공통 복구 경계와 규칙67을 유지한다.
 
 위 구체화에 추가 사용자 업무 선택은 없다. API DTO/worker 연결, 물리 제약·저장 복원/동시성/실파일 검증은 남아 있으며 문서화가 실제 기능 완료를 뜻하지 않는다.
+
+### 5.7 Case 초안의 불변 초기 기준 행 공유 — 2026-10-21 설계
+
+이 절은 **Case 출처 신규 Draft의 revision 0 행 구성 저장**을 대체한다. §5.1의 개인 소유·안정 rowId·성공 revision 규칙은 유지한다. 물리 키·파생 ID 형식·DBA 순서는 [DDL §6.12](mi-model-input-template-catalog-erd-ddl-draft.md#612-case-초안-공유-기준-행--2026-10-21-설계)가 소유한다. 구현/DB 적용 완료를 뜻하지 않는다.
+
+#### 5.7.1 선택한 구조와 소유권
+
+- **불변 기준 집합(baseline):** 권한 확인한 한 회사·한 Case의 정확한 고정 4파일과 발행 양식에서 판독한 `(표, 원본 행번호)` 집합이다. revision 0의 실제 논리 행만 포함한다. 원본 파일의 값·수식·서식은 기존 파일이 소유하고 전체 셀을 DB로 전사하지 않는다. 식별 열/빈 슬롯/Regas 연결 원본 행 등 현재 `create`의 행 판정 규칙을 그대로 사용한다.
+- **Draft:** 개인 소유권, baseline 참조, 고정 4파일 참조, revision 0 및 이후 성공 변경, 작업/최종 Case를 소유한다. baseline에는 사용자 편집 값·rowId·operation·revision·현재 위치를 넣지 않는다. 다른 사용자는 같은 원본 집합을 참조할 수 있지만 서로의 Draft와 변경 내용에는 접근하지 못한다.
+- 원본 행의 Draft별 rowId는 Draft UUID와 불변 원본 대응으로 결정적으로 배정한다(같은 입력이면 항상 같은 ID). 원본 행별 매핑을 새 Draft에 전부 INSERT하지 않는다. 추가 행의 ID는 기존 성공 추가 방식대로 발급한다. 조회마다 새 UUID를 만들거나 원본 행번호를 공개 rowId로 사용하지 않는다.
+- 성공 row delta에 처음 나타난 원본 행만 기존 Draft 행/위치 테이블에 기록한다(같은 위치를 다시 기록하는 delta도 포함). 변경 전 위치 구간도 함께 기록해 과거 복원이 가능하게 한다. SET/CLEAR만으로 모든 원본 행을 복제하지 않는다. 이 **필요한 행만 기록하는 방식**과 기존 성공 delta를 결합한다.
+- baseline은 해당 파일·catalog와 함께 불변이다. Draft 폐기·최종저장·소유자 변경으로 수정하거나 삭제하지 않는다. 참조 수명은 FINALIZED/DISCARDED 및 과거 성공 이력을 포함한다. 기존 자동 삭제 없음 정책을 유지하고 TTL/참조계수/자동 GC를 추가하지 않는다.
+
+#### 5.7.2 재사용 판정과 내용 동일성의 근거
+
+| 상황 | 판정 |
+| --- | --- |
+| 같은 회사·사용자·Case의 활성 Draft | 기존 EDT-01 재개 우선. 저장 방식·revision·rowId·진행 작업을 유지한다. 요청/현재 source 불일치는 기존 충돌이며 새 Draft로 우회하지 않는다 |
+| 활성 Draft 없음, 같은 회사·Case·template ID/버전·catalog 발행·sourceVersion·4역할별 file_no/객체 참조·행 판독 버전 | 같은 baseline을 참조하는 독립 Draft 생성. 기존 Draft의 편집/위치/추가·삭제 행을 복사하지 않는다 |
+| Case ID/template ID만 같음 | 재사용 근거로 부족하다. sourceVersion과 실제 4개 고정 참조를 반드시 대조한다 |
+| 파일 참조 또는 sourceVersion 변경 | 새 기준으로 새 baseline을 만든다. 기존 활성 Draft는 충돌을 유지하고 자동 재기준화하지 않는다 |
+| 파일은 같지만 template ID/버전/catalog 발행 변경 | 새 baseline. 개발 중 templateId가 자주 바뀌어도 이전 양식의 행 해석을 재사용하지 않는다 |
+| 다른 회사 또는 다른 Case | 파일이 같아 보여도 공유하지 않는다. 교차 회사/Case 콘텐츠 중복 제거는 범위 밖이다 |
+| 행 판독 규칙 변경 | 새 내부 baseline 버전으로 신규 생성. 이미 연결된 Draft의 버전/행 집합은 그대로 읽는다 |
+| 직접 업로드 Draft | 공유 대상 아님. §5.6의 역할별 파일 baseline·교체·새 rowId·성공 이력을 유지한다 |
+
+§3.2에서 사용자가 확인한 **새 업로드는 새 file_no/UUID 객체이고 등록 후 경로·내용 불변**, §3.3의 발행 catalog 불변을 재사용 근거로 삼는다. 따라서 기본 경로에 전체 파일 재해시·새 snapshot·버킷 versioning을 추가하지 않는다. sourceVersion은 참조 조합의 식별자이며 파일 바이트 해시가 아니다. 공유 기준이 이미 있으면 파일 전체를 다시 내려받거나 Excel 행 스캔을 하지 않는다. 객체 누락/판독 오류는 실제 표/저장 읽기에서 기존 실패 처리로 드러날 수 있고, baseline 적중을 파일 존재·계산값 정확성 보증으로 표현하지 않는다.
+
+다른 참조 사이의 콘텐츠 동일성을 증명할 별도 요구가 생기면 **실제 reader가 읽는 동일 해독 바이트 스트림**의 역할별 SHA-256과 길이를 양쪽에서 비교하고 같은 발행 해석 규칙도 확인해야 한다. file_hash_val/ETag/파일명/크기만 비교해서는 증명하지 못한다. 과거 digest가 없으면 양쪽 4파일 전체 읽기·해독과 O(바이트 수) 계산이 필요하고, 등록 참조에 digest를 고정·검증할 보관 설계도 필요하다. 이 추가 비용/스키마는 현재 선택안에 포함하지 않는다. 운영에서 불변식 위반이 확인되면 해당 재사용을 중단하고 원본 등록을 복구하며, 같은 키를 덮어써 정당화하지 않는다.
+
+#### 5.7.3 첫 생성·동시성·실패 경계
+
+1. 인증·회사/Case 접근·현재 발행/4파일·요청 sourceVersion을 확인하고 활성 Draft를 먼저 재개한다. baseline ID를 클라이언트에게 받거나 노출하지 않는다.
+2. 활성 Draft가 없으면 정확한 재사용 키로 committed baseline을 찾는다. 적중하면 고정 manifest(역할별 파일 참조 목록)를 대조한다. 미적중일 때만 DB 잠금 밖에서 현재 `create`와 같은 파일 판독·행 판정을 수행한다. 이 단계는 메모리/임시 작업이며 부분 baseline/Draft를 공개하지 않는다.
+3. 생성/재개 경로의 기존 **Case 잠금 → 필요 시 기존 Draft 잠금** 순서의 같은 master transaction에서 현재 권한·sourceVersion·발행·4파일을 다시 확인한다. 재개 대상이 생겼으면 그것을 반환한다. baseline도 다시 조회해 다른 생성자가 먼저 commit했다면 그 집합을 사용한다.
+4. baseline이 여전히 없으면 header·4파일 manifest·전체 기준 행을 일괄 INSERT하고 완전성/중복/범위/행 수를 검사한다. 이어 Draft·baseline 참조·고정 파일4건·revision0을 함께 commit한다. 적중 시에는 이 작은 Draft 저장만 수행한다. baseline 생성 전용 공개 BUILDING/FAILED 상태나 별도 worker를 추가하지 않는다. DB에서 보이는 baseline은 검증된 완성 집합뿐이다.
+5. 첫 생성의 N행 INSERT transaction은 여전히 큰 transaction이다. 배치를 여러 commit으로 쪼개 부분 공개하지 않는다. 동시에 처음 진입한 여러 요청은 파일 스캔이 중복될 수 있으나 같은 Case 잠금과 DB 유일성으로 baseline 한 건/사용자별 활성 Draft 한 건만 확정한다. UK 충돌은 해당 transaction rollback 후 쓰기 DB에서 승자를 재조회하고 다시 기준을 대조한다. 무제한 재시도/lease takeover는 추가하지 않는다.
+6. 스캔 실패·source 변경·INSERT 실패·commit 전 프로세스 종료는 신규 baseline/Draft를 남기지 않는다. 다른 생성자가 이미 확정한 baseline은 영향받지 않는다. 응답 유실/commit 불명은 같은 source로 EDT-01 재호출하여 쓰기 DB 잠금 아래 활성 Draft를 확인하며 임의 실패 처리/삭제를 하지 않는다. 기존 임시 파일 보호·정리 규칙을 유지한다.
+
+#### 5.7.4 조회·편집·과거 revision·최종저장
+
+| 경로 | 구현에서 바꿀 연결과 유지할 검사 |
+| --- | --- |
+| `initialRead` / EDT-02·03 revision0 | 연결 baseline·manifest·행 집합 완전성을 검사한다. 구조 조회에는 전체 행을 JVM으로 가져오지 않는다. 선택 표 페이지는 baseline의 표/원본 행 범위만 조회하여 Draft별 rowId와 가상 `[0,∞)` 위치를 만든다. 현재 2,000행 및 bytes 상한, 표 끝 빈 행 제외, 원본 값 판독/controls/metadata는 유지한다 |
+| `restore` / `InputDraftHistory.restore` | baseline 모든 원본 identity와 미변경 위치를 논리적으로 합성하고 해당 Draft에 실제 저장된 원본 위치 이력·추가 행을 합친다. 성공 delta 순차 재생 결과와 합성한 전체 identity/위치를 양방향 대조한다. 원본 누락·잘못된 source mapping·고아/겹친 구간을 정상 빈 결과로 숨기지 않는다 |
+| EDT-04 접수 검증 | 현재 `validateChange`가 직접 `rowPositions`로 만드는 bindings도 합성 결과를 사용해야 한다. 물리 테이블만 조회하면 미변경 원본 행을 없는 행으로 오판한다. 요청 rowId가 이 Draft·표의 현재 활성 행인지 검증한 후 기존 표별 정책/업무키 검사 수행 |
+| CHANGE 준비/확정 | `prepareWorkerChange`의 `InputDraftEditingBasis`와 완료 시 검증이 동일 합성 경로를 사용한다. 값·열 변경은 기존 v2 delta에 저장. 원본 행의 첫 row delta는 이전 구간+새 구간을 저장하고, 추가 행은 기존 추가/삭제 이력을 사용한다. 이동으로 영향받은 모든 행을 포함해 최종 위치 중복을 검사한다. 성공 delta·위치 이력·revision·operation 결과는 기존 단일 transaction/token/기한 조건으로 확정 |
+| 과거 revision | `InputDraftEditingBasis.history(r)`는 전체 baseline 원본 + r까지 생성된 추가 행 + r에 유효한 위치 구간 + r까지 성공 delta로 복원한다. r 이후 변경으로 닫힌 구간의 종료를 이 관점에서 NULL로 절단하는 기존 동작을 유지한다. 이후 삭제/추가가 과거 결과로 새지 않는다 |
+| FINALIZE | `InputDraftFinalizationRepository.prepareClaimed → verify`의 직접 `rowIdentities/rowPositions` 읽기도 합성 경로로 바꾼다. `InputDraftEditingBasis.history`를 사용하는 workbook 재생성은 고정 원본4개와 해당 Draft의 성공 이력만 사용한다. baseline 원본이 다른 사용자의 현재 값/파일을 가리키지 않는다. 최종 Case/4파일/고정 template/FINALIZED/operation/준비파일 commit 경계와 원본 형식 보존은 유지 |
+| 직접 업로드 | `InputUploadRepository`·`InputUploadService`는 기존 full-row/file_rvsn_no 경로 유지. 파일 교체 시 옛 행 tombstone·새 원본 행 INSERT가 공유 baseline을 수정하지 않는다 |
+
+공개 EDT-03은 현재 revision과 다른 요청을 `REVISION_CONFLICT`로 거절하는 계약을 유지한다. 위 과거 복원은 worker/검증/파일 재생성 내부 능력이며 새 과거 조회 API를 뜻하지 않는다. 공개 ID 형식, EDT-01 응답/오류·개인 활성 Draft1건·변경/최종저장 계약은 그대로이므로 API 정본 수정은 없다.
+
+소유권 검증은 모든 진입에서 먼저 한다. 같은 baseline을 가리키더라도 다른 사용자 Draft ID/rowId/operation ID로 읽고 쓰지 못한다. 다른 회사 baseline을 연결할 수 없도록 DB 복합 FK와 서버 대조를 함께 둔다. 작업에서는 기존 `workerOwner` 및 source 접근 검사를 유지하며 baseline 생성자의 감사 login을 작업 권한으로 사용하지 않는다.
+
+#### 5.7.5 비용·대안·후속 단위
+
+N=원본 논리 행 수, M=독립 Draft 수, K=한 Draft의 성공 row delta에 포함되어 실제 기록된 원본 행 수다(같은 위치 재기록 포함). 조사 표본 N=226,102는 설계 규모 예시이며 이번 작업의 실측이 아니다.
+
+| 항목 | 기존 | 선택안 |
+| --- | --- | --- |
+| 첫 신규 Draft | Excel 스캔 + N identity/N 위치 INSERT | 같은 스캔 + baseline N행·header/4파일 + Draft metadata. 원본 위치0 INSERT 없음 |
+| 같은 기준 두 번째 Draft | 재스캔 + 다시 2N INSERT | baseline 참조 대조 + Draft/header·4파일·revision0의 고정 수 INSERT. 원본 행/위치 INSERT **0건** |
+| M개 저장량 | 원본 행/위치만 2NM건 | 공통 N건 + 각 Draft metadata + 변경된 K identity/위치 이력 + 추가 행/성공 delta |
+| revision0 페이지 | 전체 무결성 SQL 확인 + 페이지 행 | baseline 무결성 SQL 확인 + 페이지 행/파생 ID. 검증용 COUNT/범위 대조는 N에 비례할 수 있음 |
+| 편집된 Draft 복원/최종저장 | 전체 행/이력 복원 + 필요한 파일 처리 | 전체 baseline/개인 변경 합성·재생과 파일 처리 유지. O(N+이력) 메모리/CPU를 없앴다고 주장하지 않음 |
+
+INSERT 건수 감소가 같은 비율의 응답 시간 단축을 보장하지 않는다. 첫 생성의 대량 INSERT/Case 잠금, 동시에 첫 생성한 요청들의 중복 스캔, 매 조회의 무결성 검사, 큰 구조 변경이 K≈N인 경우의 이력 저장 비용은 측정 대상이다. 변경 없는 두 번째 Draft가 226k행을 저장하지 않는 것이 이번 설계의 직접 완료 조건이다.
+
+배제한 대안: 기존 Draft의 편집 상태 복사는 요구와 소유권에 맞지 않는다. 원본 행을 새 UUID로 `INSERT…SELECT`하는 방식은 2N 저장을 남긴다. 원본 rowId를 사용자 간 그대로 공유하면 기존 전역 row PK/FK와 개인 identity 경계를 크게 바꾼다. 전체 snapshot/매 페이지 물리화/영속 현재값 cache는 현재 목표에 필요하지 않다. 연속 범위 압축은 빈 슬롯·Regas 예외를 별도 표현해야 하고 조회/검증 복잡도가 늘어 최소안에서 제외한다.
+
+**적용 순서:** DDL §6.12의 additive schema → 모든 웹/worker의 기존/공유 읽기·쓰기 호환 → 신규 Case 생성만 제한 활성화 → 실패/경합·실제 규모 측정 후 확대. 기존 저장 Draft의 자동 변환은 없다. 첫 구현 단위는 **공유 기준 및 가상 행 합성의 내부 persistence/복원 경로와 의미 있는 테스트**다. 신규 공개 생성은 꺼둔 채 기존/직접 업로드 동작과 원본 첫 이동·과거 복원을 검증한다. 이어 EDT-01과 모든 검증/worker/FINALIZE 연결을 완성한 뒤 생성 활성화를 검토한다.
+
+#### 5.7.6 Open Questions / implementation readiness
+
+- 이 slice의 추가 사용자 업무 결정은 없다. `ready` — 위 내부 저장/복원 구현을 시작할 설계가 정해졌다.
+- 구현·로컬 검증 결과는 [공유 기준 구현 기록](../../work-notes/2026/2026-10-21-case-input-draft-shared-baseline-implementation.md)이 소유한다. 신규 생성 설정과 수동 적용·활성화 순서는 [증분 DDL](../../model-input-shared-baseline-ddl-draft.sql)을 따른다.
+- 실제 MySQL 제약/동시성·DBA 적용, 첫/재사용 생성 성능, worker/파일 보존 검증은 후속 완료 조건이다. 전체 표 정책/운영 READY로 확대하지 않는다.
 
 ## 6. Business rules
 
@@ -1039,6 +1117,8 @@ API 경로·요청·응답 계약은 feature spec/OpenAPI가 소유한다. 후�
 
 ## 12. Exit criteria / handoff
 
+- 2026-10-21 Case 공유 기준 slice: §5.7·DDL §6.12는 `ready`인 구현 입력이다. 첫 단위는 생성 비활성 상태의 저장/행 합성·복원이며 실제 MySQL/성능/배포 승인은 별도다. 아래 전체 제품 준비도와 과거 단계 기록을 대체하지 않는다.
+
 - 2026-10-16 BE·DBA 필수 확인: 기존 코드/문서 연결 대조는 §5.4·DDL §6.4로 완료했다. 공통 설계 입력은 `ready after minor cleanup`(실제 DB 대조/적용 준비 별도), 공통 persistence/API·worker/복구는 아직 미구현이다. DBA-01~05와 제품 검증을 완료한 것으로 승격하지 않는다. 추가 사용자 공통 업무 결정은 없다.
 
 - 2026-10-16 최소 논리 관계·FE 공통 편집 초안 작성 범위는 완료했다(§3.4·§5.1 및 편집 API 초안). 공통 BE 추천 묶음과 Sector H/J·I 음수 금지·국가/하위부문 자유입력·연월 범위/신규·기존 수정 중복 금지와 Sector/Monthly 수요 입력·해제·BCPrices 기존 연도/가격 수정 두 묶음은 같은 날 사용자 채택했다. **INPUT-03 전체 확정/구현 ready는 아니다**. 아래 기존 전체 준비도 판정을 유지한다. 이번 후속으로 공통 저장/복원과 최종저장·실패 복구 계약은 §3.4·§5.1~5.3/편집 API §9·DDL §6.3에 마무리했다. 남은 표별 정책과 DBA 적용 준비/유일성·복구 제품 검증은 각각 §11·편집 API §10·DDL §13으로 분리한다. PriceModel/Regas 추가 추천은 미승인이다.
@@ -1222,3 +1302,5 @@ SUMMARY I15가 요구하는 순서(① BCRegasification 등록 → ② 조정 �
 - 2026-10-13: 사용자 결정으로 규칙 36의 legacy 3파일 정리에 `SCENARIO` case를 추가했다. 연결 run history·execution-preparation·active 가격전망해석을 함께 soft delete하며 규칙 38의 `RUNNING` pre-check와 §11 위험 문구를 맞췄다. 같은 날 잠시 기록한 "SCENARIO 제외" 문구는 이 결정으로 대체했다.
 - 2026-10-15: Q7/규칙64와 Delivery Plan §6A에 따라 F-S-06 제외 INPUT-02A를 조건부 완료했다. 위 2026-10-13 미판정 기록은 당시 이력이다. INPUT-03/04 설계·계약 작업에 전달하며 제품 write 구현 승인은 별도다.
 - implementation readiness: `blocked by open questions` — 실행 경계는 규칙64로 확정했으나 `INPUT-03` row identity·Draft 물리 모델과 `INPUT-04` write/비동기 계약이 확정되기 전에는 write API 구현을 시작하지 않는다.
+
+- 2026-10-21 공유 기준 설계의 한정 readiness: §5.7·DDL §6.12는 `ready`. 위 전체 제품/과거 단계 판정과 구분하며 첫 내부 저장·복원 slice만 다음 구현 단위로 제시한다.

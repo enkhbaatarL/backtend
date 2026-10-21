@@ -210,6 +210,8 @@ public class InputUploadService {
             List<String> kinds=InputUploadValidation.KINDS.stream().filter(byKind::containsKey).toList();
             String kind=kinds.get(0);var u=byKind.get(kind);
             Draft old=op.draftId()==null?null:common.owned(op.draftId(),owner.company(),owner.user());
+            // 접수 때 확인했더라도 실행 시점에 다시 확인한다. 아래 물리 행 처리는 업로드 Draft 형식만 지원한다.
+            if(old!=null&&!old.uploaded())throw InputDraftException.internal();
             Catalog catalog=uploads.template(old==null?u.template():Long.valueOf(old.templateId()),modelCode);
             long next=old==null?0:op.baseRevision()+1;String draft=old==null?UUID.randomUUID().toString():old.id();
             List<RowRef> newRows=new ArrayList<>();List<FileRef> files=new ArrayList<>();
@@ -227,8 +229,9 @@ public class InputUploadService {
             String delta=text(java.util.Map.of("policyTemplateId",catalog.templateId(),"uploadFileId",u.id(),"kind",kind));
             if(old==null)chain.add(new Revision(0,null,null,2,null,null,null,0,null,null,null));
             else chain.add(new Revision(next,next-1,op.id(),2,delta,"UPLOAD_FILE","SUCCEEDED",2,op.baseRevision(),op.request(),"{}"));
-            List<RowIdentity> identities=new ArrayList<>(old==null?List.of():common.rowIdentities(draft));
-            List<RowPosition> positions=new ArrayList<>(old==null?List.of():common.rowPositions(draft));
+            var stored=old==null?null:common.logicalRows(old);
+            List<RowIdentity> identities=new ArrayList<>(stored==null?List.of():stored.identities());
+            List<RowPosition> positions=new ArrayList<>(stored==null?List.of():stored.positions());
             Set<Long> affected=catalog.tables().stream().filter(t->kinds.contains(t.role())).map(TableRef::id).collect(java.util.stream.Collectors.toSet());
             List<RowPosition> closed=new ArrayList<>();
             for(int i=0;i<positions.size();i++){var p=positions.get(i);if(affected.contains(p.table())&&p.end()==null&&p.row()!=null){positions.set(i,new RowPosition(p.table(),p.id(),p.begin(),next,p.row()));closed.add(new RowPosition(p.table(),p.id(),next,null,null));}}

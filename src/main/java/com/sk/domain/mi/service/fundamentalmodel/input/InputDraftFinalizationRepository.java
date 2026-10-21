@@ -106,7 +106,8 @@ final class InputDraftFinalizationRepository {
         if(actual.size()!=4)throw InputDraftException.conflict("FILES_INCOMPLETE",draft.revision());
         if (!draft.uploaded()&&!actual.equals(common.fixedFiles(draft.id()))) throw InputDraftException.conflict("SOURCE_CHANGED", draft.revision());
         List<Revision> chain = common.revisions(draft.id());
-        var editing=new InputDraftEditingBasis(draft,source,chain,common.rowIdentities(draft.id()),common.rowPositions(draft.id()));
+        var rows=common.logicalRows(draft);
+        var editing=new InputDraftEditingBasis(draft,source,chain,rows.identities(),rows.positions());
         editing.history(draft.revision(),json);
         return new Job(draft, op, owner, List.copyOf(source.files()), List.copyOf(chain),editing);
     }
@@ -120,7 +121,8 @@ final class InputDraftFinalizationRepository {
         }
         if (draft.company() != expected.draft().company() || draft.user() != expected.draft().user()
                 || !Objects.equals(draft.caseId(),expected.draft().caseId()) || draft.templateId() != expected.draft().templateId()
-                || !Objects.equals(draft.sourceVersion(),expected.draft().sourceVersion())) throw InputDraftException.internal();
+                || !Objects.equals(draft.sourceVersion(),expected.draft().sourceVersion())
+                || !Objects.equals(draft.baselineId(),expected.draft().baselineId())) throw InputDraftException.internal();
         return new Job(draft, op, expected.owner(), expected.files(), expected.revisions(),expected.basis());
     }
 

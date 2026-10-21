@@ -3,7 +3,7 @@
 ## Document Control
 
 - status: Draft
-- canonical for: Schema rollout — model input template catalog tables, columns, keys, indexes, nullability, migration, rollback, and verify SQL; §6.1/§10A의 기존 불변 파일 참조와 §6.2/§10B의 발행 양식/catalog·Case 연결, §6.3의 Draft 공통 저장 및 §6.10의 직접 업로드 확장 물리 정의, §6.11의 A 실행기 상태 저장. 기존 공통 파일 table 전체 DDL은 재정의하지 않는다.
+- canonical for: Schema rollout — model input template catalog tables, columns, keys, indexes, nullability, migration, rollback, and verify SQL; §6.1/§10A의 기존 불변 파일 참조와 §6.2/§10B의 발행 양식/catalog·Case 연결, §6.3의 Draft 공통 저장 및 §6.10의 직접 업로드 확장 물리 정의, §6.11의 A 실행기 상태 저장, §6.12의 Case 공유 초기 기준과 Draft 호환/적용 설계. 기존 공통 파일 table 전체 DDL은 재정의하지 않는다.
 - owner: BE / DBA
 - source documents:
   - `docs/work-notes/2026/2026-09-03-model-input-transfer-format.md`
@@ -14,7 +14,7 @@
   - `docs/conventions/db-term-dictionary-sheet2.csv`
 - supersedes:
   - 이 문서의 2026-09-04 `양식 → 테이블` 2단계 초안
-- last synced: 2026-10-20 (§6.11 A 실행기 상태 table 사용자 승인; §6.10 직접 업로드 저장 확장/증분 DDL 초안; §6.9 미배포 v2 단일 저장/복원 형식·Draft 초기화 SQL 확정; §6.8 감사 초 정밀도 정렬·증분 적용 준비; §6.3.4.1 성공값 좌표 이동·저장 이력 오류 처리 보완; 사용자 제공 midb 정의에 따른 §6.4 파일 metadata 매핑 정렬 유지; 나머지 DBA 후속은 §13)
+- last synced: 2026-10-21 (§6.12 Case 공유 초기 기준 설계; §6.11 A 실행기 상태 table 사용자 승인; §6.10 직접 업로드 저장 확장/증분 DDL 초안; §6.9 미배포 v2 단일 저장/복원 형식·Draft 초기화 SQL 확정; §6.8 감사 초 정밀도 정렬·증분 적용 준비; §6.3.4.1 성공값 좌표 이동·저장 이력 오류 처리 보완; 사용자 제공 midb 정의에 따른 §6.4 파일 metadata 매핑 정렬 유지; 나머지 DBA 후속은 §13)
 - open questions:
   - §6.11의 상태 table1개 추가는 2026-10-20 사용자 후속 승인됐다. 실제 DB 조회·DDL 적용/경합 검증은 별도이며 아직 수행하지 않았다.
   - 직접 업로드의 물리 설계/증분 SQL은 §6.10에 정리했다. 실제 환경 제약명·타입·수동 적용, MySQL 제약/동시성 및 새 저장 형식 reader/writer 검증은 미실행이며 이 확인 전에는 적용 준비 완료로 판정하지 않는다.
@@ -370,7 +370,7 @@ catalogRevision은 별도 숫자 카운터가 아니라 불변 발행 묶음의 
 
 기존 등록 명명 규칙대로 각 제약/index에 테이블명+`_uxNN/_ixNN/_fkNN/_ckNN`을 붙인다. generated helper 타입은 참조 Case INT/Drft·행 UUID와 동일하다. MySQL nullable UK는 과거 종료행의 NULL 중복을 허용하는 용도로만 사용하고 활성 제약 값은 NULL이 될 수 없도록 상태/필수 CHECK와 함께 검증한다.
 
-- Draft 생성은 원본4역할·revision0·실제 원본 행ID/위치0을 함께 commit한다. 업무값 변경/계산은 하지 않는다. 동시 생성 UK 충돌은 승자 Draft를 재조회하고 sourceVersion을 대조한다.
+- 기존 full-row Draft 생성은 원본4역할·revision0·실제 원본 행ID/위치0을 함께 commit한다. §6.12 공유 Case 저장은 검증된 baseline 참조·가상 행 대응으로 대체한다. 업무값 변경/계산은 하지 않는다. 동시 생성 UK 충돌은 승자 Draft를 재조회하고 sourceVersion을 대조한다.
 - 접수는 Draft row 잠금 아래 requestId 기존 기록을 먼저 확인하고, QUEUED 요청/진행 포인터를 함께 commit한다. 업로드나 계산 전에 접수를 durable하게 만든다. 메모리 queue만을 접수 증거로 사용하지 않는다.
 - CHANGE 성공은 동일 Draft/현재revision/진행요청/RUNNING·시도토큰/기한 조건을 확인하고 성공revision/delta·신규행·위치이력·현재revision/작업결과·슬롯 해제를 한 transaction에서 commit한다. 위치 변경은 이전 current 구간을 먼저 닫고 새 구간을 넣어 UK 일시 충돌을 피한다. 같은 transaction에서 중복 업무키도 최종 활성 행 상태 기준으로 검사하므로 Draft별 쓰기 직렬화가 경합 수단이다. 표별 업무키를 범용 행UK로 강제하거나 기존 중복을 전수 청소하지 않는다.
 - FINALIZE 성공은 domain §5.2의 **새 Case·파일4건·Case-template·FINALIZED·작업성공·준비파일 COMMITTED**를 같은 transaction에서 확정한다. 성공revision은 불변이다. source 접근/기준·현재revision과 시도/기한이 바뀌면 rollback한다. Case/파일 등록을 먼저 commit하고 후속 transaction에서 Draft를 연결하지 않는다.
@@ -433,6 +433,8 @@ Draft 존속 중 기준 참조/성공 chain/행이력/종료 요청·중복 키�
 소스 검색 범위에서 catalog6개/Case-template·신규7개에 대응하는 entity/repository 및 EDT endpoint는 발견하지 못했다. 따라서 기존 파일4개를 읽는 기능이 있어도 고정 발행/개인 Draft·재전송/복구 persistence가 이미 구현됐다고 할 수 없다. 실제 DB에 해당 table이 없는지도 소스만으로 결론내리지 않고 DBA-01로 확인한다.
 
 ### 6.5 EDT-01~03 첫 구현용 수동 DDL — 2026-10-16
+
+2026-10-21 신규 Case 공유 저장 설계는 §6.12를 따른다. 아래 전체 원본 행/위치 저장은 기존 `base_id IS NULL` 경로의 기준이며 신규 공유 저장은 별도 증분 적용한다.
 
 검토/수동 적용 SQL 정본은 [model-input-draft-read-ddl-draft.sql](../../model-input-draft-read-ddl-draft.sql)이다. §6.3 전체7개 중 첫 생성/조회에 필요한 Draft·고정4파일·revision0·행ID·위치이력 **5개만** 생성한다. 요청/최종준비파일 테이블과 그 prcs_id FK는 이후 변경/최종저장 slice에서 추가하며 지금 기능이 쓰지 않는다. catalog6개는 기존 설계의 신규 설치용 구간으로 제공하고 이미 존재하면 pre-check 뒤 해당 CREATE를 건너뛴다. 실행/DB 적용은 사용자 담당이다.
 
@@ -848,6 +850,8 @@ DDL은 암묵 commit되므로 reset의 DELETE transaction을 검증·COMMIT/ROLL
 
 ### 6.10 직접 업로드 초안 저장 확장 — 2026-10-19
 
+§6.12 도입 후에도 UPLOAD는 `base_id IS NULL`이며 이 절의 역할별 파일 baseline/전체 행 저장을 유지한다. 공유 baseline에 자동 편입하지 않는다.
+
 직접 업로드의 행·열 편집은 기존 초안과 같은 정책/공통 API를 사용한다(사용자 후속 확인; domain §5.6·편집 API §3). 아래 UPLOAD 분기는 원본 Case 없는 부분 초안의 생성·파일 기준점/소유 저장을 위한 내부 구분이며 별도 편집 저장 체계를 뜻하지 않는다. xlsm/xlsx·원본 형식 유지·파일당50MiB는 입력 제공 명세 §3.3의 기존 확정을 유지하며 이번 확인으로 SQL/스키마를 추가 변경하지 않는다.
 
 이 절은 §6.3의 **기존 Case 기반 경로를 유지**하면서 [domain 규칙67·§5.6](mi-model-input-template-catalog-domain-model-design.md#incremental-upload-lifecycle-storage-20261019)을 구현할 물리 확장이다. API는 [입력 제공 명세 §3.3](../../feature-specs/mi-fundamental-model-input-provision-feature-spec.md#incremental-input-upload-api-20261019)이 소유한다. 수동 증분 SQL은 [model-input-incremental-upload-ddl-draft.sql](../../model-input-incremental-upload-ddl-draft.sql)이다. 이 절/SQL은 설계 초안이며 실제 DB 적용·실행 검증이나 기존 코드의 지원 완료를 뜻하지 않는다. §6.3~6.9에서 원본 Case·고정4파일·CHANGE 성공만 전제한 문구는 직접 업로드에 한해 아래 확장을 따른다.
@@ -947,6 +951,113 @@ UPLOAD_FILE의 v2 dlta_json은 닫힌 형식 `{policyTemplateId,uploadFileId,kin
 - 승인 후 증분 SQL에 pre-check/apply/초기화/verify/보존 rollback/DBA 순서를 작성한다. 실제 MySQL 실행계획/제약/잠금 검증은 아직 없다. 고정 PK 조회 외 새 대량 조회 index는 이번 상태 table에 필요하지 않다.
 
 **Open Questions:** 실제 MySQL의 정의/제약/잠금 경쟁 수동 검증. `implementation readiness: ready` — table1개와 위 초기화/인계 방식은 사용자 승인됐으며 제품 구현/대역 검증을 진행한다. 실제 DB 적용/배포 승인을 뜻하지 않는다.
+
+### 6.12 Case 초안 공유 기준 행 — 2026-10-21 설계
+
+실행 DDL 초안은 [model-input-shared-baseline-ddl-draft.sql](../../model-input-shared-baseline-ddl-draft.sql)이며 수동 사전 확인/적용/검증/복구 구간을 제공한다. 실제 DB 적용·MySQL 검증은 미실행이다.
+
+**정본 범위:** 신규 3개 table과 Draft의 nullable 참조, 가상 원본 identity/위치 해석, 수동 증분 적용·검증·복구의 구현 입력이다. 실행 SQL 초안은 위 파일을 따르며 실제 DB 적용은 별도다. 업무 소유·원본 동일성·생성 순서는 [domain §5.7](mi-model-input-template-catalog-domain-model-design.md#57-case-초안의-불변-초기-기준-행-공유--2026-10-21-설계), API는 편집 명세 §3을 따른다. §6.5 기존 생성 DDL과 §6.10 업로드 DDL을 다시 실행하거나 덮어쓰지 않는다.
+
+#### 6.12.1 저장 형식·컬럼·타입
+
+공통 UUID/Case/template/table/회사/file 타입·감사 필드는 §6.3.1·§6.8을 재사용한다. 신규 table은 master InnoDB, PK → 감사 시스템 컬럼 → 일반 컬럼 순서다. UUID/코드/sourceVersion의 비교는 ascii_bin, 객체 참조는 utf8mb4_bin으로 정확 비교한다. `?`만 NULL이며 그 외 NOT NULL이다. 성공 baseline의 `del_yn`은 `N`만 허용하고 child 독립 삭제나 CASCADE를 두지 않는다.
+
+| table / PK | 일반 컬럼 | 책임·CHECK |
+| --- | --- | --- |
+| `tmd_mdl_inptbasem` / `base_id UUID` | `cust_cpny_no MEDIUMINT UNSIGNED`, `org_case_id INT UNSIGNED`, `tmplt_id INT UNSIGNED`, `org_rvsn_val VARCHAR(68) ascii_bin`, `base_ver_no SMALLINT UNSIGNED`, `row_cnt BIGINT UNSIGNED` | committed 완성 기준만 존재. `base_ver_no>=1`, sourceVersion 정규식은 기존 sv1 형식, row_cnt>=0. 사용자 소유·상태/현재 revision 컬럼 없음 |
+| `tmd_mdl_inptbasefiled` / `(base_id,mdl_file_cd)` | `file_no BIGINT UNSIGNED`, `obj_ref_val LONGTEXT utf8mb4_bin` | 역할은 기존4종 CHECK, 객체 참조는 공백 불가·최대16KiB UTF-8. 서버가 기존 FileRef.location을 정확 보관/대조. URI를 해석/정규화하거나 사용자가 제공한 경로로 치환하지 않음 |
+| `tmd_mdl_inptbaserowd` / `(base_id,inpt_tbl_id,org_row_no)` | PK 외 감사 필드만 | 원본 논리 행 한 건. `org_row_no BETWEEN 1 AND 1048576`, `inpt_tbl_id INT UNSIGNED`. baseline rowId/위치 이력/셀값 없음 |
+| 기존 `tmd_mdl_inptdrftm` 추가 | `base_id UUID NULL DEFAULT NULL` | NULL은 기존 full-row 저장. non-NULL은 공유 Case 저장. CHECK `base_id IS NULL OR src_spt_cd='CASE'`. 생성 후 참조 불변. 직접 업로드는 항상 NULL |
+
+`base_ver_no=1`은 이번 공유 저장/행 판정/ID 파생 규칙 묶음이다. 현재 reader의 일반 identityColumns 판정과 Regas 연결 원본 예외를 그대로 동결한다. 판정/ID 규칙 변경 시 새 버전을 쓰고 기존 버전 reader를 유지한다. 성공 delta의 `json_rvsn_no=2`와는 다른 축이며 요청/결과/CHANGE payload를 v3로 바꾸지 않는다. baseline 버전이 지원되지 않으면 `POLICY_UNSUPPORTED`로 중단하고 행을 추측하지 않는다.
+
+base header의 templateVersion/catalogRevision은 기존 tmplt_id 및 불변 발행 참조·sourceVersion에 결합되므로 독립 버전/해석 JSON 사본을 추가하지 않는다. 현재 조회 가능한 catalog를 source()와 같은 기준으로 검증해야 하며 동일 발행 내용을 수정하는 운영을 허용하지 않는다. row_cnt는 발행 완전성 검증을 위한 의도적 집계 중복이다.
+
+#### 6.12.2 키·FK·인덱스와 DB 밖 불변식
+
+새 오브젝트에는 아래 제약명을 사용한다. 기존 Draft 제약명은 §6.6의 rename 전 이름이 남을 수 있으므로 `SHOW CREATE TABLE`로 확인하고 삭제/재번호하지 않는다. 아래 새 번호 10은 이 slice용 예약 번호이며 실제 충돌이면 실행 DDL 작성 전에 이 정본부터 조정한다.
+
+| 대상 | 물리 제약/인덱스 |
+| --- | --- |
+| base master | `tmd_mdl_inptbasem_ux01(cust_cpny_no,org_case_id,tmplt_id,org_rvsn_val,base_ver_no)` — 재사용 키. 모든 열 non-null. `..._ux02(base_id,cust_cpny_no,org_case_id,tmplt_id,org_rvsn_val)` — Draft 복합 참조 대상 |
+| base master FK | `..._fk01(cust_cpny_no) → tmd_custcpnym(cust_cpny_no)`, `..._fk02(org_case_id) → tmd_mdl_scnrcasem(case_id)`, `..._fk03(tmplt_id) → tmd_mdl_inpttmpltm(tmplt_id)`. `_ux01`의 회사 선두 index 재사용, `_ix01(org_case_id)`·`_ix02(tmplt_id)`로 나머지 FK 지원 |
+| base files | `tmd_mdl_inptbasefiled_ux01(base_id,file_no)`로 역할 간 같은 파일 중복 방지. `_fk01(base_id) → base master`, `_fk02(file_no) → tcm_filel(file_no)`, `_ix01(file_no)` |
+| base rows | `tmd_mdl_inptbaserowd_fk01(base_id) → base master`, `_fk02(inpt_tbl_id) → tmd_mdl_inpttbld(inpt_tbl_id)`, `_ix01(inpt_tbl_id)`. PK가 선택 baseline/표/원본 행 범위 조회를 덮는다 |
+| Draft 참조 | `tmd_mdl_inptdrftm_ix10(base_id,cust_cpny_no,org_case_id,tmplt_id,org_rvsn_val)`와 `..._fk10` 동일 열 → base master `_ux02`. `..._ck10`은 CASE 제한. NULL인 기존/UPLOAD row는 FK를 건너뛰며 기존 출처 필수성 CHECK는 유지 |
+
+CHECK 이름은 각 신규 table의 `_ck01`부터 표의 조건 순서로 배정한다. 모든 FK는 RESTRICT/NO ACTION이며 기존 Case/파일/catalog 참조 삭제를 허용하지 않는다. soft delete는 FK가 막지 못하므로 source 접근 검사를 생략하지 않는다.
+
+DB FK만으로 확인할 수 없는 것은 같은 master transaction의 생성/조회 검증과 후속 DBA 검증 질의에 명시한다.
+
+- baseline의 파일 역할은 정확히4개, 현재 확인한 Case의 file_no/객체 참조와 일치한다. Draft의 고정 파일4건도 baseline manifest와 일치한다.
+- 모든 기준 행의 table은 header의 tmplt_id에 속하며 현재 정의의 bodyRanges 안이고 최초 스캔의 실제 논리 행 집합과 같다. `row_cnt=COUNT(base rows)`이며 중복/누락 없이 한 번에 commit한다. 행0건은 실제로 빈 경우 허용하되 부분 생성의 빈 header로 해석하지 않는다.
+- base에 연결된 Draft의 물리 원본 행은 baseline에 반드시 존재하고 ID 파생 결과와 같으며 `file_rvsn_no=0`이다. 추가 행은 기존 성공 operation/clientRowKey에 속한다. 두 집합이 겹치지 않는다.
+- 논리 활성 위치에는 가상 원본과 실제 저장 행을 **모두** 포함한다. 기존 `rowh` generated UK는 저장된 행 사이만 검사하므로 전체 논리 상태의 중복 방지는 합성 후 검증 + Draft 잠금이 담당한다. 물리 UK만으로 충분하다고 간주하지 않는다.
+
+정규화: files/rows는 원자 항목이며 복합 PK 전체에 종속한다. header에는 독립적인 사용자/현재 상태를 중복하지 않는다. role manifest는 파일 원본 metadata를 변경하는 사본이 아니라 당시 고정 참조의 증거다. row_cnt 집계와 복합 FK용 parent unique는 완전성/회사·원본 경계 강제 목적이다. 별도 상태 index/현재값 캐시·파티션은 추가하지 않는다.
+
+#### 6.12.3 rowId와 필요한 원본 행만 저장하는 규칙
+
+공유 Draft 원본 rowId는 **UUID v5**로 생성한다. namespace는 해당 `drft_id`의 UUID 16바이트(network byte order), name은 UTF-8 ASCII 문자열 `mi-input-row/v1/{base_id}/{inpt_tbl_id}/{org_row_no}`다. UUID는 소문자 표준36자, 정수는 선행0 없는 양의10진수다. namespace+name의 SHA-1에서 앞16바이트를 취하고 version5/variant RFC 비트를 설정하는 UUID v5 알고리즘을 고정한다. Java `UUID.nameUUIDFromBytes`는 v3이므로 그대로 호출해서 대체하지 않는다. 구현 시 독립 기준값과 고정 벡터로 검증한다. 이 해시는 파일 내용 증명/권한 토큰 용도가 아니다.
+
+- 기존 full-row Draft의 저장된 rowId는 절대 재계산하지 않는다. 공유 Draft의 원본은 v5, 신규 추가 행은 기존 서버 v4 방식이다. 이동·삭제·다시 조회해도 원본 이름 입력은 최초 좌표로 고정한다. 삭제된 원본 슬롯을 새 행이 채우면 새 v4 ID를 사용한다.
+- rowId만으로 기준 행/권한을 조회하지 않는다. 서버가 소유 확인한 Draft/표의 baseline에서 ID를 파생·대조한다. 클라이언트가 맞는 모양의 UUID를 보내도 멤버십이 없으면 기존 검증 오류다. 충돌/중복 ID가 검출되면 전체 요청을 실패시키며 임의 재발급·덮어쓰기를 하지 않는다.
+- **미변경 원본:** 논리 identity `(table,id,original,null,null,baseline=0)`와 위치 `(table,id,begin=0,end=NULL,row=original)`만 합성하고 물리 rowm/rowh에는 넣지 않는다.
+- **원본의 첫 row delta가 revision r(같은 위치 재기록 포함):** 같은 성공 transaction에서 기존 rowm 형식으로 원본 identity를 넣고 rowh `[0,r)`의 원본 위치와 `[r,∞)`의 새 위치 또는 NULL tombstone을 저장한다. 원본인데 물리 row가 없다는 이유로 ADD로 처리하지 않는다. 값만 바뀐 이전 revision은 이 원본 위치 구간 안에 있으므로 과거 값은 delta로 복원한다.
+- **후속 위치 변경:** 기존 current 구간을 r에서 닫고 새 구간을 연다. 되돌아온 원본 위치도 기존 identity를 유지하고 이미 기록한 history를 삭제해 다시 가상 상태로 만들지 않는다.
+- **추가 행:** 기존 rowm의 prcs_id/clientRowKey와 성공 revision 시작 위치를 사용한다. 같은 요청 추가 후 삭제도 성공 ID와 NULL 위치를 보관한다. 원본 자리 이동·교환은 영향받는 모든 이전 current를 먼저 닫고 새 위치를 넣어 generated UK를 만족시킨다. 처음 저장할 원본의 과거 `[0,r)`는 닫힌 구간으로 직접 넣는다.
+- 기존 rowm/rowh PK/UK/FK는 유지한다. 새 baseline과 rowm을 잇는 nullable 컬럼은 row마다 추가하지 않는다. Draft 참조를 따라 table/original 멤버십을 서버에서 확인한다.
+
+#### 6.12.4 합성 조회와 성공 확정의 정확한 경계
+
+구현은 물리 행 읽기와 논리 행 읽기를 명시적으로 구분한다. `rowIdentities/rowPositions/rows/initialPageRows`의 소비자를 확인하여 공유 경로에서는 합성 결과를 사용하게 한다. 단일 책임의 repository 내부 함수/기존 record 확장으로 충분하며 전용 cache/새 ORM 계층은 요구하지 않는다.
+
+1. Draft의 base_id가 NULL이면 기존 SQL/검증을 그대로 사용한다. non-NULL이면 먼저 소유/source/manifest/base 버전을 검증한다. 그 다음 baseline B, 이 Draft의 물리 identities P 및 위치 H를 같은 DB snapshot/잠금 아래 읽는다.
+2. 논리 identities는 `derive(B)`와 P의 추가 행을 합친다. P의 원본 행은 B에 존재하는지·ID가 같은지 검증하되 두 번 합치지 않는다. baseline 원본마다 P가 있으면 그 H 전체를, 없으면 가상 `[0,∞)`를 사용한다. P 존재에 대응하는 H 누락·불연속·겹침·잘못된 row/table/revision은 오류다. 물리 원본이 미래 revision에서 처음 기록돼도 `[0,r)`가 있어 과거 복원이 가능하다.
+3. 성공 revision0..n 및 operation 결과를 기존 `InputDraftHistory.restore`로 재생한다. 재생 identity/위치 전체와 합성 입력을 양방향 대조한다. 가상 위치를 성공 delta에서 새로 만들어낸 결과와만 비교하여 저장 오류를 은폐하지 않는다. baseline count/범위 및 물리 원본 대응을 먼저 확인한다.
+4. revision0의 구조/페이지 빠른 경로는 baseline 전체 count·범위·4파일과 이 Draft의 revision0/물리 행 없음 확인을 DB에서 수행하고 필요한 페이지 범위만 JVM으로 가져온다. count 검사는 O(N)일 수 있다. B 전체를 매번 JVM 로드하거나 생성 시 2N INSERT하는 방식으로 돌아가지 않는다. NULL base_id 경로의 `validateInitialRows`는 유지한다.
+5. n>0의 첫 구현은 전체 B/P/H와 성공 delta를 합성해 현재와 같은 페이지 렌더 입력을 만든다. 작은 페이지 SQL만으로 이동/삭제·표 확장/열 변화가 있는 현재 위치를 추정하지 않는다. 내부 과거 r은 `InputDraftEditingBasis.history(r)`의 prefix/구간 절단을 유지한다.
+6. `ModelInputDraftService.validateChange`의 bindings, `prepareWorkerChange`, `restore`, `InputDraftFinalizationRepository.prepareClaimed → verify` 및 `InputDraftEditingBasis`가 같은 논리 합성을 사용한다. at-revision Draft를 복제하는 코드에서도 base 참조/버전을 잃지 않는다. UPLOAD 교체의 직접 물리 읽기는 base_id NULL 불변식 아래 기존 의미를 유지한다.
+7. `completeChange`는 row delta에 처음 기록하는 원본/기존 물리 원본/신규 추가를 구별하고 §6.12.3을 수행한다. `added=false`이면 반드시 기존 current UPDATE1건이라는 현재 전제에 첫 원본 기록 분기를 추가한다. late token/기한 실패 또는 정합성 오류면 최초 rowm·과거 구간까지 rollback한다. 성공 revision/작업 결과/포인터 갱신은 기존과 동일하다.
+
+#### 6.12.5 DBA 적용·검증·중단/복구 순서
+
+이 절은 **후속 실행 DDL의 필수 작성 항목과 순서**이며 지금 SQL을 실행하라는 지시가 아니다. DBA가 실제 환경과 승인된 실행 패키지를 확인한 뒤 수동 적용한다. 기존 v2 초기화/reset SQL을 이 변경의 migration으로 사용하지 않는다.
+
+| 단계 / 담당 | 구체 작업·기대 결과·중단 조건 |
+| --- | --- |
+| 1. pre-check / BE·DBA | master DB/MySQL 버전·InnoDB·CHECK 지원, 기존 catalog/Draft/UPLOAD 스키마와 `SHOW CREATE TABLE`, 타입/unsigned/collation, `_ix10/_fk10/_ck10` 충돌 여부, FK parent index·길이를 대조. 신규 이름 없음 또는 동일 정의임을 확인. 백업/복원 가능성과 ALTER metadata lock·transaction 자원 한도를 확인. 불일치는 적용 중단 |
+| 2. apply / DBA | base master→files→rows 생성, Draft nullable base_id 추가 후 index/CHECK/FK 추가. 기존 PK/UK/row history/파일 값 변경 없음. 새 구조는 아직 앱에서 사용하지 않음. DDL implicit commit을 고려해 문장별 완료 상태를 확인하고 부분 적용 뒤 전체 스크립트를 맹목 재실행하지 않음 |
+| 3. backfill / 없음 | 기존 Draft는 모두 base_id NULL로 유지. 기존 편집 이력을 원본으로 승격하거나 최초 원본/rowId를 다시 만들지 않음. 기준이 같은 옛 Draft가 있어도 첫 공유 baseline은 고정 파일을 정상 판독해 새로 등록 |
+| 4. 호환 앱 배포 / BE | 신규 공유 생성은 기본 OFF. 웹·단일 runner·별도 worker가 있으면 그 worker까지 모두 두 저장 형식의 읽기/변경/최종저장을 지원해야 함. 혼재 중에는 NULL 경로만 생성. API/소유/직접 업로드 회귀·새 저장 테스트 통과 뒤 다음 단계 |
+| 5. 제한 활성화 / BE·운영 | 승인 환경에서 Case 신규 생성만 ON. 같은 기준 사용자A/B 생성, A 수정/B revision0 불변, 재개/응답유실, 동시 첫 생성, source 변경 충돌, 삭제/행 이동/열 변경/과거 복원/최종저장, 직접 업로드 생성·교체를 검증. 실제4파일 결과 보존/형식과 권한 확인 전 확대 금지 |
+| 6. verify / BE·DBA | 아래 이상 검출 항목 각각0, 성공 baseline1건, 신규 두 번째 Draft의 초기 물리 rowm/rowh 각각0, 성공 revision0/고정파일4건 확인. 첫·재사용 시간/스캔 횟수·INSERT 건수·잠금 대기/rollback·메모리 실측. 설계 예시226,102를 실측값으로 사용하지 않음 |
+| 7. 중단 / 운영 | 소유·원본 불일치, 잘못된 rowId/위치·이력, 부분 commit, 파일 재생성 불일치 또는 운영 한도 초과면 신규 공유 생성 OFF. 문제 Draft의 새 변경/최종저장을 중단하고 성공 이력/원본을 보존. 실행 중 작업은 기존 종료 확인/token 규칙으로 정리하며 행을 임의 삭제하지 않음 |
+| 8. rollback / BE·DBA | 공유 Draft가 생기기 전에는 신규 생성 OFF 후 이전 앱 복귀 가능. 공유 Draft가 한 건이라도 있으면 **두 형식을 읽는 마지막 정상 앱으로 복귀**하며 공유 reader/writer는 유지. base_id를 NULL로 지우거나 옛 앱으로 바로 복귀하면 원본 행이 사라진 것으로 해석되므로 금지. 새 table/column은 보존; 즉시 DROP 불필요 |
+
+후속 DBA 검증 질의는 다음 조건을 독립 검출한다. 저장소 SQL 파일의 기존 전체 행 존재 전제를 가진 검증 쿼리는 공유 Draft를 별도 분기하도록 증분 패키지에 작성하고, 기존/UPLOAD 검증은 보존한다.
+
+- baseline 재사용 키 중복, 정확히4개가 아닌 manifest/역할 중복/잘못된 file_no·객체 참조, row_cnt와 실제 row 수 불일치.
+- baseline 행 table의 template 불일치, bodyRanges 밖/중복 원본 좌표, soft delete된 기준 child. SQL로 JSON 범위 검사를 구현하기 어려우면 같은 source 정의를 읽는 BE 검증 도구로 검출하며 검사 생략으로 바꾸지 않는다.
+- 공유 Draft인데 CASE가 아님, parent와 회사/Case/template/sourceVersion 불일치, 고정 파일과 manifest 불일치, baseline의 물리 원본/ID 불일치 또는 `file_rvsn_no<>0`.
+- 논리 전체 current 위치 중복/누락, original 첫 변경의 `[0,r)` 누락, 구간 겹침/비정상 종료, 성공 delta/작업 결과와 양방향 복원 불일치. 파생 UUID/전체 재생 검증은 BE 도구가 담당한다.
+- legacy/UPLOAD의 NULL base 유지와 row/file baseline 검증 통과. 변경된 source 때문에 기존 Draft가 조회 거절되는 정상 충돌을 데이터 손상으로 오판하지 않는다.
+
+새 index의 실제 사용은 baseline 적중 `_ux01`, 페이지 PK의 `(base_id,inpt_tbl_id,org_row_no)` 범위, 물리 override의 기존 `(drft_id,inpt_tbl_id,file_rvsn_no,org_row_no)` 및 row history index를 `EXPLAIN`으로 확인한다. 무결성 전체 count의 index scan은 의도된 비용이므로 무조건 ALL/index scan을 실패로 보지 않는다. 선택 페이지에 전체 행 scan이 생기거나 잘못된 선두 key를 쓰면 활성화 전에 수정한다.
+
+구버전 앱으로 완전 복귀해야 할 별도 요구가 생기면 쓰기를 멈추고 각 공유 Draft의 원본 가상 identity/전체 위치를 **동일 rowId**로 기존 rowm/rowh에 완전히 전개한 뒤 합성 전후 모든 성공 revision·파일 결과를 대조하고 마지막에 base_id를 해제해야 한다. 대규모 데이터 변환·부분 중단 복구가 필요하므로 이 설계의 자동 backfill/rollback에 포함하지 않는다. 기본 복구 경로는 호환 앱 유지다.
+
+#### 6.12.6 구현 순서·준비도·사전 검증
+
+1. 내부 slice: 실제 환경에 맞춘 additive DDL 초안·단일 합성 경로·결정적 UUID·최초 위치 변경 저장·과거 복원 테스트. 생성 OFF이며 기존/UPLOAD 저장 회귀 확인. 이 단계만 배포해 공유 생성 ON을 허용하지 않는다.
+2. 연결 slice: EDT-01 baseline 생성/재사용 및 위 모든 소비자 연결, 두 저장 형식 CHANGE/FINALIZE·worker 재시작 테스트. mock/단위 검증과 실제 MySQL FK/UK/row lock·batch rollback 증거를 구분한다. 현재 `create` 재개는 Case→Draft인 반면 `prepareClaimed → verify`는 Draft/operation→Case여서 기존 deadlock 가능성이 있다. 생성 경로의 순서를 전체 경로의 공통 보장으로 해석하지 않는다. 제한 활성화 전 FINALIZE 동시 재개를 검증하고, deadlock이면 해당 transaction 전체 rollback·성공 이력 보존·EDT-01 재호출 대조를 확인한다. 잠금 순서 통일은 기존 위험에 대한 별도 최소 보완 후보이며 이번 문서만으로 Java 수정 범위를 추가 승인하지 않는다.
+3. DBA 수동 적용·호환 앱 전환·제한 활성화 및 성능/파일 결과 검증. 이미 적용한 DDL을 재실행하지 않고 pre-check 결과를 따른다.
+
+필수 동작 검증에는 두 Draft의 ID 분리/안정성, A의 이동·삭제·추가 후 B 불변, 첫 변경 이전 과거 revision, 이동 목적지가 가상 원본인 중복 거절, 같은 요청 재전송, batch 중간 실패/commit 불명, 회사·사용자 혼입 거절, source/template 변경 충돌, 열 변화/Regas 연결 행, 과거 full-row Draft와 UPLOAD_FILE 교체, FINALIZE 고정 양식/4파일 보존을 포함한다. 신규 생성 ON 전에 N 규모의 첫/재사용 비용도 측정한다.
+
+- Dictionary: 기존 `BASE/VER/ROW/ORG/FILE/OBJ/REF/VAL/CNT`와 현행 공통 토큰을 재사용한다. 추가 용어 없음. 신규 object는 `tmd_mdl_inpt{base...}{m/d}` 및 `_ux/_ix/_fkNN` 규칙을 따른다. 감사명 예외는 §6.8의 기존 사용자 결정이다.
+- Open Questions: 이 slice의 미해결 업무/스키마 선택 없음. 환경별 실제 제약/권한/운영 한도는 pre-check 증거 항목이며 이미 확인한 값으로 주장하지 않는다.
+- implementation readiness: `ready` — 내부 persistence/복원 slice의 구현 입력. 실행 DDL 작성/DBA 적용 승인·운영 활성화는 별도다.
 
 ## 7. ERD review
 
@@ -1283,6 +1394,8 @@ BE 구현 후의 제품 검증은 별도다: 입력→JSON text→DB→재조회
 - Q2는 기존 파일 식별값을 사용하므로 신규 DB 용어/컬럼 등록은 없다.
 
 ## 18. Implementation readiness
+
+- 2026-10-21 공유 기준 slice(§6.12): 내부 persistence/복원 구현 입력은 `ready`. 실행 DDL 작성·실제 MySQL/DBA 적용·성능/파일 보존 검증은 후속이며 아래 전체 제품 준비도와 구분한다.
 
 - 2026-10-19 직접 업로드: §6.10 저장 구조/증분 SQL 작성과 독립 정적 검토 완료. 저장 구조 구현 입력은 `ready`, 실제 MySQL/환경 대조·동시성 검증 전 DBA 적용은 `blocked by open questions`다. 신규 API/worker 및 일반 행·열 처리의 제품 구현/검증 완료 판정은 별도다.
 

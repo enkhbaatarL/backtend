@@ -50,6 +50,8 @@ public class ModelInputDraftService {
     private final PlatformTransactionManager transactionManager;
     @org.springframework.beans.factory.annotation.Value("${mi.model-input.change-worker.enabled:false}")
     private boolean changesEnabled;
+    @org.springframework.beans.factory.annotation.Value("${mi.model-input.shared-baseline.enabled:false}")
+    private boolean sharedBaselineEnabled;
     @org.springframework.beans.factory.annotation.Value("${mi.model-input.finalization.enabled:false}")
     private boolean finalizationEnabled;
     private Supplier<InputDraftFinalizationService> finalizations=()->null;
@@ -244,6 +246,25 @@ public class ModelInputDraftService {
             return new Created(summary(existing,restore(existing,current).source),false);
         }));
         if(!basis.version.equals(requestedVersion))throw InputDraftException.conflict("SOURCE_CHANGED",null);
+        boolean shared=sharedBaselineEnabled;
+        Baseline ready=shared?tx(true,()->{
+            Baseline found=store.findBaseline(actor.company,caseId,basis.catalog.templateId(),basis.version);
+            if(found!=null)store.validateBaseline(found,basis.files,initialRanges(basis));
+            return found;
+        }):null;
+        boolean scanned=ready==null;
+        List<RowRef> rows=scanned?scanInitialRows(actor,basis):List.of();
+        try {
+            return InputDraftDiagnostics.during(InputDraftDiagnostics.Stage.CREATE_STORE,null,()->tx(false,()->
+                createCaseDraft(actor,basis,requestedVersion,shared,rows,scanned,null)));
+        } catch(org.springframework.dao.DuplicateKeyException race) {
+            if(!shared)throw race;
+            // 전체 rollback 뒤 쓰기 DB/Case lock에서 확정된 승자를 한 번만 확인한다.
+            return InputDraftDiagnostics.during(InputDraftDiagnostics.Stage.CREATE_STORE,null,()->tx(false,()->
+                createCaseDraft(actor,basis,requestedVersion,true,rows,scanned,race)));
+        }
+    }
+    private List<RowRef> scanInitialRows(Actor actor,Source basis) {
         List<RowRef> rows=new ArrayList<>();
         for(FileRef file:basis.files) {
             List<Window> windows=new ArrayList<>();
@@ -287,20 +308,33 @@ public class ModelInputDraftService {
             });
             });
         }
-        return InputDraftDiagnostics.during(InputDraftDiagnostics.Stage.CREATE_STORE,null,()->tx(false,()->{
-            Source current=source(actor,caseId,true);
-            if(!basis.version.equals(current.version))throw InputDraftException.conflict("SOURCE_CHANGED",null);
-            Draft existing=store.active(actor.company,actor.user,caseId);
-            if(existing!=null){existing=store.lockOwned(existing.id(),actor.company,actor.user);fixed(existing,current,requestedVersion);return new Created(summary(existing,restore(existing,current).source),false);}
-            Draft created=store.create(actor.company,actor.user,caseId,current.catalog,current.version,current.files,rows,actor.login);
-            return new Created(summary(created,current),true);
-        }));
+        return rows;
+    }
+    private Created createCaseDraft(Actor actor,Source basis,String requestedVersion,boolean shared,List<RowRef> rows,
+            boolean scanned,org.springframework.dao.DuplicateKeyException race) {
+        long caseId=basis.caseId;
+        Source current=source(actor,caseId,true);
+        if(!basis.version.equals(current.version))throw InputDraftException.conflict("SOURCE_CHANGED",null);
+        Draft existing=store.active(actor.company,actor.user,caseId);
+        if(existing!=null){existing=store.lockOwned(existing.id(),actor.company,actor.user);fixed(existing,current,requestedVersion);return new Created(summary(existing,restore(existing,current).source),false);}
+        Draft created;
+        if(shared) {
+            Baseline base=store.findBaseline(actor.company,caseId,current.catalog.templateId(),current.version);
+            if(base==null) {
+                if(race!=null)throw race;
+                if(!scanned)throw InputDraftException.internal();
+                base=store.createBaseline(actor.company,caseId,current.catalog,current.version,current.files,rows,initialRanges(current),actor.login);
+            } else store.validateBaseline(base,current.files,initialRanges(current));
+            created=store.createShared(actor.company,actor.user,caseId,current.catalog,current.version,current.files,base,actor.login);
+        } else created=store.create(actor.company,actor.user,caseId,current.catalog,current.version,current.files,rows,actor.login);
+        return new Created(summary(created,current),true);
     }
     private void fixed(Draft draft,Source source,String version) {
         if(draft.uploaded()){if(draft.templateId()!=source.catalog.templateId())throw InputDraftException.internal();return;}
         if(!draft.sourceVersion().equals(version)||!java.util.Objects.equals(draft.sourceVersion(),source.version)||draft.templateId()!=source.catalog.templateId())throw InputDraftException.conflict("DRAFT_SOURCE_CONFLICT",draft.revision());
         Map<String,Long> expected=new LinkedHashMap<>();source.files.forEach(f->expected.put(f.role(),f.fileNo()));
         if(!expected.equals(tx(true,()->store.fixedFiles(draft.id()))))throw InputDraftException.conflict("SOURCE_CHANGED",draft.revision());
+        store.validateDraftBaseline(draft,source.files,initialRanges(source));
     }
     private State state(Actor actor,String id) {
         return state(actor,lockSnapshot(actor,id));
@@ -311,7 +345,7 @@ public class ModelInputDraftService {
     private State state(Actor actor,Draft draft) {
         return restore(draft,checkedSource(actor,draft));
     }
-    /** 소유/원본 접근, 원본 기준값과 고정 파일만 확인한다. 행/이력은 읽지 않는다. */
+    /** 소유/원본 접근과 고정 기준을 확인한다. 개별 행/이력을 JVM으로 가져오지 않는다. */
     private Source checkedSource(Actor actor,Draft draft) {
         Source source=InputDraftDiagnostics.timed(InputDraftDiagnostics.Stage.SOURCE_LOAD,null,()->source(actor,draft));
         if(!java.util.Objects.equals(draft.sourceVersion(),source.version)) throw InputDraftException.conflict("SOURCE_CHANGED",draft.revision());
@@ -322,29 +356,31 @@ public class ModelInputDraftService {
     }
     private State restore(Draft draft,Source source) {
         var revisions=InputDraftDiagnostics.timed(InputDraftDiagnostics.Stage.REVISION_LOAD,null,()->store.revisions(draft.id()));
-        var identities=InputDraftDiagnostics.timed(InputDraftDiagnostics.Stage.ROW_IDENTITIES_LOAD,null,()->store.rowIdentities(draft.id()));
-        var positions=InputDraftDiagnostics.timed(InputDraftDiagnostics.Stage.ROW_POSITIONS_LOAD,null,()->store.rowPositions(draft.id()));
+        var rows=InputDraftDiagnostics.timed(InputDraftDiagnostics.Stage.ROW_IDENTITIES_LOAD,null,()->store.logicalRows(draft));
         InputDraftHistory history=InputDraftDiagnostics.timed(InputDraftDiagnostics.Stage.HISTORY_RESTORE,null,
-            ()->InputDraftHistory.restore(draft,source.catalog,source.definitions,revisions,identities,positions,json));
+            ()->InputDraftHistory.restore(draft,source.catalog,source.definitions,revisions,rows.identities(),rows.positions(),json));
         Source current=new Source(source.caseId,history.catalog(),source.files,source.key,source.version,source.inputIds,history.definitions());
         return new State(draft,current,history);
     }
     /** 초기 revision은 전체 행 정합성만 DB에서 확인하고 표시할 행만 JVM으로 가져온다. */
     private State initialRead(Draft draft,Source source,TableRef selected,Integer first) {
         var revisions=InputDraftDiagnostics.timed(InputDraftDiagnostics.Stage.REVISION_LOAD,null,()->store.revisions(draft.id()));
-        List<ModelInputDraftRepository.InitialRowRange> ranges=new ArrayList<>();
-        source.definitions.forEach((tableId,definition)->definition.bodyRanges().forEach(range->
-            ranges.add(new ModelInputDraftRepository.InitialRowRange(tableId,range.startRow(),range.endRow()))));
         InputDraftDiagnostics.timed(InputDraftDiagnostics.Stage.INITIAL_ROWS_VALIDATE,null,()->{
-            store.validateInitialRows(draft.id(),ranges);return null;
+            store.validateInitialRows(draft,initialRanges(source));return null;
         });
         List<Integer> page=selected==null?List.of():source.definitions.get(selected.id()).page(first,2000);
         var identities=InputDraftDiagnostics.timed(InputDraftDiagnostics.Stage.ROW_IDENTITIES_LOAD,null,()->
-            page.isEmpty()?List.<RowIdentity>of():store.initialPageRows(draft.id(),selected.id(),page.get(0),page.get(page.size()-1)));
+            page.isEmpty()?List.<RowIdentity>of():store.initialPageRows(draft,selected.id(),page.get(0),page.get(page.size()-1)));
         var positions=identities.stream().map(row->new RowPosition(row.table(),row.id(),0,null,row.original())).toList();
         InputDraftHistory history=InputDraftDiagnostics.timed(InputDraftDiagnostics.Stage.HISTORY_RESTORE,null,()->
             InputDraftHistory.restore(draft,source.catalog,source.definitions,revisions,identities,positions,json));
         return new State(draft,source,history);
+    }
+    private static List<InitialRowRange> initialRanges(Source source) {
+        List<InitialRowRange> ranges=new ArrayList<>();
+        source.definitions.forEach((table,definition)->definition.bodyRanges().forEach(range->
+            ranges.add(new InitialRowRange(table,range.startRow(),range.endRow()))));
+        return ranges;
     }
     private Summary summary(Draft draft,Source source) {
         String label=switch(draft.status()){case "DRAFT"->"편집 중";case "FINALIZED"->"최종저장 완료";case "DISCARDED"->"폐기";default->throw InputDraftException.internal();};
@@ -425,7 +461,7 @@ public class ModelInputDraftService {
         }
         if(!changesEnabled)throw InputDraftException.conflict("POLICY_UNSUPPORTED",draft.revision());
         Map<Long,Map<Integer,String>> bindings=new HashMap<>();
-        for(var row:store.rowPositions(draft.id()))if(row.end()==null&&row.row()!=null)
+        for(var row:store.logicalRows(draft).positions())if(row.end()==null&&row.row()!=null)
             bindings.computeIfAbsent(row.table(),ignored->new HashMap<>()).put(row.row(),row.id());
         InputWorkbookEditor.validate(source,bindings,request,draft.revision());
         InputWorkbookEditor.validateHistory(source(actor(),draft),store.revisions(draft.id()),json);
@@ -463,7 +499,8 @@ public class ModelInputDraftService {
             InputWorkbookEditor.validate(current.source,current.history,request,draft.revision());
             Source original=source(actor,draft);
             InputWorkbookEditor.validateHistory(original,store.revisions(id),json);
-            var basis=new InputDraftEditingBasis(draft,original,store.revisions(id),store.rowIdentities(id),store.rowPositions(id));
+            var rows=store.logicalRows(draft);
+            var basis=new InputDraftEditingBasis(draft,original,store.revisions(id),rows.identities(),rows.positions());
             TableRef table=current.source.catalog.tables().stream().filter(t->t.key().equals(request.operations().get(0).path("tableId").asText())).findFirst().orElseThrow(InputDraftException::internal);
             return new PreparedChange(id,op.id(),token,actor.companyCode,current.source.files.stream().filter(f->f.role().equals(table.role())).findFirst().orElseThrow(),
                 current.source.catalog.templateId(),table,request.operations().get(0).path("rowRef").path("rowId").asText(),request,null,basis);

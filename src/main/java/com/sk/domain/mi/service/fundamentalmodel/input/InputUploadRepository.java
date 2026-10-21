@@ -136,7 +136,7 @@ public class InputUploadRepository {
         }
         var kinds=incoming.stream().map(Upload::kind).collect(java.util.stream.Collectors.toSet());
         var affected=catalog.tables().stream().filter(t->kinds.contains(t.role())).map(TableRef::id).collect(java.util.stream.Collectors.toSet());
-        List<RowPosition> active=common.rowPositions(draft).stream().filter(p->affected.contains(p.table())&&p.end()==null&&p.row()!=null).toList();
+        List<RowPosition> active=common.physicalRowPositions(draft).stream().filter(p->affected.contains(p.table())&&p.end()==null&&p.row()!=null).toList();
         sql.batchUpdate("UPDATE tmd_mdl_inptdrftrowh SET end_rvsn_no=? WHERE row_id=? AND end_rvsn_no IS NULL",active,500,
             (s,p)->{s.setLong(1,revision);s.setString(2,p.id());});
         sql.batchUpdate("INSERT INTO tmd_mdl_inptdrftrowh(row_id,drft_id,inpt_tbl_id,bgn_rvsn_no,row_no,crt_usr_logn_id,mod_usr_logn_id) VALUES(?,?,?,?,NULL,?,?)",active,500,

@@ -21,8 +21,6 @@ record InputDraftEditingBasis(Draft draft, ModelInputDraftService.Source source,
         Set<String> ids = rows.stream().map(RowIdentity::id).collect(Collectors.toSet());
         List<RowPosition> locations = positions.stream().filter(p -> ids.contains(p.id()) && p.begin() <= revision)
             .map(p -> new RowPosition(p.table(), p.id(), p.begin(), p.end() != null && p.end() <= revision ? p.end() : null, p.row())).toList();
-        Draft at = new Draft(draft.id(), draft.company(), draft.user(), draft.caseId(), draft.templateId(), draft.sourceVersion(),
-            draft.status(), revision, draft.activeOperation(), draft.finalizedCase());
-        return InputDraftHistory.restore(at, source.catalog(), source.definitions(), prefix, rows, locations, json);
+        return InputDraftHistory.restore(draft.atRevision(revision), source.catalog(), source.definitions(), prefix, rows, locations, json);
     }
 }
