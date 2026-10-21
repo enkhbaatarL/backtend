@@ -63,6 +63,25 @@ public class ModelInputDraftRepository {
             (rs,n)->rs.getString(1),id);
         if(types.size()!=1||!List.of("INDEPENDENT","MI_BASE").contains(types.get(0))) throw InputDraftException.missing();
     }
+    public void caseCompanyAccess(long caseId, int company) {
+        boolean owned=Boolean.TRUE.equals(jdbc.queryForObject("""
+            SELECT EXISTS (
+                SELECT 1 FROM tmd_mdl_scnrcasem c
+                JOIN tmd_usrm u ON u.usr_no=c.usr_no
+                WHERE c.case_id=? AND c.del_yn='N' AND u.cust_cpny_no=?
+            )
+            """,Boolean.class,caseId,company));
+        if(!owned)throw InputDraftException.missing();
+    }
+    public boolean hasCompletedLatestRun(long caseId) {
+        return Boolean.TRUE.equals(jdbc.queryForObject("""
+            SELECT EXISTS (
+                SELECT 1 FROM tmd_mdl_scnrcasem c
+                JOIN tmd_mdl_scnrcaseh h ON h.run_id=c.last_run_id AND h.case_id=c.case_id AND h.del_yn='N'
+                WHERE c.case_id=? AND c.del_yn='N' AND c.case_stat_cd='COMPLETED' AND h.exec_stat_cd='COMPLETED'
+            )
+            """,Boolean.class,caseId));
+    }
     public List<FileRef> files(long caseId) {
         return jdbc.query("""
             SELECT file_no,org_file_nm,strg_path_nm FROM tcm_filel

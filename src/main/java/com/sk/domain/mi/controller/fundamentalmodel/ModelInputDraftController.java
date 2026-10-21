@@ -117,7 +117,7 @@ public class ModelInputDraftController {
         String sourceVersion) {}
 
     @GetMapping("/cases/{caseId}/inputs/structure")
-    @Operation(summary = "원본 입력 구조 조회", description = "active INDEPENDENT 또는 MI_BASE Case의 네 파일 구조와 sourceVersion을 조회합니다. 양식은 해당 Case에 연결된 ACTIVE 또는 DEPRECATED 버전을 사용합니다. 표 미선택 상태이므로 tableData는 null입니다. 회사 문맥은 인증 정보로 결정합니다.")
+    @Operation(summary = "원본 입력 구조 조회", description = "active INDEPENDENT 또는 MI_BASE Case의 등록 파일·연결 양식 기준 구조와 sourceVersion을 조회합니다. 양식은 해당 Case에 연결된 ACTIVE 또는 DEPRECATED 버전을 사용합니다. Case와 최근 Run이 모두 완료됐으면 파일을 다시 내려받아 시트를 검사하지 않으며, 완료 증거가 없으면 확인합니다. 실제 파일 판독은 표 조회 또는 초안 생성 시 수행합니다. 표 미선택 상태이므로 tableData는 null입니다. 회사 문맥은 인증 정보로 결정합니다.")
     @ApiResponse(responseCode = "200", description = "DEMAND·SUPPLY·TRADE·OUTPUT 순서의 원본 구조", content = @Content(schema = @Schema(implementation = SourceEnvelope.class)))
     @ApiResponse(responseCode = "400", description = "REQ_INVALID_PARAMETER: 잘못된 Case ID", content = @Content(mediaType = MediaType.APPLICATION_JSON_VALUE, schema = @Schema(implementation = NullErrorEnvelope.class)))
     @ApiResponse(responseCode = "404", description = "RSC_NOT_FOUND: 사용 가능한 원본 Case가 없음", content = @Content(mediaType = MediaType.APPLICATION_JSON_VALUE, schema = @Schema(implementation = NullErrorEnvelope.class)))

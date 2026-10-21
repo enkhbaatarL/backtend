@@ -140,6 +140,7 @@ public class ModelInputDraftService {
         Map<String,String> inputIds,Map<Long,InputReadDefinition> definitions) {
         Source(long caseId,Catalog catalog,List<FileRef> files,String key,String version,Map<String,String> inputIds,Map<Long,InputReadDefinition> definitions){this(Long.valueOf(caseId),catalog,files,key,version,inputIds,definitions);}
     }
+    private record CaseSource(Source source,boolean completedRun) {}
     private record State(Draft draft,Source source,InputDraftHistory history) {}
     Actor actor() {
         if(authorization==null)throw InputDraftException.missing();
@@ -155,7 +156,7 @@ public class ModelInputDraftService {
     }
     private Source source(Actor actor,long caseId,boolean lock) {
         if(caseId<1||caseId>Integer.MAX_VALUE)throw InputDraftException.missing();
-        store.caseAccess(caseId,lock);Catalog catalog=store.catalog(caseId);
+        store.caseAccess(caseId,lock);store.caseCompanyAccess(caseId,actor.company);Catalog catalog=store.catalog(caseId);
         if(catalog.roles().size()!=4||!new HashSet<>(catalog.roles()).equals(new HashSet<>(ROLES)))throw InputDraftException.conflict("POLICY_INCOMPLETE",null);
         List<FileRef> registered=store.files(caseId);Map<String,FileRef> files=new LinkedHashMap<>();
         for(FileRef file:registered) {
@@ -604,9 +605,10 @@ public class ModelInputDraftService {
     private static String cell(int row,int col){return CellReference.convertNumToColString(col-1)+row;}
     @Transactional(propagation=Propagation.NOT_SUPPORTED)
     public SourceStructure sourceStructure(long caseId) {
-        Actor actor=actor();Source source=tx(true,()->source(actor,caseId,false));
-        // sourceVersion 진입점도 네 객체의 존재/표 소속을 확인한다. 셀 값은 이 API의 응답이 아니므로 판독하지 않는다.
-        for(FileRef file:source.files) {
+        Actor actor=actor();CaseSource basis=tx(true,()->new CaseSource(source(actor,caseId,false),store.hasCompletedLatestRun(caseId)));
+        Source source=basis.source();
+        // 완료된 실행의 등록 파일은 반복 판독하지 않는다. 완료 증거가 없으면 기존 객체·시트 검사를 유지한다.
+        if(!basis.completedRun())for(FileRef file:source.files) {
             Set<String> sheets=source.catalog.tables().stream().filter(t->t.role().equals(file.role())).map(TableRef::sheet).collect(java.util.stream.Collectors.toSet());
             reader.verifySheets(file,actor.companyCode,sheets);
         }
