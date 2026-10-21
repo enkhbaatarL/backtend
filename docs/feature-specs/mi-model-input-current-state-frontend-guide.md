@@ -8,7 +8,7 @@
 - source documents: [입력 제공 명세][be-provision], [편집 명세][be-edit-spec], [현재 Controller][be-controller], [현재 DTO][be-dto], [현재 Service][be-service]. FE 코드 비교는 §2에 명시한 과거 조사 기준이다.
 - depends on: [표별 업무 규칙][be-domain], [DBA 적용 계약][be-ddl]. 이 안내는 새 정책·API·배포를 승인하지 않는다.
 - supersedes: 이 문서의 2026-10-19 현재 상태 설명. 과거 실서버 시험 증거는 §1의 이력으로 유지한다.
-- last synced: 2026-10-20 — 편집기 중간 커밋 `842fe78f3` 기준, 순차 업로드·v2·모드/연도 헤더·자동 실행 동기화
+- last synced: 2026-10-21 — 저장된 빈 ADDED 행 조회 규칙 반영. 기존 편집기 중간 커밋 `842fe78f3` 기준의 순차 업로드·v2·모드/연도 헤더·자동 실행 안내는 유지
 - open questions: 실제 카탈로그 연결·잔여 표 처리·Shipping 보류 결함2건과 PMI 표시 정책, 서버 배포·DBA 적용·FE 브라우저 통합 확인. 편집기 세션 종료를 전체 기능 완료로 간주하지 않는다.
 
 ## 1. 현재 인계 기준과 가능한 작업
@@ -197,7 +197,7 @@ EDT-03의 `data`는 `{draftId, revision, sourceKey, sourceVersion, tableData, pa
 
 | page 필드 | 의미 |
 | --- | --- |
-| `totalBodyRows` | 표시 범위의 본문 행 수. 중간 빈 슬롯 포함, 헤더 제외. 끝 빈 행 제외 기준은 [Draft API §3.2](mi-fundamental-model-input-draft-editing-api-proposal.md) 참고 |
+| `totalBodyRows` | 표시 범위의 본문 행 수. 중간 빈 슬롯과 값 없는 활성 `ADDED` 행 포함, 헤더 제외. 끝 빈 행 제외 기준은 [Draft API §3.2](mi-fundamental-model-input-draft-editing-api-proposal.md) 참고 |
 | `returnedBodyRows` | 이번 응답의 본문 행 수. 최대 2,000 |
 | `startRow`, `endRow` | 이번 본문의 Excel 행 번호. 본문 없으면 null |
 | `hasNext` | 다음 본문 페이지 존재 여부 |
@@ -206,6 +206,8 @@ EDT-03의 `data`는 `{draftId, revision, sourceKey, sourceVersion, tableData, pa
 응답 전체는 2 MiB 한도여서 2,000행보다 적게 올 수 있다. 본문은 보존 Helper 영역을 건너뛴 비연속 행일 수 있다. `startRow + 2000`으로 다음 위치를 계산하지 않는다. `hasNext=false`에서 종료한다. 헤더는 페이지마다 반복되므로 누적 렌더링 시 중복 제거하고, 본문은 원래 행 번호를 유지한다. 한 행과 metadata만으로 한도를 넘으면 `422 / RESPONSE_TOO_LARGE`다.
 
 출처/표 전환 또는 저장 성공으로 revision이 바뀌면 이전 요청 결과를 현재 화면에 섞지 않는다. 캐시를 사용한다면 인증 회사·사용자 문맥과 `draftId, revision, tableId, startRow`를 구분한다. 원본 `sourceVersion`과 `inputId`는 Draft 저장마다 바뀌는 키가 아니므로 그것만으로 캐시를 나누면 오래된 값이 남는다.
+
+**저장된 빈 추가 행:** 표의 `ADD_ROW`가 READY이고 필수 CREATE 값이 없다면 `values:{}`로 추가한 행도 성공 revision의 EDT-03에 포함된다. 표시 값이 전부 비어도 `editing.rowBindings`에 같은 행 번호의 `{rowId,origin:"ADDED"}`가 오고 `editing.editValues`에는 그 `rowId`와 빈 `values`가 온다. `tableData.rows`의 누락된 셀 필드는 빈칸으로 그린다. 마지막의 미활성 `EMPTY_SLOT`은 계속 제외하며, 다른 표시 행과 추가 행이 모두 없을 때만 본문 0행이다. 행 번호는 저장 후 서버 응답에서 읽고 FE가 추측하지 않는다. 서버 배포 전에는 기존 조회 결과가 계속 올 수 있으므로 실제 EDT-03 응답으로 활성화를 확인한다.
 
 Regas처럼 다른 표를 참조하는 화면은 그 표도 같은 Draft·revision으로 별도 조회한다. 선택 표 응답에 참조 시트 전체가 포함됐다고 가정하지 않는다. [조회 구현][be-service] · [기존 연결 시트 로더][fe-table]
 
@@ -360,6 +362,8 @@ operations는 순서대로 하나의 성공/실패 단위로 처리한다. 새 �
 4. 작업 조회 자체는 FAILED여도 HTTP `200`, 최상위 `status:true`, `code:SUC-000`이다. **저장 성공은 `data.status === 'SUCCEEDED'`로 판단한다.**
 
 응답이 유실되거나 통신/500으로 결과를 모를 때는 새 UUID로 다시 저장하지 않는다. 같은 `requestId`와 같은 body로 재전송하거나, 이미 받은 `statusEndpoint`를 조회한다. 같은 requestId에 다른 내용을 보내면 `IDEMPOTENCY_CONFLICT`다. 실패가 확정된 작업의 같은 요청 재전송은 실패 기록을 돌려주므로, 다시 시도하려면 현재 Draft를 확인하고 새 requestId를 만든다. CHANGE와 FINALIZE는 requestId 중복 키를 공유한다.
+
+빈 행 추가가 `SUCCEEDED`이고 `rowMappings[].rowState=ACTIVE`라면 `clientRowKey→rowId`를 반영하고 `resultRevision`으로 영향 표를 재조회한다. 재조회한 `rowBindings.origin=ADDED`의 `rowId`로 이후 SET/CLEAR를 보낸다. `rowMappings`만으로 행 번호를 만들거나 같은 빈 행을 다시 ADD_ROW 하지 않는다. 기존에 저장됐지만 화면에서 숨겨졌던 활성 추가 행도 변경 배포 후 같은 성공 revision 재조회에서 나타난다.
 
 ## 6. 최종저장과 모델 실행
 

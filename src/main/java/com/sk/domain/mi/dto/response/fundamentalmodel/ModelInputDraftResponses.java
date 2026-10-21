@@ -52,7 +52,7 @@ public final class ModelInputDraftResponses {
         JsonNode inputGuideRules,List<JsonNode> controls,JsonNode displayUpdateRules) {}
     @Schema(requiredProperties={"totalBodyRows","returnedBodyRows","startRow","endRow","hasNext","nextStartRow"})
     public record Page(
-        @Schema(description="표시 범위 전체 본문 행 수. 범위 안의 빈 슬롯 포함",minimum="0") int totalBodyRows,
+        @Schema(description="표시 범위 전체 본문 행 수. 범위 안의 빈 슬롯과 값 없는 활성 ADDED 행 포함",minimum="0") int totalBodyRows,
         @Schema(description="이번 페이지 본문 행 수. 헤더 제외",minimum="0",maximum="2000") int returnedBodyRows,
         @Schema(description="이번 본문 첫 전역 행. 본문이 없으면 null",nullable=true,types={"integer","null"},minimum="1",maximum="1048576") Integer startRow,
         @Schema(description="이번 본문 마지막 전역 행. 본문이 없으면 null",nullable=true,types={"integer","null"},minimum="1",maximum="1048576") Integer endRow,

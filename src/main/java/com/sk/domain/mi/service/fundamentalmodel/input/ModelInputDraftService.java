@@ -693,7 +693,10 @@ public class ModelInputDraftService {
     private Table renderTable(Actor actor,State state,String key,Integer first,int limit) {
         TableRef table=state.source.catalog.tables().stream().filter(t->t.key().equals(key)).findFirst().orElseThrow(InputDraftException::missing);
         InputReadDefinition def=state.source.definitions.get(table.id());List<Integer> candidate=def.page(first,2000),headers=def.headerRows();
-        int[] lastDataRow={0};
+        Map<Integer,String> identities=state.history.bindings(table.id());
+        // 저장된 추가 행은 값이 비어도 표시한다. 빈 원본 행과 미활성 슬롯은 기존 값 기준으로 자른다.
+        int[] lastVisibleRow={identities.entrySet().stream().filter(entry->"ADDED".equals(state.history.origin(entry.getValue())))
+            .mapToInt(Map.Entry::getKey).max().orElse(0)};
         Map<Integer,Map<Integer,Cell>> rows=new HashMap<>();Set<Integer> wanted=new HashSet<>(candidate);wanted.addAll(headers);
         long[] budget={0};int[] cutoff={Integer.MAX_VALUE};
         Set<Integer> invalidRows=new HashSet<>(),invalidControls=new HashSet<>();
@@ -706,7 +709,7 @@ public class ModelInputDraftService {
             Integer original=state.history.sourceRow(table.id(),row);if(original!=null)sourceRows.computeIfAbsent(original,k->new ArrayList<>()).add(row);
             if(def.body(row)){
                 Map<Integer,Cell> changed=new HashMap<>();state.history.overlay(table.id(),row,changed);
-                if(hasBodyData(def,changed))lastDataRow[0]=Math.max(lastDataRow[0],row);
+                if(hasBodyData(def,changed))lastVisibleRow[0]=Math.max(lastVisibleRow[0],row);
             }
         };
         headers.forEach(register::accept);
@@ -719,7 +722,7 @@ public class ModelInputDraftService {
                 Map<Integer,Cell> currentValues=values;
                 if(def.body(row)){
                     currentValues=new HashMap<>(values);state.history.overlay(table.id(),row,currentValues);
-                    if(hasBodyData(def,currentValues))lastDataRow[0]=Math.max(lastDataRow[0],row);
+                    if(hasBodyData(def,currentValues))lastVisibleRow[0]=Math.max(lastVisibleRow[0],row);
                 }
                 if(!wanted.contains(row))continue;
                 if(!headers.contains(row)&&row>cutoff[0])continue;
@@ -737,7 +740,7 @@ public class ModelInputDraftService {
         }
         reader.read(file,actor.companyCode,windows);
         if(!invalidRows.isEmpty())throw InputDraftException.internal();
-        InputReadDefinition displayDef=trimBody(def,lastDataRow[0]);
+        InputReadDefinition displayDef=trimBody(def,lastVisibleRow[0]);
         List<Integer> displayCandidate=displayDef.page(first,2000);
         for(int row:wanted)state.history.overlay(table.id(),row,rows.computeIfAbsent(row,k->new HashMap<>()));
         for(JsonNode control:def.controls()) {
@@ -746,7 +749,6 @@ public class ModelInputDraftService {
             if(value!=null)rows.computeIfAbsent(row,k->new HashMap<>()).put(col,value);
         }
         List<Integer> page=new ArrayList<>(displayCandidate.stream().filter(row->row<=cutoff[0]).toList());
-        Map<Integer,String> identities=state.history.bindings(table.id());
         Table result;
         while(true) {
             result=project(state,table,displayDef,page,rows,identities,invalidRows);

@@ -15,7 +15,7 @@
   - [Delivery Plan](../design-docs/gas/mi-model-input-editing-delivery-plan.md) §6A·§7·§9
   - [OpenAPI 규칙](../conventions/openapi-documentation-conventions.md), [보안 정책](../../SECURITY.md)
 - supersedes: 없음. QRY-01/02와 기존 조회/업로드 범위를 대체하지 않는다.
-- last synced: 2026-10-20 (모든 Draft 표의 마지막 데이터 행 표시 §3.2 반영; LiqProdAdjustment 신규 월 입력·입력 연월 기준 Period 계산·월 건너뛰기/중복 허용·새 열 fieldKey·임시 키/성공 대응 사용자 채택; 열 명령/기존 API 연결·headerValues 형식·LiqProd 월 삭제·같은 저장의 추가 후 삭제·성공 mapping 다섯 필드/상태·빈 배열 통일·삭제 키 미재사용/동일 요청 키 유지 채택; 열 동작 조회 metadata·LiqProd/LiqUtil 빈 본문/0 구분·editing.columnCreation 기존 표현 재사용·LNG Demand 새 연도 국가 입력·PMIInput·Base Case HDD/CDD/Temperature 새 연도 본문 빈칸/0 구분 채택; U1/U2 공통 정책 채택·사용자 필수 미결0건; FE 최종 JSON·구현 차이 §4~7/§10.2 반영; 열 저장 v2 단일 형식·Draft 초기화/배포 SQL은 DDL §6.9)
+- last synced: 2026-10-21 (저장된 빈 ADDED 행 표시 §3.2 반영; 2026-10-20 모든 Draft 표의 마지막 데이터 행 표시 §3.2 반영; LiqProdAdjustment 신규 월 입력·입력 연월 기준 Period 계산·월 건너뛰기/중복 허용·새 열 fieldKey·임시 키/성공 대응 사용자 채택; 열 명령/기존 API 연결·headerValues 형식·LiqProd 월 삭제·같은 저장의 추가 후 삭제·성공 mapping 다섯 필드/상태·빈 배열 통일·삭제 키 미재사용/동일 요청 키 유지 채택; 열 동작 조회 metadata·LiqProd/LiqUtil 빈 본문/0 구분·editing.columnCreation 기존 표현 재사용·LNG Demand 새 연도 국가 입력·PMIInput·Base Case HDD/CDD/Temperature 새 연도 본문 빈칸/0 구분 채택; U1/U2 공통 정책 채택·사용자 필수 미결0건; FE 최종 JSON·구현 차이 §4~7/§10.2 반영; 열 저장 v2 단일 형식·Draft 초기화/배포 SQL은 DDL §6.9)
 - open questions: §10. 2026-10-16 공통 BE 채택과 이번 공통 저장·최종저장/복구 계약(§9) 마무리를 반영한다. 표별 정책·DBA 적용 준비/제품 검증은 별도 후속이며 PriceModel/Regas 추천은 미승인이다. 문서 전체는 Draft다.
 
 ## 1. 목표·이번 slice
@@ -294,15 +294,15 @@ EDT-03의 data는 `draftId/revision/sourceKey/sourceVersion/tableData/page/editi
 - `page` 필드·본문 최대2,000행·2 MiB 상한/분할/422는 QRY 상세 §5.1을 적용하되 **편집 metadata까지 포함한 전체 응답 bytes**로 계산한다. 모든 페이지는 같은 Draft revision이어야 한다.
 - 빈 슬롯/헤더를 임의로 기존 논리 행으로 만들지 않는다. 실제 행과 빈 슬롯의 대응은 `editing.rowBindings`를 사용한다. `inputCells`나 좌표만 보고 쓰기 대상을 만들지 않는다.
 
-#### 모든 Draft 표의 마지막 데이터 행 표시 — 2026-10-20 사용자 확정
+#### 모든 Draft 표의 마지막 표시 행 — 2026-10-20 끝 빈 슬롯 제외, 2026-10-21 빈 ADDED 행 보존
 
-모든 역할(DEMAND/SUPPLY/TRADE/OUTPUT)의 Draft EDT-03 및 업로드 preview selection은 **현재 성공 revision의 마지막 데이터 행까지만** 본문을 반환한다. GDP에 적용한 끝 빈 행 제외를 다른 표에도 동일하게 확장한다. Draft에서는 QRY의 끝 빈 슬롯 보존 규칙 대신 본 절을 적용하며, 원본 QRY 조회 정책은 변경하지 않는다.
+모든 역할(DEMAND/SUPPLY/TRADE/OUTPUT)의 Draft EDT-03 및 업로드 preview selection은 **현재 성공 revision의 마지막 표시 값 또는 활성 ADDED 행까지** 본문을 반환한다. GDP에 적용한 끝 빈 행 제외를 다른 표에도 동일하게 확장하되, 사용자가 저장한 빈 추가 행은 다시 표시한다. Draft에서는 QRY의 끝 빈 슬롯 보존 규칙 대신 본 절을 적용하며, 원본 QRY 조회 정책은 변경하지 않는다.
 
-- 표마다 발행된 표시 열과 본문 구간(노란 입력 영역 및 함께 표시하도록 확정된 읽기 전용 값)을 사용한다. 실행 중 셀 색으로 표시/편집 권한을 재추정하지 않는다. 표별 헤더/기간 행과 본문 시작, 원본 좌표를 유지하며 마지막 데이터 행 이전의 빈 행과 데이터 행 내부의 빈 셀은 유지한다. 떨어진 본문 구간은 기존 구간 순서를 유지한다.
+- 표마다 발행된 표시 열과 본문 구간(노란 입력 영역 및 함께 표시하도록 확정된 읽기 전용 값)을 사용한다. 실행 중 셀 색으로 표시/편집 권한을 재추정하지 않는다. 표별 헤더/기간 행과 본문 시작, 원본 좌표를 유지하며 마지막 표시 행 이전의 빈 행과 데이터 행 내부의 빈 셀은 유지한다. 떨어진 본문 구간은 기존 구간 순서를 유지한다.
 - 표시 열의 실제 값이 null 또는 빈 문자열인 셀은 끝 행을 늘리지 않는다. 숫자 0, false, 공백만 있는 문자열, 저장된 오류 표시는 값으로 취급한다. 표시 대상 밖 계산 보조 열의 수식은 끝 행 판단에 사용하지 않는다.
-- 성공한 SET/CLEAR/행 변경 이력을 적용한 값을 기준으로 판단한다. 논리 행 ID가 있다는 이유만으로 완전히 비어진 끝 행을 유지하지 않는다.
+- 성공한 SET/CLEAR/행 변경 이력을 적용한 값을 기준으로 판단한다. 성공 저장되어 현재 활성인 `ADDED` 행은 표시 값이 전부 비어도 끝 행 판단에 포함한다. 중간 빈 슬롯도 기존대로 표시한다. 끝의 미활성 `EMPTY_SLOT`과 값 없는 `SOURCE` 행은 논리 행 ID만으로 끝 행을 늘리지 않는다. 삭제된 `ADDED` 행도 표시하지 않는다.
 - `page.totalBodyRows`는 이 표시 범위의 본문 행 수다. `rows`, `inputCells`, `editing.rowBindings/editValues`, `returnedBodyRows/endRow/hasNext/nextStartRow`도 같은 표시 범위/페이지에 맞춘다. 페이지당 행/bytes 상한은 유지한다.
-- 본문 전체가 비었으면 헤더/열/연결 control은 유지하고 본문 수는 0, 시작/끝/다음 행은 null, hasNext=false다. 본문 없는 control 전용 표도 기존 표현을 유지한다. 마지막 데이터 행을 넘는 명시적 startRow는 400이다.
+- 표시 값도 활성 `ADDED` 행도 없으면 헤더/열/연결 control은 유지하고 본문 수는 0, 시작/끝/다음 행은 null, hasNext=false다. 본문 없는 control 전용 표도 기존 표현을 유지한다. 마지막 표시 값 또는 활성 `ADDED` 행을 넘는 명시적 startRow는 400이다.
 - 끝 행 판단에 필요한 표시 대상 셀의 판독 실패는 500이며 오류 행을 빈 행처럼 잘라내지 않는다.
 - 원본 Excel, catalog의 전체 입력 범위, 저장된 행 ID 및 ADD_ROW의 자리 배정은 바꾸지 않는다. 이 변경은 편집 capability를 READY로 바꾸지 않는다.
 
