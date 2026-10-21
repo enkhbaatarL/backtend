@@ -303,3 +303,5 @@ mi:
       model-code: DRAFT_C_STRUCTURE
     shared-baseline:
       enabled: true
+    web-runner:
+      enabled: true
