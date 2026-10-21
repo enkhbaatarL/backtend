@@ -328,6 +328,23 @@ public class ModelInputDraftService {
         Source current=new Source(source.caseId,history.catalog(),source.files,source.key,source.version,source.inputIds,history.definitions());
         return new State(draft,current,history);
     }
+    /** 초기 revision은 전체 행 정합성만 DB에서 확인하고 표시할 행만 JVM으로 가져온다. */
+    private State initialRead(Draft draft,Source source,TableRef selected,Integer first) {
+        var revisions=InputDraftDiagnostics.timed(InputDraftDiagnostics.Stage.REVISION_LOAD,null,()->store.revisions(draft.id()));
+        List<ModelInputDraftRepository.InitialRowRange> ranges=new ArrayList<>();
+        source.definitions.forEach((tableId,definition)->definition.bodyRanges().forEach(range->
+            ranges.add(new ModelInputDraftRepository.InitialRowRange(tableId,range.startRow(),range.endRow()))));
+        InputDraftDiagnostics.timed(InputDraftDiagnostics.Stage.INITIAL_ROWS_VALIDATE,null,()->{
+            store.validateInitialRows(draft.id(),ranges);return null;
+        });
+        List<Integer> page=selected==null?List.of():source.definitions.get(selected.id()).page(first,2000);
+        var identities=InputDraftDiagnostics.timed(InputDraftDiagnostics.Stage.ROW_IDENTITIES_LOAD,null,()->
+            page.isEmpty()?List.<RowIdentity>of():store.initialPageRows(draft.id(),selected.id(),page.get(0),page.get(page.size()-1)));
+        var positions=identities.stream().map(row->new RowPosition(row.table(),row.id(),0,null,row.original())).toList();
+        InputDraftHistory history=InputDraftDiagnostics.timed(InputDraftDiagnostics.Stage.HISTORY_RESTORE,null,()->
+            InputDraftHistory.restore(draft,source.catalog,source.definitions,revisions,identities,positions,json));
+        return new State(draft,source,history);
+    }
     private Summary summary(Draft draft,Source source) {
         String label=switch(draft.status()){case "DRAFT"->"편집 중";case "FINALIZED"->"최종저장 완료";case "DISCARDED"->"폐기";default->throw InputDraftException.internal();};
         String endpoint=null;
@@ -601,7 +618,8 @@ public class ModelInputDraftService {
         Actor actor=actor();
         return InputDraftDiagnostics.timed(InputDraftDiagnostics.Stage.STRUCTURE_STATE,null,()->tx(false,()->{
             // 포인터와 작업을 읽는 동안 timeout/종료 복구가 같은 Draft를 바꾸지 못하게 한다.
-            State state=state(actor,id);
+            Draft draft=lockSnapshot(actor,id);Source source=checkedSource(actor,draft);
+            State state=draft.revision()==0?initialRead(draft,source,null,null):restore(draft,source);
             return structure(state);
         }));
     }
@@ -611,8 +629,8 @@ public class ModelInputDraftService {
             Draft draft=lockSnapshot(actor,id);Source source=checkedSource(actor,draft);
             // 오래된 revision과 없는 표는 행/이력 복원 전에 거절한다. 표 키는 성공 이력 적용으로 바뀌지 않는다.
             if(revision!=draft.revision())throw InputDraftException.conflict("REVISION_CONFLICT",draft.revision());
-            if(source.catalog.tables().stream().noneMatch(t->t.key().equals(key)))throw InputDraftException.missing();
-            return restore(draft,source);
+            TableRef selected=source.catalog.tables().stream().filter(t->t.key().equals(key)).findFirst().orElseThrow(InputDraftException::missing);
+            return draft.revision()==0?initialRead(draft,source,selected,first):restore(draft,source);
         }));
         Table result=InputDraftDiagnostics.timed(InputDraftDiagnostics.Stage.TABLE_RENDER,null,()->renderTable(actor,state,key,first));
         // 행·이력·파일을 바꾸는 모든 저장은 revision을 올리므로, 같은 revision·원본 기준·파일이면 렌더 기준과 같다.

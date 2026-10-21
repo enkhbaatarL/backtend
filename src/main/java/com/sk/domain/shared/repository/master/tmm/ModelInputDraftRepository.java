@@ -299,6 +299,47 @@ public class ModelInputDraftRepository {
     }
     public record RowPosition(long table,String id,long begin,Long end,Integer row) {}
     public record RowWrite(long table,String id,String client,Integer row,boolean added) {}
+    public record InitialRowRange(long table,int first,int last) {}
+    /** revision0의 전체 저장 행을 DB에서 검증한다. 호출자는 같은 transaction의 Draft 잠금을 보유한다. */
+    public void validateInitialRows(String draft,List<InitialRowRange> ranges) {
+        requireTransaction();
+        List<Object> parameters=new ArrayList<>();parameters.add(draft);
+        parameters.add("^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$");
+        List<String> allowed=new ArrayList<>();
+        for(InitialRowRange range:ranges) {
+            allowed.add("(m.inpt_tbl_id=? AND m.org_row_no BETWEEN ? AND ?)");
+            parameters.add(range.table());parameters.add(range.first());parameters.add(range.last());
+        }
+        parameters.add(draft);parameters.add(draft);
+        String body=allowed.isEmpty()?"1=0":String.join(" OR ",allowed);
+        // 양방향 비교: 누락된 위치, 고아 위치, 추가 이력과 초기 행 위치 변경을 모두 거부한다.
+        String statement="""
+            SELECT CASE WHEN EXISTS (
+                SELECT 1 FROM tmd_mdl_inptdrftrowm m
+                LEFT JOIN tmd_mdl_inptdrftrowh h ON h.row_id=m.row_id AND h.bgn_rvsn_no=0
+                WHERE m.drft_id=? AND (m.del_yn<>'N' OR m.org_row_no IS NULL OR m.file_rvsn_no<>0
+                    OR m.prcs_id IS NOT NULL OR m.clnt_row_id IS NOT NULL OR NOT REGEXP_LIKE(TRIM(m.row_id),?,'c')
+                    OR NOT ("""+body+"""
+                    ) OR h.row_id IS NULL OR h.drft_id<>m.drft_id OR h.inpt_tbl_id<>m.inpt_tbl_id
+                    OR h.row_no IS NULL OR h.row_no<>m.org_row_no OR h.end_rvsn_no IS NOT NULL OR h.del_yn<>'N')
+            ) OR EXISTS (
+                SELECT 1 FROM tmd_mdl_inptdrftrowh h LEFT JOIN tmd_mdl_inptdrftrowm m ON m.row_id=h.row_id
+                WHERE h.drft_id=? AND (m.row_id IS NULL OR m.drft_id<>h.drft_id OR m.inpt_tbl_id<>h.inpt_tbl_id
+                    OR h.bgn_rvsn_no<>0 OR h.end_rvsn_no IS NOT NULL OR h.row_no IS NULL
+                    OR h.row_no<>m.org_row_no OR h.del_yn<>'N')
+            ) OR EXISTS (
+                SELECT 1 FROM tmd_mdl_inptdrftrowm WHERE drft_id=?
+                GROUP BY inpt_tbl_id,org_row_no HAVING COUNT(*)>1
+            ) THEN 1 ELSE 0 END
+            """;
+        if(jdbc.queryForObject(statement,Integer.class,parameters.toArray())!=0)throw InputDraftException.internal();
+    }
+    public List<RowIdentity> initialPageRows(String draft,long table,int first,int last) {
+        return jdbc.query("""
+            SELECT inpt_tbl_id,row_id,org_row_no FROM tmd_mdl_inptdrftrowm
+            WHERE drft_id=? AND inpt_tbl_id=? AND org_row_no BETWEEN ? AND ? ORDER BY org_row_no
+            """,(rs,n)->new RowIdentity(rs.getLong(1),rs.getString(2),rs.getInt(3),null,null),draft,table,first,last);
+    }
     public List<Revision> revisions(String draftId) {
         return jdbc.query("""
             SELECT r.*,p.prcs_type_cd,p.prcs_stat_cd,p.json_rvsn_no AS op_schema,
