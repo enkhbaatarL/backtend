@@ -39,7 +39,7 @@ final class InputDraftFinalizationStorage implements ObjectsStore {
     @Override public Reference plan(WorkerOwner owner, Operation operation, String role) {
         if (!ROLES.contains(role) || !java.util.Set.of("USER", "ADMIN").contains(operation.role())) throw InputDraftException.missing();
         String bucket = operation.role().equals("ADMIN") ? commonBucket : prefix + owner.companyCode().toLowerCase(Locale.ROOT);
-        String key = "SCNRCASE/INPUTDRAFT/" + uuid(operation.id()) + "/" + uuid(operation.token()) + "/" + role + ".xlsm";
+        String key = "SCNRCASE/INPUTDRAFT/" + uuid(operation.id()) + "/" + uuid(operation.token()) + "/" + uuid(operation.id()) + "-" + role + ".xlsm";
         Reference result = new Reference(bucket, key, endpoint + "/" + bucket + "/" + key, role + ".xlsm", MIME, owner.companyCode(), null, null, null);
         result.validate(operation, role, owner);
         return result;
@@ -89,9 +89,10 @@ final class InputDraftFinalizationStorage implements ObjectsStore {
     private void allowed(Reference ref) {
         if (ref.company() == null || ref.company().isBlank() || ref.bucket() == null
                 || !(ref.bucket().equals(commonBucket) || ref.bucket().equals(prefix + ref.company().toLowerCase(Locale.ROOT)))
-                || ref.key() == null || !ref.key().matches("SCNRCASE/INPUTDRAFT/[0-9a-f-]{36}/[0-9a-f-]{36}/(SUPPLY|DEMAND|TRADE|OUTPUT)\\.(xlsm|xlsx)")
+                || ref.key() == null || !ref.key().matches("SCNRCASE/INPUTDRAFT/[0-9a-f-]{36}/[0-9a-f-]{36}/(?:[0-9a-f-]{36}-)?(SUPPLY|DEMAND|TRADE|OUTPUT)\\.(xlsm|xlsx)")
                 || !Objects.equals(ref.location(), endpoint + "/" + ref.bucket() + "/" + ref.key()) || !(ref.name()!=null&&ref.name().endsWith(".xlsx")?InputUploadValidation.XLSX:MIME).equals(ref.mime())
-                || !ref.key().endsWith("/"+ref.name())) {
+                || !(ref.key().endsWith("/"+ref.name())
+                    || ref.key().endsWith("/"+ref.key().split("/")[2]+"-"+ref.name()))) {
             throw InputDraftException.missing();
         }
     }

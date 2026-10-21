@@ -88,7 +88,7 @@ final class InputDraftFinalizationService {
         }
         void validate(Operation op, String role, WorkerOwner owner) {
             String extension=(role+".xlsx").equals(name)?"xlsx":"xlsm";
-            String expected = "SCNRCASE/INPUTDRAFT/" + uuid(op.id()) + "/" + uuid(op.token()) + "/" + role + "."+extension;
+            String expected = "SCNRCASE/INPUTDRAFT/" + uuid(op.id()) + "/" + uuid(op.token()) + "/" + uuid(op.id()) + "-" + role + "."+extension;
             if (bucket == null || bucket.isBlank() || !expected.equals(key) || !Objects.equals(company, owner.companyCode())
                     || !(role + "."+extension).equals(name) || !(extension.equals("xlsx")?InputUploadValidation.XLSX:MIME).equals(mime) || location == null || location.length() > 255
                     || !location.endsWith("/" + bucket + "/" + key) || absentSince != null

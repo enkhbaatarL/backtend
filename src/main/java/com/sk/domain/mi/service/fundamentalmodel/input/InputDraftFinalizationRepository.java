@@ -175,7 +175,8 @@ final class InputDraftFinalizationRepository {
         List<SavedFile> saved = new ArrayList<>();
         for (Prepared item : prepared) {
             Reference ref = item.ref();
-            UploadedFile file = UploadedFile.of(ref.name(), ref.name(), ref.location(), ref.size(), ref.name().endsWith(".xlsx")?"xlsx":"xlsm", ref.mime(),
+            String storageFileName = ref.key().substring(ref.key().lastIndexOf('/') + 1);
+            UploadedFile file = UploadedFile.of(ref.name(), storageFileName, ref.location(), ref.size(), ref.name().endsWith(".xlsx")?"xlsx":"xlsm", ref.mime(),
                     "99991231", Math.toIntExact(caseId), "SCNRCASE", null);
             long fileNo = insert("""
                     INSERT INTO tcm_filel(org_file_nm,strg_file_nm,strg_path_nm,file_size,filex_nm,mime_type_nm,file_vald_end_dt,
