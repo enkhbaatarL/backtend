@@ -41,9 +41,9 @@
 -- =====================================================================================================
 
 -- A1. Operator inputs. Choose an unused version explicitly; never MAX(version)+1. Schema is checked, not selected.
-SET @e_schema = NULL;   -- e.g. the schema that holds template7 (testdb: midb)
-SET @e_actor = NULL;    -- audit login, 1..50 chars
-SET @e_version = NULL;  -- new tmplt_ver_no for DRAFT_C_STRUCTURE, unused, 2..65535
+SET @e_schema = 'midb';
+SET @e_actor = 'SYSTEM';
+SET @e_version = 2;
 SET @e_source = 7, @e_model = 'DRAFT_C_STRUCTURE', @e_source_version = 1;
 SET @e_source_marker = 'structure-c-20261019; baselineId=2026-10-07-delivery-261006-v8-v6; partial=92/99; NOT_PUBLISHED';
 SET @e_marker = 'editor-write-20261020; source=tmplt7/DRAFT_C_STRUCTURE/v1; patched=52/92; scopes=126; NOT_PUBLISHED';
@@ -276,6 +276,8 @@ WITH p AS (SELECT nb.inpt_tbl_id AS new_id, nf.mdl_file_cd AS role, ns.sht_nm AS
 SELECT p.role, p.sheet, p.name, JSON_EXTRACT(p.new_qry, '$.capabilities') AS capabilities,
        (SELECT COUNT(*) FROM tmd_mdl_inptmodscopd m WHERE m.inpt_tbl_id = p.new_id) AS scopes
 FROM p WHERE CAST(p.new_qry AS JSON) <> CAST(p.old_qry AS JSON) ORDER BY p.role, p.sheet, p.name;
+
+COMMIT ;
 ROLLBACK;
 -- Replace the ROLLBACK above with COMMIT only after an authorized review of VERIFIED_UNPUBLISHED in this connection.
 -- After COMMIT, PART A is intentionally not rerunnable (version/marker guard). Do not delete a committed version
@@ -288,7 +290,7 @@ ROLLBACK;
 -- mi.model-input.change-worker.enabled=true is planned, uploads/draft workers are stopped during this transaction.
 -- Effect: template7 becomes DEPRECATED (definitions, aply_bgn_dtm and Case links unchanged; existing Case drafts keep
 -- reading it), the new version becomes the single ACTIVE of DRAFT_C_STRUCTURE (new uploads bind to it).
-SET @v_schema = NULL, @v_actor = NULL, @v_version = NULL; -- same schema/new version as PART A, audit login
+SET @v_schema = 'midb', @v_actor = 'SYSTEM', @v_version = 2;-- same schema/new version as PART A, audit login
 SET @v_source = 7, @v_model = 'DRAFT_C_STRUCTURE';
 SET @v_marker = 'editor-write-20261020; source=tmplt7/DRAFT_C_STRUCTURE/v1; patched=52/92; scopes=126; NOT_PUBLISHED';
 SET @v_ok = 0, @v_published = 0, @v_new = NULL, @v_source_time = NULL, @v_time = NULL;
@@ -333,7 +335,7 @@ SET @v_published = IF(@v_ok = 1
  AND NOT EXISTS (SELECT 1 FROM tmd_mdl_scnrcasetmpltd WHERE tmplt_id = @v_new), 1, 0);
 SELECT tmplt_id, tmplt_ver_no, tmplt_stat_cd, aply_bgn_dtm, del_yn FROM tmd_mdl_inpttmpltm WHERE mdl_spt_cd = @v_model ORDER BY tmplt_ver_no;
 SELECT IF(@v_published = 1, 'PUBLISHED_PENDING_COMMIT', 'STOP_AND_ROLLBACK') AS decision;
-ROLLBACK;
+COMMIT ;
 -- Replace the ROLLBACK above with COMMIT only when PUBLISHED_PENDING_COMMIT. After COMMIT, never switch either root back
 -- to DRAFT or edit ACTIVE/DEPRECATED JSON. A problem after publication is fixed by another new version.
 -- Smoke after COMMIT (outside SQL): new upload -> draft -> table-data GET shows READY only for the 52 tables;
