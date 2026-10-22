@@ -128,7 +128,7 @@ public class ModelInputDraftController {
         String sourceVersion) {}
 
     @GetMapping("/cases/{caseId}/inputs/structure")
-    @Operation(summary = "원본 입력 구조 조회", description = "active INDEPENDENT 또는 MI_BASE Case의 등록 파일·연결 양식 기준 구조와 sourceVersion을 조회합니다. 양식은 해당 Case에 연결된 ACTIVE 또는 DEPRECATED 버전을 사용합니다. Case와 최근 Run이 모두 완료됐으면 파일을 다시 내려받아 시트를 검사하지 않으며, 완료 증거가 없으면 확인합니다. 실제 파일 판독은 표 조회 또는 초안 생성 시 수행합니다. 표 미선택 상태이므로 tableData는 null입니다. 회사 문맥은 인증 정보로 결정합니다.")
+    @Operation(summary = "원본 입력 구조 조회", description = "active INDEPENDENT 또는 MI_BASE Case의 등록 파일·연결 양식 기준 구조와 sourceVersion을 조회합니다. 양식은 해당 Case에 연결된 ACTIVE 또는 DEPRECATED 버전을 사용합니다. Case와 최근 Run이 모두 완료됐으면 파일을 다시 내려받아 시트를 검사하지 않으며, 완료 증거가 없으면 확인합니다. 실제 파일 판독은 표 조회 또는 초안 생성 시 수행합니다. 양식에서 탐색 표시를 허용한 표만 구조에 포함하며 내부 control 소유 표는 목록에서 제외해도 연결 control은 선택 표 응답에 제공합니다. 표 미선택 상태이므로 tableData는 null입니다. 회사 문맥은 인증 정보로 결정합니다.")
     @ApiResponse(responseCode = "200", description = "DEMAND·SUPPLY·TRADE·OUTPUT 순서의 원본 구조", content = @Content(schema = @Schema(implementation = SourceEnvelope.class)))
     @ApiResponse(responseCode = "400", description = "REQ_INVALID_PARAMETER: 잘못된 Case ID", content = @Content(mediaType = MediaType.APPLICATION_JSON_VALUE, schema = @Schema(implementation = NullErrorEnvelope.class)))
     @ApiResponse(responseCode = "404", description = "RSC_NOT_FOUND: 사용 가능한 원본 Case가 없음", content = @Content(mediaType = MediaType.APPLICATION_JSON_VALUE, schema = @Schema(implementation = NullErrorEnvelope.class)))
@@ -165,7 +165,7 @@ public class ModelInputDraftController {
     }
 
     @GetMapping("/input-drafts/{draftId}")
-    @Operation(summary = "개인 Draft 구조 재조회", description = "현재 회사·사용자가 소유한 Draft의 저장된 성공 revision과 구조를 반환합니다. 진행 작업 중에도 직전 성공 상태를 조회합니다. 다른 소유자의 Draft는 존재 여부를 공개하지 않고 404입니다. tableData는 null이며 저장 이력 해석 실패는 500입니다.")
+    @Operation(summary = "개인 Draft 구조 재조회", description = "현재 회사·사용자가 소유한 Draft의 저장된 성공 revision과 구조를 반환합니다. 진행 작업 중에도 직전 성공 상태를 조회합니다. 다른 소유자의 Draft는 존재 여부를 공개하지 않고 404입니다. 양식에서 탐색 표시를 허용한 표만 구조에 포함합니다. tableData는 null이며 저장 이력 해석 실패는 500입니다.")
     @ApiResponse(responseCode = "200", description = "Draft 구조", content = @Content(schema = @Schema(implementation = StructureEnvelope.class)))
     @ApiResponse(responseCode = "400", description = "REQ_INVALID_PARAMETER: 잘못된 Draft ID", content = @Content(mediaType = MediaType.APPLICATION_JSON_VALUE, schema = @Schema(implementation = ProblemEnvelope.class)))
     @ApiResponse(responseCode = "404", description = "RSC_NOT_FOUND: 본인 Draft가 없음", content = @Content(mediaType = MediaType.APPLICATION_JSON_VALUE, schema = @Schema(implementation = ProblemEnvelope.class)))

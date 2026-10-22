@@ -9,12 +9,13 @@ import java.util.Set;
 /** 고정 발행 묶음의 내부 조회 정의. 누락된 업무 정책을 추정하지 않는다. */
 public record InputReadDefinition(List<Integer> columns,List<Integer> headerRows,List<Range> bodyRanges,
         List<Integer> identityColumns,JsonNode fields,JsonNode capabilities,JsonNode inputGuideRules,
-        JsonNode controls,JsonNode displayUpdateRules,JsonNode columnCreation) {
+        JsonNode controls,JsonNode displayUpdateRules,JsonNode columnCreation,boolean navigationVisible) {
     public record Range(int startRow,int endRow) {}
     public static InputReadDefinition parse(JsonNode root) {
         if(root==null || !root.isObject()) throw incomplete();
         InputDraftJson.keys(root,Set.of("schemaVersion","columns","headerRows","bodyRanges","identityColumns",
-            "fields","capabilities","inputGuideRules","controls","displayUpdateRules","columnCreation","uploadValidation"));
+            "fields","capabilities","inputGuideRules","controls","displayUpdateRules","columnCreation","uploadValidation","navigationVisible"));
+        if(root.has("navigationVisible")&&!root.path("navigationVisible").isBoolean()) throw incomplete();
         if(!root.path("schemaVersion").isIntegralNumber()) throw incomplete();
         if(!root.path("schemaVersion").canConvertToInt() || root.path("schemaVersion").intValue()!=1) throw InputDraftException.conflict("POLICY_UNSUPPORTED",null);
         List<Integer> columns=ints(root.path("columns"),16384), headers=ints(root.path("headerRows"),1048576),
@@ -90,7 +91,7 @@ public record InputReadDefinition(List<Integer> columns,List<Integer> headerRows
             }
         }
         return new InputReadDefinition(List.copyOf(columns),List.copyOf(headers),List.copyOf(body),List.copyOf(identity),
-            fields,caps,root.get("inputGuideRules"),root.get("controls"),root.get("displayUpdateRules"),creation);
+            fields,caps,root.get("inputGuideRules"),root.get("controls"),root.get("displayUpdateRules"),creation,root.path("navigationVisible").asBoolean(true));
     }
     private static void creation(JsonNode value) {
         InputDraftJson.keys(value,Set.of("dataType","create"));

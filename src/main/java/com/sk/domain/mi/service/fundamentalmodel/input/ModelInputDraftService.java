@@ -637,7 +637,7 @@ public class ModelInputDraftService {
             if(!source.inputIds.containsKey(role))continue;
             Map<String,List<TableInfo>> sheets=new LinkedHashMap<>();
             for(TableRef table:source.catalog.tables())if(table.role().equals(role)) {
-                InputReadDefinition def=source.definitions.get(table.id());List<String> controls=new ArrayList<>();def.controls().forEach(c->controls.add(c.path("id").asText()));
+                InputReadDefinition def=source.definitions.get(table.id());if(!def.navigationVisible())continue;List<String> controls=new ArrayList<>();def.controls().forEach(c->controls.add(c.path("id").asText()));
                 sheets.computeIfAbsent(table.sheet(),k->new ArrayList<>()).add(new TableInfo(table.key(),role,table.sheet(),table.name(),table.description(),
                     cell(table.startRow(),table.startColumn())+":"+cell(table.endRow(),table.endColumn()),table.rowAdd()?"추가 가능":"고정",table.columnAdd()?"추가 가능":"고정",
                     new Coordinates(def.headerRows().isEmpty()?0:def.headerRows().get(0),def.bodyRanges().isEmpty()?table.dataStart():def.bodyRanges().get(0).startRow()),List.copyOf(controls)));
@@ -768,7 +768,7 @@ public class ModelInputDraftService {
         List<InputReadDefinition.Range> ranges=def.bodyRanges().stream().filter(range->range.startRow()<=lastRow)
             .map(range->new InputReadDefinition.Range(range.startRow(),Math.min(range.endRow(),lastRow))).toList();
         return new InputReadDefinition(def.columns(),def.headerRows(),ranges,def.identityColumns(),def.fields(),def.capabilities(),
-            def.inputGuideRules(),def.controls(),def.displayUpdateRules(),def.columnCreation());
+            def.inputGuideRules(),def.controls(),def.displayUpdateRules(),def.columnCreation(),def.navigationVisible());
     }
     @io.swagger.v3.oas.annotations.media.Schema(requiredProperties={"kind","draftId","revision","draftEndpoint","structure","selection"})
     public record UploadResult(String kind,String draftId,long revision,String draftEndpoint,Structure structure,
@@ -778,7 +778,7 @@ public class ModelInputDraftService {
         Source source=uploadSource(catalog,files,sourceKey);
         InputDraftHistory history=InputDraftHistory.restore(draft,source.catalog,source.definitions,chain,identities,positions,json);
         State state=new State(draft,new Source(null,history.catalog(),source.files,source.key,null,source.inputIds,history.definitions()),history);
-        var first=state.source.catalog.tables().stream().filter(t->t.role().equals(kind)).findFirst().orElse(null);
+        var first=state.source.catalog.tables().stream().filter(t->t.role().equals(kind)&&state.source.definitions.get(t.id()).navigationVisible()).findFirst().orElse(null);
         Structure structure=structure(state);
         int budget=InputDraftJson.BODY_LIMIT-json.bytes(structure).length-4096;
         if(budget<1)throw InputDraftException.responseLarge();
