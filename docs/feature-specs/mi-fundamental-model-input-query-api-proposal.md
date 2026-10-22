@@ -14,7 +14,7 @@
   - [Delivery Plan](../design-docs/gas/mi-model-input-editing-delivery-plan.md) §3·§6A·§7
   - [문서 소유권](../conventions/source-of-truth-governance.md), [OpenAPI 규칙](../conventions/openapi-documentation-conventions.md), [보안 정책](../../SECURITY.md)
 - supersedes: 없음
-- last synced: 2026-10-16
+- last synced: 2026-10-19
 - open questions: §9 Q2~Q6의 남은기술·검증 항목. Q2의 불변 파일 등록은 §4.4, 양식/catalog 발행 묶음·기존 DDL/Case 연결과 내부 버전 구성은 domain §3.3·DDL §6.2/§10B·이 문서 §4.6에 구체화했다. 실제 table/GET 정의·seed/발행·관계 등록·제품 연결/검증은 후속이다. 내용 hash/새 revision 컬럼을 요구하지 않는다. 숫자 표시 정책·JSON DRM 비적용과 기존 항목 JSON/월 생성/삭제 원칙은 확정됐고 제품 적용·실제 원본/catalog·이벤트/삭제/파일·FE/접근 검증은 Q3~Q6의 기존 후속이다.
 
 이 문서는 INPUT-02A와 분리한 **상세 제안이며 §1.1의 사용자 확정 범위를 반영**한다. 문서 전체의 승인이나 INPUT-03/04의 BLOCKED 해제를 뜻하지 않는다. 앞선 확정은 이 문서와 전용 work note에만 반영했으며, 2026-10-15 사용자 승인으로 숫자 표시 정책과 JSON DRM 비적용을 기존 조회 명세 §3.2·§5에 통합했다. 나머지 공용 정본 통합 시 기존 조회 명세를 갱신하고 이 문서는 참조 이력으로 전환한다. 같은 사실의 승인 계약을 두 문서에 중복 정의하지 않는다.
@@ -119,7 +119,7 @@ GET /api/v1/mi/fundamental-model/cases/101/inputs/table-data?sourceVersion=sv1_2
 
 ### 4.1 서버의 일관성 검사
 
-- QRY-01은 권한·active Case·4역할 완전성·등록 양식과의 대응을 확인하고, 같은 원본 기준에서 구조/버전/역할별 inputId를 구성한다. 원본 객체의 존재·구조 검증 실패를 빈 역할로 반환하지 않는다.
+- QRY-01은 요청 회사와 Case 작성 사용자 회사의 일치, active Case·4역할 완전성·등록 양식과의 대응을 확인하고, 같은 원본 기준에서 구조/버전/역할별 inputId를 구성한다. Case와 `last_run_id`의 Run이 모두 `COMPLETED`인 기존 실행 Case는 반복 객체 다운로드·시트 검사를 생략한다. 이는 QRY-01에서 현재 객체가 존재한다는 증명이 아니며, 이후 실제 파일 판독 실패를 빈 역할로 반환하지 않는다. 완료 증거가 없는 Case는 기존 객체·시트 검사를 유지한다. 이 분기는 접근 범위나 QRY-01의 요청/응답 필드를 바꾸지 않는다.
 - QRY-02도 매번 현재 사용자의 tenant·role/condition과 Case 접근 범위, 현재 4파일·양식 기준을 확인한다. 버전이나 inputId를 알고 있다는 이유로 권한 검사를 생략하지 않는다. 같은 tenant의 공유 조회를 업로더 본인 제한으로 바꾸지 않는다.
 - 형식이 맞는 `sourceVersion`이 현재 4파일/카탈로그 기준으로 계산한 값과 다르면 409다. 이전 구조와 새 파일 값을 섞지 않으며 새 버전으로 자동 대체해 성공시키지 않는다. 이 비교는 과거 발급 이력이나 접근 권한을 증명하지 않는다.
 - 요청 전후 파일/카탈로그가 바뀌어 같은 기준임을 보장할 수 없는 경우도 혼합 200 대신 충돌/실패로 처리한다. 실제 객체 내용 버전까지 고정하는 방법은 §9 Q2이며 DB metadata 동일만으로 byte 불변을 주장하지 않는다.
@@ -220,7 +220,7 @@ catalogRevision = "catalog-v1:" + decimal(tmplt_id)
 #### 요청별 연결 순서
 
 1. 기존 인증·tenant/role·유효 Case 접근을 검사한다. Case 없음/삭제/비대상과 양식 관계 없음/해석 불가를 구별해 기존 §7의 404/409를 유지한다.
-2. 현재 네 불변 파일/객체 참조와 Case에 저장된 양식 연결을 읽는다. 연결된 ACTIVE 또는 지원 가능한 DEPRECATED의 모델 구분·실제 네 파일 대응·요청 표/규칙의 소속을 확인한다. GET에서 관계를 INSERT하거나 현재 ACTIVE/MAX를 임의로 연결하지 않는다.
+2. 현재 네 불변 파일/객체 참조와 Case에 저장된 양식 연결을 읽는다. 연결된 ACTIVE 또는 지원 가능한 DEPRECATED의 실제 네 파일 대응·요청 표/규칙의 소속을 확인한다. application model-code 설정 없이 Case 연결을 사용하며 모델 코드가 다르다는 이유로 거절하지 않는다. GET에서 관계를 INSERT하거나 현재 ACTIVE/MAX를 임의로 연결하지 않는다.
 3. 위 두 값과 §4.4의 contentRevision으로 기존 고정 직렬화/해시를 생성한다. QRY-01은 이 기준의 구조를 반환하고 QRY-02는 요청 sourceVersion과 대조한다. 서로 다른 양식/catalog의 좌표/선택지/규칙을 같은 응답에 섞지 않는다.
 4. 현재 선택 응답을 읽은 뒤 기준이 유지되는지 확인한다. 긴 파일 읽기 동안 DB lock을 유지하는 것을 기본안으로 삼지 않으며 최종 대조가 실제 현재 DB 상태를 읽는지 제품 검증한다. 바뀐 기준/누락/읽기 실패는 기존 실패 계약을 따르고 새 기준으로 자동 성공시키지 않는다.
 

@@ -17,7 +17,7 @@
 -- 기존 시험 양식1의 DRAFT→ACTIVE 발행만 UPDATE하며 새 양식/다른 양식은 만들거나 바꾸지 않는다.
 -- 원본 Case/파일 내용·metadata, Draft/행/revision은 INSERT/UPDATE/DELETE하지 않는다.
 -- 시험 모델코드 DRAFT_API_SMOKE와 tableId는 testdb 전용이며 전체 catalog 발행이 아니다.
--- 서버 설정 mi.model-input.model-code도 DRAFT_API_SMOKE로 맞춰야 한다.
+-- application model-code 설정은 필요 없다. Case103에 연결된 시험 양식을 사용한다.
 -- 표별 정책은 후속, PriceModel/Regas 추가 추천은 미승인. 목록/seed 설계는 포함하지 않는다.
 -- 동작 capabilities는 INCOMPLETE이며 기존 승인 BCPrices SET 필드 metadata만 유지한다.
 -- BCPrices B6:E7 헤더/B8:E21 본문은 로컬 baseline/parser/reader로 확인했다.
@@ -189,7 +189,7 @@ SELECT CASE WHEN q.tmplt_stat_cd = 'ACTIVE' AND q.del_yn = 'N'
                   AND q.registered_tables = 1 AND q.registered_scopes = 1
                   AND q.registered_case_binding = 1 AND q.case103_template_id = 1 AND q.binding_del_yn = 'N'
             THEN 'READY_TO_COMMIT' ELSE 'NOT_READY' END AS bootstrap_result,
-       103 AS case_id, 'DRAFT_API_SMOKE' AS server_model_code,
+       103 AS case_id, 'DRAFT_API_SMOKE' AS template_model_code,
        q.tmplt_id, q.tmplt_stat_cd, q.registered_file_roles, q.registered_sheets,
        q.registered_tables, q.registered_scopes, q.registered_case_binding,
        'OUTPUT/BCPrices/base_case_prices' AS first_table_id

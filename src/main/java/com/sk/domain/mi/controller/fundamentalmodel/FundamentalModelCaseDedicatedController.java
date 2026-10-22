@@ -46,9 +46,16 @@ public class FundamentalModelCaseDedicatedController {
         summary = "MI Fundamental Model Scenario Case 업로드 API",
         description = "`DEMAND`, `SUPPLY`, `TRADE`, `OUTPUT` 입력 파일을 각각 정확히 1개씩 업로드해 "
             + "PENDING 상태의 Fundamental Model case를 생성합니다. `OUTPUT`은 실행 결과가 아니라 모델 실행 입력입니다. "
-            + "파일 하나라도 업로드에 실패하면 먼저 업로드된 파일을 보상 삭제하고 Case 생성 요청 전체를 실패 처리합니다."
+            + "서버의 `mi.model-input.upload.model-code`에 해당하는 ACTIVE 템플릿을 생성 시점에 자동 연결합니다. "
+            + "설정이 없거나 ACTIVE 템플릿이 하나로 정해지지 않으면 생성하지 않습니다. "
+            + "파일 업로드 또는 템플릿 연결에 실패하면 먼저 업로드된 파일을 보상 삭제하고 Case 생성 요청 전체를 실패 처리합니다."
     )
     @ApiResponse(responseCode = "201", description = "생성 성공")
+    @ApiResponse(
+        responseCode = "409",
+        description = "BIZ_RULE_VIOLATION: 입력 모델 설정이 없거나 해당 모델의 ACTIVE 템플릿이 없거나 여러 개임",
+        content = @Content(mediaType = MediaType.APPLICATION_JSON_VALUE, schema = @Schema(implementation = BaseResponse.class))
+    )
     @ApiResponse(
         responseCode = "400",
         description = "REQ_INVALID_PARAMETER: 파일이 정확히 4개가 아니거나 입력 역할이 누락·중복됨; FILE_INVALID: 빈 파일이 포함됨",

@@ -5,6 +5,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.sk.common.enums.ResultCode;
 import com.sk.common.exception.AppErrorException;
 import com.sk.common.exception.AppHttpStatusException;
+import com.sk.common.exception.CustomAuthorizationException;
 import com.sk.common.utils.DateUtil;
 import com.sk.domain.admin.dto.response.file.FileUploadRes;
 import com.sk.domain.mi.dto.request.fundamentalmodel.FundamentalModelCaseListReq;
@@ -65,6 +66,7 @@ import com.sk.domain.shared.repository.master.tmd.projection.ScenarioCasePriceRo
 import com.sk.domain.shared.repository.master.tmd.projection.ScenarioCaseTradeFlowHeaderRow;
 import com.sk.domain.shared.repository.master.tmd.projection.ScenarioCaseTradeFlowRow;
 import com.sk.domain.shared.repository.master.tmd.projection.ScenarioCaseVolumeRegionBucketRow;
+import com.sk.domain.shared.repository.master.tmm.ModelInputDraftRepository;
 import com.sk.domain.shared.service.FileService;
 import com.sk.domain.shared.service.permissions.AuthorizationService;
 import java.math.BigDecimal;
@@ -99,7 +101,9 @@ import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.TransactionStatus;
 import org.springframework.transaction.annotation.Transactional;
-import org.springframework.transaction.support.TransactionOperations;
+import org.springframework.transaction.PlatformTransactionManager;
+import org.springframework.transaction.TransactionDefinition;
+import org.springframework.transaction.support.TransactionTemplate;
 import org.springframework.transaction.support.TransactionSynchronization;
 import org.springframework.transaction.support.TransactionSynchronizationManager;
 import org.springframework.web.multipart.MultipartFile;
@@ -171,14 +175,18 @@ public class FundamentalModelCaseServiceImpl implements FundamentalModelCaseServ
     private final ScenarioCaseTradeFlowHeaderRepository scenarioCaseTradeFlowHeaderRepository;
     private final ScenarioCaseTradeFlowRepository scenarioCaseTradeFlowRepository;
     private final UploadedFileRepository uploadedFileRepository;
+    private final ModelInputDraftRepository modelInputDraftRepository;
     private final FileService fileService;
     private final AuthorizationService authorizationService;
     private final KubernetesJobService kubernetesJobService;
-    private final TransactionOperations transactionOperations;
+    private final PlatformTransactionManager transactionManager;
     private final ObjectMapper objectMapper;
 
     @Value("${kubernetes.callback-base-url:}")
     private String callbackBaseUrl;
+
+    @Value("${mi.model-input.upload.model-code:}")
+    private String caseTemplateModelCode;
 
     @Override
     @Transactional(readOnly = true)
@@ -195,12 +203,19 @@ public class FundamentalModelCaseServiceImpl implements FundamentalModelCaseServ
             searchType = null;
         }
 
-        List<FundamentalModelCaseListItemRes> cases = scenarioCaseRepository.findListRows(searchType, keyword)
+        List<ScenarioCaseListRow> caseRows = scenarioCaseRepository.findListRows(searchType, keyword);
+        Optional<ScenarioCaseListRow> miBaseRow = scenarioCaseRepository.findCurrentMiBaseListRow();
+        List<Long> caseIds = new ArrayList<>();
+        caseRows.forEach(row -> caseIds.add(row.caseId()));
+        miBaseRow.ifPresent(row -> caseIds.add(row.caseId()));
+        Map<Long, String> draftIds = findActiveDraftIds(caseIds);
+
+        List<FundamentalModelCaseListItemRes> cases = caseRows
             .stream()
-            .map(this::toListItemResponse)
+            .map(row -> toListItemResponse(row, draftIds.get(row.caseId())))
             .toList();
-        FundamentalModelCaseListItemRes miBase = scenarioCaseRepository.findCurrentMiBaseListRow()
-            .map(this::toListItemResponse)
+        FundamentalModelCaseListItemRes miBase = miBaseRow
+            .map(row -> toListItemResponse(row, draftIds.get(row.caseId())))
             .orElse(null);
         int totalCount = cases.size() + (miBase == null ? 0 : 1);
         return new FundamentalModelCaseListRes(totalCount, miBase, cases);
@@ -221,6 +236,15 @@ public class FundamentalModelCaseServiceImpl implements FundamentalModelCaseServ
         String companyCd = authorizationService.getCompanyCdWithPriority();
         Role role = authorizationService.getCurrentRole();
 
+        if (caseTemplateModelCode == null || caseTemplateModelCode.isBlank()) {
+            throw caseTemplateUnavailable();
+        }
+        List<Long> templateIds = modelInputDraftRepository.findActiveTemplateIdsForUpdate(caseTemplateModelCode);
+        if (templateIds.size() != 1) {
+            throw caseTemplateUnavailable();
+        }
+        long templateId = templateIds.get(0);
+
         ScenarioCase savedCase = scenarioCaseRepository.saveAndFlush(
             ScenarioCase.createPending(actorUserNo, normalizedTitle, description, actorLoginId)
         );
@@ -234,6 +258,7 @@ public class FundamentalModelCaseServiceImpl implements FundamentalModelCaseServ
                 files,
                 uploadedFileNos
             );
+            modelInputDraftRepository.bindCaseTemplate(savedCase.getCaseId(), templateId, actorLoginId);
 
             return new FundamentalModelCaseCreateRes(
                 savedCase.getCaseId(),
@@ -248,6 +273,14 @@ public class FundamentalModelCaseServiceImpl implements FundamentalModelCaseServ
             compensateUploadedFiles(uploadedFileNos);
             throw e;
         }
+    }
+
+    private AppHttpStatusException caseTemplateUnavailable() {
+        return AppHttpStatusException.of(
+            HttpStatus.CONFLICT,
+            ResultCode.Error.BIZ_RULE_VIOLATION,
+            "Case에 연결할 ACTIVE 입력 템플릿이 없습니다. 템플릿 설정과 발행 상태를 확인하세요."
+        );
     }
 
     @Override
@@ -372,6 +405,25 @@ public class FundamentalModelCaseServiceImpl implements FundamentalModelCaseServ
     public FundamentalModelRunAcceptRes runCase(Long caseId) {
         String actorLoginId = authorizationService.getSubject();
         findActiveOwnedCase(caseId);
+        return startOwnedRun(caseId, actorLoginId);
+    }
+
+    /** HTTP 인증을 만들지 않는다. DB에서 요청 소유권을 재검증한 Draft 실행 접수기만 사용한다. */
+    @Transactional
+    public FundamentalModelRunAcceptRes runFinalizedDraftCase(Long caseId, Integer ownerUserNo, String actorLoginId) {
+        ScenarioCase scenarioCase = scenarioCaseRepository.findActiveCaseForUpdate(caseId)
+            .filter(found -> found.getExecType() == FundamentalModelExecType.INDEPENDENT)
+            .filter(found -> found.getUserNo().equals(ownerUserNo))
+            .orElseThrow(() -> caseNotFound(caseId));
+        if (actorLoginId == null || actorLoginId.isBlank() || actorLoginId.length() > 50
+            || scenarioCase.getStatus() != FundamentalModelCaseStatus.PENDING || scenarioCase.getLastRunId() != null) {
+            throw AppHttpStatusException.of(HttpStatus.CONFLICT, ResultCode.Error.BIZ_RULE_VIOLATION,
+                "finalized draft case is not awaiting its first run.");
+        }
+        return startOwnedRun(caseId, actorLoginId);
+    }
+
+    private FundamentalModelRunAcceptRes startOwnedRun(Long caseId, String actorLoginId) {
         LocalDateTime requestedAt = LocalDateTime.now();
         String runId = generateRunId(requestedAt);
 
@@ -2182,7 +2234,10 @@ public class FundamentalModelCaseServiceImpl implements FundamentalModelCaseServ
     }
 
     private void markRunFailed(String runId, Long caseId, String errorMessage) {
-        transactionOperations.executeWithoutResult((TransactionStatus ignored) -> {
+        // afterCommit 동기 실패도 이미 종료된 접수 transaction에 참여하지 않고 별도 확정한다.
+        TransactionTemplate failureTransaction = new TransactionTemplate(transactionManager);
+        failureTransaction.setPropagationBehavior(TransactionDefinition.PROPAGATION_REQUIRES_NEW);
+        failureTransaction.executeWithoutResult((TransactionStatus ignored) -> {
             LocalDateTime failedAt = LocalDateTime.now();
             int updateCount = scenarioCaseRunHistoryRepository.updateRunningToTerminal(
                 runId,
@@ -2485,6 +2540,22 @@ public class FundamentalModelCaseServiceImpl implements FundamentalModelCaseServ
     }
 
     private FundamentalModelCaseListItemRes toListItemResponse(ScenarioCaseListRow row) {
+        return toListItemResponse(row, findActiveDraftIds(List.of(row.caseId())).get(row.caseId()));
+    }
+
+    private Map<Long, String> findActiveDraftIds(List<Long> caseIds) {
+        if (caseIds.isEmpty()) {
+            return Map.of();
+        }
+        Integer companyNo = authorizationService.getCompanyNoWithPriority();
+        Integer userNo = authorizationService.getUserNo();
+        if (companyNo == null || companyNo <= 0 || userNo == null || userNo <= 0) {
+            throw CustomAuthorizationException.of(ResultCode.Error.AUTH_INSUFFICIENT_PERMISSIONS);
+        }
+        return modelInputDraftRepository.findActiveDraftIds(companyNo, userNo, caseIds);
+    }
+
+    private FundamentalModelCaseListItemRes toListItemResponse(ScenarioCaseListRow row, String draftId) {
         return new FundamentalModelCaseListItemRes(
             row.caseId(),
             row.title(),
@@ -2492,7 +2563,8 @@ public class FundamentalModelCaseServiceImpl implements FundamentalModelCaseServ
             row.execType(),
             row.assigneeName(),
             row.createdAt(),
-            row.updatedAt()
+            row.updatedAt(),
+            draftId
         );
     }
 

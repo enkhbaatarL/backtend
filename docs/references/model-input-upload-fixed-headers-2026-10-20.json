@@ -1,0 +1,4972 @@
+{
+  "documentControl": {
+    "status": "Draft",
+    "canonicalFor": "Reference only — fixed header evidence; apply SQL owns DML",
+    "owner": "BE",
+    "date": "2026-10-20",
+    "lastSynced": "2026-10-20",
+    "source": "docs/references/mi-model-input-baseline-2026-10-07-manifest.json",
+    "definitions": "docs/model-input-catalog-structure-data-draft.sql",
+    "openQuestions": [
+      "Actual MySQL execution and uploaded-file compatibility remain user verification"
+    ]
+  },
+  "selection": "Nonempty nonformula text without digits in displayed header columns; exact whitespace retained. Period numbers, formula results, body values and numeric captions excluded. All selected text labels reviewed; this is the 92-table partial baseline only.",
+  "files": [
+    {
+      "role": "DEMAND",
+      "path": "temp/model-input-baselines/2026-10-07-delivery-261006-v8-v6/DEMAND-normalized.xlsm",
+      "sha256": "ef516b6de2a829c891dbd991ba9f9d626f104dcae2e5ecd8128b1f0ae31c23bd"
+    },
+    {
+      "role": "OUTPUT",
+      "path": "temp/model-input-baselines/2026-10-07-delivery-261006-v8-v6/OUTPUT-normalized.xlsm",
+      "sha256": "69742cc9c6fba170324c09c21986574a390c741ba26d371acdce570aeaac28ce"
+    },
+    {
+      "role": "SUPPLY",
+      "path": "temp/model-input-baselines/2026-10-07-delivery-261006-v8-v6/SUPPLY-normalized.xlsm",
+      "sha256": "eefbcde6e6a5baeb3491bc2d37abe79a0e9a0ff511d1673ddee39f46ea64bd36"
+    },
+    {
+      "role": "TRADE",
+      "path": "temp/model-input-baselines/2026-10-07-delivery-261006-v8-v6/TRADE-normalized.xlsm",
+      "sha256": "b1211662aa00d49d9f03c1d732acd495cf99446ede69abde34565007b3819a31"
+    }
+  ],
+  "tables": [
+    {
+      "qry": "@c_q001",
+      "role": "DEMAND",
+      "sheet": "GDPPopulationAdjustment",
+      "name": "GDP Adjustment",
+      "ord": 1,
+      "br": 6,
+      "er": 2000,
+      "bc": 2,
+      "ec": 6,
+      "hr": 6,
+      "he": 6,
+      "dr": 12,
+      "ra": "Y",
+      "ca": "N",
+      "description": "STRUCTURE DRAFT; DEMAND SUMMARY!D11:J11; write policy incomplete",
+      "beforeRowSha256": "72e83b50262884cf51f51513096bf18236f960daed2b5f3ec7404a328081b5c9",
+      "fixedHeaderCount": 4,
+      "beforeHeaderRows": [
+        6
+      ],
+      "afterHeaderRows": [
+        6
+      ],
+      "fixedHeaderCells": [
+        {
+          "rowNumber": 6,
+          "columnNumber": 2,
+          "value": "Year"
+        },
+        {
+          "rowNumber": 6,
+          "columnNumber": 3,
+          "value": "Country"
+        },
+        {
+          "rowNumber": 6,
+          "columnNumber": 5,
+          "value": "GDP (BUSD)"
+        },
+        {
+          "rowNumber": 6,
+          "columnNumber": 6,
+          "value": "% change (+/-)"
+        }
+      ]
+    },
+    {
+      "qry": "@c_q002",
+      "role": "DEMAND",
+      "sheet": "GDPPopulationAdjustment",
+      "name": "Population Adjustment",
+      "ord": 2,
+      "br": 6,
+      "er": 2000,
+      "bc": 10,
+      "ec": 13,
+      "hr": 6,
+      "he": 6,
+      "dr": 12,
+      "ra": "Y",
+      "ca": "N",
+      "description": "STRUCTURE DRAFT; DEMAND SUMMARY!D12:J12; write policy incomplete",
+      "beforeRowSha256": "a855016fcb9b42fef838e0c8c936bb053c60966cdaec8765d9e46d59c6ccd3cd",
+      "fixedHeaderCount": 3,
+      "beforeHeaderRows": [
+        6
+      ],
+      "afterHeaderRows": [
+        6
+      ],
+      "fixedHeaderCells": [
+        {
+          "rowNumber": 6,
+          "columnNumber": 10,
+          "value": "Year"
+        },
+        {
+          "rowNumber": 6,
+          "columnNumber": 11,
+          "value": "Country"
+        },
+        {
+          "rowNumber": 6,
+          "columnNumber": 13,
+          "value": "Population (Thousands)"
+        }
+      ]
+    },
+    {
+      "qry": "@c_q003",
+      "role": "DEMAND",
+      "sheet": "ElectrificationRateAdjustment",
+      "name": "Electrification Rate Adjustment",
+      "ord": 1,
+      "br": 6,
+      "er": 2000,
+      "bc": 2,
+      "ec": 6,
+      "hr": 6,
+      "he": 6,
+      "dr": 12,
+      "ra": "Y",
+      "ca": "N",
+      "description": "STRUCTURE DRAFT; DEMAND SUMMARY!D13:J13; write policy incomplete",
+      "beforeRowSha256": "4c59cf151a1a4984806526f56eb4fa6fab916d3f9f754ebe4868580753f938fd",
+      "fixedHeaderCount": 4,
+      "beforeHeaderRows": [
+        6
+      ],
+      "afterHeaderRows": [
+        6
+      ],
+      "fixedHeaderCells": [
+        {
+          "rowNumber": 6,
+          "columnNumber": 2,
+          "value": "Year"
+        },
+        {
+          "rowNumber": 6,
+          "columnNumber": 3,
+          "value": "Country"
+        },
+        {
+          "rowNumber": 6,
+          "columnNumber": 4,
+          "value": "Drive Train"
+        },
+        {
+          "rowNumber": 6,
+          "columnNumber": 6,
+          "value": "% New Car Sales"
+        }
+      ]
+    },
+    {
+      "qry": "@c_q004",
+      "role": "DEMAND",
+      "sheet": "PowerMixAdjustment",
+      "name": "Annual Power Mix Adjustment",
+      "ord": 1,
+      "br": 6,
+      "er": 7989,
+      "bc": 2,
+      "ec": 6,
+      "hr": 6,
+      "he": 6,
+      "dr": 12,
+      "ra": "Y",
+      "ca": "N",
+      "description": "STRUCTURE DRAFT; DEMAND SUMMARY!D14:J14; write policy incomplete",
+      "beforeRowSha256": "0b5266a6c8a52da78a2e216d85c75e3a7854677d01cb0a80c65d01a86d38c6ee",
+      "fixedHeaderCount": 4,
+      "beforeHeaderRows": [
+        6
+      ],
+      "afterHeaderRows": [
+        6
+      ],
+      "fixedHeaderCells": [
+        {
+          "rowNumber": 6,
+          "columnNumber": 2,
+          "value": "Year"
+        },
+        {
+          "rowNumber": 6,
+          "columnNumber": 3,
+          "value": "Country"
+        },
+        {
+          "rowNumber": 6,
+          "columnNumber": 4,
+          "value": "Energy Source"
+        },
+        {
+          "rowNumber": 6,
+          "columnNumber": 6,
+          "value": "% Power Mix"
+        }
+      ]
+    },
+    {
+      "qry": "@c_q005",
+      "role": "DEMAND",
+      "sheet": "PowerMixAdjustment",
+      "name": "Monthly Power Mix Adjustment",
+      "ord": 2,
+      "br": 6,
+      "er": 7989,
+      "bc": 10,
+      "ec": 15,
+      "hr": 6,
+      "he": 6,
+      "dr": 12,
+      "ra": "Y",
+      "ca": "N",
+      "description": "STRUCTURE DRAFT; DEMAND SUMMARY!D15:J15; write policy incomplete",
+      "beforeRowSha256": "8785dccf4ae3104e0a499d59da3427bc9488dbbc63a0bf49b4cc45a5679d4817",
+      "fixedHeaderCount": 5,
+      "beforeHeaderRows": [
+        6
+      ],
+      "afterHeaderRows": [
+        6
+      ],
+      "fixedHeaderCells": [
+        {
+          "rowNumber": 6,
+          "columnNumber": 10,
+          "value": "Year"
+        },
+        {
+          "rowNumber": 6,
+          "columnNumber": 11,
+          "value": "Month"
+        },
+        {
+          "rowNumber": 6,
+          "columnNumber": 12,
+          "value": "Country"
+        },
+        {
+          "rowNumber": 6,
+          "columnNumber": 13,
+          "value": "Energy Source"
+        },
+        {
+          "rowNumber": 6,
+          "columnNumber": 15,
+          "value": "% Power Mix"
+        }
+      ]
+    },
+    {
+      "qry": "@c_q006",
+      "role": "DEMAND",
+      "sheet": "CoalGasAdjustment",
+      "name": "Coal Futures Price Adjustment",
+      "ord": 1,
+      "br": 6,
+      "er": 2000,
+      "bc": 2,
+      "ec": 5,
+      "hr": 6,
+      "he": 6,
+      "dr": 12,
+      "ra": "Y",
+      "ca": "N",
+      "description": "STRUCTURE DRAFT; DEMAND SUMMARY!D16:J16; write policy incomplete",
+      "beforeRowSha256": "ef7cfb73aa43b94c6e36be89fc728f63f7d4408807249a21d11912a245b3c0bc",
+      "fixedHeaderCount": 3,
+      "beforeHeaderRows": [
+        6
+      ],
+      "afterHeaderRows": [
+        6
+      ],
+      "fixedHeaderCells": [
+        {
+          "rowNumber": 6,
+          "columnNumber": 2,
+          "value": "Month-Year"
+        },
+        {
+          "rowNumber": 6,
+          "columnNumber": 3,
+          "value": "Region"
+        },
+        {
+          "rowNumber": 6,
+          "columnNumber": 5,
+          "value": "Coal Futures Price (USD/t)"
+        }
+      ]
+    },
+    {
+      "qry": "@c_q007",
+      "role": "DEMAND",
+      "sheet": "CoalGasAdjustment",
+      "name": "Gas Futures Price Adjustment",
+      "ord": 2,
+      "br": 6,
+      "er": 2000,
+      "bc": 8,
+      "ec": 11,
+      "hr": 6,
+      "he": 6,
+      "dr": 12,
+      "ra": "Y",
+      "ca": "N",
+      "description": "STRUCTURE DRAFT; DEMAND SUMMARY!D17:J17; write policy incomplete",
+      "beforeRowSha256": "23aa2750e03ebc3f441ebe0d4acf538785fc7a2ba5595979716b6218d9c2f98b",
+      "fixedHeaderCount": 3,
+      "beforeHeaderRows": [
+        6
+      ],
+      "afterHeaderRows": [
+        6
+      ],
+      "fixedHeaderCells": [
+        {
+          "rowNumber": 6,
+          "columnNumber": 8,
+          "value": "Month-Year"
+        },
+        {
+          "rowNumber": 6,
+          "columnNumber": 9,
+          "value": "Region"
+        },
+        {
+          "rowNumber": 6,
+          "columnNumber": 11,
+          "value": "Gas Futures Price (USD/mmbtu)"
+        }
+      ]
+    },
+    {
+      "qry": "@c_q008",
+      "role": "DEMAND",
+      "sheet": "WeatherAdjustment",
+      "name": "Country HDD and CDD Adjustment",
+      "ord": 1,
+      "br": 6,
+      "er": 7997,
+      "bc": 2,
+      "ec": 7,
+      "hr": 6,
+      "he": 6,
+      "dr": 12,
+      "ra": "Y",
+      "ca": "N",
+      "description": "STRUCTURE DRAFT; DEMAND SUMMARY!D18:J18; write policy incomplete",
+      "beforeRowSha256": "f7aaa9e50caa93bd4cd778a5f71f2a8064c2949f4270bc774d20c373beaae4a3",
+      "fixedHeaderCount": 5,
+      "beforeHeaderRows": [
+        6
+      ],
+      "afterHeaderRows": [
+        6
+      ],
+      "fixedHeaderCells": [
+        {
+          "rowNumber": 6,
+          "columnNumber": 2,
+          "value": "Year"
+        },
+        {
+          "rowNumber": 6,
+          "columnNumber": 3,
+          "value": "Month"
+        },
+        {
+          "rowNumber": 6,
+          "columnNumber": 4,
+          "value": "Country"
+        },
+        {
+          "rowNumber": 6,
+          "columnNumber": 5,
+          "value": "HDD/CDD"
+        },
+        {
+          "rowNumber": 6,
+          "columnNumber": 7,
+          "value": "HDD/CDD"
+        }
+      ]
+    },
+    {
+      "qry": "@c_q009",
+      "role": "DEMAND",
+      "sheet": "WeatherAdjustment",
+      "name": "Country Temperature Adjustment",
+      "ord": 2,
+      "br": 6,
+      "er": 7997,
+      "bc": 11,
+      "ec": 15,
+      "hr": 6,
+      "he": 6,
+      "dr": 12,
+      "ra": "Y",
+      "ca": "N",
+      "description": "STRUCTURE DRAFT; DEMAND SUMMARY!D19:J19; write policy incomplete",
+      "beforeRowSha256": "28208ac7a0656323de74b45072301b9e21013f5a9815eec7db93bcf6985924f6",
+      "fixedHeaderCount": 4,
+      "beforeHeaderRows": [
+        6
+      ],
+      "afterHeaderRows": [
+        6
+      ],
+      "fixedHeaderCells": [
+        {
+          "rowNumber": 6,
+          "columnNumber": 11,
+          "value": "Year"
+        },
+        {
+          "rowNumber": 6,
+          "columnNumber": 12,
+          "value": "Month"
+        },
+        {
+          "rowNumber": 6,
+          "columnNumber": 13,
+          "value": "Country"
+        },
+        {
+          "rowNumber": 6,
+          "columnNumber": 15,
+          "value": "Temperature (°C)"
+        }
+      ]
+    },
+    {
+      "qry": "@c_q010",
+      "role": "DEMAND",
+      "sheet": "WeatherAdjustment",
+      "name": "Regional HDD and CDD Adjustment",
+      "ord": 3,
+      "br": 6,
+      "er": 7997,
+      "bc": 20,
+      "ec": 24,
+      "hr": 6,
+      "he": 6,
+      "dr": 12,
+      "ra": "Y",
+      "ca": "N",
+      "description": "STRUCTURE DRAFT; DEMAND SUMMARY!D20:J20; write policy incomplete",
+      "beforeRowSha256": "5541dd017e7596b066663be7f98d8afb3496abcef82eb6d0bbe8cf1c80b06310",
+      "fixedHeaderCount": 5,
+      "beforeHeaderRows": [
+        6
+      ],
+      "afterHeaderRows": [
+        6
+      ],
+      "fixedHeaderCells": [
+        {
+          "rowNumber": 6,
+          "columnNumber": 20,
+          "value": "Year"
+        },
+        {
+          "rowNumber": 6,
+          "columnNumber": 21,
+          "value": "Month"
+        },
+        {
+          "rowNumber": 6,
+          "columnNumber": 22,
+          "value": "Region"
+        },
+        {
+          "rowNumber": 6,
+          "columnNumber": 23,
+          "value": "HDD/CDD"
+        },
+        {
+          "rowNumber": 6,
+          "columnNumber": 24,
+          "value": "HDD/CDD"
+        }
+      ]
+    },
+    {
+      "qry": "@c_q011",
+      "role": "DEMAND",
+      "sheet": "WeatherAdjustment",
+      "name": "Regional Temperature Change Adjustment",
+      "ord": 4,
+      "br": 6,
+      "er": 7997,
+      "bc": 28,
+      "ec": 31,
+      "hr": 6,
+      "he": 6,
+      "dr": 12,
+      "ra": "Y",
+      "ca": "N",
+      "description": "STRUCTURE DRAFT; DEMAND SUMMARY!D21:J21; write policy incomplete",
+      "beforeRowSha256": "b496699de9a3dba5199368b43731d9be1dd293f841441baab3d33ed54d500be4",
+      "fixedHeaderCount": 4,
+      "beforeHeaderRows": [
+        6
+      ],
+      "afterHeaderRows": [
+        6
+      ],
+      "fixedHeaderCells": [
+        {
+          "rowNumber": 6,
+          "columnNumber": 28,
+          "value": "Year"
+        },
+        {
+          "rowNumber": 6,
+          "columnNumber": 29,
+          "value": "Month"
+        },
+        {
+          "rowNumber": 6,
+          "columnNumber": 30,
+          "value": "Region"
+        },
+        {
+          "rowNumber": 6,
+          "columnNumber": 31,
+          "value": "Absolute Temperature Change (°C)"
+        }
+      ]
+    },
+    {
+      "qry": "@c_q012",
+      "role": "DEMAND",
+      "sheet": "PMIAdjustment",
+      "name": "Monthly PMI Adjustment",
+      "ord": 1,
+      "br": 6,
+      "er": 8000,
+      "bc": 2,
+      "ec": 6,
+      "hr": 6,
+      "he": 6,
+      "dr": 13,
+      "ra": "Y",
+      "ca": "N",
+      "description": "STRUCTURE DRAFT; DEMAND SUMMARY!D22:J22; write policy incomplete",
+      "beforeRowSha256": "c44821cd607e12bb072c3c0ad0f47f4f4f5ed67f7923e902077dea21b10edb8a",
+      "fixedHeaderCount": 4,
+      "beforeHeaderRows": [
+        6
+      ],
+      "afterHeaderRows": [
+        6
+      ],
+      "fixedHeaderCells": [
+        {
+          "rowNumber": 6,
+          "columnNumber": 2,
+          "value": "Year"
+        },
+        {
+          "rowNumber": 6,
+          "columnNumber": 3,
+          "value": "Month"
+        },
+        {
+          "rowNumber": 6,
+          "columnNumber": 4,
+          "value": "Country"
+        },
+        {
+          "rowNumber": 6,
+          "columnNumber": 6,
+          "value": "PMI"
+        }
+      ]
+    },
+    {
+      "qry": "@c_q013",
+      "role": "DEMAND",
+      "sheet": "PMIAdjustment",
+      "name": "PMI Reference Country Adjustment",
+      "ord": 2,
+      "br": 6,
+      "er": 8000,
+      "bc": 10,
+      "ec": 12,
+      "hr": 6,
+      "he": 6,
+      "dr": 12,
+      "ra": "Y",
+      "ca": "N",
+      "description": "STRUCTURE DRAFT; DEMAND SUMMARY!D23:J23; write policy incomplete",
+      "beforeRowSha256": "53447db1b93aa6e1c1ed90aca196691c0818bc5096c2a6e30ef46020ff812bcf",
+      "fixedHeaderCount": 2,
+      "beforeHeaderRows": [
+        6
+      ],
+      "afterHeaderRows": [
+        6
+      ],
+      "fixedHeaderCells": [
+        {
+          "rowNumber": 6,
+          "columnNumber": 10,
+          "value": "Country"
+        },
+        {
+          "rowNumber": 6,
+          "columnNumber": 12,
+          "value": "Reference Country"
+        }
+      ]
+    },
+    {
+      "qry": "@c_q014",
+      "role": "DEMAND",
+      "sheet": "HydrogenAdjustment",
+      "name": "Hydrogen Production Adjustment",
+      "ord": 1,
+      "br": 6,
+      "er": 8000,
+      "bc": 2,
+      "ec": 5,
+      "hr": 6,
+      "he": 6,
+      "dr": 12,
+      "ra": "Y",
+      "ca": "N",
+      "description": "STRUCTURE DRAFT; DEMAND SUMMARY!D24:J24; write policy incomplete",
+      "beforeRowSha256": "4e2d150faa75418db82f057d7d2f7718447d24259f73340827b2d97bc1e784f3",
+      "fixedHeaderCount": 3,
+      "beforeHeaderRows": [
+        6
+      ],
+      "afterHeaderRows": [
+        6
+      ],
+      "fixedHeaderCells": [
+        {
+          "rowNumber": 6,
+          "columnNumber": 2,
+          "value": "Year"
+        },
+        {
+          "rowNumber": 6,
+          "columnNumber": 3,
+          "value": "Country"
+        },
+        {
+          "rowNumber": 6,
+          "columnNumber": 5,
+          "value": "Hydrogen Production (ktonnes)"
+        }
+      ]
+    },
+    {
+      "qry": "@c_q015",
+      "role": "DEMAND",
+      "sheet": "LNGBunkeringAdjustment",
+      "name": "LNG Bunkering Vessel Count Adjustment",
+      "ord": 1,
+      "br": 6,
+      "er": 2000,
+      "bc": 2,
+      "ec": 5,
+      "hr": 6,
+      "he": 6,
+      "dr": 12,
+      "ra": "Y",
+      "ca": "N",
+      "description": "STRUCTURE DRAFT; DEMAND SUMMARY!D25:J25; write policy incomplete",
+      "beforeRowSha256": "41ca9e981b8346306817d43c1b0a0245966671165624c5ba456803f207491718",
+      "fixedHeaderCount": 3,
+      "beforeHeaderRows": [
+        6
+      ],
+      "afterHeaderRows": [
+        6
+      ],
+      "fixedHeaderCells": [
+        {
+          "rowNumber": 6,
+          "columnNumber": 2,
+          "value": "Year"
+        },
+        {
+          "rowNumber": 6,
+          "columnNumber": 3,
+          "value": "Vessel Type"
+        },
+        {
+          "rowNumber": 6,
+          "columnNumber": 5,
+          "value": "No. of vessels"
+        }
+      ]
+    },
+    {
+      "qry": "@c_q016",
+      "role": "DEMAND",
+      "sheet": "LNGBunkeringAdjustment",
+      "name": "LNG Bunkering Fuel Consumption Adjustment",
+      "ord": 2,
+      "br": 6,
+      "er": 2000,
+      "bc": 8,
+      "ec": 11,
+      "hr": 6,
+      "he": 6,
+      "dr": 12,
+      "ra": "Y",
+      "ca": "N",
+      "description": "STRUCTURE DRAFT; DEMAND SUMMARY!D26:J26; write policy incomplete",
+      "beforeRowSha256": "ee76779d69dcf7f88b9cd1f6f9b387cf841f0f39ad144d211c40f094d74e1d8a",
+      "fixedHeaderCount": 3,
+      "beforeHeaderRows": [
+        6
+      ],
+      "afterHeaderRows": [
+        6
+      ],
+      "fixedHeaderCells": [
+        {
+          "rowNumber": 6,
+          "columnNumber": 8,
+          "value": "Year"
+        },
+        {
+          "rowNumber": 6,
+          "columnNumber": 9,
+          "value": "Vessel Type"
+        },
+        {
+          "rowNumber": 6,
+          "columnNumber": 11,
+          "value": "Fuel consumption (MCM/yr)"
+        }
+      ]
+    },
+    {
+      "qry": "@c_q017",
+      "role": "DEMAND",
+      "sheet": "DemandOutputOverwrite",
+      "name": "Demand Model Manual Overwrite Sector Input",
+      "ord": 1,
+      "br": 6,
+      "er": 507,
+      "bc": 4,
+      "ec": 11,
+      "hr": 6,
+      "he": 7,
+      "dr": 8,
+      "ra": "Y",
+      "ca": "N",
+      "description": "STRUCTURE DRAFT; DEMAND SUMMARY!D27:J27; write policy incomplete",
+      "beforeRowSha256": "e99389e5d0d9e3a5e86ccbf78743e8e588b2130d716278be4052c785a2046ee2",
+      "fixedHeaderCount": 6,
+      "beforeHeaderRows": [
+        6,
+        7
+      ],
+      "afterHeaderRows": [
+        6,
+        7
+      ],
+      "fixedHeaderCells": [
+        {
+          "rowNumber": 6,
+          "columnNumber": 4,
+          "value": "Demand Model Manual Overwrite Sector Input"
+        },
+        {
+          "rowNumber": 7,
+          "columnNumber": 4,
+          "value": "Country"
+        },
+        {
+          "rowNumber": 7,
+          "columnNumber": 5,
+          "value": "Year"
+        },
+        {
+          "rowNumber": 7,
+          "columnNumber": 6,
+          "value": "Month"
+        },
+        {
+          "rowNumber": 7,
+          "columnNumber": 7,
+          "value": "Demand Sub-Sector"
+        },
+        {
+          "rowNumber": 7,
+          "columnNumber": 9,
+          "value": "User-Adjusted Gas Demand [Million Tonnes LNG]"
+        }
+      ]
+    },
+    {
+      "qry": "@c_q018",
+      "role": "DEMAND",
+      "sheet": "DemandOutputOverwrite",
+      "name": "Demand Model Manual Overwrite Monthly Input",
+      "ord": 2,
+      "br": 6,
+      "er": 507,
+      "bc": 13,
+      "ec": 19,
+      "hr": 6,
+      "he": 7,
+      "dr": 8,
+      "ra": "Y",
+      "ca": "N",
+      "description": "STRUCTURE DRAFT; DEMAND SUMMARY!D28:J28; write policy incomplete",
+      "beforeRowSha256": "80b3497e98dead6004d54290951d0714f68cde69b30ed5b2abf67aa52c2384a3",
+      "fixedHeaderCount": 5,
+      "beforeHeaderRows": [
+        6,
+        7
+      ],
+      "afterHeaderRows": [
+        6,
+        7
+      ],
+      "fixedHeaderCells": [
+        {
+          "rowNumber": 6,
+          "columnNumber": 13,
+          "value": "Demand Model Manual Overwrite Monthly Input"
+        },
+        {
+          "rowNumber": 7,
+          "columnNumber": 13,
+          "value": "Country"
+        },
+        {
+          "rowNumber": 7,
+          "columnNumber": 14,
+          "value": "Year"
+        },
+        {
+          "rowNumber": 7,
+          "columnNumber": 15,
+          "value": "Month"
+        },
+        {
+          "rowNumber": 7,
+          "columnNumber": 17,
+          "value": "User-Adjusted Gas Demand [Million Tonnes LNG]"
+        }
+      ]
+    },
+    {
+      "qry": "@c_q019",
+      "role": "DEMAND",
+      "sheet": "BCInput",
+      "name": "RE Base Case Gas Demand Data by Sector",
+      "ord": 1,
+      "br": 2,
+      "er": 14493,
+      "bc": 3,
+      "ec": 14,
+      "hr": 2,
+      "he": 3,
+      "dr": 4,
+      "ra": "Y",
+      "ca": "N",
+      "description": "STRUCTURE DRAFT; DEMAND SUMMARY!D32:J32; write policy incomplete",
+      "beforeRowSha256": "66e568859b69eecdf3aebb37cab873f517dc108548745f0370470974139ec92b",
+      "fixedHeaderCount": 13,
+      "beforeHeaderRows": [
+        2,
+        3
+      ],
+      "afterHeaderRows": [
+        2,
+        3
+      ],
+      "fixedHeaderCells": [
+        {
+          "rowNumber": 2,
+          "columnNumber": 3,
+          "value": "RE Base Case Gas Demand Data by Sector"
+        },
+        {
+          "rowNumber": 3,
+          "columnNumber": 3,
+          "value": "Continent"
+        },
+        {
+          "rowNumber": 3,
+          "columnNumber": 4,
+          "value": "Region"
+        },
+        {
+          "rowNumber": 3,
+          "columnNumber": 5,
+          "value": "Country"
+        },
+        {
+          "rowNumber": 3,
+          "columnNumber": 6,
+          "value": "Demand Category"
+        },
+        {
+          "rowNumber": 3,
+          "columnNumber": 7,
+          "value": "Demand Sector"
+        },
+        {
+          "rowNumber": 3,
+          "columnNumber": 8,
+          "value": "Year"
+        },
+        {
+          "rowNumber": 3,
+          "columnNumber": 9,
+          "value": "Gas Demand Base Case(Million Tonnes LNG)"
+        },
+        {
+          "rowNumber": 3,
+          "columnNumber": 10,
+          "value": "LNG Bunkering (Million Tonnes LNG)"
+        },
+        {
+          "rowNumber": 3,
+          "columnNumber": 11,
+          "value": "Non-LNG Bunkering (Million Tonnes LNG)"
+        },
+        {
+          "rowNumber": 3,
+          "columnNumber": 12,
+          "value": "Hydrogen Demand Base Case (Million Tonnes LNG)"
+        },
+        {
+          "rowNumber": 3,
+          "columnNumber": 13,
+          "value": "Non-Hydrogen Demand Base Case (Million Tonnes LNG)"
+        },
+        {
+          "rowNumber": 3,
+          "columnNumber": 14,
+          "value": "Combined Gas Demand Base Case (Million Tonnes LNG)"
+        }
+      ]
+    },
+    {
+      "qry": "@c_q020",
+      "role": "DEMAND",
+      "sheet": "BCInput",
+      "name": "RE Base Case GDP and Population Data",
+      "ord": 2,
+      "br": 2,
+      "er": 2368,
+      "bc": 17,
+      "ec": 22,
+      "hr": 2,
+      "he": 3,
+      "dr": 4,
+      "ra": "Y",
+      "ca": "N",
+      "description": "STRUCTURE DRAFT; DEMAND SUMMARY!D33:J33; write policy incomplete",
+      "beforeRowSha256": "3a1f3c4602fcd8f2dc895e6aa3f33bd8784a1a1745720482a11f115b08221b0c",
+      "fixedHeaderCount": 7,
+      "beforeHeaderRows": [
+        2,
+        3
+      ],
+      "afterHeaderRows": [
+        2,
+        3
+      ],
+      "fixedHeaderCells": [
+        {
+          "rowNumber": 2,
+          "columnNumber": 17,
+          "value": "RE Base Case GDP and Population Data"
+        },
+        {
+          "rowNumber": 3,
+          "columnNumber": 17,
+          "value": "Year"
+        },
+        {
+          "rowNumber": 3,
+          "columnNumber": 18,
+          "value": "Continent"
+        },
+        {
+          "rowNumber": 3,
+          "columnNumber": 19,
+          "value": "Region"
+        },
+        {
+          "rowNumber": 3,
+          "columnNumber": 20,
+          "value": "Country"
+        },
+        {
+          "rowNumber": 3,
+          "columnNumber": 21,
+          "value": "GDP"
+        },
+        {
+          "rowNumber": 3,
+          "columnNumber": 22,
+          "value": "Population (thousands)"
+        }
+      ]
+    },
+    {
+      "qry": "@c_q021",
+      "role": "DEMAND",
+      "sheet": "BCInput",
+      "name": "Power Generation Data",
+      "ord": 3,
+      "br": 2,
+      "er": 100803,
+      "bc": 26,
+      "ec": 35,
+      "hr": 2,
+      "he": 3,
+      "dr": 4,
+      "ra": "Y",
+      "ca": "N",
+      "description": "STRUCTURE DRAFT; DEMAND SUMMARY!D34:J34; write policy incomplete",
+      "beforeRowSha256": "64fafcb85e3b8b00f20d2c393198c7b0b33070cc6f669f10626eb36001b9d482",
+      "fixedHeaderCount": 8,
+      "beforeHeaderRows": [
+        2,
+        3
+      ],
+      "afterHeaderRows": [
+        2,
+        3
+      ],
+      "fixedHeaderCells": [
+        {
+          "rowNumber": 2,
+          "columnNumber": 26,
+          "value": "Power Generation Data"
+        },
+        {
+          "rowNumber": 3,
+          "columnNumber": 26,
+          "value": "Country"
+        },
+        {
+          "rowNumber": 3,
+          "columnNumber": 27,
+          "value": "Year"
+        },
+        {
+          "rowNumber": 3,
+          "columnNumber": 28,
+          "value": "Month"
+        },
+        {
+          "rowNumber": 3,
+          "columnNumber": 29,
+          "value": "Energy Source Use"
+        },
+        {
+          "rowNumber": 3,
+          "columnNumber": 30,
+          "value": "Sum of Generation (TWh)"
+        },
+        {
+          "rowNumber": 3,
+          "columnNumber": 34,
+          "value": "Adjusted Gas Demand (Million Tonnes LNG)"
+        },
+        {
+          "rowNumber": 3,
+          "columnNumber": 35,
+          "value": "Gas Consumption Rate (Million Tonnes LNG/TWh)"
+        }
+      ]
+    },
+    {
+      "qry": "@c_q022",
+      "role": "DEMAND",
+      "sheet": "BCInput",
+      "name": "Power Generation Utilisation Rate",
+      "ord": 4,
+      "br": 2,
+      "er": 1125,
+      "bc": 37,
+      "ec": 40,
+      "hr": 2,
+      "he": 3,
+      "dr": 4,
+      "ra": "Y",
+      "ca": "N",
+      "description": "STRUCTURE DRAFT; DEMAND SUMMARY!D35:J35; write policy incomplete",
+      "beforeRowSha256": "da339c5df79d7508fe2025ad9e7242702c9b6578db8a347a5a1debbf5e08c3e3",
+      "fixedHeaderCount": 4,
+      "beforeHeaderRows": [
+        2,
+        3
+      ],
+      "afterHeaderRows": [
+        2,
+        3
+      ],
+      "fixedHeaderCells": [
+        {
+          "rowNumber": 2,
+          "columnNumber": 37,
+          "value": "Utilisation Rate"
+        },
+        {
+          "rowNumber": 3,
+          "columnNumber": 37,
+          "value": "Continent"
+        },
+        {
+          "rowNumber": 3,
+          "columnNumber": 38,
+          "value": "Country"
+        },
+        {
+          "rowNumber": 3,
+          "columnNumber": 39,
+          "value": "Remapped Energy Source"
+        }
+      ]
+    },
+    {
+      "qry": "@c_q023",
+      "role": "DEMAND",
+      "sheet": "BCInput",
+      "name": "Car Sales for Electrification Input",
+      "ord": 5,
+      "br": 2,
+      "er": 13548,
+      "bc": 43,
+      "ec": 47,
+      "hr": 2,
+      "he": 3,
+      "dr": 4,
+      "ra": "Y",
+      "ca": "N",
+      "description": "STRUCTURE DRAFT; DEMAND SUMMARY!D36:J36; write policy incomplete",
+      "beforeRowSha256": "59fc58c3def42e92a2ab1cb05ddf0521b95502219ac454ccc126ae21ca9a89ca",
+      "fixedHeaderCount": 6,
+      "beforeHeaderRows": [
+        2,
+        3
+      ],
+      "afterHeaderRows": [
+        2,
+        3
+      ],
+      "fixedHeaderCells": [
+        {
+          "rowNumber": 2,
+          "columnNumber": 43,
+          "value": "Car Sales for Electrification Input"
+        },
+        {
+          "rowNumber": 3,
+          "columnNumber": 43,
+          "value": "Country"
+        },
+        {
+          "rowNumber": 3,
+          "columnNumber": 44,
+          "value": "Year"
+        },
+        {
+          "rowNumber": 3,
+          "columnNumber": 45,
+          "value": "Vehicle type"
+        },
+        {
+          "rowNumber": 3,
+          "columnNumber": 46,
+          "value": "Drive train"
+        },
+        {
+          "rowNumber": 3,
+          "columnNumber": 47,
+          "value": "Count"
+        }
+      ]
+    },
+    {
+      "qry": "@c_q024",
+      "role": "DEMAND",
+      "sheet": "BCInput",
+      "name": "Base Case LNG Bunkering Demand",
+      "ord": 6,
+      "br": 2,
+      "er": 252,
+      "bc": 49,
+      "ec": 51,
+      "hr": 2,
+      "he": 3,
+      "dr": 4,
+      "ra": "Y",
+      "ca": "N",
+      "description": "STRUCTURE DRAFT; DEMAND SUMMARY!D37:J37; write policy incomplete",
+      "beforeRowSha256": "7dfcba9daf2188957195b0f1238c0b291ffed5586c6b3467af187fdcb1c8c1b1",
+      "fixedHeaderCount": 4,
+      "beforeHeaderRows": [
+        2,
+        3
+      ],
+      "afterHeaderRows": [
+        2,
+        3
+      ],
+      "fixedHeaderCells": [
+        {
+          "rowNumber": 2,
+          "columnNumber": 49,
+          "value": "LNG Bunkering Input"
+        },
+        {
+          "rowNumber": 3,
+          "columnNumber": 49,
+          "value": "Country"
+        },
+        {
+          "rowNumber": 3,
+          "columnNumber": 50,
+          "value": "Year"
+        },
+        {
+          "rowNumber": 3,
+          "columnNumber": 51,
+          "value": "LNG Bunkering (Million Tonnes LNG)"
+        }
+      ]
+    },
+    {
+      "qry": "@c_q025",
+      "role": "DEMAND",
+      "sheet": "BCInput",
+      "name": "Base Case Hydrogen Demand",
+      "ord": 7,
+      "br": 2,
+      "er": 290,
+      "bc": 54,
+      "ec": 56,
+      "hr": 2,
+      "he": 3,
+      "dr": 4,
+      "ra": "Y",
+      "ca": "N",
+      "description": "STRUCTURE DRAFT; DEMAND SUMMARY!D38:J38; write policy incomplete",
+      "beforeRowSha256": "0b6a42b480ef0a31124c3b2fa37a5cf278232f483dde81211044273825e4a258",
+      "fixedHeaderCount": 4,
+      "beforeHeaderRows": [
+        2,
+        3
+      ],
+      "afterHeaderRows": [
+        2,
+        3
+      ],
+      "fixedHeaderCells": [
+        {
+          "rowNumber": 2,
+          "columnNumber": 54,
+          "value": "Hydrogen Demand Input"
+        },
+        {
+          "rowNumber": 3,
+          "columnNumber": 54,
+          "value": "Country"
+        },
+        {
+          "rowNumber": 3,
+          "columnNumber": 55,
+          "value": "Year"
+        },
+        {
+          "rowNumber": 3,
+          "columnNumber": 56,
+          "value": "Hydrogen Demand Base Case (Million Tonnes LNG)"
+        }
+      ]
+    },
+    {
+      "qry": "@c_q026",
+      "role": "DEMAND",
+      "sheet": "BCInput",
+      "name": "Coal and Gas Futures Pricing",
+      "ord": 8,
+      "br": 2,
+      "er": 28,
+      "bc": 59,
+      "ec": 63,
+      "hr": 2,
+      "he": 3,
+      "dr": 4,
+      "ra": "Y",
+      "ca": "N",
+      "description": "STRUCTURE DRAFT; DEMAND SUMMARY!D39:J39; write policy incomplete",
+      "beforeRowSha256": "5699c476a8fb3b8e83fbda515e772b1ce4aa99581b7f9ae33572204dd4a3ad63",
+      "fixedHeaderCount": 6,
+      "beforeHeaderRows": [
+        2,
+        3
+      ],
+      "afterHeaderRows": [
+        2,
+        3
+      ],
+      "fixedHeaderCells": [
+        {
+          "rowNumber": 2,
+          "columnNumber": 59,
+          "value": "Futures pricing"
+        },
+        {
+          "rowNumber": 3,
+          "columnNumber": 59,
+          "value": "Date"
+        },
+        {
+          "rowNumber": 3,
+          "columnNumber": 60,
+          "value": "Newcastle Coal"
+        },
+        {
+          "rowNumber": 3,
+          "columnNumber": 61,
+          "value": "Rotterdam Coal"
+        },
+        {
+          "rowNumber": 3,
+          "columnNumber": 62,
+          "value": "JKM"
+        },
+        {
+          "rowNumber": 3,
+          "columnNumber": 63,
+          "value": "TTF"
+        }
+      ]
+    },
+    {
+      "qry": "@c_q027",
+      "role": "DEMAND",
+      "sheet": "MacroParametersLogicInput",
+      "name": "Selected Macro Parameter Intensities",
+      "ord": 1,
+      "br": 7,
+      "er": 176,
+      "bc": 9,
+      "ec": 16,
+      "hr": 7,
+      "he": 8,
+      "dr": 9,
+      "ra": "Y",
+      "ca": "N",
+      "description": "STRUCTURE DRAFT; DEMAND SUMMARY!D41:J41; write policy incomplete",
+      "beforeRowSha256": "94a4ac3c9654201d41b962602c4a4ceca1e23cbf178f3ee5c861d3fa0ce30bc6",
+      "fixedHeaderCount": 9,
+      "beforeHeaderRows": [
+        7,
+        8
+      ],
+      "afterHeaderRows": [
+        7,
+        8
+      ],
+      "fixedHeaderCells": [
+        {
+          "rowNumber": 7,
+          "columnNumber": 9,
+          "value": "Selected Macro Parameters Intensities (do not change)"
+        },
+        {
+          "rowNumber": 8,
+          "columnNumber": 9,
+          "value": "Intensity Type"
+        },
+        {
+          "rowNumber": 8,
+          "columnNumber": 10,
+          "value": "Continent"
+        },
+        {
+          "rowNumber": 8,
+          "columnNumber": 11,
+          "value": "Region"
+        },
+        {
+          "rowNumber": 8,
+          "columnNumber": 12,
+          "value": "Country"
+        },
+        {
+          "rowNumber": 8,
+          "columnNumber": 13,
+          "value": "Change in non-power gas demand per change in GDP/population"
+        },
+        {
+          "rowNumber": 8,
+          "columnNumber": 14,
+          "value": "Change in power generation per change in GDP/population"
+        },
+        {
+          "rowNumber": 8,
+          "columnNumber": 15,
+          "value": "Non-power intercept [BCM]"
+        },
+        {
+          "rowNumber": 8,
+          "columnNumber": 16,
+          "value": "Power intercept [TWh]"
+        }
+      ]
+    },
+    {
+      "qry": "@c_q028",
+      "role": "DEMAND",
+      "sheet": "PMIInput",
+      "name": "Base Case PMI Input",
+      "ord": 1,
+      "br": 7,
+      "er": 1016,
+      "bc": 22,
+      "ec": 37,
+      "hr": 7,
+      "he": 8,
+      "dr": 9,
+      "ra": "Y",
+      "ca": "Y",
+      "description": "STRUCTURE DRAFT; DEMAND SUMMARY!D44:J44; write policy incomplete",
+      "beforeRowSha256": "70cac046a56804278ba3d3e1d00e841a5c6f6b830f5733e6a2a1bc998d7efc07",
+      "fixedHeaderCount": 5,
+      "beforeHeaderRows": [
+        7,
+        8
+      ],
+      "afterHeaderRows": [
+        7,
+        8
+      ],
+      "fixedHeaderCells": [
+        {
+          "rowNumber": 7,
+          "columnNumber": 22,
+          "value": "Base Case PMI Input (do not change)"
+        },
+        {
+          "rowNumber": 8,
+          "columnNumber": 22,
+          "value": "Continent"
+        },
+        {
+          "rowNumber": 8,
+          "columnNumber": 23,
+          "value": "Region"
+        },
+        {
+          "rowNumber": 8,
+          "columnNumber": 24,
+          "value": "Country"
+        },
+        {
+          "rowNumber": 8,
+          "columnNumber": 25,
+          "value": "Month"
+        }
+      ]
+    },
+    {
+      "qry": "@c_q029",
+      "role": "DEMAND",
+      "sheet": "PMILogicInput",
+      "name": "User-Adjusted PMI Intensity Parameter",
+      "ord": 1,
+      "br": 7,
+      "er": 92,
+      "bc": 2,
+      "ec": 5,
+      "hr": 7,
+      "he": 8,
+      "dr": 9,
+      "ra": "N",
+      "ca": "N",
+      "description": "STRUCTURE DRAFT; DEMAND SUMMARY!D46:J46; write policy incomplete",
+      "beforeRowSha256": "826694c23e8319b55f51f2bc4ce59a066d50d533ef1d892db5ee699890e94ed0",
+      "fixedHeaderCount": 5,
+      "beforeHeaderRows": [
+        7,
+        8
+      ],
+      "afterHeaderRows": [
+        7,
+        8
+      ],
+      "fixedHeaderCells": [
+        {
+          "rowNumber": 7,
+          "columnNumber": 2,
+          "value": "User-Adjusted PMI Intensity Parameter"
+        },
+        {
+          "rowNumber": 8,
+          "columnNumber": 2,
+          "value": "Continent"
+        },
+        {
+          "rowNumber": 8,
+          "columnNumber": 3,
+          "value": "Region"
+        },
+        {
+          "rowNumber": 8,
+          "columnNumber": 4,
+          "value": "Country"
+        },
+        {
+          "rowNumber": 8,
+          "columnNumber": 5,
+          "value": "Intensity"
+        }
+      ]
+    },
+    {
+      "qry": "@c_q030",
+      "role": "DEMAND",
+      "sheet": "PMILogicInput",
+      "name": "Base Case PMI Intensity Parameter",
+      "ord": 2,
+      "br": 7,
+      "er": 92,
+      "bc": 7,
+      "ec": 10,
+      "hr": 7,
+      "he": 8,
+      "dr": 9,
+      "ra": "Y",
+      "ca": "N",
+      "description": "STRUCTURE DRAFT; DEMAND SUMMARY!D47:J47; write policy incomplete",
+      "beforeRowSha256": "f8a46ce9c168091bcbc7e829ac55b27934c074d3be7004efd754a5a49b82dc29",
+      "fixedHeaderCount": 5,
+      "beforeHeaderRows": [
+        7,
+        8
+      ],
+      "afterHeaderRows": [
+        7,
+        8
+      ],
+      "fixedHeaderCells": [
+        {
+          "rowNumber": 7,
+          "columnNumber": 7,
+          "value": "Base Case PMI Input (do not change)"
+        },
+        {
+          "rowNumber": 8,
+          "columnNumber": 7,
+          "value": "Continent"
+        },
+        {
+          "rowNumber": 8,
+          "columnNumber": 8,
+          "value": "Region"
+        },
+        {
+          "rowNumber": 8,
+          "columnNumber": 9,
+          "value": "Country"
+        },
+        {
+          "rowNumber": 8,
+          "columnNumber": 10,
+          "value": "Intensity"
+        }
+      ]
+    },
+    {
+      "qry": "@c_q031",
+      "role": "DEMAND",
+      "sheet": "WeatherLogicInput",
+      "name": "User-Adjusted HDD-Gas Intensity Input",
+      "ord": 1,
+      "br": 7,
+      "er": 92,
+      "bc": 2,
+      "ec": 5,
+      "hr": 7,
+      "he": 8,
+      "dr": 9,
+      "ra": "N",
+      "ca": "N",
+      "description": "STRUCTURE DRAFT; DEMAND SUMMARY!D49:J49; write policy incomplete",
+      "beforeRowSha256": "6ef7814036133bf7701042f9695db56e34f2a51b7bdfc138da1704043b27e6d8",
+      "fixedHeaderCount": 5,
+      "beforeHeaderRows": [
+        7,
+        8
+      ],
+      "afterHeaderRows": [
+        7,
+        8
+      ],
+      "fixedHeaderCells": [
+        {
+          "rowNumber": 7,
+          "columnNumber": 2,
+          "value": "User-Adjusted HDD-Gas Intensity Input"
+        },
+        {
+          "rowNumber": 8,
+          "columnNumber": 2,
+          "value": "Continent"
+        },
+        {
+          "rowNumber": 8,
+          "columnNumber": 3,
+          "value": "Region"
+        },
+        {
+          "rowNumber": 8,
+          "columnNumber": 4,
+          "value": "Country"
+        },
+        {
+          "rowNumber": 8,
+          "columnNumber": 5,
+          "value": "HDD-Gas Intensity"
+        }
+      ]
+    },
+    {
+      "qry": "@c_q032",
+      "role": "DEMAND",
+      "sheet": "WeatherLogicInput",
+      "name": "User-Adjusted CDD-Gas Intensity Input",
+      "ord": 2,
+      "br": 7,
+      "er": 92,
+      "bc": 7,
+      "ec": 10,
+      "hr": 7,
+      "he": 8,
+      "dr": 9,
+      "ra": "N",
+      "ca": "N",
+      "description": "STRUCTURE DRAFT; DEMAND SUMMARY!D50:J50; write policy incomplete",
+      "beforeRowSha256": "53dccd120b69e0fc4bc2b4f280c66c5bbd7ef756d0cf2bb80777690826e670fc",
+      "fixedHeaderCount": 5,
+      "beforeHeaderRows": [
+        7,
+        8
+      ],
+      "afterHeaderRows": [
+        7,
+        8
+      ],
+      "fixedHeaderCells": [
+        {
+          "rowNumber": 7,
+          "columnNumber": 7,
+          "value": "User-Adjusted CDD-Gas Intensity Input"
+        },
+        {
+          "rowNumber": 8,
+          "columnNumber": 7,
+          "value": "Continent"
+        },
+        {
+          "rowNumber": 8,
+          "columnNumber": 8,
+          "value": "Region"
+        },
+        {
+          "rowNumber": 8,
+          "columnNumber": 9,
+          "value": "Country"
+        },
+        {
+          "rowNumber": 8,
+          "columnNumber": 10,
+          "value": "CDD-Gas Intensity"
+        }
+      ]
+    },
+    {
+      "qry": "@c_q033",
+      "role": "DEMAND",
+      "sheet": "WeatherLogicInput",
+      "name": "Base Case HDD-Gas Intensity Input",
+      "ord": 3,
+      "br": 7,
+      "er": 92,
+      "bc": 12,
+      "ec": 15,
+      "hr": 7,
+      "he": 8,
+      "dr": 9,
+      "ra": "Y",
+      "ca": "N",
+      "description": "STRUCTURE DRAFT; DEMAND SUMMARY!D51:J51; write policy incomplete",
+      "beforeRowSha256": "412fba83452e9f36f00349f205e327090494925039533019d17f1f16ae92bb48",
+      "fixedHeaderCount": 5,
+      "beforeHeaderRows": [
+        7,
+        8
+      ],
+      "afterHeaderRows": [
+        7,
+        8
+      ],
+      "fixedHeaderCells": [
+        {
+          "rowNumber": 7,
+          "columnNumber": 12,
+          "value": "Base Case HDD-Gas Intensity Input"
+        },
+        {
+          "rowNumber": 8,
+          "columnNumber": 12,
+          "value": "Continent"
+        },
+        {
+          "rowNumber": 8,
+          "columnNumber": 13,
+          "value": "Region"
+        },
+        {
+          "rowNumber": 8,
+          "columnNumber": 14,
+          "value": "Country"
+        },
+        {
+          "rowNumber": 8,
+          "columnNumber": 15,
+          "value": "HDD-Gas Intensity"
+        }
+      ]
+    },
+    {
+      "qry": "@c_q034",
+      "role": "DEMAND",
+      "sheet": "WeatherLogicInput",
+      "name": "Base Case CDD-Gas Intensity Input",
+      "ord": 4,
+      "br": 7,
+      "er": 92,
+      "bc": 17,
+      "ec": 20,
+      "hr": 7,
+      "he": 8,
+      "dr": 9,
+      "ra": "Y",
+      "ca": "N",
+      "description": "STRUCTURE DRAFT; DEMAND SUMMARY!D52:J52; write policy incomplete",
+      "beforeRowSha256": "9005ffd4c3345523fa3b1c1e506b34954e3fd859108ebbca99cef675a60b80af",
+      "fixedHeaderCount": 5,
+      "beforeHeaderRows": [
+        7,
+        8
+      ],
+      "afterHeaderRows": [
+        7,
+        8
+      ],
+      "fixedHeaderCells": [
+        {
+          "rowNumber": 7,
+          "columnNumber": 17,
+          "value": "Base Case CDD-Gas Intensity Input"
+        },
+        {
+          "rowNumber": 8,
+          "columnNumber": 17,
+          "value": "Continent"
+        },
+        {
+          "rowNumber": 8,
+          "columnNumber": 18,
+          "value": "Region"
+        },
+        {
+          "rowNumber": 8,
+          "columnNumber": 19,
+          "value": "Country"
+        },
+        {
+          "rowNumber": 8,
+          "columnNumber": 20,
+          "value": "CDD-Gas Intensity"
+        }
+      ]
+    },
+    {
+      "qry": "@c_q035",
+      "role": "DEMAND",
+      "sheet": "WeatherInput",
+      "name": "Base Case HDD Input",
+      "ord": 1,
+      "br": 7,
+      "er": 1016,
+      "bc": 74,
+      "ec": 89,
+      "hr": 7,
+      "he": 8,
+      "dr": 9,
+      "ra": "Y",
+      "ca": "Y",
+      "description": "STRUCTURE DRAFT; DEMAND SUMMARY!D61:J61; write policy incomplete",
+      "beforeRowSha256": "75f996497f3d5e189af8c8c9f9748283c34bef5adec7284b38d47f67a2b6421d",
+      "fixedHeaderCount": 5,
+      "beforeHeaderRows": [
+        7,
+        8
+      ],
+      "afterHeaderRows": [
+        7,
+        8
+      ],
+      "fixedHeaderCells": [
+        {
+          "rowNumber": 7,
+          "columnNumber": 74,
+          "value": "Base Case HDD Input"
+        },
+        {
+          "rowNumber": 8,
+          "columnNumber": 74,
+          "value": "Continent"
+        },
+        {
+          "rowNumber": 8,
+          "columnNumber": 75,
+          "value": "Region"
+        },
+        {
+          "rowNumber": 8,
+          "columnNumber": 76,
+          "value": "Country"
+        },
+        {
+          "rowNumber": 8,
+          "columnNumber": 77,
+          "value": "Month"
+        }
+      ]
+    },
+    {
+      "qry": "@c_q036",
+      "role": "DEMAND",
+      "sheet": "WeatherInput",
+      "name": "Base Case CDD Input",
+      "ord": 2,
+      "br": 7,
+      "er": 1016,
+      "bc": 92,
+      "ec": 107,
+      "hr": 7,
+      "he": 8,
+      "dr": 9,
+      "ra": "Y",
+      "ca": "Y",
+      "description": "STRUCTURE DRAFT; DEMAND SUMMARY!D62:J62; write policy incomplete",
+      "beforeRowSha256": "222861345a69244a73ea7edd0c307cde07bfb96b7fea0a7418acd03ccd0e813e",
+      "fixedHeaderCount": 5,
+      "beforeHeaderRows": [
+        7,
+        8
+      ],
+      "afterHeaderRows": [
+        7,
+        8
+      ],
+      "fixedHeaderCells": [
+        {
+          "rowNumber": 7,
+          "columnNumber": 92,
+          "value": "Base Case CDD Input"
+        },
+        {
+          "rowNumber": 8,
+          "columnNumber": 92,
+          "value": "Continent"
+        },
+        {
+          "rowNumber": 8,
+          "columnNumber": 93,
+          "value": "Region"
+        },
+        {
+          "rowNumber": 8,
+          "columnNumber": 94,
+          "value": "Country"
+        },
+        {
+          "rowNumber": 8,
+          "columnNumber": 95,
+          "value": "Month"
+        }
+      ]
+    },
+    {
+      "qry": "@c_q037",
+      "role": "DEMAND",
+      "sheet": "WeatherInput",
+      "name": "Base Case Temperature",
+      "ord": 3,
+      "br": 7,
+      "er": 1016,
+      "bc": 139,
+      "ec": 154,
+      "hr": 7,
+      "he": 8,
+      "dr": 9,
+      "ra": "Y",
+      "ca": "Y",
+      "description": "STRUCTURE DRAFT; DEMAND SUMMARY!D65:J65; write policy incomplete",
+      "beforeRowSha256": "a282bd85ae0ab7372bd818fdacba56158474b9f01d9f23b49ff2cf9dda43e48b",
+      "fixedHeaderCount": 5,
+      "beforeHeaderRows": [
+        7,
+        8
+      ],
+      "afterHeaderRows": [
+        7,
+        8
+      ],
+      "fixedHeaderCells": [
+        {
+          "rowNumber": 7,
+          "columnNumber": 139,
+          "value": "Base Case Temperature "
+        },
+        {
+          "rowNumber": 8,
+          "columnNumber": 139,
+          "value": "Continent"
+        },
+        {
+          "rowNumber": 8,
+          "columnNumber": 140,
+          "value": "Region"
+        },
+        {
+          "rowNumber": 8,
+          "columnNumber": 141,
+          "value": "Country"
+        },
+        {
+          "rowNumber": 8,
+          "columnNumber": 142,
+          "value": "Month"
+        }
+      ]
+    },
+    {
+      "qry": "@c_q038",
+      "role": "DEMAND",
+      "sheet": "LNGBunkeringInput",
+      "name": "Base Case LNG Bunkering Input",
+      "ord": 1,
+      "br": 7,
+      "er": 56,
+      "bc": 8,
+      "ec": 11,
+      "hr": 7,
+      "he": 8,
+      "dr": 9,
+      "ra": "Y",
+      "ca": "N",
+      "description": "STRUCTURE DRAFT; DEMAND SUMMARY!D67:J67; write policy incomplete",
+      "beforeRowSha256": "92c848bb3dd6d040dce99fbe0e87c97963d7650483052f8981db866c9c771193",
+      "fixedHeaderCount": 5,
+      "beforeHeaderRows": [
+        7,
+        8
+      ],
+      "afterHeaderRows": [
+        7,
+        8
+      ],
+      "fixedHeaderCells": [
+        {
+          "rowNumber": 7,
+          "columnNumber": 8,
+          "value": "Base Case LNG Bunkering Input (do not change)"
+        },
+        {
+          "rowNumber": 8,
+          "columnNumber": 8,
+          "value": "Year"
+        },
+        {
+          "rowNumber": 8,
+          "columnNumber": 9,
+          "value": "Vessel Type"
+        },
+        {
+          "rowNumber": 8,
+          "columnNumber": 10,
+          "value": "No. of Vessels"
+        },
+        {
+          "rowNumber": 8,
+          "columnNumber": 11,
+          "value": "Fuel Consumption Rate by Vessel (MCM/Year)"
+        }
+      ]
+    },
+    {
+      "qry": "@c_q039",
+      "role": "DEMAND",
+      "sheet": "LNGBunkeringLogicInput",
+      "name": "LNG Bunkering Share by Country",
+      "ord": 1,
+      "br": 6,
+      "er": 98,
+      "bc": 2,
+      "ec": 17,
+      "hr": 6,
+      "he": 7,
+      "dr": 8,
+      "ra": "Y",
+      "ca": "Y",
+      "description": "STRUCTURE DRAFT; DEMAND SUMMARY!D69:J69; write policy incomplete",
+      "beforeRowSha256": "6465cba12216b64655489923f46305e21eeb231c4f977522506a17efb410e9b4",
+      "fixedHeaderCount": 4,
+      "beforeHeaderRows": [
+        6,
+        7
+      ],
+      "afterHeaderRows": [
+        6,
+        7
+      ],
+      "fixedHeaderCells": [
+        {
+          "rowNumber": 6,
+          "columnNumber": 2,
+          "value": "LNG Bunkering Share by Country (%) (do not change)"
+        },
+        {
+          "rowNumber": 7,
+          "columnNumber": 2,
+          "value": "Continent"
+        },
+        {
+          "rowNumber": 7,
+          "columnNumber": 3,
+          "value": "Region"
+        },
+        {
+          "rowNumber": 7,
+          "columnNumber": 4,
+          "value": "Country"
+        }
+      ]
+    },
+    {
+      "qry": "@c_q040",
+      "role": "DEMAND",
+      "sheet": "HydrogenInput",
+      "name": "Base Case Hydrogen Production Input",
+      "ord": 1,
+      "br": 7,
+      "er": 736,
+      "bc": 6,
+      "ec": 8,
+      "hr": 7,
+      "he": 8,
+      "dr": 9,
+      "ra": "Y",
+      "ca": "N",
+      "description": "STRUCTURE DRAFT; DEMAND SUMMARY!D71:J71; write policy incomplete",
+      "beforeRowSha256": "f316a13f199a313414415e316810cb8066f3721667e0a27dcfed8b91932a9911",
+      "fixedHeaderCount": 4,
+      "beforeHeaderRows": [
+        7,
+        8
+      ],
+      "afterHeaderRows": [
+        7,
+        8
+      ],
+      "fixedHeaderCells": [
+        {
+          "rowNumber": 7,
+          "columnNumber": 6,
+          "value": "Base Case Hydrogen Production Input (do not change)"
+        },
+        {
+          "rowNumber": 8,
+          "columnNumber": 6,
+          "value": "Year"
+        },
+        {
+          "rowNumber": 8,
+          "columnNumber": 7,
+          "value": "Country"
+        },
+        {
+          "rowNumber": 8,
+          "columnNumber": 8,
+          "value": "Production (ktonnes)"
+        }
+      ]
+    },
+    {
+      "qry": "@c_q088",
+      "role": "OUTPUT",
+      "sheet": "USCostofSupply",
+      "name": "US Cost of Supply",
+      "ord": 1,
+      "br": 6,
+      "er": 816,
+      "bc": 2,
+      "ec": 12,
+      "hr": 6,
+      "he": 7,
+      "dr": 8,
+      "ra": "N",
+      "ca": "N",
+      "description": "STRUCTURE DRAFT; OUTPUT SUMMARY!D10:J10; write policy incomplete",
+      "beforeRowSha256": "8c0a4534300b68a2683dbc94e9e411a0cb077ea99ebab739e95af8ca218a633f",
+      "fixedHeaderCount": 2,
+      "beforeHeaderRows": [
+        6,
+        7
+      ],
+      "afterHeaderRows": [
+        6,
+        7
+      ],
+      "fixedHeaderCells": [
+        {
+          "rowNumber": 6,
+          "columnNumber": 2,
+          "value": "Cumulative gas production (Million Tonnes LNG)"
+        },
+        {
+          "rowNumber": 7,
+          "columnNumber": 2,
+          "value": "Breakeven Gas Price (USD/mmbtu)"
+        }
+      ]
+    },
+    {
+      "qry": "@c_q089",
+      "role": "OUTPUT",
+      "sheet": "BCPrices",
+      "name": "Base Case Prices",
+      "ord": 1,
+      "br": 6,
+      "er": 21,
+      "bc": 2,
+      "ec": 5,
+      "hr": 6,
+      "he": 7,
+      "dr": 8,
+      "ra": "Y",
+      "ca": "N",
+      "description": "STRUCTURE DRAFT; OUTPUT SUMMARY!D12:J12; write policy incomplete",
+      "beforeRowSha256": "d2ef331dcb40dcf0f348ddd491833cea8d07661b3a18ef7a50b220c11cbeef94",
+      "fixedHeaderCount": 7,
+      "beforeHeaderRows": [
+        6,
+        7
+      ],
+      "afterHeaderRows": [
+        6,
+        7
+      ],
+      "fixedHeaderCells": [
+        {
+          "rowNumber": 6,
+          "columnNumber": 3,
+          "value": "Henry Hub (USD/mmbtu)"
+        },
+        {
+          "rowNumber": 6,
+          "columnNumber": 4,
+          "value": "East Asia Spot (USD/mmbtu)"
+        },
+        {
+          "rowNumber": 6,
+          "columnNumber": 5,
+          "value": "TTF (USD/mmbtu)"
+        },
+        {
+          "rowNumber": 7,
+          "columnNumber": 2,
+          "value": "Year"
+        },
+        {
+          "rowNumber": 7,
+          "columnNumber": 3,
+          "value": "HH"
+        },
+        {
+          "rowNumber": 7,
+          "columnNumber": 4,
+          "value": "East Asia Spot"
+        },
+        {
+          "rowNumber": 7,
+          "columnNumber": 5,
+          "value": "TTF"
+        }
+      ]
+    },
+    {
+      "qry": "@c_q090",
+      "role": "OUTPUT",
+      "sheet": "PremiumCalc",
+      "name": "PremiumCalc TTF",
+      "ord": 1,
+      "br": 35,
+      "er": 47,
+      "bc": 2,
+      "ec": 8,
+      "hr": 35,
+      "he": 38,
+      "dr": 39,
+      "ra": "N",
+      "ca": "N",
+      "description": "STRUCTURE DRAFT; OUTPUT SUMMARY!D13:J13; write policy incomplete",
+      "beforeRowSha256": "1cb9c4e37818ba2c62d10193fcc0fa5b7fcdb16eec16ee82ef02d5199a03a74d",
+      "fixedHeaderCount": 4,
+      "beforeHeaderRows": [
+        35,
+        36,
+        37,
+        38
+      ],
+      "afterHeaderRows": [
+        35,
+        36,
+        37,
+        38
+      ],
+      "fixedHeaderCells": [
+        {
+          "rowNumber": 35,
+          "columnNumber": 2,
+          "value": "Calculation of premium for TTF:"
+        },
+        {
+          "rowNumber": 37,
+          "columnNumber": 3,
+          "value": "Uncontracted volumes (Million Tonnes LNG)"
+        },
+        {
+          "rowNumber": 38,
+          "columnNumber": 2,
+          "value": "Year"
+        },
+        {
+          "rowNumber": 38,
+          "columnNumber": 3,
+          "value": "Base case"
+        }
+      ]
+    },
+    {
+      "qry": "@c_q091",
+      "role": "OUTPUT",
+      "sheet": "PremiumCalc",
+      "name": "PremiumCalc East Asia Spot",
+      "ord": 2,
+      "br": 53,
+      "er": 61,
+      "bc": 2,
+      "ec": 8,
+      "hr": 53,
+      "he": 56,
+      "dr": 57,
+      "ra": "N",
+      "ca": "N",
+      "description": "STRUCTURE DRAFT; OUTPUT SUMMARY!D14:J14; write policy incomplete",
+      "beforeRowSha256": "8fc9760df77bb66d9e4278eac77eb8d1d103beecce170646637f9bfc38e2edd6",
+      "fixedHeaderCount": 4,
+      "beforeHeaderRows": [
+        53,
+        54,
+        55,
+        56
+      ],
+      "afterHeaderRows": [
+        53,
+        54,
+        55,
+        56
+      ],
+      "fixedHeaderCells": [
+        {
+          "rowNumber": 53,
+          "columnNumber": 2,
+          "value": "Calculation of premium for East Asia Spot:"
+        },
+        {
+          "rowNumber": 55,
+          "columnNumber": 3,
+          "value": "Uncontracted volumes (Million Tonnes LNG)"
+        },
+        {
+          "rowNumber": 56,
+          "columnNumber": 2,
+          "value": "Year"
+        },
+        {
+          "rowNumber": 56,
+          "columnNumber": 3,
+          "value": "Base case"
+        }
+      ]
+    },
+    {
+      "qry": "@c_q092",
+      "role": "OUTPUT",
+      "sheet": "PriceSeasonality",
+      "name": "Price Seasonality",
+      "ord": 1,
+      "br": 1,
+      "er": 4,
+      "bc": 2,
+      "ec": 15,
+      "hr": 1,
+      "he": 1,
+      "dr": 2,
+      "ra": "N",
+      "ca": "N",
+      "description": "STRUCTURE DRAFT; OUTPUT SUMMARY!D27:J27; write policy incomplete",
+      "beforeRowSha256": "d26495b8ee9bd356aaf2fc18de8f9f11a27c480f994dc830fd76bd089174e55d",
+      "fixedHeaderCount": 2,
+      "beforeHeaderRows": [
+        1
+      ],
+      "afterHeaderRows": [
+        1
+      ],
+      "fixedHeaderCells": [
+        {
+          "rowNumber": 1,
+          "columnNumber": 2,
+          "value": "Price Region"
+        },
+        {
+          "rowNumber": 1,
+          "columnNumber": 15,
+          "value": "연평균 가격상승률"
+        }
+      ]
+    },
+    {
+      "qry": "@c_q041",
+      "role": "SUPPLY",
+      "sheet": "ProductionAdjustment",
+      "name": "PNG Production Adjustment",
+      "ord": 1,
+      "br": 7,
+      "er": 200,
+      "bc": 9,
+      "ec": 13,
+      "hr": 7,
+      "he": 7,
+      "dr": 8,
+      "ra": "Y",
+      "ca": "N",
+      "description": "STRUCTURE DRAFT; SUPPLY SUMMARY!D11:J11; write policy incomplete",
+      "beforeRowSha256": "d8d03c7ce5af54d0f3391a291219a57741ded521db37d481816171d0e78d6d8c",
+      "fixedHeaderCount": 4,
+      "beforeHeaderRows": [
+        7
+      ],
+      "afterHeaderRows": [
+        7
+      ],
+      "fixedHeaderCells": [
+        {
+          "rowNumber": 7,
+          "columnNumber": 9,
+          "value": "Year"
+        },
+        {
+          "rowNumber": 7,
+          "columnNumber": 10,
+          "value": "Month"
+        },
+        {
+          "rowNumber": 7,
+          "columnNumber": 11,
+          "value": "Country"
+        },
+        {
+          "rowNumber": 7,
+          "columnNumber": 13,
+          "value": "Volumes (Mt)"
+        }
+      ]
+    },
+    {
+      "qry": "@c_q042",
+      "role": "SUPPLY",
+      "sheet": "{USA}Hurricanes",
+      "name": "Monthly Hurricane Adjustment",
+      "ord": 1,
+      "br": 7,
+      "er": 200,
+      "bc": 2,
+      "ec": 4,
+      "hr": 7,
+      "he": 7,
+      "dr": 13,
+      "ra": "Y",
+      "ca": "N",
+      "description": "STRUCTURE DRAFT; SUPPLY SUMMARY!D14:J14; write policy incomplete",
+      "beforeRowSha256": "83bc0ca89c6af67bd90cfe4aed7589db3bb4ff8bd42f6c90361b4efe3e37927d",
+      "fixedHeaderCount": 3,
+      "beforeHeaderRows": [
+        7
+      ],
+      "afterHeaderRows": [
+        7
+      ],
+      "fixedHeaderCells": [
+        {
+          "rowNumber": 7,
+          "columnNumber": 2,
+          "value": "Year"
+        },
+        {
+          "rowNumber": 7,
+          "columnNumber": 3,
+          "value": "Month"
+        },
+        {
+          "rowNumber": 7,
+          "columnNumber": 4,
+          "value": "Hurricane intensity"
+        }
+      ]
+    },
+    {
+      "qry": "@c_q043",
+      "role": "SUPPLY",
+      "sheet": "LiqUtilAdjustment",
+      "name": "Monthly LNG Train Utilization",
+      "ord": 1,
+      "br": 7,
+      "er": 407,
+      "bc": 2,
+      "ec": 90,
+      "hr": 7,
+      "he": 10,
+      "dr": 11,
+      "ra": "Y",
+      "ca": "Y",
+      "description": "STRUCTURE DRAFT; SUPPLY SUMMARY!D15:J15; write policy incomplete",
+      "beforeRowSha256": "49ca1930d27370195e178870337dfc604b1aa76c627a467d7bd11465e011debf",
+      "fixedHeaderCount": 8,
+      "beforeHeaderRows": [
+        7,
+        8,
+        10
+      ],
+      "afterHeaderRows": [
+        7,
+        8,
+        9,
+        10
+      ],
+      "fixedHeaderCells": [
+        {
+          "rowNumber": 7,
+          "columnNumber": 6,
+          "value": "Year"
+        },
+        {
+          "rowNumber": 8,
+          "columnNumber": 6,
+          "value": "Month"
+        },
+        {
+          "rowNumber": 9,
+          "columnNumber": 6,
+          "value": "Period"
+        },
+        {
+          "rowNumber": 10,
+          "columnNumber": 2,
+          "value": "Country"
+        },
+        {
+          "rowNumber": 10,
+          "columnNumber": 3,
+          "value": "LNG Plant"
+        },
+        {
+          "rowNumber": 10,
+          "columnNumber": 4,
+          "value": "LNG Plant Train"
+        },
+        {
+          "rowNumber": 10,
+          "columnNumber": 5,
+          "value": "Life Cycle Category"
+        },
+        {
+          "rowNumber": 10,
+          "columnNumber": 6,
+          "value": "Nameplate Capacity (MTPA)"
+        }
+      ]
+    },
+    {
+      "qry": "@c_q044",
+      "role": "SUPPLY",
+      "sheet": "LiqProdAdjustment",
+      "name": "Monthly LNG Train Production",
+      "ord": 1,
+      "br": 7,
+      "er": 407,
+      "bc": 2,
+      "ec": 90,
+      "hr": 7,
+      "he": 10,
+      "dr": 11,
+      "ra": "Y",
+      "ca": "Y",
+      "description": "STRUCTURE DRAFT; SUPPLY SUMMARY!D16:J16; write policy incomplete",
+      "beforeRowSha256": "bdc4882a241b921c5cfce36ff6bc3cb338df9572297275f4e427e9fcad03f05e",
+      "fixedHeaderCount": 8,
+      "beforeHeaderRows": [
+        7,
+        8,
+        10
+      ],
+      "afterHeaderRows": [
+        7,
+        8,
+        9,
+        10
+      ],
+      "fixedHeaderCells": [
+        {
+          "rowNumber": 7,
+          "columnNumber": 6,
+          "value": "Year"
+        },
+        {
+          "rowNumber": 8,
+          "columnNumber": 6,
+          "value": "Month"
+        },
+        {
+          "rowNumber": 9,
+          "columnNumber": 6,
+          "value": "Period"
+        },
+        {
+          "rowNumber": 10,
+          "columnNumber": 2,
+          "value": "Country"
+        },
+        {
+          "rowNumber": 10,
+          "columnNumber": 3,
+          "value": "LNG Plant"
+        },
+        {
+          "rowNumber": 10,
+          "columnNumber": 4,
+          "value": "LNG Plant Train"
+        },
+        {
+          "rowNumber": 10,
+          "columnNumber": 5,
+          "value": "Life Cycle Category"
+        },
+        {
+          "rowNumber": 10,
+          "columnNumber": 6,
+          "value": "Nameplate Capacity (MTPA)"
+        }
+      ]
+    },
+    {
+      "qry": "@c_q045",
+      "role": "SUPPLY",
+      "sheet": "RegasAdjustment",
+      "name": "Monthly Regas Capacity Adjustment",
+      "ord": 1,
+      "br": 8,
+      "er": 382,
+      "bc": 2,
+      "ec": 115,
+      "hr": 8,
+      "he": 10,
+      "dr": 11,
+      "ra": "N",
+      "ca": "N",
+      "description": "STRUCTURE DRAFT; SUPPLY SUMMARY!D17:J17; write policy incomplete",
+      "beforeRowSha256": "e3ad772da2dd1da20c28eef50e30669dd7f07618c4de55452a8b821ad17ef856",
+      "fixedHeaderCount": 7,
+      "beforeHeaderRows": [
+        8,
+        9,
+        10
+      ],
+      "afterHeaderRows": [
+        8,
+        9,
+        10
+      ],
+      "fixedHeaderCells": [
+        {
+          "rowNumber": 8,
+          "columnNumber": 8,
+          "value": "Capacity adjustment (Mt LNG) - Input disruption from nameplate capacity"
+        },
+        {
+          "rowNumber": 10,
+          "columnNumber": 2,
+          "value": "Continent"
+        },
+        {
+          "rowNumber": 10,
+          "columnNumber": 3,
+          "value": "Region"
+        },
+        {
+          "rowNumber": 10,
+          "columnNumber": 4,
+          "value": "Country"
+        },
+        {
+          "rowNumber": 10,
+          "columnNumber": 5,
+          "value": "Regasification plant"
+        },
+        {
+          "rowNumber": 10,
+          "columnNumber": 6,
+          "value": "Life Cycle Category"
+        },
+        {
+          "rowNumber": 10,
+          "columnNumber": 7,
+          "value": "Nameplate capacity (MTPA)"
+        }
+      ]
+    },
+    {
+      "qry": "@c_q046",
+      "role": "SUPPLY",
+      "sheet": "RegasAdjustment",
+      "name": "Monthly Regas Capacity by Country",
+      "ord": 2,
+      "br": 385,
+      "er": 444,
+      "bc": 7,
+      "ec": 115,
+      "hr": 385,
+      "he": 386,
+      "dr": 387,
+      "ra": "N",
+      "ca": "N",
+      "description": "STRUCTURE DRAFT; SUPPLY SUMMARY!D19:J19; write policy incomplete",
+      "beforeRowSha256": "d09aa1a7f5fdffdc719716763cfda7d6d65f86147c2d7a9c3c3bef854ac15861",
+      "fixedHeaderCount": 1,
+      "beforeHeaderRows": [
+        385,
+        386
+      ],
+      "afterHeaderRows": [
+        385,
+        386
+      ],
+      "fixedHeaderCells": [
+        {
+          "rowNumber": 386,
+          "columnNumber": 7,
+          "value": "Country"
+        }
+      ]
+    },
+    {
+      "qry": "@c_q047",
+      "role": "SUPPLY",
+      "sheet": "BCProduction",
+      "name": "Annual Gas Production Baseline",
+      "ord": 1,
+      "br": 7,
+      "er": 24779,
+      "bc": 3,
+      "ec": 11,
+      "hr": 7,
+      "he": 7,
+      "dr": 8,
+      "ra": "Y",
+      "ca": "N",
+      "description": "STRUCTURE DRAFT; SUPPLY SUMMARY!D21:J21; write policy incomplete",
+      "beforeRowSha256": "151df41ab60f19c3bf7f5f0761c11b421255308bc6312f233484fbce5f0b0f12",
+      "fixedHeaderCount": 8,
+      "beforeHeaderRows": [
+        7
+      ],
+      "afterHeaderRows": [
+        7
+      ],
+      "fixedHeaderCells": [
+        {
+          "rowNumber": 7,
+          "columnNumber": 3,
+          "value": "Year"
+        },
+        {
+          "rowNumber": 7,
+          "columnNumber": 4,
+          "value": "Continent"
+        },
+        {
+          "rowNumber": 7,
+          "columnNumber": 5,
+          "value": "Country"
+        },
+        {
+          "rowNumber": 7,
+          "columnNumber": 6,
+          "value": "Province/Basin"
+        },
+        {
+          "rowNumber": 7,
+          "columnNumber": 8,
+          "value": "Life Cycle Category"
+        },
+        {
+          "rowNumber": 7,
+          "columnNumber": 9,
+          "value": "Gas type"
+        },
+        {
+          "rowNumber": 7,
+          "columnNumber": 10,
+          "value": "Oil and gas detail"
+        },
+        {
+          "rowNumber": 7,
+          "columnNumber": 11,
+          "value": "Base case supply (Mt)"
+        }
+      ]
+    },
+    {
+      "qry": "@c_q048",
+      "role": "SUPPLY",
+      "sheet": "BCHurricanes",
+      "name": "Hurricane Impact on Upstream Assets",
+      "ord": 1,
+      "br": 7,
+      "er": 11,
+      "bc": 2,
+      "ec": 7,
+      "hr": 7,
+      "he": 7,
+      "dr": 8,
+      "ra": "N",
+      "ca": "N",
+      "description": "STRUCTURE DRAFT; SUPPLY SUMMARY!D23:J23; write policy incomplete",
+      "beforeRowSha256": "dede9c3548ee3865ef47f76a07259ff6762c980750b90661db44cb94a0de7b49",
+      "fixedHeaderCount": 6,
+      "beforeHeaderRows": [
+        7
+      ],
+      "afterHeaderRows": [
+        7
+      ],
+      "fixedHeaderCells": [
+        {
+          "rowNumber": 7,
+          "columnNumber": 2,
+          "value": "Intensity"
+        },
+        {
+          "rowNumber": 7,
+          "columnNumber": 3,
+          "value": "Pre-hurricane upstream production shut-in duration (No. of weeks in a month)"
+        },
+        {
+          "rowNumber": 7,
+          "columnNumber": 4,
+          "value": "Pre-hurricane upstream production shut-in volume (% of total monthly volume)"
+        },
+        {
+          "rowNumber": 7,
+          "columnNumber": 5,
+          "value": "During and post-hurricane upstream production shut-in duration (No. of weeks in a month)"
+        },
+        {
+          "rowNumber": 7,
+          "columnNumber": 6,
+          "value": "During and post-hurricane upstream production shut-in volume (% of total monthly volume)"
+        },
+        {
+          "rowNumber": 7,
+          "columnNumber": 7,
+          "value": "Net impact (Monthly upstream production decrease by %)"
+        }
+      ]
+    },
+    {
+      "qry": "@c_q049",
+      "role": "SUPPLY",
+      "sheet": "BCHurricanes",
+      "name": "Hurricane Affected Provinces",
+      "ord": 2,
+      "br": 7,
+      "er": 13,
+      "bc": 9,
+      "ec": 11,
+      "hr": 7,
+      "he": 7,
+      "dr": 8,
+      "ra": "N",
+      "ca": "N",
+      "description": "STRUCTURE DRAFT; SUPPLY SUMMARY!D25:J25; write policy incomplete",
+      "beforeRowSha256": "ba1b33eb68ac9962e8405b48fba0a87abbb00b41474870bdeb8e666cfe8254ec",
+      "fixedHeaderCount": 2,
+      "beforeHeaderRows": [
+        7
+      ],
+      "afterHeaderRows": [
+        7
+      ],
+      "fixedHeaderCells": [
+        {
+          "rowNumber": 7,
+          "columnNumber": 9,
+          "value": "Province of upstream assets impacted by hurricane in GoM"
+        },
+        {
+          "rowNumber": 7,
+          "columnNumber": 11,
+          "value": "Impacted by hurricane?"
+        }
+      ]
+    },
+    {
+      "qry": "@c_q050",
+      "role": "SUPPLY",
+      "sheet": "BCHurricanes",
+      "name": "Hurricane Impact on Liquefaction Plants",
+      "ord": 3,
+      "br": 14,
+      "er": 19,
+      "bc": 2,
+      "ec": 7,
+      "hr": 14,
+      "he": 15,
+      "dr": 16,
+      "ra": "N",
+      "ca": "N",
+      "description": "STRUCTURE DRAFT; SUPPLY SUMMARY!D24:J24; write policy incomplete",
+      "beforeRowSha256": "d39ddc7516a13645d1c4251c403585b44b7a9c5edcea0a02523c0a8632e8a4d4",
+      "fixedHeaderCount": 7,
+      "beforeHeaderRows": [
+        14,
+        15
+      ],
+      "afterHeaderRows": [
+        14,
+        15
+      ],
+      "fixedHeaderCells": [
+        {
+          "rowNumber": 14,
+          "columnNumber": 2,
+          "value": "Impact on liquefaction plant:"
+        },
+        {
+          "rowNumber": 15,
+          "columnNumber": 2,
+          "value": "Intensity"
+        },
+        {
+          "rowNumber": 15,
+          "columnNumber": 3,
+          "value": "Pre-hurricane liq plant shut-in duration (No. of weeks in a month)"
+        },
+        {
+          "rowNumber": 15,
+          "columnNumber": 4,
+          "value": "Pre-hurricane liq plant shut-in volume (% of total monthly LNG production)"
+        },
+        {
+          "rowNumber": 15,
+          "columnNumber": 5,
+          "value": "During and post-hurricane liq plant shut-in duration (No. of weeks in a month)"
+        },
+        {
+          "rowNumber": 15,
+          "columnNumber": 6,
+          "value": "During and post-hurricane upstream production shut-in volume (% of total monthly LNG production)"
+        },
+        {
+          "rowNumber": 15,
+          "columnNumber": 7,
+          "value": "Net impact (Monthly LNG production decrease by %)"
+        }
+      ]
+    },
+    {
+      "qry": "@c_q051",
+      "role": "SUPPLY",
+      "sheet": "BCHurricanes",
+      "name": "Hurricane Affected LNG Plants",
+      "ord": 4,
+      "br": 15,
+      "er": 41,
+      "bc": 9,
+      "ec": 11,
+      "hr": 15,
+      "he": 15,
+      "dr": 16,
+      "ra": "Y",
+      "ca": "N",
+      "description": "STRUCTURE DRAFT; SUPPLY SUMMARY!D26:J26; write policy incomplete",
+      "beforeRowSha256": "845adb7528050d7263969581df61b2fd1f77e229d2cd251c34bce61725fb6a75",
+      "fixedHeaderCount": 2,
+      "beforeHeaderRows": [
+        15
+      ],
+      "afterHeaderRows": [
+        15
+      ],
+      "fixedHeaderCells": [
+        {
+          "rowNumber": 15,
+          "columnNumber": 9,
+          "value": "Liquefaction plants impacted by a hurricane in GoM"
+        },
+        {
+          "rowNumber": 15,
+          "columnNumber": 11,
+          "value": "Impacted by hurricane?"
+        }
+      ]
+    },
+    {
+      "qry": "@c_q052",
+      "role": "SUPPLY",
+      "sheet": "BCLiquefaction",
+      "name": "Monthly LNG Train Baseline",
+      "ord": 1,
+      "br": 7,
+      "er": 52411,
+      "bc": 2,
+      "ec": 14,
+      "hr": 7,
+      "he": 7,
+      "dr": 8,
+      "ra": "Y",
+      "ca": "N",
+      "description": "STRUCTURE DRAFT; SUPPLY SUMMARY!D27:J27; write policy incomplete",
+      "beforeRowSha256": "239214af16384094f94f66dccdc97f300c14af776ad6fcc6e1d53cb8dff551e8",
+      "fixedHeaderCount": 12,
+      "beforeHeaderRows": [
+        7
+      ],
+      "afterHeaderRows": [
+        7
+      ],
+      "fixedHeaderCells": [
+        {
+          "rowNumber": 7,
+          "columnNumber": 2,
+          "value": "Year"
+        },
+        {
+          "rowNumber": 7,
+          "columnNumber": 3,
+          "value": "Month"
+        },
+        {
+          "rowNumber": 7,
+          "columnNumber": 4,
+          "value": "Period"
+        },
+        {
+          "rowNumber": 7,
+          "columnNumber": 5,
+          "value": "Country"
+        },
+        {
+          "rowNumber": 7,
+          "columnNumber": 6,
+          "value": "Plant Name"
+        },
+        {
+          "rowNumber": 7,
+          "columnNumber": 7,
+          "value": "Plant Train"
+        },
+        {
+          "rowNumber": 7,
+          "columnNumber": 8,
+          "value": "Infra Life Cycle"
+        },
+        {
+          "rowNumber": 7,
+          "columnNumber": 9,
+          "value": "LNG train capacity (Million tonnes LNG per month)"
+        },
+        {
+          "rowNumber": 7,
+          "columnNumber": 10,
+          "value": "Mapped UCube project"
+        },
+        {
+          "rowNumber": 7,
+          "columnNumber": 11,
+          "value": "Upstream asset life cycle"
+        },
+        {
+          "rowNumber": 7,
+          "columnNumber": 12,
+          "value": "Mapped UCube project province (Non-NAm)/LNG plant province (NAm)"
+        },
+        {
+          "rowNumber": 7,
+          "columnNumber": 14,
+          "value": "LNG plant utilisation %"
+        }
+      ]
+    },
+    {
+      "qry": "@c_q053",
+      "role": "SUPPLY",
+      "sheet": "BCRegasification",
+      "name": "Annual Regas Capacity Baseline",
+      "ord": 1,
+      "br": 7,
+      "er": 379,
+      "bc": 2,
+      "ec": 17,
+      "hr": 7,
+      "he": 7,
+      "dr": 8,
+      "ra": "Y",
+      "ca": "Y",
+      "description": "STRUCTURE DRAFT; SUPPLY SUMMARY!D28:J28; write policy incomplete",
+      "beforeRowSha256": "17ba66600ce981d110743dc7e0fda19c96b103440d5c0cdd0ec8c053813482f6",
+      "fixedHeaderCount": 5,
+      "beforeHeaderRows": [
+        7
+      ],
+      "afterHeaderRows": [
+        7
+      ],
+      "fixedHeaderCells": [
+        {
+          "rowNumber": 7,
+          "columnNumber": 2,
+          "value": "Continent"
+        },
+        {
+          "rowNumber": 7,
+          "columnNumber": 3,
+          "value": "Region"
+        },
+        {
+          "rowNumber": 7,
+          "columnNumber": 4,
+          "value": "Country"
+        },
+        {
+          "rowNumber": 7,
+          "columnNumber": 5,
+          "value": "Regasification plant"
+        },
+        {
+          "rowNumber": 7,
+          "columnNumber": 6,
+          "value": "Life Cycle Category"
+        }
+      ]
+    },
+    {
+      "qry": "@c_q054",
+      "role": "SUPPLY",
+      "sheet": "BCPipeline",
+      "name": "Annual Pipeline Capacity Baseline",
+      "ord": 1,
+      "br": 7,
+      "er": 70,
+      "bc": 2,
+      "ec": 6,
+      "hr": 7,
+      "he": 7,
+      "dr": 8,
+      "ra": "Y",
+      "ca": "N",
+      "description": "STRUCTURE DRAFT; SUPPLY SUMMARY!D29:J29; write policy incomplete",
+      "beforeRowSha256": "bea0f2995fe144fa481a32d5471b71bc9822e193b85e8ae5e52730419095eae9",
+      "fixedHeaderCount": 5,
+      "beforeHeaderRows": [
+        7
+      ],
+      "afterHeaderRows": [
+        7
+      ],
+      "fixedHeaderCells": [
+        {
+          "rowNumber": 7,
+          "columnNumber": 2,
+          "value": "Year"
+        },
+        {
+          "rowNumber": 7,
+          "columnNumber": 3,
+          "value": "Major pipeline"
+        },
+        {
+          "rowNumber": 7,
+          "columnNumber": 4,
+          "value": "From country"
+        },
+        {
+          "rowNumber": 7,
+          "columnNumber": 5,
+          "value": "To country"
+        },
+        {
+          "rowNumber": 7,
+          "columnNumber": 6,
+          "value": "Pipeline capacity (Mt)"
+        }
+      ]
+    },
+    {
+      "qry": "@c_q055",
+      "role": "SUPPLY",
+      "sheet": "LNG Summary",
+      "name": "LNG Production Reconciliation",
+      "ord": 1,
+      "br": 7,
+      "er": 531,
+      "bc": 3,
+      "ec": 25,
+      "hr": 7,
+      "he": 8,
+      "dr": 9,
+      "ra": "N",
+      "ca": "N",
+      "description": "STRUCTURE DRAFT; SUPPLY SUMMARY!D30:J30; write policy incomplete",
+      "beforeRowSha256": "4f4460d16c17a840d1280b810a4e35b04d2187e2dc2cfd26152248daf1fffa06",
+      "fixedHeaderCount": 11,
+      "beforeHeaderRows": [
+        7,
+        8
+      ],
+      "afterHeaderRows": [
+        7,
+        8
+      ],
+      "fixedHeaderCells": [
+        {
+          "rowNumber": 8,
+          "columnNumber": 4,
+          "value": "Region"
+        },
+        {
+          "rowNumber": 8,
+          "columnNumber": 5,
+          "value": "Country"
+        },
+        {
+          "rowNumber": 8,
+          "columnNumber": 6,
+          "value": "Project"
+        },
+        {
+          "rowNumber": 8,
+          "columnNumber": 7,
+          "value": "Train"
+        },
+        {
+          "rowNumber": 8,
+          "columnNumber": 8,
+          "value": "Status"
+        },
+        {
+          "rowNumber": 8,
+          "columnNumber": 9,
+          "value": "FID Date"
+        },
+        {
+          "rowNumber": 8,
+          "columnNumber": 10,
+          "value": "PJT Start"
+        },
+        {
+          "rowNumber": 8,
+          "columnNumber": 11,
+          "value": "Train No."
+        },
+        {
+          "rowNumber": 8,
+          "columnNumber": 12,
+          "value": "Mapped \nUpstream\nproject"
+        },
+        {
+          "rowNumber": 8,
+          "columnNumber": 13,
+          "value": "Mapped \nUpstream\nprovince"
+        },
+        {
+          "rowNumber": 8,
+          "columnNumber": 14,
+          "value": "Capacity"
+        }
+      ]
+    },
+    {
+      "qry": "@c_q056",
+      "role": "TRADE",
+      "sheet": "LNG_TradeRestrictionInput",
+      "name": "LNG Restriction",
+      "ord": 1,
+      "br": 5,
+      "er": 509,
+      "bc": 2,
+      "ec": 11,
+      "hr": 5,
+      "he": 5,
+      "dr": 6,
+      "ra": "Y",
+      "ca": "N",
+      "description": "STRUCTURE DRAFT; TRADE SUMMARY!D10:J10; write policy incomplete",
+      "beforeRowSha256": "247ca2e9e9109b762dac06b8e7f4e0c6e1fe6bd62b99e90d4e25fa7156eac059",
+      "fixedHeaderCount": 10,
+      "beforeHeaderRows": [
+        5
+      ],
+      "afterHeaderRows": [
+        5
+      ],
+      "fixedHeaderCells": [
+        {
+          "rowNumber": 5,
+          "columnNumber": 2,
+          "value": "Year"
+        },
+        {
+          "rowNumber": 5,
+          "columnNumber": 3,
+          "value": "Month"
+        },
+        {
+          "rowNumber": 5,
+          "columnNumber": 4,
+          "value": "From Country"
+        },
+        {
+          "rowNumber": 5,
+          "columnNumber": 5,
+          "value": "To Country"
+        },
+        {
+          "rowNumber": 5,
+          "columnNumber": 6,
+          "value": "LNG Export Terminal"
+        },
+        {
+          "rowNumber": 5,
+          "columnNumber": 7,
+          "value": "LNG Plant Train"
+        },
+        {
+          "rowNumber": 5,
+          "columnNumber": 8,
+          "value": "Scope"
+        },
+        {
+          "rowNumber": 5,
+          "columnNumber": 9,
+          "value": "Restriction Volume [Mt LNG]"
+        },
+        {
+          "rowNumber": 5,
+          "columnNumber": 10,
+          "value": "Active"
+        },
+        {
+          "rowNumber": 5,
+          "columnNumber": 11,
+          "value": "Note"
+        }
+      ]
+    },
+    {
+      "qry": "@c_q057",
+      "role": "TRADE",
+      "sheet": "PNG_TradeRestrictionInput",
+      "name": "PNG Restriction",
+      "ord": 1,
+      "br": 5,
+      "er": 509,
+      "bc": 2,
+      "ec": 10,
+      "hr": 5,
+      "he": 5,
+      "dr": 6,
+      "ra": "Y",
+      "ca": "N",
+      "description": "STRUCTURE DRAFT; TRADE SUMMARY!D11:J11; write policy incomplete",
+      "beforeRowSha256": "2f18d0b8b3a1cf3823ecb8b03106346db70a8744b424b3618f4459ae694b2cd2",
+      "fixedHeaderCount": 9,
+      "beforeHeaderRows": [
+        5
+      ],
+      "afterHeaderRows": [
+        5
+      ],
+      "fixedHeaderCells": [
+        {
+          "rowNumber": 5,
+          "columnNumber": 2,
+          "value": "Year"
+        },
+        {
+          "rowNumber": 5,
+          "columnNumber": 3,
+          "value": "Month"
+        },
+        {
+          "rowNumber": 5,
+          "columnNumber": 4,
+          "value": "From Country"
+        },
+        {
+          "rowNumber": 5,
+          "columnNumber": 5,
+          "value": "To Country"
+        },
+        {
+          "rowNumber": 5,
+          "columnNumber": 6,
+          "value": "Pipeline"
+        },
+        {
+          "rowNumber": 5,
+          "columnNumber": 7,
+          "value": "Scope"
+        },
+        {
+          "rowNumber": 5,
+          "columnNumber": 8,
+          "value": "Restriction Volume [Mt LNG]"
+        },
+        {
+          "rowNumber": 5,
+          "columnNumber": 9,
+          "value": "Active"
+        },
+        {
+          "rowNumber": 5,
+          "columnNumber": 10,
+          "value": "Note"
+        }
+      ]
+    },
+    {
+      "qry": "@c_q058",
+      "role": "TRADE",
+      "sheet": "MidstreamContractInput",
+      "name": "Forecasted PNG Contract Volume (Imports)",
+      "ord": 1,
+      "br": 2,
+      "er": 1104,
+      "bc": 1,
+      "ec": 4,
+      "hr": 2,
+      "he": 4,
+      "dr": 5,
+      "ra": "Y",
+      "ca": "N",
+      "description": "STRUCTURE DRAFT; TRADE SUMMARY!D13:J13; write policy incomplete",
+      "beforeRowSha256": "8e9efe3840989c002af62affe3132896ff301f5f2a32b42391276ae9b54bedaa",
+      "fixedHeaderCount": 6,
+      "beforeHeaderRows": [
+        2,
+        3,
+        4
+      ],
+      "afterHeaderRows": [
+        2,
+        3,
+        4
+      ],
+      "fixedHeaderCells": [
+        {
+          "rowNumber": 2,
+          "columnNumber": 1,
+          "value": "Forecasted PNG Contract Volume (Imports)"
+        },
+        {
+          "rowNumber": 3,
+          "columnNumber": 1,
+          "value": "From GMC"
+        },
+        {
+          "rowNumber": 4,
+          "columnNumber": 1,
+          "value": "Year"
+        },
+        {
+          "rowNumber": 4,
+          "columnNumber": 2,
+          "value": "From Country"
+        },
+        {
+          "rowNumber": 4,
+          "columnNumber": 3,
+          "value": "To Country"
+        },
+        {
+          "rowNumber": 4,
+          "columnNumber": 4,
+          "value": "Unadjusted Gross Gas Import [Mt LNG]"
+        }
+      ]
+    },
+    {
+      "qry": "@c_q059",
+      "role": "TRADE",
+      "sheet": "MidstreamContractInput",
+      "name": "LNG Contract Volumes",
+      "ord": 2,
+      "br": 2,
+      "er": 2918,
+      "bc": 17,
+      "ec": 21,
+      "hr": 2,
+      "he": 4,
+      "dr": 5,
+      "ra": "Y",
+      "ca": "N",
+      "description": "STRUCTURE DRAFT; TRADE SUMMARY!D19:J19; write policy incomplete",
+      "beforeRowSha256": "a54b855ec6014a524145cae8837eba5e35647c270ce89bf97bf187d17cbda744",
+      "fixedHeaderCount": 7,
+      "beforeHeaderRows": [
+        2,
+        3,
+        4
+      ],
+      "afterHeaderRows": [
+        2,
+        3,
+        4
+      ],
+      "fixedHeaderCells": [
+        {
+          "rowNumber": 2,
+          "columnNumber": 17,
+          "value": "LNG Contract Volume (Imports)"
+        },
+        {
+          "rowNumber": 3,
+          "columnNumber": 17,
+          "value": "From GMC"
+        },
+        {
+          "rowNumber": 4,
+          "columnNumber": 17,
+          "value": "Year "
+        },
+        {
+          "rowNumber": 4,
+          "columnNumber": 18,
+          "value": "From Country"
+        },
+        {
+          "rowNumber": 4,
+          "columnNumber": 19,
+          "value": "From Liquefaction Terminal"
+        },
+        {
+          "rowNumber": 4,
+          "columnNumber": 20,
+          "value": "To Country"
+        },
+        {
+          "rowNumber": 4,
+          "columnNumber": 21,
+          "value": "Gross Gas Import [Mt LNG]"
+        }
+      ]
+    },
+    {
+      "qry": "@c_q060",
+      "role": "TRADE",
+      "sheet": "ShippingCostInput",
+      "name": "Shipping Route Parameters",
+      "ord": 1,
+      "br": 2,
+      "er": 375,
+      "bc": 29,
+      "ec": 39,
+      "hr": 2,
+      "he": 3,
+      "dr": 4,
+      "ra": "Y",
+      "ca": "N",
+      "description": "STRUCTURE DRAFT; TRADE SUMMARY!D27:J27; write policy incomplete",
+      "beforeRowSha256": "ef7841dab303222223c36572148015da06d1741d912efe9950ff89852743f5d6",
+      "fixedHeaderCount": 8,
+      "beforeHeaderRows": [
+        2,
+        3
+      ],
+      "afterHeaderRows": [
+        2,
+        3
+      ],
+      "fixedHeaderCells": [
+        {
+          "rowNumber": 2,
+          "columnNumber": 29,
+          "value": "LUT for Shipping Costs"
+        },
+        {
+          "rowNumber": 3,
+          "columnNumber": 29,
+          "value": "From Country"
+        },
+        {
+          "rowNumber": 3,
+          "columnNumber": 30,
+          "value": "To Country"
+        },
+        {
+          "rowNumber": 3,
+          "columnNumber": 31,
+          "value": "Average Duration/days"
+        },
+        {
+          "rowNumber": 3,
+          "columnNumber": 34,
+          "value": "Average Speed/knots"
+        },
+        {
+          "rowNumber": 3,
+          "columnNumber": 35,
+          "value": "Fuel  Consumption/tonnes"
+        },
+        {
+          "rowNumber": 3,
+          "columnNumber": 38,
+          "value": "Canals"
+        },
+        {
+          "rowNumber": 3,
+          "columnNumber": 39,
+          "value": "Port Charges"
+        }
+      ]
+    },
+    {
+      "qry": "@c_q061",
+      "role": "TRADE",
+      "sheet": "ShippingCostInput",
+      "name": "Importer Classification",
+      "ord": 2,
+      "br": 2,
+      "er": 92,
+      "bc": 42,
+      "ec": 43,
+      "hr": 2,
+      "he": 3,
+      "dr": 4,
+      "ra": "Y",
+      "ca": "N",
+      "description": "STRUCTURE DRAFT; TRADE SUMMARY!D28:J28; write policy incomplete",
+      "beforeRowSha256": "9d2f0661f64d7e13427db1bf26dbaa9f9cb15aafcb8f6d08d24a7d75fb941cc6",
+      "fixedHeaderCount": 3,
+      "beforeHeaderRows": [
+        2,
+        3
+      ],
+      "afterHeaderRows": [
+        2,
+        3
+      ],
+      "fixedHeaderCells": [
+        {
+          "rowNumber": 2,
+          "columnNumber": 42,
+          "value": "Importer Classification"
+        },
+        {
+          "rowNumber": 3,
+          "columnNumber": 42,
+          "value": "Country"
+        },
+        {
+          "rowNumber": 3,
+          "columnNumber": 43,
+          "value": "Region"
+        }
+      ]
+    },
+    {
+      "qry": "@c_q062",
+      "role": "TRADE",
+      "sheet": "ShippingCostInput",
+      "name": "Exporter List",
+      "ord": 3,
+      "br": 2,
+      "er": 29,
+      "bc": 46,
+      "ec": 46,
+      "hr": 2,
+      "he": 3,
+      "dr": 4,
+      "ra": "Y",
+      "ca": "N",
+      "description": "STRUCTURE DRAFT; TRADE SUMMARY!D32:J32; write policy incomplete",
+      "beforeRowSha256": "4b8912bc7a5b8570a7ba1cd3dea72c26e4fd9df92c7525f0f4d6f387a0273a50",
+      "fixedHeaderCount": 2,
+      "beforeHeaderRows": [
+        2,
+        3
+      ],
+      "afterHeaderRows": [
+        2,
+        3
+      ],
+      "fixedHeaderCells": [
+        {
+          "rowNumber": 2,
+          "columnNumber": 46,
+          "value": "Exporters"
+        },
+        {
+          "rowNumber": 3,
+          "columnNumber": 46,
+          "value": "Country"
+        }
+      ]
+    },
+    {
+      "qry": "@c_q063",
+      "role": "TRADE",
+      "sheet": "ShippingCostInput",
+      "name": "Atlantic Charter Cost",
+      "ord": 4,
+      "br": 15,
+      "er": 24,
+      "bc": 2,
+      "ec": 6,
+      "hr": 15,
+      "he": 16,
+      "dr": 17,
+      "ra": "Y",
+      "ca": "N",
+      "description": "STRUCTURE DRAFT; TRADE SUMMARY!D21:J21; write policy incomplete",
+      "beforeRowSha256": "aeae52fb202616fc36d62f2e021f870e1b4eb330fe4e0a178916dfcdf54c6364",
+      "fixedHeaderCount": 3,
+      "beforeHeaderRows": [
+        15,
+        16
+      ],
+      "afterHeaderRows": [
+        15,
+        16
+      ],
+      "fixedHeaderCells": [
+        {
+          "rowNumber": 16,
+          "columnNumber": 2,
+          "value": "Year"
+        },
+        {
+          "rowNumber": 16,
+          "columnNumber": 4,
+          "value": "User Input Growth Rate (%)"
+        },
+        {
+          "rowNumber": 16,
+          "columnNumber": 6,
+          "value": "User Input Absolute Value ($/d)"
+        }
+      ]
+    },
+    {
+      "qry": "@c_q064",
+      "role": "TRADE",
+      "sheet": "ShippingCostInput",
+      "name": "Fuel Cost - IFO380",
+      "ord": 5,
+      "br": 26,
+      "er": 35,
+      "bc": 2,
+      "ec": 6,
+      "hr": 26,
+      "he": 27,
+      "dr": 28,
+      "ra": "Y",
+      "ca": "N",
+      "description": "STRUCTURE DRAFT; TRADE SUMMARY!D22:J22; write policy incomplete",
+      "beforeRowSha256": "c06c19ae92b2f63df9cdf85db77871bc86807ca601bddbfe9951bee451b5fa3a",
+      "fixedHeaderCount": 5,
+      "beforeHeaderRows": [
+        26,
+        27
+      ],
+      "afterHeaderRows": [
+        26,
+        27
+      ],
+      "fixedHeaderCells": [
+        {
+          "rowNumber": 27,
+          "columnNumber": 2,
+          "value": "Year"
+        },
+        {
+          "rowNumber": 27,
+          "columnNumber": 3,
+          "value": "RE Base Case ($/tonne)"
+        },
+        {
+          "rowNumber": 27,
+          "columnNumber": 4,
+          "value": "User Input Growth Rate (%)"
+        },
+        {
+          "rowNumber": 27,
+          "columnNumber": 5,
+          "value": "User Input Implied Value ($/tonne)"
+        },
+        {
+          "rowNumber": 27,
+          "columnNumber": 6,
+          "value": "User Input Absolute Value ($/tonne)"
+        }
+      ]
+    },
+    {
+      "qry": "@c_q065",
+      "role": "TRADE",
+      "sheet": "ShippingCostInput",
+      "name": "Suez Canal Cost",
+      "ord": 6,
+      "br": 37,
+      "er": 46,
+      "bc": 2,
+      "ec": 6,
+      "hr": 37,
+      "he": 38,
+      "dr": 39,
+      "ra": "Y",
+      "ca": "N",
+      "description": "STRUCTURE DRAFT; TRADE SUMMARY!D23:J23; write policy incomplete",
+      "beforeRowSha256": "873ec4c61ee5f9063152c81ea1a9f2b7c1569fce9de262598944dcdab06e2c77",
+      "fixedHeaderCount": 6,
+      "beforeHeaderRows": [
+        37,
+        38
+      ],
+      "afterHeaderRows": [
+        37,
+        38
+      ],
+      "fixedHeaderCells": [
+        {
+          "rowNumber": 37,
+          "columnNumber": 2,
+          "value": "Suez Canal"
+        },
+        {
+          "rowNumber": 38,
+          "columnNumber": 2,
+          "value": "Year"
+        },
+        {
+          "rowNumber": 38,
+          "columnNumber": 3,
+          "value": "RE Base Case ($/crossing)"
+        },
+        {
+          "rowNumber": 38,
+          "columnNumber": 4,
+          "value": "User Input Growth Rate (%)"
+        },
+        {
+          "rowNumber": 38,
+          "columnNumber": 5,
+          "value": "User Input Implied Value ($/crossing)"
+        },
+        {
+          "rowNumber": 38,
+          "columnNumber": 6,
+          "value": "User Input Absolute Value ($/crossing)"
+        }
+      ]
+    },
+    {
+      "qry": "@c_q066",
+      "role": "TRADE",
+      "sheet": "ShippingCostInput",
+      "name": "Panama Canal Cost",
+      "ord": 7,
+      "br": 48,
+      "er": 57,
+      "bc": 2,
+      "ec": 6,
+      "hr": 48,
+      "he": 49,
+      "dr": 50,
+      "ra": "Y",
+      "ca": "N",
+      "description": "STRUCTURE DRAFT; TRADE SUMMARY!D24:J24; write policy incomplete",
+      "beforeRowSha256": "f666bee305e1c71f6ea8ce5ae233971a609860ad79977249ce9005232177aa07",
+      "fixedHeaderCount": 6,
+      "beforeHeaderRows": [
+        48,
+        49
+      ],
+      "afterHeaderRows": [
+        48,
+        49
+      ],
+      "fixedHeaderCells": [
+        {
+          "rowNumber": 48,
+          "columnNumber": 2,
+          "value": "Panama Canal"
+        },
+        {
+          "rowNumber": 49,
+          "columnNumber": 2,
+          "value": "Year"
+        },
+        {
+          "rowNumber": 49,
+          "columnNumber": 3,
+          "value": "RE Base Case ($/Crossing"
+        },
+        {
+          "rowNumber": 49,
+          "columnNumber": 4,
+          "value": "User Input Growth Rate (%)"
+        },
+        {
+          "rowNumber": 49,
+          "columnNumber": 5,
+          "value": "User Input Implied Value ($/crossing)"
+        },
+        {
+          "rowNumber": 49,
+          "columnNumber": 6,
+          "value": "User Input Absolute Value ($/crossing)"
+        }
+      ]
+    },
+    {
+      "qry": "@c_q067",
+      "role": "TRADE",
+      "sheet": "ShippingCostInput",
+      "name": "Suez Canal Disruption",
+      "ord": 8,
+      "br": 59,
+      "er": 68,
+      "bc": 2,
+      "ec": 4,
+      "hr": 59,
+      "he": 60,
+      "dr": 61,
+      "ra": "Y",
+      "ca": "N",
+      "description": "STRUCTURE DRAFT; TRADE SUMMARY!D25:J25; write policy incomplete",
+      "beforeRowSha256": "c944eba9011a80977416569d68bdb0d85c333197e013d03d19fbbcb05cefb52f",
+      "fixedHeaderCount": 4,
+      "beforeHeaderRows": [
+        59,
+        60
+      ],
+      "afterHeaderRows": [
+        59,
+        60
+      ],
+      "fixedHeaderCells": [
+        {
+          "rowNumber": 59,
+          "columnNumber": 2,
+          "value": "Suez Canal Disruption"
+        },
+        {
+          "rowNumber": 60,
+          "columnNumber": 2,
+          "value": "Year"
+        },
+        {
+          "rowNumber": 60,
+          "columnNumber": 3,
+          "value": "Disrupted (Yes/No)"
+        },
+        {
+          "rowNumber": 60,
+          "columnNumber": 4,
+          "value": "Additional Shipping Distance / NM"
+        }
+      ]
+    },
+    {
+      "qry": "@c_q068",
+      "role": "TRADE",
+      "sheet": "ShippingCostInput",
+      "name": "Panama Canal Disruption",
+      "ord": 9,
+      "br": 70,
+      "er": 79,
+      "bc": 2,
+      "ec": 4,
+      "hr": 70,
+      "he": 71,
+      "dr": 72,
+      "ra": "Y",
+      "ca": "N",
+      "description": "STRUCTURE DRAFT; TRADE SUMMARY!D26:J26; write policy incomplete",
+      "beforeRowSha256": "4547e30c92abe984f92c9d07217c258a8a5c8af5279cf600d5cedf21c035079b",
+      "fixedHeaderCount": 4,
+      "beforeHeaderRows": [
+        70,
+        71
+      ],
+      "afterHeaderRows": [
+        70,
+        71
+      ],
+      "fixedHeaderCells": [
+        {
+          "rowNumber": 70,
+          "columnNumber": 2,
+          "value": "Panama Canal Disruption"
+        },
+        {
+          "rowNumber": 71,
+          "columnNumber": 2,
+          "value": "Year"
+        },
+        {
+          "rowNumber": 71,
+          "columnNumber": 3,
+          "value": "Disrupted (Yes/No)"
+        },
+        {
+          "rowNumber": 71,
+          "columnNumber": 4,
+          "value": "Additional Shipping Distance / NM"
+        }
+      ]
+    },
+    {
+      "qry": "@c_q069",
+      "role": "TRADE",
+      "sheet": "ShippingCostInput",
+      "name": "Technical Parameters",
+      "ord": 10,
+      "br": 81,
+      "er": 83,
+      "bc": 2,
+      "ec": 5,
+      "hr": 81,
+      "he": 82,
+      "dr": 83,
+      "ra": "N",
+      "ca": "N",
+      "description": "STRUCTURE DRAFT; TRADE SUMMARY!D29:J29; write policy incomplete",
+      "beforeRowSha256": "67b1be936ab3e8464eccf46bf9fe17a3af9be43e58c76a5989557a56fadf39e1",
+      "fixedHeaderCount": 2,
+      "beforeHeaderRows": [
+        81,
+        82
+      ],
+      "afterHeaderRows": [
+        81,
+        82
+      ],
+      "fixedHeaderCells": [
+        {
+          "rowNumber": 81,
+          "columnNumber": 2,
+          "value": "Technical Parameters"
+        },
+        {
+          "rowNumber": 82,
+          "columnNumber": 3,
+          "value": "LNG Vessel Tank Heel (%)"
+        }
+      ]
+    },
+    {
+      "qry": "@c_q070",
+      "role": "TRADE",
+      "sheet": "ShippingCostInput",
+      "name": "Panama Spot Capacity",
+      "ord": 11,
+      "br": 86,
+      "er": 90,
+      "bc": 2,
+      "ec": 5,
+      "hr": 86,
+      "he": 87,
+      "dr": 88,
+      "ra": "N",
+      "ca": "N",
+      "description": "STRUCTURE DRAFT; TRADE SUMMARY!D30:J30; write policy incomplete",
+      "beforeRowSha256": "4419f47f8a764b1dfa46b3d708e90b213373dbc5390f118175cdcf2bae01c541",
+      "fixedHeaderCount": 5,
+      "beforeHeaderRows": [
+        86,
+        87
+      ],
+      "afterHeaderRows": [
+        86,
+        87
+      ],
+      "fixedHeaderCells": [
+        {
+          "rowNumber": 86,
+          "columnNumber": 2,
+          "value": "Panama Spot Capacity"
+        },
+        {
+          "rowNumber": 87,
+          "columnNumber": 2,
+          "value": "Year"
+        },
+        {
+          "rowNumber": 87,
+          "columnNumber": 3,
+          "value": "Panama Spot Capacity (MTPA)"
+        },
+        {
+          "rowNumber": 87,
+          "columnNumber": 4,
+          "value": "Use?"
+        },
+        {
+          "rowNumber": 87,
+          "columnNumber": 5,
+          "value": "Memo"
+        }
+      ]
+    },
+    {
+      "qry": "@c_q071",
+      "role": "TRADE",
+      "sheet": "MidstreamCapacityInput",
+      "name": "PNG Infrastructure",
+      "ord": 1,
+      "br": 1,
+      "er": 207,
+      "bc": 2,
+      "ec": 17,
+      "hr": 1,
+      "he": 3,
+      "dr": 11,
+      "ra": "Y",
+      "ca": "Y",
+      "description": "STRUCTURE DRAFT; TRADE SUMMARY!D33:J33; write policy incomplete",
+      "beforeRowSha256": "7467b1bdad01c9de15a831ffd636a40a84471829c04ef4463586faf2e112b868",
+      "fixedHeaderCount": 6,
+      "beforeHeaderRows": [
+        1,
+        2,
+        3
+      ],
+      "afterHeaderRows": [
+        1,
+        2,
+        3
+      ],
+      "fixedHeaderCells": [
+        {
+          "rowNumber": 1,
+          "columnNumber": 2,
+          "value": "PNG Infrastructure [Mt LNG]"
+        },
+        {
+          "rowNumber": 2,
+          "columnNumber": 2,
+          "value": "From GMC/SupplyModel"
+        },
+        {
+          "rowNumber": 2,
+          "columnNumber": 10,
+          "value": "Year"
+        },
+        {
+          "rowNumber": 3,
+          "columnNumber": 2,
+          "value": "Route"
+        },
+        {
+          "rowNumber": 3,
+          "columnNumber": 4,
+          "value": "From Country"
+        },
+        {
+          "rowNumber": 3,
+          "columnNumber": 7,
+          "value": "To Country"
+        }
+      ]
+    },
+    {
+      "qry": "@c_q072",
+      "role": "TRADE",
+      "sheet": "MidstreamCapacityInput",
+      "name": "Pipeline Import Allocation Shares",
+      "ord": 2,
+      "br": 1,
+      "er": 186,
+      "bc": 128,
+      "ec": 132,
+      "hr": 1,
+      "he": 3,
+      "dr": 4,
+      "ra": "Y",
+      "ca": "N",
+      "description": "STRUCTURE DRAFT; TRADE SUMMARY!D34:J34; write policy incomplete",
+      "beforeRowSha256": "3916f4f9762ee55a2301be364f39d918cdab5d18505407919b443a985f73de76",
+      "fixedHeaderCount": 7,
+      "beforeHeaderRows": [
+        1,
+        2,
+        3
+      ],
+      "afterHeaderRows": [
+        1,
+        2,
+        3
+      ],
+      "fixedHeaderCells": [
+        {
+          "rowNumber": 1,
+          "columnNumber": 128,
+          "value": "Share of Imports between From and To Country Flowing through Each Pipeline"
+        },
+        {
+          "rowNumber": 2,
+          "columnNumber": 128,
+          "value": "From Secondary Research"
+        },
+        {
+          "rowNumber": 3,
+          "columnNumber": 128,
+          "value": "Year"
+        },
+        {
+          "rowNumber": 3,
+          "columnNumber": 129,
+          "value": "From Country"
+        },
+        {
+          "rowNumber": 3,
+          "columnNumber": 130,
+          "value": "To Country"
+        },
+        {
+          "rowNumber": 3,
+          "columnNumber": 131,
+          "value": "Pipeline"
+        },
+        {
+          "rowNumber": 3,
+          "columnNumber": 132,
+          "value": "User-adjustable Share (%)"
+        }
+      ]
+    },
+    {
+      "qry": "@c_q073",
+      "role": "TRADE",
+      "sheet": "MidstreamCapacityInput",
+      "name": "Nord Stream Importer Allocation",
+      "ord": 3,
+      "br": 1,
+      "er": 8,
+      "bc": 158,
+      "ec": 160,
+      "hr": 1,
+      "he": 3,
+      "dr": 4,
+      "ra": "Y",
+      "ca": "N",
+      "description": "STRUCTURE DRAFT; TRADE SUMMARY!D35:J35; write policy incomplete",
+      "beforeRowSha256": "d8f01d6f520b6c0ce178d70e44d4506b5c057f48f45b662b72b0d92b2a61e0b3",
+      "fixedHeaderCount": 5,
+      "beforeHeaderRows": [
+        1,
+        2,
+        3
+      ],
+      "afterHeaderRows": [
+        1,
+        2,
+        3
+      ],
+      "fixedHeaderCells": [
+        {
+          "rowNumber": 1,
+          "columnNumber": 158,
+          "value": "Nord stream gas by importer country"
+        },
+        {
+          "rowNumber": 2,
+          "columnNumber": 158,
+          "value": "% share imported"
+        },
+        {
+          "rowNumber": 3,
+          "columnNumber": 158,
+          "value": "From Country"
+        },
+        {
+          "rowNumber": 3,
+          "columnNumber": 159,
+          "value": "To Country"
+        },
+        {
+          "rowNumber": 3,
+          "columnNumber": 160,
+          "value": "User-Adjustable Share (%)"
+        }
+      ]
+    },
+    {
+      "qry": "@c_q074",
+      "role": "TRADE",
+      "sheet": "UpstreamAdjLogicInput",
+      "name": "Country Supply Adjustment",
+      "ord": 1,
+      "br": 1,
+      "er": 674,
+      "bc": 9,
+      "ec": 16,
+      "hr": 1,
+      "he": 2,
+      "dr": 3,
+      "ra": "N",
+      "ca": "N",
+      "description": "STRUCTURE DRAFT; TRADE SUMMARY!D45:J45; write policy incomplete",
+      "beforeRowSha256": "4b8511caf630c74848fa98fd9711e8d6dc0f0edab5e7bea10df4be5bdf36381a",
+      "fixedHeaderCount": 6,
+      "beforeHeaderRows": [
+        1,
+        2
+      ],
+      "afterHeaderRows": [
+        1,
+        2
+      ],
+      "fixedHeaderCells": [
+        {
+          "rowNumber": 1,
+          "columnNumber": 9,
+          "value": "Year"
+        },
+        {
+          "rowNumber": 1,
+          "columnNumber": 10,
+          "value": "Country"
+        },
+        {
+          "rowNumber": 1,
+          "columnNumber": 16,
+          "value": "Deficit Supply-Adjustment [BCM]"
+        },
+        {
+          "rowNumber": 2,
+          "columnNumber": 9,
+          "value": "Year"
+        },
+        {
+          "rowNumber": 2,
+          "columnNumber": 10,
+          "value": "Country"
+        },
+        {
+          "rowNumber": 2,
+          "columnNumber": 16,
+          "value": "User-Input [Mt LNG]"
+        }
+      ]
+    },
+    {
+      "qry": "@c_q075",
+      "role": "TRADE",
+      "sheet": "UpstreamAdjLogicInput",
+      "name": "Excess LNG to PNG Countries",
+      "ord": 2,
+      "br": 1,
+      "er": 40,
+      "bc": 20,
+      "ec": 20,
+      "hr": 1,
+      "he": 3,
+      "dr": 4,
+      "ra": "Y",
+      "ca": "N",
+      "description": "STRUCTURE DRAFT; TRADE SUMMARY!D46:J46; write policy incomplete",
+      "beforeRowSha256": "95801fcd940a496df9f87b7eb8b0af703a146c2e24072d677969547921ee56e4",
+      "fixedHeaderCount": 2,
+      "beforeHeaderRows": [
+        1,
+        2,
+        3
+      ],
+      "afterHeaderRows": [
+        1,
+        2,
+        3
+      ],
+      "fixedHeaderCells": [
+        {
+          "rowNumber": 1,
+          "columnNumber": 20,
+          "value": "Consumption of Excess LNG Volumes as PNG (Surplus Case)"
+        },
+        {
+          "rowNumber": 2,
+          "columnNumber": 20,
+          "value": "Exporter countries"
+        }
+      ]
+    },
+    {
+      "qry": "@c_q076",
+      "role": "TRADE",
+      "sheet": "DemandAdjLogicInput",
+      "name": "Premium Market Countries",
+      "ord": 1,
+      "br": 1,
+      "er": 16,
+      "bc": 1,
+      "ec": 1,
+      "hr": 1,
+      "he": 2,
+      "dr": 3,
+      "ra": "Y",
+      "ca": "N",
+      "description": "STRUCTURE DRAFT; TRADE SUMMARY!D48:J48; write policy incomplete",
+      "beforeRowSha256": "b3783db4bd50ccc3ff4aff4ed04d35c48125620b074b7fbc2f5f1ceb935848be",
+      "fixedHeaderCount": 2,
+      "beforeHeaderRows": [
+        1,
+        2
+      ],
+      "afterHeaderRows": [
+        1,
+        2
+      ],
+      "fixedHeaderCells": [
+        {
+          "rowNumber": 1,
+          "columnNumber": 1,
+          "value": "Selection of Premium Markets"
+        },
+        {
+          "rowNumber": 2,
+          "columnNumber": 1,
+          "value": "Premium Markets"
+        }
+      ]
+    },
+    {
+      "qry": "@c_q077",
+      "role": "TRADE",
+      "sheet": "DemandAdjLogicInput",
+      "name": "Demand Adjustment Parameters",
+      "ord": 2,
+      "br": 1,
+      "er": 3,
+      "bc": 3,
+      "ec": 6,
+      "hr": 1,
+      "he": 1,
+      "dr": 2,
+      "ra": "Y",
+      "ca": "N",
+      "description": "STRUCTURE DRAFT; TRADE SUMMARY!D49:J49; write policy incomplete",
+      "beforeRowSha256": "eb54573dc0000fbab71651fba86267ebcddfbf6515e698056e308561ae6fb52f",
+      "fixedHeaderCount": 1,
+      "beforeHeaderRows": [
+        1
+      ],
+      "afterHeaderRows": [
+        1
+      ],
+      "fixedHeaderCells": [
+        {
+          "rowNumber": 1,
+          "columnNumber": 3,
+          "value": "Demand Adjustment"
+        }
+      ]
+    },
+    {
+      "qry": "@c_q078",
+      "role": "TRADE",
+      "sheet": "DemandAdjLogicInput",
+      "name": "Demand Adjustment Bands",
+      "ord": 3,
+      "br": 1,
+      "er": 7,
+      "bc": 8,
+      "ec": 10,
+      "hr": 1,
+      "he": 2,
+      "dr": 3,
+      "ra": "Y",
+      "ca": "N",
+      "description": "STRUCTURE DRAFT; TRADE SUMMARY!D50:J50; write policy incomplete",
+      "beforeRowSha256": "af9bd04c9f575f471e69cd3024af1b608930a78eaec39e17f5916f7360b0512f",
+      "fixedHeaderCount": 4,
+      "beforeHeaderRows": [
+        1,
+        2
+      ],
+      "afterHeaderRows": [
+        1,
+        2
+      ],
+      "fixedHeaderCells": [
+        {
+          "rowNumber": 1,
+          "columnNumber": 8,
+          "value": "Demand Adjustment"
+        },
+        {
+          "rowNumber": 2,
+          "columnNumber": 8,
+          "value": "Lower Bound"
+        },
+        {
+          "rowNumber": 2,
+          "columnNumber": 9,
+          "value": "Upper Bound"
+        },
+        {
+          "rowNumber": 2,
+          "columnNumber": 10,
+          "value": "Deviations"
+        }
+      ]
+    },
+    {
+      "qry": "@c_q079",
+      "role": "TRADE",
+      "sheet": "CostInput",
+      "name": "Regasification Tariff",
+      "ord": 1,
+      "br": 1,
+      "er": 379,
+      "bc": 1,
+      "ec": 4,
+      "hr": 1,
+      "he": 2,
+      "dr": 3,
+      "ra": "Y",
+      "ca": "N",
+      "description": "STRUCTURE DRAFT; TRADE SUMMARY!D51:J51; write policy incomplete",
+      "beforeRowSha256": "1b6def0df9e2086a1fcc71dd3d0b0b5e327870d6daaf05543abcb96007ad547e",
+      "fixedHeaderCount": 5,
+      "beforeHeaderRows": [
+        1,
+        2
+      ],
+      "afterHeaderRows": [
+        1,
+        2
+      ],
+      "fixedHeaderCells": [
+        {
+          "rowNumber": 1,
+          "columnNumber": 1,
+          "value": "LNG Regasification Tariff (USD/MMbtu)"
+        },
+        {
+          "rowNumber": 2,
+          "columnNumber": 1,
+          "value": "Year"
+        },
+        {
+          "rowNumber": 2,
+          "columnNumber": 2,
+          "value": "Country"
+        },
+        {
+          "rowNumber": 2,
+          "columnNumber": 3,
+          "value": "RE Base Case Input"
+        },
+        {
+          "rowNumber": 2,
+          "columnNumber": 4,
+          "value": "User-Input"
+        }
+      ]
+    },
+    {
+      "qry": "@c_q080",
+      "role": "TRADE",
+      "sheet": "CostInput",
+      "name": "Liquefaction Cost",
+      "ord": 2,
+      "br": 1,
+      "er": 233,
+      "bc": 8,
+      "ec": 11,
+      "hr": 1,
+      "he": 2,
+      "dr": 3,
+      "ra": "Y",
+      "ca": "N",
+      "description": "STRUCTURE DRAFT; TRADE SUMMARY!D52:J52; write policy incomplete",
+      "beforeRowSha256": "08ee0534582c91ed9f4fb2d92bd4d22cc5b64eabdc3a26f35d1c0b78ce1783dd",
+      "fixedHeaderCount": 5,
+      "beforeHeaderRows": [
+        1,
+        2
+      ],
+      "afterHeaderRows": [
+        1,
+        2
+      ],
+      "fixedHeaderCells": [
+        {
+          "rowNumber": 1,
+          "columnNumber": 8,
+          "value": "LNG Liquefaction Cost (USD/MMbtu)"
+        },
+        {
+          "rowNumber": 2,
+          "columnNumber": 8,
+          "value": "Year"
+        },
+        {
+          "rowNumber": 2,
+          "columnNumber": 9,
+          "value": "Country"
+        },
+        {
+          "rowNumber": 2,
+          "columnNumber": 10,
+          "value": "RE Base Case Input"
+        },
+        {
+          "rowNumber": 2,
+          "columnNumber": 11,
+          "value": "User-Input"
+        }
+      ]
+    },
+    {
+      "qry": "@c_q081",
+      "role": "TRADE",
+      "sheet": "CostInput",
+      "name": "LNG Upstream Cost",
+      "ord": 3,
+      "br": 1,
+      "er": 227,
+      "bc": 15,
+      "ec": 18,
+      "hr": 1,
+      "he": 2,
+      "dr": 3,
+      "ra": "Y",
+      "ca": "N",
+      "description": "STRUCTURE DRAFT; TRADE SUMMARY!D53:J53; write policy incomplete",
+      "beforeRowSha256": "07d4c3211eead1ffffcbd19904eeca53a6f45b036732f8370f40b66ed1e7a671",
+      "fixedHeaderCount": 5,
+      "beforeHeaderRows": [
+        1,
+        2
+      ],
+      "afterHeaderRows": [
+        1,
+        2
+      ],
+      "fixedHeaderCells": [
+        {
+          "rowNumber": 1,
+          "columnNumber": 15,
+          "value": "LNG Upstream Cost (USD/MMbtu)"
+        },
+        {
+          "rowNumber": 2,
+          "columnNumber": 15,
+          "value": "Year"
+        },
+        {
+          "rowNumber": 2,
+          "columnNumber": 16,
+          "value": "Country"
+        },
+        {
+          "rowNumber": 2,
+          "columnNumber": 17,
+          "value": "RE Base Case Input"
+        },
+        {
+          "rowNumber": 2,
+          "columnNumber": 18,
+          "value": "User-Input"
+        }
+      ]
+    },
+    {
+      "qry": "@c_q082",
+      "role": "TRADE",
+      "sheet": "CostInput",
+      "name": "Non-LNG Upstream Cost",
+      "ord": 4,
+      "br": 1,
+      "er": 615,
+      "bc": 22,
+      "ec": 25,
+      "hr": 1,
+      "he": 2,
+      "dr": 3,
+      "ra": "Y",
+      "ca": "N",
+      "description": "STRUCTURE DRAFT; TRADE SUMMARY!D54:J54; write policy incomplete",
+      "beforeRowSha256": "ee085189987310de80485a3c6b1ee8810dad3a34ae2f4b72d597ddfd6edad4e8",
+      "fixedHeaderCount": 5,
+      "beforeHeaderRows": [
+        1,
+        2
+      ],
+      "afterHeaderRows": [
+        1,
+        2
+      ],
+      "fixedHeaderCells": [
+        {
+          "rowNumber": 1,
+          "columnNumber": 22,
+          "value": "Non-LNG Upstream Cost (USD/MMBTU)"
+        },
+        {
+          "rowNumber": 2,
+          "columnNumber": 22,
+          "value": "Year"
+        },
+        {
+          "rowNumber": 2,
+          "columnNumber": 23,
+          "value": "Country"
+        },
+        {
+          "rowNumber": 2,
+          "columnNumber": 24,
+          "value": "RE Base Case Input"
+        },
+        {
+          "rowNumber": 2,
+          "columnNumber": 25,
+          "value": "User-Input"
+        }
+      ]
+    },
+    {
+      "qry": "@c_q083",
+      "role": "TRADE",
+      "sheet": "CostInput",
+      "name": "Pipeline Cost",
+      "ord": 5,
+      "br": 1,
+      "er": 1554,
+      "bc": 29,
+      "ec": 33,
+      "hr": 1,
+      "he": 2,
+      "dr": 3,
+      "ra": "Y",
+      "ca": "N",
+      "description": "STRUCTURE DRAFT; TRADE SUMMARY!D55:J55; write policy incomplete",
+      "beforeRowSha256": "0162b44377ec76f99cbcc157e267b667e7fddc64192e682566c3b8b5e2db3898",
+      "fixedHeaderCount": 6,
+      "beforeHeaderRows": [
+        1,
+        2
+      ],
+      "afterHeaderRows": [
+        1,
+        2
+      ],
+      "fixedHeaderCells": [
+        {
+          "rowNumber": 1,
+          "columnNumber": 29,
+          "value": "Pipeline Cost (USD/MMBTU)"
+        },
+        {
+          "rowNumber": 2,
+          "columnNumber": 29,
+          "value": "Year"
+        },
+        {
+          "rowNumber": 2,
+          "columnNumber": 30,
+          "value": "From Country"
+        },
+        {
+          "rowNumber": 2,
+          "columnNumber": 31,
+          "value": "To Country"
+        },
+        {
+          "rowNumber": 2,
+          "columnNumber": 32,
+          "value": "RE Base Case Input"
+        },
+        {
+          "rowNumber": 2,
+          "columnNumber": 33,
+          "value": "User-Input"
+        }
+      ]
+    },
+    {
+      "qry": "@c_q084",
+      "role": "TRADE",
+      "sheet": "CostInput",
+      "name": "LNG Project SRMC",
+      "ord": 6,
+      "br": 1,
+      "er": 519,
+      "bc": 37,
+      "ec": 40,
+      "hr": 1,
+      "he": 2,
+      "dr": 3,
+      "ra": "Y",
+      "ca": "N",
+      "description": "STRUCTURE DRAFT; TRADE SUMMARY!D56:J56; write policy incomplete",
+      "beforeRowSha256": "ec8f0ed651234b965aac951bcb3cc9986ba232c374421c292940bc28366bce9e",
+      "fixedHeaderCount": 5,
+      "beforeHeaderRows": [
+        1,
+        2
+      ],
+      "afterHeaderRows": [
+        1,
+        2
+      ],
+      "fixedHeaderCells": [
+        {
+          "rowNumber": 1,
+          "columnNumber": 37,
+          "value": "LNG Projects' SRMC (USD/kcf)"
+        },
+        {
+          "rowNumber": 2,
+          "columnNumber": 37,
+          "value": "Year"
+        },
+        {
+          "rowNumber": 2,
+          "columnNumber": 38,
+          "value": "Project_Mapped"
+        },
+        {
+          "rowNumber": 2,
+          "columnNumber": 39,
+          "value": "Country"
+        },
+        {
+          "rowNumber": 2,
+          "columnNumber": 40,
+          "value": "Average of Costs (USD/kcf)"
+        }
+      ]
+    },
+    {
+      "qry": "@c_q085",
+      "role": "TRADE",
+      "sheet": "4.5 PriceModelInput",
+      "name": "JKM - Base Case",
+      "ord": 1,
+      "br": 2,
+      "er": 35,
+      "bc": 35,
+      "ec": 37,
+      "hr": 2,
+      "he": 3,
+      "dr": 4,
+      "ra": "Y",
+      "ca": "N",
+      "description": "STRUCTURE DRAFT; TRADE SUMMARY!D63:J63; write policy incomplete",
+      "beforeRowSha256": "f03791e6dd18840d7d4c8164791c106eb921335a2642cd4b3b35c4d4c6e32da7",
+      "fixedHeaderCount": 4,
+      "beforeHeaderRows": [
+        2,
+        3
+      ],
+      "afterHeaderRows": [
+        2,
+        3
+      ],
+      "fixedHeaderCells": [
+        {
+          "rowNumber": 2,
+          "columnNumber": 35,
+          "value": "JKM - Base Case"
+        },
+        {
+          "rowNumber": 3,
+          "columnNumber": 35,
+          "value": "Year"
+        },
+        {
+          "rowNumber": 3,
+          "columnNumber": 36,
+          "value": "Country"
+        },
+        {
+          "rowNumber": 3,
+          "columnNumber": 37,
+          "value": "Uncontracted Volumes/Mt LNG"
+        }
+      ]
+    },
+    {
+      "qry": "@c_q086",
+      "role": "TRADE",
+      "sheet": "4.5 PriceModelInput",
+      "name": "TTF - Base Case",
+      "ord": 2,
+      "br": 2,
+      "er": 59,
+      "bc": 39,
+      "ec": 41,
+      "hr": 2,
+      "he": 3,
+      "dr": 4,
+      "ra": "Y",
+      "ca": "N",
+      "description": "STRUCTURE DRAFT; TRADE SUMMARY!D64:J64; write policy incomplete",
+      "beforeRowSha256": "8629379a7323bc9234b621641b8aeb7cdb1d1ef7cc4be406eb2494c772b82817",
+      "fixedHeaderCount": 4,
+      "beforeHeaderRows": [
+        2,
+        3
+      ],
+      "afterHeaderRows": [
+        2,
+        3
+      ],
+      "fixedHeaderCells": [
+        {
+          "rowNumber": 2,
+          "columnNumber": 39,
+          "value": "TTF - Base Case"
+        },
+        {
+          "rowNumber": 3,
+          "columnNumber": 39,
+          "value": "Year"
+        },
+        {
+          "rowNumber": 3,
+          "columnNumber": 40,
+          "value": "Country"
+        },
+        {
+          "rowNumber": 3,
+          "columnNumber": 41,
+          "value": "Uncontracted Volumes/Mt LNG"
+        }
+      ]
+    },
+    {
+      "qry": "@c_q087",
+      "role": "TRADE",
+      "sheet": "LNGExportRestictionInput",
+      "name": "LNG Export Restriction",
+      "ord": 1,
+      "br": 2,
+      "er": 200,
+      "bc": 2,
+      "ec": 5,
+      "hr": 2,
+      "he": 3,
+      "dr": 4,
+      "ra": "Y",
+      "ca": "N",
+      "description": "STRUCTURE DRAFT; TRADE SUMMARY!D65:J65; write policy incomplete",
+      "beforeRowSha256": "a71a45cafeb0c1815838bf7caa6843c1d755e4e43bd603ee46d775fb68011963",
+      "fixedHeaderCount": 5,
+      "beforeHeaderRows": [
+        2,
+        3
+      ],
+      "afterHeaderRows": [
+        2,
+        3
+      ],
+      "fixedHeaderCells": [
+        {
+          "rowNumber": 2,
+          "columnNumber": 2,
+          "value": "LNG Export Restriction"
+        },
+        {
+          "rowNumber": 3,
+          "columnNumber": 2,
+          "value": "Year"
+        },
+        {
+          "rowNumber": 3,
+          "columnNumber": 3,
+          "value": "Country"
+        },
+        {
+          "rowNumber": 3,
+          "columnNumber": 4,
+          "value": "LNG Plant"
+        },
+        {
+          "rowNumber": 3,
+          "columnNumber": 5,
+          "value": "LNG Plant Train"
+        }
+      ]
+    }
+  ]
+}

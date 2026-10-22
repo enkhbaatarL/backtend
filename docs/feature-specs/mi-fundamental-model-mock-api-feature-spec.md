@@ -13,7 +13,7 @@
   - `docs/conventions/openapi-documentation-conventions.md`
 - supersedes:
   - 이 문서의 1차 mock runtime 구성·reset API·in-memory store 구현 handoff
-- last synced: 2026-09-28
+- last synced: 2026-10-20 (§3.2 일반 Case의 ACTIVE 템플릿 자동 연결)
 - open questions:
   - 현재 구현된 API와 Region/Country 필터 확장 계약에는 없음
   - callback 인증/서명, 필터 저장은 별도 후속 계약에서 확정
@@ -327,6 +327,14 @@ createCase(
 - 확장자/MIME/크기 검증은 기존 `FileService` 정책을 재사용하고 해당 오류를 `FILE_FORMAT_ERROR`, `FILE_SIZE_ERROR`로 매핑한다.
 - 네 파일은 하나의 Case aggregate로 업로드한다. 하나라도 업로드 또는 file metadata 저장에 실패하면 API 전체를 실패시키고, 그 전에 성공한 파일은 기존 보상 삭제 흐름으로 정리한다.
 - 같은 파일명 자체는 허용하지만 `DEMAND`, `SUPPLY`, `TRADE`, `OUTPUT` 역할 키워드는 각각 정확히 1개여야 한다.
+
+일반 Case의 템플릿 자동 연결 (2026-10-20 사용자 요청):
+
+- 기존 multipart 요청/201 응답 필드는 유지한다. 서버는 `mi.model-input.upload.model-code`로 지정한 모델의 삭제되지 않은 `ACTIVE` 템플릿 하나를 생성 시점에 고정한다. 직접 업로드의 모델 선택 설정을 공유하며 전역 최대 ID나 다른 모델로 대체하지 않는다.
+- 모델 설정이 비어 있거나 해당 모델의 ACTIVE가 없거나 둘 이상이면 `409 BIZ_RULE_VIOLATION`으로 거절하며 Case/파일을 저장하지 않는다.
+- Case·4파일 metadata·`tmd_mdl_scnrcasetmpltd` 연결은 같은 master transaction에서 저장한다. 연결 실패도 생성 전체 실패이며 이미 업로드한 파일은 기존 보상 삭제 흐름으로 정리한다.
+- 이후 ACTIVE 발행이 바뀌어도 이미 생성한 Case의 연결은 유지한다. 기존 미연결 Case를 자동 보정하거나 GET에서 연결을 만들지 않는다.
+- 자동 연결은 템플릿의 모든 표와 파일 내용이 일치한다는 검증 결과가 아니다. 기존 파일 검증과 입력 조회/초안 생성의 판독·정책 검증은 유지한다.
 
 ### 3.3 Scenario Case 실행 요청
 

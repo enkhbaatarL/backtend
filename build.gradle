@@ -170,3 +170,11 @@ test {
     // 시스템 환경 변수를 테스트 JVM에 전달
     environment System.getenv()
 }
+
+// Dedicated worker: only compiled classes and dependencies, no profiles/workbooks.
+tasks.register('inputDraftWorkerDist', Sync) {
+    dependsOn tasks.named('classes')
+    into layout.buildDirectory.dir('input-draft-worker')
+    from(sourceSets.main.output.classesDirs) { into 'classes' }
+    from(configurations.runtimeClasspath) { into 'lib' }
+}

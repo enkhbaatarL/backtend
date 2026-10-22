@@ -6,6 +6,34 @@
 - canonical for: Business rules, ownership, lifecycle, and relationships of the MI model input template catalog, Draft and finalization; boundary to Case and Run
 - owner: BE
 - source documents:
+  - 2026-10-20 사용자 인계 정책 채택: 정상 종료 증거가 있는 인계는 자동으로 진행하고, 비정상 종료·종료 불명은 운영자가 이전 웹 소비자의 실제 종료를 확인한 뒤 운영용 복구 명령으로 재개한다. 이 정책으로 새 세션의 구현 착수를 승인했다. schema 변경은 별도 확인한다.
+  - 2026-10-20 사용자 배포 전제 확인: 기존 전용 worker 종료는 사용자가 담당하며 실제 배포 환경에는 기존 worker가 없다. 기존 worker 자동 종료 확인·혼합 운영 대응은 A 구현 범위에서 제외한다.
+  - 2026-10-20 사용자 후속 승인: A 실행기 프롬프트 사전 검토를 반영한다. 잠금 획득을 이전 실행 종료 증거로 보지 않고, 종료 미확인 시 인계 보류·DB 정리 재개·Error 처리 한계·작업별 평문 정리를 §5.5.3에 명시한다. 이번 승인은 문서 반영이며 제품 구현은 별도다.
+  - 2026-10-20 사용자 결정: 실행 방식은 A(웹 JVM 안 처리)로 진행하고, 운영 반영 전 웹 Pod 설정 확인과 웹 동시 부하 시험으로 확인한다(§5.5.3).
+  - 2026-10-19 사용자 결정: LiqUtil의 월 열을 모두 삭제한 뒤 새 월을 추가하면 고정 원본의 첫 월부터 다시 시작한다(규칙47).
+  - 2026-10-19 사용자 결정: 모델 입력 파일 처리 worker는 별도 배포·별도 저장소로 분리하지 않는 방향이다. 실제 행·열 편집 처리기를 먼저 구현하고 실행 방식(웹 JVM 안 처리 / 웹 Pod 안 자식 JVM)은 고객사 배포 전에 정한다. 규칙64의 120초는 외부 요구가 아닌 내부 목표다(§5.5.3·규칙64).
+  - 2026-10-19 업로드 처리 상한 초기 채택: 사용자가 일단120초로 결정했다. 규칙67에 따라 파일 수신 후 접수부터 대기열 포함120초를 적용하며 실제 파일 성능/중단 검증은 미완료다.
+- 2026-10-21 업로드 처리 상한 후속 결정: testdb 4파일 실측에서 120초 만료가 확인돼 최초/후속 업로드 작업의 접수 후 기한을 600초로 변경한다. CHANGE/FINALIZE의 120초는 유지한다(규칙67, 입력 제공 명세 §3.3).
+  - 2026-10-19 사용자 후속 결정: 취소한 A는 취소 상태로 유지하고 B의 첫 파일 검증 실패는 다시 업로드한다. A 취소와 B 최초 검증을 함께 복구하지 않는다(규칙67).
+  - 2026-10-19 미완료 작성 취소/새 시작 사용자1안 채택: 처리 중 작업이 없을 때 현재 작성 취소를 확인한 뒤 새 Case 작성을 허용하고 확인 전 기존 내용을 유지한다(규칙67).
+  - 2026-10-19 사용자 최종 결정: 파일을 직접 업로드하는 초안은 같은 사용자가 한 번에 Case 하나만 작성한다. 규칙67에서 과거 복수 허용을 대체하며 다른 출처 Draft 정책은 유지한다.
+  - 2026-10-19 과거 재논의 이력: 업로드 초안 목록/선택 재개를 제외하고 동일 사용자 복수 허용을 보류했다. 당시 미정이던 개수는 이후 직접 업로드 단일 작성 결정으로 확정했다.
+  - 2026-10-19 사용자 정정: 파일 교체가 다른 파일의 표에 영향을 주는 경우는 없다. 규칙67의 교체 범위는 해당 역할 파일/편집에 한정하고 파일 간 재계산 가정을 제거한다.
+  - 2026-10-19 업로드 실패 후 재시도 추천안 채택: 확정 FAILED는 같은 요청으로 재실행하지 않고 기존 결과를 반환하며, 명시적 재시도는 새 요청/후속 현재 성공 버전으로 처리한다(규칙67).
+  - 2026-10-19 사용자 결정: LiqUtil 새 월 본문 빈칸 기본·미입력 유지·명시적 숫자0 구분은 규칙46을 따른다. 기존 숫자값을 변환하지 않는다.
+  - 2026-10-19 후속 파일 revision 사용자1안 채택: 파일 추가·교체는 화면의 성공 버전과 현재 버전이 일치해야 하며 성공 시 초안 revision을1회 증가, 실패 시 유지한다(규칙67).
+  - 2026-10-19 초안별 변경1건 사용자1안 채택: 같은 초안의 변경 작업은 한 번에 하나만 허용하고 처리 중 직전 성공 상태/결과 조회를 유지한다. 다른 초안은 독립적으로 진행한다(규칙67).
+  - 2026-10-19 업로드 비동기 사용자1안 채택: 파일 수신 후 비동기로 검증·파싱하고 성공 뒤에만 초안 생성 또는 파일 연결·교체를 확정한다(규칙67).
+  - 2026-10-19 최종저장 형식 사용자1안 채택: 각 역할의.xlsx 원본은.xlsx로,.xlsm 원본은.xlsm으로 최종저장한다. 자동 변환하지 않으며 최종 파일의 실제 형식·확장자·MIME을 일치시킨다(규칙16·67).
+  - 2026-10-19 파일 형식 사용자2안 채택: 순차 업로드는.xlsm과.xlsx를 모두 지원한다. 각 파일은 실제 형식과 고정 양식의 해당 역할 구조에 맞아야 하며 기준본과의 확장자 동일성을 필수로 두지 않는다(규칙67).
+  - 2026-10-19 복수 업로드 초안 사용자1안 과거 채택(아래 단일 작성 결정으로 대체): 같은 사용자가 여러 업로드 초안을 진행할 수 있고, 각 초안의 파일·편집 내용·고정 템플릿 버전은 독립적으로 유지한다(규칙67).
+  - 2026-10-19 부분 업로드 편집 사용자1안 채택: 필요한 역할 파일이 없는 동작만 제한하고 현재 파일로 처리 가능한 승인 편집은 허용한다. 미처리 연결 동작의 입력만 저장해 두는 방식은 채택하지 않는다(규칙67).
+  - 2026-10-19 동일 역할 재업로드 사용자1안 채택: 교체 전 편집 초기화를 안내·확인받고 새 파일 검증에 성공한 경우만 해당 역할 파일을 교체한다. 검증 실패 시 기존 파일/편집 상태를 유지한다(규칙67).
+  - 2026-10-19 순차 업로드 양식 버전 사용자1안 채택: 첫 정상 파일을 검증한 ACTIVE 버전을 초안 전체에 고정하며 후속 업로드·편집·최종저장에 사용한다. 이후 활성화된 버전은 새 초안부터 적용한다(규칙67).
+  - 2026-10-19 순차 업로드 생성 시점 사용자1안 채택: 첫 정상 파일에서 업로드 편집 초안을 만들고 네 역할을 갖춰 최종저장에 성공할 때 실제 Case를 생성한다(규칙67).
+  - 2026-10-19 사용자 추가 요구: 파일명으로 역할을 판별해 ACTIVE 양식으로 파일을 하나씩 검증·누적하고 업로드 파일로 새 Case 편집을 지원한다. 검증된 네 역할이 모두 있어야 최종저장할 수 있고, 양식 불일치 시 Case 생성·파일 연결을 금지한다(규칙67).
+  - 2026-10-19 사용자 결정: SUPPLY LiqProdAdjustment의 신규 월 입력·Period 계산·월 건너뛰기/중복 허용은 규칙65, 근거 없는 입력 제한을 추가하지 않는 원칙은 규칙66을 따른다.
+  - 2026-10-19 사용자 결정: 개발 시트가 남아 있어도 업무 구조가 호환되면 Case 파일 연결을 허용한다. 개발 시트의 원본 보존과 화면/편집 제외, 기준 정규화본과 실제 Case 파일의 구분은 규칙39~40을 따른다.
   - 2026-10-16 후속 구현 승인: 공통 요청 처리와 Draft 생성·재개·조회만 첫 구현한다. 실제 DB는 testdb/원본Case103, DDL은 사용자 검토·수동 적용이다. 제품 부분 구현/검증 경계는 편집 API §1.2·DDL §6.5, 실행 결과는 기존 stable note를 따른다. 표별 정책은 후속, PriceModel/Regas 추가 추천은 미승인 유지.
   - 2026-10-16 사용자 작업 전환: 표별 정책은 후속, PriceModel/Regas 추천은 미승인 유지. 공통 저장·최종저장/복구 계약만 이 문서 §3.4·§5.1~5.3 및 편집 API §9·DDL §6.3에 구체화한다. 구현/DB 적용 승인이 아니다.
   - 2026-10-16 사용자 두 업무 묶음 채택: Sector/Monthly 수요 비우기 금지·행 삭제로 해제, Monthly 필수/자유입력·연월·0 이상/FE0·중복·P blank/R=Q, BCPrices 기존 연도 수정/중복 금지·가격0 이상/비우기 금지·입력값 보존/추가 반올림 없음. 규칙45·§6.1을 따른다.
@@ -43,8 +71,11 @@
   - `docs/conventions/db-term-dictionary-sheet2.csv`
 - supersedes:
   - 없음
-- last synced: 2026-10-16
+- last synced: 2026-10-21 (§5.7 Case 초기 기준 행 공유 설계; §5.5.3 A 실행기 계약·상태 table 승인·운영 복구 절차, 규칙64 실행 위치 대체; 2026-10-19 반영: §5.5.3 worker 비분리 방향·처리기 요구사항, 규칙64 120초 성격; 개발 시트 포함 파일 수용은 규칙39~40; 감사 이름·정밀도 사용자 채택은 DDL §6.8 참조; LiqProd 중복 허용·입력 제한 근거 원칙·새 열 식별·임시 키 연결/성공 대응·기존 저장 API 열 명령 연결·headerValues 형식·LiqProd 월 삭제·같은 저장의 열 추가 후 삭제·삭제된 새 열의 성공 식별 대응 유지·삭제 키 미재사용·LiqProd/LiqUtil 새 월 본문 빈칸/0 구분 사용자 채택)
 - open questions:
+  - A 실행기의 인계 정책은 정상 종료 증거에 따른 자동 인계·비정상 종료의 운영자 확인 후 수동 복구로 확정했다(§5.5.3). 2026-10-20 저장소 DDL/코드 확인에서 기존 구조는 소비자의 claim 전/idle 수명과 종료/승인 증거를 표현하지 못했다. 전용 상태 table1개(ERD §6.11)는 2026-10-20 사용자 후속으로 승인됐으며 아래 최초 활성화/인계 순서로 구현한다.
+  - 순차 업로드의 생성 시점·첫 ACTIVE 버전 고정·교체/실패 보존·부분 편집·형식 유지와 동일 사용자당 한 번에 Case 하나 작성은 규칙67을 따른다. 원본 Case 없는 초안의 소유·보존/파일 기준점 복원은 §5.6, 물리 연결은 DDL §6.10에 구체화했다. 실제 저장/경합·형식 보존 검증과 동작별 필요 역할 연결은 기술 후속이다. 기존 sourceCase 기반 Draft 계약을 부분 파일에 그대로 적용하지 않는다.
+  - LiqProdAdjustment 신규 월의 입력 주체·Period 산식·월 건너뛰기/중복 허용은 규칙65로 확정했다. 과거 월·연도 범위도 규칙66에 따라 근거 없는 업무 제한을 추가하지 않는다. 연결·계산/보존과 상세 쓰기 형식은 별도 확정한다.
   - 조사·설계 병행 범위와 미결정 사항별 필요한 근거는 §1A.3~1A.5를 따른다. 공통 초안 작성 가능과 구현 착수 가능은 별도로 판정한다.
   - 구조 변경은 이번 release에 포함하며 주된 추가 방식은 마지막 행·열 추가로 확정했다(규칙 13·26). 표별 추가 경계, 신규 셀 처리와 중간 삽입·삭제 예외의 참조 갱신은 write 계약·실파일 검증에서 구체화해야 한다.
   - 새 행·열에 원본 수식·서식·데이터 유효성 규칙을 어떤 방식으로 복제할지 정해야 한다.
@@ -52,7 +83,7 @@
   - Draft는 §3.4/§5.1의 관계형 식별/유일성 + 검증된 순서 JSON 변경분으로 채택했다. 공통 저장의 물리 분리·복원 단위는 DDL §6.3, 최종저장/복구는 §5.2~5.3으로 구체화했다. 실제 DBA 적용·제품 검증은 후속이다.
   - 사용자·source Case당 진행 중 Draft 1건 제한과 기존 Draft 재개는 확정했다. 동시 생성·재개와 완료 후 새 Draft의 공통 API/저장 표현은 편집 API §3·DDL §6.3을 따른다. 폐기 API는 후속이다.
   - 임시저장 계산 실패 및 최종저장 실패 시 해당 요청 취소는 확정했다. 성공 경계와 부분 실패 복구는 §5.1~5.3에 정리했다. 실제 worker/DB/storage 경합·복구 검증은 후속이다.
-  - `BaseEntity`의 `crt_*` 감사 컬럼과 DB 명명 문서의 `reg_*` 표준 충돌을 DBA/데이터 표준 담당자가 확인해야 한다.
+  - 감사 이름·정밀도는 DDL §6.8의 사용자 채택을 따른다. 실제 적용·환경 시간대/외부 표준 확인은 DBA-04 잔여다.
   - 기간 축, 셀 원천(BASE/USER), 파생 테이블 표시를 스키마에 넣을지 조회 응답에서만 계산할지 정해야 한다. §14.4 참조.
 
 ## 1. Feature summary
@@ -72,7 +103,7 @@ Excel 파일 4개로 구성된다. `OUTPUT`도 다른 세 역할과 같은 input
 임시저장은 Backend가 작업용 workbook의 계산 허용 수식만 재계산하며 변경 저장·계산이 모두 성공하면 변경분·revision과 영향받은 테이블 값을 확정한다. 계산 실패 시 이번 요청의 변경 전체를 취소하고 직전 성공 임시저장 상태를 유지한다.
 최종저장은 고정된 원본 snapshot과 전체 Draft 변경분으로 `DEMAND`, `SUPPLY`, `TRADE`, `OUTPUT` XLSM 4개를 다시 만든 뒤,
 기존 4파일 Fundamental Model 파일 업로드·Case 생성 서비스를 내부 호출한다. 모델 실행 container는 이 파일 생성 과정에
-참여하지 않으며 생성된 파일을 이후 Run에서 소비한다.
+참여하지 않으며 생성된 파일을 이후 Run에서 소비한다. 최종저장 성공 후 BE가 이 Run을 자동 접수하는 연결은 규칙18·§5.5를 따른다.
 
 ## 1A. 조사 미완료 상태의 공통 설계 — 트랙 B 공통 초안
 
@@ -80,7 +111,7 @@ Excel 파일 4개로 구성된다. `OUTPUT`도 다른 세 역할과 같은 input
 
 | 구분 | 현재 근거·해석 |
 | --- | --- |
-| 기존 확정 결정 | 4역할을 하나의 양식·source set으로 사용한다. 전체 표시 구조와 선택 표 하나의 값을 조회하고, 카탈로그와 사용자 Draft를 분리하며, 임시저장·최종저장·별도 Run 경계를 유지한다(§5~6, 조회 feature spec §2~3). 구조 변경은 이번 release에 포함한다(규칙 13·26). |
+| 기존 확정 결정 | 4역할을 하나의 양식·source set으로 사용한다. 전체 표시 구조와 선택 표 하나의 값을 조회하고, 카탈로그와 사용자 Draft를 분리하며, 임시저장·최종저장·Run 책임 경계를 유지하며, 저장 후 BE 자동 실행 연결은 규칙18을 따른다(§5~6, 조회 feature spec §2~3). 구조 변경은 이번 release에 포함한다(규칙 13·26). |
 | 표별 편집 확정 — 2026-10-08 | TRADE `4.5 PriceModelInput`의 T-183/T-184는 입력 편집·아래 행 추가 가능한 C다. 기존 시트 전체 제외를 해제하고 두 표의 허용 영역만 Draft/최종 파일에 반영한다. 미표시 T-177~T-182 A 보존 및 계산/구조 검증 경계는 규칙 44·57을 따른다. |
 | 보존 확정 결정 — 2026-10-08 | 양방향 조사 후 사용자 최종 확인으로 UNIQUE 5셀은 미표시·모델 미사용·A 원본 복제로 확정했다. `MidstreamContractInput`의 T-137/T-138은 헤더 수식·배열 결과를 보존하고 T-187 backup과 T-188 Industry research는 시트 전체를 보존한다. 사용자 입력 변경에도 이 보존 영역을 갱신·재계산·확장하지 않으며 UNIQUE 구현을 요구하지 않는다(규칙 57의 UNIQUE 적용 확인). 모델 미사용은 사용자 업무 확인이며 실행 검증 결과와 구분한다. |
 | OUTPUT 최신 기준 동기화 — 2026-10-08 | v8 사람 확인의 노랑 입력·표시 6표, T-083만 아래 연도 행 추가, 미표시 12표 A 보존을 규칙 50/§6.1에 반영했다. T-082 Helper는 갱신·재계산하지 않는다. 상세 계산 allowlist·정답/모델 사용 검증은 미완료다. |
@@ -101,20 +132,20 @@ Excel 파일 4개로 구성된다. `OUTPUT`도 다른 세 역할과 같은 input
 
 ### 1A.2 확정된 공통 흐름과 책임
 
-`원본 4파일 + 양식 기준 → 화면 조회 → Draft(임시 편집 상태) → 값·구조 변경 → 임시저장 → 최종 XLSM 4개 생성 → 새 Case → 별도 Run`
+`원본 4파일 + 양식 기준 → 화면 조회 → Draft(임시 편집 상태) → 값·구조 변경 → 임시저장 → 최종 XLSM 4개 생성 → 새 Case/실행 대기 → BE Run 접수`
 
 아래는 기존 §5~6 규칙을 단계별로 풀어 쓴 공통 흐름이다. 작업 책임을 나눈 것이며 클래스·물리 테이블·호출 횟수를 정한 것은 아니다. 표 정책이 아직 미확정이면 그 표의 변경 경계를 열지 않되, 구조 변경 자체는 이번 release에 포함한다. API 세부는 [조회 feature spec](../../feature-specs/mi-fundamental-model-input-provision-feature-spec.md) 및 후속 write 계약, 물리 저장은 [DDL draft](mi-model-input-template-catalog-erd-ddl-draft.md)가 소유한다.
 
 | 단계 | 입력 | 처리 책임 | 결과·유지되는 상태 | 다음 단계 진입 조건 |
 | --- | --- | --- | --- | --- |
-| 1. 원본·양식 선택 | 접근 가능한 기존 Case의 4역할 파일과 대응 양식 버전 | 기존 Case·파일 관리가 실제 파일을 소유하고 BE가 동일 source set과 양식을 식별한다. 기준본 준비 시의 개발 시트 제거와 런타임 편집을 구분한다(규칙 39~40) | 네 역할이 함께 식별된 원본 기준. 원본 bytes와 양식 정의는 사용자 편집으로 바뀌지 않음 | 4역할 완비·양식 구조 일치·접근 범위 확인. 불일치는 다른 버전으로 자동 fallback하지 않음(규칙 10) |
+| 1. 원본·양식 선택 | 접근 가능한 기존 Case의 4역할 파일과 대응 양식 버전 | 기존 Case·파일 관리가 실제 파일을 소유하고 BE가 동일 source set과 양식을 식별한다. 개발 시트 포함 파일의 수용과 화면/편집 제외는 규칙39~40을 따른다 | 네 역할이 함께 식별된 원본 기준. 원본 bytes와 양식 정의는 사용자 편집으로 바뀌지 않음 | 4역할 완비·양식 구조 일치·접근 범위 확인. 불일치는 다른 버전으로 자동 fallback하지 않음(규칙 10) |
 | 2. 화면 조회 | 선택한 source set·양식, 선택 표 | BE가 표시 정책으로 전체 탐색 구조와 선택 표 하나의 헤더·값·연결 control을 읽는다. FE는 값과 별도 화면 갱신 규칙을 소비 | 사용자에게 보인 원본 기준과 표 값. 조회만으로 Draft·Case를 생성하거나 원본을 수정하지 않음 | 편집할 때 조회 기준과 같은 원본·양식을 Draft에 고정할 수 있어야 함. 호출 분할·최초 선택은 API 정본의 미결정 |
 | 3. Draft 시작·재개 | 편집 사용자, source Case·정확한 4파일, 양식 버전 | Draft가 원본·양식의 고정 참조, revision(변경 버전), 사용자 편집 상태를 소유. current MI Base를 다시 선택하지 않음 | `DRAFT`와 고정 기준, 저장된 변경분·revision. 동일 사용자·source Case당 진행 중 1건을 재개(규칙 60) | 편집 소유권과 고정 기준을 확인할 수 있고 허용 정책이 확정된 표만 변경. 동시 생성·재개 계약은 Q8b, source 식별·API·저장 표현은 Q9 |
 | 4. 값·구조 변경 | Draft 기준과 사용자 입력·구조 동작 | FE가 허용 규칙으로 편집을 표현하고 BE는 저장 시 같은 정책으로 검증. 기존 셀 값, 신규 행 필수값, 표 끝 추가와 개별 삽입·삭제 예외를 구분(규칙 13·21~28) | 저장할 변경 후보. 화면의 아직 저장하지 않은 값은 영속 Draft 변경분이나 BE 계산 성공을 뜻하지 않음 | 대상/타입/필수값·구조 선행조건·revision을 검증할 수 있어야 임시저장. 실제 요청 단위·연결 동작의 원자성은 Q2~Q4·Q8 |
 | 5. 임시저장 | Draft revision과 값·구조 변경 | BE가 변경 저장·revision과 작업용 workbook의 계산 허용 영향 범위 재계산을 하나의 성공 단위로 다룸. 화면 규칙만으로 저장·계산 검증을 생략하지 않음 | 모두 성공한 Draft 변경분·revision과 영향 표 값. 계산 실패면 이번 요청 전체 취소·직전 성공 상태 유지. Case·최종 XLSM은 없음(규칙 15) | 최종저장에 사용할 전체 변경분과 revision을 식별할 수 있어야 함. 임시저장 성공만으로 최종 파일 검증을 대체하지 않음 |
-| 6. 최종 XLSM 4개 생성 | 고정 원본 전체 + 대상 revision의 전체 Draft 변경분 + 양식 정책 | BE가 원본 전체를 복제하고 승인 값·구조만 반영한 뒤 허용 계산, 원본 보존, 구조·신규 오류를 검증. 임시 파일을 그대로 승격하거나 모델 container에 생성을 맡기지 않음(규칙 16·20·30~34) | 네 역할이 완비된 검증 결과 파일 set. 아직 새 Case·Run 완료는 아님 | 4파일 생성과 계산·구조·보존 검증이 모두 성공해야 Case 연결. 하나라도 실패하면 불완전 set을 성공으로 전달하지 않음 |
-| 7. 새 Case 연결·최종저장 완료 | 검증된 4파일 set, 대상 Draft | 기존 Fundamental Model application service에 4파일을 내부 전달해 새 `INDEPENDENT` Case 생성·파일 연결. Draft와 생성 Case의 대응을 완료(규칙 17~19) | 새 Case와 연결 파일, `FINALIZED` Draft·최종 Case 참조. 같은 Draft의 완료 재시도는 같은 Case 반환 | 최종 Case 확정·4파일 연결 완료 후 별도 Run 요청 가능. 업로드/DB/Draft 연결 사이의 부분 실패·동시 재시도는 Q8c |
-| 8. 별도 Run | 완성된 새 Case의 4역할 파일 | 기존 실행 흐름이 실행 접수·이력·Job 전달·결과를 소유. Draft 저장이나 XLSM 생성의 일부로 Run을 시작하지 않음 | Case의 실행 이력·결과. Run 실패를 Draft 계산 실패와 구분 | 실행 가능 상태·재실행 조건은 기존 실행 정본을 따름. Run 재시도를 위해 편집 최종저장이나 Case 생성을 다시 하지 않음 |
+| 6. 최종 workbook 4개 생성(형식은 규칙16) | 고정 원본 전체 + 대상 revision의 전체 Draft 변경분 + 양식 정책 | BE가 원본 전체를 복제하고 승인 값·구조만 반영한 뒤 허용 계산, 원본 보존, 구조·신규 오류를 검증. 임시 파일을 그대로 승격하거나 모델 container에 생성을 맡기지 않음(규칙 16·20·30~34) | 네 역할이 완비된 검증 결과 파일 set. 아직 새 Case·Run 완료는 아님 | 4파일 생성과 계산·구조·보존 검증이 모두 성공해야 Case 연결. 하나라도 실패하면 불완전 set을 성공으로 전달하지 않음 |
+| 7. 새 Case 연결·최종저장 완료 | 검증된 4파일 set, 대상 Draft | 기존 Fundamental Model application service에 4파일을 내부 전달해 새 `INDEPENDENT` Case 생성·파일 연결. Draft와 생성 Case의 대응을 완료(규칙 17~19) | 새 Case와 연결 파일, `FINALIZED` Draft·최종 Case 참조. 같은 Draft의 완료 재시도는 같은 Case 반환 | 최종 Case 확정·4파일 연결 완료 후 BE가 Run 자동 접수(규칙18). 업로드/DB/Draft 연결 사이의 부분 실패·동시 재시도는 Q8c |
+| 8. BE Run 접수 | 완성된 새 Case의 4역할 파일 | 저장 확정 후 BE가 자동 연결하며 기존 실행 흐름이 실행 접수·이력·Job 전달·결과를 소유(규칙18). XLSM 생성 중에는 Run을 시작하지 않음 | Case의 실행 이력·결과. Run 실패를 Draft 계산 실패와 구분 | 실행 가능 상태·재실행 조건은 기존 실행 정본을 따름. Run 재시도를 위해 편집 최종저장이나 Case 생성을 다시 하지 않음 |
 
 Case/Run 내부 상태·재실행 의미는 [공통 Case/Run workflow](scenario-case-execution-workflow-design-draft.md), 실행 endpoint·필드·오류는 [Fundamental Model Case feature spec](../../feature-specs/mi-fundamental-model-mock-api-feature-spec.md)을 참조한다. 이 설계는 편집 최종저장과의 연결 경계만 소유한다.
 
@@ -126,7 +157,7 @@ Case/Run 내부 상태·재실행 의미는 [공통 Case/Run workflow](scenario-
 | 변경 검증·임시저장 | BE도 카탈로그 허용 정책을 검증. 계산 실패는 해당 요청의 값·구조 변경 전체 취소이며 직전 성공 Draft 상태 유지(규칙 15) | revision 충돌·동일 요청 재전송 시 구조 동작 중복 방지와 실패 후 상태/값 대조(Q8a). 원본·카탈로그·Case/최종 파일은 변경하지 않음 |
 | 최종 생성·검증 | 전체 원본에서 재생성하고 네 역할을 하나의 set으로 검증. 승인된 기존 오류는 보존하되 신규 오류는 실패. 실패하면 최종저장 취소·이전 성공 임시저장 Draft 유지(규칙 31~32·61). 평문 작업사본 수명/삭제 기준은 규칙 63 | 작업 자원 정리·부분 실패 복구의 구현/검증(Q7·Q8c). 임시 파일 통제·권한은 SECURITY.md를 따름. 실패 파일을 성공 파일로 취급하는 예외는 없음 |
 | 파일 업로드·Case·Draft 완료 | 성공한 Draft당 최종 Case는 하나이며 완료 재시도는 같은 Case 반환. 실패 확정 시 최종저장 취소·Draft 미완료 유지(규칙 19·61) | 업로드 일부 성공·Case 생성 후 Draft 연결 실패·응답 유실·동시 최종저장의 취소/복구 경계(Q8c). DB와 object storage가 하나의 transaction이라고 가정하지 않음 |
-| Run | 최종저장과 별도 접수·실행. 모델 container는 편집 파일 생성에 참여하지 않음 | 기존 실행 계약을 참조하며 이 공통 초안에서 새로운 Run 실패/재시도 정책을 만들지 않음 |
+| Run | 저장 확정 뒤 BE가 자동 접수·실행(규칙18). 모델 container는 편집 파일 생성에 참여하지 않음 | 기존 실행 계약을 참조하며 이 공통 초안에서 새로운 Run 실패/재시도 정책을 만들지 않음 |
 
 #### 조회·수정·재계산·원본 보존의 독립 범위
 
@@ -309,7 +340,8 @@ Q1~Q6은 트랙 A의 우선 조사 목록이다. P1은 write·구조·보존 경
 #### 조회에서 확인할 항목
 
 - 매 요청의 접근 권한·유효 Case·정확한 네 파일 등록/객체 참조와 template/catalog 기준을 확인하고 같은 기준으로 응답한다. 파일 연결/양식/catalog가 바뀌면 기존 sourceVersion 대조·충돌 처리를 유지한다.
-- 실제 객체 존재/읽기·선택 응답 범위의 저장값 판독·기존 삭제/접근 검사도 유지한다. 별도 전체 내용 재해시, ETag 조건부 읽기, 버킷 버전 관리/잠금이나 새 snapshot/cache/worker를 필수조건으로 추가하지 않는다.
+- **2026-10-20 사용자 후속 결정 — 기존 실행 완료 Case:** QRY-01의 구조/버전 진입에서는 Case와 그 `last_run_id`의 Run이 모두 `COMPLETED`로 확인되면 네 등록 파일을 다시 내려받아 시트 구조를 검사하지 않는다. 실행 완료 증거가 없는 Case는 기존의 객체·시트 검사를 유지한다. 어느 경우에도 Case 접근, 네 역할의 등록 파일·객체 참조, 연결된 발행 양식/catalog와 sourceVersion의 확인을 생략하지 않는다. 완료 Run은 현재 파일 내용과 양식의 재검증 결과를 뜻하지 않으며, 신규 Case 업로드/초안 직접 업로드의 양식 검증을 대체하지 않는다.
+- 선택 표 응답의 실제 객체 읽기·저장값 판독과 기존 삭제/접근 검사는 유지한다. 완료 Case의 QRY-01은 객체 존재를 다시 확인하지 않으므로 이후 표 조회/초안 생성에서 객체 누락이 드러날 수 있다. 별도 전체 내용 재해시, ETag 조건부 읽기, 버킷 버전 관리/잠금이나 새 snapshot/cache/worker를 필수조건으로 추가하지 않는다.
 - 후속 제품 검증은 반복 업로드의 새 file_no/객체 생성과 이전 참조 유지, 직접/staged Case 성공 경계, 역할/연결·catalog 변경 시 버전 대조, 누락/읽기 실패를 확인한다. 사용자 확인 불변식과 코드 근거를 운영 장애/전체 제품 시험 완료로 확대하지 않는다. template/catalog 연결안은 §3.3·DDL §6.2/§10B에 구체화했고 실제 등록/제품 구현·검증은 남는다.
 
 ### 3.3 Q2 양식·catalog 발행 묶음과 Case 연결 — 2026-10-15 구체화
@@ -326,10 +358,11 @@ Q1~Q6은 트랙 A의 우선 조사 목록이다. P1은 write·구조·보존 경
 
 #### Case 연결 시점과 실패 경계
 
-- 최소 연결 시점은 **네 파일과 Case 저장 커밋 뒤, QRY 제공 전**이다. 서버/관리 등록이 정확한 네 역할·파일/객체·등록 양식 대응을 검증한 뒤 기존 Case-template 관계 한 건을 저장한다. GET에서 관계를 추정/생성하지 않고 새 공개 업로드 파라미터나 등록 API를 이번 범위에 추가하지 않는다.
-- 신규 Case는 서버가 확인한 해당 모델의 ACTIVE 양식 후보와 실제 네 파일의 대응을 검증한다. ACTIVE라는 이유나 파일명/버전 번호만으로 연결하지 않는다. 기존 createCase의 Case/4파일 성공과 template 연결 성공은 다른 사실이다. 별도 연결 실패는 이미 커밋된 Case/파일 성공을 소급 취소하지 않고 미연결 상태로 남기며 조회는 기존 정책대로 제공 불가다. 원본 업로드 API의 성공 계약을 바꾸지 않는다.
-- 현재 createCase/공통 파일 경로와 Scenario staged 등록에는 이 관계 저장이 없으며 실제 연결 호출은 후속 구현이다. 위 관리 등록안은 저장 Case 조회의 최소 연결안이며 후속 Draft/최종저장의 Case·양식 원자적 저장 경계를 재정의하지 않는다. SCENARIO를 QRY-01/02의 조회 대상으로 확대하지 않는다.
-- 연결 등록은 짧은 DB transaction에서 Case·네 파일/객체 참조와 양식 기준이 여전히 유효한지 확인해 한 번 저장한다. 같은 Case/같은 양식의 재실행은 그대로 유지한다. 다른 양식 연결이 이미 있거나 등록 중 기준이 바뀌면 자동 UPDATE/upsert로 바꾸지 않는다.
+- **2026-10-20 사용자 변경:** 일반 4파일 Case 업로드도 생성 당시 해당 모델의 `ACTIVE` 양식을 자동 연결한다. 모델 선택은 기존 직접 업로드 설정 `mi.model-input.upload.model-code`를 공유한다. 설정 누락·ACTIVE 없음/복수는 실패이며 임의 모델/전역 최대 ID를 고르지 않는다.
+- 일반 Case·4파일 metadata·Case-template 관계 한 건을 같은 master transaction에 저장한다. 템플릿 선택은 발행 상태 변경과 경합하지 않도록 잠근 뒤 고정하고, 연결 저장이 실패하면 생성 전체를 rollback하며 업로드 object는 기존 보상 삭제를 적용한다. 과거의 “일반 업로드 성공 후 별도 연결, 연결 실패여도 Case 업로드 성공 유지” 안을 이 생성 경로에서 대체한다.
+- 자동 연결 자체를 실제 workbook 전체 구조/저장값 호환 검증 완료로 취급하지 않는다. 기존 일반 업로드 파일 검증과 초안 생성의 판독·정책 검증은 유지하고, 조회의 완료 Case QRY-01 예외는 §3.2를 따른다. 신규 파일 내용 검증 경로/비동기 처리나 공개 요청 필드는 이번 자동 연결에 추가하지 않는다.
+- 기존 Case의 수동 등록·Scenario staged 등록에는 위 일반 Case 생성 변경을 자동 소급하지 않는다. 관리 등록은 정확한 네 역할·파일/객체·등록 양식 대응을 확인한 뒤 관계 한 건을 저장하며 다른 양식으로 자동 UPDATE/upsert하지 않는다. SCENARIO를 QRY-01/02 조회 대상으로 확대하지 않는다.
+- GET에서 관계를 추정/생성하지 않는다. Draft 최종저장은 §5.6대로 최신 ACTIVE가 아닌 Draft에 이미 고정된 양식을 사용한다.
 
 #### 기존 Case와 변경 처리
 
@@ -392,6 +425,8 @@ ModelInputDraft 0..1 ── 1 finalized ScenarioCase
 - 한 테이블은 여러 수정 가능 범위를 가질 수 있다. 범위가 없으면 읽기 전용이다.
 - case는 양식 버전 하나에 고정된다. 양식이 나중에 바뀌어도 과거 case 해석은 바뀌지 않는다.
 - Draft는 source case, source input 파일 4개, template version을 생성 시점에 고정한다. current MI Base가 바뀌어도 기존 Draft의 source는 바뀌지 않는다.
+- **2026-10-21 PNG Infrastructure 삭제 적용 범위 — 사용자 확인:** 저장된 추가 행·연도 열 삭제 정책은 이를 발행한 새 양식에 묶인 Case/업로드 Draft부터 적용한다. 기존 Case/Draft의 양식·성공 이력은 전환하거나 다시 해석하지 않는다. 기존 양식은 기존 정책 상태를 그대로 반환한다. 조회/호출 허용 여부는 편집 API §3.3을 따르며 기존 조회·허용 편집·최종저장에 오류가 없는지 회귀 확인한다.
+- **PNG Infrastructure 추가 항목 삭제 보존 규칙:** 원본 행·원본 연도 열은 삭제하지 않는다. 추가 행 삭제는 해당 표의 입력 셀만 압축하며 다른 표·외부 입력 셀을 이동하지 않는다. 원본 예약 Helper `C208:C400` 좌표는 보존하고, 그 밖에서 추가 행 때문에 생성된 C 식은 삭제·이동된 활성 행에 맞춰 정리한다. 추가 연도 열 삭제는 해당 표의 헤더·본문과 활성 열 위치를 함께 갱신한다. 마지막 추가 항목을 삭제하면 표의 조회 범위를 원본 하한으로 되돌린다.
 - 행 대응은 원본/신규 행과 사용자 편집값을 구분해야 한다. Midstream의 입력값 전체 중복과 AJ Helper 중복은 값 조합·Helper를 영속 identity로 재사용할 수 없다는 근거다. ID 발급/보관 방식은 Q2·Q8d·Q9에 남긴다.
 - Finalized Draft는 새 독립실행 case 하나를 가리키며 재시도 시 같은 case를 반환한다.
 - 관계도의 `ScenarioCase 1:N ModelInputDraft`는 사용자별·과거 Draft를 포함한 관계다. 동일 사용자·source Case당 진행 중 Draft는 1건이며 재개한다(규칙 60). 동시성/저장 보장 수단은 Q8b에서 검토한다.
@@ -399,6 +434,18 @@ ModelInputDraft 0..1 ── 1 finalized ScenarioCase
 - Draft의 `DRAFT/FINALIZED/DISCARDED` 편집 lifecycle에서 `FINALIZED`는 네 파일과 새 Case 연결의 완료를 뜻하며 Run 성공을 뜻하지 않는다. 실패한 임시/최종저장 요청은 규칙 15·61에 따라 취소하며 직전 성공 Draft 상태를 유지한다. 실패 응답/조회 표현과 별도 처리 상태는 §5.1/편집 API의 채택 기준을 따른다. `DISCARDED` 허용 시점·보존은 Q8 후속이며 편집 lifecycle의 추가 상태·전이를 만들지 않는다.
 
 ### 5.1 Draft 성공 revision·행·처리 요청 관계 — 사용자 채택 공통 설계
+
+<a id="column-add-delete-decision-20261019"></a>
+
+**2026-10-19 사용자 채택 — 같은 저장의 열 추가 후 삭제:** 열 삭제가 허용된 표에서는 같은 저장 요청 안에서 새 열을 추가한 뒤 그 열을 삭제할 수 있다. 두 명령은 같은 요청의 임시 키로 연결하며 성공한 최종 표에는 해당 열을 남기지 않고 성공 응답에서 삭제 상태를 알린다. 같은 저장에서 삭제된 새 열도 서버가 발급한 식별과 삭제 상태의 대응을 성공 응답에 남긴다(2026-10-19 후속 사용자 채택). 공개 항목 형식은 편집 API §1.1이 소유하며 최종 표의 활성 열과 구분한다. 다른 열을 함께 삭제하거나 표별 삭제 허용을 넓히지 않는다. 공개 임시 키/응답 표현은 [편집 API §1.1](../../feature-specs/mi-fundamental-model-input-draft-editing-api-proposal.md#column-add-delete-api-decision-20261019)이 소유한다. 이 정책 채택은 실제 구조/계산/보존 검증 완료를 뜻하지 않는다.
+
+<a id="column-key-lifecycle-decision-20261019"></a>
+
+**2026-10-19 사용자 채택 — 삭제 열 식별의 미재사용:** 삭제된 열의 식별 키는 새 열에 재사용하지 않는다. 같은 연월을 다시 추가해도 새 열로 구별하고 새 키를 발급한다. 같은 저장에서 추가 후 삭제한 열의 키도 재사용하지 않는다. 동일 requestId·동일 내용의 재전송은 새 추가가 아니며 기존 재전송 계약대로 같은 결과와 키를 반환한다. 공개 fieldKey 계약은 [편집 API §1.1](../../feature-specs/mi-fundamental-model-input-draft-editing-api-proposal.md#column-key-lifecycle-api-decision-20261019)이 소유한다. 내부 키 생성 수단이나 물리 저장/DDL 변경을 이 결정만으로 확정하지 않는다.
+
+감사 이름·정밀도/증분 적용은 [DDL §6.8](mi-model-input-template-catalog-erd-ddl-draft.md)이 소유한다. 작업120초 상한과 revision·행/시도 토큰의 상태 판단은 유지하고 감사 시각의 소수점에 의존하지 않는다.
+
+성공 확정/복원의 내부 delta 형식은 [DDL §6.3.4.1](mi-model-input-template-catalog-erd-ddl-draft.md)을 따른다. 검증된 표별 처리 결과를 저장하는 공통 경계와 아직 미연결인 실제 처리기/계산 실행을 구분하며, 저장 이력 누락·불일치를 원본 fallback으로 숨기지 않는다.
 
 ```text
 발행 묶음 1 ── N 표/field/정책 정의
@@ -411,7 +458,7 @@ Draft 1 ── N FINALIZE 요청 ── N 시도별 4역할 준비 기록
 Draft 1 ── 0..1 최종 Case (성공 때만 연결)
 ```
 
-- 신규 Draft의 원본 논리 행에 서버 ID를 한 번 배정하고 대응을 보존한다. 전체 셀 복사가 아니라 표/논리 행 대응이다. 생성 중 실패하면 부분 Draft를 공개하지 않는다. 실제 데이터 행만 배정하고 빈 슬롯/표 밖/숨김 보존 영역은 제외한다. Draft·4원본 참조·revision0·원본 행 대응을 하나의 짧은 DB transaction으로 생성하며 부분 생성은 rollback한다. 물리 키는 DDL §6.3을 따른다. 같은 Draft/표/원본 논리 행은 반복 조회·페이지 이동에도 같은 ID다. 다른 Draft·표·최종 Case에서 같은 ID 사용을 보장하지 않는다.
+- 신규 Draft의 원본 논리 행에 서버 ID를 한 번 배정하고 대응을 보존한다. 전체 셀 복사가 아니라 표/논리 행 대응이다. 생성 중 실패하면 부분 Draft를 공개하지 않는다. 실제 데이터 행만 배정하고 빈 슬롯/표 밖/숨김 보존 영역은 제외한다. Draft·4원본 참조·revision0·원본 행 대응을 하나의 짧은 DB transaction으로 생성하며 부분 생성은 rollback한다. 신규 Case 공유 저장은 §5.7의 가상 원본 대응과 baseline 참조로 이 원자성을 만족하며 기존/직접 업로드 저장은 유지한다. 물리 키는 DDL §6.3·§6.12를 따른다. 같은 Draft/표/원본 논리 행은 반복 조회·페이지 이동에도 같은 ID다. 다른 Draft·표·최종 Case에서 같은 ID 사용을 보장하지 않는다.
 - 새 행은 요청 안의 임시키와 성공 시 발급된 행ID를 대응시킨다. 성공 전에는 영속 행으로 공개하지 않으며 실패한 임시키는 성공 변경분으로 남기지 않는다. 요청 중복 식별과 업무상 같은 값의 행 허용은 독립적이다.
 - 편집 lifecycle `DRAFT/FINALIZED/DISCARDED`와 처리 상태 `QUEUED/RUNNING/SUCCEEDED/FAILED`를 분리한다. 뒤의 네 상태 이름은 2026-10-16 공통 BE 추천 묶음에서 채택했다. `QUEUED → RUNNING → SUCCEEDED/FAILED`, 대기 중 timeout은 `QUEUED → FAILED`다. 생성/재개만으로 계산하지 않고, 임시저장 성공/실패 모두 lifecycle은 DRAFT로 유지한다. 폐기 API는 후속이다. 보존은 §3.4의 자동 삭제 없음 기준을 따른다.
 - Draft당 진행 처리 요청은 한 건으로 채택했다. 접수는 중복 식별 예약과 작업 기록 저장까지이며 성공 revision 증가가 아니다. 요청은 고정 기준/현재 성공 revision에서 검증·계산하고 짧은 성공 확정 경계에서 변경분·행 대응·파생 결과와 revision을 함께 반영한다. 파일 계산 중 장시간 DB transaction을 유지하지 않는다. 동시 생성/접수/확정은 관계형 유일성·기준 대조로 보장하는 방향이다.
@@ -425,8 +472,8 @@ Draft 1 ── 0..1 최종 Case (성공 때만 연결)
 1. **접수:** 인증/소유권과 기존 요청 확인 후 DRAFT·현재 성공 revision·원본/발행 기준·진행 요청 없음을 검사한다. FINALIZE 요청을 durable하게(DB에 재시작 후에도 남게) 기록하고 진행 슬롯을 같은 transaction에서 잡는다. 대상 revision과 Case 제목/설명은 접수 뒤 바뀌지 않는다. 접수는 새 Case 생성이 아니다.
 2. **생성·검증:** 격리 worker가 고정 원본 + 대상까지의 전체 성공 변경을 순서대로 적용해 4역할을 다시 생성하고 계산·구조·보존을 모두 검증한다. 기존 임시 workbook/조회 snapshot을 최종 파일로 승격하지 않는다. 실패 요청의 입력은 제외한다.
 3. **업로드 준비:** 시도별 4역할의 전용 private object 참조를 먼저 기록한 뒤 업로드한다. 기존 암복호화 경계를 재사용한다. 준비 object는 `tcm_filel`/Case에 아직 연결하지 않고 공개 다운로드/Case 목록/Run에서 접근할 수 없게 한다. DB와 object storage는 하나의 transaction이 아니다.
-4. **한 번의 DB 확정:** 4개 업로드와 저장 참조·정상 읽기 가능 확인이 모두 끝나면, 같은 master transaction에서 새 INDEPENDENT/PENDING Case, 기존 파일 metadata4건/관계, **Draft에 고정한** 발행 묶음의 Case-template 관계, Draft의 FINALIZED/최종 Case, FINALIZE SUCCEEDED/결과와 진행 슬롯 해제를 함께 commit한다. 접수한 소유자·tenant·원본 접근/고정 기준·성공 revision·작업/시도 토큰·기한을 다시 대조한다. 하나라도 실패하면 모두 rollback한다. 최신 ACTIVE 발행으로 자동 교체하지 않는다.
-5. **공개:** commit 뒤에만 Case ID/4파일·완료 상태를 공개한다. 최종저장으로 성공 revision을 증가시키지 않는다. Run은 생성/실행하지 않으며 이후 별도 요청으로 시작한다. 일반 원본 업로드 후 별도 양식 등록(§3.3)의 경계를 이 확정 단계에 복사하지 않는다.
+4. **한 번의 DB 확정:** 4개 업로드와 저장 참조·정상 읽기 가능 확인이 모두 끝나면, 같은 master transaction에서 새 INDEPENDENT/PENDING Case, 기존 파일 metadata4건/관계, **Draft에 고정한** 발행 묶음의 Case-template 관계, Draft의 FINALIZED/최종 Case, FINALIZE SUCCEEDED/결과·최초 실행 대기와 진행 슬롯 해제를 함께 commit한다. 접수한 소유자·tenant·원본 접근/고정 기준·성공 revision·작업/시도 토큰·기한을 다시 대조한다. 하나라도 실패하면 모두 rollback한다. 최신 ACTIVE 발행으로 자동 교체하지 않는다.
+5. **공개·실행 연결:** commit 뒤에만 Case ID/4파일·저장 완료 상태를 공개한다. 최종저장으로 성공 revision을 증가시키지 않는다. BE가 영속 대기를 읽어 별도 짧은 transaction에서 기존 Run 접수 로직으로 연결한다(§5.5·규칙18). 실행 실패는 저장 성공을 취소하지 않으며 FE의 추가 Run 요청은 필요 없다. 일반 Case 자동 연결(§3.3)과 달리 이 경로는 Draft에 이미 고정한 양식을 사용한다.
 
 기존 `FundamentalModelCaseServiceImpl.createCase`는 transaction 중 업로드하고 예외 때 파일 삭제를 시도한다. 이 코드의 성공 경계만으로 재시작/응답 유실/정리 복구를 보장하지 못한다. 최종저장 구현은 기존 Case·파일 형식/검증을 재사용하되 위 준비/확정 경계를 만족해야 하며, 기존 메서드를 그대로 호출하면 계약이 충족된다고 보지 않는다.
 
@@ -465,6 +512,201 @@ Draft 1 ── 0..1 최종 Case (성공 때만 연결)
 
 파일 보호의 재사용 범위: FileService.upload는 FileEncryptionPolicy 대상이면 decrypt 후 저장하고 downloadFiles는 조건에 따라 encrypt한다. ObjectStorageService.uploadFile의 isPublic=false 분기는 ACL 공개 설정/공개 URL 반환을 하지 않는다. 이 사실만으로 실제 bucket ACL/저장 암호화가 검증됐다고 하지 않으며, 고객사/역할·비공개/권한 검사는 새 경로에서도 유지한다. 기존 암복호화 재사용 결정을 다시 승인받거나 원격 DRM 재시험을 공통 착수 조건으로 추가하지 않는다.
 
+### 5.5 첫 실제 변경 경로 — F-O-01 한정 worker 연결
+
+- 첫 지원은 §6.1의 F-O-01 PRESERVE 사례다. 정규화 OUTPUT SHA256 `69742cc9c6fba170324c09c21986574a390c741ba26d371acdce570aeaac28ce`, `USCostofSupply!B8`의 원본0.34와 요청0.35만 지원한다. 기존 BCPrices 가격 SET의 업무 승인은 유지하지만 계산/연관값 정책 미결이므로 이번 runtime 허용으로 확대하지 않는다. F-O-01 외 계산을 생략해 성공시키지 않는다.
+- 별도 발행/시험 Case의 `OUTPUT/USCostofSupply/us_cost_of_supply`에 B8 한 슬롯·`breakevenPrice` 필드만 READY로 선언한다. 기존 Case103/ACTIVE 발행은 수정하지 않는다. 접수·처리·확정에서 같은 제한과 소유/원본 기준을 대조한다. 이전 성공도 이 경로로 생성한 B8 보존 delta만 재현하고 지원하지 않는 누적 변경과 혼합하지 않는다.
+- 시험 발행은 별도 모델 코드/Case로 준비하고 기존 Case103 연결·발행을 보존한다. 입력 양식은 각 Case에 연결된 ACTIVE/DEPRECATED를 사용하며 application model-code로 제한하지 않는다. worker는 같은 DB의 여러 모델 코드 작업을 소비하고 실행 시 각 Draft의 고정 양식과 현재 Case 연결·권한을 재검증한다. DB당 worker 1개와 기존 token/marker 복구를 유지한다. 배포 전 다른 모델 코드의 QUEUED/RUNNING 작업을 확인하며 웹/worker 코드와 설정을 함께 맞춘다. 새 ACTIVE 발행으로 기존 Case/Draft를 자동 전환하지 않는다.
+- worker는 웹 component scan/스케줄러와 분리한 전용 진입점으로 DB queue를 읽는다. 웹은 실제 처리기를 실행하지 않는다. 전용 단일 container/PID1 감독 프로세스와 한 자식 JVM을 사용하며 규칙64의 전체 cgroup CPU/메모리/swap 제한을 시작 시 확인한다. heap 옵션만으로 자원 제한을 주장하지 않는다. 동일 queue의 모든 worker는 같은 private 영속 작업 volume을 공유하고 OS 파일 잠금으로 하나만 실행한다. master의 session advisory lock도 유지한다. 이 volume/단일 인스턴스 조건 없이 worker를 복제하지 않는다.
+- claim 전에 operation/token marker를 private volume의 `.pending-<operation>-<token>.json`에 완성·file fsync한 뒤 같은 directory의 최종 `<operation>-<token>.json`으로 atomic move하고 directory fsync한다. atomic move를 지원하지 않으면 claim하지 않는다. 이전 JVM 종료를 확인한 복구는 정해진 임시 marker 이름의 regular file만 회수하며, 손상된 최종 marker를 임의 삭제하거나 claim 여부를 추정하지 않는다. 파일 처리와 DB transaction은 분리한다. 자식 JVM의 watchdog은 DB 기한의 남은 시간 안에서 프로세스를 종료하고, 감독 프로세스는 종료/모든 handle 닫힘을 확인한 뒤 평문 scratch를 정리한다. 정상 작업도 결과 확정 전에 파일 handle을 닫고 삭제한다. supervisor 종료 시 자식도 함께 종료되는 PID namespace를 사용한다. 재시작은 같은 volume의 배타 잠금과 이전 자식 종료 증거를 확보한 marker만 복구하며 알 수 없는 RUNNING을 재실행/종료 추정하지 않는다.
+- 재시작 actor는 저장된 Draft/operation과 현재 사용자·회사/역할·삭제/타사 허용을 쓰기 DB에서 대조한다. 요청 JWT를 저장하거나 SYSTEM으로 대체하지 않는다. plaintext 파일은 0700 directory/0600 file, 작업 종료1분·복구5분 내 제거하고 실패 원문/파일을 보관하지 않는다. 기존 저장 원본은 공통 업로드 복호화 후 저장되는 경계를 그대로 읽으며 새 암호화 정책을 만들지 않는다. 최종 다운로드/최종저장·DRM 재검증은 이번 경로에 없다.
+
+
+#### 5.5.1 별도 시험 환경 준비·수동 확인 순서
+
+1. 별도 쓰기 시험 Case가 없으면 기존 `POST /api/v1/mi/fundamental-model/cases`의 multipart `title`과 `files`에 정규화 DEMAND/SUPPLY/TRADE/OUTPUT을 각각 한 개씩 새로 업로드한다. HTTP201/SUC-000·새 caseId(103 제외)·PENDING·files4를 확인한다. 이 API는 Run을 접수하지 않는다. 기존 Case의 파일 metadata만 복제해 같은 저장 객체를 참조하지 않는다. 새 Case ID를 확인한 뒤 그 Case만 별도 model-code의 F-O-01 발행에 연결한다. 발행 SQL/COMMIT과 실제 API는 사용자가 실행한다.
+2. 시험 웹 앱은 필요한 경우 기존 앱과 다른 포트로 시작하고 `mi.model-input.change-worker.enabled=true`로 지정한다. 양식은 시험 Case의 연결로 결정하며 기존 Case103 발행 연결은 그대로 둔다. application model-code 설정은 사용하지 않는다. 같은 DB의 여러 모델 코드 작업이 단일 worker의 후보이므로 서버 포트나 모델 코드로 시험 작업이 격리된다고 가정하지 않는다.
+3. 배포 묶음은 `./gradlew inputDraftWorkerDist`로 만든다. `docker build --build-arg WORKER_JRE_IMAGE=<검토한 Java17 이미지의 고정 참조> -f Dockerfile.input-draft-worker -t <시험 worker 이미지> build/input-draft-worker`로 이미지를 생성한다. 클래스/의존성만 포함하며 개인 application profile·XLSM·비밀 설정을 이미지에 넣지 않는다.
+4. private 외부 YAML에는 같은 master DB의 `spring.datasource.master.{jdbc-url,username,password,driver-class-name}`와 기존 허용 저장소의 `ncp.storage.{end-point,region-name,access-key,secret-key,bucket-name,prefix}`를 준비한다. 양식 선택을 위한 model-code 설정은 필요 없다. FINALIZE를 활성화할 때는 `mi.model-input.finalization.enabled=true`와 기존 앱과 동일한 `file.encryption.*`/`external.file-crypto.*` 정책·허용된 암복호화 설정도 전달한다. 비밀 값은 채팅/저장소/실행 기록에 적지 않는다. 컨테이너 UID10001이 읽을 수 있고 다른 사용자에게 공개되지 않도록 설정한다. 이 전용 설정은 웹 앱 profile 전체를 복제하지 않는다.
+5. `MI_INPUT_DRAFT_WORKER_IMAGE`를 검토한 이미지의 고정 참조로, `MI_INPUT_DRAFT_WORKER_CONFIG`를 위 외부 파일의 절대 경로로 지정하고 `docker compose -f compose.input-draft-worker.yml up -d`로 단일 worker를 시작한다. 재시작/업데이트 때 같은 compose project와 `worker-state` volume을 유지한다. 같은 DB의 worker를 별도 volume으로 복제하거나 `down -v`로 복구 marker를 지우지 않는다. CPU/메모리/swap 조건과 PID1 supervisor 확인이 실패하면 시작하지 않는다.
+6. 새 Case의 sourceVersion으로 Draft를 만들고 EDT-03에서 B8의 rowId·revision0·0.34를 얻는다. EDT-04에 그 rowId/필드로 SET0.35 한 건을 보내고 EDT-05의 SUCCEEDED/resultRevision1을 확인한다. EDT-03 revision1의0.35·같은 rowId와 동일 requestId 재전송 시 같은 operation/revision을 확인한다. 기존 Case103 상태는 기준과 대조한다. 성공 판단은 사용자 응답/조회 증거를 받은 뒤 실행 노트에 기록한다. 로컬 H2/파일 시험은 실제 MySQL/API 결과를 대신하지 않는다.
+
+#### 5.5.2 FINALIZE의 같은 worker 통합
+
+최종저장도 위 단일 영속 queue/worker·marker/시도 token·기한·감독 프로세스에서 처리한다. 신규 준비파일 schema를 적용한 뒤 웹/worker의 `mi.model-input.finalization.enabled`를 함께 활성화한다(기본 false). D 전용 준비/확정 경계는 §5.2~5.4를 구현하는 구성요소이며 별도 queue나 worker를 만들지 않는다. 기존 공통 저장 접수/조회와 원본/현재 사용자·고정 기준 검증을 재사용한다.
+
+대상 성공 revision0은 원본4파일을 byte 동일하게 복제·검증한다. nonzero는 전체 성공 chain을 검증하고 지정 F-O-01의 OUTPUT B8 적용/저장·보존 검증을 같은 처리기로 재사용한다. 미변경 역할은 byte 동일 복제하며 미지원 chain은 거부한다. 파일 IO는 master transaction 밖에서 순차 실행하며 전용 참조 기록 뒤에만 PUT한다. 새 Case/파일4/고정 발행·FINALIZED/요청 성공/준비 COMMITTED·슬롯 해제와 최초 실행 대기는 같은 master 확정이며 revision은 증가하지 않는다. 웹 BE가 이 영속 대기를 읽어 기존 실행 접수 로직을 사용한다. Run 생성과 최종저장 작업의 최초 실행 연결은 다음 짧은 master transaction으로 함께 확정한다. 파일 worker에는 Kubernetes/HTTP 인증 컨텍스트를 추가하지 않는다. 기존 요청 결과 JSON에 선택적 실행 대기/연결 필드를 추가하고 물리 schema는 변경하지 않는다. 기존 완료 기록은 자동 실행하지 않으며 현재 사용자 권한과 최종 Case 소유권을 재검증한다. 실행 실패는 저장 성공을 소급 취소하지 않는다(규칙18·편집 API §9.2.1).
+
+FINALIZE의 claim-null은 RUNNING이 없다는 증거가 아니다. 오류/불명 결과는 marker를 유지해 자식 JVM/전송 종료·평문 정리를 확인한 다음 쓰기 DB의 실제 상태/token으로 복구한다. 알려진 안전 failure reason만 marker에 원자적으로 기록할 수 있으며 payload/경로/거부값은 기록하지 않는다. 실패 준비 object는 같은 종료 증거와 durable 기록으로 반복 정리하고, 정리 미확정이면 marker를 유지한다. 성공/결과 불명 object나 고정 원본을 삭제하지 않는다. 실제 MySQL/storage/호스트 유실 확인은 사용자 후속이다.
+
+<a id="worker-execution-direction-20261019"></a>
+
+#### 5.5.3 실행 위치 방향 — 2026-10-19 방향 결정·2026-10-20 A 채택
+
+- **2026-10-19 방향 결정:** 모델 입력 파일 처리 worker를 웹 백엔드와 별도 배포·별도 저장소로 분리하지 않고 **웹 Pod에 함께 배포**한다. 사용자가 실제 Excel 처리 프로세스의 약250MB 메모리 측정 판단을 근거로 이 방향을 재확인했다. 별도 worker Deployment/Pod·요청별 Kubernetes Job 준비를 진행하지 않는다. 당시 다음 두 실행 방식을 비교했고, 2026-10-20 A를 채택했다.
+  - A — 웹 JVM 안에서 처리
+  - B — 웹 Pod 안에서 웹이 자식 JVM을 띄워 처리
+- **근거:** 요청마다 Kubernetes Job을 만드는 방식은 이 기능과 맞지 않는다고 판단했다. 고객사는 1GiB 안으로 가볍게 되면 별도 저장소로 분리하는 안을 제안했으므로, 분리하지 않는 방향은 고객과 공유한다. 실측 근거는 [1GiB 재측정](../../work-notes/2026/2026-10-19-model-input-worker-1gib-remeasure.md)과 [BCInput 스트리밍 시제품](../../work-notes/2026/2026-10-19-model-input-bcinput-streaming-prototype.md)이다. 실험 파이프라인의 Java POI 계산은 heap 192MiB에서 안정적이었고, 가장 큰 입력 시트 DEMAND `BCInput`(압축 해제 약 71MB)의 행 단위 Java 스트리밍 편집은 Java RSS 약 44~65MiB였다. 둘 다 제품 처리기 측정이 아니다.
+- **처리기 요구사항(A·B 공통):**
+  1. 시트 XML을 행 단위 스트리밍으로 읽고 쓴다. 시트 전체를 메모리에 올리지 않으며, 작업당 메모리 상한을 두고 구현 후 실측으로 확인한다. 현재 F-O-01 경로의 시트 통째 읽기와 64MiB 초과 거부는 `BCInput`(68MiB)을 처리하지 못하므로 일반 처리기에 그대로 쓰지 않는다.
+  2. 처리 반복 중 DB 기한을 확인해 스스로 중단할 수 있어야 한다. A에서는 프로세스 강제 종료로 작업을 끊을 수 없다.
+  3. 웹 요청의 인증·보안 컨텍스트에 의존하지 않고, 저장된 작업 기록으로 사용자·권한을 다시 확인한다. 평문 임시 파일은 `InputTempFiles`(0700 directory/0600 file)로 만들고 finally에서 닫는다(규칙63).
+- **현재 전용 worker 구성의 지위:** §5.5·5.5.1·5.5.2의 전용 container/PID1 감독 프로세스, cgroup 검사, 영속 작업 volume, marker는 개발·시험 서버(Compose)에서 쓰는 기존 실행기의 설명이다. A의 운영 배포 요건으로 사용하지 않는다. 기존 Supervisor/Main/Compose는 이번 실행기 구현에서 삭제·수정하지 않으며, A에는 아래 웹 실행기 계약을 적용한다. 기존 worker 종료는 사용자가 전환 시 담당하고 실제 배포 환경에는 기존 worker가 없다. 기존 worker 자동 종료 확인·혼합 운영 대응은 구현 범위가 아니며 별도 종료 제어나 감시 기능을 추가하지 않는다. 이 결정은 기존 worker가 이미 종료됐다는 실행 결과가 아니다.
+- **선택 기준:** 실제 작업 시간, 강제 종료 필요성, 웹 CPU 영향, 평문 handle 0 확인(규칙63)을 기준으로 A를 채택했다. 운영 자원 적합성은 부하 시험으로 별도 확인한다.
+- **2026-10-20 사용자 결정 — A 채택:** 실행 방식은 A(웹 JVM 안에서 처리)로 진행한다. 근거는 실제 편집기 단독 실측이다([편집기 자원 시험](../../work-notes/2026/2026-10-20-model-input-editor-in-process-resource-test.md)): 시험한 무거운 시나리오는 heap 256MiB 안에서 끝났고, BCInput 중단 시험은 interrupt 후 수 ms 내 정지·평문 잔여0을 확인했다. checkpoint 사이 최대 간격은 약2초였으며 외부 암복호화·저장소 전송·다른 경로의 네트워크 지연까지 입증한 결과는 아니다. 운영 반영 전에 실제 웹 Pod heap·CPU와 편집 작업 중 웹 응답 지연을 [부하 시험](../../work-notes/2026/2026-10-20-model-input-editor-web-load-test.md)으로 확인한다. 규칙64의 실행 위치는 A로 대체하며, 과거 worker 1개·2vCPU·2GiB 수치를 웹 Pod 자원 설정으로 복사하지 않는다. 약250MiB의 기존 Java 계산 RSS와 시험 JVM heap 256MiB는 웹 애플리케이션·편집/파일 준비·전송·임시파일을 합친 Pod 전체 메모리 상한이 아니다. 제품 연동 후 동시 작업과 웹 부하를 포함한 총량으로 자원을 정한다.
+
+##### A 웹 실행기 계약 — 2026-10-20 검토 반영
+
+1. **실행 경계:** UPLOAD·CHANGE·FINALIZE는 웹 JVM 안의 전용 단일 처리 스레드에서 순차 실행한다. 웹 요청 스레드나 기존 `AsyncConfig` 실행기로 편집을 넘기지 않는다. 실행기 활성화 속성은 하나이며 기본값은 꺼짐이다. 기존 업로드/최종저장 기능 속성은 유지한다. 처리 스레드가 막혀도 기한·잠금 감시는 동작해야 하며, 감시용 실행 자원을 허용한다. 작업 상태의 원본은 DB queue이고 메모리 queue를 복구 근거로 삼지 않는다.
+2. **단일 소비자와 잠금의 한계:** 기존 worker와 같은 master DB 세션 잠금 `GET_LOCK(CONCAT('mi-input-draft:',DATABASE()),0)`을 사용한다. 잠금을 보유한 정상 소비자만 claim한다. 그러나 **DB 잠금 세션 종료는 이전 Java 스레드/전송 종료의 증거가 아니다.** MySQL은 세션 종료 시 잠금을 해제할 뿐 클라이언트 작업을 종료하지 않는다([MySQL locking functions](https://dev.mysql.com/doc/refman/8.0/en/locking-functions.html)). 네트워크 분리·DB 세션 종료 후에도 이전 소비자의 계산·PUT은 계속될 수 있다. 배포 환경의 소비자는 A 웹 실행기이며, 웹 복제본 사이에서도 잠금만으로 장애 중 전역 동시 처리1건을 보장한다고 하지 않는다.
+3. **잠금 상실·인계:** 정상 종료 증거가 확인된 경우에만 자동 인계한다. 잠금 상실 또는 소유 확인 불가 시 신규 claim을 중단하고 진행 작업에 interrupt를 보낸다. 재획득만으로 실행을 재개하지 않는다. 같은 JVM의 시도는 처리 본문·finally·파일 핸들·전송이 실제로 끝났음을 확인한다. 다른 웹 복제본의 비정상 종료·종료 불명은 자동 복구, 종료를 전제로 하는 준비 object 삭제, 신규 작업 시작을 보류하고 경고하며 아래 수동 복구 절차를 따른다. DB의 RUNNING 유무, 기한 경과, token 조건 검사, 일정 시간 대기는 단독으로 종료 증거가 아니다. token은 이전 시도의 DB 확정 차단에 사용하며 이미 진행 중인 외부 PUT까지 취소하지 않는다. 정상 인계 증거는 대상 소비자 시도를 식별하고 재시작·다른 복제본에서도 검증 가능해야 한다. 새 소비자는 작업 시작 전에 기존 정상 종료 증거를 재사용할 수 없도록 소비자 시도 상태를 전환해야 하며, claim 전 장애나 idle 중 연결 상실도 정상 종료로 오인하지 않는다.
+4. **기한·종료 순서:** 현재 DB 작업 기한120초(코드·DDL `ck09`)는 바꾸지 않는다. 기한 도달 시 해당 작업만 interrupt하고 checkpoint에서 협력적으로 중단한다. `Future.cancel(true)`/`isDone()`을 실제 처리 종료로 간주하지 않는다([Java Future](https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/util/concurrent/Future.html)). 기한 뒤에도 작업이 남으면 새 작업을 시작하지 않고 경고한다. 늦은 성공은 DB의 상태·token·기한 조건으로 차단한다. DB TIMEOUT 확정 여부와 실제 실행/정리 완료 여부를 구분하고, 종료 전제의 복구/정리는 실제 종료 확인 뒤 수행한다. 정상 shutdown도 신규 claim 중단 → 진행 작업 interrupt → 실제 종료·정리 확인 → 정상 잠금 반납 순서를 지킨다. 새 웹 실행기와 그 호출 경로는 `System.exit`/`Runtime.halt`로 웹 JVM을 종료하지 않는다.
+5. **DB 기준 복구:** A는 전용 worker의 영속 operation/token marker에 의존하지 않는다. 종료가 확인된 이전 시도만 DB의 operation/token으로 기존 UPLOAD·CHANGE·FINALIZE 복구 경로에 넘긴다. RUNNING뿐 아니라 FAILED 상태의 FINALIZE 준비파일 `CLEANUP_PENDING`과 업로드 정리 후보도 찾아 반복 정리한다. 실패 확정 직후 또는 정리 도중 재시작해도 DB 기록으로 재개한다. 안전한 실패 사유는 허용된 코드만 DB 실패 확정 시 기록한다. commit 응답 유실/DB 접근 불가에서는 성공·실패를 추정하지 않고 쓰기 DB에서 상태/token을 재확인한다. 이미 성공한 작업은 실패로 덮지 않으며 성공/결과 불명 object는 삭제하지 않는다. DB에 기록하지 못한 세부 실패 사유를 복원했다고 주장하지 않는다.
+6. **Error 처리:** 작업 경계에서 `Error`(`OutOfMemoryError` 포함)를 포착해 해당 시도의 실패 확정과 소유 평문 정리를 시도한다. 성공 확정 여부를 먼저 확인하며, 실패 확정·정리가 미확정이면 새 작업 소비를 중단하고 DB 기반 후속 복구 대상으로 남긴다. 실패 처리 자체의 오류로 성공/정리를 추정하지 않는다. 다른 웹 처리의 취소나 웹 JVM 종료를 호출하지 않는다. 실제 메모리 고갈은 같은 JVM의 요청·GC·실패 처리에도 영향을 줄 수 있어 웹 무영향·DB 확정·정리 성공을 절대 보장하지 않는다. 주입한 Error의 처리 경로 검증을 실제 heap 고갈의 격리 검증으로 확대하지 않는다.
+7. **평문 소유·정리:** 정상·실패·interrupt·Error에서 각 작업이 소유한 파일/핸들을 finally로 닫고 `InputTempFiles`를 통해 정리한다. 규칙63의 종료 후1분·복구 후5분·파일/열린 핸들 잔여0 기준은 유지한다. 웹 요청도 같은 임시파일 component를 사용하므로 작업별 소유 범위로 정리·잔여 검사를 수행하고, workspace 전체를 해당 작업의 잔여로 판단하거나 다른 활성 요청 파일을 지우지 않는다. 재시작 시 `InputTempFiles.recover`의 활성 workspace 잠금 보호를 유지한다. 기존 업로드 접수 복구용 로컬 marker는 전용 worker의 operation/token marker와 구분하며 이번 변경에서 무조건 제거하지 않는다. 작업/전송이 멈추지 않았거나 삭제가 실패한 경우 평문0·규칙63 충족으로 보고하지 않는다.
+
+8. **비정상 종료의 수동 복구:** 운영자가 이전 웹 소비자의 실제 컨테이너 종료를 확인한다. 노드와 통신할 수 없어 확인이 불가능하면 노드 종료 등으로 이전 실행이 계속될 가능성을 제거한 뒤 재개한다. Pod API 객체의 삭제·NotReady·강제 삭제 성공만으로 종료를 확인하지 않는다([Kubernetes Pod termination](https://kubernetes.io/docs/concepts/workloads/pods/pod-lifecycle/#pod-termination)). 운영용 복구 명령은 확인한 소비자 시도와 대상 operation/token을 지정해 실행하고, DB 잠금 아래 현재 상태를 다시 검사한다. 이전 소비자 재진입·동시 복구·오래된 승인 재사용을 막으며 새 시도나 이미 성공한 결과를 덮지 않는다. 전송 종료/결과 불명은 별도 확인하고, RUNNING 실패 확정과 미완료 정리를 수행한 뒤 소비를 재개한다. 재시작만으로 수동 복구 보류가 풀리면 안 된다. 업무용 공개 API나 상시 Kubernetes 감시기를 기본으로 추가하지 않고 기존 운영 수단을 우선 사용하되, 없으면 필요한 최소 운영용 복구 명령과 사용 절차를 구현한다. 운영자 확인 전에는 모델 입력 처리가 멈추는 가용성 비용을 수용한다. 실행기 보류를 이유로 다른 웹 처리를 의도적으로 중단하지 않으며 실제 OOM/DB 장애 자체의 영향은 별개다.
+
+**구현 준비 상태:** 인계 정책은 위 정상 자동·비정상 수동 방식으로 확정됐고 이 정책의 구현 착수는 승인됐다. 기존 전용 worker 종료는 사용자 담당이며 실제 배포에는 없으므로 자동 종료 확인 대상에서 제외한다. 정상 인계 증거·비정상 보류·소비자 시도 식별·1회성 복구 승인을 기존 DB 구조로 안전하게 표현할 수 있는지 먼저 확인하고, 최초 활성화 및 정상/비정상 인계의 구체 순서를 이 절에 보완한다. 계약이 다른 기존 필드나 임의 JSON에 운영 상태를 숨겨 넣어 schema 확인을 우회하지 않는다. 정책 선택을 다시 묻지 않으며, 필요한 schema 변경이나 확정 계약과 양립할 수 없는 구체 문제가 확인되면 해당 변경 구현 전에 최소 범위와 근거를 사용자에게 제시한다. 자원 수치와 웹 동시 부하 검증은 별도 부하 시험 목표로 유지한다.
+
+##### 최초 활성화·인계 순서 — 2026-10-20 schema 추가 승인
+
+저장소의 기존 DDL/Repository에는 소비자 전체 수명에 대한 기록이 없다. 요청이 없는 상태에서 정상 종료한 경우와 claim 전/idle 중 비정상 종료한 경우를 영속 정보로 구분할 수 없으므로 기존 요청 token만으로는 계약을 구현할 수 없다. [ERD §6.11의 전용 상태 table1개](mi-model-input-template-catalog-erd-ddl-draft.md#in-process-runner-state-proposal-20261020)를 추가한다(2026-10-20 사용자 승인). 아래 순서는 확정 계약이며 구현/실행 검증 결과는 작업노트가 소유한다.
+
+1. **최초 활성화:** A 기본 꺼짐 상태에서 수동 DDL/최초 상태 초기화를 완료한다. 기존 RUNNING·종료 불명·미완료 정리가 있으면 초기 상태를 정상 종료로 간주하지 않고 먼저 운영자가 실제 이전 실행/전송 종료와 DB 결과를 확인한다. 앱은 테이블이나 제어 행을 자동 재생성하지 않는다. 세션 잠금 획득 후 초기/정상 종료 상태를 새 소비자 UUID의 `ACTIVE`로 조건부 갱신하고 commit 결과를 확인한 뒤에만 claim/복구/정리 루프에 들어간다. 이 기록은 claim 전과 idle 동안에도 유지한다.
+2. **작업 연결:** 작업을 맡기 전에 소비자 UUID를 대조하고 operation/예상 token을 연결한다. claim 실패·응답 유실은 실제 요청 상태를 재조회하며, 처리/전송·finally·작업 소유 평문 정리와 DB 결과 확인이 끝난 뒤 연결을 해제한다. 작업 연결이 없다는 사실만으로 소비자를 정상 종료로 바꾸지 않는다.
+3. **정상 인계:** 신규 작업 중단 → 진행 작업 interrupt → 처리 본문·전송·finally 종료 및 DB 결과/필요 정리 확인 → 자기 소비자 UUID의 `STOPPED` commit 확인 → 세션 잠금 반납 순서다. 다음 복제본은 이 상태를 자기 새 UUID의 `ACTIVE`로 전환한 뒤에만 시작한다. 이전 UUID의 지연 갱신은 거부한다. 잠금을 잃은 같은 JVM이 실제 종료를 확인해 종료 증거를 기록할 때도 잠금과 자기 UUID를 다시 대조해야 하며, 그 경로로 기존 소비를 재개하지 않는다.
+4. **비정상 보류:** 새 복제본이 잠금을 얻어도 기존 행이 `ACTIVE`/`RECOVERING`이면 소비·종료 전제 복구/삭제를 보류한다. 기한 만료·RUNNING0건·프로세스 재시작으로 상태를 초기화하지 않는다. 정상 종료 기록의 commit 결과가 불명이면 쓰기 DB 확인 전 정상 인계를 주장하지 않는다.
+5. **1회성 수동 복구:** 운영자는 실제 종료와 전송 상태를 확인한 소비자 UUID 및 operation/token(연결 없으면 명시적 idle 확인)을 명령에 전달한다. 명령은 같은 세션 잠금과 제어 행 잠금 아래 기대값을 대조하고, 새 복구 시도 UUID의 `RECOVERING` 및 승인 대상/운영자/시각을 원자적으로 기록한다. 이 전환에서 승인은 소비되며 이전 UUID 대상의 중복·동시 명령은 실패한다. 복구 시도도 외부 IO 전에 영속 기록한다.
+6. **복구 종료/재장애:** 승인된 종료 범위만 기존 DB 복구 경로에 전달한다. 성공 보존·결과 불명 보류·RUNNING 실패 확정·FAILED FINALIZE/업로드 후보의 미완료 정리를 확인하고 `STOPPED`로 바꾼 뒤 정상 인계한다. 복구 중 다시 죽으면 새 복구 UUID의 `RECOVERING`이 남으므로 그 복구 프로세스의 실제 종료에 대한 새 승인이 필요하다. 과거 승인을 자동 재사용하지 않는다. 업로드 접수용 로컬 marker의 별도 소유/종료 증거는 유지한다.
+
+**구현 착수 판정(2026-10-20):** `ready` — 사용자 후속으로 ERD §6.11의 table1개 추가를 승인했다. 제품 구현·대역 테스트를 진행하며 실제 MySQL 적용/운영 복구/배포는 별도다.
+
+##### A 실행기 활성화·운영 복구 명령
+
+- DBA가 [수동 DDL](../../model-input-web-runner-ddl-draft.sql)의 사전 확인·최초 초기화·검증을 완료한 뒤 웹 설정에 `mi.model-input.web-runner.enabled=true`를 지정한다. 기본값은 `false`다. UPLOAD·CHANGE·FINALIZE의 기존 기능 속성/저장소·양식 설정도 충족해야 한다. 상태 행이 없으면 앱이 만들지 않고 소비를 보류한다.
+- 아래 명령은 기존 `inputDraftWorkerDist`의 클래스/의존성 묶음을 재사용한다. `InputDraftRecoveryMain`만 실행하며 기존 Main/Supervisor/Compose를 바꾸지 않는다. 설정은 실제 웹과 같은 master DB/저장소를 가리키는 보호된 외부 파일로 제공한다. 자격 증명을 명령 인자에 쓰거나 배포 묶음에 포함하지 않는다. 상태 조회도 기존 Spring 구성에 필요한 설정이 있어야 한다.
+
+```bash
+./gradlew inputDraftWorkerDist
+java -cp 'build/input-draft-worker/classes:build/input-draft-worker/lib/*' \
+  com.sk.domain.mi.service.fundamentalmodel.input.InputDraftRecoveryMain \
+  --spring.config.additional-location=file:/secure/model-input-recovery.yml \
+  --runner.action=status
+```
+
+`status`는 현재 `execution`, `state`, `operation`, `attempt`를 출력한다. `ACTIVE`/`RECOVERING` 보류에서 실제 이전 컨테이너·복구 명령·전송의 종료를 위 계약에 따라 확인하고 그 출력의 정확한 UUID를 지정한다. 정상 웹 소비자가 가진 잠금을 강제로 해제하지 않는다. 연결된 작업이 있으면:
+
+```bash
+java -cp 'build/input-draft-worker/classes:build/input-draft-worker/lib/*' \
+  com.sk.domain.mi.service.fundamentalmodel.input.InputDraftRecoveryMain \
+  --spring.config.additional-location=file:/secure/model-input-recovery.yml \
+  --runner.action=recover --runner.confirm-stopped=true \
+  --runner.execution='<확인한-consumer-UUID>' \
+  --runner.operation='<확인한-operation-UUID>' --runner.token='<확인한-attempt-UUID>' \
+  --runner.actor='<확인한-운영자-ID>'
+```
+
+작업 연결이 없는 소비자는 `--runner.operation`·`--runner.token` 대신 `--runner.idle=true`를 전달한다. `confirm-stopped`는 운영자의 확인 선언이며 프로그램이 Kubernetes/전송 종료를 대신 검증했다는 뜻이 아니다. `actor`는 감사용 운영자 식별자(영문·숫자·`_.@-`, 1~50자)다. 잘못되거나 오래된 대상, 이미 `STOPPED`인 대상, 잠금 경합은 승인되지 않는다. 복구가 완료되면 `STOPPED`가 되고 대기 중인 웹 소비자가 새 실행 UUID로 시작할 수 있다. 명령 실패/중단 시 `status`를 다시 조회하여 **새 복구 UUID의 실제 종료부터 확인**한다. 이전 승인값을 재사용하거나 DB 행을 임의로 `STOPPED`로 수정하지 않는다.
+
+수동 운영 확인은 제품 테스트와 별도다. 실제 MySQL에서 웹 소비자 두 연결의 잠금 경합, 세션 종료 후 이전 작업이 살아 있는 동안의 보류, 명시적 종료 확인 뒤 복구 및 정상 인계를 확인한다. H2/잠금 대역 테스트 통과만으로 이 운영 검증을 통과했다고 하지 않는다.
+
+<a id="incremental-upload-lifecycle-storage-20261019"></a>
+
+### 5.6 직접 업로드의 저장·복원 경계 — 규칙67의 기술 구체화
+
+규칙67에서 채택한 업무 동작을 구현할 논리 경계다. 원본 Case 기반 Draft는 기존 소유/고정 원본/복원 경계를 유지한다. 물리 테이블·NULL/키·증분 SQL은 [DDL §6.10](mi-model-input-template-catalog-erd-ddl-draft.md#incremental-upload-storage-20261019), 공개 요청/응답은 [입력 제공 명세 §3.3](../../feature-specs/mi-fundamental-model-input-provision-feature-spec.md#incremental-input-upload-api-20261019)이 소유한다.
+
+**사용자 후속 확인:** 직접 업로드는 기존 Case ID 없이 유효 파일1개부터 초안을 만들고4개 미만 상태에서 편집할 수 있는 진입이다. 초안 생성 후의 값·행·열 편집은 다른 출처의 초안과 같은 고정 양식 정책·동일한 공통 편집 API를 사용한다. 업로드 전용 행·열 명령/별도 편집 정책을 만들지 않는다. 필요한 파일이 없는 동작만 제한하고4역할 최종저장 조건은 유지한다. 지원 형식은 xlsm/xlsx, 최종저장은 역할별 원본 형식 유지, 파일당 상한은 기존 확정한50MiB(52428800바이트)다. 구체 경로/DTO는 편집 API §3, 파일 검증 계약은 입력 제공 명세 §3.3을 따른다.
+
+1. **소유:** 직접 업로드의 접수·private 파일·초안은 인증/권한 확인된 같은 회사/사용자에 속한다. 최초 검증에는 원본 Case 접근을 요구하지 않으며 일반 기존 Case 경로의 접근 검사를 제거하는 것으로 확대하지 않는다. 요청/worker가 확인된 owner/접수 역할을 복원하며 클라이언트의 파일 경로나 tenant 식별을 신뢰하지 않는다.
+2. **최초 접수와 단일 작성:** 아직 초안이 없는 최초 접수도 영속 기록과 사용자별 현재 작성 점유를 함께 확정한다. 첫 검증 성공에서만 초안을 만들고 현재 작성을 해당 초안으로 전환한다. 실패에서는 자기 최초 점유만 해제한다. 재전송은 원래 결과를 반환하며 과거 작업이 새 작성의 점유를 해제하거나 재활성화하지 않는다.
+3. **양식 선택:** 첫 작업의 실제 검증 시작 시 당시 ACTIVE를 한 번 선택해 검증 기록에 고정한다. 같은 작업 중 새 ACTIVE가 생겨도 다시 선택하지 않는다. 성공한 그 버전을 초안 전체에 고정하며 후속은 DEPRECATED 전환 뒤에도 같은 정의로 처리한다. 최초 검증 실패로 아직 초안이 없으면 새 요청은 새 검증 시점의 ACTIVE를 선택한다.
+4. **파일 기준점과 이력:** 최초 성공은 revision0, 추가/교체 성공은 현재 revision+1에 해당 역할의 새 원본 기준점을 확정한다. 현재 파일만 바꾸고 이전 편집을 무조건 재생하지 않는다. 조회/편집/최종저장은 각 역할의 마지막 성공 원본과 그 이후 그 역할에 적용된 성공 결과만 복원한다. 실패·진행 후보는 제외한다. 다른 역할의 기준점/편집은 유지한다.
+5. **교체된 행·열:** 이전 파일의 행ID는 새 파일에 재사용하지 않는다. 이전 행은 삭제 대응으로 남기고 새 원본 행에 새 식별자를 부여한다. 새 파일은 자기 원본 열/구조 정의에서 시작하며 이전 파일에서 추가/삭제/변경한 열·셀 결과는 넘어오지 않는다. 과거 성공 요청/결과는 기록으로 보존한다. 오래된 화면의 요청은 현재 revision/행·열 기준점 검사로 차단한다.
+6. **객체 보관:** 업로드 원본은 최종저장 전에는 Case/공통 공개 파일에 연결하지 않는 private 후보/성공 원본이다. 수신 준비부터 서버 저장 참조를 추적해 실패·중복·재시작 정리를 가능하게 한다. 실패 후보 정리는 실제 실행/저장 상태와 성공 참조 여부 확인 뒤 수행한다. 성공 원본·교체 전 파일/편집 이력은 기존 자동 TTL 없음/보존 원칙을 사용하며 취소를 즉시 물리 삭제로 해석하지 않는다. 로컬 평문 정리는 규칙63을 유지한다. 목록·선택 재개·취소 내용 복구 기능은 추가하지 않는다.
+7. **종료:** 확인된 취소 또는 최종저장 성공과 현재 작성 해제를 같은 DB 성공 경계로 묶는다. 실제 Case/최종4파일/고정 양식 연결과 실행 대기는 기존 §5.2를 재사용한다. A 취소 뒤 B 첫 검증 실패는 규칙67대로 A 비복구/B 초안 미생성이다. 실패 결과 불변·작업 유형별 기한·실제 종료/commit 확인·늦은 성공 차단은 기존 공통 복구 경계와 규칙67을 유지한다.
+
+위 구체화에 추가 사용자 업무 선택은 없다. API DTO/worker 연결, 물리 제약·저장 복원/동시성/실파일 검증은 남아 있으며 문서화가 실제 기능 완료를 뜻하지 않는다.
+
+### 5.7 Case 초안의 불변 초기 기준 행 공유 — 2026-10-21 설계
+
+이 절은 **Case 출처 신규 Draft의 revision 0 행 구성 저장**을 대체한다. §5.1의 개인 소유·안정 rowId·성공 revision 규칙은 유지한다. 물리 키·파생 ID 형식·DBA 순서는 [DDL §6.12](mi-model-input-template-catalog-erd-ddl-draft.md#612-case-초안-공유-기준-행--2026-10-21-설계)가 소유한다. 구현/DB 적용 완료를 뜻하지 않는다.
+
+#### 5.7.1 선택한 구조와 소유권
+
+- **불변 기준 집합(baseline):** 권한 확인한 한 회사·한 Case의 정확한 고정 4파일과 발행 양식에서 판독한 `(표, 원본 행번호)` 집합이다. revision 0의 실제 논리 행만 포함한다. 원본 파일의 값·수식·서식은 기존 파일이 소유하고 전체 셀을 DB로 전사하지 않는다. 식별 열/빈 슬롯/Regas 연결 원본 행 등 현재 `create`의 행 판정 규칙을 그대로 사용한다.
+- **Draft:** 개인 소유권, baseline 참조, 고정 4파일 참조, revision 0 및 이후 성공 변경, 작업/최종 Case를 소유한다. baseline에는 사용자 편집 값·rowId·operation·revision·현재 위치를 넣지 않는다. 다른 사용자는 같은 원본 집합을 참조할 수 있지만 서로의 Draft와 변경 내용에는 접근하지 못한다.
+- 원본 행의 Draft별 rowId는 Draft UUID와 불변 원본 대응으로 결정적으로 배정한다(같은 입력이면 항상 같은 ID). 원본 행별 매핑을 새 Draft에 전부 INSERT하지 않는다. 추가 행의 ID는 기존 성공 추가 방식대로 발급한다. 조회마다 새 UUID를 만들거나 원본 행번호를 공개 rowId로 사용하지 않는다.
+- 성공 row delta에 처음 나타난 원본 행만 기존 Draft 행/위치 테이블에 기록한다(같은 위치를 다시 기록하는 delta도 포함). 변경 전 위치 구간도 함께 기록해 과거 복원이 가능하게 한다. SET/CLEAR만으로 모든 원본 행을 복제하지 않는다. 이 **필요한 행만 기록하는 방식**과 기존 성공 delta를 결합한다.
+- baseline은 해당 파일·catalog와 함께 불변이다. Draft 폐기·최종저장·소유자 변경으로 수정하거나 삭제하지 않는다. 참조 수명은 FINALIZED/DISCARDED 및 과거 성공 이력을 포함한다. 기존 자동 삭제 없음 정책을 유지하고 TTL/참조계수/자동 GC를 추가하지 않는다.
+
+#### 5.7.2 재사용 판정과 내용 동일성의 근거
+
+| 상황 | 판정 |
+| --- | --- |
+| 같은 회사·사용자·Case의 활성 Draft | 기존 EDT-01 재개 우선. 저장 방식·revision·rowId·진행 작업을 유지한다. 요청/현재 source 불일치는 기존 충돌이며 새 Draft로 우회하지 않는다 |
+| 활성 Draft 없음, 같은 회사·Case·template ID/버전·catalog 발행·sourceVersion·4역할별 file_no/객체 참조·행 판독 버전 | 같은 baseline을 참조하는 독립 Draft 생성. 기존 Draft의 편집/위치/추가·삭제 행을 복사하지 않는다 |
+| Case ID/template ID만 같음 | 재사용 근거로 부족하다. sourceVersion과 실제 4개 고정 참조를 반드시 대조한다 |
+| 파일 참조 또는 sourceVersion 변경 | 새 기준으로 새 baseline을 만든다. 기존 활성 Draft는 충돌을 유지하고 자동 재기준화하지 않는다 |
+| 파일은 같지만 template ID/버전/catalog 발행 변경 | 새 baseline. 개발 중 templateId가 자주 바뀌어도 이전 양식의 행 해석을 재사용하지 않는다 |
+| 다른 회사 또는 다른 Case | 파일이 같아 보여도 공유하지 않는다. 교차 회사/Case 콘텐츠 중복 제거는 범위 밖이다 |
+| 행 판독 규칙 변경 | 새 내부 baseline 버전으로 신규 생성. 이미 연결된 Draft의 버전/행 집합은 그대로 읽는다 |
+| 직접 업로드 Draft | 공유 대상 아님. §5.6의 역할별 파일 baseline·교체·새 rowId·성공 이력을 유지한다 |
+
+§3.2에서 사용자가 확인한 **새 업로드는 새 file_no/UUID 객체이고 등록 후 경로·내용 불변**, §3.3의 발행 catalog 불변을 재사용 근거로 삼는다. 따라서 기본 경로에 전체 파일 재해시·새 snapshot·버킷 versioning을 추가하지 않는다. sourceVersion은 참조 조합의 식별자이며 파일 바이트 해시가 아니다. 공유 기준이 이미 있으면 파일 전체를 다시 내려받거나 Excel 행 스캔을 하지 않는다. 객체 누락/판독 오류는 실제 표/저장 읽기에서 기존 실패 처리로 드러날 수 있고, baseline 적중을 파일 존재·계산값 정확성 보증으로 표현하지 않는다.
+
+다른 참조 사이의 콘텐츠 동일성을 증명할 별도 요구가 생기면 **실제 reader가 읽는 동일 해독 바이트 스트림**의 역할별 SHA-256과 길이를 양쪽에서 비교하고 같은 발행 해석 규칙도 확인해야 한다. file_hash_val/ETag/파일명/크기만 비교해서는 증명하지 못한다. 과거 digest가 없으면 양쪽 4파일 전체 읽기·해독과 O(바이트 수) 계산이 필요하고, 등록 참조에 digest를 고정·검증할 보관 설계도 필요하다. 이 추가 비용/스키마는 현재 선택안에 포함하지 않는다. 운영에서 불변식 위반이 확인되면 해당 재사용을 중단하고 원본 등록을 복구하며, 같은 키를 덮어써 정당화하지 않는다.
+
+#### 5.7.3 첫 생성·동시성·실패 경계
+
+1. 인증·회사/Case 접근·현재 발행/4파일·요청 sourceVersion을 확인하고 활성 Draft를 먼저 재개한다. baseline ID를 클라이언트에게 받거나 노출하지 않는다.
+2. 활성 Draft가 없으면 정확한 재사용 키로 committed baseline을 찾는다. 적중하면 고정 manifest(역할별 파일 참조 목록)를 대조한다. 미적중일 때만 DB 잠금 밖에서 현재 `create`와 같은 파일 판독·행 판정을 수행한다. 이 단계는 메모리/임시 작업이며 부분 baseline/Draft를 공개하지 않는다.
+3. 생성/재개 경로의 기존 **Case 잠금 → 필요 시 기존 Draft 잠금** 순서의 같은 master transaction에서 현재 권한·sourceVersion·발행·4파일을 다시 확인한다. 재개 대상이 생겼으면 그것을 반환한다. baseline도 다시 조회해 다른 생성자가 먼저 commit했다면 그 집합을 사용한다.
+4. baseline이 여전히 없으면 header·4파일 manifest·전체 기준 행을 일괄 INSERT하고 완전성/중복/범위/행 수를 검사한다. 이어 Draft·baseline 참조·고정 파일4건·revision0을 함께 commit한다. 적중 시에는 이 작은 Draft 저장만 수행한다. baseline 생성 전용 공개 BUILDING/FAILED 상태나 별도 worker를 추가하지 않는다. DB에서 보이는 baseline은 검증된 완성 집합뿐이다.
+5. 첫 생성의 N행 INSERT transaction은 여전히 큰 transaction이다. 배치를 여러 commit으로 쪼개 부분 공개하지 않는다. 동시에 처음 진입한 여러 요청은 파일 스캔이 중복될 수 있으나 같은 Case 잠금과 DB 유일성으로 baseline 한 건/사용자별 활성 Draft 한 건만 확정한다. UK 충돌은 해당 transaction rollback 후 쓰기 DB에서 승자를 재조회하고 다시 기준을 대조한다. 무제한 재시도/lease takeover는 추가하지 않는다.
+6. 스캔 실패·source 변경·INSERT 실패·commit 전 프로세스 종료는 신규 baseline/Draft를 남기지 않는다. 다른 생성자가 이미 확정한 baseline은 영향받지 않는다. 응답 유실/commit 불명은 같은 source로 EDT-01 재호출하여 쓰기 DB 잠금 아래 활성 Draft를 확인하며 임의 실패 처리/삭제를 하지 않는다. 기존 임시 파일 보호·정리 규칙을 유지한다.
+
+#### 5.7.4 조회·편집·과거 revision·최종저장
+
+| 경로 | 구현에서 바꿀 연결과 유지할 검사 |
+| --- | --- |
+| `initialRead` / EDT-02·03 revision0 | 연결 baseline·manifest·행 집합 완전성을 검사한다. 구조 조회에는 전체 행을 JVM으로 가져오지 않는다. 선택 표 페이지는 baseline의 표/원본 행 범위만 조회하여 Draft별 rowId와 가상 `[0,∞)` 위치를 만든다. 현재 2,000행 및 bytes 상한, 표 끝 빈 행 제외, 원본 값 판독/controls/metadata는 유지한다 |
+| `restore` / `InputDraftHistory.restore` | baseline 모든 원본 identity와 미변경 위치를 논리적으로 합성하고 해당 Draft에 실제 저장된 원본 위치 이력·추가 행을 합친다. 성공 delta 순차 재생 결과와 합성한 전체 identity/위치를 양방향 대조한다. 원본 누락·잘못된 source mapping·고아/겹친 구간을 정상 빈 결과로 숨기지 않는다 |
+| EDT-04 접수 검증 | 현재 `validateChange`가 직접 `rowPositions`로 만드는 bindings도 합성 결과를 사용해야 한다. 물리 테이블만 조회하면 미변경 원본 행을 없는 행으로 오판한다. 요청 rowId가 이 Draft·표의 현재 활성 행인지 검증한 후 기존 표별 정책/업무키 검사 수행 |
+| CHANGE 준비/확정 | `prepareWorkerChange`의 `InputDraftEditingBasis`와 완료 시 검증이 동일 합성 경로를 사용한다. 값·열 변경은 기존 v2 delta에 저장. 원본 행의 첫 row delta는 이전 구간+새 구간을 저장하고, 추가 행은 기존 추가/삭제 이력을 사용한다. 이동으로 영향받은 모든 행을 포함해 최종 위치 중복을 검사한다. 성공 delta·위치 이력·revision·operation 결과는 기존 단일 transaction/token/기한 조건으로 확정 |
+| 과거 revision | `InputDraftEditingBasis.history(r)`는 전체 baseline 원본 + r까지 생성된 추가 행 + r에 유효한 위치 구간 + r까지 성공 delta로 복원한다. r 이후 변경으로 닫힌 구간의 종료를 이 관점에서 NULL로 절단하는 기존 동작을 유지한다. 이후 삭제/추가가 과거 결과로 새지 않는다 |
+| FINALIZE | `InputDraftFinalizationRepository.prepareClaimed → verify`의 직접 `rowIdentities/rowPositions` 읽기도 합성 경로로 바꾼다. `InputDraftEditingBasis.history`를 사용하는 workbook 재생성은 고정 원본4개와 해당 Draft의 성공 이력만 사용한다. baseline 원본이 다른 사용자의 현재 값/파일을 가리키지 않는다. 최종 Case/4파일/고정 template/FINALIZED/operation/준비파일 commit 경계와 원본 형식 보존은 유지 |
+| 직접 업로드 | `InputUploadRepository`·`InputUploadService`는 기존 full-row/file_rvsn_no 경로 유지. 파일 교체 시 옛 행 tombstone·새 원본 행 INSERT가 공유 baseline을 수정하지 않는다 |
+
+공개 EDT-03은 현재 revision과 다른 요청을 `REVISION_CONFLICT`로 거절하는 계약을 유지한다. 위 과거 복원은 worker/검증/파일 재생성 내부 능력이며 새 과거 조회 API를 뜻하지 않는다. 공개 ID 형식, EDT-01 응답/오류·개인 활성 Draft1건·변경/최종저장 계약은 그대로이므로 API 정본 수정은 없다.
+
+소유권 검증은 모든 진입에서 먼저 한다. 같은 baseline을 가리키더라도 다른 사용자 Draft ID/rowId/operation ID로 읽고 쓰지 못한다. 다른 회사 baseline을 연결할 수 없도록 DB 복합 FK와 서버 대조를 함께 둔다. 작업에서는 기존 `workerOwner` 및 source 접근 검사를 유지하며 baseline 생성자의 감사 login을 작업 권한으로 사용하지 않는다.
+
+#### 5.7.5 비용·대안·후속 단위
+
+N=원본 논리 행 수, M=독립 Draft 수, K=한 Draft의 성공 row delta에 포함되어 실제 기록된 원본 행 수다(같은 위치 재기록 포함). 조사 표본 N=226,102는 설계 규모 예시이며 이번 작업의 실측이 아니다.
+
+| 항목 | 기존 | 선택안 |
+| --- | --- | --- |
+| 첫 신규 Draft | Excel 스캔 + N identity/N 위치 INSERT | 같은 스캔 + baseline N행·header/4파일 + Draft metadata. 원본 위치0 INSERT 없음 |
+| 같은 기준 두 번째 Draft | 재스캔 + 다시 2N INSERT | baseline 참조 대조 + Draft/header·4파일·revision0의 고정 수 INSERT. 원본 행/위치 INSERT **0건** |
+| M개 저장량 | 원본 행/위치만 2NM건 | 공통 N건 + 각 Draft metadata + 변경된 K identity/위치 이력 + 추가 행/성공 delta |
+| revision0 페이지 | 전체 무결성 SQL 확인 + 페이지 행 | baseline 무결성 SQL 확인 + 페이지 행/파생 ID. 검증용 COUNT/범위 대조는 N에 비례할 수 있음 |
+| 편집된 Draft 복원/최종저장 | 전체 행/이력 복원 + 필요한 파일 처리 | 전체 baseline/개인 변경 합성·재생과 파일 처리 유지. O(N+이력) 메모리/CPU를 없앴다고 주장하지 않음 |
+
+INSERT 건수 감소가 같은 비율의 응답 시간 단축을 보장하지 않는다. 첫 생성의 대량 INSERT/Case 잠금, 동시에 첫 생성한 요청들의 중복 스캔, 매 조회의 무결성 검사, 큰 구조 변경이 K≈N인 경우의 이력 저장 비용은 측정 대상이다. 변경 없는 두 번째 Draft가 226k행을 저장하지 않는 것이 이번 설계의 직접 완료 조건이다.
+
+배제한 대안: 기존 Draft의 편집 상태 복사는 요구와 소유권에 맞지 않는다. 원본 행을 새 UUID로 `INSERT…SELECT`하는 방식은 2N 저장을 남긴다. 원본 rowId를 사용자 간 그대로 공유하면 기존 전역 row PK/FK와 개인 identity 경계를 크게 바꾼다. 전체 snapshot/매 페이지 물리화/영속 현재값 cache는 현재 목표에 필요하지 않다. 연속 범위 압축은 빈 슬롯·Regas 예외를 별도 표현해야 하고 조회/검증 복잡도가 늘어 최소안에서 제외한다.
+
+**적용 순서:** DDL §6.12의 additive schema → 모든 웹/worker의 기존/공유 읽기·쓰기 호환 → 신규 Case 생성만 제한 활성화 → 실패/경합·실제 규모 측정 후 확대. 기존 저장 Draft의 자동 변환은 없다. 첫 구현 단위는 **공유 기준 및 가상 행 합성의 내부 persistence/복원 경로와 의미 있는 테스트**다. 신규 공개 생성은 꺼둔 채 기존/직접 업로드 동작과 원본 첫 이동·과거 복원을 검증한다. 이어 EDT-01과 모든 검증/worker/FINALIZE 연결을 완성한 뒤 생성 활성화를 검토한다.
+
+#### 5.7.6 Open Questions / implementation readiness
+
+- 이 slice의 추가 사용자 업무 결정은 없다. `ready` — 위 내부 저장/복원 구현을 시작할 설계가 정해졌다.
+- 구현·로컬 검증 결과는 [공유 기준 구현 기록](../../work-notes/2026/2026-10-21-case-input-draft-shared-baseline-implementation.md)이 소유한다. 신규 생성 설정과 수동 적용·활성화 순서는 [증분 DDL](../../model-input-shared-baseline-ddl-draft.sql)을 따른다.
+- 실제 MySQL 제약/동시성·DBA 적용, 첫/재사용 생성 성능, worker/파일 보존 검증은 후속 완료 조건이다. 전체 표 정책/운영 READY로 확대하지 않는다.
+
 ## 6. Business rules
 
 1. 모델 유형별 `ACTIVE` 양식은 최대 한 건이다.
@@ -484,16 +726,16 @@ Draft 1 ── 0..1 최종 Case (성공 때만 연결)
     - 2026-10-13 사용자 확인: SUPPLY `BCRegasification` 마지막 행 추가 시 `RegasAdjustment`의 연결 행은 자동 추가한다. `RegasAdjustment` 사용자는 행을 직접 추가/삭제할 수 없으며 기존 허용 입력값만 변경한다. master 삭제 허용·연결 삭제 처리와 상세 경계는 규칙51을 따른다.
 13. 2026-10-07 사용자 확인: 구조 변경의 주된 추가 방식은 해당 논리 테이블의 마지막 행 뒤·마지막 열 뒤에 붙이는 append다. workbook 전체의 마지막 좌표를 뜻하지 않으며 모든 table의 행·열 추가를 일괄 허용하지 않는다. 중간 삽입·삭제는 개별 table의 명시된 허용 규칙을 따른다. 2026-10-13 사용자 후속 결정에 따라 규칙45의 `DemandOutputOverwrite`는 마지막 행 추가·행 삭제만 지원하고 중간 삽입은 현재 범위에서 제외한다. 규칙47의 `LiqUtilAdjustment` 행·열 삭제는 유지한다. 추후 중간 삽입 요청을 검토할 때 위치 기반 참조, 고정 집계 범위와 열 인덱스의 갱신·보존을 검증해야 한다.
 14. 화면 action은 `임시저장`과 `최종저장`만 제공한다. 미리보기는 현재 범위에서 제외한다.
-15. 임시저장은 Case나 최종 XLSM을 만들지 않고 변경분·revision 저장과 영향받은 계산 허용 테이블의 재계산을 하나의 성공 단위로 다룬다. 2026-10-08 사용자 결정에 따라 계산 실패 시 **이번 요청의 값·구조 변경 전체를 취소**한다. 요청의 변경분·revision 증가·부분 계산 결과를 성공한 Draft 상태로 확정하지 않고 직전 성공 임시저장의 변경분·revision·계산 결과를 유지한다. 취소를 보장할 transaction·계산 실행 방식과 실패 응답 표현은 후속 write/저장 설계에서 확정한다.
-16. 최종저장은 고정 source snapshot과 전체 Draft 변경분으로 XLSM 4개를 처음부터 다시 생성한다. 임시 작업 파일을 그대로 승격하지 않는다.
+15. 임시저장은 Case나 최종 파일을 만들지 않고 변경분·revision 저장과 영향받은 계산 허용 테이블의 재계산을 하나의 성공 단위로 다룬다. 2026-10-08 사용자 결정에 따라 계산 실패 시 **이번 요청의 값·구조 변경 전체를 취소**한다. 요청의 변경분·revision 증가·부분 계산 결과를 성공한 Draft 상태로 확정하지 않고 직전 성공 임시저장의 변경분·revision·계산 결과를 유지한다. 취소를 보장할 transaction·계산 실행 방식과 실패 응답 표현은 후속 write/저장 설계에서 확정한다.
+16. 최종저장은 고정 source snapshot과 전체 Draft 변경분으로 네 역할의 workbook을 처음부터 다시 생성한다. 임시 작업 파일을 그대로 승격하지 않는다. **2026-10-19 사용자 후속 결정:** 규칙67의 순차 업로드 최종저장은 각 역할의 원본 형식을 유지한다(.xlsx→.xlsx,.xlsm→.xlsm). 이 문서의 기존 "최종 XLSM" 표현은 당시.xlsm 기준본에 대한 설명이며, 이 순차 업로드 경로에서.xlsx를.xlsm으로 변환하거나4개를 같은 형식으로 통일하라는 계약으로 해석하지 않는다. 원본 전체 복제·승인 범위만 변경·계산/구조/보존 검증 원칙은 그대로 유지한다.
 17. 최종저장은 계산 허용 수식의 workbook 계산, 계산 제외 영역의 원본 보존, 구조 검증과 네 파일 생성이 모두 성공한 뒤 4파일 계약으로 확장된 Fundamental Model 파일 업로드·Case 생성 application service를 내부 재사용한다. Backend가 자기 HTTP Controller를 호출하지 않는다.
-18. 최종저장 성공 시 새 `INDEPENDENT` Case는 기존 업로드 흐름의 초기 상태로 생성되고 Draft는 `FINALIZED`와 `finalizedCaseId`를 가진다. Run 접수는 기존 별도 흐름을 사용한다.
+18. **2026-10-19 사용자 변경:** 최종저장 성공 시 새 `INDEPENDENT/PENDING` Case와 `FINALIZED` Draft·최종 Case 연결 및 최초 실행 대기를 함께 확정한다. BE가 기존 Run 접수 로직으로 자동 연결한다. 저장 완료와 실행 완료는 별개이며 실행 실패에도 확정된 Case/4파일/Draft는 유지한다. 같은 최종저장 재전송은 실행을 다시 만들지 않는다. API/중복/실패 조회 계약은 편집 API §9.2.1을 따른다.
 19. 동일 Draft의 최종저장 재시도는 새 Case를 중복 생성하지 않고 이미 연결된 `finalizedCaseId`를 반환해야 한다.
-20. 모델 실행 container는 편집 결과 XLSM 생성 책임이 없다. Backend가 소유한 workbook materialization/calculation 경계가 값 적용·계산 허용 수식 재계산·계산 제외 영역 보존·구조 검증·XLSM 직렬화를 수행한다.
+20. 모델 실행 container는 편집 결과 workbook 생성 책임이 없다. Backend가 소유한 workbook materialization/calculation 경계가 값 적용·계산 허용 수식 재계산·계산 제외 영역 보존·구조 검증과 규칙16의 형식에 맞는 직렬화를 수행한다.
 21. 카탈로그에서 화면에 내려준 편집/추가/선택 규칙은 Backend write validation에도 동일하게 적용한다. 화면 표시 전용 metadata로만 사용하지 않는다.
 22. 행·열 추가는 Boolean만으로 허용하지 않는다. table별 `NONE`, `APPEND_ONLY`, 기준 후보 선택, domain command 같은 구조 변경 정책과 수식·서식·validation 복제 규칙이 확정된 경우에만 연다.
 23. 선택형 필드와 신규 행·열 header 후보는 Frontend에 하드코딩하지 않는다. 고정 후보, 기준 table, master data, 기간축, 자유입력 중 source type과 validation을 카탈로그가 소유한다.
-24. 파라미터 제안의 workbook 병합·파일 생성 로직은 재사용하지 않는다. 새 materialization/calculation 경계가 Draft와 카탈로그 규칙으로 XLSM 4개를 생성한 뒤, 결과 bytes를 `MultipartFile` 4개로 변환해 4파일 실행 준비 흐름에 전달하는 adapter 패턴만 재사용한다.
+24. 파라미터 제안의 workbook 병합·파일 생성 로직은 재사용하지 않는다. 새 materialization/calculation 경계가 Draft와 카탈로그 규칙으로 규칙16의 형식에 맞는 네 역할 파일을 생성한 뒤, 결과 bytes를 `MultipartFile` 4개로 변환해 4파일 실행 준비 흐름에 전달하는 adapter 패턴만 재사용한다.
 25. 전수 조사에서 분류한 기존 23개와 `OUTPUT` 5개, 총 28개 화면 대상 sheet는 활성 catalog가 아니라 후보 evidence다. 최종 표시 table 목록과 표 경계를 template version별로 확정한다. 화면 구조·값의 반환 범위는 `docs/feature-specs/mi-fundamental-model-input-provision-feature-spec.md` §3을 따른다. 조회 대상과 수정 허용 범위는 구분하며 write는 catalog가 허용한 범위만 적용한다.
 26. 2026-10-07 사용자 확인: 이번 release는 값 편집과 요청된 구조 변경을 함께 포함한다. 구조 변경을 후속 release로 일괄 미루지 않는다. 행·열 추가 가능 여부는 사용자 확인과 표별 조사 판정을 반영하며 모든 table을 일괄 `rowAdd=false/columnAdd=false`로 두지 않는다. 기본 추가 방식과 예외는 규칙 13을 따른다. 2026-10-06 사용자 확인으로 `ProductionAdjustment`는 **C — 구조변경**으로 분류하며 행 추가 가능을 확정했다. 신규 행 L/N/O셀과 M3 집계 수식 처리는 규칙 31을 따르고 그 밖의 신규 행 식별·서식/validation 및 연결 범위는 규칙 22에 따라 write 계약에서 구체화한다. 이 업무 허용 결정은 구조 변경 API 구현/검증이 완료됐다는 뜻이 아니다.
 27. 값이 없는 preformatted row에 첫 값을 넣는 동작은 기존 값 수정으로 간주하지 않는다. 별도 행 생성 정책이 확정되기 전에는 빈 슬롯 활성화를 차단한다.
@@ -514,8 +756,8 @@ Draft 1 ── 0..1 최종 Case (성공 때만 연결)
     - `INDEPENDENT | MI_BASE` 정리는 기존대로 case master만 바꾼다. `SCENARIO`만 연결 row를 함께 바꾸는 이유는 남은 execution-preparation이 삭제된 case를 가리키면 팝업 조회가 데이터 불일치로 실패하기 때문이다.
 37. 규칙 36의 정리는 physical delete가 아니다. 연결된 input/output 파일 metadata와 object, run history, 결과 row는 감사·복구를 위해 보존한다. 별도 보존기간과 승인된 purge 절차가 생기기 전에는 hard delete하지 않는다.
 38. 실행 중인 legacy case는 바로 soft delete하지 않는다. cutover pre-check에서 `INDEPENDENT | MI_BASE | SCENARIO` 대상의 `RUNNING`을 0건으로 확인하고, current `MI_BASE`가 legacy 대상이면 soft delete 후 active MI Base가 없을 수 있음을 운영자가 확인한다. 자동 대체 지정은 하지 않는다.
-39. 첨부본의 `SUMMARY`와 `플랫폼 입력 안내`는 개발 전용 시트이며 실제 운영 인풋 구성원이 아니다. 두 이름의 시트는 catalog 작성 evidence로만 사용하고 ACTIVE runtime catalog, source snapshot, Draft projection, 최종 XLSM, Case 파일 연결, Run 전달에서 제외한다.
-40. 별도 운영 파일은 수신하지 않는다. 현재 개발본 4개에서 개발 전용 시트를 제거해 만든 정규화본을 운영 template source와 source snapshot으로 등록하고, 그 정규화본으로 template version의 구조 hash를 만든다. 최종 materialization 때마다 개발 시트를 삭제하는 방식으로 보정하지 않는다.
+39. **2026-10-19 사용자 변경:** `SUMMARY`와 `플랫폼 입력 안내`가 남아 있어도 업무 구조가 승인 양식과 호환되면 네 역할 파일의 Case 연결과 source snapshot 등록을 허용한다. 두 시트의 존재만으로 파일을 거부하거나 제거/재업로드를 요구하지 않는다. 두 시트는 catalog 작성 evidence로 사용할 수 있지만 ACTIVE runtime catalog, 조회 응답, Draft 편집·projection과 입력폼 Backend 재계산 대상에는 포함하지 않는다. 원본에 있으면 시트·수식·저장값·서식 및 관련 package 구성을 보존하며 최종 XLSM 생성과 Run 전달의 전제조건으로 삭제하지 않는다. 이미 두 시트를 제거한 파일에는 다시 추가하지 않는다. 이 규칙은 해당 두 시트의 모델 사용 여부나 Run 실행 성공을 보장하지 않는다.
+40. 기존 정규화본은 양식 정의와 검증 근거를 만든 기준본으로 유지하며, 별도 운영 기준 파일 수신을 필수로 요구하지 않는다. 실제 Case 파일은 네 역할과 승인된 업무 구조의 호환성으로 연결한다(§3.2~3.3). 정규화 여부나 기준본과의 파일명·전체 내용 hash 일치는 요구하지 않으며 기존 역할 식별·접근 권한·파일 유효성·판독 조건은 유지한다. 개발 시트는 runtime sheet definition과 구조 hash 대상에서 제외하므로 두 시트의 포함 여부만으로 새 양식 버전을 만들지 않는다. 구조 hash의 구체 판별 방식은 기존 미결 범위를 유지하며 자동 판별 완료로 간주하지 않는다. 등록된 파일은 불변 원본으로 사용하고 연결/최종저장 시 개발 시트를 삭제해 보정하지 않는다. 기존 표별 쓰기 정책과 제한된 검증 fixture의 지원 범위는 이 파일 수용 결정으로 확대하지 않는다.
 41. hidden sheet 보존은 계산 엔진을 거치지 않는 package-copy 책임이다. worksheet part, sheet 순서·이름·`hidden/veryHidden` 상태, 관계, 수식, cached value, style과 연결 package를 source snapshot 그대로 유지하고 hidden sheet cell을 계산 engine input/output에 포함하지 않는다.
 42. 최종저장 검증은 source와 결과의 hidden sheet 집합·순서·상태가 같고 hidden worksheet part가 변경되지 않았음을 확인한다. hidden sheet 내부의 기존 formula error도 원본 보존 대상으로 취급하며 새 오류 검사나 재계산 대상으로 삼지 않는다.
 43. `SUMMARY` E열이 `직접 입력 대상 아님.`이고 수식·cell formula inbound/outbound·계산용 defined name이 모두 없는 것으로 확인된 visible sheet 6개는 write allowlist, Draft 변경, dependency graph와 Backend workbook 재계산에서 제외한다. 최종 XLSM에는 source snapshot 상태로 보존한다. 화면 표시는 아래와 같이 나눈다. 이 계산 제외는 입력폼 Backend 경계이며 이후 모델 실행 프로그램이 파일을 읽는 범위를 축소하지 않는다.
@@ -551,7 +793,12 @@ Draft 1 ── 0..1 최종 Case (성공 때만 연결)
 
 46. 2026-10-06 사용자 전달 FE 합의: 화면에는 수식 원문 대신 셀 값을 제공하고, 입력 변경·열 추가로 화면 값이 바뀌어야 하는 동작은 카탈로그가 소유하는 별도 갱신 규칙으로 전달한다. 사용자 후속 결정에 따라 이 규칙도 양식 version별 카탈로그 데이터로 DB에 저장하고 BE가 읽어 제공한다. FE는 전달된 규칙으로 화면 값을 갱신하며 수식 셀인지 판별하거나 Excel 수식을 직접 해석하지 않는다. `LiqUtilAdjustment`의 마지막 월 열 추가 시 새 Period를 직전 Period + 1로 만드는 동작이 확정 사례다. `H7:CL7`은 시트 내부 참조 수식이며 화면 갱신 규칙은 실제 수식 확인 후 구체화한다. 2026-10-07 사용자 확인으로 수식 범위를 정정했으며 `G7`은 시작 연도 값으로 수식 범위에서 제외하고 기존 고정 헤더 정책을 유지한다. 화면 갱신은 규칙 15–17/20–21의 BE 저장 검증·계산 허용 수식 처리·최종 파일 생성 책임을 대체하지 않는다. 규칙 전달 범위와 소비자 계약은 input-provision feature spec §3.1C가 소유한다. 물리 저장 단위와 테이블·컬럼은 기존 catalog ERD/DDL 후속 설계에서 확정한다.
 
+    <a id="liqutil-empty-body-decision-20261019"></a>
+
+    - **2026-10-19 사용자 후속 결정 — LiqUtil 새 월 본문 초기값:** 새 월의 본문은 빈칸을 기본값으로 생성하고 사용자가 입력하지 않은 칸도 빈칸으로 유지한다. 숫자0은 사용자가 명시적으로 입력한 값으로 구분하며 미입력 칸을0으로 채우지 않는다. 기존 원본/저장 월의 숫자값을 일괄 빈칸으로 변환하지 않는다. Year/Month/Period 헤더 자동3규칙과 이 표의 본문 초기값은 독립된 정책이며 헤더 생성 규칙은 유지한다. 공개 제출/값 표현은 편집 API §1.1이 소유하고 실제 생성/저장·계산/연결 영향 검증은 별도다.
+
 47. 2026-10-06 사용자 결정: SUPPLY `LiqUtilAdjustment`는 행 삭제·열 삭제가 가능하다. 행 삭제 시작 위치와 월 열 삭제 후 Period 정책은 아래 사용자 후속 결정을 따른다. 실제 삭제 대상 범위·나머지 위치 제한, 수식/참조/갱신 규칙 적용 방식은 별도 write 계약에서 확정한다. 삭제 허용 결정만으로 고정 헤더나 모든 workbook 영역의 삭제 범위를 확정하지 않는다. 삭제 정책도 기존 카탈로그 DB 설계에서 표현해야 한다.
+    - **2026-10-19 전체 월 삭제 후 추가 — 사용자 채택:** 활성 월 열이0개인 상태에서 새 월을 추가하면 해당 역할 파일의 고정 원본 첫 월의 Year/Month/Period부터 다시 시작한다. 남은 월이 있으면 기존 마지막 잔존 월 기준 다음 월/Period+1 규칙을 유지한다. 새 열에는 새 fieldKey를 발급하고 삭제한 key를 재사용하지 않는다. 본문은 규칙46의 빈칸 초기값을 유지한다. 같은 요청 안의 전체 삭제 후 추가와 성공 이력 복원 후 추가에 동일하게 적용하며 B:F 설비 정보는 유지한다. 실제 구조·수식/보존 검증 완료 전 READY로 표시하지 않는다.
     - **2026-10-13 F-S-05-ROW 사용자 후속 결정:** 행 삭제는 **헤더를 제외한 11행부터** 가능하다. 헤더는 삭제하지 않는다. 실제 삭제할 데이터 행/범위와 삭제 후 남은 행 식별·수식/참조·집계/metadata의 기대 변경은 실행 명세에서 별도로 확정한다. 삭제 시작 행이 정해졌다는 이유로 11행을 검증 대상 행으로 자동 선택하거나 worksheet 전체 행 삭제를 승인하지 않는다. 열 삭제(F-S-05-COLUMN)와 삭제 후 Period 재번호화 정책은 이번 행 답변으로 확정하지 않는다.
     - **2026-10-14 F-S-05-ROW 사용자 확정 — 원본11행 삭제·추가 계산 제외:** 같은 정규화 SUPPLY source의 `LiqUtilAdjustment` **원본11행 `Australia Pacific LNG T1`**을 설명한 논리 표 범위대로 삭제한다. `B11:CL11`을 제거하고 원본 `B12:CL407`의 값·타입·서식을 설비 식별과 함께 `B11:CL406`으로 이동하며 `B407:CL407`은 기존 서식을 유지한 실제 빈 입력 슬롯으로 둔다. header `B7:CL10`·`H7:CL7`83수식/저장값 및 나머지 원본 수식·저장값·서식/설정은 **추가 계산 없이 보존**한다. 물리 row/column·dimension·조건부서식·숨은 Filter 이름·다른 셀/backup/A 영역과 다른 시트는 원본 그대로 유지한다. 계산 및 Excel 계산 정답 비교는 해당 없음(PRESERVE)이며 새 파일의 저장 후 재읽기/구조·보존·읽기 전용 Excel 재개방을 검증한다. 월 열 삭제·worksheet 전체11행 삭제나 다른 구조 사례의 계산 정책으로 확대하지 않는다. 실제 파일/검증 상태는 [compatibility F-S-05-ROW 후속](../../references/mi-model-input-sheet-calculation-compatibility.md)을 따른다.
     - **2026-10-13 F-S-05-COLUMN 사용자 후속 결정:** 같은 시트의 월 열을 삭제한 뒤 **남은 Period(기간 번호)는 기존 번호를 유지**하며 재번호화하지 않는다. 삭제된 기간의 빈 번호를 메우기 위해 남은 기간 번호를 당기지 않는다. 실제 삭제할 월/열·범위와 이동 후 헤더 수식/참조·다른 표 참조·서식/validation·집계/metadata의 기대 변경은 실행 명세에서 별도로 확정한다. Period 유지 결정만으로 헤더 수식을 literal 값으로 바꾸거나 worksheet 전체 열 삭제를 승인하지 않는다. 행 삭제(F-S-05-ROW)와 독립 사례로 검증한다.
@@ -568,6 +815,7 @@ Draft 1 ── 0..1 최종 Case (성공 때만 연결)
     - 2026-10-13 사용자 후속 결정 — **F-D-03 마지막 연도 열의 입력·자동 합계:** 사용자가 F-D-05로 지칭한 `LNG Demand` 마지막 연도 열 추가는 기존 F-D-03에 대응한다. 새 O열의 연도 O3과 국가별 값만 사용자가 직접 입력하고 total/subtotal은 수식을 넣어 자동 계산한다. 입력 범위는 `O3`, `O6:O9`, `O11:O14`, `O16:O23`, `O26`, `O28:O33`, `O36:O42`, `O44:O63`, `O65:O75`, `O77:O88`, `O90:O99`, `O101:O103`, `O105:O108`이다(연도1·국가90셀).
         - 새 O열의 합계 행은 **4·5·10·15·24·25·27·34·35·43·64·76·89·100·104·109의16셀**이며 직접 입력으로 덮어쓰지 않는다. 기존13합계 행은 N열 수식을 열 참조 이동해 복제한다. 원본24·25·27행은 숫자0 literal이지만 사용자 후속 확인으로 **새 O열에만 `O25=SUM(O26)`, `O27=SUM(O28:O33)`, `O24=SUM(O25,O27)`**를 추가한다. 수식이 없다는 원본 관측만으로 이 소계/합계 행을 사용자 입력으로 만들지 않는다.
         - 이 연도 열 추가 사례의 **기존 E:N 입력·수식·저장값은 원본 보존**한다. 기존24·25·27행 literal이나130합계 수식을 변경/재계산하지 않는다. 이는 F-D-03 새 열 추가의 보존 경계이며 기존 입력 변경 사례 F-D-02의130합계 계산 규칙은 유지한다. F-D-05 `DemandOutputOverwrite` 행 변경과 F-D-04 E6 빈 값 금지/기본값0 정책을 다른 사례/새 국가 입력 전체로 확대하지 않는다. 신규 연도/본문값·구조 metadata 기대값과 동일 조건 Excel 정답에 따른 실제 파일/계산 검증은 compatibility에 연결한다.
+    - <a id="lng-demand-empty-body-decision-20261019"></a> **2026-10-19 새 연도 국가별 입력칸 초기값 — 사용자 채택:** 새 연도 열의 국가별 입력90칸은 빈칸으로 시작하고, 사용자가 입력하지 않은 칸도 빈칸으로 유지한다. 숫자0은 사용자가 명시적으로 입력한 값으로 구분한다. 이 결정은 국가별 사용자 입력칸에 적용하며 자동 계산하는16합계 셀은 기존 승인 규칙을 따른다. 기존 E:N 보존과 E6 한 칸의 빈 값 금지/기본값0은 유지하며 다른 표로 확대하지 않는다. 공개 제출/초기값 표현은 편집 API §1.1이 소유한다. 실제 생성·저장·계산 검증 완료를 뜻하지 않는다.
 51. SUPPLY `RegasAdjustment`의 직접 값 수정은 T-106 `H11:AE382`로 제한한다. `B:G`·`AF:DK`·`DM:DV`는 사용자 쓰기 금지인 연결 수식이다. T-107 연간 합과 T-108 국가별 월 합은 계산·연쇄 갱신 대상이다.
     - **2026-10-13 F-S-04-ROW 사용자 결정:** `BCRegasification` T-117은 각 논리 표의 마지막 데이터 행 아래 행 추가와 행 삭제를 허용한다. `RegasAdjustment`에서는 사용자가 행을 직접 추가하거나 삭제할 수 없고 기존 허용 입력값만 변경한다. `BCRegasification`에서 행을 추가하면 같은 설비의 `RegasAdjustment` 행을 자동 추가한다. 판별대장의 과거 행 추가 칸 빈칸을 현재 허용 정책으로 사용하지 않는다.
     - 자동 추가는 두 표의 마지막 설비 행을 연결해 생성하며 기존 국가별 합계 블록을 추가 행 수만큼 아래로 이동하고 SUMIFS의 고정 끝행을 확장하는 기존 연결 규칙을 따른다. 실제 신규 설비/필수값·식별 대응·자동 입력/수식·서식/validation·집계/names/Table/metadata 변화와 동일 조건 Excel 정답은 F-S-04-ROW 실행 명세에서 확정한다. 한 시트만 변경한 것으로 연결 추가 성공을 판정하지 않는다.
@@ -585,7 +833,8 @@ Draft 1 ── 0..1 최종 Case (성공 때만 연결)
 
 56. 2026-10-07 사용자 확인: SUPPLY `BCProduction`의 T-111 `Production Year Count Reference` (`N7:T24`)는 **A — 원본 복제**이며 화면에 표시하지 않는다. 해당 표의 기존 값·수식·cached result와 관련 피벗 설정/캐시·외부 원본 관계를 그대로 보존한다. T-110 `Annual Gas Production Baseline`의 행 추가에도 T-111의 O열 재집계·Q/R/S 연쇄 갱신·수식 재계산·피벗 새로고침·원본 연결 변경은 하지 않는다. 이 보존 범위는 T-111이며 같은 시트 전체나 T-110의 정책을 A로 변경하지 않는다.
 
-57. 2026-10-07 사용자 확인: 기준 묶음 `2026-10-07-delivery-261006-v8-v6`의 원본 4파일 `SUMMARY` C열에서 표 전체가 `미표시`인 항목은 **A — 원본 복제**이며 화면에 표시하지 않는다. 해당 업무 표의 값·수식·cached result와 관련 원본 구성을 변경·재계산·확장하지 않는다. 표별 대응은 통합 판별대장에 기록한다. 같은 시트의 표시 표와 표 내부 일부 미표시 열에는 이 전체 표 분류를 확대하지 않는다. 워크북 밖 서버 LUT·외부 결과 연결 설명은 대장의 A 분류 기록으로 구분하고, 복제할 XLSM 시트·셀 범위를 새로 만들지 않는다. 개발 전용 `SUMMARY`·`플랫폼 입력 안내`의 X 제거 정책은 규칙 39를 유지한다.
+
+57. 2026-10-07 사용자 확인: 기준 묶음 `2026-10-07-delivery-261006-v8-v6`의 원본 4파일 `SUMMARY` C열에서 표 전체가 `미표시`인 항목은 **A — 원본 복제**이며 화면에 표시하지 않는다. 해당 업무 표의 값·수식·cached result와 관련 원본 구성을 변경·재계산·확장하지 않는다. 표별 대응은 통합 판별대장에 기록한다. 같은 시트의 표시 표와 표 내부 일부 미표시 열에는 이 전체 표 분류를 확대하지 않는다. 워크북 밖 서버 LUT·외부 결과 연결 설명은 대장의 A 분류 기록으로 구분하고, 복제할 XLSM 시트·셀 범위를 새로 만들지 않는다. 개발 전용 `SUMMARY`·`플랫폼 입력 안내`의 수용·보존과 화면/편집 제외는 규칙39~40을 따른다.
 
 규칙 57의 시트 전체 적용 확인(2026-10-08 사용자 재확인): TRADE `backup_MidstreamContractInput`(T-187)은 **시트 전체가 화면 미표시·A 원본 복제**다. 값·수식·저장된 계산 결과·서식·관련 원본 설정과 원본 시트의 Excel 표시/숨김 상태를 보존한다. 값 편집·구조 변경·재계산·새로고침 대상에서 제외하며, `CK4`·`CQ4`의 UNIQUE 수식과 배열 결과도 이 보존 범위에 포함한다.
 
@@ -618,6 +867,64 @@ Draft 1 ── 0..1 최종 Case (성공 때만 연결)
 63. 2026-10-15 사용자 결정 — **평문 임시 저장·삭제:** 모델 입력 파일 처리의 평문 작업사본을 통제된 임시 위치에 저장할 수 있다. 작업 종료 후 **1분 이내**, 중단으로 남은 작업사본은 서비스 복구 후 **5분 이내** 삭제한다. **실패 분석용 평문은 보관하지 않는다.** 삭제 완료는 해당 작업사본의 **파일과 열린 핸들(프로세스가 파일을 열어 둔 참조) 잔여가 모두0**인지 확인한다. 임시 위치/접근 권한은 SECURITY.md를 따른다. 원본·정식 저장 파일·기존 검증 자료의 보관 정책 변경/일괄 삭제로 확대하지 않는다. 구체 정리/복구 수단은 Q7·Q8c/INPUT-02A에서 검증한다. **같은 날 사용자 후속 결정:** 로컬 DRM 복호화 시험은 불가하고 암복호화가 이미 적용된 기능임을 확인했으므로 기존 공통 기능을 재사용하며 이번 INPUT-02A의 실제 DRM 암복호화 재검증은 제외한다. 보호 표본·DRM 시험 설정·원격 재검증 자료를 새 선행조건으로 요구하지 않고 검증 Pass로 기록하지 않는다. 로컬 worker 평문 작업사본의 위 수명·삭제 검증은 별도로 유지한다.
 
 64. 2026-10-15 사용자 승인 — **초기 실행·운영 기준:** 웹 요청 JVM과 분리한 worker **1개**, worker 전체 **2vCPU·2GiB**, **동시 작업1건**, **비동기 처리**를 적용한다. 한 작업의 역할 파일은 순차 처리하고 승인 case별 부분 계산/heap·보존 범위는 유지한다. 저장 완료는 **30초 목표**, 접수 후 대기열·파일 준비/허용 계산/저장 및 필요한 저장 확정까지 요청 전체는 **120초 상한**이다. 접수와 저장 완료를 구분하며 요청 실패 처리는 규칙15·61, 평문 종료/복구 정리는 규칙63을 따른다. 비동기 API의 구체 상태·완료/부분 실패 취소 경계는 Q8/INPUT-04에서 정의한다. 실제 자원 제한 대표 경로 재측정 후 같은 날 사용자 최종 승인으로 Q7·Delivery Plan §6A의 조건부 완료를 채택했다. 파일 처리 실측을 API 전체 저장 SLA 검증으로 확대하지 않으며 제품 구현·API 전체 저장 응답은 INPUT-07~10 후속에서 검증한다.
+    - **2026-10-19 사용자 확인 — 120초 성격:** 이 규칙의 120초 상한은 외부 요구가 아닌 내부 목표이며 반드시 지켜야 하는 조건이 아니다. 다만 현재 변경 요청·최종저장 기한 코드와 DDL `ck09`에 120초로 고정돼 있어, 바꾸려면 코드와 DBA DDL 변경을 함께 해야 한다. 이번 A 실행기 전환에서는 이 기한을 유지한다.
+    - **2026-10-20 A 채택에 따른 대체:** 위 과거 기준의 "웹 요청 JVM과 분리"는 **웹 JVM 안 전용 단일 처리 스레드**로 대체한다. 동시 작업1건·비동기·역할 파일 순차 처리 원칙은 유지하고, 장애 중 단일 소비자·종료 확인·인계 보류 조건은 [§5.5.3](#worker-execution-direction-20261019)을 따른다. worker 1개·2vCPU·2GiB는 기존 전용 worker의 시험 기준으로 남기며 웹 Pod의 자원 수치는 실제 웹 동시 부하 시험 결과와 함께 정한다.
+
+<a id="liqprod-month-header-decision-20261019"></a>
+
+65. **2026-10-19 사용자 결정 — LiqProdAdjustment 신규 월 입력:** SUPPLY `LiqProdAdjustment`의 `Monthly LNG Train Production` 표에 새 월을 추가할 때 **Year/Month는 사용자가 직접 입력하고 Period는 서버가 자동 생성**한다. 사용자에게 Period 입력을 요구하지 않는다. SUMMARY!I16의 입력 의도를 채택하며, `LiqUtilAdjustment`의 Year/Month/Period 전체 자동 생성 규칙을 이 표에 적용하지 않는다. 최초 결정은 신규 월의 입력 주체에 한정하며 기존 헤더 편집·삭제나 다른 표의 기간 정책을 확장하지 않는다. API의 채택 범위와 잔여 JSON 형식은 [편집 API §1.1](../../feature-specs/mi-fundamental-model-input-draft-editing-api-proposal.md#liqprod-month-input-20261019)·§10.1을 따른다.
+    - **2026-10-19 Period 후속 결정 — 1안 채택:** 신규 월의 Period는 입력한 연월을 기준으로 계산한다. 현재 고정 SUPPLY 원본의 이 표에서는 `2025년 1월 ↔ Period 85`를 기준으로 **`Period = 85 + (year - 2025) * 12 + (month - 1)`**을 적용한다. 입력 연월과 무관하게 마지막 Period에1을 더하는 방식은 채택하지 않는다. 예를 들어 마지막 월이2031년12월/168이고2032년3월을 추가한다면 계산값은171이다. 월 건너뛰기·중복 허용은 아래 후속 결정을 따른다. 근거는 [기존84개월 저장값 관측](../../references/model-input/2026-10-19-summary-structure-review.md#liqprod-period-evidence-20261019)이며 원본 Period 행에 산식이 들어 있다는 뜻은 아니다. 이 기준월/번호를 다른 표나 모든 양식에 고정 적용하는 결정으로 확대하지 않는다.
+    - **2026-10-19 월 건너뛰기 후속 결정 — 2안 채택:** 이 표의 기간 끝에 미래 월을 추가할 때 중간 월을 건너뛰어 사용자가 선택한 월을 바로 추가할 수 있다. 마지막 월이2031년12월/168이면2032년3월 열을 바로 추가하며 Period는 위 승인 산식대로171이다. 이 결정은 중간 위치 삽입이나 다른 표의 비연속 기간 허용까지 확장하지 않는다. 중복·입력 제한은 아래 후속 결정과 규칙66을 따른다.
+    - **2026-10-19 중복 후속 결정 — 2안 채택:** 같은 연월의 열을 여러 개 추가할 수 있으며 사용자가 입력한 연월을 중복이라는 이유로 거부하지 않는다. 같은 연월이면 위 산식에 따라 Period도 같을 수 있다. 연월/Period를 열의 고유 식별자로 취급하지 않으며 별개 열을 자동 병합·덮어쓰기하지 않는다. 입력 제한은 규칙66을 적용한다. 원본 SUMMARY16행과 해당 표에서 별도 업무 기간 제한을 확인하지 못했으므로 과거 월·연도 범위도 추가 제한을 두지 않는다. 논리 표 끝 추가 원칙은 유지하며 중간 삽입을 승인하지 않는다. 새 열도 기존 열과 같은 식별 원칙으로 서로 구별한다(2026-10-19 사용자 채택). 공개 식별 계약은 [편집 API §1.1 새 열 식별](../../feature-specs/mi-fundamental-model-input-draft-editing-api-proposal.md#column-fieldkey-decision-20261019)이 소유한다. 새 열과 입력값을 같은 저장의 임시 키로 연결하고 성공 응답에서 실제 열 키와 대응시키는 방식도 사용자 채택했다. 공개 필드/응답 계약은 같은 편집 API 정본을 따른다. 행/열/값 변경을 기존의 같은 저장 단위로 처리하는 사용자 채택도 [편집 API §1.1 열 명령 연결](../../feature-specs/mi-fundamental-model-input-draft-editing-api-proposal.md#column-operations-decision-20261019)을 따른다. 명령명 채택만으로 표별 삭제 허용을 확대하지 않는다. 헤더 전달 형식도 [편집 API §1.1 headerValues 채택](../../feature-specs/mi-fundamental-model-input-draft-editing-api-proposal.md#column-header-values-decision-20261019)을 따른다. 이 표의 Year/Month 직접 입력·Period 서버 계산과 Util의 전체 자동 생성 범위는 바꾸지 않는다. 잔여 요청/응답 JSON과 실제 생성/계산/연결 영향 검증은 별도다.
+
+    <a id="liqprod-month-delete-decision-20261019"></a>
+
+    - **2026-10-19 월 열 삭제 후속 결정 — 사용자 채택:** LiqProdAdjustment의 Monthly LNG Train Production에서 사용자가 선택한 월 열의 삭제를 허용한다. 해당 열의 Year/Month/Period 헤더와 본문값을 함께 삭제하며 B:F 설비 정보 고정 열은 유지한다. 같은 연월/Period의 열이 여러 개여도 fieldKey로 선택한 열만 삭제하고 다른 열을 함께 삭제하지 않는다. 이는 논리 표의 월 열 삭제이며 worksheet 전체 열 삭제나 다른 표의 삭제 허용을 승인한 것이 아니다. 수식·연결/계산·파일 보존 영향의 구현 검증은 별도이며 삭제 허용 결정만으로 제품 지원/검증 완료로 판단하지 않는다. 공개 요청 계약은 편집 API §1.1/§10.1이 소유한다.
+
+    <a id="liqprod-empty-body-decision-20261019"></a>
+
+    - **2026-10-19 새 월 본문 초기값 후속 결정 — 사용자 채택:** LiqProdAdjustment의 새 월 본문은 빈칸을 기본값으로 생성하고 사용자가 입력하지 않은 칸도 빈칸으로 남긴다. 미입력 칸을 숫자0으로 채우지 않으며 숫자0은 사용자가 명시적으로 입력한 값으로 구분한다. 이는 이 표의 새 월 본문 정책이며 다른 표의 초기값이나 설비 정보 필드의 필수 정책으로 확대하지 않는다. 공개 제출/값 표현은 편집 API §1.1이 소유하며 실제 생성/저장·계산/연결 영향 검증은 별도다.
+
+<a id="input-validation-evidence-decision-20261019"></a>
+
+66. **2026-10-19 사용자 결정 — 입력 제한의 근거:** 미확정 입력 정책에는 SUMMARY 또는 해당 시트의 표에 명시된 근거 없이 중복 금지·업무 기간/순서 제한을 새로 추가하지 않고 사용자 입력을 허용한다. 입력값 검사가 필요해지면 후속 변경으로 추가한다. 이미 사용자 확정된 표별 검증(규칙45·§6.1 등), 공통 요청 형식/권한·안전한 처리 검증을 철회하는 결정은 아니다. 새로운 제한을 추천만으로 필수 요구사항으로 승격하지 않는다.
+
+<a id="incremental-input-upload-20261019"></a>
+
+**2026-10-20 최초 다중 선택 사용자 채택:** 최초 업로드는 서로 다른 역할의 파일1~4개를 한 작업으로 처리한다. 아래 규칙67의 한 번에 하나씩/첫 파일 생성이라는 최초 진입 제한을 대체하며 후속 개별 추가·교체는 유지한다. 하나의 ACTIVE 양식 버전으로 모든 파일을 검증한 뒤 초안과 모든 파일·원본 행을 revision0으로 함께 확정한다. 하나라도 실패하거나 기한을 넘기면 초안을 만들지 않고 전체 작업을 실패 처리하며 미확정 후보는 기존 종료 증거/정리 규칙에 따라 정리한다. 역할 중복은 허용하지 않는다. 단일 작성 슬롯·최초 재전송·편집/교체·4역할 최종저장은 유지한다. 업로드 기한은 규칙67의 2026-10-21 후속 결정을 따른다. API 필드는 입력 제공 명세 §3.3, 작업-파일의1:N 제약과 배포 순서는 DDL §6.10을 따른다.
+
+
+67. **2026-10-19 사용자 추가 요구 — 파일 순차 업로드로 새 Case 편집:** 사용자는 입력 workbook을 한 번에 하나씩 업로드하며, 서버는 파일명에서 `DEMAND/SUPPLY/TRADE/OUTPUT` 역할을 판별하고 현재 활성 양식의 해당 역할 규칙으로 실제 파일을 검증·읽는다. 새 Case의 입력은 사용자가 올린 파일이며 기준본의 값으로 대신 채우지 않는다. 업로드한 유효 파일을 편집할 수 있어야 하며 **네 역할이 각각 준비된 경우에만 최종저장**할 수 있다. 파일이 양식과 맞지 않거나 읽기·구조 검증에 실패하면 그 요청으로 **Case를 새로 생성하거나 해당 파일을 Case/업로드 묶음에 연결하지 않는다**. 후속 파일 실패 시 앞서 성공한 파일과 편집 상태를 훼손하지 않는다. 파일명만 맞는 것을 구조 검증 성공으로 보지 않으며, 정상적인 값 차이·허용된 구조 확장과 개발 시트 포함은 기존 규칙39~40의 수용 경계를 따른다. 생성 시점·양식 버전 고정·동일 역할 교체·부분 편집 원칙은 아래 후속 결정을 따르고 저장·소유/파일 기준점 복원은 §5.6·DDL §6.10을 따르며 초안 식별 응답 등 구체 API 계약은 [입력 제공 명세 §3.3](../../feature-specs/mi-fundamental-model-input-provision-feature-spec.md#incremental-input-upload-api-20261019)에서 정의한다. 기존 완성 Case의 원본/Draft를 ACTIVE 양식으로 자동 전환하는 결정으로 확대하지 않는다.
+
+    - **2026-10-19 생성 시점 후속 결정 — 1안 채택:** 첫 파일의 역할/양식 검증·판독이 성공하면 **업로드 편집 초안**을 생성해 그 파일을 편집할 수 있게 한다. 이후 유효 파일은 같은 초안에 누적한다. 네 역할이 모두 준비돼도 업로드만으로 Case를 생성하지 않고, **최종저장 성공 경계에서 실제 새 Case를 생성**한다. 최초 파일의 검증 실패 시 초안을 생성하지 않으며 후속 파일 실패 시 앞선 초안/유효 파일/편집 상태를 보존한다. 최종저장 전에는 미완성 Case를 만들지 않는다. 초안의 식별/저장 방식은 후속 API/ERD에서 정의하며 이 결정으로 기존 sourceCase 필수 Draft schema/코드를 재사용 가능하다고 간주하지 않는다.
+
+    - **2026-10-19 업로드 비동기 후속 결정 — 1안 채택:** 파일 수신 후에는 검증·파싱 접수를 먼저 알리고 실제 처리는 비동기로 진행한다. 접수 기록은 편집 초안이나 유효 파일 연결이 아니며, 첫 파일은 검증·파싱 성공 후에만 초안을 생성한다. 후속 파일도 성공 뒤에만 기존 초안에 연결하고 동일 역할 교체의 파일 변경/편집 초기화를 함께 확정한다. 대기·처리 중 파일은 네 역할 준비에 포함하지 않는다. 실패하면 최초 초안을 만들지 않고 기존 초안의 파일·편집을 보존한다. 접수/진행/성공·실패 확인의 공개 API는 입력 제공 명세 §3.3이 소유한다. 초안별 변경 경합과 업로드 처리 시간 상한은 아래 후속 결정을 따르며 worker 자원/구성이나 자동 재실행을 추가 확정하지 않는다.
+
+    - **2026-10-19 업로드 처리 시간 — 초기120초 채택:** 파일 수신 후 업로드 작업 접수부터 대기열·고정 양식 검증/파싱·성공 상태 확정까지120초를 초기 상한으로 적용한다. 파일 전송 시간은 제외한다. 기한까지 성공 확정되지 않은 작업은 종료/저장 결과를 확인해 TIMEOUT으로 실패 확정하고 뒤늦은 파일 연결·교체·초안 생성/성공 버전 반영을 허용하지 않는다. 이미 기한 내 확정된 성공을 뒤늦게 조회했다는 이유로 실패로 바꾸지 않는다. 최초 실패는 초안/Case 미생성, 후속 실패는 기존 파일·편집·성공 버전 보존을 유지한다. 실제 대표 파일의 처리 시간/자원·기한/중단/늦은 결과 차단 검증은 별도이며 이 초기 채택만으로 검증 완료나 worker 자원/구성 변경을 승인한 것으로 보지 않는다. 공개 TIMEOUT 응답·조회/재시도는 입력 제공 명세 §3.3이 소유한다.
+
+    - **2026-10-21 업로드 처리 시간 — 후속600초 채택:** testdb에서 정규화 XLSM 4개(원본 행 226,102건)의 최초 업로드가 120초에 `FAILED/TIMEOUT`으로 끝난 실측에 따라, 최초 업로드와 후속 파일 추가·교체의 접수 후 기한을 대기열 포함600초로 변경한다. 파일 전송 제외, 기한 내 성공 확정, 실제 실행·저장 종료 확인, 늦은 성공 차단 및 실패 시 원본 보존 경계는 위 초기 결정과 같다. 이 후속 결정이 위 120초 업로드 수치만 대체하며 CHANGE/FINALIZE의 120초는 유지한다. 600초 내 실제 완료와 자원 사용은 testdb 재시험으로 확인한다.
+
+    - **2026-10-19 초안별 변경1건 후속 결정 — 1안 채택:** 같은 업로드 편집 초안의 변경 작업은 한 번에 하나만 허용한다. 파일 추가·교체, 편집 저장, 최종저장은 같은 초안의 공통 진행 제한을 사용하며, 작업이 접수돼 대기/처리 중이면 새 변경을 접수하거나 뒤에 자동 예약하지 않는다. 역할이 달라도 같은 초안이면 병행하지 않는다. 기존 동일 요청의 재전송/처리 결과 확인과 직전 성공 상태 조회는 계속 허용하며 미완료 파일·편집을 조회에 섞지 않는다. 한 작업이 성공 또는 실패로 확정된 뒤 다음 변경을 요청할 수 있다. 다른 초안의 작업은 이 제한 때문에 차단하지 않으며 전체 worker 처리량 보장과는 구분한다. 구체 요청/충돌 표현은 입력 제공 명세 §3.3을 따른다.
+
+    - **2026-10-19 후속 파일 revision 후속 결정 — 1안 채택:** 기존 업로드 초안의 파일 추가·교체는 사용자가 확인한 직전 성공 버전이 서버의 현재 성공 버전과 일치하는 경우에만 진행한다. 최신 상태에 무조건 덮어쓰지 않는다. 파일 추가 또는 교체가 성공하면 파일 연결·해당 편집 상태와 초안의 성공 revision 증가를 함께 확정하며 작업당1회만 증가한다. 파일 검증·처리 실패나 버전 충돌 시 기존 파일·편집·성공 revision을 유지한다. 접수/대기/처리 중 상태나 같은 성공 작업의 결과 재확인은 revision 증가 사유가 아니다. 파일 변경과 편집 저장은 같은 초안의 성공 버전을 기준으로 하며 구체 baseRevision 요청/충돌 계약은 입력 제공 명세 §3.3이 소유한다.
+
+    - **2026-10-19 업로드 실패 후 재시도 후속 결정 — 추천안 채택:** 업로드 작업이 FAILED로 확정되면 같은 요청 재전송은 저장된 실패 결과를 반환하며 실패 작업을 자동으로 재실행하거나 진행 상태로 되돌리지 않는다. 사용자가 다시 시도하면 새 요청의 별도 작업으로 처리하고 원래 실패 이력은 유지한다. 후속 파일 재시도는 현재 초안의 성공 상태와 필요한 교체 확인을 기준으로 하며 실패 당시의 상태를 복원하거나 덮어쓰지 않는다. 최초 업로드 실패로 초안이 없을 때의 재시도는 새 정상 업로드의 초안 생성 규칙을 따른다. 구체 requestId/baseRevision·재전송/오류 계약은 입력 제공 명세 §3.3이 소유한다. 통신 끊김만으로 실패를 확정하거나 실제 실행/저장 결과가 불명확한 작업을 중복 실행하는 정책으로 확대하지 않는다.
+
+    - **2026-10-19 미완료 작성 취소/새 시작 — 2026-10-22 실행건 전환 경로에서 대체된 이전 결정:** 현재 직접 업로드 작성의 변경 작업이 대기/처리 중이 아닐 때, 현재 파일·편집 내용을 더 이상 이어가지 않는다는 안내와 사용자 확인을 받은 뒤 현재 작성을 취소하고 새 Case 작성을 허용한다. 확인 전이나 확인을 철회한 경우 기존 파일·편집·고정 양식·성공 버전을 유지한다. FE 표시만 믿지 않고 서버가 소유권과 현재 작업/진행 상태를 다시 확인하며 대기/처리 중 작업을 강제 중단하고 전환하지 않는다. 취소 확정에 실패하면 기존 작성은 유효하고 새 활성 작성을 만들지 않는다. 취소가 확정된 작성은 편집/파일 추가·교체/최종저장을 재개하지 못하며, 새 작성은 새 파일의 검증 성공 뒤 새 초안/당시 ACTIVE 양식 규칙을 따른다. 취소는 Case 최종저장이 아니고 실제 Case를 생성하지 않는다. 즉시 물리 파일/이력을 삭제하는 정책으로 확대하지 않는다. **2026-10-19 사용자 후속 확정:** A의 취소를 먼저 확정하고 B의 새 최초 파일을 업로드한다. B의 첫 파일 검증이 실패해도 A는 취소 상태로 유지하며 A의 파일·편집을 복구/재활성화하지 않는다. B는 검증 성공 전 초안을 만들지 않고 사용자가 새 요청으로 다시 업로드한다. B의 최초 실패를 이유로 A 취소를 되돌리는 결합 확정은 추가하지 않는다. 구체 취소 API/저장 표현은 후속 기술 계약이다.
+
+    - **2026-10-22 실행건 전환 시 명시적 작성 취소 — 사용자 후속 결정:** 다른 실행건을 선택할 때 현재 직접 업로드 작성의 파일 검증이 대기·실행 중이어도 취소한다. Draft가 있으면 소유자·revision을 확인해 UPLOAD_FILE을 실패 확정한 뒤 Draft를 폐기한다. 최초 검증 중 Draft가 없으면 소유한 UPLOAD_CREATE 작업 식별자로 실패 확정한다. 최초 성공과 취소가 경합해 막 생성된 revision0 Draft도 해당 작업의 취소로 폐기할 수 있다. 이미 다른 작업으로 교체된 과거 식별자는 새 작업에 영향을 주지 않는다. 편집 저장·최종저장 진행 중인 Draft와 이후 편집된 Draft는 과거 업로드 작업 식별자로 취소하지 않는다. 작업 상태와 점유 해제·Draft 폐기는 사용자별 슬롯 잠금에서 원자 확정하며 늦은 실행 결과는 반영하지 않는다. 실행 본문의 즉시 중단이나 원본 파일·이력의 즉시 물리 삭제를 뜻하지 않는다. API 계약은 입력 제공 명세 §3.3을 따른다.
+
+    - **2026-10-19 양식 버전 후속 결정 — 1안 채택:** 첫 정상 파일을 검증한 **당시 ACTIVE 양식 버전**을 업로드 편집 초안에 고정한다. 같은 초안의 후속 파일 검증·조회·편집·최종저장은 이 버전을 사용한다. 진행 중 새 버전이 ACTIVE가 돼 기존 버전이 DEPRECATED로 전환돼도 초안을 최신 버전으로 자동 전환하거나 기존 파일/편집 내용을 최신 기준으로 다시 해석하지 않는다. **새로 시작하는 초안부터 새 ACTIVE 버전**을 선택한다. 고정 버전에 맞지 않는 후속 파일은 실패하고 기존 초안 상태를 보존하며 다른 버전으로 자동 재시도하지 않는다. 고정 기준의 식별·실제 양식 정의/파일 불변성 확인은 후속 API/저장 계약에서 구체화한다.
+
+    - **2026-10-19 동일 역할 교체 후속 결정 — 1안 채택:** 같은 역할의 파일을 다시 올리면 **기존 해당 역할의 편집 내용이 초기화됨을 안내하고 사용자 확인을 받은 뒤 교체를 허용**한다. 새 파일을 초안의 고정 양식 버전으로 검증·판독하고 성공한 경우에만 해당 역할의 파일을 교체하면서 그 역할의 기존 사용자 편집·구조 변경을 초기화한다. 확인 취소나 검증/판독 실패 시 기존 파일과 편집 내용을 그대로 유지한다. 파일만 먼저 바꾸거나 편집을 미리 지우는 부분 교체를 허용하지 않는다. 다른 역할의 원본/사용자 편집과 초안의 고정 양식 버전은 유지한다. **2026-10-19 사용자 정정:** 파일 교체가 다른 파일의 표에 영향을 주는 경우는 없다. 교체 대상은 해당 역할의 파일과 그 파일의 사용자 편집·구조 변경이며 다른 역할 파일의 표·사용자 입력·계산 결과는 변경하지 않는다. 다른 파일의 표를 재계산하거나 파일 간 의존을 이유로 교체를 거절/새 초안을 요구하는 경로를 추가하지 않는다. 교체 파일 내부의 기존 양식 검증·원본 보존과 승인 편집 정책은 그대로 유지한다. 교체는 같은 초안 안에서 수행하고 새 Case를 만들지 않는다.
+
+    - **2026-10-19 부분 업로드 편집 후속 결정 — 1안 채택:** 다른 역할 파일이 아직 없어 처리할 수 없는 편집/연결 동작은 **그 동작만 제한**하고, 현재 업로드된 파일만으로 처리 가능한 기존 승인 범위의 편집은 계속 허용한다. 제한한 동작의 입력만 성공 저장하고 연결 계산을 나중으로 미루지 않는다. 없는 파일의 값·계산 결과를 기준본/0/임의 값으로 대신하지 않는다. 필요한 파일이 추가되면 고정 양식의 동작별 정책과 준비도를 다시 평가하며, 파일이 모였다는 이유만으로 미지원 편집/계산을 허용하지 않는다. FE는 제한 사유와 필요한 역할을 안내하고 BE도 같은 조건을 검증한다. 요청에 제한 대상 명령이 포함되면 기존 요청 전체 성공/실패 원칙을 유지하며 현재 성공 상태를 보존한다. 이 결정으로 네 역할 완성 전 최종저장 금지를 해제하지 않는다.
+
+    - **2026-10-19 직접 업로드 초안 개수 — 한 번에 Case 하나 작성 채택:** 초안 하나는 최종저장할 Case 하나의 네 역할 파일 묶음과 편집 상태다. 같은 사용자는 파일 직접 업로드로 작성 중인 Case를 한 번에 하나만 진행한다. 최초 파일의 비동기 검증 중 아직 편집 초안이 생성되지 않았어도 그 작업을 현재 작성으로 취급해 서로 다른 신규 요청이 둘 이상의 활성 초안을 만들지 못하게 한다. 여러 탭/새 요청 식별자로 제한을 우회하지 않으며 다른 사용자의 작성은 막지 않는다. 최종저장 성공 후에는 다음 Case를 새로 작성할 수 있다. 기존 작성의 실패 파일/편집은 앞선 확정대로 보존하며 실패만으로 현재 초안을 자동 취소하지 않는다. 과거의 동일 사용자 복수 허용 결정은 이 결정으로 대체한다. 미완료 작성의 취소/새 시작은 아래 사용자 확인 규칙을 따르며 기존 작업을 확인 없이 자동 종료·삭제·병합하지 않는다. 업로드 초안 목록/선택 재개는 제외하고 기존 저장 Case 등 다른 출처의 Draft 생성·재개/보관 정책은 변경하지 않는다. 구체 요청/진행 제한·저장 경계는 API/ERD에서 정의한다.
+
+    - **2026-10-19 지원 파일 형식 후속 결정 — 2안 채택:** 순차 업로드 입력은 **.xlsm과.xlsx를 모두 지원**한다. 각 역할의 파일을 실제 형식과 초안에 적용되는 고정 양식의 업무 구조로 검증하며, 기준 양식 파일이.xlsm이라는 이유만으로 호환되는.xlsx를 거절하지 않는다. 형식 지원이 다른 양식/역할·허용 밖 구조를 자동 수용한다는 뜻은 아니다. 확장자만 바꾼 파일을 형식 변환으로 취급하지 않으며.xlsm에 있는 원본 매크로/관련 package의 보존과 실행 제외는 기존 정책을 유지한다. 업로드 원본 형식과 최종저장 파일 형식의 관계는 아래 원본 형식 유지 후속 결정을 따른다. 실제.xlsx 편집·파일 보존·최종저장과 Case/Run 연결의 구현/검증은 후속이다.
+
+    - **2026-10-19 최종저장 형식 후속 결정 — 1안 채택:** 각 역할의 **.xlsx 원본은.xlsx로,.xlsm 원본은.xlsm으로 최종저장**한다. 네 역할에 두 형식이 섞여 있어도 각 파일의 원본 형식을 유지하며 모두.xlsm으로 통일하지 않는다. 실제 workbook 형식과 최종 확장자/MIME/package를 일치시키고, 이름만 바꿔 다른 형식으로 취급하지 않는다. 원본 전체 복제와 승인 변경만 반영하는 규칙30 및 계산/구조·원본 보존 검증은 두 형식에 모두 적용한다. .xlsm의 원본 매크로/관련 package는 기존 정책대로 보존하고 실행하지 않으며.xlsx에 없는 매크로를 추가하지 않는다. 형식별 물리 저장·복원·최종 파일 생성/Case·Run 연결의 실제 구현/검증은 후속이다.
 
 ### 6.1 규칙 50의 OUTPUT 최신 적용 기준 — 2026-10-08
 
@@ -641,6 +948,53 @@ Draft 1 ── 0..1 최종 Case (성공 때만 연결)
 - **2026-10-14 F-O-04 사용자 지정 — 21빈 슬롯 활성화·계산 제외:** 같은 정규화 OUTPUT source의 `BCPrices`에서 새 연도는 기존21행 빈 슬롯에 생성한다. B21=2036, C21:E21에는 각각 source C16:E16의 **숫자값만 literal로 복사**한다. 이 지정 사례는 추가 계산 없이4입력 외 모든 원본 값·수식·저장값·서식/validation·행/열·참조/metadata를 보존한다.21의 기존 셀 서식/General을 유지하며 C16:E16의0.00 서식·수식까지 복제하거나 값을 반올림하지 않는다. 입력 선언 B8:E21·worksheet dimension A1:S21은 유지하고22행 신규 확장/worksheet 행 삽입으로 대체하지 않는다. 계산 및 Excel 계산 정답 비교는 해당 없음(PRESERVE)이며 새 결과 파일의 입력/보존·저장 후 재읽기·읽기 전용 native를 검증한다. 모든 지정 가격값이 있는 이 사례에서 일반 신규 가격의 필수/빈 값·기본값이나 다른 OUTPUT 입력/구조 변경의 계산 정책을 추론하지 않는다.
 - **계산 잔여(지정 F-O-01/04 외):** 과거 `D7:K7 + P8:P816 = 817셀`을 현재 계산 allowlist로 사용하지 않는다. F-O-01/04의 추가 갱신 없음은 위 사용자 확인을 따르고, 다른 입력 변경의 최신 L열 대응·비A 수식 범위/Excel 비교값은 A-07/Q5에서 대조 후 확정한다. `PremiumCalc` D:H의 일부 화면 미표시만으로 그 열 전체를 A 보존이나 재계산 대상으로 승격하지 않는다.
 - 입력·행 추가 승인과 계산 엔진 GO는 별개다. T-083 신규 행의 필드/서식·validation·범위/참조 처리와 파일 밖 모델 연결, 계산 결과·원본 보존 검증은 후속 write/검증 범위다. Scenario OUTPUT은 규칙 48의 별도 기준 원본 보존 계약을 유지한다.
+
+### 6.2 PMIInput 새 연도 본문 초기값 — 2026-10-19
+
+<a id="pmi-empty-body-decision-20261019"></a>
+
+- 사용자 채택: DEMAND `PMIInput`의 `Base Case PMI Input`에 새 연도 열을 추가할 때 사용자 입력 본문은 빈칸으로 시작하고, 사용자가 입력하지 않은 칸도 빈칸으로 유지한다. 숫자0은 명시적으로 입력한 값으로 구분한다. 기존 숫자50 등을 새 열의 기본값으로 복사하지 않는다.
+- 이 결정은 해당 표의 신규 연도 본문 초기값이다. 기존 연도의 숫자/빈칸은 보존하며 기존 값 수정·CLEAR·다른 표의 초기값 정책으로 확대하지 않는다. 원본 관측과 실제 열 생성·저장/연결·계산 검증은 구분한다. 공개 제출/초기값 표현은 편집 API §1.1이 소유한다.
+
+### 6.3 WeatherInput Base Case HDD 새 연도 본문 초기값 — 2026-10-19
+
+<a id="hdd-empty-body-decision-20261019"></a>
+
+- 사용자 채택: DEMAND `WeatherInput / Base Case HDD Input`의 새 연도 사용자 입력 본문은 빈칸으로 시작하고, 사용자가 입력하지 않은 칸도 빈칸으로 유지한다. 숫자0은 명시적으로 입력한 값으로 구분한다. 기존 연도값을 신규 기본값으로 복사하지 않는다.
+- 기존 HDD 숫자/빈칸·Helper는 보존한다. 이 결정은 해당 표의 새 연도 본문 초기값이며 다른 표·기존 값 수정/CLEAR 정책으로 확대하지 않는다. 공개 제출/초기값 표현은 편집 API §1.1이 소유하며 실제 열 생성·저장/연결·계산 검증 완료를 뜻하지 않는다.
+
+### 6.4 WeatherInput Base Case CDD 새 연도 본문 초기값 — 2026-10-19
+
+<a id="cdd-empty-body-decision-20261019"></a>
+
+- 사용자 채택: DEMAND `WeatherInput / Base Case CDD Input`의 새 연도 사용자 입력 본문은 빈칸으로 시작하고, 사용자가 입력하지 않은 칸도 빈칸으로 유지한다. 숫자0은 명시적으로 입력한 값으로 구분한다. 기존 숫자0이나 다른 연도값을 신규 기본값으로 복사하지 않는다.
+- 기존 CDD 숫자/빈칸·Helper는 보존한다. 이 결정은 해당 표의 새 연도 본문 초기값이며 다른 표·기존 값 수정/CLEAR 정책으로 확대하지 않는다. 공개 제출/초기값 표현은 편집 API §1.1이 소유하며 실제 열 생성·저장/연결·계산 검증 완료를 뜻하지 않는다.
+
+### 6.5 WeatherInput Base Case Temperature 새 연도 본문 초기값 — 2026-10-19
+
+<a id="temperature-empty-body-decision-20261019"></a>
+
+- 사용자 채택: DEMAND `WeatherInput / Base Case Temperature`의 새 연도 사용자 입력 본문은 빈칸으로 시작하고, 사용자가 입력하지 않은 칸도 빈칸으로 유지한다. 숫자0은 명시적으로 입력한 값으로 구분한다. 기존 연도값을 신규 기본값으로 복사하지 않는다.
+- 기존 Temperature 숫자/빈칸·Helper는 보존한다. 이 결정은 해당 표의 새 연도 본문 초기값이며 다른 표·기존 값 수정/CLEAR 정책으로 확대하지 않는다. 공개 제출/초기값 표현은 편집 API §1.1이 소유하며 실제 열 생성·저장/연결·계산 검증 완료를 뜻하지 않는다.
+
+### 6.6 신규 입력 공통 시작값·새 연도 입력 주체 — 2026-10-19
+
+<a id="common-new-input-default-decision-20261019"></a>
+
+- **U1 사용자 채택:** 기존 기본값·자동 생성/수식·필수 규칙이 없는 신규 사용자 입력칸은 빈칸으로 생성하고 미입력도 빈칸으로 유지한다. 숫자0은 명시적으로 입력한 값으로 구분한다. LNG Bunkering Share by Country·PNG Infrastructure의 새 연도 본문과 다른 승인 표의 신규 행/기간 열에서도 이 조건을 만족하는 입력칸에 같은 공통 정책을 적용한다.
+- **기존 규칙 우선:** 명시된 기본값·필수값·자동 계산 규칙은 유지한다. 예를 들어 BCRegasification 신규 수치의 기본값0/필수·연결/합계 수식은 이 공통 빈칸 정책으로 바꾸지 않는다. 이미 확정한 표별 빈칸 생성 규칙도 유지한다. 기존 값을 지우거나 이전 행/연도값을 임의 복사하지 않는다. 사용자가 입력한0이 Base 선택으로 해석되는 등 원본의 모델 소비 의미도 그대로 따른다. 입력 저장의 빈칸/숫자0 구분으로 모델 해석을 바꾸지 않는다.
+
+<a id="annual-header-manual-decision-20261019"></a>
+
+- **U2 사용자 채택:** 신규 연도의 생성 주체가 미정이던 다음7표의 새 연도는 사용자가 직접 입력한다: PMIInput의 Base Case PMI Input, WeatherInput의 Base Case HDD Input·Base Case CDD Input·Base Case Temperature, LNGBunkeringLogicInput의 LNG Bunkering Share by Country, MidstreamCapacityInput의 PNG Infrastructure, BCRegasification의 Annual Regas Capacity Baseline. 마지막 연도+1을 고정 생성 규칙으로 추가하지 않는다.
+- LNG Demand의 기존 연도 직접 입력·LiqUtilAdjustment의 헤더 자동3규칙·LiqProdAdjustment의 연월 직접 입력/Period 자동 계산은 유지한다. 새 연도 입력에 근거 없는 연속성·중복 금지·업무 기간 제한을 추가하지 않고 규칙66을 적용한다. API 요청/metadata 표현은 편집 API §1.1/§3.3이 소유한다.
+- 두 결정은 기존 승인 표/동작 안의 미정 정책을 마무리한다. 행/열 추가·삭제 허용 범위를 넓히거나 계산/보존·구조/연결 검증 없이 runtime READY로 승격하지 않는다.
+
+### 6.7 BCLiquefaction 입력·보존 경계 — 2026-10-20
+
+- **사용자 확인:** T-116 `Monthly LNG Train Baseline`의 N열(기준 가동률)은 기존 값 수정과 신규 행 입력을 허용한다. 고정 source SUMMARY F27/J27의 입력·조회 충돌은 이 결정으로 해소한다.
+- 기존 SUMMARY 입력 B:C·E:L과 마지막 행 추가 허용을 유지한다. D Period는 원본의 조회용 저장값이며 사용자 편집·이전 행 값 복사 대상이 아니다. M/O/P/Q는 SUMMARY J27와 통합 판별대장 T-116의 명시 보존 범위로, 기존 수식·저장값을 유지하고 새 행에 생성하지 않는다. N 변경으로 이 보존 예외를 해제하지 않는다. 새 사용자 입력칸은 §6.6 U1을 따른다.
+- 행 추가 시 원본의 B7:N끝행 자동 필터와 같은 범위의 숨김 `_xlnm._FilterDatabase` 끝행만 함께 늘린다. 기타 표/조회 영역·수식·외부 관계는 보존한다.
 
 ## 7. Extension considerations
 
@@ -719,12 +1073,16 @@ API 경로·요청·응답 계약은 feature spec/OpenAPI가 소유한다. 후�
 
 ## 11. Risks / open questions
 
+<a id="user-decisions-closed-20261019"></a>
+
+- **2026-10-19 현행 사용자 결정 점검:** 통합 집계 U1/U2는 §6.6으로 모두 채택됐고 이번 요구 범위의 사용자 필수 결정 미결은 **0건**이다. 원본/기존 계약 대조·수식/모델 사용·계산/연결/보존·구현/DBA/제품 검증은 기술 후속으로 유지한다. 승인 밖 추가 기능/선택 추천을 필수 승인 항목으로 승격하거나 과거 미결 문구를 재질문하지 않는다. 이 판정은 전체 기능 구현/검증 완료를 뜻하지 않는다.
+
 ### 2026-10-16 공통 초안의 미결 분류
 
 | 구분 | 실제 남은 결정/확인 | 후속 책임 |
 | --- | --- | --- |
 | BE 설계 구체화/검증 | 기존 코드/문서 연결 확인은 §5.4 및 DDL §6.4로 완료. 재사용/보완 경계를 구분했으며 기존 구현이 공통 계약을 충족한 것은 아니다. §3.4·§5.1~5.3의 공통 저장/최종저장·복구 설계는 이번 문서 범위 완료. Sector/Monthly 자유입력 명칭의 모델 인식 제약(정확한 명칭·언어/별칭·대소문자/공백·미인식 처리), 실제 복원/경합·부분 실패·정리/시간의 제품 검증은 후속. 공개 계약은 편집 API §3~6·§9 | INPUT-03/04; 기술 세부는 BE/DBA가 구체화하며 공통 묶음 재승인을 요구하지 않음 |
-| 사용자 업무 결정 | PriceModel 비계약 물량/Regas 신규 설비 추천은 미승인·후속. 다음 표의 일반 입력·파생 정책과 승인 밖 동작(BCPrices 연도 CLEAR/행 삭제 등) | 공통 설계의 선행조건에서 제외. 해당 표/동작을 열기 전에 업무 단위로 결정. Sector/Monthly 수요 입력·해제 및 BCPrices 기존 수정 두 묶음은 채택 완료이며 재질문하지 않음 |
+| 사용자 업무 결정 — 2026-10-19 점검 | §6.6 U1/U2 채택으로 이번 범위의 사용자 필수 미결0건. 기존 표별 확정은 유지. 과거 PriceModel/Regas 추천·BCPrices 승인 밖 추가 동작은 필수 질문으로 세지 않음 | 기술/사실 대조는 담당자가 수행. 요청하지 않은 기능을 추가하거나 이미 정한 입력/초기값 정책을 다시 승인받지 않음 |
 | STRUCT/BE 검증 | 일반 행 추가/삭제와 빈 슬롯 소진, 참조/수식·서식·validation·연결/보존, 지정19 밖 계산 allowlist와 실제 모델 영향 | STRUCT 및 해당 구현/검증. 이 초안의 mock 성공은 실제 정책 완비/계산 Pass가 아님 |
 | DBA 확인 | 공통 물리 정의는 DDL §6.3에 구체화. 실제 DB가 필요한 항목은 DDL §13의 DBA-01~05로 분리. MySQL 제약/경합·packet·FK/감사 표준·SQL/rollout 실물 검증은 미수행 | DDL §6.3·§6.4·§13, 적용 준비/제품 검증과 표별 정의 저장은 별도 |
 
@@ -735,7 +1093,7 @@ API 경로·요청·응답 계약은 feature spec/OpenAPI가 소유한다. 후�
 - `INPUT-02` 실파일 spike에서 Apache POI 5.4.0은 1 GiB heap으로 `supply.xlsm` 전체 로딩에 실패했고,
   headless LibreOffice는 cached value를 갱신하지 못하면서 VBA·external link와 package 구조를 훼손했다.
   두 경로는 현재 요구사항에 `NO-GO`다. 2026-10-13 사용자 결정으로 전체 로딩 대신 POI 부분 계산을 채택했다(§1A.4 Q7).
-- 대형 workbook 계산을 web request JVM에 직접 넣으면 OOM과 동시 요청 자원 고갈 위험이 있다. 규칙64의 격리 worker/비동기 경계와 Q7의 조건부 채택은 확정했다. Draft 계산 상태·접수/완료 응답 계약과 실제 worker의 전체 저장 응답·부분 실패 검증은 INPUT-04/07~10 후속이다.
+- 대형 workbook 계산의 OOM과 동시 요청 자원 고갈 위험은 남는다. 실행 위치는 §5.5.3·규칙64의 A(웹 JVM 안 전용 처리 스레드)로 대체했으며 웹 부하 시험으로 자원을 정한다. Q7의 조건부 채택을 웹 영향 검증 완료로 확대하지 않는다. Draft 계산 상태·접수/완료 응답 계약과 전체 저장 응답·부분 실패 검증은 INPUT-04/07~10 후속이다.
 - 최신 input 표본에는 다른 sheet를 참조하는 복합 수식과 외부 workbook 참조가 존재한다. table dependency
   catalog만으로 계산 결과를 갱신하는 구현은 안전하지 않다.
 - 최신 v8/v6 기준본 고정·정규화 보존 및 선정19사례의 범위 한정 검증은 완료됐다(baseline/compatibility reference·Q7). 지정 밖 표별 정책·계산/구조 검증과 운영 template 등록은 별도다. 9/28의 개발 전용 6개 시트 수를 최신 묶음의 수치로 사용하지 않는다.
@@ -743,7 +1101,7 @@ API 경로·요청·응답 계약은 feature spec/OpenAPI가 소유한다. 후�
 - 기존 3파일 `INDEPENDENT | MI_BASE | SCENARIO` case는 4파일 기능 cutover 전에 soft delete한다(`SCENARIO`의 연결 row 범위는 규칙 36). 대상 판별·건수·`RUNNING`
   0건·current `MI_BASE` 포함 여부를 DBA pre-check로 확인하고, case/file/run/result hard delete는 하지 않는다.
 - `tmm_mi_model_param_m`도 같은 파일/시트 위치를 저장한다. 양식 버전 FK를 공유하지 않으면 이중 관리가 남는다.
-- `BaseEntity` 감사 컬럼과 DB 명명 문서의 시스템 컬럼명이 다르다. physical DDL 적용 전 표준 예외 확인이 필요하다.
+- 감사 이름은 실제 DB/코드 기준 유지로 사용자가 채택했다. 정밀도/증분 적용은 DDL §6.8, 실제 시간대/외부 표준 확인 잔여는 DBA-04를 따른다.
 - 양식 판별 해시의 입력값 정규화 방식이 미정이다. hash column은 nullable로 두되 자동 판별을 아직 계약하지 않는다.
 - §3.2의 불변 파일 등록과 §3.3의 발행 양식/catalog 묶음·Case 연결을 제품 조회에 구현하고 seed/기존 4파일 등록·일관성을 검증해야 한다. 추가 내용 해시/독립 revision 컬럼이나 원본 불변성 재확인을 선행조건으로 두지 않는다.
 - 표본에서 설비명이 유일키가 아니었다. `BCRegasification`의 `Malta LNG`가 국가만 다른 2행으로 존재하고
@@ -766,6 +1124,8 @@ API 경로·요청·응답 계약은 feature spec/OpenAPI가 소유한다. 후�
 
 ## 12. Exit criteria / handoff
 
+- 2026-10-21 Case 공유 기준 slice: §5.7·DDL §6.12는 `ready`인 구현 입력이다. 첫 단위는 생성 비활성 상태의 저장/행 합성·복원이며 실제 MySQL/성능/배포 승인은 별도다. 아래 전체 제품 준비도와 과거 단계 기록을 대체하지 않는다.
+
 - 2026-10-16 BE·DBA 필수 확인: 기존 코드/문서 연결 대조는 §5.4·DDL §6.4로 완료했다. 공통 설계 입력은 `ready after minor cleanup`(실제 DB 대조/적용 준비 별도), 공통 persistence/API·worker/복구는 아직 미구현이다. DBA-01~05와 제품 검증을 완료한 것으로 승격하지 않는다. 추가 사용자 공통 업무 결정은 없다.
 
 - 2026-10-16 최소 논리 관계·FE 공통 편집 초안 작성 범위는 완료했다(§3.4·§5.1 및 편집 API 초안). 공통 BE 추천 묶음과 Sector H/J·I 음수 금지·국가/하위부문 자유입력·연월 범위/신규·기존 수정 중복 금지와 Sector/Monthly 수요 입력·해제·BCPrices 기존 연도/가격 수정 두 묶음은 같은 날 사용자 채택했다. **INPUT-03 전체 확정/구현 ready는 아니다**. 아래 기존 전체 준비도 판정을 유지한다. 이번 후속으로 공통 저장/복원과 최종저장·실패 복구 계약은 §3.4·§5.1~5.3/편집 API §9·DDL §6.3에 마무리했다. 남은 표별 정책과 DBA 적용 준비/유일성·복구 제품 검증은 각각 §11·편집 API §10·DDL §13으로 분리한다. PriceModel/Regas 추가 추천은 미승인이다.
@@ -781,7 +1141,7 @@ API 경로·요청·응답 계약은 feature spec/OpenAPI가 소유한다. 후�
   - row/column data type 범위
   - active template 단건 보장 generated column
   - legacy 3파일 case soft-delete 대상 판별, `RUNNING` 차단, rollback과 DBA rollout 순서
-  - 감사 컬럼 명명 충돌
+  - DDL §6.8 감사 적용·실측 확인
 
 ## 13. Dictionary updates
 
@@ -940,8 +1300,8 @@ SUMMARY I15가 요구하는 순서(① BCRegasification 등록 → ② 조정 �
   `docs/feature-specs/mi-fundamental-model-input-provision-feature-spec.md`에서 정의한다.
 - 2026-10-01: 전체 화면 구조와 단일 표 값의 반환 범위 및 FE 필드 이름/셀 표현 재사용 계약은 위 API spec §3이 소유한다. 규칙 25는 표시 후보와 write 허용 범위를 구분하도록 정리했으며 표 단위 조회를 일부 field만 반환한다는 결정으로 해석하지 않는다. API의 `sections/inputId/tableData`를 새 도메인 엔터티나 DB 컬럼 요구로 해석하지 않는다.
 - 2026-10-01 UI 보완: API의 table은 일반 표·부속 control·control 전용 영역을 포함하는 논리 입력 영역이다. 공유 control의 연결/소유권과 원본 셀 binding 표현은 위 API spec §3.1B가 소유한다. 이 조회 표현만으로 새 엔터티/DB 컬럼이나 모드 write 정책을 확정하지 않는다.
-- 2026-10-01 업로드 보완: kind별 등록 양식으로 사용자 파일을 검증·파싱하는 화면용 POST /input-uploads 계약은 위 API spec §3.3이 소유한다. 신규 포맷 자동 등록이나 4파일 Case 생성과 구분하며 업로드 원본 보존/수명 모델은 별도 확정한다.
-- 행·열 추가 방식과 감사 컬럼 표준 충돌은 구현 전 해결해야 하지만, hierarchy 조회용 schema 초안 검토는 진행할 수 있다.
+- 2026-10-01 업로드 보완은 당시 단일 파싱 경계다. 2026-10-19 요구로 규칙67·위 API spec §3.3에서 파일명 역할 판별·순차 업로드 편집 진입으로 확장했다. 신규 포맷 자동 등록은 허용하지 않으며 Case 생성 시점·보존/수명 등은 Open Questions에서 확정한다.
+- 행·열 추가 방식과 DDL §6.8 감사 적용 확인은 실제 활성화 전 해결해야 하지만, hierarchy 조회용 schema 초안 검토는 진행할 수 있다.
 - 2026-10-08: 트랙 B 공통 흐름·책임·정책 후보·A 결과 반영과 단계 완료 판정은 §1A·§3.1을 따른다. API·DDL·Delivery Plan·조사 대장 변경은 이 요약만으로 확정되지 않는다.
 - 2026-10-08 트랙 A 인계: Midstream A-01/A-02와 AG/AI 상류 정적 확인을 §1A.3~1A.4의 Q1~Q6·H1~H4에 연결했다. 기존 §6 승인은 유지하며 다음 표 조사·계산/보존/구조 검증과 사람 결정은 미완료다.
 - 2026-10-13: 사용자 결정으로 계산 방식을 POI 부분 계산으로 정했다(§1A.4 Q7). 격리·동기/비동기 경계와 `INPUT-02A` 판정은 미완료다.
@@ -949,3 +1309,5 @@ SUMMARY I15가 요구하는 순서(① BCRegasification 등록 → ② 조정 �
 - 2026-10-13: 사용자 결정으로 규칙 36의 legacy 3파일 정리에 `SCENARIO` case를 추가했다. 연결 run history·execution-preparation·active 가격전망해석을 함께 soft delete하며 규칙 38의 `RUNNING` pre-check와 §11 위험 문구를 맞췄다. 같은 날 잠시 기록한 "SCENARIO 제외" 문구는 이 결정으로 대체했다.
 - 2026-10-15: Q7/규칙64와 Delivery Plan §6A에 따라 F-S-06 제외 INPUT-02A를 조건부 완료했다. 위 2026-10-13 미판정 기록은 당시 이력이다. INPUT-03/04 설계·계약 작업에 전달하며 제품 write 구현 승인은 별도다.
 - implementation readiness: `blocked by open questions` — 실행 경계는 규칙64로 확정했으나 `INPUT-03` row identity·Draft 물리 모델과 `INPUT-04` write/비동기 계약이 확정되기 전에는 write API 구현을 시작하지 않는다.
+
+- 2026-10-21 공유 기준 설계의 한정 readiness: §5.7·DDL §6.12는 `ready`. 위 전체 제품/과거 단계 판정과 구분하며 첫 내부 저장·복원 slice만 다음 구현 단위로 제시한다.

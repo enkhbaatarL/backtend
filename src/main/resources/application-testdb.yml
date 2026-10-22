@@ -293,4 +293,15 @@ kubernetes:
 
 mi:
   model-input:
-    model-code: DRAFT_API_SMOKE
+    change-worker:
+      enabled: true
+    finalization:
+      enabled: true
+    upload:
+      enabled: true
+      source-key: DRAFT_C_STRUCTURE_V1
+      model-code: DRAFT_C_STRUCTURE
+    shared-baseline:
+      enabled: true
+    web-runner:
+      enabled: true

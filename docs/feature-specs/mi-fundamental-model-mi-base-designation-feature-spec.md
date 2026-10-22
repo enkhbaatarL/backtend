@@ -12,7 +12,7 @@
   - `docs/design-docs/gas/scenario-case-execution-erd-ddl-draft.md`
   - `SECURITY.md`
 - supersedes: 없음
-- last synced: 2026-09-28
+- last synced: 2026-10-19
 - open questions: 없음. 상세 화면의 지정 actor/time 표시와 input 내용 제공은 별도 후속 계약에서 다룬다.
 
 ## 1. Feature Goal
@@ -88,6 +88,7 @@ current MI Base는 고정 기준값이므로 검색 결과와 무관하게 `miBa
     "totalCount": 21,
     "miBase": {
       "caseId": 105,
+      "draftId": "aefb60dc-18b8-4ac2-beb4-a4d499950765",
       "title": "미국-이란 긴장 고조 케이스",
       "status": "COMPLETED",
       "execType": "MI_BASE",
@@ -98,6 +99,7 @@ current MI Base는 고정 기준값이므로 검색 결과와 무관하게 `miBa
     "cases": [
       {
         "caseId": 110,
+        "draftId": null,
         "title": "수급모델 독립 실행 테스트 0001",
         "status": "COMPLETED",
         "execType": "INDEPENDENT",
@@ -123,6 +125,11 @@ current MI Base는 고정 기준값이므로 검색 결과와 무관하게 `miBa
 | 필드 | 타입 | nullable | 설명 |
 |---|---|---|---|
 | `execType` | `FundamentalModelExecType` | N | `miBase`는 `MI_BASE`; `cases`는 `INDEPENDENT` |
+| `draftId` | UUID string | Y | 인증된 현재 회사·로그인 사용자가 이 Case를 원본으로 편집 중인 미삭제 `DRAFT`의 ID. 없으면 필드를 생략하지 않고 `null` |
+
+`draftId`는 `miBase`와 `cases` 모두 같은 기준을 사용한다. 다른 회사·사용자, `FINALIZED`/`DISCARDED`/삭제 Draft는 제외한다. Case 업로더 기준이나 해당 Case를 최종저장한 Draft ID가 아니다. 목록 조회는 Draft를 생성하거나 변경하지 않는다.
+
+FE는 값이 있으면 `GET /api/v1/mi/fundamental-model/input-drafts/{draftId}`로 현재 구조·revision·진행 작업을 다시 확인하고 편집을 이어간다. `null`이면 원본 구조 조회 → 생성/재개 흐름을 사용한다. 값이 있어도 원본 변경·동시 최종저장·진행 작업에 따른 기존 검증과 상태 처리는 유지한다. 자세한 호출/오류 계약은 [Input Draft API §2·§3](mi-fundamental-model-input-draft-editing-api-proposal.md#2-호출-흐름공통-접근-경계)를 따른다.
 
 `기준값 (MI Base)`, `그 외 실행 케이스` section label과 `BC` badge는 응답의 `miBase` 위치를 기준으로 FE가 표시한다. 목록에서는 지정자·지정시각 문구를 사용하지 않으므로 해당 audit 필드는 이번 목록 DTO에 추가하지 않는다.
 
@@ -212,6 +219,8 @@ PUT /api/v1/mi/fundamental-model/cases/{caseId}/mi-base
 
 응답 wrapper는 변경된 목록과 같은 `BaseResponse<FundamentalModelCaseListItemRes>`를 사용한다.
 
+공용 항목의 `draftId`는 §3과 동일하게 현재 회사·로그인 사용자 기준으로 반환한다.
+
 ```json
 {
   "status": true,
@@ -219,6 +228,7 @@ PUT /api/v1/mi/fundamental-model/cases/{caseId}/mi-base
   "message": "Success.",
   "data": {
     "caseId": 110,
+    "draftId": null,
     "title": "수급모델 독립 실행 테스트 0001",
     "status": "COMPLETED",
     "execType": "MI_BASE",

@@ -4,24 +4,28 @@ import com.sk.domain.mi.service.fundamentalmodel.input.InputDraftException;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import java.time.LocalDateTime;
 import javax.sql.DataSource;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Qualifier;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Repository;
 
 /** master transaction에 참여하는 명시적 SQL. 원본 projection과 초기 행 대응 bulk 저장에 사용한다. */
+@Slf4j
 @Repository
 public class ModelInputDraftRepository {
+    private static final int ORIGINAL_ROW_INSERT_SIZE = 500;
     private final JdbcTemplate jdbc;
-    @Value("${mi.model-input.model-code:}")
-    private String modelCode;
     public ModelInputDraftRepository(@Qualifier("masterDataSource") DataSource master) { jdbc=new JdbcTemplate(master); }
-    public record FileRef(String role,long fileNo,String name,String location) {}
+    public record FileRef(String role,Long fileNo,String name,String location,long baseline,String sha256,Long size) {
+        public FileRef(String role,long fileNo,String name,String location){this(role,fileNo,name,location,0,null,null);}
+    }
     public record Scope(int startRow,int endRow,int startColumn,int endColumn) {
         public boolean contains(int row,int col) { return row>=startRow&&row<=endRow&&col>=startColumn&&col<=endColumn; }
     }
@@ -31,13 +35,55 @@ public class ModelInputDraftRepository {
         public String key() { return role+"/"+sheet+"/"+name; }
     }
     public record Catalog(long templateId,int version,List<String> roles,List<TableRef> tables) {}
-    public record Draft(String id,int company,int user,long caseId,long templateId,String sourceVersion,String status,
-            long revision,String activeOperation,Long finalizedCase) {}
+    public record Draft(String id,int company,int user,Long caseId,long templateId,String sourceVersion,String status,
+            long revision,String activeOperation,Long finalizedCase,String baselineId) {
+        public Draft(String id,int company,int user,Long caseId,long templateId,String sourceVersion,String status,long revision,String activeOperation,Long finalizedCase){this(id,company,user,caseId,templateId,sourceVersion,status,revision,activeOperation,finalizedCase,null);}
+        public Draft(String id,int company,int user,long caseId,long templateId,String sourceVersion,String status,long revision,String activeOperation,Long finalizedCase){this(id,company,user,Long.valueOf(caseId),templateId,sourceVersion,status,revision,activeOperation,finalizedCase);}
+        public boolean uploaded(){return caseId==null;}
+        /** 과거 revision 복원용 복사본. 저장 형식(baselineId)을 포함한 나머지 필드는 그대로 유지한다. */
+        public Draft atRevision(long at){return new Draft(id,company,user,caseId,templateId,sourceVersion,status,at,activeOperation,finalizedCase,baselineId);}
+    }
     public record RowRef(long table,int row,String id) {}
+    public List<Long> findActiveTemplateIdsForUpdate(String modelCode) {
+        requireTransaction();
+        return jdbc.queryForList("""
+            SELECT tmplt_id FROM tmd_mdl_inpttmpltm
+            WHERE mdl_spt_cd=? AND tmplt_stat_cd='ACTIVE' AND del_yn='N'
+            FOR UPDATE
+            """, Long.class, modelCode);
+    }
+
+    public void bindCaseTemplate(long caseId, long templateId, String actor) {
+        requireTransaction();
+        jdbc.update("""
+            INSERT INTO tmd_mdl_scnrcasetmpltd(case_id,tmplt_id,crt_usr_logn_id,mod_usr_logn_id)
+            VALUES(?,?,?,?)
+            """, caseId, templateId, actor, actor);
+    }
+
     public void caseAccess(long id, boolean lock) {
         List<String> types=jdbc.query("SELECT exec_type_cd FROM tmd_mdl_scnrcasem WHERE case_id=? AND del_yn='N'"+(lock?" FOR UPDATE":""),
             (rs,n)->rs.getString(1),id);
         if(types.size()!=1||!List.of("INDEPENDENT","MI_BASE").contains(types.get(0))) throw InputDraftException.missing();
+    }
+    public void caseCompanyAccess(long caseId, int company) {
+        boolean owned=Boolean.TRUE.equals(jdbc.queryForObject("""
+            SELECT EXISTS (
+                SELECT 1 FROM tmd_mdl_scnrcasem c
+                JOIN tmd_usrm u ON u.usr_no=c.usr_no
+                WHERE c.case_id=? AND c.del_yn='N' AND u.cust_cpny_no=?
+            )
+            """,Boolean.class,caseId,company));
+        if(!owned)throw InputDraftException.missing();
+    }
+    public boolean hasCompletedLatestRun(long caseId) {
+        return Boolean.TRUE.equals(jdbc.queryForObject("""
+            SELECT EXISTS (
+                SELECT 1 FROM tmd_mdl_scnrcasem c
+                JOIN tmd_mdl_scnrcaseh h ON h.run_id=c.last_run_id AND h.case_id=c.case_id AND h.del_yn='N'
+                WHERE c.case_id=? AND c.del_yn='N' AND c.case_stat_cd='COMPLETED' AND h.exec_stat_cd='COMPLETED'
+            )
+            """,Boolean.class,caseId));
     }
     public List<FileRef> files(long caseId) {
         return jdbc.query("""
@@ -48,14 +94,15 @@ public class ModelInputDraftRepository {
             Math.toIntExact(caseId),java.time.LocalDate.now(java.time.ZoneId.of("Asia/Seoul")).format(java.time.format.DateTimeFormatter.BASIC_ISO_DATE));
     }
     public Catalog catalog(long caseId) {
-        if(modelCode==null||modelCode.isBlank()) throw InputDraftException.conflict("POLICY_INCOMPLETE",null);
         List<long[]> root=jdbc.query("""
             SELECT t.tmplt_id,t.tmplt_ver_no FROM tmd_mdl_scnrcasetmpltd c
             JOIN tmd_mdl_inpttmpltm t ON t.tmplt_id=c.tmplt_id
-            WHERE c.case_id=? AND c.del_yn='N' AND t.del_yn='N' AND t.mdl_spt_cd=? AND t.tmplt_stat_cd IN ('ACTIVE','DEPRECATED')
-            """,(rs,n)->new long[]{rs.getLong(1),rs.getInt(2)},caseId,modelCode);
+            WHERE c.case_id=? AND c.del_yn='N' AND t.del_yn='N' AND t.tmplt_stat_cd IN ('ACTIVE','DEPRECATED')
+            """,(rs,n)->new long[]{rs.getLong(1),rs.getInt(2)},caseId);
         if(root.size()!=1) throw InputDraftException.conflict("POLICY_INCOMPLETE",null);
-        long template=root.get(0)[0];
+        return catalogTemplate(root.get(0)[0],(int)root.get(0)[1]);
+    }
+    public Catalog catalogTemplate(long template,int version) {
         List<String> roles=jdbc.query("SELECT mdl_file_cd FROM tmd_mdl_inptfiled WHERE tmplt_id=? AND del_yn='N' ORDER BY file_ord",(rs,n)->rs.getString(1),template);
         Map<Long,List<Scope>> scopes=new LinkedHashMap<>();
         jdbc.query("""
@@ -74,33 +121,512 @@ public class ModelInputDraftRepository {
             rs.getString("inpt_tbl_expn"),rs.getInt("tbl_bgn_row_no"),rs.getInt("tbl_end_row_no"),rs.getInt("tbl_bgn_col_no"),rs.getInt("tbl_end_col_no"),
             rs.getInt("hdr_bgn_row_no"),rs.getInt("hdr_end_row_no"),rs.getInt("data_bgn_row_no"),"Y".equals(rs.getString("row_add_psbl_yn")),
             "Y".equals(rs.getString("col_add_psbl_yn")),rs.getString("qry_json"),List.copyOf(scopes.getOrDefault(rs.getLong("inpt_tbl_id"),List.of()))),template);
-        return new Catalog(template,(int)root.get(0)[1],List.copyOf(roles),List.copyOf(tables));
+        return new Catalog(template,version,List.copyOf(roles),List.copyOf(tables));
     }
     private Draft draft(ResultSet rs,int ignored)throws SQLException {
-        return new Draft(rs.getString("drft_id"),rs.getInt("cust_cpny_no"),rs.getInt("usr_no"),rs.getLong("org_case_id"),
+        return new Draft(rs.getString("drft_id"),rs.getInt("cust_cpny_no"),rs.getInt("usr_no"),rs.getObject("org_case_id",Long.class),
             rs.getLong("tmplt_id"),rs.getString("org_rvsn_val"),rs.getString("drft_stat_cd"),rs.getLong("rvsn_no"),
-            rs.getString("actv_prcs_id"),rs.getObject("fnsv_case_id",Long.class));
+            rs.getString("actv_prcs_id"),rs.getObject("fnsv_case_id",Long.class),rs.getString("base_id"));
     }
     public Draft active(int company,int user,long caseId) {
         return jdbc.query("SELECT * FROM tmd_mdl_inptdrftm WHERE cust_cpny_no=? AND usr_no=? AND org_case_id=? AND drft_stat_cd='DRAFT' AND del_yn='N'",
             this::draft,company,user,caseId).stream().findFirst().orElse(null);
     }
+
+    public Map<Long, String> findActiveDraftIds(int company, int user, List<Long> caseIds) {
+        if (caseIds.isEmpty()) {
+            return Map.of();
+        }
+        String placeholders = String.join(",", Collections.nCopies(caseIds.size(), "?"));
+        List<Object> parameters = new ArrayList<>();
+        parameters.add(company);
+        parameters.add(user);
+        parameters.addAll(caseIds);
+        return jdbc.query("""
+            SELECT org_case_id, drft_id FROM tmd_mdl_inptdrftm
+            WHERE cust_cpny_no=? AND usr_no=? AND drft_stat_cd='DRAFT' AND del_yn='N'
+              AND org_case_id IN (%s)
+            """.formatted(placeholders), rs -> {
+                Map<Long, String> draftIds = new LinkedHashMap<>();
+                while (rs.next()) {
+                    draftIds.put(rs.getLong("org_case_id"), rs.getString("drft_id"));
+                }
+                return draftIds;
+            }, parameters.toArray());
+    }
+
     public Draft owned(String id,int company,int user) {
         return jdbc.query("SELECT * FROM tmd_mdl_inptdrftm WHERE drft_id=? AND cust_cpny_no=? AND usr_no=? AND del_yn='N'",
             this::draft,id,company,user).stream().findFirst().orElseThrow(InputDraftException::missing);
+    }
+    /** 접수/복구는 항상 Draft → 요청 순서로 잠근다. 호출 transaction은 master여야 한다. */
+    public Draft lockOwned(String id,int company,int user) {
+        requireTransaction();
+        lockUploadOwner(owned(id,company,user));
+        return jdbc.query("SELECT * FROM tmd_mdl_inptdrftm WHERE drft_id=? AND cust_cpny_no=? AND usr_no=? AND del_yn='N' FOR UPDATE",
+            this::draft,id,company,user).stream().findFirst().orElseThrow(InputDraftException::missing);
+    }
+    /** 결과 조회의 만료 정리 전용. 업로드 소유 슬롯 → Draft 순서를 지키며 경합하면 건너뛴다. */
+    public Draft tryLockOwned(String id,int company,int user) {
+        requireTransaction();
+        Draft observed=owned(id,company,user);
+        if(observed.uploaded()&&jdbc.query("SELECT cust_cpny_no FROM tmd_mdl_inptupldactvm WHERE cust_cpny_no=? AND usr_no=? FOR UPDATE SKIP LOCKED",
+                (rs,n)->rs.getInt(1),company,user).isEmpty())return null;
+        return jdbc.query("SELECT * FROM tmd_mdl_inptdrftm WHERE drft_id=? AND cust_cpny_no=? AND usr_no=? AND del_yn='N' FOR UPDATE SKIP LOCKED",
+            this::draft,id,company,user).stream().findFirst().orElse(null);
+    }
+    public Operation tryLockOperation(String draftId,String operationId) {
+        requireTransaction();
+        return jdbc.query("SELECT * FROM tmd_mdl_inptdrftprcsl WHERE drft_id=? AND prcs_id=? FOR UPDATE SKIP LOCKED",
+            this::operation,draftId,operationId).stream().findFirst().orElse(null);
+    }
+    private Draft lockDraft(String id) {
+        requireTransaction();
+        jdbc.query("SELECT * FROM tmd_mdl_inptdrftm WHERE drft_id=? AND del_yn='N'",this::draft,id).stream().findFirst().ifPresent(this::lockUploadOwner);
+        return jdbc.query("SELECT * FROM tmd_mdl_inptdrftm WHERE drft_id=? AND del_yn='N' FOR UPDATE",this::draft,id)
+            .stream().findFirst().orElseThrow(InputDraftException::missing);
+    }
+    public Draft lockForRecovery(String id){return lockDraft(id);}
+    private void lockUploadOwner(Draft draft) {
+        if(draft.uploaded())jdbc.query("SELECT cust_cpny_no FROM tmd_mdl_inptupldactvm WHERE cust_cpny_no=? AND usr_no=? FOR UPDATE",(rs,n)->rs.getInt(1),draft.company(),draft.user());
+    }
+    private static void requireTransaction() {
+        if(!org.springframework.transaction.support.TransactionSynchronizationManager.isActualTransactionActive())throw new IllegalStateException("master transaction required");
+    }
+    public record Operation(String id,String draftId,String requestId,String type,String role,long baseRevision,
+        String status,int schemaVersion,String request,String token,LocalDateTime expires,String result,String failure,String actor) {
+        public boolean terminal(){return status.equals("SUCCEEDED")||status.equals("FAILED");}
+    }
+    private Operation operation(ResultSet rs,int ignored)throws SQLException {
+        return new Operation(rs.getString("prcs_id"),rs.getString("drft_id"),rs.getString("req_id"),rs.getString("prcs_type_cd"),
+            rs.getString("usr_role_cd"),rs.getLong("base_rvsn_no"),rs.getString("prcs_stat_cd"),rs.getInt("json_rvsn_no"),
+            rs.getString("req_json"),rs.getString("try_tokn"),rs.getTimestamp("expr_dtm").toLocalDateTime(),rs.getString("rslt_json"),rs.getString("fail_json"),rs.getString("crt_usr_logn_id"));
+    }
+    public Operation request(String draftId,String requestId) {
+        return jdbc.query("SELECT * FROM tmd_mdl_inptdrftprcsl WHERE drft_id=? AND req_id=?",this::operation,draftId,requestId).stream().findFirst().orElse(null);
+    }
+    public Operation operation(String draftId,String operationId,boolean lock) {
+        if(lock)requireTransaction();
+        return jdbc.query("SELECT * FROM tmd_mdl_inptdrftprcsl WHERE drft_id=? AND prcs_id=?"+(lock?" FOR UPDATE":""),this::operation,draftId,operationId)
+            .stream().findFirst().orElseThrow(InputDraftException::missing);
+    }
+    public LocalDateTime databaseTime(){return jdbc.queryForObject("SELECT CURRENT_TIMESTAMP(6)",LocalDateTime.class);}
+    /** 웹 실행기의 저장 결과 재확인. UPLOAD_CREATE는 아직 draft가 없을 수 있다. */
+    public Operation workerOperation(String operationId) {
+        return jdbc.query("SELECT * FROM tmd_mdl_inptdrftprcsl WHERE prcs_id=?",this::operation,operationId)
+                .stream().findFirst().orElseThrow(InputDraftException::missing);
+    }
+    /** 종료 증거를 가진 실행기만 사용한다. 실패 확정 직후/정리 중 재시작도 포함한다. */
+    public List<Operation> stoppedWorkerOperations() {
+        return jdbc.query("""
+            SELECT p.* FROM tmd_mdl_inptdrftprcsl p WHERE p.prcs_stat_cd='RUNNING'
+            OR (p.prcs_type_cd='FINALIZE' AND p.prcs_stat_cd='FAILED' AND EXISTS (
+                SELECT 1 FROM tmd_mdl_inptfnsvfiled f WHERE f.prcs_id=p.prcs_id AND f.try_tokn=p.try_tokn
+                    AND f.prcs_stat_cd='CLEANUP_PENDING'))
+            ORDER BY p.expr_dtm,p.prcs_id LIMIT 100
+            """,this::operation);
+    }
+    public Operation enqueueChange(Draft draft,String requestId,long baseRevision,String request,String role,String actor) {
+        Draft current=lockDraft(draft.id());
+        if(!current.status().equals("DRAFT"))throw InputDraftException.conflict("DRAFT_NOT_EDITABLE",current.revision());
+        if(current.activeOperation()!=null)throw InputDraftException.conflict("DRAFT_BUSY",current.revision());
+        if(current.revision()!=baseRevision)throw InputDraftException.conflict("REVISION_CONFLICT",current.revision());
+        // 감사 시간은 초 단위다. 같은 값을 기한의 기준으로 써 DB 반올림/CHECK 불일치를 막는다.
+        LocalDateTime now=databaseTime().withNano(0);String id=UUID.randomUUID().toString();
+        jdbc.update("""
+            INSERT INTO tmd_mdl_inptdrftprcsl(prcs_id,cust_cpny_no,usr_no,drft_id,req_id,prcs_type_cd,usr_role_cd,base_rvsn_no,prcs_stat_cd,json_rvsn_no,req_json,expr_dtm,crt_dtm,mod_dtm,crt_usr_logn_id,mod_usr_logn_id)
+            VALUES(?,?,?,?,?,'CHANGE',?,?,'QUEUED',2,?,?,?,?,?,?)
+            """,id,current.company(),current.user(),current.id(),requestId,role,baseRevision,request,now.plusSeconds(120),now,now,actor,actor);
+        int changed=jdbc.update("UPDATE tmd_mdl_inptdrftm SET actv_prcs_id=?,mod_usr_logn_id=?,mod_dtm=? WHERE drft_id=? AND actv_prcs_id IS NULL AND rvsn_no=? AND drft_stat_cd='DRAFT'",id,actor,now,current.id(),baseRevision);
+        if(changed!=1)throw InputDraftException.internal();
+        return operation(current.id(),id,false);
+    }
+    /** 후속 격리 worker가 DB에서 같은 QUEUED를 찾는 경계. 메모리 queue는 근거가 아니다. */
+    public List<Operation> queuedChanges() { return queuedOperations(false); }
+    public List<Operation> queuedOperations(boolean finalizations) {
+        return jdbc.query("""
+            SELECT p.* FROM tmd_mdl_inptdrftprcsl p
+            JOIN tmd_mdl_inptdrftm d ON d.drft_id=p.drft_id JOIN tmd_mdl_inpttmpltm t ON t.tmplt_id=d.tmplt_id
+            WHERE p.prcs_stat_cd='QUEUED' AND (p.prcs_type_cd='CHANGE' OR (? AND p.prcs_type_cd='FINALIZE'))
+            ORDER BY p.expr_dtm,p.prcs_id LIMIT 100
+            """,this::operation,finalizations);
+    }
+
+    /** 성공 저장 결과에 함께 기록한 실행 대기만 찾는다. 과거 성공 기록에는 이 필드가 없다. */
+    public List<Operation> queuedFinalizationExecutions() {
+        return jdbc.query("""
+            SELECT p.* FROM tmd_mdl_inptdrftprcsl p
+            WHERE p.prcs_type_cd='FINALIZE' AND p.prcs_stat_cd='SUCCEEDED'
+              AND p.rslt_json LIKE ?
+            ORDER BY p.end_dtm,p.prcs_id LIMIT 100
+            """, this::operation, "%\"executionStatus\"%\"QUEUED\"%");
+    }
+
+    public record FinalizationCase(long caseId, String status, String runId) {}
+
+    /** 요청 잠금 뒤 최종 Case도 잠근다. 수동 실행과 자동 실행이 같은 Case를 선점한다. */
+    public FinalizationCase lockFinalizationCase(Draft draft) {
+        requireTransaction();
+        if (!draft.status().equals("FINALIZED") || draft.finalizedCase() == null) throw InputDraftException.internal();
+        return jdbc.query("""
+            SELECT case_id,case_stat_cd,last_run_id FROM tmd_mdl_scnrcasem
+            WHERE case_id=? AND usr_no=? AND exec_type_cd='INDEPENDENT' AND del_yn='N' FOR UPDATE
+            """, (rs,n) -> new FinalizationCase(rs.getLong(1),rs.getString(2),rs.getString(3)),
+            draft.finalizedCase(),draft.user()).stream().findFirst().orElseThrow(InputDraftException::missing);
+    }
+
+    public void completeFinalizationExecution(Operation operation, String result) {
+        requireTransaction();
+        if (result.getBytes(java.nio.charset.StandardCharsets.UTF_8).length > 1_048_576) throw InputDraftException.internal();
+        int changed = jdbc.update("""
+            UPDATE tmd_mdl_inptdrftprcsl SET rslt_json=?,mod_dtm=CURRENT_TIMESTAMP
+            WHERE prcs_id=? AND drft_id=? AND prcs_type_cd='FINALIZE' AND prcs_stat_cd='SUCCEEDED' AND rslt_json=?
+            """, result,operation.id(),operation.draftId(),operation.result());
+        if (changed != 1) throw InputDraftException.internal();
+    }
+
+    public record FinalizationRun(String runId, String status, String failureReason) {}
+
+    public FinalizationRun finalizationRun(long caseId, String runId) {
+        return jdbc.query("""
+            SELECT run_id,exec_stat_cd,fail_rsn_cd FROM tmd_mdl_scnrcaseh
+            WHERE case_id=? AND run_id=? AND del_yn='N'
+            """, (rs,n) -> new FinalizationRun(rs.getString(1),rs.getString(2),rs.getString(3)),
+            caseId,runId).stream().findFirst().orElseThrow(InputDraftException::internal);
+    }
+    public Operation claimChange(String draftId,String operationId) {
+        return claimChange(draftId,operationId,UUID.randomUUID().toString());
+    }
+    /** marker를 먼저 fsync한 서버 토큰만 전달한다. HTTP 입력으로 받지 않는다. */
+    public Operation claimChange(String draftId,String operationId,String token) {
+        if(token==null||!UUID.fromString(token).toString().equals(token))throw InputDraftException.internal();
+        Draft draft=lockDraft(draftId);Operation op=operation(draftId,operationId,true);
+        if(op.schemaVersion()!=2||!op.type().equals("CHANGE"))throw InputDraftException.internal();
+        if(!op.status().equals("QUEUED")||!draft.status().equals("DRAFT")||!operationId.equals(draft.activeOperation())
+            ||draft.revision()!=op.baseRevision()||!databaseTime().isBefore(op.expires()))return null;
+        int changed=jdbc.update("UPDATE tmd_mdl_inptdrftprcsl SET prcs_stat_cd='RUNNING',try_tokn=?,bgn_dtm=CURRENT_TIMESTAMP(6),mod_dtm=CURRENT_TIMESTAMP WHERE drft_id=? AND prcs_id=? AND prcs_stat_cd='QUEUED' AND expr_dtm>CURRENT_TIMESTAMP(6)",token,draftId,operationId);
+        return changed==1?operation(draftId,operationId,false):null;
+    }
+    public record WorkerOwner(int company,int user,String companyCode,String login) {}
+    /** 요청의 원래 actor/역할과 현재 DB의 회사·사용 권한을 함께 확인한다. */
+    public WorkerOwner workerOwner(Draft draft,Operation op) {
+        return jdbc.query("""
+            SELECT d.cust_cpny_no,d.usr_no,c.cust_cpny_cd,u.usr_logn_id
+            FROM tmd_mdl_inptdrftm d JOIN tmd_usrm u ON u.usr_no=d.usr_no
+            JOIN tmd_custcpnym c ON c.cust_cpny_no=d.cust_cpny_no
+            WHERE d.drft_id=? AND d.del_yn='N' AND u.del_yn='N' AND c.del_yn='N'
+              AND u.usr_logn_id=? AND u.usr_role_cd=? AND u.usr_role_cd IN ('USER','ADMIN')
+              AND ((u.usr_role_cd='USER' AND u.cust_cpny_no=d.cust_cpny_no AND c.cust_cpny_cd='SKGAS')
+                OR (u.usr_role_cd='ADMIN' AND u.otcmp_svc_accs_psbl_yn='Y'))
+            """,(rs,n)->new WorkerOwner(rs.getInt(1),rs.getInt(2),rs.getString(3),rs.getString(4)),
+            draft.id(),op.actor(),op.role()).stream().findFirst().orElseThrow(InputDraftException::missing);
+    }
+    /** 성공 기록도 이 잠금/기준 아래 같은 transaction에서 delta·행·revision과 함께 확정해야 한다. */
+    public Operation lockRunningChange(String draftId,String operationId,String token) {
+        Draft draft=lockDraft(draftId);Operation op=operation(draftId,operationId,true);
+        return op.schemaVersion()==2&&op.type().equals("CHANGE")&&op.status().equals("RUNNING")&&token!=null&&token.equals(op.token())
+            &&draft.status().equals("DRAFT")&&operationId.equals(draft.activeOperation())&&draft.revision()==op.baseRevision()
+            &&databaseTime().isBefore(op.expires())?op:null;
+    }
+    public record Revision(long number,Long base,String operation,int schema,String delta,
+        String type,String status,int operationSchema,Long operationBase,String request,String result) {}
+    public record RowIdentity(long table,String id,Integer original,String operation,String client,long baseline) {
+        public RowIdentity(long table,String id,Integer original,String operation,String client){this(table,id,original,operation,client,0);}
+    }
+    public record RowPosition(long table,String id,long begin,Long end,Integer row) {}
+    public record RowWrite(long table,String id,String client,Integer row,boolean added) {}
+    public record InitialRowRange(long table,int first,int last) {}
+    /** revision0 행 정합성을 저장 형식에 맞게 DB에서 검증한다. 호출자는 같은 transaction의 Draft 잠금을 보유한다. */
+    public void validateInitialRows(Draft draft,List<InitialRowRange> ranges) {
+        if(draft.baselineId()==null)validatePhysicalInitialRows(draft.id(),ranges);
+        else validateSharedInitialRows(draft);
+    }
+    /** revision0의 전체 저장 행을 DB에서 검증한다. */
+    private void validatePhysicalInitialRows(String draft,List<InitialRowRange> ranges) {
+        requireTransaction();
+        List<Object> parameters=new ArrayList<>();parameters.add(draft);
+        parameters.add("^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$");
+        List<String> allowed=new ArrayList<>();
+        for(InitialRowRange range:ranges) {
+            allowed.add("(m.inpt_tbl_id=? AND m.org_row_no BETWEEN ? AND ?)");
+            parameters.add(range.table());parameters.add(range.first());parameters.add(range.last());
+        }
+        parameters.add(draft);parameters.add(draft);
+        String body=allowed.isEmpty()?"1=0":String.join(" OR ",allowed);
+        // 양방향 비교: 누락된 위치, 고아 위치, 추가 이력과 초기 행 위치 변경을 모두 거부한다.
+        String statement="""
+            SELECT CASE WHEN EXISTS (
+                SELECT 1 FROM tmd_mdl_inptdrftrowm m
+                LEFT JOIN tmd_mdl_inptdrftrowh h ON h.row_id=m.row_id AND h.bgn_rvsn_no=0
+                WHERE m.drft_id=? AND (m.del_yn<>'N' OR m.org_row_no IS NULL OR m.file_rvsn_no<>0
+                    OR m.prcs_id IS NOT NULL OR m.clnt_row_id IS NOT NULL OR NOT REGEXP_LIKE(TRIM(m.row_id),?,'c')
+                    OR NOT ("""+body+"""
+                    ) OR h.row_id IS NULL OR h.drft_id<>m.drft_id OR h.inpt_tbl_id<>m.inpt_tbl_id
+                    OR h.row_no IS NULL OR h.row_no<>m.org_row_no OR h.end_rvsn_no IS NOT NULL OR h.del_yn<>'N')
+            ) OR EXISTS (
+                SELECT 1 FROM tmd_mdl_inptdrftrowh h LEFT JOIN tmd_mdl_inptdrftrowm m ON m.row_id=h.row_id
+                WHERE h.drft_id=? AND (m.row_id IS NULL OR m.drft_id<>h.drft_id OR m.inpt_tbl_id<>h.inpt_tbl_id
+                    OR h.bgn_rvsn_no<>0 OR h.end_rvsn_no IS NOT NULL OR h.row_no IS NULL
+                    OR h.row_no<>m.org_row_no OR h.del_yn<>'N')
+            ) OR EXISTS (
+                SELECT 1 FROM tmd_mdl_inptdrftrowm WHERE drft_id=?
+                GROUP BY inpt_tbl_id,org_row_no HAVING COUNT(*)>1
+            ) THEN 1 ELSE 0 END
+            """;
+        if(jdbc.queryForObject(statement,Integer.class,parameters.toArray())!=0)throw InputDraftException.internal();
+    }
+    /** 공유 revision0에는 개인 원본/추가 행과 위치가 아직 존재하지 않아야 한다. */
+    private void validateSharedInitialRows(Draft draft) {
+        requireTransaction();
+        if(draft.baselineId()==null||draft.revision()!=0||draft.uploaded())throw InputDraftException.internal();
+        if(jdbc.queryForObject("SELECT CASE WHEN EXISTS (SELECT 1 FROM tmd_mdl_inptdrftrowm WHERE drft_id=?) OR EXISTS (SELECT 1 FROM tmd_mdl_inptdrftrowh WHERE drft_id=?) THEN 1 ELSE 0 END",
+            Integer.class,draft.id(),draft.id())!=0)throw InputDraftException.internal();
+    }
+    /** revision0의 요청 페이지 원본 행. 공유 Draft는 baseline에서 개인 rowId를 파생한다. */
+    public List<RowIdentity> initialPageRows(Draft draft,long table,int first,int last) {
+        return draft.baselineId()==null?physicalInitialPageRows(draft.id(),table,first,last):baselineRows(draft,table,first,last);
+    }
+    private List<RowIdentity> physicalInitialPageRows(String draft,long table,int first,int last) {
+        return jdbc.query("""
+            SELECT inpt_tbl_id,row_id,org_row_no FROM tmd_mdl_inptdrftrowm
+            WHERE drft_id=? AND inpt_tbl_id=? AND org_row_no BETWEEN ? AND ? ORDER BY org_row_no
+            """,(rs,n)->new RowIdentity(rs.getLong(1),rs.getString(2),rs.getInt(3),null,null),draft,table,first,last);
+    }
+    public List<Revision> revisions(String draftId) {
+        return jdbc.query("""
+            SELECT r.*,p.prcs_type_cd,p.prcs_stat_cd,p.json_rvsn_no AS op_schema,
+                p.base_rvsn_no AS op_base,p.req_json,p.rslt_json,p.del_yn AS op_deleted
+            FROM tmd_mdl_inptdrftrvsnl r LEFT JOIN tmd_mdl_inptdrftprcsl p
+                ON p.drft_id=r.drft_id AND p.prcs_id=r.prcs_id
+            WHERE r.drft_id=? ORDER BY r.rvsn_no
+            """,(rs,n)->{
+                if(!"N".equals(rs.getString("del_yn"))||(rs.getString("prcs_id")!=null&&!"N".equals(rs.getString("op_deleted"))))throw InputDraftException.internal();
+                return new Revision(rs.getLong("rvsn_no"),rs.getObject("base_rvsn_no",Long.class),rs.getString("prcs_id"),rs.getInt("json_rvsn_no"),rs.getString("dlta_json"),
+                    rs.getString("prcs_type_cd"),rs.getString("prcs_stat_cd"),rs.getInt("op_schema"),rs.getObject("op_base",Long.class),rs.getString("req_json"),rs.getString("rslt_json"));
+            },draftId);
+    }
+    /** 물리 행만 읽는다. 공유 Draft는 변경된 원본/추가 행만 반환하므로 논리 행은 {@link #logicalRows(Draft)}를 사용한다. */
+    public List<RowIdentity> physicalRowIdentities(String draftId) {
+        return jdbc.query("SELECT inpt_tbl_id,row_id,org_row_no,prcs_id,clnt_row_id,file_rvsn_no,del_yn FROM tmd_mdl_inptdrftrowm WHERE drft_id=? ORDER BY inpt_tbl_id,row_id",(rs,n)->{
+            if(!"N".equals(rs.getString("del_yn")))throw InputDraftException.internal();
+            return new RowIdentity(rs.getLong("inpt_tbl_id"),rs.getString("row_id"),rs.getObject("org_row_no",Integer.class),rs.getString("prcs_id"),rs.getString("clnt_row_id"),rs.getLong("file_rvsn_no"));
+        },draftId);
+    }
+    public ModelInputBaselineRows.Snapshot logicalRows(Draft draft) {
+        var identities=physicalRowIdentities(draft.id());var positions=physicalRowPositions(draft.id());
+        return draft.baselineId()==null?new ModelInputBaselineRows.Snapshot(identities,positions)
+            :ModelInputBaselineRows.merge(draft,baselineRows(draft,null,null,null),identities,positions);
+    }
+    /** 물리 위치만 읽는다. 공유 Draft의 가상 원본 위치는 포함하지 않는다. */
+    public List<RowPosition> physicalRowPositions(String draftId) {
+        return jdbc.query("SELECT inpt_tbl_id,row_id,bgn_rvsn_no,end_rvsn_no,row_no,del_yn FROM tmd_mdl_inptdrftrowh WHERE drft_id=? ORDER BY row_id,bgn_rvsn_no",(rs,n)->{
+            if(!"N".equals(rs.getString("del_yn")))throw InputDraftException.internal();
+            return new RowPosition(rs.getLong("inpt_tbl_id"),rs.getString("row_id"),rs.getLong("bgn_rvsn_no"),rs.getObject("end_rvsn_no",Long.class),rs.getObject("row_no",Integer.class));
+        },draftId);
+    }
+    /** 검증된 결과만 저장한다. 호출자는 같은 master transaction에서 payload/행 소속을 먼저 검사한다. */
+    public boolean completeChange(String draftId,String operationId,String token,String delta,String result,List<RowWrite> rows) {
+        return completeChange(draftId,operationId,token,delta,result,rows,null);
+    }
+    /** checkedRows는 호출자의 같은 잠금 transaction에서 검증한 변경 전 전체 snapshot이다. */
+    public boolean completeChange(String draftId,String operationId,String token,String delta,String result,List<RowWrite> rows,
+            ModelInputBaselineRows.Snapshot checkedRows) {
+        Operation op=lockRunningChange(draftId,operationId,token);
+        if(op==null)return false;
+        Draft current=lockDraft(draftId);
+        Map<String,RowIdentity> firstOriginals=sharedFirstWrites(current,rows,checkedRows);
+        long next=op.baseRevision()+1;
+        if(next>9007199254740991L)throw InputDraftException.internal();
+        jdbc.update("""
+            INSERT INTO tmd_mdl_inptdrftrvsnl(drft_id,rvsn_no,json_rvsn_no,base_rvsn_no,prcs_id,dlta_json,crt_usr_logn_id,mod_usr_logn_id)
+            VALUES(?,?,2,?,?,?,?,?)
+            """,draftId,next,op.baseRevision(),op.id(),delta,op.actor(),op.actor());
+        for(RowWrite row:rows)if(row.added())jdbc.update("""
+            INSERT INTO tmd_mdl_inptdrftrowm(row_id,drft_id,inpt_tbl_id,prcs_id,clnt_row_id,crt_usr_logn_id,mod_usr_logn_id)
+            VALUES(?,?,?,?,?,?,?)
+            """,row.id(),draftId,row.table(),op.id(),row.client(),op.actor(),op.actor());
+        for(RowIdentity row:firstOriginals.values()) {
+            jdbc.update("INSERT INTO tmd_mdl_inptdrftrowm(row_id,drft_id,inpt_tbl_id,org_row_no,crt_usr_logn_id,mod_usr_logn_id) VALUES(?,?,?,?,?,?)",
+                row.id(),draftId,row.table(),row.original(),op.actor(),op.actor());
+            jdbc.update("INSERT INTO tmd_mdl_inptdrftrowh(row_id,bgn_rvsn_no,end_rvsn_no,drft_id,inpt_tbl_id,row_no,crt_usr_logn_id,mod_usr_logn_id) VALUES(?,0,?,?,?,?,?,?)",
+                row.id(),next,draftId,row.table(),row.original(),op.actor(),op.actor());
+        }
+        // 위치 교환/이동은 모든 이전 current를 닫은 뒤 새 위치를 넣어 generated UK를 지킨다.
+        for(RowWrite row:rows)if(row.added())jdbc.update("UPDATE tmd_mdl_inptdrftrowm SET file_rvsn_no=COALESCE((SELECT u.file_rvsn_no FROM tmd_mdl_inptdrftfiled f JOIN tmd_mdl_inptupldfiled u ON u.upld_file_id=f.upld_file_id JOIN tmd_mdl_inpttbld t ON t.inpt_tbl_id=? JOIN tmd_mdl_inptshtd sh ON sh.inpt_sht_id=t.inpt_sht_id JOIN tmd_mdl_inptfiled tf ON tf.inpt_file_id=sh.inpt_file_id AND tf.mdl_file_cd=f.mdl_file_cd WHERE f.drft_id=?),0) WHERE row_id=?",row.table(),draftId,row.id());
+        for(RowWrite row:rows)if(!row.added()&&!firstOriginals.containsKey(row.id())) {
+            int changed=jdbc.update("UPDATE tmd_mdl_inptdrftrowh SET end_rvsn_no=?,mod_usr_logn_id=?,mod_dtm=CURRENT_TIMESTAMP WHERE drft_id=? AND inpt_tbl_id=? AND row_id=? AND end_rvsn_no IS NULL",next,op.actor(),draftId,row.table(),row.id());
+            if(changed!=1)throw InputDraftException.internal();
+        }
+        for(RowWrite row:rows)jdbc.update("""
+            INSERT INTO tmd_mdl_inptdrftrowh(row_id,bgn_rvsn_no,drft_id,inpt_tbl_id,row_no,crt_usr_logn_id,mod_usr_logn_id)
+            VALUES(?,?,?,?,?,?,?)
+            """,row.id(),next,draftId,row.table(),row.row(),op.actor(),op.actor());
+        int finished=jdbc.update("""
+            UPDATE tmd_mdl_inptdrftprcsl SET prcs_stat_cd='SUCCEEDED',rslt_json=?,end_dtm=CURRENT_TIMESTAMP(6),mod_dtm=CURRENT_TIMESTAMP,mod_usr_logn_id=?
+            WHERE drft_id=? AND prcs_id=? AND prcs_stat_cd='RUNNING' AND try_tokn=? AND expr_dtm>CURRENT_TIMESTAMP(6)
+            """,result,op.actor(),draftId,op.id(),token);
+        if(finished!=1)throw InputDraftException.internal(); // 늦은 완료는 위 INSERT까지 전부 rollback한다.
+        int advanced=jdbc.update("""
+            UPDATE tmd_mdl_inptdrftm SET rvsn_no=?,actv_prcs_id=NULL,mod_dtm=CURRENT_TIMESTAMP,mod_usr_logn_id=?
+            WHERE drft_id=? AND drft_stat_cd='DRAFT' AND rvsn_no=? AND actv_prcs_id=?
+            """,next,op.actor(),draftId,op.baseRevision(),op.id());
+        if(advanced!=1)throw InputDraftException.internal();
+        return true;
+    }
+    /** FK/UK에 보이지 않는 가상 원본까지 포함해 최종 위치를 검증한다. */
+    private Map<String,RowIdentity> sharedFirstWrites(Draft draft,List<RowWrite> writes,ModelInputBaselineRows.Snapshot checkedRows) {
+        if(draft.baselineId()==null||writes.isEmpty())return Map.of();
+        var snapshot=checkedRows==null?logicalRows(draft):checkedRows;
+        Map<String,RowIdentity> all=new LinkedHashMap<>();snapshot.identities().forEach(row->all.put(row.id(),row));
+        Map<String,RowPosition> active=new LinkedHashMap<>();
+        snapshot.positions().stream().filter(p->p.end()==null).forEach(p->active.put(p.id(),p));
+        java.util.Set<String> physical=new java.util.HashSet<>();physicalRowIdentities(draft.id()).forEach(row->physical.add(row.id()));
+        java.util.Set<String> changed=new java.util.HashSet<>();Map<String,RowIdentity> first=new LinkedHashMap<>();
+        for(RowWrite write:writes) {
+            if(!changed.add(write.id()))throw InputDraftException.internal();
+            RowIdentity old=all.get(write.id());
+            if(write.added()) {if(old!=null)throw InputDraftException.internal();}
+            else {
+                RowPosition before=active.get(write.id());
+                if(old==null||old.table()!=write.table()||before==null||before.row()==null)throw InputDraftException.internal();
+                if(!physical.contains(write.id()))first.put(write.id(),old);
+            }
+            active.put(write.id(),new RowPosition(write.table(),write.id(),draft.revision()+1,null,write.row()));
+        }
+        java.util.Set<String> occupied=new java.util.HashSet<>();
+        for(RowPosition row:active.values())if(row.row()!=null&&!occupied.add(row.table()+":"+row.row()))throw InputDraftException.internal();
+        return first;
+    }
+
+    public Operation expireChange(String draftId,String operationId,String failure) {
+        Draft draft=lockDraft(draftId);Operation op=operation(draftId,operationId,true);
+        if(!op.type().equals("CHANGE")||op.terminal()||databaseTime().isBefore(op.expires()))return op;
+        return failLocked(draft,op,failure);
+    }
+    /** 호출자가 해당 worker/시도의 종료를 확인한 경우에만 사용한다. 시작 때 전체 RUNNING을 실패로 바꾸지 않는다. */
+    public Operation failStoppedChange(String draftId,String operationId,String stoppedToken,String failure) {
+        Draft draft=lockDraft(draftId);Operation op=operation(draftId,operationId,true);
+        if(!op.type().equals("CHANGE")||!op.status().equals("RUNNING")||stoppedToken==null||!stoppedToken.equals(op.token()))return op;
+        return failLocked(draft,op,failure);
+    }
+    private Operation failLocked(Draft draft,Operation op,String failure) {
+        if(!op.id().equals(draft.activeOperation()))throw InputDraftException.internal();
+        jdbc.update("UPDATE tmd_mdl_inptdrftprcsl SET prcs_stat_cd='FAILED',fail_json=?,end_dtm=CURRENT_TIMESTAMP(6),mod_dtm=CURRENT_TIMESTAMP WHERE drft_id=? AND prcs_id=? AND prcs_stat_cd IN ('QUEUED','RUNNING')",failure,draft.id(),op.id());
+        int changed=jdbc.update("UPDATE tmd_mdl_inptdrftm SET actv_prcs_id=NULL,mod_usr_logn_id=?,mod_dtm=CURRENT_TIMESTAMP WHERE drft_id=? AND actv_prcs_id=?",op.actor(),draft.id(),op.id());
+        if(changed!=1)throw InputDraftException.internal();
+        return operation(draft.id(),op.id(),false);
     }
     public Map<String,Long> fixedFiles(String draft) {
         Map<String,Long> files=new LinkedHashMap<>();
         jdbc.query("SELECT mdl_file_cd,file_no FROM tmd_mdl_inptdrftfiled WHERE drft_id=? AND del_yn='N'",rs->{files.put(rs.getString(1),rs.getLong(2));},draft);
         return files;
     }
-    public List<RowRef> rows(String draft,long table) {
-        return jdbc.query("""
-            SELECT m.inpt_tbl_id,h.row_no,m.row_id FROM tmd_mdl_inptdrftrowm m
-            JOIN tmd_mdl_inptdrftrowh h ON h.row_id=m.row_id AND h.drft_id=m.drft_id AND h.inpt_tbl_id=m.inpt_tbl_id
-            WHERE m.drft_id=? AND m.inpt_tbl_id=? AND m.del_yn='N' AND h.del_yn='N' AND h.end_rvsn_no IS NULL AND h.row_no IS NOT NULL ORDER BY h.row_no
-            """,(rs,n)->new RowRef(rs.getLong(1),rs.getInt(2),rs.getString(3)),draft,table);
+    public record Baseline(String id,int company,long caseId,long templateId,String sourceVersion,int version,long rowCount) {}
+    private Baseline mapBaseline(java.sql.ResultSet rs,int ignored)throws SQLException {
+        if(!"N".equals(rs.getString("del_yn")))throw InputDraftException.internal();
+        return new Baseline(rs.getString("base_id"),rs.getInt("cust_cpny_no"),rs.getLong("org_case_id"),
+            rs.getLong("tmplt_id"),rs.getString("org_rvsn_val"),rs.getInt("base_ver_no"),rs.getLong("row_cnt"));
     }
+    public Baseline findBaseline(int company,long caseId,long template,String version) {
+        return jdbc.query("SELECT * FROM tmd_mdl_inptbasem WHERE cust_cpny_no=? AND org_case_id=? AND tmplt_id=? AND org_rvsn_val=? AND base_ver_no=1",
+            this::mapBaseline,company,caseId,template,version).stream().findFirst().orElse(null);
+    }
+    public Baseline baseline(Draft draft) {
+        if(draft.baselineId()==null)return null;
+        if(draft.uploaded())throw InputDraftException.internal();
+        Baseline base=jdbc.query("SELECT * FROM tmd_mdl_inptbasem WHERE base_id=?",this::mapBaseline,draft.baselineId())
+            .stream().findFirst().orElseThrow(InputDraftException::internal);
+        if(base.company()!=draft.company()||base.caseId()!=draft.caseId()||base.templateId()!=draft.templateId()
+            ||!base.sourceVersion().equals(draft.sourceVersion()))throw InputDraftException.internal();
+        if(base.version()!=1)throw InputDraftException.conflict("POLICY_UNSUPPORTED",draft.revision());
+        return base;
+    }
+    /** 공유 Draft의 고정 기준을 현재 원본과 대조한다. 기존 형식 Draft는 대조할 기준이 없다. */
+    public void validateDraftBaseline(Draft draft,List<FileRef> files,List<InitialRowRange> ranges) {
+        if(draft.baselineId()!=null)validateBaseline(baseline(draft),files,ranges);
+    }
+    /** 완성 기준만 공개한다. 호출자는 같은 master transaction의 Case lock을 유지한다. */
+    public Baseline createBaseline(int company,long caseId,Catalog catalog,String version,List<FileRef> files,
+            List<RowRef> rows,List<InitialRowRange> ranges,String actor) {
+        requireTransaction();
+        String id=UUID.randomUUID().toString();
+        jdbc.update("""
+            INSERT INTO tmd_mdl_inptbasem(base_id,cust_cpny_no,org_case_id,tmplt_id,org_rvsn_val,base_ver_no,row_cnt,crt_usr_logn_id,mod_usr_logn_id)
+            VALUES(?,?,?,?,?,1,?,?,?)
+            """,id,company,caseId,catalog.templateId(),version,rows.size(),actor,actor);
+        for(FileRef file:files)jdbc.update("""
+            INSERT INTO tmd_mdl_inptbasefiled(base_id,mdl_file_cd,file_no,obj_ref_val,crt_usr_logn_id,mod_usr_logn_id)
+            VALUES(?,?,?,?,?,?)
+            """,id,file.role(),file.fileNo(),file.location(),actor,actor);
+        for(int offset=0;offset<rows.size();offset+=ORIGINAL_ROW_INSERT_SIZE) {
+            List<RowRef> chunk=rows.subList(offset,Math.min(offset+ORIGINAL_ROW_INSERT_SIZE,rows.size()));
+            List<Object> args=new ArrayList<>();
+            for(RowRef row:chunk)Collections.addAll(args,id,row.table(),row.row(),actor,actor);
+            jdbc.update("INSERT INTO tmd_mdl_inptbaserowd(base_id,inpt_tbl_id,org_row_no,crt_usr_logn_id,mod_usr_logn_id) VALUES"
+                +String.join(",",Collections.nCopies(chunk.size(),"(?,?,?,?,?)")),args.toArray());
+        }
+        Baseline base=new Baseline(id,company,caseId,catalog.templateId(),version,1,rows.size());
+        validateBaseline(base,files,ranges);
+        return base;
+    }
+    public void validateBaseline(Baseline base,List<FileRef> files,List<InitialRowRange> ranges) {
+        if(base.version()!=1)throw InputDraftException.conflict("POLICY_UNSUPPORTED",null);
+        Map<String,FileRef> expected=new LinkedHashMap<>();
+        for(FileRef file:files) {
+            if(file.fileNo()==null||file.fileNo()<=0||file.location()==null||file.location().isBlank()
+                ||file.location().getBytes(java.nio.charset.StandardCharsets.UTF_8).length>16384
+                ||expected.putIfAbsent(file.role(),file)!=null)throw InputDraftException.internal();
+        }
+        if(!expected.keySet().equals(java.util.Set.of("DEMAND","SUPPLY","TRADE","OUTPUT"))
+            ||expected.values().stream().map(FileRef::fileNo).distinct().count()!=4)throw InputDraftException.internal();
+        var manifest=jdbc.query("SELECT mdl_file_cd,file_no,obj_ref_val,del_yn FROM tmd_mdl_inptbasefiled WHERE base_id=?",(rs,n)->{
+            FileRef file=expected.get(rs.getString(1));
+            if(!"N".equals(rs.getString(4))||file==null||file.fileNo()!=rs.getLong(2)||!file.location().equals(rs.getString(3)))
+                throw InputDraftException.internal();
+            return file.role();
+        },base.id());
+        if(manifest.size()!=4||!new java.util.HashSet<>(manifest).equals(expected.keySet()))throw InputDraftException.internal();
+        List<Object> args=new ArrayList<>();List<String> allowed=new ArrayList<>();
+        for(InitialRowRange range:ranges) {
+            allowed.add("(inpt_tbl_id=? AND org_row_no BETWEEN ? AND ?)");
+            Collections.addAll(args,range.table(),range.first(),range.last());
+        }
+        String body=allowed.isEmpty()?"1=0":String.join(" OR ",allowed);
+        args.add(base.id());
+        jdbc.query("SELECT COUNT(*),COALESCE(SUM(CASE WHEN del_yn<>'N' OR NOT ("+body+") THEN 1 ELSE 0 END),0) FROM tmd_mdl_inptbaserowd WHERE base_id=?",rs->{
+            if(!rs.next()||rs.getLong(1)!=base.rowCount()||rs.getLong(2)!=0)throw InputDraftException.internal();
+            return null;
+        },args.toArray());
+    }
+    public List<RowIdentity> baselineRows(Draft draft,Long table,Integer first,Integer last) {
+        Baseline base=baseline(draft);if(base==null)throw InputDraftException.internal();
+        String filter="";List<Object> args=new ArrayList<>();args.add(base.id());
+        if(table!=null) {
+            filter=" AND inpt_tbl_id=? AND org_row_no BETWEEN ? AND ?";
+            Collections.addAll(args,table,first,last);
+        }
+        List<RowIdentity> rows=jdbc.query("SELECT inpt_tbl_id,org_row_no,del_yn FROM tmd_mdl_inptbaserowd WHERE base_id=?"+filter+" ORDER BY inpt_tbl_id,org_row_no",(rs,n)->{
+            if(!"N".equals(rs.getString(3)))throw InputDraftException.internal();
+            long t=rs.getLong(1);int row=rs.getInt(2);
+            return new RowIdentity(t,ModelInputBaselineRows.id(draft.id(),base.id(),t,row),row,null,null);
+        },args.toArray());
+        if(table==null&&rows.size()!=base.rowCount())throw InputDraftException.internal();
+        return rows;
+    }
+    public Draft createShared(int company,int user,long caseId,Catalog catalog,String version,List<FileRef> files,Baseline base,String actor) {
+        requireTransaction();
+        if(base.company()!=company||base.caseId()!=caseId||base.templateId()!=catalog.templateId()||!base.sourceVersion().equals(version)||base.version()!=1)
+            throw InputDraftException.internal();
+        String id=UUID.randomUUID().toString();
+        jdbc.update("""
+            INSERT INTO tmd_mdl_inptdrftm(drft_id,cust_cpny_no,usr_no,org_case_id,tmplt_id,org_rvsn_val,drft_stat_cd,rvsn_no,base_id,crt_usr_logn_id,mod_usr_logn_id)
+            VALUES(?,?,?,?,?,?,'DRAFT',0,?,?,?)
+            """,id,company,user,caseId,catalog.templateId(),version,base.id(),actor,actor);
+        for(FileRef file:files)jdbc.update("INSERT INTO tmd_mdl_inptdrftfiled(drft_id,mdl_file_cd,file_no,crt_usr_logn_id,mod_usr_logn_id) VALUES(?,?,?,?,?)",id,file.role(),file.fileNo(),actor,actor);
+        jdbc.update("INSERT INTO tmd_mdl_inptdrftrvsnl(drft_id,rvsn_no,json_rvsn_no,crt_usr_logn_id,mod_usr_logn_id) VALUES(?,0,2,?,?)",id,actor,actor);
+        return owned(id,company,user);
+    }
+
     public Draft create(int company,int user,long caseId,Catalog catalog,String version,List<FileRef> files,List<RowRef> rows,String actor) {
         String id=UUID.randomUUID().toString();
         jdbc.update("""
@@ -108,11 +634,54 @@ public class ModelInputDraftRepository {
             VALUES(?,?,?,?,?,?,'DRAFT',0,?,?)
             """,id,company,user,caseId,catalog.templateId(),version,actor,actor);
         for(FileRef file:files) jdbc.update("INSERT INTO tmd_mdl_inptdrftfiled(drft_id,mdl_file_cd,file_no,crt_usr_logn_id,mod_usr_logn_id) VALUES(?,?,?,?,?)",id,file.role(),file.fileNo(),actor,actor);
-        jdbc.update("INSERT INTO tmd_mdl_inptdrftrvsnl(drft_id,rvsn_no,json_rvsn_no,crt_usr_logn_id,mod_usr_logn_id) VALUES(?,0,1,?,?)",id,actor,actor);
-        jdbc.batchUpdate("INSERT INTO tmd_mdl_inptdrftrowm(row_id,drft_id,inpt_tbl_id,org_row_no,crt_usr_logn_id,mod_usr_logn_id) VALUES(?,?,?,?,?,?)",rows,500,
-            (ps,row)->{ps.setString(1,row.id());ps.setString(2,id);ps.setLong(3,row.table());ps.setInt(4,row.row());ps.setString(5,actor);ps.setString(6,actor);});
-        jdbc.batchUpdate("INSERT INTO tmd_mdl_inptdrftrowh(row_id,bgn_rvsn_no,drft_id,inpt_tbl_id,row_no,crt_usr_logn_id,mod_usr_logn_id) VALUES(?,0,?,?,?,?,?)",rows,500,
-            (ps,row)->{ps.setString(1,row.id());ps.setString(2,id);ps.setLong(3,row.table());ps.setInt(4,row.row());ps.setString(5,actor);ps.setString(6,actor);});
+        jdbc.update("INSERT INTO tmd_mdl_inptdrftrvsnl(drft_id,rvsn_no,json_rvsn_no,crt_usr_logn_id,mod_usr_logn_id) VALUES(?,0,2,?,?)",id,actor,actor);
+        insertOriginalRows(id, rows, actor, "IDENTITY",
+            "INSERT INTO tmd_mdl_inptdrftrowm(row_id,drft_id,inpt_tbl_id,org_row_no,crt_usr_logn_id,mod_usr_logn_id) VALUES",
+            "(?,?,?,?,?,?)");
+        insertOriginalRows(id, rows, actor, "POSITION",
+            "INSERT INTO tmd_mdl_inptdrftrowh(row_id,bgn_rvsn_no,drft_id,inpt_tbl_id,row_no,crt_usr_logn_id,mod_usr_logn_id) VALUES",
+            "(?,0,?,?,?,?,?)");
         return owned(id,company,user);
+    }
+
+    /** 두 고정 INSERT만 사용한다. 행 값은 모두 바인딩하고 SQL 전송당 행 수를 제한한다. */
+    private void insertOriginalRows(String draft, List<RowRef> rows, String actor, String phase, String statement, String tuple) {
+        for (int offset = 0; offset < rows.size(); offset += ORIGINAL_ROW_INSERT_SIZE) {
+            List<RowRef> chunk = rows.subList(offset, Math.min(offset + ORIGINAL_ROW_INSERT_SIZE, rows.size()));
+            String sql = statement + String.join(",", Collections.nCopies(chunk.size(), tuple));
+            int rowsBefore = offset;
+            long started = System.nanoTime();
+            jdbc.update(sql, ps -> {
+                int parameter = 1;
+                for (RowRef row : chunk) {
+                    ps.setString(parameter++, row.id());
+                    ps.setString(parameter++, draft);
+                    ps.setLong(parameter++, row.table());
+                    ps.setInt(parameter++, row.row());
+                    ps.setString(parameter++, actor);
+                    ps.setString(parameter++, actor);
+                }
+                if (rowsBefore == 0) {
+                    log.info("Input Draft row insert started phase={} connectionId={} totalRows={} chunkRows={}",
+                        phase, mysqlConnectionId(ps), rows.size(), chunk.size());
+                } else if (log.isDebugEnabled()) {
+                    log.debug("Input Draft row insert sending phase={} connectionId={} rowsBefore={} chunkRows={}",
+                        phase, mysqlConnectionId(ps), rowsBefore, chunk.size());
+                }
+            });
+            log.info("Input Draft row insert progress phase={} completedRows={} totalRows={} chunkMs={}",
+                phase, offset + chunk.size(), rows.size(), (System.nanoTime() - started) / 1_000_000);
+        }
+    }
+
+    /** 현재 statement의 물리 연결 번호만 읽는다. 진단용 unwrap 실패는 저장 흐름에 영향을 주지 않는다. */
+    private static Object mysqlConnectionId(java.sql.PreparedStatement statement) {
+        try {
+            var connection = statement.getConnection();
+            if (connection.isWrapperFor(com.mysql.cj.jdbc.JdbcConnection.class)) {
+                return connection.unwrap(com.mysql.cj.jdbc.JdbcConnection.class).getId();
+            }
+        } catch (SQLException | RuntimeException ignored) { /* 민감한 provider 메시지는 기록하지 않는다. */ }
+        return "UNKNOWN";
     }
 }

@@ -11,14 +11,22 @@ public final class InputDraftException extends RuntimeException {
     private final ResultCode.Error code;
     private final String reason;
     private final Long revision;
+    private java.util.List<Object> issues=java.util.List.of();
     private InputDraftException(HttpStatus status, ResultCode.Error code, String reason, Long revision) {
         super("입력 편집 요청을 처리할 수 없습니다.");
         this.status=status; this.code=code; this.reason=reason; this.revision=revision;
     }
     public static InputDraftException invalid() { return new InputDraftException(HttpStatus.BAD_REQUEST,ResultCode.Error.REQ_INVALID_PARAMETER,"INVALID_REQUEST",null); }
+    public static InputDraftException invalid(String path) {
+        var error=invalid();error.issues=java.util.List.of(java.util.Map.of("path",path,"reason","INVALID_REQUEST"));return error;
+    }
     public static InputDraftException json() { return new InputDraftException(HttpStatus.BAD_REQUEST,ResultCode.Error.REQ_INVALID_JSON,"INVALID_REQUEST",null); }
     public static InputDraftException missing() { return new InputDraftException(HttpStatus.NOT_FOUND,ResultCode.Error.RSC_NOT_FOUND,null,null); }
     public static InputDraftException conflict(String reason, Long revision) { return new InputDraftException(HttpStatus.CONFLICT,ResultCode.Error.BIZ_RULE_VIOLATION,reason,revision); }
+    public static InputDraftException validation(long revision,java.util.List<Object> issues) {
+        var error=new InputDraftException(HttpStatus.UNPROCESSABLE_ENTITY,ResultCode.Error.BIZ_RULE_VIOLATION,"VALIDATION_FAILED",revision);
+        error.issues=java.util.List.copyOf(issues);return error;
+    }
     public static InputDraftException large() { return new InputDraftException(HttpStatus.PAYLOAD_TOO_LARGE,ResultCode.Error.REQ_INVALID_PARAMETER,"PAYLOAD_TOO_LARGE",null); }
     public static InputDraftException responseLarge() { return new InputDraftException(HttpStatus.UNPROCESSABLE_ENTITY,ResultCode.Error.BIZ_RULE_VIOLATION,"RESPONSE_TOO_LARGE",null); }
     public static InputDraftException internal() { return new InputDraftException(HttpStatus.INTERNAL_SERVER_ERROR,ResultCode.Error.SYS_INTERNAL_ERROR,null,null); }

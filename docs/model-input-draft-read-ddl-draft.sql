@@ -44,9 +44,9 @@
 -- 3) qry_json과 ck01/ck06의 현재 존재·내용을 확인해 이미 적용된 ADD/DROP을 중복 실행하지 않는다.
 -- 4) 자동 계산 컬럼·NULL을 포함한 중복 방지·연결 제약·CHECK/JSON_VALID, transaction/lock 설정을 확인한다.
 --    max_allowed_packet과 연결 설정도 JSON 저장 한도에 맞는지 확인한다.
--- 5) 생성/수정자·시간 기록의 crt_*/mod_*와 reg_* 표준 차이, 길이·시간 정밀도/DB 시간 설정을 확정한다.
+-- 5) 사용자 채택 crt_*/mod_*·감사 DATETIME 정렬은 별도 증분 SQL을 따른다. 실제 길이/환경 시간대·외부 표준 확인은 DBA-04다.
 -- 6) 기준 Case103의 4역할 파일/유효 metadata·저장소 접근, Case-양식 연결·조회 정의와
---    mi.model-input.model-code의 실제 등록값을 확인한다. 이 파일에 production 등록 데이터는 없다.
+--    Case에 연결된 양식의 발행 상태와 실제 등록값을 확인한다. 이 파일에 production 등록 데이터는 없다.
 --    qry_json은 조회할 열/헤더/본문 등을 정하는 정보다. NULL 저장은 허용하지만 미완비면 API 조회는 거절된다.
 --    새 DRAFT 발행에서 준비하며 기존 ACTIVE/DEPRECATED 정의나 Case 연결을 덮어쓰지 않는다.
 -- 7) 위 결과를 반영한 적용 대상 구간·실행 권한·수동 적용/검증·복구 순서를 사용자/DBA가 검토한다.
@@ -71,7 +71,8 @@ WHERE table_schema=DATABASE() AND table_name IN
  'tmd_mdl_scnrcasetmpltd','tmd_mdl_inptdrftm','tmd_mdl_inptdrftfiled',
  'tmd_mdl_inptdrftrvsnl','tmd_mdl_inptdrftrowm','tmd_mdl_inptdrftrowh');
 -- Also review SHOW CREATE TABLE for existing rows above. Existing IDs must fit Java positive Long/Integer usages.
--- crt_* follows current BaseEntity. Resolve the reg_* standard exception before apply.
+-- crt_*/mod_* names and DATETIME audit precision follow the user decision (2026-10-19).
+-- Existing tables: use model-input-audit-precision-ddl-draft.sql; do not rerun CREATE.
 
 -- 2. EXISTING CATALOG DESIGN: only create missing catalog set after pre-check.
 -- B. 기존 설계6개: 실제 DB에 없는 table만 아래 순서로 생성. 이미 있으면 해당 CREATE와 INDEX를 건너뛴다.
@@ -79,10 +80,10 @@ CREATE TABLE tmd_mdl_inpttmpltm
 (
     tmplt_id            INT UNSIGNED AUTO_INCREMENT COMMENT '입력템플릿ID' PRIMARY KEY,
     crt_usr_logn_id     VARCHAR(50) DEFAULT 'SYSTEM' NOT NULL COMMENT '생성사용자로그인ID',
-    crt_dtm             DATETIME(6) DEFAULT CURRENT_TIMESTAMP(6) NOT NULL COMMENT '생성일시',
+    crt_dtm             DATETIME DEFAULT CURRENT_TIMESTAMP NOT NULL COMMENT '생성일시',
     mod_usr_logn_id     VARCHAR(50) DEFAULT 'SYSTEM' NOT NULL COMMENT '수정사용자로그인ID',
-    mod_dtm             DATETIME(6) DEFAULT CURRENT_TIMESTAMP(6) NOT NULL
-                            ON UPDATE CURRENT_TIMESTAMP(6) COMMENT '수정일시',
+    mod_dtm             DATETIME DEFAULT CURRENT_TIMESTAMP NOT NULL
+                            ON UPDATE CURRENT_TIMESTAMP COMMENT '수정일시',
     del_yn              CHAR(1) DEFAULT 'N' NOT NULL COMMENT '삭제여부',
     mdl_spt_cd          VARCHAR(20) NOT NULL COMMENT '모델구분코드',
     tmplt_ver_no        SMALLINT UNSIGNED NOT NULL COMMENT '템플릿버전번호',
@@ -104,10 +105,10 @@ CREATE TABLE tmd_mdl_inptfiled
 (
     inpt_file_id        INT UNSIGNED AUTO_INCREMENT COMMENT '입력파일ID' PRIMARY KEY,
     crt_usr_logn_id     VARCHAR(50) DEFAULT 'SYSTEM' NOT NULL COMMENT '생성사용자로그인ID',
-    crt_dtm             DATETIME(6) DEFAULT CURRENT_TIMESTAMP(6) NOT NULL COMMENT '생성일시',
+    crt_dtm             DATETIME DEFAULT CURRENT_TIMESTAMP NOT NULL COMMENT '생성일시',
     mod_usr_logn_id     VARCHAR(50) DEFAULT 'SYSTEM' NOT NULL COMMENT '수정사용자로그인ID',
-    mod_dtm             DATETIME(6) DEFAULT CURRENT_TIMESTAMP(6) NOT NULL
-                            ON UPDATE CURRENT_TIMESTAMP(6) COMMENT '수정일시',
+    mod_dtm             DATETIME DEFAULT CURRENT_TIMESTAMP NOT NULL
+                            ON UPDATE CURRENT_TIMESTAMP COMMENT '수정일시',
     del_yn              CHAR(1) DEFAULT 'N' NOT NULL COMMENT '삭제여부',
     tmplt_id            INT UNSIGNED NOT NULL COMMENT '입력템플릿ID',
     mdl_file_cd         VARCHAR(20) NOT NULL COMMENT '모델파일코드 (DEMAND/SUPPLY/TRADE/OUTPUT)',
@@ -131,10 +132,10 @@ CREATE TABLE tmd_mdl_inptshtd
 (
     inpt_sht_id         INT UNSIGNED AUTO_INCREMENT COMMENT '입력시트ID' PRIMARY KEY,
     crt_usr_logn_id     VARCHAR(50) DEFAULT 'SYSTEM' NOT NULL COMMENT '생성사용자로그인ID',
-    crt_dtm             DATETIME(6) DEFAULT CURRENT_TIMESTAMP(6) NOT NULL COMMENT '생성일시',
+    crt_dtm             DATETIME DEFAULT CURRENT_TIMESTAMP NOT NULL COMMENT '생성일시',
     mod_usr_logn_id     VARCHAR(50) DEFAULT 'SYSTEM' NOT NULL COMMENT '수정사용자로그인ID',
-    mod_dtm             DATETIME(6) DEFAULT CURRENT_TIMESTAMP(6) NOT NULL
-                            ON UPDATE CURRENT_TIMESTAMP(6) COMMENT '수정일시',
+    mod_dtm             DATETIME DEFAULT CURRENT_TIMESTAMP NOT NULL
+                            ON UPDATE CURRENT_TIMESTAMP COMMENT '수정일시',
     del_yn              CHAR(1) DEFAULT 'N' NOT NULL COMMENT '삭제여부',
     inpt_file_id        INT UNSIGNED NOT NULL COMMENT '입력파일ID',
     sht_nm              VARCHAR(150) NOT NULL COMMENT '시트명',
@@ -153,10 +154,10 @@ CREATE TABLE tmd_mdl_inpttbld
 (
     inpt_tbl_id         INT UNSIGNED AUTO_INCREMENT COMMENT '입력테이블ID' PRIMARY KEY,
     crt_usr_logn_id     VARCHAR(50) DEFAULT 'SYSTEM' NOT NULL COMMENT '생성사용자로그인ID',
-    crt_dtm             DATETIME(6) DEFAULT CURRENT_TIMESTAMP(6) NOT NULL COMMENT '생성일시',
+    crt_dtm             DATETIME DEFAULT CURRENT_TIMESTAMP NOT NULL COMMENT '생성일시',
     mod_usr_logn_id     VARCHAR(50) DEFAULT 'SYSTEM' NOT NULL COMMENT '수정사용자로그인ID',
-    mod_dtm             DATETIME(6) DEFAULT CURRENT_TIMESTAMP(6) NOT NULL
-                            ON UPDATE CURRENT_TIMESTAMP(6) COMMENT '수정일시',
+    mod_dtm             DATETIME DEFAULT CURRENT_TIMESTAMP NOT NULL
+                            ON UPDATE CURRENT_TIMESTAMP COMMENT '수정일시',
     del_yn              CHAR(1) DEFAULT 'N' NOT NULL COMMENT '삭제여부',
     inpt_sht_id         INT UNSIGNED NOT NULL COMMENT '입력시트ID',
     inpt_tbl_nm         VARCHAR(100) NOT NULL COMMENT '입력테이블명',
@@ -190,10 +191,10 @@ CREATE TABLE tmd_mdl_inptmodscopd
 (
     mod_scop_id         INT UNSIGNED AUTO_INCREMENT COMMENT '수정범위ID' PRIMARY KEY,
     crt_usr_logn_id     VARCHAR(50) DEFAULT 'SYSTEM' NOT NULL COMMENT '생성사용자로그인ID',
-    crt_dtm             DATETIME(6) DEFAULT CURRENT_TIMESTAMP(6) NOT NULL COMMENT '생성일시',
+    crt_dtm             DATETIME DEFAULT CURRENT_TIMESTAMP NOT NULL COMMENT '생성일시',
     mod_usr_logn_id     VARCHAR(50) DEFAULT 'SYSTEM' NOT NULL COMMENT '수정사용자로그인ID',
-    mod_dtm             DATETIME(6) DEFAULT CURRENT_TIMESTAMP(6) NOT NULL
-                            ON UPDATE CURRENT_TIMESTAMP(6) COMMENT '수정일시',
+    mod_dtm             DATETIME DEFAULT CURRENT_TIMESTAMP NOT NULL
+                            ON UPDATE CURRENT_TIMESTAMP COMMENT '수정일시',
     del_yn              CHAR(1) DEFAULT 'N' NOT NULL COMMENT '삭제여부',
     inpt_tbl_id         INT UNSIGNED NOT NULL COMMENT '입력테이블ID',
     mod_scop_ord        SMALLINT UNSIGNED NOT NULL COMMENT '수정범위순서',
@@ -217,10 +218,10 @@ CREATE TABLE tmd_mdl_scnrcasetmpltd
 (
     case_id             INT UNSIGNED COMMENT '시나리오케이스ID' PRIMARY KEY,
     crt_usr_logn_id     VARCHAR(50) DEFAULT 'SYSTEM' NOT NULL COMMENT '생성사용자로그인ID',
-    crt_dtm             DATETIME(6) DEFAULT CURRENT_TIMESTAMP(6) NOT NULL COMMENT '생성일시',
+    crt_dtm             DATETIME DEFAULT CURRENT_TIMESTAMP NOT NULL COMMENT '생성일시',
     mod_usr_logn_id     VARCHAR(50) DEFAULT 'SYSTEM' NOT NULL COMMENT '수정사용자로그인ID',
-    mod_dtm             DATETIME(6) DEFAULT CURRENT_TIMESTAMP(6) NOT NULL
-                            ON UPDATE CURRENT_TIMESTAMP(6) COMMENT '수정일시',
+    mod_dtm             DATETIME DEFAULT CURRENT_TIMESTAMP NOT NULL
+                            ON UPDATE CURRENT_TIMESTAMP COMMENT '수정일시',
     del_yn              CHAR(1) DEFAULT 'N' NOT NULL COMMENT '삭제여부',
     tmplt_id            INT UNSIGNED NOT NULL COMMENT '입력템플릿ID',
     CONSTRAINT tmd_mdl_scnrcasetmpltd_fk01 FOREIGN KEY (case_id)
@@ -259,9 +260,9 @@ CREATE TABLE tmd_mdl_inptdrftm
 (
     drft_id CHAR(36) CHARACTER SET ascii COLLATE ascii_bin NOT NULL PRIMARY KEY,
     crt_usr_logn_id VARCHAR(50) NOT NULL DEFAULT 'SYSTEM',
-    crt_dtm DATETIME(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6),
+    crt_dtm DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
     mod_usr_logn_id VARCHAR(50) NOT NULL DEFAULT 'SYSTEM',
-    mod_dtm DATETIME(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6) ON UPDATE CURRENT_TIMESTAMP(6),
+    mod_dtm DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     del_yn CHAR(1) NOT NULL DEFAULT 'N',
     cust_cpny_no MEDIUMINT UNSIGNED NOT NULL,
     usr_no INT UNSIGNED NOT NULL,
@@ -294,9 +295,9 @@ CREATE TABLE tmd_mdl_inptdrftfiled
     drft_id CHAR(36) CHARACTER SET ascii COLLATE ascii_bin NOT NULL,
     mdl_file_cd VARCHAR(20) NOT NULL,
     crt_usr_logn_id VARCHAR(50) NOT NULL DEFAULT 'SYSTEM',
-    crt_dtm DATETIME(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6),
+    crt_dtm DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
     mod_usr_logn_id VARCHAR(50) NOT NULL DEFAULT 'SYSTEM',
-    mod_dtm DATETIME(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6) ON UPDATE CURRENT_TIMESTAMP(6),
+    mod_dtm DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     del_yn CHAR(1) NOT NULL DEFAULT 'N',
     file_no BIGINT UNSIGNED NOT NULL,
     PRIMARY KEY(drft_id,mdl_file_cd),
@@ -313,9 +314,9 @@ CREATE TABLE tmd_mdl_inptdrftrvsnl
     drft_id CHAR(36) CHARACTER SET ascii COLLATE ascii_bin NOT NULL,
     rvsn_no BIGINT UNSIGNED NOT NULL,
     crt_usr_logn_id VARCHAR(50) NOT NULL DEFAULT 'SYSTEM',
-    crt_dtm DATETIME(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6),
+    crt_dtm DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
     mod_usr_logn_id VARCHAR(50) NOT NULL DEFAULT 'SYSTEM',
-    mod_dtm DATETIME(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6) ON UPDATE CURRENT_TIMESTAMP(6),
+    mod_dtm DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     del_yn CHAR(1) NOT NULL DEFAULT 'N',
     json_rvsn_no SMALLINT UNSIGNED NOT NULL,
     base_rvsn_no BIGINT UNSIGNED NULL,
@@ -337,9 +338,9 @@ CREATE TABLE tmd_mdl_inptdrftrowm
 (
     row_id CHAR(36) CHARACTER SET ascii COLLATE ascii_bin NOT NULL PRIMARY KEY,
     crt_usr_logn_id VARCHAR(50) NOT NULL DEFAULT 'SYSTEM',
-    crt_dtm DATETIME(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6),
+    crt_dtm DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
     mod_usr_logn_id VARCHAR(50) NOT NULL DEFAULT 'SYSTEM',
-    mod_dtm DATETIME(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6) ON UPDATE CURRENT_TIMESTAMP(6),
+    mod_dtm DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     del_yn CHAR(1) NOT NULL DEFAULT 'N',
     drft_id CHAR(36) CHARACTER SET ascii COLLATE ascii_bin NOT NULL,
     inpt_tbl_id INT UNSIGNED NOT NULL,
@@ -362,9 +363,9 @@ CREATE TABLE tmd_mdl_inptdrftrowh
     row_id CHAR(36) CHARACTER SET ascii COLLATE ascii_bin NOT NULL,
     bgn_rvsn_no BIGINT UNSIGNED NOT NULL,
     crt_usr_logn_id VARCHAR(50) NOT NULL DEFAULT 'SYSTEM',
-    crt_dtm DATETIME(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6),
+    crt_dtm DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
     mod_usr_logn_id VARCHAR(50) NOT NULL DEFAULT 'SYSTEM',
-    mod_dtm DATETIME(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6) ON UPDATE CURRENT_TIMESTAMP(6),
+    mod_dtm DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     del_yn CHAR(1) NOT NULL DEFAULT 'N',
     drft_id CHAR(36) CHARACTER SET ascii COLLATE ascii_bin NOT NULL,
     inpt_tbl_id INT UNSIGNED NOT NULL,
