@@ -9,6 +9,9 @@ public record ModelSheetNode(
     String modelSheet,
 
     @Schema(description = "해당 시트에 속한 테이블명 목록", example = "[\"table1\"]")
-    List<String> tableNames
+    List<String> tableNames,
+
+    @Schema(description = "해당 시트에 속한 테이블 목록 (tableNames와 동일 순서, 화면 표시명 포함)")
+    List<ModelTableNode> tables
 ) {
 }

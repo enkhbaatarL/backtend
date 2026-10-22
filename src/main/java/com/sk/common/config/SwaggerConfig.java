@@ -51,7 +51,7 @@ public class SwaggerConfig {
     private static final String MCP_SECURITY_SCHEME = "McpBasicAuth";
 
     // note: 안정화 후 투머치 문서 모두 삭제예정
-    private static final String SW_VERSION_BASE = "v1.3.4";
+    private static final String SW_VERSION_BASE = "v1.3.5";
     private static final DateTimeFormatter SW_DEPLOY_DATE_FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
 
     // [MCP 인증] mcp.default-id 가 설정되어 있으면 X-User-Id 헤더를 선택으로 문서화
@@ -152,6 +152,18 @@ public class SwaggerConfig {
 
   ## 수정사항
   <details open>
+    <summary><strong>v1.3.5 (2026-10-22)</strong></summary>
+
+  - [Model Parameter Proposal]
+    - 파라미터 제안 결과/현재 상태 조회 API: 테이블 화면 표시명 `displayTableName` 추가 (카탈로그 매핑 불가 시 tableName 그대로)
+      - `modelFiles[].modelSheets[].tables[]` (`tableName`, `displayTableName`) 추가 — 기존 `tableNames`는 유지
+      - `parameterShapes[].displayTableName`, `modelFiles[].modelSheets[].modelTables[].displayTableName` 추가
+  - [Scenario Parameter Comparison] (태그 05-3)
+    - 시나리오 파라미터 비교 API: 위와 동일하게 `displayTableName` 추가
+
+  </details>
+
+  <details>
     <summary><strong>v1.3.4 (2026-10-21)</strong></summary>
 
   - [Scenario Parameter Comparison] (태그 05-3)

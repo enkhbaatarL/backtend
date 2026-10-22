@@ -21,6 +21,8 @@ import com.sk.domain.mi.service.nextgen.paramproposal.ModelParameterResponseProj
 import com.sk.domain.mi.service.nextgen.paramproposal.ModelParameterResponseProjector.InvalidParameterPayloadException;
 import com.sk.domain.mi.service.nextgen.paramproposal.ModelParameterTreeProjector;
 import com.sk.domain.mi.service.nextgen.paramproposal.ModelParameterTreeProjector.InvalidModelParameterTreeException;
+import com.sk.domain.mi.service.nextgen.paramproposal.ModelTableDisplayNameResolver;
+import com.sk.domain.mi.service.nextgen.paramproposal.ModelTableDisplayNameResolver.ModelTableKey;
 import com.sk.domain.mi.service.nextgen.paramproposal.excel.ModelInputFile;
 import com.sk.domain.mi.service.nextgen.query.ModelExecutionInputFilesProjector;
 import com.sk.domain.shared.client.ModelParamProposalAgentApi;
@@ -121,6 +123,7 @@ public class ModelParamProposalServiceImpl implements ModelParamProposalService 
     private final ModelExecutionInputFilesProjector modelExecutionInputFilesProjector;
     private final MiBaseInputSetResolver miBaseInputSetResolver;
     private final GroupMiBaseResolver groupMiBaseResolver;
+    private final ModelTableDisplayNameResolver modelTableDisplayNameResolver;
 
     @Override
     @Transactional(propagation = Propagation.NOT_SUPPORTED)
@@ -200,14 +203,15 @@ public class ModelParamProposalServiceImpl implements ModelParamProposalService 
             ));
 
         JsonNode parameters = resolveParameters(proposal);
+        List<ModelParamShape> parameterShapes = buildParameterShapes(parameters);
         return new ModelParamProposalRes(
             proposal.getModelParamProposalId(),
             proposal.getScenarioId(),
             proposal.getScenarioGroupId(),
             resolveDisplayStatus(preparation, proposal),
             parameters,
-            buildModelFiles(parameters),
-            buildParameterShapes(parameters),
+            buildModelFiles(parameters, parameterShapes),
+            parameterShapes,
             resolveFailureReason(proposal),
             preparation.getCreateDt(),
             resolveCompletedAt(proposal)
@@ -1087,7 +1091,7 @@ public class ModelParamProposalServiceImpl implements ModelParamProposalService 
         );
     }
 
-    private List<ModelFileNode> buildModelFiles(JsonNode parameters) {
+    private List<ModelFileNode> buildModelFiles(JsonNode parameters, List<ModelParamShape> parameterShapes) {
         Map<String, Map<String, Set<String>>> tree = new LinkedHashMap<>();
         if (parameters != null && parameters.isArray()) {
             for (JsonNode parameter : parameters) {
@@ -1109,11 +1113,25 @@ public class ModelParamProposalServiceImpl implements ModelParamProposalService 
                 }
             }
         }
+        // 표시명은 마스터 기준으로 해석된 parameterShapes에서 가져온다 (추가 조회 없음)
+        Map<ModelTableKey, String> displayTableNames = ModelTableDisplayNameResolver.byTableFromShapes(parameterShapes);
         return tree.entrySet().stream()
             .map(fileEntry -> new ModelFileNode(
                 fileEntry.getKey(),
                 fileEntry.getValue().entrySet().stream()
-                    .map(sheetEntry -> new ModelSheetNode(sheetEntry.getKey(), List.copyOf(sheetEntry.getValue())))
+                    .map(sheetEntry -> new ModelSheetNode(
+                        sheetEntry.getKey(),
+                        List.copyOf(sheetEntry.getValue()),
+                        sheetEntry.getValue().stream()
+                            .map(tableName -> new ModelTableNode(
+                                tableName,
+                                ModelTableDisplayNameResolver.displayTableNameOrDefault(
+                                    displayTableNames,
+                                    new ModelTableKey(fileEntry.getKey(), sheetEntry.getKey(), tableName)
+                                )
+                            ))
+                            .toList()
+                    ))
                     .toList()
             ))
             .toList();
@@ -1142,10 +1160,17 @@ public class ModelParamProposalServiceImpl implements ModelParamProposalService 
         Map<String, MiModelParam> masterByName = miModelParamRepository
             .findByParameterNameInAndIsDeletedFalse(paramByName.keySet()).stream()
             .collect(Collectors.toMap(MiModelParam::getParameterName, Function.identity(), (first, second) -> first));
+        Map<Long, String> displayTableNames = modelTableDisplayNameResolver.resolveByModelParamId(masterByName.values());
         return paramByName.entrySet().stream()
             .map(entry -> {
                 MiModelParam master = masterByName.get(entry.getKey());
-                return master == null ? null : toModelParamShape(master, entry.getValue());
+                return master == null
+                    ? null
+                    : toModelParamShape(
+                        master,
+                        entry.getValue(),
+                        ModelTableDisplayNameResolver.displayTableNameOrDefault(displayTableNames, master)
+                    );
             })
             .filter(Objects::nonNull)
             .toList();
@@ -1171,7 +1196,7 @@ public class ModelParamProposalServiceImpl implements ModelParamProposalService 
         return values;
     }
 
-    private ModelParamShape toModelParamShape(MiModelParam master, JsonNode parameter) {
+    private ModelParamShape toModelParamShape(MiModelParam master, JsonNode parameter, String displayTableName) {
         List<String> slotAxes = extractStringArray(parameter, "slotAxesFieldNames");
         List<String> valueFields = extractStringArray(parameter, "valueFieldNames");
         Set<String> slotAxisNames = slotAxes.stream()
@@ -1188,6 +1213,7 @@ public class ModelParamProposalServiceImpl implements ModelParamProposalService 
             master.getModelFile(),
             master.getModelSheet(),
             master.getModelTable(),
+            displayTableName,
             master.getBasecaseReadMode(),
             columns,
             master.getSemanticAxes()
