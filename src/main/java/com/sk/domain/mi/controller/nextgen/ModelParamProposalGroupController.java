@@ -163,6 +163,12 @@ public class ModelParamProposalGroupController {
             완료(제안 보유 — currentState가 PROPOSAL_READY/CONFIRMED_PENDING_EXECUTION/EXECUTING/EXECUTED_CONFIRMED/EXECUTION_FAILED) 시나리오들의 파라미터를 slot 축 기준으로 행 병합한 비교 그리드를 조회합니다.
             미제안 셀은 null이므로 화면에서 "-" 또는 공백으로 표시하세요. basecaseValue(MI Base)는 행별로 처음 발견된 non-null 기준값이며 없으면 null입니다.
             modelTarget/parameterShapes/modelFiles는 단건 제안 조회와 같은 구조·위치입니다. 완료 시나리오가 없으면 scenarios/parameters가 빈 배열입니다.
+
+            ### 테이블 화면 표시명 (displayTableName)
+            - 테이블 탭 라벨은 `modelFiles[].modelSheets[].tables[].displayTableName`을 사용하세요 (예: table4 → Suez Canal Cost).
+            - `tableName`(table1 등)은 시스템 key이므로 parameters[].modelTarget.tableName과의 매칭·저장에만 사용하세요.
+            - 카탈로그에 표시명이 없거나 매핑할 수 없으면 `displayTableName`에 tableName이 그대로 내려갑니다 (null 없음).
+            - `parameterShapes[].displayTableName`도 동일한 규칙입니다. 기존 `tableNames`는 호환을 위해 유지됩니다.
             """
     )
     @ApiResponse(responseCode = "200", description = "조회 성공")

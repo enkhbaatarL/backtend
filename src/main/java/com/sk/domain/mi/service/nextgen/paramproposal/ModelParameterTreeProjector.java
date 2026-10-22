@@ -16,6 +16,7 @@ import com.sk.domain.mi.dto.response.nextgen.ModelParamColumn;
 import com.sk.domain.mi.dto.response.nextgen.ModelParamColumnKind;
 import com.sk.domain.mi.service.nextgen.paramproposal.ModelParamSlotAxisResolver.InvalidSlotAxisMetadataException;
 import com.sk.domain.mi.service.nextgen.paramproposal.ModelParameterResponseProjector.InvalidParameterPayloadException;
+import com.sk.domain.mi.service.nextgen.paramproposal.ModelTableDisplayNameResolver.ModelTableKey;
 import com.sk.domain.shared.entity.master.tmm.MiModelParam;
 import com.sk.domain.shared.enums.nextgen.BasecaseReadMode;
 import com.sk.domain.shared.repository.master.tmm.MiModelParamRepository;
@@ -44,6 +45,7 @@ public class ModelParameterTreeProjector {
     private final MiModelParamRepository miModelParamRepository;
     private final ModelParameterResponseProjector modelParameterResponseProjector;
     private final ModelParamSlotAxisResolver modelParamSlotAxisResolver;
+    private final ModelTableDisplayNameResolver modelTableDisplayNameResolver;
 
     public List<CurrentModelParamFileRes> project(String parameterJson) {
         return project(parameterJson, false);
@@ -61,8 +63,10 @@ public class ModelParameterTreeProjector {
         Map<String, List<MiModelParam>> mastersByName = loadMastersByName(parameters);
 
         Map<String, Map<String, Map<String, List<CurrentModelParamLeafRes>>>> tree = new LinkedHashMap<>();
+        Set<MiModelParam> usedMasters = new LinkedHashSet<>();
         for (CurrentModelParameterRes parameter : parameters) {
             MiModelParam master = requiredMaster(mastersByName, parameter);
+            usedMasters.add(master);
             CurrentModelParamTargetRes target = parameter.modelTarget();
             validateCoordinates(target, master);
 
@@ -89,7 +93,8 @@ public class ModelParameterTreeProjector {
                 .add(leaf);
         }
 
-        return toResponseTree(tree);
+        // validateCoordinates로 target 좌표 == 마스터 좌표가 보장되므로 마스터 기준 키로 표시명을 찾는다
+        return toResponseTree(tree, modelTableDisplayNameResolver.resolveByTable(usedMasters));
     }
 
     private List<CurrentModelParameterRes> parseParameters(String json, boolean allowEmpty) {
@@ -319,7 +324,8 @@ public class ModelParameterTreeProjector {
     }
 
     private List<CurrentModelParamFileRes> toResponseTree(
-        Map<String, Map<String, Map<String, List<CurrentModelParamLeafRes>>>> tree
+        Map<String, Map<String, Map<String, List<CurrentModelParamLeafRes>>>> tree,
+        Map<ModelTableKey, String> displayTableNames
     ) {
         return tree.entrySet().stream()
             .map(fileEntry -> new CurrentModelParamFileRes(
@@ -330,6 +336,10 @@ public class ModelParameterTreeProjector {
                         sheetEntry.getValue().entrySet().stream()
                             .map(tableEntry -> new CurrentModelParamTableRes(
                                 tableEntry.getKey(),
+                                ModelTableDisplayNameResolver.displayTableNameOrDefault(
+                                    displayTableNames,
+                                    new ModelTableKey(fileEntry.getKey(), sheetEntry.getKey(), tableEntry.getKey())
+                                ),
                                 List.copyOf(tableEntry.getValue())
                             ))
                             .toList()

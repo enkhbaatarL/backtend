@@ -12,6 +12,8 @@ import com.sk.domain.mi.dto.response.nextgen.ModelFileNode;
 import com.sk.domain.mi.dto.response.nextgen.ModelParamProposalRes;
 import com.sk.domain.mi.dto.response.nextgen.ModelParamShape;
 import com.sk.domain.mi.dto.response.nextgen.ModelSheetNode;
+import com.sk.domain.mi.dto.response.nextgen.ModelTableNode;
+import com.sk.domain.mi.service.nextgen.paramproposal.ModelTableDisplayNameResolver.ModelTableKey;
 import com.sk.domain.shared.entity.master.tmm.MiScenario;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
@@ -72,7 +74,7 @@ public class ModelParamCompareMerger {
             scenarios,
             parameterResults,
             List.copyOf(shapesByName.values()),
-            toModelFiles(fileTree)
+            toModelFiles(fileTree, ModelTableDisplayNameResolver.byTableFromShapes(shapesByName.values()))
         );
     }
 
@@ -217,12 +219,27 @@ public class ModelParamCompareMerger {
         }
     }
 
-    private List<ModelFileNode> toModelFiles(Map<String, Map<String, Set<String>>> fileTree) {
+    private List<ModelFileNode> toModelFiles(
+        Map<String, Map<String, Set<String>>> fileTree,
+        Map<ModelTableKey, String> displayTableNames
+    ) {
         return fileTree.entrySet().stream()
             .map(fileEntry -> new ModelFileNode(
                 fileEntry.getKey(),
                 fileEntry.getValue().entrySet().stream()
-                    .map(sheetEntry -> new ModelSheetNode(sheetEntry.getKey(), List.copyOf(sheetEntry.getValue())))
+                    .map(sheetEntry -> new ModelSheetNode(
+                        sheetEntry.getKey(),
+                        List.copyOf(sheetEntry.getValue()),
+                        sheetEntry.getValue().stream()
+                            .map(tableName -> new ModelTableNode(
+                                tableName,
+                                ModelTableDisplayNameResolver.displayTableNameOrDefault(
+                                    displayTableNames,
+                                    new ModelTableKey(fileEntry.getKey(), sheetEntry.getKey(), tableName)
+                                )
+                            ))
+                            .toList()
+                    ))
                     .toList()
             ))
             .toList();

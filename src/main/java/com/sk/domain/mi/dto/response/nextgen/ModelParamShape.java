@@ -24,6 +24,9 @@ public record ModelParamShape(
     @Schema(description = "모델 시트 내 테이블명", example = "table1")
     String modelTable,
 
+    @Schema(description = "테이블 화면 표시명 (카탈로그 매핑 불가 시 modelTable 그대로)", example = "Annual Power Mix Adjustment")
+    String displayTableName,
+
     @Schema(
         description = "표 렌더링 방식. FIXED_COLUMNS=행 단위로 값이 배치된 형태, "
             + "MATRIX_TIME_COLUMNS=월별 값이 열 방향으로 배치된 형태",
