@@ -74,8 +74,9 @@ Base path: `/api/v1/mi/fundamental-model`
 | UP-02 | POST | `/input-upload-drafts/{draftId}/files` | 같은 multipart → 후속 파일 추가/확인한 교체 |
 | UP-03 | GET | `/input-upload-requests/{operationId}` | 최초 초안 생성 전에도 작업 상태 조회 가능 |
 | UP-04 | POST | `/input-upload-drafts/{draftId}/discard` | JSON `{baseRevision,discardConfirmed:true}` → DISCARDED 구조 |
+| UP-05 | POST | `/input-upload-requests/{operationId}/discard` | 첫 검증 중 draftId가 없을 때 본문 없이 취소 → `{operationId,draftId,discarded:true}` |
 
-위12개는 [현재 Controller][be-controller]의 실제 경로다. 비동기 POST는 신규/진행 중 동일 요청202, 종료된 동일 요청 재전송200이며 GET은 실패 작업도200이다. EDT-01·UP-04는 성공200이다. 성공 여부는 최상위 boolean과 작업 `data.status`를 구분한다.
+위13개는 [현재 Controller][be-controller]의 실제 경로다. 비동기 POST는 신규/진행 중 동일 요청202, 종료된 동일 요청 재전송200이며 GET은 실패 작업도200이다. EDT-01·UP-04·UP-05는 성공200이다. 성공 여부는 최상위 boolean과 작업 `data.status`를 구분한다.
 
 기존 API 연결:
 
@@ -270,7 +271,7 @@ UP-02 추가/교체는 현재 Draft의 baseRevision이 필수다. 이미 같은 
 - FAILED 재시도는 새 requestId를 만들고 후속 요청의 현재 baseRevision을 다시 받는다. 검증 불일치 시 새 Case나 파일 연결을 만들지 않으며 기존 역할 교체도 확정하지 않는다.
 - 업로드 처리 상한은 파일 전송 후 접수부터 대기열 포함600초다. `statusEndpoint`를2초 간격으로 조회하고 `SUCCEEDED` 또는 `FAILED`에서 멈춘다. TIMEOUT은 서버의 종료 결과로 확인하며 FE 대기시간만으로 실패를 확정하거나 새 작업을 만들지 않는다. 실제 대용량 성능 보장으로 해석하지 않는다.
 
-작성 전체 취소는 진행 작업이 없고 사용자 확인을 받은 뒤 UP-04로 보낸다.
+다른 실행건을 선택할 때 현재 Draft가 있으면 UP-04를 호출한다. 진행 중인 후속 파일 업로드도 `FAILED/DISCARDED_BY_USER`로 끝난다. 첫 파일 검증 중이라 `draftId`가 없으면 `POST /input-upload-requests/{operationId}/discard`를 본인 `operationId`로 호출한다(본문 없음). 성공200의 data는 `{operationId,draftId,discarded:true}`이고 draftId는 검증 성공과 경합해 초안이 생성된 경우에만 채워진다. 과거 operationId로 새 작성은 취소하지 않는다. 파일 전송 중 아직 operationId를 받지 못했다면 FE는 해당 전송을 중단하고, 접수 응답을 받았으면 그 operationId를 취소한다.
 
 ```json
 {

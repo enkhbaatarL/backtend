@@ -53,6 +53,9 @@ public class ModelInputDraftController {
             schema=@Schema(type="string",format="binary")) java.util.List<String> file,UploadMetadata metadata) {}
     public record DiscardRequest(@Schema(minimum="0",maximum="9007199254740991",requiredMode=Schema.RequiredMode.REQUIRED) long baseRevision,
         @Schema(allowableValues={"true"},requiredMode=Schema.RequiredMode.REQUIRED) boolean discardConfirmed) {}
+    @Schema(requiredProperties={"status","code","message","data"})
+    public record DiscardOperationEnvelope(boolean status,String code,String message,InputUploadService.DiscardedOperation data) {}
+
 
     @PostMapping(value="/input-upload-drafts",consumes=MediaType.MULTIPART_FORM_DATA_VALUE)
     @Operation(summary="입력 파일 묶음의 업로드 검증 접수",description="기존 Case 없이 xlsx/xlsm 1~4개를 같은 file part로 반복 전송하고 metadata는 application/json으로 한 번 보냅니다. 역할 중복은 실패하며 모든 파일의 검증/파싱이 성공한 경우에만 초안 하나를 revision0으로 생성합니다. 하나라도 실패하면 전체 실패로 초안을 만들지 않습니다. 같은 사용자는 직접 업로드 Case 하나만 작성하며 같은 requestId/동일 파일 집합은 순서가 달라도 기존 작업을 반환합니다. 파일당50MiB, 접수 후 전체 처리 기한600초입니다. statusEndpoint를2초 간격 조회하며 SUCCEEDED/FAILED에서 종료합니다. 성공 result.structure는 모든 성공 역할을, kind/selection은 DEMAND→SUPPLY→TRADE→OUTPUT 순서 중 업로드한 첫 역할/첫 표를 제공합니다. 성공 뒤 공통 Draft 조회/편집 API를 사용합니다.")
@@ -87,8 +90,16 @@ public class ModelInputDraftController {
     @ApiResponse(responseCode="404",description="RSC-001: 본인 업로드 작업 없음",content=@Content(schema=@Schema(implementation=ProblemEnvelope.class)))
     @RequiredPermissionRules(rules={@PermissionRule(role=Role.USER,conditions={PermissionCondition.SKGAS_COMPANY_USER_ONLY}),@PermissionRule(role=Role.ADMIN,conditions={PermissionCondition.THIRD_PARTY_ADMIN_ONLY})})
     public ResponseEntity<byte[]> uploadOperation(@PathVariable String operationId){return success(uploadService().operation(uuid(operationId)));}
+    @PostMapping("/input-upload-requests/{operationId}/discard")
+    @Operation(summary="초안 생성 전 첫 업로드 취소",description="다른 실행건으로 전환할 때 draftId가 아직 없는 첫 업로드의 operationId로 호출합니다. 본인 최초 작업이 QUEUED/RUNNING이면 FAILED/DISCARDED_BY_USER로 확정합니다. 검증 성공과 경합해 revision0 Draft가 생성됐으면 그 Draft도 폐기합니다. 이미 종료·폐기된 작업은 반복 호출해도 성공하며, 이후 편집된 Draft는 취소하지 않습니다. 현재 새 작업을 과거 operationId로 취소하지 않습니다. 파일·이력은 즉시 물리 삭제하지 않습니다.")
+    @ApiResponse(responseCode="200",description="작성 취소 완료. draftId는 초안이 생성되지 않았으면 null",content=@Content(schema=@Schema(implementation=DiscardOperationEnvelope.class),examples=@ExampleObject(value="{\"status\":true,\"code\":\"SUC-000\",\"message\":\"Success.\",\"data\":{\"operationId\":\"19ea2ef1-7a4c-4c01-b3be-de451e024234\",\"draftId\":null,\"discarded\":true}}")))
+    @ApiResponse(responseCode="400",description="REQ-003: 잘못된 operationId",content=@Content(schema=@Schema(implementation=ProblemEnvelope.class)))
+    @ApiResponse(responseCode="404",description="RSC-001: 본인 최초 업로드 작업 없음",content=@Content(schema=@Schema(implementation=ProblemEnvelope.class)))
+    @ApiResponse(responseCode="409",description="BIZ-001: 이후 편집/진행 작업 또는 현재 작성 충돌",content=@Content(schema=@Schema(implementation=ProblemEnvelope.class)))
+    @RequiredPermissionRules(rules={@PermissionRule(role=Role.USER,conditions={PermissionCondition.SKGAS_COMPANY_USER_ONLY}),@PermissionRule(role=Role.ADMIN,conditions={PermissionCondition.THIRD_PARTY_ADMIN_ONLY})})
+    public ResponseEntity<byte[]> discardFirstUpload(@Parameter(description="본인 최초 업로드 작업 ID",schema=@Schema(format="uuid")) @PathVariable String operationId){return success(uploadService().discardFirstOperation(uuid(operationId)));}
     @PostMapping(value="/input-upload-drafts/{draftId}/discard",consumes=MediaType.APPLICATION_JSON_VALUE)
-    @Operation(summary="확인한 현재 업로드 작성 취소",description="현재 파일·편집을 더 이상 이어가지 않는다는 확인 후 discardConfirmed:true와 baseRevision을 보냅니다. 진행 작업이 없을 때만 취소하고 현재 작성 제한을 해제합니다. 취소한 초안을 복구하거나 파일을 즉시 삭제하지 않습니다. 새 첫 파일은 취소 성공 후 별도 업로드하며 새 검증 실패도 이전 취소를 되돌리지 않습니다.")
+    @Operation(summary="확인한 현재 업로드 작성 취소",description="다른 실행건으로 전환할 때 현재 draftId와 baseRevision, discardConfirmed:true를 보냅니다. 진행 중인 파일 업로드는 FAILED/DISCARDED_BY_USER로 확정하고 Draft를 폐기해 현재 작성 제한을 해제합니다. 진행 중인 편집 저장·최종저장은 취소하지 않고409로 거절합니다. 첫 검증 중 draftId가 없으면 operationId 취소 API를 사용합니다. 파일·이력은 즉시 물리 삭제하지 않습니다.")
     @io.swagger.v3.oas.annotations.parameters.RequestBody(required=true,content=@Content(schema=@Schema(implementation=DiscardRequest.class)))
     @ApiResponse(responseCode="200",description="DISCARDED 상태의 공통 Draft 구조",content=@Content(schema=@Schema(implementation=StructureEnvelope.class)))
     @ApiResponse(responseCode="400",description="REQ-003: 확인/버전 오류",content=@Content(schema=@Schema(implementation=ProblemEnvelope.class)))

@@ -63,6 +63,10 @@ public class InputUploadService {
         @io.swagger.v3.oas.annotations.media.Schema(nullable=true,types={"object","null"},schemaResolution=io.swagger.v3.oas.annotations.media.Schema.SchemaResolution.INLINE) UploadFailure failure) {}
     @io.swagger.v3.oas.annotations.media.Schema(requiredProperties={"reason","currentRevision","issues"})
     public record UploadFailure(String reason,@io.swagger.v3.oas.annotations.media.Schema(nullable=true,types={"integer","null"}) Long currentRevision,List<UploadIssue> issues) {}
+    @io.swagger.v3.oas.annotations.media.Schema(requiredProperties={"operationId","draftId","discarded"})
+    public record DiscardedOperation(@io.swagger.v3.oas.annotations.media.Schema(format="uuid") String operationId,
+        @io.swagger.v3.oas.annotations.media.Schema(nullable=true,types={"string","null"},format="uuid") String draftId,
+        boolean discarded) {}
     @io.swagger.v3.oas.annotations.media.Schema(requiredProperties={"scope","kind","sheetName","tableId","cellRef","reason"})
     public record UploadIssue(@io.swagger.v3.oas.annotations.media.Schema(allowableValues={"FILE","SHEET","TABLE","HEADER"}) String scope,
         @io.swagger.v3.oas.annotations.media.Schema(nullable=true,types={"string","null"},allowableValues={"DEMAND","SUPPLY","TRADE","OUTPUT"}) String kind,
@@ -181,10 +185,35 @@ public class InputUploadService {
             uploads.lockSlot(actor.company(),actor.user(),actor.login());Draft current=common.lockOwned(draft,actor.company(),actor.user());
             if(!current.uploaded())throw InputDraftException.missing();if(current.status().equals("DISCARDED"))return null;
             if(!current.status().equals("DRAFT"))throw InputDraftException.conflict("DRAFT_NOT_EDITABLE",current.revision());
-            if(current.activeOperation()!=null)throw InputDraftException.conflict("DRAFT_BUSY",current.revision());
             if(current.revision()!=value.path("baseRevision").longValue())throw InputDraftException.conflict("REVISION_CONFLICT",current.revision());
+            if(current.activeOperation()!=null) {
+                Operation active=common.workerOperation(current.activeOperation());
+                if(!active.type().equals("UPLOAD_FILE")||!draft.equals(active.draftId())||active.terminal())throw InputDraftException.conflict("DRAFT_BUSY",current.revision());
+                uploads.fail(uploads.ownedOperation(active.id(),actor.company(),actor.user()),text(new Problem("DISCARDED_BY_USER",current.revision(),List.of())));
+            }
             uploads.discard(current);return null;
         });return drafts.structure(draft);
+    }
+    public DiscardedOperation discardFirstOperation(String id) {
+        uuid(id);var actor=drafts.actor();
+        return tx(()->{
+            var slot=uploads.lockSlot(actor.company(),actor.user(),actor.login());
+            Operation op=uploads.ownedOperation(id,actor.company(),actor.user());
+            if(!op.type().equals("UPLOAD_CREATE"))throw InputDraftException.missing();
+            if(op.status().equals("QUEUED")||op.status().equals("RUNNING")) {
+                if(!id.equals(slot.operation()))throw InputDraftException.conflict("UPLOAD_IN_PROGRESS",null);
+                uploads.fail(op,text(new Problem("DISCARDED_BY_USER",null,List.of())));
+                return new DiscardedOperation(id,null,true);
+            }
+            if(op.draftId()==null)return new DiscardedOperation(id,null,true);
+            Draft current=common.lockOwned(op.draftId(),actor.company(),actor.user());
+            if(current.status().equals("DISCARDED"))return new DiscardedOperation(id,current.id(),true);
+            if(!current.status().equals("DRAFT"))throw InputDraftException.conflict("DRAFT_NOT_EDITABLE",current.revision());
+            if(current.revision()!=0||!current.id().equals(slot.draft()))throw InputDraftException.conflict("REVISION_CONFLICT",current.revision());
+            if(current.activeOperation()!=null)throw InputDraftException.conflict("DRAFT_BUSY",current.revision());
+            uploads.discard(current);
+            return new DiscardedOperation(id,current.id(),true);
+        });
     }
     List<Operation> pending(){return enabled?uploads.pending():List.of();}
     void expireQueued(Operation observed) {
