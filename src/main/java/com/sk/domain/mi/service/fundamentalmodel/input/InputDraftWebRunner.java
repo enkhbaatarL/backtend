@@ -17,6 +17,9 @@ final class InputDraftWebRunner implements SmartLifecycle {
     private final InputDraftRunnerRepository state;
     private final InputDraftWebTasks tasks;
     private final InputTempFiles scratch;
+    private final String instance = UUID.randomUUID().toString();
+    private final String host = logValue(System.getenv("HOSTNAME"));
+    private final long pid = ProcessHandle.current().pid();
     private final Object control = new Object();
     private volatile InputDraftRunnerLease lease;
     private volatile Thread worker;
@@ -63,7 +66,7 @@ final class InputDraftWebRunner implements SmartLifecycle {
 
     private void run(InputDraftRunnerRepository.State recovery, String actor) {
         String execution = null;
-        boolean waitingReported = false;
+        String waitingReason = null;
         monitors = Executors.newScheduledThreadPool(2, work -> {
             Thread thread = new Thread(work, "input-draft-web-watch"); thread.setDaemon(true); return thread;
         });
@@ -73,12 +76,18 @@ final class InputDraftWebRunner implements SmartLifecycle {
         try {
             while (!stopping && execution == null) {
                 lease = locks.acquire();
+                if (lease == null && !"QUEUE_LOCK_HELD".equals(waitingReason)) {
+                    logWaiting("QUEUE_LOCK_HELD");
+                    waitingReason = "QUEUE_LOCK_HELD";
+                }
                 if (lease != null) {
                     requireLease();
                     execution = recovery == null ? state.activate() : state.approveRecovery(recovery, actor);
                     if (execution == null) {
-                        if (!waitingReported) log.warn("Model input runner waiting for confirmed consumer termination");
-                        waitingReported = true;
+                        if (!"PREVIOUS_CONSUMER_NOT_STOPPED".equals(waitingReason)) {
+                            logWaiting("PREVIOUS_CONSUMER_NOT_STOPPED");
+                            waitingReason = "PREVIOUS_CONSUMER_NOT_STOPPED";
+                        }
                         releaseLease();
                     }
                 }
@@ -88,7 +97,9 @@ final class InputDraftWebRunner implements SmartLifecycle {
                 }
             }
             if (execution == null) return;
-            log.info("Model input consumer started: execution={}", execution);
+            var observed = diagnostics();
+            log.info("Model input consumer started: execution={} instance={} host={} pid={} database={} lockOwnerConnectionId={} operations={}",
+                    execution, instance, host, pid, logValue(observed.database()), ownerConnection(observed), tasks.enabledOperations());
             recoverStopped(execution);
             if (recovery == null) {
                 while (!stopping) {
@@ -109,10 +120,11 @@ final class InputDraftWebRunner implements SmartLifecycle {
             }
             requireOwner(execution);
             state.stopped(execution);
-            log.info("Model input consumer stopped: execution={}", execution);
+            log.info("Model input consumer stopped: execution={} instance={} host={} pid={}", execution, instance, host, pid);
         } catch (Throwable failure) {
             blocked = true;
-            log.error("Model input runner held; actual termination and persisted state must be checked before recovery");
+            log.error("Model input runner held; actual termination and persisted state must be checked before recovery: execution={} instance={} host={} pid={} failureType={}",
+                    execution, instance, host, pid, failure.getClass().getSimpleName());
         } finally {
             monitors.shutdownNow();
             try { releaseLease(); }
@@ -120,6 +132,34 @@ final class InputDraftWebRunner implements SmartLifecycle {
             running = false;
             onStop.run();
         }
+    }
+
+    private void logWaiting(String reason) {
+        var observed = diagnostics();
+        var event = reason.equals("QUEUE_LOCK_HELD") ? log.atInfo() : log.atWarn();
+        event.log("Model input runner waiting: reason={} instance={} host={} pid={} database={} lockOwnerConnectionId={} persistedExecution={} persistedStatus={}",
+                reason, instance, host, pid, logValue(observed.database()), ownerConnection(observed),
+                logValue(observed.persistedExecution()), logValue(observed.persistedStatus()));
+    }
+
+    private InputDraftRunnerRepository.Diagnostics diagnostics() {
+        try { return state.diagnostics(); }
+        catch (RuntimeException failure) {
+            // 진단 실패의 메시지/SQL/자격값은 기록하지 않고 원래 소비 흐름을 계속한다.
+            log.warn("Model input runner diagnostics unavailable: instance={} host={} pid={} failureType={}",
+                    instance, host, pid, failure.getClass().getSimpleName());
+            return new InputDraftRunnerRepository.Diagnostics(null, null, null, null);
+        }
+    }
+
+    private static Object ownerConnection(InputDraftRunnerRepository.Diagnostics observed) {
+        return observed.lockOwnerConnectionId() == null ? "unknown" : observed.lockOwnerConnectionId();
+    }
+
+    private static String logValue(String value) {
+        if (value == null || value.isBlank()) return "unknown";
+        String bounded = value.substring(0, Math.min(value.length(), 128));
+        return bounded.replaceAll("[^a-zA-Z0-9_.:-]", "_");
     }
 
     private void recoverStopped(String execution) throws Exception {

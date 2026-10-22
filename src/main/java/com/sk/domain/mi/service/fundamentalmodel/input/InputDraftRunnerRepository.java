@@ -12,6 +12,7 @@ import org.springframework.transaction.support.TransactionTemplate;
 /** master queue의 소비자 수명. 행 누락/이전 ACTIVE는 자동 초기화하지 않는다. */
 final class InputDraftRunnerRepository {
     record State(String execution, String status, String operation, String token) {}
+    record Diagnostics(String database, Long lockOwnerConnectionId, String persistedExecution, String persistedStatus) {}
     private static final String ACTOR = "INPUT_WEB_RUNNER";
     private final JdbcTemplate sql;
     private final TransactionTemplate transaction;
@@ -26,6 +27,16 @@ final class InputDraftRunnerRepository {
     }
 
     State read() { return read(false); }
+
+    /** 로그용 관측값이다. 잠금 소유 확인이나 이전 작업 종료 판단에 사용하지 않는다. */
+    Diagnostics diagnostics() {
+        return sql.query("""
+            SELECT DATABASE(),IS_USED_LOCK(CONCAT('mi-input-draft:',DATABASE())),s.exec_id,s.exec_stat_cd
+            FROM (SELECT 1 AS probe_value) probe
+            LEFT JOIN tmd_mdl_inptexecm s ON s.exec_no=1 AND s.del_yn='N'
+            """, (rs, n) -> new Diagnostics(rs.getString(1), rs.getObject(2, Long.class),
+                rs.getString(3), rs.getString(4))).get(0);
+    }
 
     private State read(boolean lock) {
         return sql.query("SELECT exec_id,exec_stat_cd,prcs_id,try_tokn FROM tmd_mdl_inptexecm WHERE exec_no=1 AND del_yn='N'"

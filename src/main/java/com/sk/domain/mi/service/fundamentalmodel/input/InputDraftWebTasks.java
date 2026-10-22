@@ -35,6 +35,9 @@ final class InputDraftWebTasks {
     }
 
     LocalDateTime databaseTime() { return common.databaseTime(); }
+    String enabledOperations() {
+        return "UPLOAD" + (changesEnabled ? ",CHANGE" : "") + (finalizationEnabled ? ",FINALIZE" : "");
+    }
     Operation operation(String operation) { return common.workerOperation(operation); }
     List<Operation> stoppedOperations() { return common.stoppedWorkerOperations(); }
 
