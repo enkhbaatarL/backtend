@@ -8,6 +8,9 @@ public record CurrentModelParamTableRes(
     @Schema(description = "Agent parameter payload의 모델 테이블 좌표", example = "table1")
     String tableName,
 
+    @Schema(description = "테이블 화면 표시명 (카탈로그 매핑 불가 시 tableName 그대로)", example = "Annual Power Mix Adjustment")
+    String displayTableName,
+
     @Schema(description = "해당 테이블에 속한 parameter/rendering leaf", requiredMode = Schema.RequiredMode.REQUIRED)
     List<CurrentModelParamLeafRes> parameters
 ) {
