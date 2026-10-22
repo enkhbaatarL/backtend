@@ -15,7 +15,7 @@
   - [Delivery Plan](../design-docs/gas/mi-model-input-editing-delivery-plan.md) §6A·§7·§9
   - [OpenAPI 규칙](../conventions/openapi-documentation-conventions.md), [보안 정책](../../SECURITY.md)
 - supersedes: 없음. QRY-01/02와 기존 조회/업로드 범위를 대체하지 않는다.
-- last synced: 2026-10-21 (저장된 빈 ADDED 행 표시 §3.2 반영; 2026-10-20 모든 Draft 표의 마지막 데이터 행 표시 §3.2 반영; LiqProdAdjustment 신규 월 입력·입력 연월 기준 Period 계산·월 건너뛰기/중복 허용·새 열 fieldKey·임시 키/성공 대응 사용자 채택; 열 명령/기존 API 연결·headerValues 형식·LiqProd 월 삭제·같은 저장의 추가 후 삭제·성공 mapping 다섯 필드/상태·빈 배열 통일·삭제 키 미재사용/동일 요청 키 유지 채택; 열 동작 조회 metadata·LiqProd/LiqUtil 빈 본문/0 구분·editing.columnCreation 기존 표현 재사용·LNG Demand 새 연도 국가 입력·PMIInput·Base Case HDD/CDD/Temperature 새 연도 본문 빈칸/0 구분 채택; U1/U2 공통 정책 채택·사용자 필수 미결0건; FE 최종 JSON·구현 차이 §4~7/§10.2 반영; 열 저장 v2 단일 형식·Draft 초기화/배포 SQL은 DDL §6.9)
+- last synced: 2026-10-22 (EDT-05 상태 조회 비잠금/만료 정리 경합 정책 반영; 저장된 빈 ADDED 행 표시 §3.2 반영; 2026-10-20 모든 Draft 표의 마지막 데이터 행 표시 §3.2 반영; LiqProdAdjustment 신규 월 입력·입력 연월 기준 Period 계산·월 건너뛰기/중복 허용·새 열 fieldKey·임시 키/성공 대응 사용자 채택; 열 명령/기존 API 연결·headerValues 형식·LiqProd 월 삭제·같은 저장의 추가 후 삭제·성공 mapping 다섯 필드/상태·빈 배열 통일·삭제 키 미재사용/동일 요청 키 유지 채택; 열 동작 조회 metadata·LiqProd/LiqUtil 빈 본문/0 구분·editing.columnCreation 기존 표현 재사용·LNG Demand 새 연도 국가 입력·PMIInput·Base Case HDD/CDD/Temperature 새 연도 본문 빈칸/0 구분 채택; U1/U2 공통 정책 채택·사용자 필수 미결0건; FE 최종 JSON·구현 차이 §4~7/§10.2 반영; 열 저장 v2 단일 형식·Draft 초기화/배포 SQL은 DDL §6.9)
 - open questions: §10. 2026-10-16 공통 BE 채택과 이번 공통 저장·최종저장/복구 계약(§9) 마무리를 반영한다. 표별 정책·DBA 적용 준비/제품 검증은 별도 후속이며 PriceModel/Regas 추천은 미승인이다. 문서 전체는 Draft다.
 
 ## 1. 목표·이번 slice
@@ -260,6 +260,8 @@ worker는 접수 당시 서버가 확인한 actor/tenant/고정 기준을 전달
 | EDT-05 / 임시저장 처리 결과 조회 | `GET /input-drafts/{draftId}/change-requests/{operationId}` | 두 path UUID 필수 | 200 `OperationView`. 실패 작업도 조회 자체가 성공하면 HTTP200/SUC-000이며 data.status가 FAILED |
 | EDT-06 / Draft 최종저장 접수 | `POST /input-drafts/{draftId}/finalizations` | §9 FinalizationRequest | 신규/진행 중 재전송202, 종료 후 재전송200 FinalizationView. 접수는 Case 생성 완료가 아님 |
 | EDT-07 / 최종저장 결과 조회 | `GET /input-drafts/{draftId}/finalizations/{operationId}` | 두 path UUID 필수 | 200 FinalizationView. 실패 조회도 HTTP200/SUC-000, 성공 Case는 SUCCEEDED에만 |
+
+EDT-05는 소유권·원본 Case 접근을 확인한 뒤 마지막 DB 확정 상태를 비잠금 조회한다. 만료 전 또는 종료된 요청을 조회할 때 저장 transaction의 행 잠금을 기다리지 않는다. 만료된 진행 요청은 기존 잠금 순서로 대기 없는 잠금 획득을 시도해 TIMEOUT을 확정한다. 다른 transaction이 해당 잠금을 보유 중이면 현재 확정 상태를 반환하고 이후 조회/서버 처리에서 다시 확인한다. 잠금 경합이나 FE 시간 경과만으로 성공/실패를 만들어 반환하지 않으며, 만료 뒤 늦은 성공 차단·기존 원자성 규칙은 유지한다.
 
 공개 ID의 UUID는 소문자 하이픈 포함 36자, revision은 0 이상 정수(최대 9,007,199,254,740,991)로 채택했다. Case 기반 `sourceVersion`은 기존 `^sv1_[0-9a-f]{64}$`/68자다. 원본 Case가 없는 직접 업로드의 nullable 응답은 §3.2를 따른다. `tableId`는 기존 구조의 ID 그대로이며 `/`·공백은 query에서 URL 인코딩한다. 조사 T-083 등은 runtime tableId가 아니다.
 

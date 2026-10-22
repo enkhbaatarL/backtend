@@ -106,70 +106,80 @@ final class InputWorkbookXml {
 
     static void write(Path source, Path target, Map<String, SheetPatch> sheets, Map<String, PartPatch> metadata, Checkpoint checkpoint) throws Exception {
         if (Files.exists(target) && Files.isSameFile(source, target)) throw invalid();
-        InputDraftFinalizationFiles.validatePackage(source, checkpoint::check);
+        InputDraftDiagnostics.timedChecked(InputDraftDiagnostics.Stage.WORKBOOK_SOURCE_VALIDATE, null, () -> {
+            InputDraftFinalizationFiles.validatePackage(source, checkpoint::check); return null;
+        });
         Map<String, String> parts = sheetParts(source);
         if (!parts.keySet().containsAll(sheets.keySet())) throw invalid();
         Map<String, SheetPatch> patches = new HashMap<>();
         sheets.forEach((sheet, patch) -> patches.put(parts.get(sheet), patch));
         Map<String, String> hashes = new HashMap<>();
-        try (ZipFile zip = new ZipFile(source.toFile());
-                ZipOutputStream output = new ZipOutputStream(Files.newOutputStream(target))) {
-            output.setComment(zip.getComment());
-            for (String name : metadata.keySet()) if (zip.getEntry(name) == null) throw invalid();
-            var entries = zip.entries();
-            while (entries.hasMoreElements()) {
-                checkpoint.check();
-                ZipEntry entry = entries.nextElement();
-                SheetPatch patch = patches.get(entry.getName());
-                ZipEntry next;
-                PartPatch partPatch = metadata.get(entry.getName());
-                if (patch != null && partPatch != null) throw invalid();
-                if (patch == null && partPatch == null) {
-                    next = new ZipEntry(entry);
-                    if (next.getMethod() == ZipEntry.DEFLATED) next.setCompressedSize(-1);
-                } else {
-                    next = new ZipEntry(entry.getName());
-                    next.setTime(entry.getTime());
-                    next.setComment(entry.getComment());
-                    next.setExtra(entry.getExtra());
-                    next.setMethod(entry.getMethod());
-                    if (entry.getMethod() == ZipEntry.STORED) {
-                        // STORED는 entry를 열기 전에 크기/CRC가 필요하다. 파일 전체 buffer 대신 동일 plan을 한 번 순차 계산한다.
-                        var crc = new java.util.zip.CRC32(); long[] size = {0};
-                        var counter = new OutputStream() {
-                            @Override public void write(int value) { crc.update(value); size[0]++; }
-                            @Override public void write(byte[] bytes, int offset, int length) { crc.update(bytes, offset, length); size[0] += length; }
-                        };
-                        try (InputStream input = zip.getInputStream(entry)) {
-                            if (partPatch != null) partPatch.write(input, counter, checkpoint);
-                            else rewrite(input, counter, patch, checkpoint);
+        InputDraftDiagnostics.timedChecked(InputDraftDiagnostics.Stage.WORKBOOK_ZIP_WRITE, null, () -> {
+            try (ZipFile zip = new ZipFile(source.toFile());
+                    ZipOutputStream output = new ZipOutputStream(Files.newOutputStream(target))) {
+                output.setComment(zip.getComment());
+                for (String name : metadata.keySet()) if (zip.getEntry(name) == null) throw invalid();
+                var entries = zip.entries();
+                while (entries.hasMoreElements()) {
+                    checkpoint.check();
+                    ZipEntry entry = entries.nextElement();
+                    SheetPatch patch = patches.get(entry.getName());
+                    ZipEntry next;
+                    PartPatch partPatch = metadata.get(entry.getName());
+                    if (patch != null && partPatch != null) throw invalid();
+                    if (patch == null && partPatch == null) {
+                        next = new ZipEntry(entry);
+                        if (next.getMethod() == ZipEntry.DEFLATED) next.setCompressedSize(-1);
+                    } else {
+                        next = new ZipEntry(entry.getName());
+                        next.setTime(entry.getTime());
+                        next.setComment(entry.getComment());
+                        next.setExtra(entry.getExtra());
+                        next.setMethod(entry.getMethod());
+                        if (entry.getMethod() == ZipEntry.STORED) {
+                            // STORED는 entry를 열기 전에 크기/CRC가 필요하다. 파일 전체 buffer 대신 동일 plan을 한 번 순차 계산한다.
+                            var crc = new java.util.zip.CRC32(); long[] size = {0};
+                            var counter = new OutputStream() {
+                                @Override public void write(int value) { crc.update(value); size[0]++; }
+                                @Override public void write(byte[] bytes, int offset, int length) { crc.update(bytes, offset, length); size[0] += length; }
+                            };
+                            try (InputStream input = zip.getInputStream(entry)) {
+                                if (partPatch != null) partPatch.write(input, counter, checkpoint);
+                                else rewrite(input, counter, patch, checkpoint);
+                            }
+                            next.setSize(size[0]); next.setCompressedSize(size[0]); next.setCrc(crc.getValue());
                         }
-                        next.setSize(size[0]); next.setCompressedSize(size[0]); next.setCrc(crc.getValue());
+                    }
+                    output.putNextEntry(next);
+                    var digest = java.security.MessageDigest.getInstance("SHA-256");
+                    var sink = new java.security.DigestOutputStream(output, digest);
+                    try (InputStream input = zip.getInputStream(entry)) {
+                        if (partPatch != null) partPatch.write(input, sink, checkpoint);
+                        else if (patch == null) copy(input, sink, checkpoint);
+                        else rewrite(input, sink, patch, checkpoint);
+                    }
+                    hashes.put(entry.getName(), java.util.HexFormat.of().formatHex(digest.digest()));
+                    output.closeEntry();
+                }
+            }
+            return null;
+        });
+        // 게시 전에 저장된 package의 CRC/XML 및 실제 저장 bytes를 확인한다.
+        InputDraftDiagnostics.timedChecked(InputDraftDiagnostics.Stage.WORKBOOK_SAVED_VALIDATE, null, () -> {
+            InputDraftFinalizationFiles.validatePackage(target, checkpoint::check); return null;
+        });
+        InputDraftDiagnostics.timedChecked(InputDraftDiagnostics.Stage.WORKBOOK_PRESERVATION_VERIFY, null, () -> {
+            try (ZipFile saved = new ZipFile(target.toFile())) {
+                if (saved.size() != hashes.size()) throw invalid();
+                for (var expected : hashes.entrySet()) {
+                    checkpoint.check();
+                    try (InputStream input = saved.getInputStream(saved.getEntry(expected.getKey()))) {
+                        if (!expected.getValue().equals(InputDraftFinalizationFiles.digest(input, checkpoint::check))) throw invalid();
                     }
                 }
-                output.putNextEntry(next);
-                var digest = java.security.MessageDigest.getInstance("SHA-256");
-                var sink = new java.security.DigestOutputStream(output, digest);
-                try (InputStream input = zip.getInputStream(entry)) {
-                    if (partPatch != null) partPatch.write(input, sink, checkpoint);
-                    else if (patch == null) copy(input, sink, checkpoint);
-                    else rewrite(input, sink, patch, checkpoint);
-                }
-                hashes.put(entry.getName(), java.util.HexFormat.of().formatHex(digest.digest()));
-                output.closeEntry();
             }
-        }
-        // 게시 전에 저장된 package의 CRC/XML 및 실제 저장 bytes를 확인한다.
-        InputDraftFinalizationFiles.validatePackage(target, checkpoint::check);
-        try (ZipFile saved = new ZipFile(target.toFile())) {
-            if (saved.size() != hashes.size()) throw invalid();
-            for (var expected : hashes.entrySet()) {
-                checkpoint.check();
-                try (InputStream input = saved.getInputStream(saved.getEntry(expected.getKey()))) {
-                    if (!expected.getValue().equals(InputDraftFinalizationFiles.digest(input, checkpoint::check))) throw invalid();
-                }
-            }
-        }
+            return null;
+        });
     }
 
     private static void rewrite(InputStream input, OutputStream output, SheetPatch patch, Checkpoint checkpoint) throws Exception {

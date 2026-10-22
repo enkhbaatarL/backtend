@@ -354,11 +354,17 @@ public class ModelInputDraftService {
         });
         return source;
     }
-    private State restore(Draft draft,Source source) {
+    private State restore(Draft draft,Source source) { return restore(loadBasis(draft,source)); }
+    private InputDraftEditingBasis loadBasis(Draft draft,Source source) {
         var revisions=InputDraftDiagnostics.timed(InputDraftDiagnostics.Stage.REVISION_LOAD,null,()->store.revisions(draft.id()));
         var rows=InputDraftDiagnostics.timed(InputDraftDiagnostics.Stage.ROW_IDENTITIES_LOAD,null,()->store.logicalRows(draft));
+        InputDraftDiagnostics.rows(rows.identities().size(),rows.positions().size());
+        return new InputDraftEditingBasis(draft,source,revisions,rows.identities(),rows.positions());
+    }
+    private State restore(InputDraftEditingBasis basis) {
+        Draft draft=basis.draft();Source source=basis.source();
         InputDraftHistory history=InputDraftDiagnostics.timed(InputDraftDiagnostics.Stage.HISTORY_RESTORE,null,
-            ()->InputDraftHistory.restore(draft,source.catalog,source.definitions,revisions,rows.identities(),rows.positions(),json));
+            ()->InputDraftHistory.restore(draft,source.catalog,source.definitions,basis.revisions(),basis.identities(),basis.positions(),json));
         Source current=new Source(source.caseId,history.catalog(),source.files,source.key,source.version,source.inputIds,history.definitions());
         return new State(draft,current,history);
     }
@@ -395,27 +401,31 @@ public class ModelInputDraftService {
     }
     @Transactional(propagation=Propagation.NOT_SUPPORTED)
     public OperationView submitChange(String id,InputDraftJson.ChangeRequest request) {
-        Actor actor=actor();recoverExpired(actor,id);
-        return tx(false,()->{
-            Draft draft=store.lockOwned(id,actor.company,actor.user);if(!draft.uploaded())store.caseAccess(draft.caseId(),false);
-            var previous=store.request(id,request.requestId());
-            if(previous!=null) {
-                if(previous.schemaVersion()!=2)throw InputDraftException.internal();
-                if(!previous.type().equals("CHANGE")||!json.sameRequest(previous.request(),request))throw InputDraftException.conflict("IDEMPOTENCY_CONFLICT",draft.revision());
-                return operationView(previous);
-            }
-            Source current=source(actor,draft);
-            if(!java.util.Objects.equals(draft.sourceVersion(),current.version))throw InputDraftException.conflict("SOURCE_CHANGED",draft.revision());
-            fixed(draft,current,draft.sourceVersion());
-            if(!draft.status().equals("DRAFT"))throw InputDraftException.conflict("DRAFT_NOT_EDITABLE",draft.revision());
-            if(draft.activeOperation()!=null)throw InputDraftException.conflict("DRAFT_BUSY",draft.revision());
-            if(draft.revision()!=request.baseRevision())throw InputDraftException.conflict("REVISION_CONFLICT",draft.revision());
-            State state=restore(draft,current);
-            validateChange(state.source,state.history,request,draft);
-            var role=authorization.getCurrentRole();
-            if(role!=com.sk.domain.shared.enums.Role.USER&&role!=com.sk.domain.shared.enums.Role.ADMIN)throw InputDraftException.missing();
-            var op=store.enqueueChange(draft,request.requestId(),request.baseRevision(),new String(json.changeBytes(request),StandardCharsets.UTF_8),role.name(),actor.login);
-            return operationView(op);
+        return InputDraftDiagnostics.timed(InputDraftDiagnostics.Stage.CHANGE_SUBMIT,null,()->{
+            Actor actor=actor();recoverExpired(actor,id);
+            var accepted=tx(false,()->{
+                Draft draft=InputDraftDiagnostics.timed(InputDraftDiagnostics.Stage.SNAPSHOT_LOCK,null,()->store.lockOwned(id,actor.company,actor.user));if(!draft.uploaded())store.caseAccess(draft.caseId(),false);
+                var previous=store.request(id,request.requestId());
+                if(previous!=null) {
+                    if(previous.schemaVersion()!=2)throw InputDraftException.internal();
+                    if(!previous.type().equals("CHANGE")||!json.sameRequest(previous.request(),request))throw InputDraftException.conflict("IDEMPOTENCY_CONFLICT",draft.revision());
+                    return operationView(previous);
+                }
+                Source current=source(actor,draft);
+                if(!java.util.Objects.equals(draft.sourceVersion(),current.version))throw InputDraftException.conflict("SOURCE_CHANGED",draft.revision());
+                fixed(draft,current,draft.sourceVersion());
+                if(!draft.status().equals("DRAFT"))throw InputDraftException.conflict("DRAFT_NOT_EDITABLE",draft.revision());
+                if(draft.activeOperation()!=null)throw InputDraftException.conflict("DRAFT_BUSY",draft.revision());
+                if(draft.revision()!=request.baseRevision())throw InputDraftException.conflict("REVISION_CONFLICT",draft.revision());
+                State state=restore(draft,current);
+                validateChange(state.source,state.history,request,draft);
+                var role=authorization.getCurrentRole();
+                if(role!=com.sk.domain.shared.enums.Role.USER&&role!=com.sk.domain.shared.enums.Role.ADMIN)throw InputDraftException.missing();
+                var op=store.enqueueChange(draft,request.requestId(),request.baseRevision(),new String(json.changeBytes(request),StandardCharsets.UTF_8),role.name(),actor.login);
+                return operationView(op);
+            });
+            log.info("Input Draft CHANGE submission completed operationId={}",accepted.operationId());
+            return accepted;
         });
     }
     void validateChange(Source source,InputDraftHistory history,InputDraftJson.ChangeRequest request,Draft draft) {
@@ -460,17 +470,7 @@ public class ModelInputDraftService {
             }
         }
         if(!changesEnabled)throw InputDraftException.conflict("POLICY_UNSUPPORTED",draft.revision());
-        var logicalRows=store.logicalRows(draft);
-        Map<Long,Map<Integer,String>> bindings=new HashMap<>();
-        for(var row:logicalRows.positions())if(row.end()==null&&row.row()!=null)
-            bindings.computeIfAbsent(row.table(),ignored->new HashMap<>()).put(row.row(),row.id());
-        Set<String> addedRows=new HashSet<>();
-        for(var row:logicalRows.identities())if(row.original()==null)addedRows.add(row.id());
-        Set<String> addedFields=new HashSet<>();
-        for(TableRef table:source.catalog.tables())for(JsonNode field:source.definitions.get(table.id()).fields())
-            if(history.sourceColumn(table.id(),field.path("columnNumber").asInt())==null)
-                addedFields.add(table.key()+"/"+field.path("fieldKey").asText());
-        InputWorkbookEditor.validate(source,bindings,addedRows,addedFields,request,draft.revision());
+        InputWorkbookEditor.validate(source,history,request,draft.revision());
         InputWorkbookEditor.validateHistory(source(actor(),draft),store.revisions(draft.id()),json);
     }
     private boolean inputType(String type,JsonNode value) {
@@ -498,34 +498,46 @@ public class ModelInputDraftService {
     }
     @Transactional(propagation=Propagation.NOT_SUPPORTED)
     PreparedChange prepareWorkerChange(String id,String operationId,String token) {
-        return tx(false,()->{
-            Draft draft=store.lockForRecovery(id);var op=store.lockRunningChange(id,operationId,token);
+        return InputDraftDiagnostics.withOperation(operationId,()->InputDraftDiagnostics.timed(InputDraftDiagnostics.Stage.CHANGE_PREPARE,null,()->tx(false,()->{
+            Draft draft=InputDraftDiagnostics.timed(InputDraftDiagnostics.Stage.SNAPSHOT_LOCK,null,()->store.lockForRecovery(id));var op=store.lockRunningChange(id,operationId,token);
             if(op==null)return null;
-            Actor actor=workerActor(draft,op);State current=state(actor,draft);
+            Actor actor=workerActor(draft,op);
+            var basis=loadBasis(draft,checkedSource(actor,draft));State current=restore(basis);
             var request=json.changeRequest(new java.io.ByteArrayInputStream(op.request().getBytes(StandardCharsets.UTF_8)));
             InputWorkbookEditor.validate(current.source,current.history,request,draft.revision());
-            Source original=source(actor,draft);
-            InputWorkbookEditor.validateHistory(original,store.revisions(id),json);
-            var rows=store.logicalRows(draft);
-            var basis=new InputDraftEditingBasis(draft,original,store.revisions(id),rows.identities(),rows.positions());
+            InputWorkbookEditor.validateHistory(basis.source(),basis.revisions(),json);
             TableRef table=current.source.catalog.tables().stream().filter(t->t.key().equals(request.operations().get(0).path("tableId").asText())).findFirst().orElseThrow(InputDraftException::internal);
             return new PreparedChange(id,op.id(),token,actor.companyCode,current.source.files.stream().filter(f->f.role().equals(table.role())).findFirst().orElseThrow(),
                 current.source.catalog.templateId(),table,request.operations().get(0).path("rowRef").path("rowId").asText(),request,null,basis);
-        });
+        })));
     }
     @Transactional(propagation=Propagation.NOT_SUPPORTED)
     public OperationView changeOperation(String id,String operationId) {
-        Actor actor=actor();recoverExpired(actor,id);
-        return tx(true,()->{
-            Draft draft=store.owned(id,actor.company,actor.user);if(!draft.uploaded())store.caseAccess(draft.caseId(),false);
-            var op=store.operation(id,operationId,false);
-            if(!op.type().equals("CHANGE"))throw InputDraftException.missing();
-            return operationView(op);
-        });
+        return InputDraftDiagnostics.withOperation(operationId,()->InputDraftDiagnostics.timed(InputDraftDiagnostics.Stage.CHANGE_STATUS,null,()->{
+            Actor actor=actor();
+            var observed=tx(true,()->{
+                Draft draft=store.owned(id,actor.company,actor.user);if(!draft.uploaded())store.caseAccess(draft.caseId(),false);
+                var op=store.operation(id,operationId,false);
+                if(!op.type().equals("CHANGE"))throw InputDraftException.missing();
+                return op;
+            });
+            if(observed.terminal()||tx(true,store::databaseTime).isBefore(observed.expires()))return operationView(observed);
+            // 만료 정리는 보조 작업이다. 저장 중인 행을 기다리지 않고 마지막 확정 상태를 반환한다.
+            var current=InputDraftDiagnostics.timed(InputDraftDiagnostics.Stage.CHANGE_STATUS_EXPIRE,null,()->tx(false,()->{
+                Draft draft=store.tryLockOwned(id,actor.company,actor.user);
+                if(draft==null)return observed;
+                if(!draft.uploaded())store.caseAccess(draft.caseId(),false);
+                var op=store.tryLockOperation(id,operationId);
+                if(op==null)return observed;
+                if(!op.type().equals("CHANGE"))throw InputDraftException.missing();
+                return store.expireChange(id,operationId,failureJson("TIMEOUT",draft.revision()));
+            }));
+            return operationView(current);
+        }));
     }
     private void recoverExpired(Actor actor,String id) {
         tx(false,()->{
-            Draft draft=store.lockOwned(id,actor.company,actor.user);if(!draft.uploaded())store.caseAccess(draft.caseId(),false);
+            Draft draft=InputDraftDiagnostics.timed(InputDraftDiagnostics.Stage.SNAPSHOT_LOCK,null,()->store.lockOwned(id,actor.company,actor.user));if(!draft.uploaded())store.caseAccess(draft.caseId(),false);
             if(draft.activeOperation()!=null) {
                 var operation=store.operation(id,draft.activeOperation(),true);
                 if(operation.type().equals("FINALIZE"))finalizer().expireQueuedJoined(id,operation.id());
@@ -561,39 +573,45 @@ public class ModelInputDraftService {
         return completeChange(null,id,operationId,token,verifiedDelta);
     }
     private boolean completeChange(Actor requestedActor,String id,String operationId,String token,JsonNode verifiedDelta) {
-        try {
-            return tx(false,()->{
-                Draft draft=requestedActor==null?store.lockForRecovery(id):store.lockOwned(id,requestedActor.company,requestedActor.user);
-                if(!draft.uploaded())store.caseAccess(draft.caseId(),false);
-                var op=store.lockRunningChange(id,operationId,token);
-                if(op==null){store.expireChange(id,operationId,failureJson("TIMEOUT",draft.revision()));return false;}
-                Actor actor=requestedActor==null?workerActor(draft,op):requestedActor;
-                State state=state(actor,draft);
-                if(requestedActor==null) {
-                    var request=json.changeRequest(new java.io.ByteArrayInputStream(op.request().getBytes(StandardCharsets.UTF_8)));
-                    InputWorkbookEditor.validate(state.source,state.history,request,draft.revision());
-                    InputWorkbookEditor.validateHistory(source(actor,draft),store.revisions(id),json);
-                }
-                var applied=state.history.apply(json.delta(json.deltaText(verifiedDelta)),op.request(),op.id(),op.baseRevision()+1);
-                boolean completed=store.completeChange(id,operationId,token,applied.delta(),applied.result(),applied.rows());
-                if(!completed)store.expireChange(id,operationId,failureJson("TIMEOUT",draft.revision()));
-                return completed;
-            });
-        } catch(RuntimeException ex) {
-            if(requestedActor!=null&&ex instanceof InputDraftException error&&error.getStatus().value()==404)throw error;
-            String reason=ex instanceof InputDraftException error&&"SOURCE_CHANGED".equals(error.getReason())?"SOURCE_CHANGED":"PERSISTENCE_FAILED";
-            // commit 응답 유실도 여기로 올 수 있다. 쓰기 DB 잠금으로 성공 여부를 먼저 재확인한다.
-            return tx(false,()->{
-                Draft draft=requestedActor==null?store.lockForRecovery(id):store.lockOwned(id,requestedActor.company,requestedActor.user);
-                if(requestedActor!=null)if(!draft.uploaded())store.caseAccess(draft.caseId(),false);
-                var op=store.operation(id,operationId,true);
-                if(op.status().equals("SUCCEEDED"))return token!=null&&token.equals(op.token());
-                if(op.terminal()||!op.status().equals("RUNNING")||token==null||!token.equals(op.token()))return false;
-                op=store.expireChange(id,operationId,failureJson("TIMEOUT",draft.revision()));
-                if(!op.terminal())store.failStoppedChange(id,operationId,token,failureJson(reason,draft.revision()));
-                return false;
-            });
-        }
+        return InputDraftDiagnostics.withOperation(operationId,()->InputDraftDiagnostics.timed(InputDraftDiagnostics.Stage.CHANGE_COMPLETE,null,()->{
+            try {
+                return tx(false,()->{
+                    Draft draft=InputDraftDiagnostics.timed(InputDraftDiagnostics.Stage.SNAPSHOT_LOCK,null,()->
+                        requestedActor==null?store.lockForRecovery(id):store.lockOwned(id,requestedActor.company,requestedActor.user));
+                    if(!draft.uploaded())store.caseAccess(draft.caseId(),false);
+                    var op=store.lockRunningChange(id,operationId,token);
+                    if(op==null){store.expireChange(id,operationId,failureJson("TIMEOUT",draft.revision()));return false;}
+                    Actor actor=requestedActor==null?workerActor(draft,op):requestedActor;
+                    var basis=loadBasis(draft,checkedSource(actor,draft));State state=restore(basis);
+                    if(requestedActor==null) {
+                        var request=json.changeRequest(new java.io.ByteArrayInputStream(op.request().getBytes(StandardCharsets.UTF_8)));
+                        InputWorkbookEditor.validate(state.source,state.history,request,draft.revision());
+                        InputWorkbookEditor.validateHistory(basis.source(),basis.revisions(),json);
+                    }
+                    var applied=InputDraftDiagnostics.timed(InputDraftDiagnostics.Stage.CHANGE_APPLY,null,()->
+                        state.history.apply(json.delta(json.deltaText(verifiedDelta)),op.request(),op.id(),op.baseRevision()+1));
+                    boolean completed=store.completeChange(id,operationId,token,applied.delta(),applied.result(),applied.rows(),
+                        new com.sk.domain.shared.repository.master.tmm.ModelInputBaselineRows.Snapshot(basis.identities(),basis.positions()));
+                    if(!completed)store.expireChange(id,operationId,failureJson("TIMEOUT",draft.revision()));
+                    return completed;
+                });
+            } catch(RuntimeException ex) {
+                if(requestedActor!=null&&ex instanceof InputDraftException error&&error.getStatus().value()==404)throw error;
+                String reason=ex instanceof InputDraftException error&&"SOURCE_CHANGED".equals(error.getReason())?"SOURCE_CHANGED":"PERSISTENCE_FAILED";
+                // commit 응답 유실도 여기로 올 수 있다. 쓰기 DB 잠금으로 성공 여부를 먼저 재확인한다.
+                return tx(false,()->{
+                    Draft draft=InputDraftDiagnostics.timed(InputDraftDiagnostics.Stage.SNAPSHOT_LOCK,null,()->
+                        requestedActor==null?store.lockForRecovery(id):store.lockOwned(id,requestedActor.company,requestedActor.user));
+                    if(requestedActor!=null)if(!draft.uploaded())store.caseAccess(draft.caseId(),false);
+                    var op=store.operation(id,operationId,true);
+                    if(op.status().equals("SUCCEEDED"))return token!=null&&token.equals(op.token());
+                    if(op.terminal()||!op.status().equals("RUNNING")||token==null||!token.equals(op.token()))return false;
+                    op=store.expireChange(id,operationId,failureJson("TIMEOUT",draft.revision()));
+                    if(!op.terminal())store.failStoppedChange(id,operationId,token,failureJson(reason,draft.revision()));
+                    return false;
+                });
+            }
+        }));
     }
     private OperationView operationView(ModelInputDraftRepository.Operation op) {
         if(op.schemaVersion()!=2)throw InputDraftException.internal();

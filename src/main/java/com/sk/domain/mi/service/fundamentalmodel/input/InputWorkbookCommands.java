@@ -716,7 +716,9 @@ final class InputWorkbookCommands {
                 change.set("fieldKey", json.tree(field)); change.set("sourceColumnNumber", json.tree(table.sourceColumns.get(token))); change.set("columnNumber", json.tree(table.columnPositions.get(token)));
             }
         }
-        readCells(target, tables, readBack, values, delta);
+        InputDraftDiagnostics.timedChecked(InputDraftDiagnostics.Stage.WORKBOOK_READ_BACK, role, () -> {
+            readCells(target, tables, readBack, values, delta); return null;
+        });
         return delta;
     }
 

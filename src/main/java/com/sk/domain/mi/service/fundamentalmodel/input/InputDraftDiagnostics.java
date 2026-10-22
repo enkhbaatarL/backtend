@@ -13,7 +13,31 @@ final class InputDraftDiagnostics {
     enum Stage {
         CREATE_SOURCE, CREATE_RESUME, CREATE_READ, CREATE_STORE, WORKBOOK_DOWNLOAD, WORKBOOK_PARSE,
         SNAPSHOT_LOCK, SOURCE_LOAD, FIXED_FILES, REVISION_LOAD, INITIAL_ROWS_VALIDATE, ROW_IDENTITIES_LOAD, ROW_POSITIONS_LOAD,
-        HISTORY_RESTORE, STRUCTURE_STATE, TABLE_STATE_BEFORE, TABLE_RENDER, TABLE_STATE_AFTER
+        HISTORY_RESTORE, STRUCTURE_STATE, TABLE_STATE_BEFORE, TABLE_RENDER, TABLE_STATE_AFTER,
+        CHANGE_SUBMIT, CHANGE_PREPARE, CHANGE_EXECUTE, CHANGE_COMPLETE, CHANGE_STATUS, CHANGE_STATUS_EXPIRE,
+        CHANGE_REPLAY, CHANGE_TRANSFORM, CHANGE_APPLY, WORKBOOK_SOURCE_VALIDATE, WORKBOOK_ZIP_WRITE,
+        WORKBOOK_SAVED_VALIDATE, WORKBOOK_PRESERVATION_VERIFY, WORKBOOK_READ_BACK
+    }
+
+    private static final ThreadLocal<String> OPERATION = new ThreadLocal<>();
+
+    static <T> T withOperation(String operation, Supplier<T> action) {
+        String previous = OPERATION.get();
+        OPERATION.set(operation != null && operation.matches("[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}") ? operation : "-");
+        try { return action.get(); }
+        finally { if (previous == null) OPERATION.remove(); else OPERATION.set(previous); }
+    }
+
+    @FunctionalInterface interface CheckedSupplier<T> { T get() throws Exception; }
+
+    static <T> T timedChecked(Stage stage, String role, CheckedSupplier<T> action) throws Exception {
+        long started = System.nanoTime(); boolean completed = false;
+        try { T result = action.get(); completed = true; return result; }
+        finally { elapsed(stage, role, started, completed); }
+    }
+
+    static void rows(int identities, int positions) {
+        log.info("Input Draft rows operationId={} identities={} positions={}", OPERATION.get() == null ? "-" : OPERATION.get(), identities, positions);
     }
 
     private InputDraftDiagnostics() {}
@@ -31,8 +55,9 @@ final class InputDraftDiagnostics {
     }
 
     static void elapsed(Stage stage, String role, long started, boolean completed) {
-        log.info("Input Draft timing stage={} role={} completed={} elapsedMs={}",
-            stage, safeRole(role), completed, (System.nanoTime() - started) / 1_000_000);
+        long millis = (System.nanoTime() - started) / 1_000_000;
+        if (OPERATION.get() == null) log.info("Input Draft timing stage={} role={} completed={} elapsedMs={}", stage, safeRole(role), completed, millis);
+        else log.info("Input Draft timing stage={} role={} completed={} elapsedMs={} operationId={}", stage, safeRole(role), completed, millis, OPERATION.get());
     }
 
     private static String safeRole(String role) {

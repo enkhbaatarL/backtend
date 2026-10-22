@@ -62,7 +62,11 @@ final class InputWorkbookEditor {
     }
 
     JsonNode execute(InputDraftEditingBasis basis, String company, InputDraftJson.ChangeRequest request) {
-        var current = basis.history(basis.draft().revision(), json);
+        return InputDraftDiagnostics.withOperation(basis.draft().activeOperation(), () ->
+            InputDraftDiagnostics.timed(InputDraftDiagnostics.Stage.CHANGE_EXECUTE, null, () -> executeCurrent(basis, company, request)));
+    }
+    private JsonNode executeCurrent(InputDraftEditingBasis basis, String company, InputDraftJson.ChangeRequest request) {
+        var current = InputDraftDiagnostics.timed(InputDraftDiagnostics.Stage.HISTORY_RESTORE, null, () -> basis.history(basis.draft().revision(), json));
         var source = currentSource(basis, current); validate(source, current, request, basis.draft().revision());
         ObjectNode delta = delta(basis, request);
         Set<String> roles = request.operations().stream().map(c -> table(current, c.path("tableId").asText()).role()).collect(java.util.stream.Collectors.toSet());
@@ -71,9 +75,11 @@ final class InputWorkbookEditor {
             JsonNode result = reader.withLocal(file, company, original -> {
                 List<Path> owned = new ArrayList<>();
                 try {
-                    Path before = replay(basis, file, original, owned);
+                    Path before = InputDraftDiagnostics.timedChecked(InputDraftDiagnostics.Stage.CHANGE_REPLAY, role,
+                        () -> replay(basis, file, original, owned));
                     Path saved = create(owned);
-                    return new InputWorkbookCommands(json, reader, checkpoint).transform(before, saved, current, request, role, null, original);
+                    return InputDraftDiagnostics.timedChecked(InputDraftDiagnostics.Stage.CHANGE_TRANSFORM, role,
+                        () -> new InputWorkbookCommands(json, reader, checkpoint).transform(before, saved, current, request, role, null, original));
                 } catch (InputDraftException | InputDraftPreserveChange.Failure ex) { throw ex; }
                 catch (Exception ex) { throw new InputDraftPreserveChange.Failure("PRESERVATION_FAILED"); }
                 finally { cleanup(owned); }
@@ -81,7 +87,8 @@ final class InputWorkbookEditor {
             for (String key : List.of("tables", "rows", "columns", "cells")) for (JsonNode item : result.path(key)) delta.withArray(key).add(item);
         }
         // 같은 v2 검증기를 통과하기 전에는 worker가 성공 transaction을 만들지 않는다.
-        current.apply(delta, new String(json.changeBytes(request), StandardCharsets.UTF_8), java.util.UUID.randomUUID().toString(), request.baseRevision() + 1);
+        InputDraftDiagnostics.timed(InputDraftDiagnostics.Stage.CHANGE_APPLY, null, () ->
+            current.apply(delta, new String(json.changeBytes(request), StandardCharsets.UTF_8), java.util.UUID.randomUUID().toString(), request.baseRevision() + 1));
         return delta;
     }
 

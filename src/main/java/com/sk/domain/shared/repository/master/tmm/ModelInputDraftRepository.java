@@ -166,6 +166,20 @@ public class ModelInputDraftRepository {
         return jdbc.query("SELECT * FROM tmd_mdl_inptdrftm WHERE drft_id=? AND cust_cpny_no=? AND usr_no=? AND del_yn='N' FOR UPDATE",
             this::draft,id,company,user).stream().findFirst().orElseThrow(InputDraftException::missing);
     }
+    /** 결과 조회의 만료 정리 전용. 업로드 소유 슬롯 → Draft 순서를 지키며 경합하면 건너뛴다. */
+    public Draft tryLockOwned(String id,int company,int user) {
+        requireTransaction();
+        Draft observed=owned(id,company,user);
+        if(observed.uploaded()&&jdbc.query("SELECT cust_cpny_no FROM tmd_mdl_inptupldactvm WHERE cust_cpny_no=? AND usr_no=? FOR UPDATE SKIP LOCKED",
+                (rs,n)->rs.getInt(1),company,user).isEmpty())return null;
+        return jdbc.query("SELECT * FROM tmd_mdl_inptdrftm WHERE drft_id=? AND cust_cpny_no=? AND usr_no=? AND del_yn='N' FOR UPDATE SKIP LOCKED",
+            this::draft,id,company,user).stream().findFirst().orElse(null);
+    }
+    public Operation tryLockOperation(String draftId,String operationId) {
+        requireTransaction();
+        return jdbc.query("SELECT * FROM tmd_mdl_inptdrftprcsl WHERE drft_id=? AND prcs_id=? FOR UPDATE SKIP LOCKED",
+            this::operation,draftId,operationId).stream().findFirst().orElse(null);
+    }
     private Draft lockDraft(String id) {
         requireTransaction();
         jdbc.query("SELECT * FROM tmd_mdl_inptdrftm WHERE drft_id=? AND del_yn='N'",this::draft,id).stream().findFirst().ifPresent(this::lockUploadOwner);
@@ -412,10 +426,15 @@ public class ModelInputDraftRepository {
     }
     /** 검증된 결과만 저장한다. 호출자는 같은 master transaction에서 payload/행 소속을 먼저 검사한다. */
     public boolean completeChange(String draftId,String operationId,String token,String delta,String result,List<RowWrite> rows) {
+        return completeChange(draftId,operationId,token,delta,result,rows,null);
+    }
+    /** checkedRows는 호출자의 같은 잠금 transaction에서 검증한 변경 전 전체 snapshot이다. */
+    public boolean completeChange(String draftId,String operationId,String token,String delta,String result,List<RowWrite> rows,
+            ModelInputBaselineRows.Snapshot checkedRows) {
         Operation op=lockRunningChange(draftId,operationId,token);
         if(op==null)return false;
         Draft current=lockDraft(draftId);
-        Map<String,RowIdentity> firstOriginals=sharedFirstWrites(current,rows);
+        Map<String,RowIdentity> firstOriginals=sharedFirstWrites(current,rows,checkedRows);
         long next=op.baseRevision()+1;
         if(next>9007199254740991L)throw InputDraftException.internal();
         jdbc.update("""
@@ -455,9 +474,9 @@ public class ModelInputDraftRepository {
         return true;
     }
     /** FK/UK에 보이지 않는 가상 원본까지 포함해 최종 위치를 검증한다. */
-    private Map<String,RowIdentity> sharedFirstWrites(Draft draft,List<RowWrite> writes) {
-        if(draft.baselineId()==null)return Map.of();
-        var snapshot=logicalRows(draft);
+    private Map<String,RowIdentity> sharedFirstWrites(Draft draft,List<RowWrite> writes,ModelInputBaselineRows.Snapshot checkedRows) {
+        if(draft.baselineId()==null||writes.isEmpty())return Map.of();
+        var snapshot=checkedRows==null?logicalRows(draft):checkedRows;
         Map<String,RowIdentity> all=new LinkedHashMap<>();snapshot.identities().forEach(row->all.put(row.id(),row));
         Map<String,RowPosition> active=new LinkedHashMap<>();
         snapshot.positions().stream().filter(p->p.end()==null).forEach(p->active.put(p.id(),p));
