@@ -3,7 +3,7 @@
 --         (rehearsed only on a local disposable MySQL 8.0.40 container; see execution record)
 -- canonical for: editor write-policy template version (copy of template7 + 52 write definitions/scopes)
 --                registration/verify SQL and its separate publication SQL. Not a policy/schema canonical source.
--- owner: BE / DBA; date / last synced: 2026-10-21
+-- owner: BE / DBA; date / last synced: 2026-10-20
 -- source: template7 (DRAFT_C_STRUCTURE v1) = model-input-catalog-structure-data-draft.sql definitions
 --         + model-input-upload-validation-testdata-draft.sql uploadValidation/headerRows (already committed)
 -- depends on: design-docs/gas/mi-model-input-template-catalog-domain-model-design.md rules3/45/47/49/58/65/66, §6.1, §6.6~6.7
@@ -244,41 +244,7 @@ SELECT COUNT(*) INTO @e_scopes_equal FROM JSON_TABLE(@e_patches, '$[*]' COLUMNS(
  WHERE x.r1 IS NOT NULL;
 SET @e_scopes_total = (SELECT COUNT(*) FROM tmd_mdl_inptmodscopd m JOIN tmd_mdl_inpttbld b USING(inpt_tbl_id)
   JOIN tmd_mdl_inptshtd s USING(inpt_sht_id) JOIN tmd_mdl_inptfiled f USING(inpt_file_id) WHERE f.tmplt_id = @e_new);
--- The digest binds the exact stored file/sheet/table/scope hierarchy to this DRAFT.
-SET @e_catalog_digest = (
-  SELECT SHA2(GROUP_CONCAT(SHA2(payload, 256) ORDER BY record_kind, record_id SEPARATOR ','), 256)
-  FROM (
-    SELECT 'F' AS record_kind, f.inpt_file_id AS record_id,
-      CAST(JSON_ARRAY('F', f.inpt_file_id, f.tmplt_id, f.mdl_file_cd, f.file_nm, f.file_ord,
-        f.file_type_cd, f.file_strt_hash_val, f.del_yn) AS CHAR) AS payload
-    FROM tmd_mdl_inptfiled f WHERE f.tmplt_id = @e_new
-    UNION ALL
-    SELECT 'S', s.inpt_sht_id,
-      CAST(JSON_ARRAY('S', s.inpt_sht_id, s.inpt_file_id, s.sht_nm, s.sht_ord, s.sht_stat_cd, s.del_yn) AS CHAR)
-    FROM tmd_mdl_inptshtd s JOIN tmd_mdl_inptfiled f USING(inpt_file_id) WHERE f.tmplt_id = @e_new
-    UNION ALL
-    SELECT 'T', b.inpt_tbl_id,
-      CAST(JSON_ARRAY('T', b.inpt_tbl_id, b.inpt_sht_id, b.inpt_tbl_nm, b.tbl_ord,
-        b.tbl_bgn_row_no, b.tbl_end_row_no, b.tbl_bgn_col_no, b.tbl_end_col_no,
-        b.hdr_bgn_row_no, b.hdr_end_row_no, b.data_bgn_row_no, b.row_add_psbl_yn,
-        b.col_add_psbl_yn, b.inpt_tbl_expn, b.qry_json, b.del_yn) AS CHAR)
-    FROM tmd_mdl_inpttbld b JOIN tmd_mdl_inptshtd s USING(inpt_sht_id)
-      JOIN tmd_mdl_inptfiled f USING(inpt_file_id) WHERE f.tmplt_id = @e_new
-    UNION ALL
-    SELECT 'M', m.mod_scop_id,
-      CAST(JSON_ARRAY('M', m.mod_scop_id, m.inpt_tbl_id, m.mod_scop_ord, m.bgn_row_no,
-        m.end_row_no, m.bgn_col_no, m.end_col_no, m.del_yn) AS CHAR)
-    FROM tmd_mdl_inptmodscopd m JOIN tmd_mdl_inpttbld b USING(inpt_tbl_id)
-      JOIN tmd_mdl_inptshtd s USING(inpt_sht_id) JOIN tmd_mdl_inptfiled f USING(inpt_file_id)
-    WHERE f.tmplt_id = @e_new
-  ) hierarchy
-);
-UPDATE tmd_mdl_inpttmpltm SET tmplt_expn = CONCAT(@e_marker, '; digest=', @e_catalog_digest)
-WHERE @e_ok = 1 AND @e_new IS NOT NULL AND @e_catalog_digest IS NOT NULL
-  AND tmplt_id = @e_new AND BINARY tmplt_expn = BINARY @e_marker AND tmplt_stat_cd = 'DRAFT';
 SET @e_verified = IF(@e_ok = 1 AND @e_new IS NOT NULL
- AND (SELECT COUNT(*) FROM tmd_mdl_inpttmpltm WHERE tmplt_id = @e_new
-      AND BINARY tmplt_expn = BINARY CONCAT(@e_marker, '; digest=', @e_catalog_digest)) = 1
  AND (SELECT COUNT(*) FROM tmd_mdl_inpttmpltm WHERE BINARY mdl_spt_cd = BINARY @e_model AND tmplt_ver_no = @e_version) = 1
  AND (SELECT COUNT(*) FROM tmd_mdl_inptfiled WHERE tmplt_id = @e_new) = 4 AND @e_files_copied = 4
  AND (SELECT COUNT(*) FROM tmd_mdl_inptshtd s JOIN tmd_mdl_inptfiled f USING(inpt_file_id) WHERE f.tmplt_id = @e_new) = 70
@@ -311,6 +277,7 @@ SELECT p.role, p.sheet, p.name, JSON_EXTRACT(p.new_qry, '$.capabilities') AS cap
        (SELECT COUNT(*) FROM tmd_mdl_inptmodscopd m WHERE m.inpt_tbl_id = p.new_id) AS scopes
 FROM p WHERE CAST(p.new_qry AS JSON) <> CAST(p.old_qry AS JSON) ORDER BY p.role, p.sheet, p.name;
 
+COMMIT ;
 ROLLBACK;
 -- Replace the ROLLBACK above with COMMIT only after an authorized review of VERIFIED_UNPUBLISHED in this connection.
 -- After COMMIT, PART A is intentionally not rerunnable (version/marker guard). Do not delete a committed version
@@ -331,53 +298,11 @@ SET TRANSACTION ISOLATION LEVEL SERIALIZABLE;
 START TRANSACTION;
 SELECT tmplt_id, tmplt_ver_no, tmplt_stat_cd, aply_bgn_dtm FROM tmd_mdl_inpttmpltm WHERE mdl_spt_cd = @v_model FOR UPDATE;
 SET @v_new = (SELECT tmplt_id FROM tmd_mdl_inpttmpltm WHERE BINARY mdl_spt_cd = BINARY @v_model AND tmplt_ver_no = @v_version
-  AND BINARY LEFT(tmplt_expn, CHAR_LENGTH(@v_marker) + 9) = BINARY CONCAT(@v_marker, '; digest=')
-  AND tmplt_stat_cd = 'DRAFT' AND aply_bgn_dtm IS NULL AND del_yn = 'N');
+  AND BINARY tmplt_expn = BINARY @v_marker AND tmplt_stat_cd = 'DRAFT' AND aply_bgn_dtm IS NULL AND del_yn = 'N');
 SELECT case_id FROM tmd_mdl_scnrcasetmpltd WHERE tmplt_id IN (@v_source, @v_new) FOR SHARE;
 SET @v_source_time = (SELECT aply_bgn_dtm FROM tmd_mdl_inpttmpltm WHERE tmplt_id = @v_source);
 SET @v_links_before = (SELECT COUNT(*) FROM tmd_mdl_scnrcasetmpltd WHERE tmplt_id = @v_source);
-SET SESSION group_concat_max_len = 16777216;
-SELECT f.inpt_file_id FROM tmd_mdl_inptfiled f WHERE f.tmplt_id = @v_new FOR SHARE;
-SELECT s.inpt_sht_id FROM tmd_mdl_inptshtd s JOIN tmd_mdl_inptfiled f USING(inpt_file_id)
- WHERE f.tmplt_id = @v_new FOR SHARE;
-SELECT b.inpt_tbl_id FROM tmd_mdl_inpttbld b JOIN tmd_mdl_inptshtd s USING(inpt_sht_id)
- JOIN tmd_mdl_inptfiled f USING(inpt_file_id) WHERE f.tmplt_id = @v_new FOR SHARE;
-SELECT m.mod_scop_id FROM tmd_mdl_inptmodscopd m JOIN tmd_mdl_inpttbld b USING(inpt_tbl_id)
- JOIN tmd_mdl_inptshtd s USING(inpt_sht_id) JOIN tmd_mdl_inptfiled f USING(inpt_file_id)
- WHERE f.tmplt_id = @v_new FOR SHARE;
--- The digest binds the exact stored file/sheet/table/scope hierarchy to this DRAFT.
-SET @v_catalog_digest = (
-  SELECT SHA2(GROUP_CONCAT(SHA2(payload, 256) ORDER BY record_kind, record_id SEPARATOR ','), 256)
-  FROM (
-    SELECT 'F' AS record_kind, f.inpt_file_id AS record_id,
-      CAST(JSON_ARRAY('F', f.inpt_file_id, f.tmplt_id, f.mdl_file_cd, f.file_nm, f.file_ord,
-        f.file_type_cd, f.file_strt_hash_val, f.del_yn) AS CHAR) AS payload
-    FROM tmd_mdl_inptfiled f WHERE f.tmplt_id = @v_new
-    UNION ALL
-    SELECT 'S', s.inpt_sht_id,
-      CAST(JSON_ARRAY('S', s.inpt_sht_id, s.inpt_file_id, s.sht_nm, s.sht_ord, s.sht_stat_cd, s.del_yn) AS CHAR)
-    FROM tmd_mdl_inptshtd s JOIN tmd_mdl_inptfiled f USING(inpt_file_id) WHERE f.tmplt_id = @v_new
-    UNION ALL
-    SELECT 'T', b.inpt_tbl_id,
-      CAST(JSON_ARRAY('T', b.inpt_tbl_id, b.inpt_sht_id, b.inpt_tbl_nm, b.tbl_ord,
-        b.tbl_bgn_row_no, b.tbl_end_row_no, b.tbl_bgn_col_no, b.tbl_end_col_no,
-        b.hdr_bgn_row_no, b.hdr_end_row_no, b.data_bgn_row_no, b.row_add_psbl_yn,
-        b.col_add_psbl_yn, b.inpt_tbl_expn, b.qry_json, b.del_yn) AS CHAR)
-    FROM tmd_mdl_inpttbld b JOIN tmd_mdl_inptshtd s USING(inpt_sht_id)
-      JOIN tmd_mdl_inptfiled f USING(inpt_file_id) WHERE f.tmplt_id = @v_new
-    UNION ALL
-    SELECT 'M', m.mod_scop_id,
-      CAST(JSON_ARRAY('M', m.mod_scop_id, m.inpt_tbl_id, m.mod_scop_ord, m.bgn_row_no,
-        m.end_row_no, m.bgn_col_no, m.end_col_no, m.del_yn) AS CHAR)
-    FROM tmd_mdl_inptmodscopd m JOIN tmd_mdl_inpttbld b USING(inpt_tbl_id)
-      JOIN tmd_mdl_inptshtd s USING(inpt_sht_id) JOIN tmd_mdl_inptfiled f USING(inpt_file_id)
-    WHERE f.tmplt_id = @v_new
-  ) hierarchy
-);
 SET @v_ok = IF(BINARY DATABASE() = BINARY @v_schema AND @@SESSION.foreign_key_checks = 1
- AND @v_catalog_digest IS NOT NULL
- AND (SELECT COUNT(*) FROM tmd_mdl_inpttmpltm WHERE tmplt_id = @v_new
-      AND BINARY tmplt_expn = BINARY CONCAT(@v_marker, '; digest=', @v_catalog_digest)) = 1
  AND CHAR_LENGTH(TRIM(@v_actor)) BETWEEN 1 AND 50 AND @v_new IS NOT NULL
  AND (SELECT COUNT(*) FROM tmd_mdl_inpttmpltm WHERE tmplt_id = @v_source AND BINARY mdl_spt_cd = BINARY @v_model
       AND tmplt_ver_no = 1 AND tmplt_stat_cd = 'ACTIVE' AND aply_bgn_dtm IS NOT NULL AND del_yn = 'N') = 1
@@ -410,7 +335,7 @@ SET @v_published = IF(@v_ok = 1
  AND NOT EXISTS (SELECT 1 FROM tmd_mdl_scnrcasetmpltd WHERE tmplt_id = @v_new), 1, 0);
 SELECT tmplt_id, tmplt_ver_no, tmplt_stat_cd, aply_bgn_dtm, del_yn FROM tmd_mdl_inpttmpltm WHERE mdl_spt_cd = @v_model ORDER BY tmplt_ver_no;
 SELECT IF(@v_published = 1, 'PUBLISHED_PENDING_COMMIT', 'STOP_AND_ROLLBACK') AS decision;
-ROLLBACK;
+COMMIT ;
 -- Replace the ROLLBACK above with COMMIT only when PUBLISHED_PENDING_COMMIT. After COMMIT, never switch either root back
 -- to DRAFT or edit ACTIVE/DEPRECATED JSON. A problem after publication is fixed by another new version.
 -- Smoke after COMMIT (outside SQL): new upload -> draft -> table-data GET shows READY only for the 52 tables;

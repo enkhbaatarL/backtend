@@ -235,3 +235,18 @@ kubernetes:
   env-secret-name: ${MI_K8S_ENV_SECRET_NAME:}
   image-pull-secret-name: ${MI_K8S_IMAGE_PULL_SECRET_NAME:}
   ttl-seconds-after-finished: ${MI_K8S_TTL_SECONDS_AFTER_FINISHED:3600}
+
+mi:
+  model-input:
+    upload:
+      enabled: true
+      source-key: DRAFT_C_STRUCTURE_V1
+      model-code: DRAFT_C_STRUCTURE
+    shared-baseline:
+      enabled: true
+    web-runner:
+      enabled: true
+    change-worker:
+      enabled: true
+    finalization:
+      enabled: true
