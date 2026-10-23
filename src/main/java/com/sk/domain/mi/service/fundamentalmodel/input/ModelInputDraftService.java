@@ -474,6 +474,7 @@ public class ModelInputDraftService {
         InputWorkbookEditor.validateHistory(source(actor(),draft),store.revisions(draft.id()),json);
     }
     private boolean inputType(String type,JsonNode value) {
+        if(type.equals("DECIMAL_OR_TEXT"))return value.isNumber()||value.isTextual();
         if(type.equals("TEXT"))return value.isTextual();if(!value.isNumber())return false;
         if(type.equals("INTEGER"))try{value.decimalValue().toBigIntegerExact();}catch(ArithmeticException ex){return false;}return true;
     }
@@ -840,6 +841,7 @@ public class ModelInputDraftService {
             new Page(def.totalRows(),page.size(),start,end,next!=null,next),new Editing(caps,fields,bindings,edits,caps.get("ADD_COLUMN").equals("READY")?def.columnCreation():null));
     }
     private Object typed(String type,Object value) {
+        if("DECIMAL_OR_TEXT".equals(type)&&(value instanceof String||value instanceof BigDecimal))return value;
         if("TEXT".equals(type)&&value instanceof String)return value;
         if(value instanceof BigDecimal number){if("DECIMAL".equals(type))return number;if("INTEGER".equals(type))try{return number.toBigIntegerExact();}catch(ArithmeticException ex){throw InputDraftException.internal();}}
         throw InputDraftException.internal();

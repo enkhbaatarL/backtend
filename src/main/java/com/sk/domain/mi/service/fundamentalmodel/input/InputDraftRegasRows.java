@@ -14,7 +14,7 @@ final class InputDraftRegasRows {
     static final String PREFIX = "_regas_";
     record Row(long table, String id, Integer source, Integer position, String client, long baseline) {}
 
-    static boolean derived(JsonNode row) { return row.has("derivedFromRowId"); }
+    static boolean derived(JsonNode row) { return row.has("derivedFromRowId") && row.path("clientRowKey").asText().startsWith(PREFIX); }
 
     static void creation(JsonNode change) {
         String master = change.path("derivedFromRowId").asText();

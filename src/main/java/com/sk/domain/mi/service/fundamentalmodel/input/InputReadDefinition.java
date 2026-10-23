@@ -45,7 +45,7 @@ public record InputReadDefinition(List<Integer> columns,List<Integer> headerRows
             if(!field.path("columnNumber").isIntegralNumber()||!field.path("columnNumber").canConvertToInt()) throw incomplete();
             String key=field.path("fieldKey").asText(); int col=field.path("columnNumber").asInt();
             if(!key.matches("[A-Za-z][A-Za-z0-9_-]{0,63}")||!fieldKeys.add(key)||!columns.contains(col)||!fieldColumns.add(col)
-                ||!Set.of("INTEGER","DECIMAL","TEXT").contains(field.path("dataType").asText())) throw incomplete();
+                ||!Set.of("INTEGER","DECIMAL","TEXT","DECIMAL_OR_TEXT").contains(field.path("dataType").asText())) throw incomplete();
             JsonNode policy=field.path("policyStatus"); InputDraftJson.keys(policy,Set.of("CREATE","SET","CLEAR","DELETE_COLUMN","SET_HEADER"));
             if(!policy.has("SET_HEADER"))((com.fasterxml.jackson.databind.node.ObjectNode)policy).put("SET_HEADER","INCOMPLETE");
             status(policy.path("SET_HEADER"));

@@ -1,0 +1,3867 @@
+{
+  "documentControl": {
+    "status": "Draft",
+    "canonicalFor": "Schema rollout - v6 editor definition patch",
+    "owner": "BE",
+    "date": "2026-10-23",
+    "source": "Model Input domain section 6-7 and DDL section 6.9.5; v5 repository catalog",
+    "workNote": "docs/work-notes/2026/2026-10-19-model-input-excel-editor.md",
+    "manualBoundary": "New DRAFT only; no DB execution, publication or existing ACTIVE mutation"
+  },
+  "patches": [
+    {
+      "key": [
+        "DEMAND",
+        "PMILogicInput",
+        "User-Adjusted PMI Intensity Parameter"
+      ],
+      "baselineSha256": "ea60a3add6e7094c16880062e7e81fed650746d0ab2e4db4d8c8084a07990cfc",
+      "geometry": {
+        "rowAdd": "Y"
+      },
+      "definition": {
+        "fields": [
+          {
+            "fieldKey": "continent",
+            "columnNumber": 2,
+            "dataType": "TEXT",
+            "policyStatus": {
+              "CREATE": "INCOMPLETE",
+              "SET": "INCOMPLETE",
+              "CLEAR": "INCOMPLETE"
+            }
+          },
+          {
+            "fieldKey": "region",
+            "columnNumber": 3,
+            "dataType": "TEXT",
+            "policyStatus": {
+              "CREATE": "INCOMPLETE",
+              "SET": "INCOMPLETE",
+              "CLEAR": "INCOMPLETE"
+            }
+          },
+          {
+            "fieldKey": "country",
+            "columnNumber": 4,
+            "dataType": "TEXT",
+            "policyStatus": {
+              "CREATE": "READY",
+              "SET": "READY",
+              "CLEAR": "NOT_ALLOWED"
+            },
+            "setConstraints": {
+              "required": true
+            },
+            "create": {
+              "required": true,
+              "initial": {
+                "kind": "EMPTY"
+              },
+              "constraints": {}
+            }
+          },
+          {
+            "fieldKey": "intensity",
+            "columnNumber": 5,
+            "dataType": "DECIMAL",
+            "policyStatus": {
+              "CREATE": "READY",
+              "SET": "READY",
+              "CLEAR": "READY"
+            },
+            "setConstraints": {},
+            "create": {
+              "required": false,
+              "initial": {
+                "kind": "EMPTY"
+              },
+              "constraints": {}
+            }
+          }
+        ],
+        "capabilities": {
+          "SET": "READY",
+          "CLEAR": "READY",
+          "ADD_ROW": "READY",
+          "DELETE_ROW": "INCOMPLETE"
+        }
+      },
+      "scopes": [
+        [
+          9,
+          92,
+          4,
+          5
+        ]
+      ]
+    },
+    {
+      "key": [
+        "DEMAND",
+        "PMILogicInput",
+        "Base Case PMI Intensity Parameter"
+      ],
+      "baselineSha256": "c0fc83f4cba6a73dc6e9d47ec3e3de943fea52968edc2c1afbe23d0ad7eb2bd4",
+      "geometry": {
+        "rowAdd": "N"
+      },
+      "definition": {
+        "fields": [
+          {
+            "fieldKey": "continent",
+            "columnNumber": 7,
+            "dataType": "TEXT",
+            "policyStatus": {
+              "CREATE": "INCOMPLETE",
+              "SET": "INCOMPLETE",
+              "CLEAR": "INCOMPLETE"
+            }
+          },
+          {
+            "fieldKey": "region",
+            "columnNumber": 8,
+            "dataType": "TEXT",
+            "policyStatus": {
+              "CREATE": "INCOMPLETE",
+              "SET": "INCOMPLETE",
+              "CLEAR": "INCOMPLETE"
+            }
+          },
+          {
+            "fieldKey": "country",
+            "columnNumber": 9,
+            "dataType": "TEXT",
+            "policyStatus": {
+              "CREATE": "INCOMPLETE",
+              "SET": "READY",
+              "CLEAR": "NOT_ALLOWED"
+            },
+            "setConstraints": {
+              "required": true
+            }
+          },
+          {
+            "fieldKey": "intensity",
+            "columnNumber": 10,
+            "dataType": "DECIMAL",
+            "policyStatus": {
+              "CREATE": "INCOMPLETE",
+              "SET": "READY",
+              "CLEAR": "READY"
+            },
+            "setConstraints": {}
+          }
+        ],
+        "capabilities": {
+          "SET": "READY",
+          "CLEAR": "READY",
+          "ADD_ROW": "NOT_ALLOWED",
+          "DELETE_ROW": "INCOMPLETE"
+        }
+      },
+      "scopes": [
+        [
+          9,
+          92,
+          9,
+          10
+        ]
+      ]
+    },
+    {
+      "key": [
+        "TRADE",
+        "DemandAdjLogicInput",
+        "Demand Adjustment Parameters"
+      ],
+      "baselineSha256": "6d4bd450d68ba1798c0a167512cdd443d178697b4c4e6c43e38303005bfdc57b",
+      "geometry": {
+        "rowAdd": "N",
+        "columnAdd": "N"
+      },
+      "definition": {
+        "fields": [
+          {
+            "fieldKey": "demandAdjustment",
+            "columnNumber": 3,
+            "dataType": "TEXT",
+            "policyStatus": {
+              "CREATE": "NOT_ALLOWED",
+              "SET": "NOT_ALLOWED",
+              "CLEAR": "NOT_ALLOWED",
+              "DELETE_COLUMN": "NOT_ALLOWED"
+            }
+          },
+          {
+            "fieldKey": "columnD",
+            "columnNumber": 4,
+            "dataType": "DECIMAL",
+            "policyStatus": {
+              "CREATE": "NOT_ALLOWED",
+              "SET": "READY",
+              "CLEAR": "READY",
+              "DELETE_COLUMN": "NOT_ALLOWED"
+            },
+            "setConstraints": {}
+          },
+          {
+            "fieldKey": "columnE",
+            "columnNumber": 5,
+            "dataType": "TEXT",
+            "policyStatus": {
+              "CREATE": "NOT_ALLOWED",
+              "SET": "NOT_ALLOWED",
+              "CLEAR": "NOT_ALLOWED",
+              "DELETE_COLUMN": "NOT_ALLOWED"
+            }
+          },
+          {
+            "fieldKey": "columnF",
+            "columnNumber": 6,
+            "dataType": "DECIMAL",
+            "policyStatus": {
+              "CREATE": "NOT_ALLOWED",
+              "SET": "READY",
+              "CLEAR": "READY",
+              "DELETE_COLUMN": "NOT_ALLOWED"
+            },
+            "setConstraints": {}
+          }
+        ],
+        "capabilities": {
+          "SET": "READY",
+          "CLEAR": "READY",
+          "ADD_ROW": "NOT_ALLOWED",
+          "DELETE_ROW": "NOT_ALLOWED",
+          "ADD_COLUMN": "NOT_ALLOWED",
+          "DELETE_COLUMN": "NOT_ALLOWED"
+        }
+      },
+      "scopes": [
+        [
+          2,
+          3,
+          4,
+          4
+        ],
+        [
+          2,
+          3,
+          6,
+          6
+        ]
+      ]
+    },
+    {
+      "key": [
+        "TRADE",
+        "DemandAdjLogicInput",
+        "Demand Adjustment Bands"
+      ],
+      "baselineSha256": "c1db23d374e71fe7b5708a82078d3128ec6df9d7ed0ac3f597f4f7685b187811",
+      "geometry": {
+        "rowAdd": "N",
+        "columnAdd": "N"
+      },
+      "definition": {
+        "fields": [
+          {
+            "fieldKey": "lowerBound",
+            "columnNumber": 8,
+            "dataType": "DECIMAL",
+            "policyStatus": {
+              "CREATE": "NOT_ALLOWED",
+              "SET": "READY",
+              "CLEAR": "READY",
+              "DELETE_COLUMN": "NOT_ALLOWED"
+            },
+            "setConstraints": {}
+          },
+          {
+            "fieldKey": "deviations",
+            "columnNumber": 10,
+            "dataType": "DECIMAL",
+            "policyStatus": {
+              "CREATE": "NOT_ALLOWED",
+              "SET": "READY",
+              "CLEAR": "READY",
+              "DELETE_COLUMN": "NOT_ALLOWED"
+            },
+            "setConstraints": {}
+          },
+          {
+            "fieldKey": "upperBound",
+            "columnNumber": 9,
+            "dataType": "DECIMAL_OR_TEXT",
+            "policyStatus": {
+              "CREATE": "NOT_ALLOWED",
+              "SET": "READY",
+              "CLEAR": "READY",
+              "DELETE_COLUMN": "NOT_ALLOWED"
+            },
+            "setConstraints": {}
+          }
+        ],
+        "capabilities": {
+          "SET": "READY",
+          "CLEAR": "READY",
+          "ADD_ROW": "NOT_ALLOWED",
+          "DELETE_ROW": "NOT_ALLOWED",
+          "ADD_COLUMN": "NOT_ALLOWED",
+          "DELETE_COLUMN": "NOT_ALLOWED"
+        }
+      },
+      "scopes": [
+        [
+          3,
+          7,
+          8,
+          10
+        ]
+      ]
+    },
+    {
+      "key": [
+        "DEMAND",
+        "BCInput",
+        "RE Base Case GDP and Population Data"
+      ],
+      "baselineSha256": "e00263454247968a83eeecb5f0307b58f53df543e5f819bca46fe30c5ac8b564",
+      "geometry": {
+        "endColumn": 24
+      },
+      "definition": {
+        "fields": [
+          {
+            "fieldKey": "year",
+            "columnNumber": 17,
+            "dataType": "INTEGER",
+            "policyStatus": {
+              "CREATE": "READY",
+              "SET": "READY",
+              "CLEAR": "READY"
+            },
+            "setConstraints": {},
+            "create": {
+              "required": false,
+              "initial": {
+                "kind": "EMPTY"
+              },
+              "constraints": {}
+            }
+          },
+          {
+            "fieldKey": "continent",
+            "columnNumber": 18,
+            "dataType": "TEXT",
+            "policyStatus": {
+              "CREATE": "READY",
+              "SET": "READY",
+              "CLEAR": "READY"
+            },
+            "setConstraints": {},
+            "create": {
+              "required": false,
+              "initial": {
+                "kind": "EMPTY"
+              },
+              "constraints": {}
+            }
+          },
+          {
+            "fieldKey": "region",
+            "columnNumber": 19,
+            "dataType": "TEXT",
+            "policyStatus": {
+              "CREATE": "READY",
+              "SET": "READY",
+              "CLEAR": "READY"
+            },
+            "setConstraints": {},
+            "create": {
+              "required": false,
+              "initial": {
+                "kind": "EMPTY"
+              },
+              "constraints": {}
+            }
+          },
+          {
+            "fieldKey": "country",
+            "columnNumber": 20,
+            "dataType": "TEXT",
+            "policyStatus": {
+              "CREATE": "READY",
+              "SET": "READY",
+              "CLEAR": "READY"
+            },
+            "setConstraints": {},
+            "create": {
+              "required": false,
+              "initial": {
+                "kind": "EMPTY"
+              },
+              "constraints": {}
+            }
+          },
+          {
+            "fieldKey": "gdp",
+            "columnNumber": 21,
+            "dataType": "DECIMAL",
+            "policyStatus": {
+              "CREATE": "READY",
+              "SET": "READY",
+              "CLEAR": "READY"
+            },
+            "setConstraints": {},
+            "create": {
+              "required": false,
+              "initial": {
+                "kind": "EMPTY"
+              },
+              "constraints": {}
+            }
+          },
+          {
+            "fieldKey": "populationThousands",
+            "columnNumber": 22,
+            "dataType": "DECIMAL",
+            "policyStatus": {
+              "CREATE": "READY",
+              "SET": "READY",
+              "CLEAR": "READY"
+            },
+            "setConstraints": {},
+            "create": {
+              "required": false,
+              "initial": {
+                "kind": "EMPTY"
+              },
+              "constraints": {}
+            }
+          }
+        ],
+        "capabilities": {
+          "SET": "READY",
+          "CLEAR": "READY",
+          "ADD_ROW": "READY",
+          "DELETE_ROW": "INCOMPLETE"
+        }
+      },
+      "scopes": [
+        [
+          4,
+          2368,
+          17,
+          22
+        ]
+      ]
+    },
+    {
+      "key": [
+        "DEMAND",
+        "BCInput",
+        "Power Generation Utilisation Rate"
+      ],
+      "baselineSha256": "a57170b8a0606d9a72efe150f96f19fe3de89e7f2ea79fcd0f5af9b0ebaddde3",
+      "geometry": {
+        "endColumn": 41
+      },
+      "definition": {
+        "fields": [
+          {
+            "fieldKey": "continent",
+            "columnNumber": 37,
+            "dataType": "TEXT",
+            "policyStatus": {
+              "CREATE": "READY",
+              "SET": "READY",
+              "CLEAR": "READY"
+            },
+            "setConstraints": {},
+            "create": {
+              "required": false,
+              "initial": {
+                "kind": "EMPTY"
+              },
+              "constraints": {}
+            }
+          },
+          {
+            "fieldKey": "country",
+            "columnNumber": 38,
+            "dataType": "TEXT",
+            "policyStatus": {
+              "CREATE": "READY",
+              "SET": "READY",
+              "CLEAR": "READY"
+            },
+            "setConstraints": {},
+            "create": {
+              "required": false,
+              "initial": {
+                "kind": "EMPTY"
+              },
+              "constraints": {}
+            }
+          },
+          {
+            "fieldKey": "remappedEnergySource",
+            "columnNumber": 39,
+            "dataType": "TEXT",
+            "policyStatus": {
+              "CREATE": "READY",
+              "SET": "READY",
+              "CLEAR": "READY"
+            },
+            "setConstraints": {},
+            "create": {
+              "required": false,
+              "initial": {
+                "kind": "EMPTY"
+              },
+              "constraints": {}
+            }
+          },
+          {
+            "fieldKey": "columnAN",
+            "columnNumber": 40,
+            "dataType": "DECIMAL",
+            "policyStatus": {
+              "CREATE": "READY",
+              "SET": "READY",
+              "CLEAR": "READY"
+            },
+            "setConstraints": {},
+            "create": {
+              "required": false,
+              "initial": {
+                "kind": "EMPTY"
+              },
+              "constraints": {}
+            }
+          }
+        ],
+        "capabilities": {
+          "SET": "READY",
+          "CLEAR": "READY",
+          "ADD_ROW": "READY",
+          "DELETE_ROW": "INCOMPLETE"
+        }
+      },
+      "scopes": [
+        [
+          4,
+          1125,
+          37,
+          40
+        ]
+      ]
+    },
+    {
+      "key": [
+        "DEMAND",
+        "MacroParametersLogicInput",
+        "Selected Macro Parameter Intensities"
+      ],
+      "baselineSha256": "3a00570c52c33e176bed18b5bcaebbbac92dd616715cdc686e8853b22bc29abe",
+      "geometry": {
+        "endColumn": 17
+      },
+      "definition": {
+        "fields": [
+          {
+            "fieldKey": "intensityType",
+            "columnNumber": 9,
+            "dataType": "TEXT",
+            "policyStatus": {
+              "CREATE": "READY",
+              "SET": "READY",
+              "CLEAR": "READY"
+            },
+            "setConstraints": {},
+            "create": {
+              "required": false,
+              "initial": {
+                "kind": "EMPTY"
+              },
+              "constraints": {}
+            }
+          },
+          {
+            "fieldKey": "continent",
+            "columnNumber": 10,
+            "dataType": "TEXT",
+            "policyStatus": {
+              "CREATE": "READY",
+              "SET": "READY",
+              "CLEAR": "READY"
+            },
+            "setConstraints": {},
+            "create": {
+              "required": false,
+              "initial": {
+                "kind": "EMPTY"
+              },
+              "constraints": {}
+            }
+          },
+          {
+            "fieldKey": "region",
+            "columnNumber": 11,
+            "dataType": "TEXT",
+            "policyStatus": {
+              "CREATE": "READY",
+              "SET": "READY",
+              "CLEAR": "READY"
+            },
+            "setConstraints": {},
+            "create": {
+              "required": false,
+              "initial": {
+                "kind": "EMPTY"
+              },
+              "constraints": {}
+            }
+          },
+          {
+            "fieldKey": "country",
+            "columnNumber": 12,
+            "dataType": "TEXT",
+            "policyStatus": {
+              "CREATE": "READY",
+              "SET": "READY",
+              "CLEAR": "READY"
+            },
+            "setConstraints": {},
+            "create": {
+              "required": false,
+              "initial": {
+                "kind": "EMPTY"
+              },
+              "constraints": {}
+            }
+          },
+          {
+            "fieldKey": "changeInNonPowerGasDemandPerChangeInGDPPopulation",
+            "columnNumber": 13,
+            "dataType": "DECIMAL",
+            "policyStatus": {
+              "CREATE": "READY",
+              "SET": "READY",
+              "CLEAR": "READY"
+            },
+            "setConstraints": {},
+            "create": {
+              "required": false,
+              "initial": {
+                "kind": "EMPTY"
+              },
+              "constraints": {}
+            }
+          },
+          {
+            "fieldKey": "changeInPowerGenerationPerChangeInGDPPopulation",
+            "columnNumber": 14,
+            "dataType": "DECIMAL",
+            "policyStatus": {
+              "CREATE": "READY",
+              "SET": "READY",
+              "CLEAR": "READY"
+            },
+            "setConstraints": {},
+            "create": {
+              "required": false,
+              "initial": {
+                "kind": "EMPTY"
+              },
+              "constraints": {}
+            }
+          },
+          {
+            "fieldKey": "nonPowerInterceptBCM",
+            "columnNumber": 15,
+            "dataType": "DECIMAL",
+            "policyStatus": {
+              "CREATE": "READY",
+              "SET": "READY",
+              "CLEAR": "READY"
+            },
+            "setConstraints": {},
+            "create": {
+              "required": false,
+              "initial": {
+                "kind": "EMPTY"
+              },
+              "constraints": {}
+            }
+          },
+          {
+            "fieldKey": "powerInterceptTWh",
+            "columnNumber": 16,
+            "dataType": "DECIMAL",
+            "policyStatus": {
+              "CREATE": "READY",
+              "SET": "READY",
+              "CLEAR": "READY"
+            },
+            "setConstraints": {},
+            "create": {
+              "required": false,
+              "initial": {
+                "kind": "EMPTY"
+              },
+              "constraints": {}
+            }
+          }
+        ],
+        "capabilities": {
+          "SET": "READY",
+          "CLEAR": "READY",
+          "ADD_ROW": "READY",
+          "DELETE_ROW": "INCOMPLETE"
+        }
+      },
+      "scopes": [
+        [
+          9,
+          176,
+          9,
+          16
+        ]
+      ]
+    },
+    {
+      "key": [
+        "SUPPLY",
+        "ProductionAdjustment",
+        "PNG Production Adjustment"
+      ],
+      "baselineSha256": "39a39b067a66ec1249cf256721d8b0187fe2bf3a6029a4483b0890cd3b7e0415",
+      "geometry": {
+        "startRow": 3,
+        "startColumn": 8,
+        "endColumn": 15
+      },
+      "definition": {
+        "fields": [
+          {
+            "fieldKey": "year",
+            "columnNumber": 9,
+            "dataType": "INTEGER",
+            "policyStatus": {
+              "CREATE": "READY",
+              "SET": "READY",
+              "CLEAR": "READY"
+            },
+            "setConstraints": {},
+            "create": {
+              "required": false,
+              "initial": {
+                "kind": "EMPTY"
+              },
+              "constraints": {}
+            }
+          },
+          {
+            "fieldKey": "month",
+            "columnNumber": 10,
+            "dataType": "INTEGER",
+            "policyStatus": {
+              "CREATE": "READY",
+              "SET": "READY",
+              "CLEAR": "READY"
+            },
+            "setConstraints": {},
+            "create": {
+              "required": false,
+              "initial": {
+                "kind": "EMPTY"
+              },
+              "constraints": {}
+            }
+          },
+          {
+            "fieldKey": "country",
+            "columnNumber": 11,
+            "dataType": "TEXT",
+            "policyStatus": {
+              "CREATE": "READY",
+              "SET": "READY",
+              "CLEAR": "READY"
+            },
+            "setConstraints": {},
+            "create": {
+              "required": false,
+              "initial": {
+                "kind": "EMPTY"
+              },
+              "constraints": {}
+            }
+          },
+          {
+            "fieldKey": "volume",
+            "columnNumber": 13,
+            "dataType": "DECIMAL",
+            "policyStatus": {
+              "CREATE": "READY",
+              "SET": "READY",
+              "CLEAR": "READY"
+            },
+            "setConstraints": {},
+            "create": {
+              "required": false,
+              "initial": {
+                "kind": "EMPTY"
+              },
+              "constraints": {}
+            }
+          }
+        ],
+        "capabilities": {
+          "SET": "READY",
+          "CLEAR": "READY",
+          "ADD_ROW": "READY",
+          "DELETE_ROW": "INCOMPLETE"
+        }
+      },
+      "scopes": [
+        [
+          8,
+          200,
+          9,
+          11
+        ],
+        [
+          8,
+          200,
+          13,
+          13
+        ]
+      ]
+    },
+    {
+      "key": [
+        "SUPPLY",
+        "{USA}Hurricanes",
+        "Monthly Hurricane Adjustment"
+      ],
+      "baselineSha256": "134480e744873aba599295110e200b8e2befcacb5e2749920ed8465bab24ebbc",
+      "geometry": {
+        "startRow": 3,
+        "endColumn": 9
+      },
+      "definition": {
+        "fields": [
+          {
+            "fieldKey": "year",
+            "columnNumber": 2,
+            "dataType": "INTEGER",
+            "policyStatus": {
+              "CREATE": "READY",
+              "SET": "READY",
+              "CLEAR": "READY"
+            },
+            "setConstraints": {},
+            "create": {
+              "required": false,
+              "initial": {
+                "kind": "EMPTY"
+              },
+              "constraints": {}
+            }
+          },
+          {
+            "fieldKey": "month",
+            "columnNumber": 3,
+            "dataType": "INTEGER",
+            "policyStatus": {
+              "CREATE": "READY",
+              "SET": "READY",
+              "CLEAR": "READY"
+            },
+            "setConstraints": {},
+            "create": {
+              "required": false,
+              "initial": {
+                "kind": "EMPTY"
+              },
+              "constraints": {}
+            }
+          },
+          {
+            "fieldKey": "volume",
+            "columnNumber": 4,
+            "dataType": "DECIMAL",
+            "policyStatus": {
+              "CREATE": "READY",
+              "SET": "READY",
+              "CLEAR": "READY"
+            },
+            "setConstraints": {},
+            "create": {
+              "required": false,
+              "initial": {
+                "kind": "EMPTY"
+              },
+              "constraints": {}
+            }
+          }
+        ],
+        "capabilities": {
+          "SET": "READY",
+          "CLEAR": "READY",
+          "ADD_ROW": "READY",
+          "DELETE_ROW": "INCOMPLETE"
+        }
+      },
+      "scopes": [
+        [
+          13,
+          200,
+          2,
+          4
+        ]
+      ]
+    },
+    {
+      "key": [
+        "SUPPLY",
+        "BCProduction",
+        "Annual Gas Production Baseline"
+      ],
+      "baselineSha256": "2a620dfedb981540a67ccc116f2904291e1f430ae6e830248eff16f14779b2c7",
+      "geometry": {
+        "startColumn": 1
+      },
+      "definition": {
+        "fields": [
+          {
+            "fieldKey": "year",
+            "columnNumber": 3,
+            "dataType": "INTEGER",
+            "policyStatus": {
+              "CREATE": "READY",
+              "SET": "READY",
+              "CLEAR": "READY"
+            },
+            "setConstraints": {},
+            "create": {
+              "required": false,
+              "initial": {
+                "kind": "EMPTY"
+              },
+              "constraints": {}
+            }
+          },
+          {
+            "fieldKey": "continent",
+            "columnNumber": 4,
+            "dataType": "TEXT",
+            "policyStatus": {
+              "CREATE": "READY",
+              "SET": "READY",
+              "CLEAR": "READY"
+            },
+            "setConstraints": {},
+            "create": {
+              "required": false,
+              "initial": {
+                "kind": "EMPTY"
+              },
+              "constraints": {}
+            }
+          },
+          {
+            "fieldKey": "country",
+            "columnNumber": 5,
+            "dataType": "TEXT",
+            "policyStatus": {
+              "CREATE": "READY",
+              "SET": "READY",
+              "CLEAR": "READY"
+            },
+            "setConstraints": {},
+            "create": {
+              "required": false,
+              "initial": {
+                "kind": "EMPTY"
+              },
+              "constraints": {}
+            }
+          },
+          {
+            "fieldKey": "provinceBasin",
+            "columnNumber": 6,
+            "dataType": "TEXT",
+            "policyStatus": {
+              "CREATE": "READY",
+              "SET": "READY",
+              "CLEAR": "READY"
+            },
+            "setConstraints": {},
+            "create": {
+              "required": false,
+              "initial": {
+                "kind": "EMPTY"
+              },
+              "constraints": {}
+            }
+          },
+          {
+            "fieldKey": "lifeCycleCategory",
+            "columnNumber": 8,
+            "dataType": "TEXT",
+            "policyStatus": {
+              "CREATE": "READY",
+              "SET": "READY",
+              "CLEAR": "READY"
+            },
+            "setConstraints": {},
+            "create": {
+              "required": false,
+              "initial": {
+                "kind": "EMPTY"
+              },
+              "constraints": {}
+            }
+          },
+          {
+            "fieldKey": "gasType",
+            "columnNumber": 9,
+            "dataType": "TEXT",
+            "policyStatus": {
+              "CREATE": "READY",
+              "SET": "READY",
+              "CLEAR": "READY"
+            },
+            "setConstraints": {},
+            "create": {
+              "required": false,
+              "initial": {
+                "kind": "EMPTY"
+              },
+              "constraints": {}
+            }
+          },
+          {
+            "fieldKey": "oilAndGasDetail",
+            "columnNumber": 10,
+            "dataType": "TEXT",
+            "policyStatus": {
+              "CREATE": "READY",
+              "SET": "READY",
+              "CLEAR": "READY"
+            },
+            "setConstraints": {},
+            "create": {
+              "required": false,
+              "initial": {
+                "kind": "EMPTY"
+              },
+              "constraints": {}
+            }
+          },
+          {
+            "fieldKey": "baseCaseSupplyMt",
+            "columnNumber": 11,
+            "dataType": "DECIMAL",
+            "policyStatus": {
+              "CREATE": "READY",
+              "SET": "READY",
+              "CLEAR": "READY"
+            },
+            "setConstraints": {},
+            "create": {
+              "required": false,
+              "initial": {
+                "kind": "EMPTY"
+              },
+              "constraints": {}
+            }
+          }
+        ],
+        "capabilities": {
+          "SET": "READY",
+          "CLEAR": "READY",
+          "ADD_ROW": "READY",
+          "DELETE_ROW": "INCOMPLETE"
+        }
+      },
+      "scopes": [
+        [
+          8,
+          24779,
+          3,
+          6
+        ],
+        [
+          8,
+          24779,
+          8,
+          11
+        ]
+      ]
+    },
+    {
+      "key": [
+        "SUPPLY",
+        "BCRegasification",
+        "Annual Regas Capacity Baseline"
+      ],
+      "baselineSha256": "c4f33e252b4f07ce91e6e96b00ded18e749c2a484bbf294df89ac390fe201ef6",
+      "geometry": {
+        "endColumn": 18,
+        "startColumn": 1
+      },
+      "definition": {
+        "fields": [
+          {
+            "fieldKey": "continent",
+            "columnNumber": 2,
+            "dataType": "TEXT",
+            "policyStatus": {
+              "CREATE": "INCOMPLETE",
+              "SET": "INCOMPLETE",
+              "CLEAR": "INCOMPLETE"
+            }
+          },
+          {
+            "fieldKey": "region",
+            "columnNumber": 3,
+            "dataType": "TEXT",
+            "policyStatus": {
+              "CREATE": "INCOMPLETE",
+              "SET": "INCOMPLETE",
+              "CLEAR": "INCOMPLETE"
+            }
+          },
+          {
+            "fieldKey": "country",
+            "columnNumber": 4,
+            "dataType": "TEXT",
+            "policyStatus": {
+              "CREATE": "INCOMPLETE",
+              "SET": "INCOMPLETE",
+              "CLEAR": "INCOMPLETE"
+            }
+          },
+          {
+            "fieldKey": "regasificationPlant",
+            "columnNumber": 5,
+            "dataType": "TEXT",
+            "policyStatus": {
+              "CREATE": "INCOMPLETE",
+              "SET": "INCOMPLETE",
+              "CLEAR": "INCOMPLETE"
+            }
+          },
+          {
+            "fieldKey": "lifeCycleCategory",
+            "columnNumber": 6,
+            "dataType": "TEXT",
+            "policyStatus": {
+              "CREATE": "INCOMPLETE",
+              "SET": "INCOMPLETE",
+              "CLEAR": "INCOMPLETE"
+            }
+          },
+          {
+            "fieldKey": "columnG",
+            "columnNumber": 7,
+            "dataType": "DECIMAL",
+            "policyStatus": {
+              "CREATE": "INCOMPLETE",
+              "SET": "READY",
+              "CLEAR": "READY"
+            },
+            "setConstraints": {}
+          },
+          {
+            "fieldKey": "columnH",
+            "columnNumber": 8,
+            "dataType": "DECIMAL",
+            "policyStatus": {
+              "CREATE": "INCOMPLETE",
+              "SET": "READY",
+              "CLEAR": "READY"
+            },
+            "setConstraints": {}
+          },
+          {
+            "fieldKey": "columnI",
+            "columnNumber": 9,
+            "dataType": "DECIMAL",
+            "policyStatus": {
+              "CREATE": "INCOMPLETE",
+              "SET": "READY",
+              "CLEAR": "READY"
+            },
+            "setConstraints": {}
+          },
+          {
+            "fieldKey": "columnJ",
+            "columnNumber": 10,
+            "dataType": "DECIMAL",
+            "policyStatus": {
+              "CREATE": "INCOMPLETE",
+              "SET": "READY",
+              "CLEAR": "READY"
+            },
+            "setConstraints": {}
+          },
+          {
+            "fieldKey": "columnK",
+            "columnNumber": 11,
+            "dataType": "DECIMAL",
+            "policyStatus": {
+              "CREATE": "INCOMPLETE",
+              "SET": "READY",
+              "CLEAR": "READY"
+            },
+            "setConstraints": {}
+          },
+          {
+            "fieldKey": "columnL",
+            "columnNumber": 12,
+            "dataType": "DECIMAL",
+            "policyStatus": {
+              "CREATE": "INCOMPLETE",
+              "SET": "READY",
+              "CLEAR": "READY"
+            },
+            "setConstraints": {}
+          },
+          {
+            "fieldKey": "columnM",
+            "columnNumber": 13,
+            "dataType": "DECIMAL",
+            "policyStatus": {
+              "CREATE": "INCOMPLETE",
+              "SET": "READY",
+              "CLEAR": "READY"
+            },
+            "setConstraints": {}
+          },
+          {
+            "fieldKey": "columnN",
+            "columnNumber": 14,
+            "dataType": "DECIMAL",
+            "policyStatus": {
+              "CREATE": "INCOMPLETE",
+              "SET": "READY",
+              "CLEAR": "READY"
+            },
+            "setConstraints": {}
+          },
+          {
+            "fieldKey": "columnO",
+            "columnNumber": 15,
+            "dataType": "DECIMAL",
+            "policyStatus": {
+              "CREATE": "INCOMPLETE",
+              "SET": "READY",
+              "CLEAR": "READY"
+            },
+            "setConstraints": {}
+          },
+          {
+            "fieldKey": "columnP",
+            "columnNumber": 16,
+            "dataType": "DECIMAL",
+            "policyStatus": {
+              "CREATE": "INCOMPLETE",
+              "SET": "READY",
+              "CLEAR": "READY"
+            },
+            "setConstraints": {}
+          },
+          {
+            "fieldKey": "columnQ",
+            "columnNumber": 17,
+            "dataType": "DECIMAL",
+            "policyStatus": {
+              "CREATE": "INCOMPLETE",
+              "SET": "READY",
+              "CLEAR": "READY"
+            },
+            "setConstraints": {}
+          }
+        ],
+        "capabilities": {
+          "SET": "READY",
+          "CLEAR": "READY",
+          "ADD_ROW": "INCOMPLETE",
+          "DELETE_ROW": "INCOMPLETE",
+          "ADD_COLUMN": "READY"
+        },
+        "columnCreation": {
+          "headerValues": {
+            "year": {
+              "dataType": "INTEGER",
+              "create": {
+                "required": true,
+                "initial": {
+                  "kind": "EMPTY"
+                },
+                "constraints": {}
+              }
+            }
+          },
+          "body": {
+            "dataType": "DECIMAL",
+            "create": {
+              "required": true,
+              "initial": {
+                "kind": "VALUE",
+                "value": 0
+              },
+              "constraints": {}
+            }
+          }
+        }
+      },
+      "scopes": [
+        [
+          8,
+          379,
+          7,
+          17
+        ]
+      ]
+    },
+    {
+      "key": [
+        "SUPPLY",
+        "RegasAdjustment",
+        "Monthly Regas Capacity Adjustment"
+      ],
+      "baselineSha256": "ef49fedd365f229ba23034faf3d60d309a9a6238de92ca6621f199f2b9698dd7",
+      "geometry": {
+        "endColumn": 126
+      },
+      "definition": {
+        "fields": [
+          {
+            "fieldKey": "continent",
+            "columnNumber": 2,
+            "dataType": "TEXT",
+            "policyStatus": {
+              "CREATE": "INCOMPLETE",
+              "SET": "INCOMPLETE",
+              "CLEAR": "INCOMPLETE"
+            }
+          },
+          {
+            "fieldKey": "region",
+            "columnNumber": 3,
+            "dataType": "TEXT",
+            "policyStatus": {
+              "CREATE": "INCOMPLETE",
+              "SET": "INCOMPLETE",
+              "CLEAR": "INCOMPLETE"
+            }
+          },
+          {
+            "fieldKey": "country",
+            "columnNumber": 4,
+            "dataType": "TEXT",
+            "policyStatus": {
+              "CREATE": "INCOMPLETE",
+              "SET": "INCOMPLETE",
+              "CLEAR": "INCOMPLETE"
+            }
+          },
+          {
+            "fieldKey": "regasificationPlant",
+            "columnNumber": 5,
+            "dataType": "TEXT",
+            "policyStatus": {
+              "CREATE": "INCOMPLETE",
+              "SET": "INCOMPLETE",
+              "CLEAR": "INCOMPLETE"
+            }
+          },
+          {
+            "fieldKey": "nameplateCapacityMTPA",
+            "columnNumber": 7,
+            "dataType": "DECIMAL",
+            "policyStatus": {
+              "CREATE": "INCOMPLETE",
+              "SET": "INCOMPLETE",
+              "CLEAR": "INCOMPLETE"
+            }
+          },
+          {
+            "fieldKey": "columnH",
+            "columnNumber": 8,
+            "dataType": "DECIMAL",
+            "policyStatus": {
+              "CREATE": "INCOMPLETE",
+              "SET": "READY",
+              "CLEAR": "READY"
+            },
+            "setConstraints": {}
+          },
+          {
+            "fieldKey": "columnI",
+            "columnNumber": 9,
+            "dataType": "DECIMAL",
+            "policyStatus": {
+              "CREATE": "INCOMPLETE",
+              "SET": "READY",
+              "CLEAR": "READY"
+            },
+            "setConstraints": {}
+          },
+          {
+            "fieldKey": "columnJ",
+            "columnNumber": 10,
+            "dataType": "DECIMAL",
+            "policyStatus": {
+              "CREATE": "INCOMPLETE",
+              "SET": "READY",
+              "CLEAR": "READY"
+            },
+            "setConstraints": {}
+          },
+          {
+            "fieldKey": "columnK",
+            "columnNumber": 11,
+            "dataType": "DECIMAL",
+            "policyStatus": {
+              "CREATE": "INCOMPLETE",
+              "SET": "READY",
+              "CLEAR": "READY"
+            },
+            "setConstraints": {}
+          },
+          {
+            "fieldKey": "columnL",
+            "columnNumber": 12,
+            "dataType": "DECIMAL",
+            "policyStatus": {
+              "CREATE": "INCOMPLETE",
+              "SET": "READY",
+              "CLEAR": "READY"
+            },
+            "setConstraints": {}
+          },
+          {
+            "fieldKey": "columnM",
+            "columnNumber": 13,
+            "dataType": "DECIMAL",
+            "policyStatus": {
+              "CREATE": "INCOMPLETE",
+              "SET": "READY",
+              "CLEAR": "READY"
+            },
+            "setConstraints": {}
+          },
+          {
+            "fieldKey": "columnN",
+            "columnNumber": 14,
+            "dataType": "DECIMAL",
+            "policyStatus": {
+              "CREATE": "INCOMPLETE",
+              "SET": "READY",
+              "CLEAR": "READY"
+            },
+            "setConstraints": {}
+          },
+          {
+            "fieldKey": "columnO",
+            "columnNumber": 15,
+            "dataType": "DECIMAL",
+            "policyStatus": {
+              "CREATE": "INCOMPLETE",
+              "SET": "READY",
+              "CLEAR": "READY"
+            },
+            "setConstraints": {}
+          },
+          {
+            "fieldKey": "columnP",
+            "columnNumber": 16,
+            "dataType": "DECIMAL",
+            "policyStatus": {
+              "CREATE": "INCOMPLETE",
+              "SET": "READY",
+              "CLEAR": "READY"
+            },
+            "setConstraints": {}
+          },
+          {
+            "fieldKey": "columnQ",
+            "columnNumber": 17,
+            "dataType": "DECIMAL",
+            "policyStatus": {
+              "CREATE": "INCOMPLETE",
+              "SET": "READY",
+              "CLEAR": "READY"
+            },
+            "setConstraints": {}
+          },
+          {
+            "fieldKey": "columnR",
+            "columnNumber": 18,
+            "dataType": "DECIMAL",
+            "policyStatus": {
+              "CREATE": "INCOMPLETE",
+              "SET": "READY",
+              "CLEAR": "READY"
+            },
+            "setConstraints": {}
+          },
+          {
+            "fieldKey": "columnS",
+            "columnNumber": 19,
+            "dataType": "DECIMAL",
+            "policyStatus": {
+              "CREATE": "INCOMPLETE",
+              "SET": "READY",
+              "CLEAR": "READY"
+            },
+            "setConstraints": {}
+          },
+          {
+            "fieldKey": "columnT",
+            "columnNumber": 20,
+            "dataType": "DECIMAL",
+            "policyStatus": {
+              "CREATE": "INCOMPLETE",
+              "SET": "READY",
+              "CLEAR": "READY"
+            },
+            "setConstraints": {}
+          },
+          {
+            "fieldKey": "columnU",
+            "columnNumber": 21,
+            "dataType": "DECIMAL",
+            "policyStatus": {
+              "CREATE": "INCOMPLETE",
+              "SET": "READY",
+              "CLEAR": "READY"
+            },
+            "setConstraints": {}
+          },
+          {
+            "fieldKey": "columnV",
+            "columnNumber": 22,
+            "dataType": "DECIMAL",
+            "policyStatus": {
+              "CREATE": "INCOMPLETE",
+              "SET": "READY",
+              "CLEAR": "READY"
+            },
+            "setConstraints": {}
+          },
+          {
+            "fieldKey": "columnW",
+            "columnNumber": 23,
+            "dataType": "DECIMAL",
+            "policyStatus": {
+              "CREATE": "INCOMPLETE",
+              "SET": "READY",
+              "CLEAR": "READY"
+            },
+            "setConstraints": {}
+          },
+          {
+            "fieldKey": "columnX",
+            "columnNumber": 24,
+            "dataType": "DECIMAL",
+            "policyStatus": {
+              "CREATE": "INCOMPLETE",
+              "SET": "READY",
+              "CLEAR": "READY"
+            },
+            "setConstraints": {}
+          },
+          {
+            "fieldKey": "columnY",
+            "columnNumber": 25,
+            "dataType": "DECIMAL",
+            "policyStatus": {
+              "CREATE": "INCOMPLETE",
+              "SET": "READY",
+              "CLEAR": "READY"
+            },
+            "setConstraints": {}
+          },
+          {
+            "fieldKey": "columnZ",
+            "columnNumber": 26,
+            "dataType": "DECIMAL",
+            "policyStatus": {
+              "CREATE": "INCOMPLETE",
+              "SET": "READY",
+              "CLEAR": "READY"
+            },
+            "setConstraints": {}
+          },
+          {
+            "fieldKey": "columnAA",
+            "columnNumber": 27,
+            "dataType": "DECIMAL",
+            "policyStatus": {
+              "CREATE": "INCOMPLETE",
+              "SET": "READY",
+              "CLEAR": "READY"
+            },
+            "setConstraints": {}
+          },
+          {
+            "fieldKey": "columnAB",
+            "columnNumber": 28,
+            "dataType": "DECIMAL",
+            "policyStatus": {
+              "CREATE": "INCOMPLETE",
+              "SET": "READY",
+              "CLEAR": "READY"
+            },
+            "setConstraints": {}
+          },
+          {
+            "fieldKey": "columnAC",
+            "columnNumber": 29,
+            "dataType": "DECIMAL",
+            "policyStatus": {
+              "CREATE": "INCOMPLETE",
+              "SET": "READY",
+              "CLEAR": "READY"
+            },
+            "setConstraints": {}
+          },
+          {
+            "fieldKey": "columnAD",
+            "columnNumber": 30,
+            "dataType": "DECIMAL",
+            "policyStatus": {
+              "CREATE": "INCOMPLETE",
+              "SET": "READY",
+              "CLEAR": "READY"
+            },
+            "setConstraints": {}
+          },
+          {
+            "fieldKey": "columnAE",
+            "columnNumber": 31,
+            "dataType": "DECIMAL",
+            "policyStatus": {
+              "CREATE": "INCOMPLETE",
+              "SET": "READY",
+              "CLEAR": "READY"
+            },
+            "setConstraints": {}
+          },
+          {
+            "fieldKey": "columnAF",
+            "columnNumber": 32,
+            "dataType": "DECIMAL",
+            "policyStatus": {
+              "CREATE": "INCOMPLETE",
+              "SET": "INCOMPLETE",
+              "CLEAR": "INCOMPLETE"
+            }
+          },
+          {
+            "fieldKey": "columnAG",
+            "columnNumber": 33,
+            "dataType": "DECIMAL",
+            "policyStatus": {
+              "CREATE": "INCOMPLETE",
+              "SET": "INCOMPLETE",
+              "CLEAR": "INCOMPLETE"
+            }
+          },
+          {
+            "fieldKey": "columnAH",
+            "columnNumber": 34,
+            "dataType": "DECIMAL",
+            "policyStatus": {
+              "CREATE": "INCOMPLETE",
+              "SET": "INCOMPLETE",
+              "CLEAR": "INCOMPLETE"
+            }
+          },
+          {
+            "fieldKey": "columnAI",
+            "columnNumber": 35,
+            "dataType": "DECIMAL",
+            "policyStatus": {
+              "CREATE": "INCOMPLETE",
+              "SET": "INCOMPLETE",
+              "CLEAR": "INCOMPLETE"
+            }
+          },
+          {
+            "fieldKey": "columnAJ",
+            "columnNumber": 36,
+            "dataType": "DECIMAL",
+            "policyStatus": {
+              "CREATE": "INCOMPLETE",
+              "SET": "INCOMPLETE",
+              "CLEAR": "INCOMPLETE"
+            }
+          },
+          {
+            "fieldKey": "columnAK",
+            "columnNumber": 37,
+            "dataType": "DECIMAL",
+            "policyStatus": {
+              "CREATE": "INCOMPLETE",
+              "SET": "INCOMPLETE",
+              "CLEAR": "INCOMPLETE"
+            }
+          },
+          {
+            "fieldKey": "columnAL",
+            "columnNumber": 38,
+            "dataType": "DECIMAL",
+            "policyStatus": {
+              "CREATE": "INCOMPLETE",
+              "SET": "INCOMPLETE",
+              "CLEAR": "INCOMPLETE"
+            }
+          },
+          {
+            "fieldKey": "columnAM",
+            "columnNumber": 39,
+            "dataType": "DECIMAL",
+            "policyStatus": {
+              "CREATE": "INCOMPLETE",
+              "SET": "INCOMPLETE",
+              "CLEAR": "INCOMPLETE"
+            }
+          },
+          {
+            "fieldKey": "columnAN",
+            "columnNumber": 40,
+            "dataType": "DECIMAL",
+            "policyStatus": {
+              "CREATE": "INCOMPLETE",
+              "SET": "INCOMPLETE",
+              "CLEAR": "INCOMPLETE"
+            }
+          },
+          {
+            "fieldKey": "columnAO",
+            "columnNumber": 41,
+            "dataType": "DECIMAL",
+            "policyStatus": {
+              "CREATE": "INCOMPLETE",
+              "SET": "INCOMPLETE",
+              "CLEAR": "INCOMPLETE"
+            }
+          },
+          {
+            "fieldKey": "columnAP",
+            "columnNumber": 42,
+            "dataType": "DECIMAL",
+            "policyStatus": {
+              "CREATE": "INCOMPLETE",
+              "SET": "INCOMPLETE",
+              "CLEAR": "INCOMPLETE"
+            }
+          },
+          {
+            "fieldKey": "columnAQ",
+            "columnNumber": 43,
+            "dataType": "DECIMAL",
+            "policyStatus": {
+              "CREATE": "INCOMPLETE",
+              "SET": "INCOMPLETE",
+              "CLEAR": "INCOMPLETE"
+            }
+          },
+          {
+            "fieldKey": "columnAR",
+            "columnNumber": 44,
+            "dataType": "DECIMAL",
+            "policyStatus": {
+              "CREATE": "INCOMPLETE",
+              "SET": "INCOMPLETE",
+              "CLEAR": "INCOMPLETE"
+            }
+          },
+          {
+            "fieldKey": "columnAS",
+            "columnNumber": 45,
+            "dataType": "DECIMAL",
+            "policyStatus": {
+              "CREATE": "INCOMPLETE",
+              "SET": "INCOMPLETE",
+              "CLEAR": "INCOMPLETE"
+            }
+          },
+          {
+            "fieldKey": "columnAT",
+            "columnNumber": 46,
+            "dataType": "DECIMAL",
+            "policyStatus": {
+              "CREATE": "INCOMPLETE",
+              "SET": "INCOMPLETE",
+              "CLEAR": "INCOMPLETE"
+            }
+          },
+          {
+            "fieldKey": "columnAU",
+            "columnNumber": 47,
+            "dataType": "DECIMAL",
+            "policyStatus": {
+              "CREATE": "INCOMPLETE",
+              "SET": "INCOMPLETE",
+              "CLEAR": "INCOMPLETE"
+            }
+          },
+          {
+            "fieldKey": "columnAV",
+            "columnNumber": 48,
+            "dataType": "DECIMAL",
+            "policyStatus": {
+              "CREATE": "INCOMPLETE",
+              "SET": "INCOMPLETE",
+              "CLEAR": "INCOMPLETE"
+            }
+          },
+          {
+            "fieldKey": "columnAW",
+            "columnNumber": 49,
+            "dataType": "DECIMAL",
+            "policyStatus": {
+              "CREATE": "INCOMPLETE",
+              "SET": "INCOMPLETE",
+              "CLEAR": "INCOMPLETE"
+            }
+          },
+          {
+            "fieldKey": "columnAX",
+            "columnNumber": 50,
+            "dataType": "DECIMAL",
+            "policyStatus": {
+              "CREATE": "INCOMPLETE",
+              "SET": "INCOMPLETE",
+              "CLEAR": "INCOMPLETE"
+            }
+          },
+          {
+            "fieldKey": "columnAY",
+            "columnNumber": 51,
+            "dataType": "DECIMAL",
+            "policyStatus": {
+              "CREATE": "INCOMPLETE",
+              "SET": "INCOMPLETE",
+              "CLEAR": "INCOMPLETE"
+            }
+          },
+          {
+            "fieldKey": "columnAZ",
+            "columnNumber": 52,
+            "dataType": "DECIMAL",
+            "policyStatus": {
+              "CREATE": "INCOMPLETE",
+              "SET": "INCOMPLETE",
+              "CLEAR": "INCOMPLETE"
+            }
+          },
+          {
+            "fieldKey": "columnBA",
+            "columnNumber": 53,
+            "dataType": "DECIMAL",
+            "policyStatus": {
+              "CREATE": "INCOMPLETE",
+              "SET": "INCOMPLETE",
+              "CLEAR": "INCOMPLETE"
+            }
+          },
+          {
+            "fieldKey": "columnBB",
+            "columnNumber": 54,
+            "dataType": "DECIMAL",
+            "policyStatus": {
+              "CREATE": "INCOMPLETE",
+              "SET": "INCOMPLETE",
+              "CLEAR": "INCOMPLETE"
+            }
+          },
+          {
+            "fieldKey": "columnBC",
+            "columnNumber": 55,
+            "dataType": "DECIMAL",
+            "policyStatus": {
+              "CREATE": "INCOMPLETE",
+              "SET": "INCOMPLETE",
+              "CLEAR": "INCOMPLETE"
+            }
+          },
+          {
+            "fieldKey": "columnBD",
+            "columnNumber": 56,
+            "dataType": "DECIMAL",
+            "policyStatus": {
+              "CREATE": "INCOMPLETE",
+              "SET": "INCOMPLETE",
+              "CLEAR": "INCOMPLETE"
+            }
+          },
+          {
+            "fieldKey": "columnBE",
+            "columnNumber": 57,
+            "dataType": "DECIMAL",
+            "policyStatus": {
+              "CREATE": "INCOMPLETE",
+              "SET": "INCOMPLETE",
+              "CLEAR": "INCOMPLETE"
+            }
+          },
+          {
+            "fieldKey": "columnBF",
+            "columnNumber": 58,
+            "dataType": "DECIMAL",
+            "policyStatus": {
+              "CREATE": "INCOMPLETE",
+              "SET": "INCOMPLETE",
+              "CLEAR": "INCOMPLETE"
+            }
+          },
+          {
+            "fieldKey": "columnBG",
+            "columnNumber": 59,
+            "dataType": "DECIMAL",
+            "policyStatus": {
+              "CREATE": "INCOMPLETE",
+              "SET": "INCOMPLETE",
+              "CLEAR": "INCOMPLETE"
+            }
+          },
+          {
+            "fieldKey": "columnBH",
+            "columnNumber": 60,
+            "dataType": "DECIMAL",
+            "policyStatus": {
+              "CREATE": "INCOMPLETE",
+              "SET": "INCOMPLETE",
+              "CLEAR": "INCOMPLETE"
+            }
+          },
+          {
+            "fieldKey": "columnBI",
+            "columnNumber": 61,
+            "dataType": "DECIMAL",
+            "policyStatus": {
+              "CREATE": "INCOMPLETE",
+              "SET": "INCOMPLETE",
+              "CLEAR": "INCOMPLETE"
+            }
+          },
+          {
+            "fieldKey": "columnBJ",
+            "columnNumber": 62,
+            "dataType": "DECIMAL",
+            "policyStatus": {
+              "CREATE": "INCOMPLETE",
+              "SET": "INCOMPLETE",
+              "CLEAR": "INCOMPLETE"
+            }
+          },
+          {
+            "fieldKey": "columnBK",
+            "columnNumber": 63,
+            "dataType": "DECIMAL",
+            "policyStatus": {
+              "CREATE": "INCOMPLETE",
+              "SET": "INCOMPLETE",
+              "CLEAR": "INCOMPLETE"
+            }
+          },
+          {
+            "fieldKey": "columnBL",
+            "columnNumber": 64,
+            "dataType": "DECIMAL",
+            "policyStatus": {
+              "CREATE": "INCOMPLETE",
+              "SET": "INCOMPLETE",
+              "CLEAR": "INCOMPLETE"
+            }
+          },
+          {
+            "fieldKey": "columnBM",
+            "columnNumber": 65,
+            "dataType": "DECIMAL",
+            "policyStatus": {
+              "CREATE": "INCOMPLETE",
+              "SET": "INCOMPLETE",
+              "CLEAR": "INCOMPLETE"
+            }
+          },
+          {
+            "fieldKey": "columnBN",
+            "columnNumber": 66,
+            "dataType": "DECIMAL",
+            "policyStatus": {
+              "CREATE": "INCOMPLETE",
+              "SET": "INCOMPLETE",
+              "CLEAR": "INCOMPLETE"
+            }
+          },
+          {
+            "fieldKey": "columnBO",
+            "columnNumber": 67,
+            "dataType": "DECIMAL",
+            "policyStatus": {
+              "CREATE": "INCOMPLETE",
+              "SET": "INCOMPLETE",
+              "CLEAR": "INCOMPLETE"
+            }
+          },
+          {
+            "fieldKey": "columnBP",
+            "columnNumber": 68,
+            "dataType": "DECIMAL",
+            "policyStatus": {
+              "CREATE": "INCOMPLETE",
+              "SET": "INCOMPLETE",
+              "CLEAR": "INCOMPLETE"
+            }
+          },
+          {
+            "fieldKey": "columnBQ",
+            "columnNumber": 69,
+            "dataType": "DECIMAL",
+            "policyStatus": {
+              "CREATE": "INCOMPLETE",
+              "SET": "INCOMPLETE",
+              "CLEAR": "INCOMPLETE"
+            }
+          },
+          {
+            "fieldKey": "columnBR",
+            "columnNumber": 70,
+            "dataType": "DECIMAL",
+            "policyStatus": {
+              "CREATE": "INCOMPLETE",
+              "SET": "INCOMPLETE",
+              "CLEAR": "INCOMPLETE"
+            }
+          },
+          {
+            "fieldKey": "columnBS",
+            "columnNumber": 71,
+            "dataType": "DECIMAL",
+            "policyStatus": {
+              "CREATE": "INCOMPLETE",
+              "SET": "INCOMPLETE",
+              "CLEAR": "INCOMPLETE"
+            }
+          },
+          {
+            "fieldKey": "columnBT",
+            "columnNumber": 72,
+            "dataType": "DECIMAL",
+            "policyStatus": {
+              "CREATE": "INCOMPLETE",
+              "SET": "INCOMPLETE",
+              "CLEAR": "INCOMPLETE"
+            }
+          },
+          {
+            "fieldKey": "columnBU",
+            "columnNumber": 73,
+            "dataType": "DECIMAL",
+            "policyStatus": {
+              "CREATE": "INCOMPLETE",
+              "SET": "INCOMPLETE",
+              "CLEAR": "INCOMPLETE"
+            }
+          },
+          {
+            "fieldKey": "columnBV",
+            "columnNumber": 74,
+            "dataType": "DECIMAL",
+            "policyStatus": {
+              "CREATE": "INCOMPLETE",
+              "SET": "INCOMPLETE",
+              "CLEAR": "INCOMPLETE"
+            }
+          },
+          {
+            "fieldKey": "columnBW",
+            "columnNumber": 75,
+            "dataType": "DECIMAL",
+            "policyStatus": {
+              "CREATE": "INCOMPLETE",
+              "SET": "INCOMPLETE",
+              "CLEAR": "INCOMPLETE"
+            }
+          },
+          {
+            "fieldKey": "columnBX",
+            "columnNumber": 76,
+            "dataType": "DECIMAL",
+            "policyStatus": {
+              "CREATE": "INCOMPLETE",
+              "SET": "INCOMPLETE",
+              "CLEAR": "INCOMPLETE"
+            }
+          },
+          {
+            "fieldKey": "columnBY",
+            "columnNumber": 77,
+            "dataType": "DECIMAL",
+            "policyStatus": {
+              "CREATE": "INCOMPLETE",
+              "SET": "INCOMPLETE",
+              "CLEAR": "INCOMPLETE"
+            }
+          },
+          {
+            "fieldKey": "columnBZ",
+            "columnNumber": 78,
+            "dataType": "DECIMAL",
+            "policyStatus": {
+              "CREATE": "INCOMPLETE",
+              "SET": "INCOMPLETE",
+              "CLEAR": "INCOMPLETE"
+            }
+          },
+          {
+            "fieldKey": "columnCA",
+            "columnNumber": 79,
+            "dataType": "DECIMAL",
+            "policyStatus": {
+              "CREATE": "INCOMPLETE",
+              "SET": "INCOMPLETE",
+              "CLEAR": "INCOMPLETE"
+            }
+          },
+          {
+            "fieldKey": "columnCB",
+            "columnNumber": 80,
+            "dataType": "DECIMAL",
+            "policyStatus": {
+              "CREATE": "INCOMPLETE",
+              "SET": "INCOMPLETE",
+              "CLEAR": "INCOMPLETE"
+            }
+          },
+          {
+            "fieldKey": "columnCC",
+            "columnNumber": 81,
+            "dataType": "DECIMAL",
+            "policyStatus": {
+              "CREATE": "INCOMPLETE",
+              "SET": "INCOMPLETE",
+              "CLEAR": "INCOMPLETE"
+            }
+          },
+          {
+            "fieldKey": "columnCD",
+            "columnNumber": 82,
+            "dataType": "DECIMAL",
+            "policyStatus": {
+              "CREATE": "INCOMPLETE",
+              "SET": "INCOMPLETE",
+              "CLEAR": "INCOMPLETE"
+            }
+          },
+          {
+            "fieldKey": "columnCE",
+            "columnNumber": 83,
+            "dataType": "DECIMAL",
+            "policyStatus": {
+              "CREATE": "INCOMPLETE",
+              "SET": "INCOMPLETE",
+              "CLEAR": "INCOMPLETE"
+            }
+          },
+          {
+            "fieldKey": "columnCF",
+            "columnNumber": 84,
+            "dataType": "DECIMAL",
+            "policyStatus": {
+              "CREATE": "INCOMPLETE",
+              "SET": "INCOMPLETE",
+              "CLEAR": "INCOMPLETE"
+            }
+          },
+          {
+            "fieldKey": "columnCG",
+            "columnNumber": 85,
+            "dataType": "DECIMAL",
+            "policyStatus": {
+              "CREATE": "INCOMPLETE",
+              "SET": "INCOMPLETE",
+              "CLEAR": "INCOMPLETE"
+            }
+          },
+          {
+            "fieldKey": "columnCH",
+            "columnNumber": 86,
+            "dataType": "DECIMAL",
+            "policyStatus": {
+              "CREATE": "INCOMPLETE",
+              "SET": "INCOMPLETE",
+              "CLEAR": "INCOMPLETE"
+            }
+          },
+          {
+            "fieldKey": "columnCI",
+            "columnNumber": 87,
+            "dataType": "DECIMAL",
+            "policyStatus": {
+              "CREATE": "INCOMPLETE",
+              "SET": "INCOMPLETE",
+              "CLEAR": "INCOMPLETE"
+            }
+          },
+          {
+            "fieldKey": "columnCJ",
+            "columnNumber": 88,
+            "dataType": "DECIMAL",
+            "policyStatus": {
+              "CREATE": "INCOMPLETE",
+              "SET": "INCOMPLETE",
+              "CLEAR": "INCOMPLETE"
+            }
+          },
+          {
+            "fieldKey": "columnCK",
+            "columnNumber": 89,
+            "dataType": "DECIMAL",
+            "policyStatus": {
+              "CREATE": "INCOMPLETE",
+              "SET": "INCOMPLETE",
+              "CLEAR": "INCOMPLETE"
+            }
+          },
+          {
+            "fieldKey": "columnCL",
+            "columnNumber": 90,
+            "dataType": "DECIMAL",
+            "policyStatus": {
+              "CREATE": "INCOMPLETE",
+              "SET": "INCOMPLETE",
+              "CLEAR": "INCOMPLETE"
+            }
+          },
+          {
+            "fieldKey": "columnCM",
+            "columnNumber": 91,
+            "dataType": "DECIMAL",
+            "policyStatus": {
+              "CREATE": "INCOMPLETE",
+              "SET": "INCOMPLETE",
+              "CLEAR": "INCOMPLETE"
+            }
+          },
+          {
+            "fieldKey": "columnCN",
+            "columnNumber": 92,
+            "dataType": "DECIMAL",
+            "policyStatus": {
+              "CREATE": "INCOMPLETE",
+              "SET": "INCOMPLETE",
+              "CLEAR": "INCOMPLETE"
+            }
+          },
+          {
+            "fieldKey": "columnCO",
+            "columnNumber": 93,
+            "dataType": "DECIMAL",
+            "policyStatus": {
+              "CREATE": "INCOMPLETE",
+              "SET": "INCOMPLETE",
+              "CLEAR": "INCOMPLETE"
+            }
+          },
+          {
+            "fieldKey": "columnCP",
+            "columnNumber": 94,
+            "dataType": "DECIMAL",
+            "policyStatus": {
+              "CREATE": "INCOMPLETE",
+              "SET": "INCOMPLETE",
+              "CLEAR": "INCOMPLETE"
+            }
+          },
+          {
+            "fieldKey": "columnCQ",
+            "columnNumber": 95,
+            "dataType": "DECIMAL",
+            "policyStatus": {
+              "CREATE": "INCOMPLETE",
+              "SET": "INCOMPLETE",
+              "CLEAR": "INCOMPLETE"
+            }
+          },
+          {
+            "fieldKey": "columnCR",
+            "columnNumber": 96,
+            "dataType": "DECIMAL",
+            "policyStatus": {
+              "CREATE": "INCOMPLETE",
+              "SET": "INCOMPLETE",
+              "CLEAR": "INCOMPLETE"
+            }
+          },
+          {
+            "fieldKey": "columnCS",
+            "columnNumber": 97,
+            "dataType": "DECIMAL",
+            "policyStatus": {
+              "CREATE": "INCOMPLETE",
+              "SET": "INCOMPLETE",
+              "CLEAR": "INCOMPLETE"
+            }
+          },
+          {
+            "fieldKey": "columnCT",
+            "columnNumber": 98,
+            "dataType": "DECIMAL",
+            "policyStatus": {
+              "CREATE": "INCOMPLETE",
+              "SET": "INCOMPLETE",
+              "CLEAR": "INCOMPLETE"
+            }
+          },
+          {
+            "fieldKey": "columnCU",
+            "columnNumber": 99,
+            "dataType": "DECIMAL",
+            "policyStatus": {
+              "CREATE": "INCOMPLETE",
+              "SET": "INCOMPLETE",
+              "CLEAR": "INCOMPLETE"
+            }
+          },
+          {
+            "fieldKey": "columnCV",
+            "columnNumber": 100,
+            "dataType": "DECIMAL",
+            "policyStatus": {
+              "CREATE": "INCOMPLETE",
+              "SET": "INCOMPLETE",
+              "CLEAR": "INCOMPLETE"
+            }
+          },
+          {
+            "fieldKey": "columnCW",
+            "columnNumber": 101,
+            "dataType": "DECIMAL",
+            "policyStatus": {
+              "CREATE": "INCOMPLETE",
+              "SET": "INCOMPLETE",
+              "CLEAR": "INCOMPLETE"
+            }
+          },
+          {
+            "fieldKey": "columnCX",
+            "columnNumber": 102,
+            "dataType": "DECIMAL",
+            "policyStatus": {
+              "CREATE": "INCOMPLETE",
+              "SET": "INCOMPLETE",
+              "CLEAR": "INCOMPLETE"
+            }
+          },
+          {
+            "fieldKey": "columnCY",
+            "columnNumber": 103,
+            "dataType": "DECIMAL",
+            "policyStatus": {
+              "CREATE": "INCOMPLETE",
+              "SET": "INCOMPLETE",
+              "CLEAR": "INCOMPLETE"
+            }
+          },
+          {
+            "fieldKey": "columnCZ",
+            "columnNumber": 104,
+            "dataType": "DECIMAL",
+            "policyStatus": {
+              "CREATE": "INCOMPLETE",
+              "SET": "INCOMPLETE",
+              "CLEAR": "INCOMPLETE"
+            }
+          },
+          {
+            "fieldKey": "columnDA",
+            "columnNumber": 105,
+            "dataType": "DECIMAL",
+            "policyStatus": {
+              "CREATE": "INCOMPLETE",
+              "SET": "INCOMPLETE",
+              "CLEAR": "INCOMPLETE"
+            }
+          },
+          {
+            "fieldKey": "columnDB",
+            "columnNumber": 106,
+            "dataType": "DECIMAL",
+            "policyStatus": {
+              "CREATE": "INCOMPLETE",
+              "SET": "INCOMPLETE",
+              "CLEAR": "INCOMPLETE"
+            }
+          },
+          {
+            "fieldKey": "columnDC",
+            "columnNumber": 107,
+            "dataType": "DECIMAL",
+            "policyStatus": {
+              "CREATE": "INCOMPLETE",
+              "SET": "INCOMPLETE",
+              "CLEAR": "INCOMPLETE"
+            }
+          },
+          {
+            "fieldKey": "columnDD",
+            "columnNumber": 108,
+            "dataType": "DECIMAL",
+            "policyStatus": {
+              "CREATE": "INCOMPLETE",
+              "SET": "INCOMPLETE",
+              "CLEAR": "INCOMPLETE"
+            }
+          },
+          {
+            "fieldKey": "columnDE",
+            "columnNumber": 109,
+            "dataType": "DECIMAL",
+            "policyStatus": {
+              "CREATE": "INCOMPLETE",
+              "SET": "INCOMPLETE",
+              "CLEAR": "INCOMPLETE"
+            }
+          },
+          {
+            "fieldKey": "columnDF",
+            "columnNumber": 110,
+            "dataType": "DECIMAL",
+            "policyStatus": {
+              "CREATE": "INCOMPLETE",
+              "SET": "INCOMPLETE",
+              "CLEAR": "INCOMPLETE"
+            }
+          },
+          {
+            "fieldKey": "columnDG",
+            "columnNumber": 111,
+            "dataType": "DECIMAL",
+            "policyStatus": {
+              "CREATE": "INCOMPLETE",
+              "SET": "INCOMPLETE",
+              "CLEAR": "INCOMPLETE"
+            }
+          },
+          {
+            "fieldKey": "columnDH",
+            "columnNumber": 112,
+            "dataType": "DECIMAL",
+            "policyStatus": {
+              "CREATE": "INCOMPLETE",
+              "SET": "INCOMPLETE",
+              "CLEAR": "INCOMPLETE"
+            }
+          },
+          {
+            "fieldKey": "columnDI",
+            "columnNumber": 113,
+            "dataType": "DECIMAL",
+            "policyStatus": {
+              "CREATE": "INCOMPLETE",
+              "SET": "INCOMPLETE",
+              "CLEAR": "INCOMPLETE"
+            }
+          },
+          {
+            "fieldKey": "columnDJ",
+            "columnNumber": 114,
+            "dataType": "DECIMAL",
+            "policyStatus": {
+              "CREATE": "INCOMPLETE",
+              "SET": "INCOMPLETE",
+              "CLEAR": "INCOMPLETE"
+            }
+          },
+          {
+            "fieldKey": "columnDK",
+            "columnNumber": 115,
+            "dataType": "DECIMAL",
+            "policyStatus": {
+              "CREATE": "INCOMPLETE",
+              "SET": "INCOMPLETE",
+              "CLEAR": "INCOMPLETE"
+            }
+          }
+        ],
+        "capabilities": {
+          "SET": "READY",
+          "CLEAR": "READY",
+          "ADD_ROW": "INCOMPLETE",
+          "DELETE_ROW": "INCOMPLETE"
+        }
+      },
+      "scopes": [
+        [
+          11,
+          382,
+          8,
+          31
+        ]
+      ]
+    },
+    {
+      "key": [
+        "TRADE",
+        "MidstreamCapacityInput",
+        "Pipeline Import Allocation Shares"
+      ],
+      "baselineSha256": "7db86b862e30d965ac815dc5c563c960c181f911df9927f6d887f02b9301fbdb",
+      "geometry": {
+        "endColumn": 133
+      },
+      "definition": {
+        "fields": [
+          {
+            "fieldKey": "year",
+            "columnNumber": 128,
+            "dataType": "INTEGER",
+            "policyStatus": {
+              "CREATE": "READY",
+              "SET": "READY",
+              "CLEAR": "READY"
+            },
+            "setConstraints": {},
+            "create": {
+              "required": false,
+              "initial": {
+                "kind": "EMPTY"
+              },
+              "constraints": {}
+            }
+          },
+          {
+            "fieldKey": "fromCountry",
+            "columnNumber": 129,
+            "dataType": "TEXT",
+            "policyStatus": {
+              "CREATE": "READY",
+              "SET": "READY",
+              "CLEAR": "READY"
+            },
+            "setConstraints": {},
+            "create": {
+              "required": false,
+              "initial": {
+                "kind": "EMPTY"
+              },
+              "constraints": {}
+            }
+          },
+          {
+            "fieldKey": "toCountry",
+            "columnNumber": 130,
+            "dataType": "TEXT",
+            "policyStatus": {
+              "CREATE": "READY",
+              "SET": "READY",
+              "CLEAR": "READY"
+            },
+            "setConstraints": {},
+            "create": {
+              "required": false,
+              "initial": {
+                "kind": "EMPTY"
+              },
+              "constraints": {}
+            }
+          },
+          {
+            "fieldKey": "pipeline",
+            "columnNumber": 131,
+            "dataType": "TEXT",
+            "policyStatus": {
+              "CREATE": "READY",
+              "SET": "READY",
+              "CLEAR": "READY"
+            },
+            "setConstraints": {},
+            "create": {
+              "required": false,
+              "initial": {
+                "kind": "EMPTY"
+              },
+              "constraints": {}
+            }
+          },
+          {
+            "fieldKey": "userAdjustableShare",
+            "columnNumber": 132,
+            "dataType": "DECIMAL",
+            "policyStatus": {
+              "CREATE": "READY",
+              "SET": "READY",
+              "CLEAR": "READY"
+            },
+            "setConstraints": {},
+            "create": {
+              "required": false,
+              "initial": {
+                "kind": "EMPTY"
+              },
+              "constraints": {}
+            }
+          }
+        ],
+        "capabilities": {
+          "SET": "READY",
+          "CLEAR": "READY",
+          "ADD_ROW": "READY",
+          "DELETE_ROW": "INCOMPLETE"
+        }
+      },
+      "scopes": [
+        [
+          4,
+          186,
+          128,
+          132
+        ]
+      ]
+    },
+    {
+      "key": [
+        "TRADE",
+        "UpstreamAdjLogicInput",
+        "Country Supply Adjustment"
+      ],
+      "baselineSha256": "b2497c50147a3a8cfea8b6a44282d48251bd7f0c6d05191047313d0332d9d3f6",
+      "geometry": {
+        "endColumn": 18
+      },
+      "definition": {
+        "fields": [
+          {
+            "fieldKey": "year",
+            "columnNumber": 9,
+            "dataType": "INTEGER",
+            "policyStatus": {
+              "CREATE": "INCOMPLETE",
+              "SET": "READY",
+              "CLEAR": "READY"
+            },
+            "setConstraints": {}
+          },
+          {
+            "fieldKey": "country",
+            "columnNumber": 10,
+            "dataType": "TEXT",
+            "policyStatus": {
+              "CREATE": "INCOMPLETE",
+              "SET": "READY",
+              "CLEAR": "READY"
+            },
+            "setConstraints": {}
+          },
+          {
+            "fieldKey": "userAdjustedSupply",
+            "columnNumber": 16,
+            "dataType": "DECIMAL",
+            "policyStatus": {
+              "CREATE": "INCOMPLETE",
+              "SET": "READY",
+              "CLEAR": "READY"
+            },
+            "setConstraints": {}
+          }
+        ],
+        "capabilities": {
+          "SET": "READY",
+          "CLEAR": "READY",
+          "ADD_ROW": "INCOMPLETE",
+          "DELETE_ROW": "INCOMPLETE"
+        }
+      },
+      "scopes": [
+        [
+          3,
+          674,
+          9,
+          10
+        ],
+        [
+          3,
+          674,
+          16,
+          16
+        ]
+      ]
+    },
+    {
+      "key": [
+        "TRADE",
+        "UpstreamAdjLogicInput",
+        "Excess LNG to PNG Countries"
+      ],
+      "baselineSha256": "fa7483e6396e9fde050daaf061a1e79c9c2534dd878dcbea1ceb564a422ba074",
+      "geometry": {
+        "endColumn": 21
+      },
+      "definition": {
+        "fields": [
+          {
+            "fieldKey": "exporterCountries",
+            "columnNumber": 20,
+            "dataType": "TEXT",
+            "policyStatus": {
+              "CREATE": "READY",
+              "SET": "READY",
+              "CLEAR": "READY"
+            },
+            "setConstraints": {},
+            "create": {
+              "required": false,
+              "initial": {
+                "kind": "EMPTY"
+              },
+              "constraints": {}
+            }
+          }
+        ],
+        "capabilities": {
+          "SET": "READY",
+          "CLEAR": "READY",
+          "ADD_ROW": "READY",
+          "DELETE_ROW": "INCOMPLETE"
+        }
+      },
+      "scopes": [
+        [
+          4,
+          40,
+          20,
+          20
+        ]
+      ]
+    },
+    {
+      "key": [
+        "TRADE",
+        "CostInput",
+        "Regasification Tariff"
+      ],
+      "baselineSha256": "7b220ec05875a9d9a7513db73d93fc736d4ddbf13c68ac19939e92b85fcfbf1f",
+      "geometry": {
+        "endColumn": 6
+      },
+      "definition": {
+        "fields": [
+          {
+            "fieldKey": "year",
+            "columnNumber": 1,
+            "dataType": "INTEGER",
+            "policyStatus": {
+              "CREATE": "READY",
+              "SET": "READY",
+              "CLEAR": "READY"
+            },
+            "setConstraints": {},
+            "create": {
+              "required": false,
+              "initial": {
+                "kind": "EMPTY"
+              },
+              "constraints": {}
+            }
+          },
+          {
+            "fieldKey": "country",
+            "columnNumber": 2,
+            "dataType": "TEXT",
+            "policyStatus": {
+              "CREATE": "READY",
+              "SET": "READY",
+              "CLEAR": "READY"
+            },
+            "setConstraints": {},
+            "create": {
+              "required": false,
+              "initial": {
+                "kind": "EMPTY"
+              },
+              "constraints": {}
+            }
+          },
+          {
+            "fieldKey": "reBaseCaseInput",
+            "columnNumber": 3,
+            "dataType": "DECIMAL",
+            "policyStatus": {
+              "CREATE": "READY",
+              "SET": "READY",
+              "CLEAR": "READY"
+            },
+            "setConstraints": {},
+            "create": {
+              "required": false,
+              "initial": {
+                "kind": "EMPTY"
+              },
+              "constraints": {}
+            }
+          },
+          {
+            "fieldKey": "columnD",
+            "columnNumber": 4,
+            "dataType": "DECIMAL",
+            "policyStatus": {
+              "CREATE": "READY",
+              "SET": "READY",
+              "CLEAR": "READY"
+            },
+            "setConstraints": {},
+            "create": {
+              "required": false,
+              "initial": {
+                "kind": "EMPTY"
+              },
+              "constraints": {}
+            }
+          }
+        ],
+        "capabilities": {
+          "SET": "READY",
+          "CLEAR": "READY",
+          "ADD_ROW": "READY",
+          "DELETE_ROW": "INCOMPLETE"
+        }
+      },
+      "scopes": [
+        [
+          3,
+          379,
+          1,
+          4
+        ]
+      ]
+    },
+    {
+      "key": [
+        "TRADE",
+        "CostInput",
+        "Liquefaction Cost"
+      ],
+      "baselineSha256": "addec56837dd295080b588fa80d01495a110d45b06193ed5e7692bea2d3723e9",
+      "geometry": {
+        "endColumn": 13
+      },
+      "definition": {
+        "fields": [
+          {
+            "fieldKey": "year",
+            "columnNumber": 8,
+            "dataType": "INTEGER",
+            "policyStatus": {
+              "CREATE": "READY",
+              "SET": "READY",
+              "CLEAR": "READY"
+            },
+            "setConstraints": {},
+            "create": {
+              "required": false,
+              "initial": {
+                "kind": "EMPTY"
+              },
+              "constraints": {}
+            }
+          },
+          {
+            "fieldKey": "country",
+            "columnNumber": 9,
+            "dataType": "TEXT",
+            "policyStatus": {
+              "CREATE": "READY",
+              "SET": "READY",
+              "CLEAR": "READY"
+            },
+            "setConstraints": {},
+            "create": {
+              "required": false,
+              "initial": {
+                "kind": "EMPTY"
+              },
+              "constraints": {}
+            }
+          },
+          {
+            "fieldKey": "reBaseCaseInput",
+            "columnNumber": 10,
+            "dataType": "DECIMAL",
+            "policyStatus": {
+              "CREATE": "READY",
+              "SET": "READY",
+              "CLEAR": "READY"
+            },
+            "setConstraints": {},
+            "create": {
+              "required": false,
+              "initial": {
+                "kind": "EMPTY"
+              },
+              "constraints": {}
+            }
+          },
+          {
+            "fieldKey": "columnK",
+            "columnNumber": 11,
+            "dataType": "DECIMAL",
+            "policyStatus": {
+              "CREATE": "READY",
+              "SET": "READY",
+              "CLEAR": "READY"
+            },
+            "setConstraints": {},
+            "create": {
+              "required": false,
+              "initial": {
+                "kind": "EMPTY"
+              },
+              "constraints": {}
+            }
+          }
+        ],
+        "capabilities": {
+          "SET": "READY",
+          "CLEAR": "READY",
+          "ADD_ROW": "READY",
+          "DELETE_ROW": "INCOMPLETE"
+        }
+      },
+      "scopes": [
+        [
+          3,
+          233,
+          8,
+          11
+        ]
+      ]
+    },
+    {
+      "key": [
+        "TRADE",
+        "CostInput",
+        "LNG Upstream Cost"
+      ],
+      "baselineSha256": "d7e8b0b7f9c15909ac861d1a6f05f74066365de4428b7dd4a367817770007e7f",
+      "geometry": {
+        "endColumn": 20
+      },
+      "definition": {
+        "fields": [
+          {
+            "fieldKey": "year",
+            "columnNumber": 15,
+            "dataType": "INTEGER",
+            "policyStatus": {
+              "CREATE": "READY",
+              "SET": "READY",
+              "CLEAR": "READY"
+            },
+            "setConstraints": {},
+            "create": {
+              "required": false,
+              "initial": {
+                "kind": "EMPTY"
+              },
+              "constraints": {}
+            }
+          },
+          {
+            "fieldKey": "country",
+            "columnNumber": 16,
+            "dataType": "TEXT",
+            "policyStatus": {
+              "CREATE": "READY",
+              "SET": "READY",
+              "CLEAR": "READY"
+            },
+            "setConstraints": {},
+            "create": {
+              "required": false,
+              "initial": {
+                "kind": "EMPTY"
+              },
+              "constraints": {}
+            }
+          },
+          {
+            "fieldKey": "reBaseCaseInput",
+            "columnNumber": 17,
+            "dataType": "DECIMAL",
+            "policyStatus": {
+              "CREATE": "READY",
+              "SET": "READY",
+              "CLEAR": "READY"
+            },
+            "setConstraints": {},
+            "create": {
+              "required": false,
+              "initial": {
+                "kind": "EMPTY"
+              },
+              "constraints": {}
+            }
+          },
+          {
+            "fieldKey": "columnR",
+            "columnNumber": 18,
+            "dataType": "DECIMAL",
+            "policyStatus": {
+              "CREATE": "READY",
+              "SET": "READY",
+              "CLEAR": "READY"
+            },
+            "setConstraints": {},
+            "create": {
+              "required": false,
+              "initial": {
+                "kind": "EMPTY"
+              },
+              "constraints": {}
+            }
+          }
+        ],
+        "capabilities": {
+          "SET": "READY",
+          "CLEAR": "READY",
+          "ADD_ROW": "READY",
+          "DELETE_ROW": "INCOMPLETE"
+        }
+      },
+      "scopes": [
+        [
+          3,
+          227,
+          15,
+          18
+        ]
+      ]
+    },
+    {
+      "key": [
+        "TRADE",
+        "CostInput",
+        "Non-LNG Upstream Cost"
+      ],
+      "baselineSha256": "9a1b7f33794ec3af8c0dd156834b0aedc7164a4c39bd720be442790a540bc38b",
+      "geometry": {
+        "endColumn": 27
+      },
+      "definition": {
+        "fields": [
+          {
+            "fieldKey": "year",
+            "columnNumber": 22,
+            "dataType": "INTEGER",
+            "policyStatus": {
+              "CREATE": "READY",
+              "SET": "READY",
+              "CLEAR": "READY"
+            },
+            "setConstraints": {},
+            "create": {
+              "required": false,
+              "initial": {
+                "kind": "EMPTY"
+              },
+              "constraints": {}
+            }
+          },
+          {
+            "fieldKey": "country",
+            "columnNumber": 23,
+            "dataType": "TEXT",
+            "policyStatus": {
+              "CREATE": "READY",
+              "SET": "READY",
+              "CLEAR": "READY"
+            },
+            "setConstraints": {},
+            "create": {
+              "required": false,
+              "initial": {
+                "kind": "EMPTY"
+              },
+              "constraints": {}
+            }
+          },
+          {
+            "fieldKey": "reBaseCaseInput",
+            "columnNumber": 24,
+            "dataType": "DECIMAL",
+            "policyStatus": {
+              "CREATE": "READY",
+              "SET": "READY",
+              "CLEAR": "READY"
+            },
+            "setConstraints": {},
+            "create": {
+              "required": false,
+              "initial": {
+                "kind": "EMPTY"
+              },
+              "constraints": {}
+            }
+          },
+          {
+            "fieldKey": "columnY",
+            "columnNumber": 25,
+            "dataType": "DECIMAL",
+            "policyStatus": {
+              "CREATE": "READY",
+              "SET": "READY",
+              "CLEAR": "READY"
+            },
+            "setConstraints": {},
+            "create": {
+              "required": false,
+              "initial": {
+                "kind": "EMPTY"
+              },
+              "constraints": {}
+            }
+          }
+        ],
+        "capabilities": {
+          "SET": "READY",
+          "CLEAR": "READY",
+          "ADD_ROW": "READY",
+          "DELETE_ROW": "INCOMPLETE"
+        }
+      },
+      "scopes": [
+        [
+          3,
+          615,
+          22,
+          25
+        ]
+      ]
+    },
+    {
+      "key": [
+        "TRADE",
+        "CostInput",
+        "Pipeline Cost"
+      ],
+      "baselineSha256": "db822452f0ef71a6f8334422746f28b0b7a2a0b855e3d97ecb2fc05bbe7dc3d3",
+      "geometry": {
+        "endColumn": 35
+      },
+      "definition": {
+        "fields": [
+          {
+            "fieldKey": "year",
+            "columnNumber": 29,
+            "dataType": "INTEGER",
+            "policyStatus": {
+              "CREATE": "READY",
+              "SET": "READY",
+              "CLEAR": "READY"
+            },
+            "setConstraints": {},
+            "create": {
+              "required": false,
+              "initial": {
+                "kind": "EMPTY"
+              },
+              "constraints": {}
+            }
+          },
+          {
+            "fieldKey": "fromCountry",
+            "columnNumber": 30,
+            "dataType": "TEXT",
+            "policyStatus": {
+              "CREATE": "READY",
+              "SET": "READY",
+              "CLEAR": "READY"
+            },
+            "setConstraints": {},
+            "create": {
+              "required": false,
+              "initial": {
+                "kind": "EMPTY"
+              },
+              "constraints": {}
+            }
+          },
+          {
+            "fieldKey": "toCountry",
+            "columnNumber": 31,
+            "dataType": "TEXT",
+            "policyStatus": {
+              "CREATE": "READY",
+              "SET": "READY",
+              "CLEAR": "READY"
+            },
+            "setConstraints": {},
+            "create": {
+              "required": false,
+              "initial": {
+                "kind": "EMPTY"
+              },
+              "constraints": {}
+            }
+          },
+          {
+            "fieldKey": "columnAF",
+            "columnNumber": 32,
+            "dataType": "DECIMAL",
+            "policyStatus": {
+              "CREATE": "READY",
+              "SET": "READY",
+              "CLEAR": "READY"
+            },
+            "setConstraints": {},
+            "create": {
+              "required": false,
+              "initial": {
+                "kind": "EMPTY"
+              },
+              "constraints": {}
+            }
+          },
+          {
+            "fieldKey": "columnAG",
+            "columnNumber": 33,
+            "dataType": "DECIMAL",
+            "policyStatus": {
+              "CREATE": "READY",
+              "SET": "READY",
+              "CLEAR": "READY"
+            },
+            "setConstraints": {},
+            "create": {
+              "required": false,
+              "initial": {
+                "kind": "EMPTY"
+              },
+              "constraints": {}
+            }
+          }
+        ],
+        "capabilities": {
+          "SET": "READY",
+          "CLEAR": "READY",
+          "ADD_ROW": "READY",
+          "DELETE_ROW": "INCOMPLETE"
+        }
+      },
+      "scopes": [
+        [
+          3,
+          1554,
+          29,
+          33
+        ]
+      ]
+    },
+    {
+      "key": [
+        "TRADE",
+        "CostInput",
+        "LNG Project SRMC"
+      ],
+      "baselineSha256": "be7abf4984628f9f5bf62d0184166624c009f394a634f87c623f1ba5a5b38d1f",
+      "geometry": {
+        "endColumn": 44
+      },
+      "definition": {
+        "fields": [
+          {
+            "fieldKey": "year",
+            "columnNumber": 37,
+            "dataType": "INTEGER",
+            "policyStatus": {
+              "CREATE": "READY",
+              "SET": "READY",
+              "CLEAR": "READY"
+            },
+            "setConstraints": {},
+            "create": {
+              "required": false,
+              "initial": {
+                "kind": "EMPTY"
+              },
+              "constraints": {}
+            }
+          },
+          {
+            "fieldKey": "projectMapped",
+            "columnNumber": 38,
+            "dataType": "TEXT",
+            "policyStatus": {
+              "CREATE": "READY",
+              "SET": "READY",
+              "CLEAR": "READY"
+            },
+            "setConstraints": {},
+            "create": {
+              "required": false,
+              "initial": {
+                "kind": "EMPTY"
+              },
+              "constraints": {}
+            }
+          },
+          {
+            "fieldKey": "country",
+            "columnNumber": 39,
+            "dataType": "TEXT",
+            "policyStatus": {
+              "CREATE": "READY",
+              "SET": "READY",
+              "CLEAR": "READY"
+            },
+            "setConstraints": {},
+            "create": {
+              "required": false,
+              "initial": {
+                "kind": "EMPTY"
+              },
+              "constraints": {}
+            }
+          },
+          {
+            "fieldKey": "averageOfCostsUSDKcf",
+            "columnNumber": 40,
+            "dataType": "DECIMAL",
+            "policyStatus": {
+              "CREATE": "READY",
+              "SET": "READY",
+              "CLEAR": "READY"
+            },
+            "setConstraints": {},
+            "create": {
+              "required": false,
+              "initial": {
+                "kind": "EMPTY"
+              },
+              "constraints": {}
+            }
+          }
+        ],
+        "capabilities": {
+          "SET": "READY",
+          "CLEAR": "READY",
+          "ADD_ROW": "READY",
+          "DELETE_ROW": "INCOMPLETE"
+        }
+      },
+      "scopes": [
+        [
+          3,
+          519,
+          37,
+          40
+        ]
+      ]
+    },
+    {
+      "key": [
+        "DEMAND",
+        "WeatherLogicInput",
+        "User-Adjusted HDD-Gas Intensity Input"
+      ],
+      "baselineSha256": "ce5a11819d84be585fd8da9499f516a72de146354fe0a03dcf28c588f055704e",
+      "geometry": {},
+      "definition": {
+        "fields": [
+          {
+            "fieldKey": "continent",
+            "columnNumber": 2,
+            "dataType": "TEXT",
+            "policyStatus": {
+              "CREATE": "INCOMPLETE",
+              "SET": "INCOMPLETE",
+              "CLEAR": "INCOMPLETE"
+            }
+          },
+          {
+            "fieldKey": "region",
+            "columnNumber": 3,
+            "dataType": "TEXT",
+            "policyStatus": {
+              "CREATE": "INCOMPLETE",
+              "SET": "INCOMPLETE",
+              "CLEAR": "INCOMPLETE"
+            }
+          },
+          {
+            "fieldKey": "country",
+            "columnNumber": 4,
+            "dataType": "TEXT",
+            "policyStatus": {
+              "CREATE": "INCOMPLETE",
+              "SET": "READY",
+              "CLEAR": "READY"
+            },
+            "setConstraints": {}
+          },
+          {
+            "fieldKey": "hddGasIntensity",
+            "columnNumber": 5,
+            "dataType": "DECIMAL",
+            "policyStatus": {
+              "CREATE": "INCOMPLETE",
+              "SET": "READY",
+              "CLEAR": "READY"
+            },
+            "setConstraints": {}
+          }
+        ],
+        "capabilities": {
+          "SET": "READY",
+          "CLEAR": "READY",
+          "ADD_ROW": "INCOMPLETE",
+          "DELETE_ROW": "INCOMPLETE"
+        }
+      },
+      "scopes": [
+        [
+          9,
+          92,
+          4,
+          5
+        ]
+      ]
+    },
+    {
+      "key": [
+        "DEMAND",
+        "WeatherLogicInput",
+        "User-Adjusted CDD-Gas Intensity Input"
+      ],
+      "baselineSha256": "6ec58d2f7f9b023a19c27e8b4c8344e055778b22e0a33af59eb0627df68ff561",
+      "geometry": {},
+      "definition": {
+        "fields": [
+          {
+            "fieldKey": "continent",
+            "columnNumber": 7,
+            "dataType": "TEXT",
+            "policyStatus": {
+              "CREATE": "INCOMPLETE",
+              "SET": "INCOMPLETE",
+              "CLEAR": "INCOMPLETE"
+            }
+          },
+          {
+            "fieldKey": "region",
+            "columnNumber": 8,
+            "dataType": "TEXT",
+            "policyStatus": {
+              "CREATE": "INCOMPLETE",
+              "SET": "INCOMPLETE",
+              "CLEAR": "INCOMPLETE"
+            }
+          },
+          {
+            "fieldKey": "country",
+            "columnNumber": 9,
+            "dataType": "TEXT",
+            "policyStatus": {
+              "CREATE": "INCOMPLETE",
+              "SET": "READY",
+              "CLEAR": "READY"
+            },
+            "setConstraints": {}
+          },
+          {
+            "fieldKey": "cddGasIntensity",
+            "columnNumber": 10,
+            "dataType": "DECIMAL",
+            "policyStatus": {
+              "CREATE": "INCOMPLETE",
+              "SET": "READY",
+              "CLEAR": "READY"
+            },
+            "setConstraints": {}
+          }
+        ],
+        "capabilities": {
+          "SET": "READY",
+          "CLEAR": "READY",
+          "ADD_ROW": "INCOMPLETE",
+          "DELETE_ROW": "INCOMPLETE"
+        }
+      },
+      "scopes": [
+        [
+          9,
+          92,
+          9,
+          10
+        ]
+      ]
+    },
+    {
+      "key": [
+        "TRADE",
+        "MidstreamContractInput",
+        "Forecasted PNG Contract Volume (Imports)"
+      ],
+      "baselineSha256": "b501fcb6093fc12a55820b68902a368bb6e941af08a60b0e4ef8d4ed2c1e6d0e",
+      "geometry": {},
+      "definition": {
+        "fields": [
+          {
+            "fieldKey": "year",
+            "columnNumber": 1,
+            "dataType": "INTEGER",
+            "policyStatus": {
+              "CREATE": "INCOMPLETE",
+              "SET": "READY",
+              "CLEAR": "INCOMPLETE"
+            },
+            "setConstraints": {}
+          },
+          {
+            "fieldKey": "fromCountry",
+            "columnNumber": 2,
+            "dataType": "TEXT",
+            "policyStatus": {
+              "CREATE": "INCOMPLETE",
+              "SET": "READY",
+              "CLEAR": "INCOMPLETE"
+            },
+            "setConstraints": {}
+          },
+          {
+            "fieldKey": "toCountry",
+            "columnNumber": 3,
+            "dataType": "TEXT",
+            "policyStatus": {
+              "CREATE": "INCOMPLETE",
+              "SET": "READY",
+              "CLEAR": "INCOMPLETE"
+            },
+            "setConstraints": {}
+          },
+          {
+            "fieldKey": "unadjustedGrossGasImportMtLNG",
+            "columnNumber": 4,
+            "dataType": "DECIMAL",
+            "policyStatus": {
+              "CREATE": "INCOMPLETE",
+              "SET": "READY",
+              "CLEAR": "INCOMPLETE"
+            },
+            "setConstraints": {}
+          }
+        ],
+        "capabilities": {
+          "SET": "READY",
+          "CLEAR": "INCOMPLETE",
+          "ADD_ROW": "INCOMPLETE",
+          "DELETE_ROW": "INCOMPLETE"
+        }
+      },
+      "scopes": [
+        [
+          5,
+          1104,
+          1,
+          4
+        ]
+      ]
+    },
+    {
+      "key": [
+        "TRADE",
+        "MidstreamContractInput",
+        "LNG Contract Volumes"
+      ],
+      "baselineSha256": "2696381de530a51e450e62121125c3a08e63100ef4a72e423591c528d60b72ef",
+      "geometry": {},
+      "definition": {
+        "fields": [
+          {
+            "fieldKey": "year",
+            "columnNumber": 17,
+            "dataType": "DECIMAL",
+            "policyStatus": {
+              "CREATE": "INCOMPLETE",
+              "SET": "READY",
+              "CLEAR": "INCOMPLETE"
+            },
+            "setConstraints": {}
+          },
+          {
+            "fieldKey": "fromCountry",
+            "columnNumber": 18,
+            "dataType": "TEXT",
+            "policyStatus": {
+              "CREATE": "INCOMPLETE",
+              "SET": "READY",
+              "CLEAR": "INCOMPLETE"
+            },
+            "setConstraints": {}
+          },
+          {
+            "fieldKey": "fromLiquefactionTerminal",
+            "columnNumber": 19,
+            "dataType": "TEXT",
+            "policyStatus": {
+              "CREATE": "INCOMPLETE",
+              "SET": "READY",
+              "CLEAR": "INCOMPLETE"
+            },
+            "setConstraints": {}
+          },
+          {
+            "fieldKey": "toCountry",
+            "columnNumber": 20,
+            "dataType": "TEXT",
+            "policyStatus": {
+              "CREATE": "INCOMPLETE",
+              "SET": "READY",
+              "CLEAR": "INCOMPLETE"
+            },
+            "setConstraints": {}
+          },
+          {
+            "fieldKey": "grossGasImportMtLNG",
+            "columnNumber": 21,
+            "dataType": "DECIMAL",
+            "policyStatus": {
+              "CREATE": "INCOMPLETE",
+              "SET": "READY",
+              "CLEAR": "INCOMPLETE"
+            },
+            "setConstraints": {}
+          }
+        ],
+        "capabilities": {
+          "SET": "READY",
+          "CLEAR": "INCOMPLETE",
+          "ADD_ROW": "INCOMPLETE",
+          "DELETE_ROW": "INCOMPLETE"
+        }
+      },
+      "scopes": [
+        [
+          5,
+          2918,
+          17,
+          21
+        ]
+      ]
+    }
+  ],
+  "additionalTables": [
+    [
+      "SUPPLY",
+      "PipelineAdjustment",
+      "Monthly Pipeline Capacity Adjustment",
+      1,
+      7,
+      200,
+      2,
+      8,
+      7,
+      7,
+      13,
+      "N",
+      "N",
+      "SUPPLY SUMMARY20; display from source row13; editing policy incomplete",
+      {
+        "schemaVersion": 1,
+        "columns": [
+          2,
+          3,
+          4,
+          8
+        ],
+        "headerRows": [
+          7
+        ],
+        "bodyRanges": [
+          {
+            "startRow": 13,
+            "endRow": 200
+          }
+        ],
+        "identityColumns": [
+          2,
+          3,
+          4
+        ],
+        "fields": [
+          {
+            "fieldKey": "year",
+            "columnNumber": 2,
+            "dataType": "INTEGER",
+            "policyStatus": {
+              "CREATE": "INCOMPLETE",
+              "SET": "INCOMPLETE",
+              "CLEAR": "INCOMPLETE"
+            }
+          },
+          {
+            "fieldKey": "month",
+            "columnNumber": 3,
+            "dataType": "INTEGER",
+            "policyStatus": {
+              "CREATE": "INCOMPLETE",
+              "SET": "INCOMPLETE",
+              "CLEAR": "INCOMPLETE"
+            }
+          },
+          {
+            "fieldKey": "pipelineName",
+            "columnNumber": 4,
+            "dataType": "TEXT",
+            "policyStatus": {
+              "CREATE": "INCOMPLETE",
+              "SET": "INCOMPLETE",
+              "CLEAR": "INCOMPLETE"
+            }
+          },
+          {
+            "fieldKey": "userAdjustedCapacityMty",
+            "columnNumber": 8,
+            "dataType": "DECIMAL",
+            "policyStatus": {
+              "CREATE": "INCOMPLETE",
+              "SET": "INCOMPLETE",
+              "CLEAR": "INCOMPLETE"
+            }
+          }
+        ],
+        "capabilities": {
+          "SET": "INCOMPLETE",
+          "CLEAR": "INCOMPLETE",
+          "ADD_ROW": "INCOMPLETE",
+          "DELETE_ROW": "INCOMPLETE",
+          "ADD_COLUMN": "INCOMPLETE",
+          "DELETE_COLUMN": "INCOMPLETE"
+        },
+        "inputGuideRules": [],
+        "controls": [],
+        "displayUpdateRules": [],
+        "uploadValidation": {
+          "schemaVersion": 1,
+          "headerCells": [
+            {
+              "rowNumber": 7,
+              "columnNumber": 2,
+              "value": "Year"
+            },
+            {
+              "rowNumber": 7,
+              "columnNumber": 3,
+              "value": "Month"
+            },
+            {
+              "rowNumber": 7,
+              "columnNumber": 4,
+              "value": "Pipeline name"
+            },
+            {
+              "rowNumber": 7,
+              "columnNumber": 8,
+              "value": "User adjusted capacity (Mt/y)"
+            }
+          ]
+        }
+      }
+    ],
+    [
+      "DEMAND",
+      "PMILogicInput",
+      "Selected PMI Input (do not change)",
+      3,
+      7,
+      92,
+      12,
+      15,
+      7,
+      8,
+      9,
+      "N",
+      "N",
+      "PMI 내부 선택표; User-Adjusted 신규 행에만 연결",
+      {
+        "schemaVersion": 1,
+        "columns": [
+          12,
+          13,
+          14,
+          15
+        ],
+        "headerRows": [
+          7,
+          8
+        ],
+        "bodyRanges": [
+          {
+            "startRow": 9,
+            "endRow": 92
+          }
+        ],
+        "identityColumns": [
+          14
+        ],
+        "fields": [],
+        "capabilities": {
+          "SET": "NOT_ALLOWED",
+          "CLEAR": "NOT_ALLOWED",
+          "ADD_ROW": "NOT_ALLOWED",
+          "DELETE_ROW": "NOT_ALLOWED",
+          "ADD_COLUMN": "NOT_ALLOWED",
+          "DELETE_COLUMN": "NOT_ALLOWED"
+        },
+        "inputGuideRules": [],
+        "controls": [],
+        "displayUpdateRules": [],
+        "navigationVisible": false,
+        "uploadValidation": {
+          "schemaVersion": 1,
+          "headerCells": [
+            {
+              "rowNumber": 7,
+              "columnNumber": 12,
+              "value": "Selected PMI Input (do not change)"
+            },
+            {
+              "rowNumber": 8,
+              "columnNumber": 12,
+              "value": "Continent"
+            },
+            {
+              "rowNumber": 8,
+              "columnNumber": 13,
+              "value": "Region"
+            },
+            {
+              "rowNumber": 8,
+              "columnNumber": 14,
+              "value": "Country"
+            },
+            {
+              "rowNumber": 8,
+              "columnNumber": 15,
+              "value": "Intensity"
+            }
+          ]
+        }
+      }
+    ]
+  ]
+}

@@ -15,8 +15,10 @@ final class InputWorkbookPolicy {
     enum Kind { VALUES, ROWS, COST, UPSTREAM, ALLOCATION, SHIPPING_COST, SHIPPING_DISRUPTION, SHIPPING_TECHNICAL, SHIPPING_ROUTE, MACRO, HYDROGEN, WEATHER_LOGIC, BCINPUT, BCPRODUCTION, PRODUCTION, HURRICANE, HURRICANE_ADJUSTMENT, ANNUAL, LNG, SECTOR, MONTHLY, LIQPROD, LIQUTIL, REGAS, REGAS_MONTHLY, UNSUPPORTED }
 
     static Kind kind(TableRef table) {
+        if (table.role().equals("DEMAND") && table.sheet().equals("PMILogicInput") && Set.of(2, 7).contains(table.startColumn())) return Kind.VALUES;
         if (table.role().equals("DEMAND") && table.sheet().equals("MacroParametersLogicInput") && table.startColumn() == 9) return Kind.MACRO;
         if (table.role().equals("TRADE") && Set.of("LNG_TradeRestrictionInput", "PNG_TradeRestrictionInput", "LNGExportRestictionInput").contains(table.sheet())) return Kind.ROWS;
+        if (midstreamContracts(table)) return Kind.VALUES;
         if (table.role().equals("TRADE") && table.sheet().equals("MidstreamCapacityInput")) {
             if (table.startColumn() == 128) return Kind.ALLOCATION;
             if (table.startColumn() == 158) return Kind.ROWS;
@@ -86,6 +88,21 @@ final class InputWorkbookPolicy {
                 || table.scopes().isEmpty() && definition.columnCreation() == null) return false;
         Kind kind = kind(table);
         if (kind == Kind.UNSUPPORTED) return false;
+        if (midstreamContracts(table)) {
+            int first = table.startColumn(), last = first == 1 ? 4 : 21, end = first == 1 ? 1104 : 2918;
+            if (table.startRow() != 2 || table.endRow() != end || table.endColumn() != last || table.dataStart() != 5
+                    || !definition.headerRows().equals(List.of(2, 3, 4))
+                    || !definition.bodyRanges().equals(List.of(new InputReadDefinition.Range(5, end)))
+                    || !definition.columns().equals(java.util.stream.IntStream.rangeClosed(first, last).boxed().toList())
+                    || table.scopes().stream().anyMatch(s -> s.startRow() < 5 || s.endRow() > end
+                        || s.startColumn() < first || s.endColumn() > last)) return false;
+        }
+        if (table.role().equals("DEMAND") && table.sheet().equals("PMILogicInput")
+                && (table.startRow() != 7 || table.endRow() < 92 || table.endColumn() != table.startColumn() + 3
+                    || !definition.headerRows().equals(List.of(7, 8))
+                    || !definition.bodyRanges().equals(List.of(new InputReadDefinition.Range(9, table.endRow())))
+                    || table.scopes().stream().anyMatch(s -> s.startRow() < 9 || s.endRow() > table.endRow()
+                        || s.startColumn() < table.endColumn() - 1 || s.endColumn() > table.endColumn()))) return false;
         if (infrastructure(table) && (table.startRow() != 1 || !definition.headerRows().equals(List.of(1, 2, 3))
                 || definition.bodyRanges().stream().anyMatch(r -> r.startRow() < 11)
                 || definition.columns().stream().anyMatch(c -> !infrastructureInput(c))
@@ -171,7 +188,7 @@ final class InputWorkbookPolicy {
         if (table.role().equals("TRADE") && table.sheet().equals("DemandAdjLogicInput") && table.startColumn() == 8
                 && (table.startRow() != 1 || table.endRow() != 7 || table.endColumn() != 10 || !definition.headerRows().equals(List.of(1, 2))
                     || !definition.bodyRanges().equals(List.of(new InputReadDefinition.Range(3, 7)))
-                    || table.scopes().stream().anyMatch(s -> s.startRow() < 3 || s.endRow() > 7 || s.startColumn() != s.endColumn() || !Set.of(8, 10).contains(s.startColumn())))) return false;
+                    || table.scopes().stream().anyMatch(s -> s.startRow() < 3 || s.endRow() > 7 || s.startColumn() < 8 || s.endColumn() > 10))) return false;
         if (kind == Kind.COST) {
             int inputLast = table.startColumn() + (table.startColumn() == 29 ? 4 : 3);
             if (table.startRow() != 1 || table.endColumn() != inputLast + (table.startColumn() == 37 ? 4 : 2) || !definition.headerRows().equals(List.of(1, 2))
@@ -213,6 +230,10 @@ final class InputWorkbookPolicy {
         }
         if (kind == Kind.REGAS && (table.startRow() != 7 || table.endColumn() < 18 || !definition.headerRows().equals(List.of(7))
                 || definition.columns().contains(table.endColumn()) || definition.bodyRanges().stream().anyMatch(r -> r.startRow() < 8))) return false;
+        // 기존 용량 READY는 A Helper를 포함하는 연결 계산 경계가 있어야 조회에도 지원으로 표시한다.
+        if (kind == Kind.REGAS && table.startColumn() != 1 && Set.of("SET", "CLEAR").contains(action))
+            for (JsonNode field : definition.fields()) if (field.path("columnNumber").asInt() < 18
+                    && field.path("policyStatus").path(action).asText().equals("READY")) return false;
         if (kind == Kind.REGAS_MONTHLY && (table.startRow() != 8 || table.endColumn() != 126 || !definition.headerRows().equals(List.of(8, 9, 10))
                 || definition.bodyRanges().stream().anyMatch(r -> r.startRow() < 11)
                 || table.scopes().stream().anyMatch(s -> s.startRow() < 11 || s.startColumn() < 8 || s.endColumn() > 31))) return false;
@@ -228,7 +249,7 @@ final class InputWorkbookPolicy {
         return switch (action) {
             case "SET", "CLEAR" -> true;
             case "ADD_ROW" -> (Set.of(Kind.ROWS, Kind.COST, Kind.MACRO, Kind.SHIPPING_COST, Kind.SHIPPING_DISRUPTION, Kind.SHIPPING_ROUTE, Kind.ALLOCATION, Kind.HYDROGEN, Kind.BCINPUT, Kind.BCPRODUCTION, Kind.PRODUCTION, Kind.HURRICANE_ADJUSTMENT, Kind.ANNUAL, Kind.SECTOR, Kind.MONTHLY, Kind.LIQPROD, Kind.LIQUTIL).contains(kind)
-                || kind == Kind.UPSTREAM && table.startColumn() == 20 || kind == Kind.WEATHER_LOGIC && table.startColumn() >= 12 || kind == Kind.REGAS && table.startColumn() == 1) && table.rowAdd();
+                || InputDraftPmiRows.user(table) || kind == Kind.UPSTREAM && table.startColumn() == 20 || kind == Kind.WEATHER_LOGIC && table.startColumn() >= 12 || kind == Kind.REGAS && table.startColumn() == 1) && table.rowAdd();
             case "ADD_COLUMN" -> (kind == Kind.ANNUAL || kind == Kind.LNG || kind == Kind.REGAS || months(table)) && table.columnAdd();
             case "DELETE_ROW" -> infrastructure(table) || kind == Kind.SECTOR || kind == Kind.MONTHLY || kind == Kind.LIQUTIL || kind == Kind.REGAS && table.startColumn() == 1;
             case "DELETE_COLUMN" -> infrastructure(table) || months(table);
@@ -342,6 +363,9 @@ final class InputWorkbookPolicy {
                         && (existing == null || existing >= s.startRow() && existing <= s.endRow()))) throw invalid(command, request, revision, "ACTION_NOT_ALLOWED");
             }
             JsonNode submitted = action.equals("CLEAR") ? null : command.get("value");
+            // 빈 값 정책은 미정이다. 기존행의 비어 있지 않은 입력만 열고 필수값 정책을 추론하지 않는다.
+            if (midstreamContracts(table) && submitted != null && submitted.isTextual() && submitted.asText().isBlank())
+                throw InputDraftException.conflict("POLICY_INCOMPLETE", revision);
             if (submitted != null) value(field, submitted, field.path("setConstraints"), command, request, revision);
             if (!client.isEmpty() && command.has("fieldKey")) newValues.get(client).put(command.path("fieldKey").asText(), submitted);
         }
@@ -371,6 +395,9 @@ final class InputWorkbookPolicy {
         return field;
     }
 
+    private static boolean midstreamContracts(TableRef table) {
+        return table.role().equals("TRADE") && table.sheet().equals("MidstreamContractInput") && Set.of(1, 17).contains(table.startColumn());
+    }
     static boolean infrastructure(TableRef table) { return table.role().equals("TRADE") && table.sheet().equals("MidstreamCapacityInput") && table.startColumn() == 2; }
     private static boolean infrastructureInput(int column) { return Set.of(2, 4, 7).contains(column) || column >= 10 && column <= 17 || column >= 170; }
     static boolean supportsHeader(TableRef table, int column) {
@@ -415,11 +442,15 @@ final class InputWorkbookPolicy {
     }
     private static void value(JsonNode field, JsonNode value, JsonNode constraints, JsonNode command, InputDraftJson.ChangeRequest request, long revision) {
         String type = field.path("dataType").asText();
-        if (type.equals("TEXT") ? !value.isTextual() : !value.isNumber()) throw InputDraftException.invalid();
-        if (value.isTextual() && value.asText().isBlank() && field.path("create").path("required").asBoolean()) throw invalidField(field, command, request, revision, "REQUIRED");
+        if (type.equals("DECIMAL_OR_TEXT") ? !value.isTextual() && !value.isNumber()
+                : type.equals("TEXT") ? !value.isTextual() : !value.isNumber()) throw InputDraftException.invalid();
+        if (constraints.has("required") && !constraints.path("required").isBoolean()) throw InputDraftException.conflict("POLICY_INCOMPLETE", revision);
+        if (value.isTextual() && value.asText().isBlank()
+                && (field.path("create").path("required").asBoolean() || constraints.path("required").asBoolean()))
+            throw invalidField(field, command, request, revision, "REQUIRED");
         if (type.equals("INTEGER")) try { value.decimalValue().toBigIntegerExact(); } catch (ArithmeticException ex) { throw InputDraftException.invalid(); }
         if (!constraints.isObject()) throw InputDraftException.conflict("POLICY_INCOMPLETE", revision);
-        var keys = constraints.fieldNames(); while (keys.hasNext()) if (!Set.of("minimum", "maximum", "options").contains(keys.next())) throw InputDraftException.conflict("POLICY_UNSUPPORTED", revision);
+        var keys = constraints.fieldNames(); while (keys.hasNext()) if (!Set.of("minimum", "maximum", "options", "required").contains(keys.next())) throw InputDraftException.conflict("POLICY_UNSUPPORTED", revision);
         boolean valid = !constraints.has("minimum") || value.isNumber() && value.decimalValue().compareTo(constraints.path("minimum").decimalValue()) >= 0;
         valid &= !constraints.has("maximum") || value.isNumber() && value.decimalValue().compareTo(constraints.path("maximum").decimalValue()) <= 0;
         if (!valid) throw invalidField(field, command, request, revision, "OUT_OF_RANGE");

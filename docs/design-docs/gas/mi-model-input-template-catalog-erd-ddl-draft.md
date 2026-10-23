@@ -14,7 +14,7 @@
   - `docs/conventions/db-term-dictionary-sheet2.csv`
 - supersedes:
   - 이 문서의 2026-09-04 `양식 → 테이블` 2단계 초안
-- last synced: 2026-10-21 (§6.12 Case 공유 초기 기준 설계; §6.11 A 실행기 상태 table 사용자 승인; §6.10 직접 업로드 저장 확장/증분 DDL 초안; §6.9 미배포 v2 단일 저장/복원 형식·Draft 초기화 SQL 확정; §6.8 감사 초 정밀도 정렬·증분 적용 준비; §6.3.4.1 성공값 좌표 이동·저장 이력 오류 처리 보완; 사용자 제공 midb 정의에 따른 §6.4 파일 metadata 매핑 정렬 유지; 나머지 DBA 후속은 §13)
+- last synced: 2026-10-23 — Demand Parameters/Bands 기존 값 수정 전용 결정 반영(업무 정본 §6.9, v6). 이전 동기화: 2026-10-21 (§6.12 Case 공유 초기 기준 설계; §6.11 A 실행기 상태 table 사용자 승인; §6.10 직접 업로드 저장 확장/증분 DDL 초안; §6.9 미배포 v2 단일 저장/복원 형식·Draft 초기화 SQL 확정; §6.8 감사 초 정밀도 정렬·증분 적용 준비; §6.3.4.1 성공값 좌표 이동·저장 이력 오류 처리 보완; 사용자 제공 midb 정의에 따른 §6.4 파일 metadata 매핑 정렬 유지; 나머지 DBA 후속은 §13)
 - open questions:
   - §6.11의 상태 table1개 추가는 2026-10-20 사용자 후속 승인됐다. 실제 DB 조회·DDL 적용/경합 검증은 별도이며 아직 수행하지 않았다.
   - 직접 업로드의 물리 설계/증분 SQL은 §6.10에 정리했다. 실제 환경 제약명·타입·수동 적용, MySQL 제약/동시성 및 새 저장 형식 reader/writer 검증은 미실행이며 이 확인 전에는 적용 준비 완료로 판정하지 않는다.
@@ -442,6 +442,8 @@ Draft 존속 중 기준 참조/성공 chain/행이력/종료 요청·중복 키�
 
 조회 정의 version1의 필수 key는 schemaVersion(1), columns(1기반 표시 열번호 배열), headerRows(반복 헤더 행번호 배열), bodyRanges(startRow/endRow), identityColumns(활성 원본 행을 식별할 비수식 입력 열번호 배열), fields(편집 API field metadata와 columnNumber), capabilities(SET/CLEAR/ADD_ROW/DELETE_ROW의 승인 준비도), inputGuideRules/controls/displayUpdateRules(확인된 조회 규칙 배열)다. 빈 규칙 배열은 실제로 없음이 확인된 경우만 등록한다. identityColumns는 업무 중복 키/행ID가 아니며 해당 행의 식별 입력이 모두 빈 경우 EMPTY_SLOT로 분류하는 읽기 근거다. 미확인 행/표·필드를 임의 추정하지 않는다. 기존 승인 정책 밖 동작은 발행 READY로 만들지 않는다.
 
+2026-10-22 확장: `navigationVisible`은 선택적 boolean이며 생략하면 `true`다. `false`인 표도 내부 catalog·control 소유 범위·scopes에 남는다. API 탐색 제외 동작은 입력 제공 명세 §3이 소유한다. 기존 LONGTEXT/JSON_VALID 범위 안의 발행 데이터 확장이며 DDL 변경은 없다. 새 key를 읽는 백엔드의 호환 반영을 먼저 확인한 뒤 이 key를 포함한 새 양식을 발행한다.
+
 **Regas 원본 연결 행 예외(2026-10-20):** domain 규칙51의 `SUPPLY/RegasAdjustment` 월별 표 중 발행 `identityColumns=[2,3,4,5,6]`인 정의에만 B:F master 연결 수식 예외를 적용한다. 같은 고정 파일의 `BCRegasification` 활성 원본 행을 먼저 확인하고, 각 행의 +3 위치에 있는 Regas B:F 다섯 수식이 같은 master 행/열을 직접 참조하는지 전부 대조한 후 별도 원본 rowId를 배정한다. 두 표의 경계·행 집합·수식 대응이 맞지 않으면 `POLICY_INCOMPLETE`로 생성하지 않는다. 설비명/저장된 계산값으로 행을 연결하거나 다른 표의 formula identity를 허용하는 예외가 아니다. 기존 구조 조회 카탈로그처럼 H:AE 비수식 입력 열을 identityColumns로 발행한 정의는 일반 활성 행 판정을 유지한다. 시트명만으로 B:F 식별 방식으로 교체하거나 발행 카탈로그를 수정하지 않는다. §6.9.5의 안정 rowId/내부 연결 계약을 유지하며 JSON key·물리 schema를 추가하지 않는다.
 
 입력 양식은 Case에 연결된 ACTIVE/DEPRECATED 발행으로 결정한다. application model-code 설정과의 일치는 요구하지 않는다. 양식 미연결/삭제/미발행은 POLICY_INCOMPLETE이며 현재 ACTIVE/MAX로 대체하지 않는다. DB의 mdl_spt_cd와 모델별 버전/ACTIVE 유일성 제약은 유지한다. worker의 모델 코드 간 처리 범위와 고정 기준 검증은 domain §5.5를 따른다.
@@ -793,9 +795,15 @@ DDL은 암묵 commit되므로 reset의 DELETE transaction을 검증·COMMIT/ROLL
 
 #### 6.9.5 검증·준비도
 
+- **Pipeline 표시 범위(v6 DRAFT):** domain 규칙62 보완을 기존 조회 JSON/metadata로 표현한다. 누락된 `SUPPLY/PipelineAdjustment/Monthly Pipeline Capacity Adjustment` 읽기 표1개를 기존 시트에 추가하여 v6는 Pipeline 추가 후95표이며 PMI 내부 Selected 추가 후96표가 된다. 경계 B7:H200, headerRows=[7], dataStart=13, bodyRanges=[13..200], columns=[2,3,4,8], identityColumns=[2,3,4]이며 수정 scopes는0개다. 일반 편집/구조 capability 및 필드는 INCOMPLETE를 유지하고 rowAdd/columnAdd=N이다. uploadValidation에는 원본7행의 표시4열 고정 제목만 등록한다. 원본8..12행은 본문·rowId 생성·수정 scope에 포함하지 않으며, 기존94표와 파일/시트/Case 바인딩·물리 schema는 그대로다. 등록 SQL의 새 표 수만 검증하며 기존 v5 생성물은 바꾸지 않는다.
+
+- 2026-10-23 Midstream 기존행 편집: 업무 정본 규칙59의 일반 보존 결정을 신규 v6 DRAFT의 PNG/LNG 두 표 SET에 연결한다. 원본 열/본문/identity/uploadValidation은 유지하고 입력 scopes는 A5:D1104·Q5:U2918만 둔다. 계산 결과/외부 셀 delta를 생성하지 않으며 기존 셀 delta와 성공 이력 재생으로 입력만 복원한다. CLEAR/빈 문자열·생성/삭제 미결은 개방하지 않는다(편집 API §3.3). schema/기존 v5 설치 생성물·ACTIVE·Case 연결 변경은 없다. BCRegas 후속 수정과 v6 전체 준비도는 안정 작업 노트의 최신 결과를 따르며 SQL 생성/로컬 검사로 발행 준비 완료를 주장하지 않는다.
+
 ##### 실제 편집기 파생 열 위치 소유 — 2026-10-19
 
-- DemandAdjLogicInput의 기존 Parameters 표는 C1:F3 경계를 유지하고 D2:D3/F2:F3만 입력한다. Premium(2행) 변경은 원본 L3:L7, Non-premium(3행) 변경은 M3:M7 수식으로 계산하며 결과는 숨김 계산영역에 유지한다. Bands는 H1:J7 경계의 기존 H/J 숫자 입력을 제공한다. H 변경은 해당 K 연결식, J 변경은 해당 L/M만 갱신하며 중앙5행 L/M은 원본 D2/D3 직접 참조라 J5 변경의 계산 대상이 아니다. 계산에 필요한 L5/M5는 원본 수식으로 평가하되 D2/D3가 바뀌지 않았으면 저장 셀은 보존한다. C/E 라벨·혼합 타입 I열·나머지 원본은 보존한다. 이전 L/M cache를 계산 근거로 쓰지 않는다. 신규 유형/행과 I열 입력은 별도 구현 준비도이며 기존 입력 지원을 전체 READY로 확대하지 않는다.
+- 2026-10-23 신규 편집 양식 초안은 `docs/model-input-editor-remaining-v6-policy.json`과 이를 읽어 생성하는 `docs/model-input-editor-remaining-v6-registration-draft.sql`을 따른다. 기존 v5 정의·ACTIVE·Case/Draft 연결은 수정하지 않는다. 표 내부 경계에 필요한 계산 열을 포함해도 공개 `columns`·`identityColumns`·업로드 고정 헤더는 기존 정의를 유지하며, 계산 열을 사용자 입력으로 열지 않는다. BCRegasification의 기존 G:Q READY 및 연도 추가 연결에서 확인된 요청 검사 불일치2건은 2026-10-23 사용자 승인으로 수정한다. 내부 경계는 A Helper/R MAX를 포함한 A:R로 두되 공개 columns/fields/scopes를 확대하지 않는다. 새 연도 본문은 필수 숫자0으로 시작하고 연도 제목은 사용자가 입력한다. 수정·검증 결과는 안정 작업 노트에서 추적하며 DB 적용/발행은 별도다. master B:F/행 추가·삭제는 일반 READY로 확대하지 않는다. PMI 두 표는 기존 D/I 국가 SET(필수 자유입력·CLEAR 금지)과 E/J 강도 SET/CLEAR를 연결한다. 대륙·지역과 Selected는 국가 변경으로 자동 갱신하지 않으며 User-Adjusted 행 추가는 Base/Selected 동시 생성으로 제공하고 Base 직접 추가는 불허한다(domain §6.8). 기존 Weather User-Adjusted 두 표는 검증된 국가/강도 SET/CLEAR만 연결하고 행 추가는 유지 보류한다. 현재 준비도/검증은 안정 작업 노트에 기록하며 등록 SQL 생성 자체가 발행이나 배포를 뜻하지 않는다.
+
+- DemandAdjLogicInput의 기존 Parameters 표는 C1:F3 경계를 유지하고 D2:D3/F2:F3만 입력한다. Premium(2행) 변경은 원본 L3:L7, Non-premium(3행) 변경은 M3:M7 수식으로 계산하며 결과는 숨김 계산영역에 유지한다. Bands는 H1:J7 경계의 기존 H/J 숫자와 I 숫자/문자 혼합 입력을 제공한다. H/I 변경은 해당 K 연결식, J 변경은 해당 L/M만 갱신하며 중앙5행 L/M은 원본 D2/D3 직접 참조라 J5 변경의 계산 대상이 아니다. 계산에 필요한 L5/M5는 원본 수식으로 평가하되 D2/D3가 바뀌지 않았으면 저장 셀은 보존한다. C/E 라벨·나머지 원본은 보존한다. I의 숫자/문자 및 실제 빈칸을 구별하며 API 타입은 편집 API §3.3을 따른다. 이전 L/M cache를 계산 근거로 쓰지 않는다. 2026-10-23 업무 정본 §6.9에 따라 두 표는 기존 값 수정 전용으로 고정한다. 신규 v6 DRAFT는 rowAdd/columnAdd=N 및 ADD_ROW/DELETE_ROW/ADD_COLUMN/DELETE_COLUMN=NOT_ALLOWED, 필드 CREATE/DELETE_COLUMN=NOT_ALLOWED를 명시한다. 신규 유형/행을 잔여 구현으로 남기지 않으며 기존 v5/발행 양식은 유지한다.
 
 - ShippingCostInput 운임5표·운하중단2표는 원본 B:F 또는 B:D의 고정 헤더/기존 본문을 유지한다. 연속 배치된 다른 표를 이동하지 않고, 신규 논리 행은 고정 원본 B:F의 마지막 내용 행과 현재7표의 예약 행 뒤에 요청 순서로 배정한다. 기존 `bodyRanges`/scope를 비연속 범위로 확장하여 다른 표의 중간 행을 포함하지 않는다. 운임은 기존 C3 모드/현재 입력을 기준으로 E만 계산하고, Pacific/Atlantic의 새 C는 직전 논리 행 C×1.02로 생성한다. E의 직전 E/D 참조도 물리 인접 행이 아닌 같은 표의 직전 논리 행이다. 운하중단의 신규 D는 고정 D61/D72 참조로 생성한다. C3 공유 control SET은 운임5표에 반영하며 A 연간 운송비·기존 외부/다른 표는 보존한다. 표별 실제 준비도는 구현/검증을 마친 후 발행하며 이 선언만으로 READY가 되지 않는다.
 
@@ -822,7 +830,7 @@ DDL은 암묵 commit되므로 reset의 DELETE transaction을 검증·COMMIT/ROLL
 - ProductionAdjustment의 월간 입력 정의는 내부 경계를 H3:O끝행으로 잡고 화면 columns와 사용자 fields/scopes는 I:K·M, 헤더7행·본문8행부터를 유지한다. 기존 H 연결 Helper와 N/O의 영향받는 수식, M3 집계 결과를 같은 표의 v2 이력에 보관하기 위한 내부 경계이며 사용자 입력 범위를 늘리지 않는다. 신규 H/N/O는 정상 원본 수식의 상대 행 참조를 적용하고 기존 예약 N201/O201은 동일 수식인지 확인하여 유지한다. 규칙31의 기존 G/L 오류 셀은 재계산/복제하지 않고 신규 G/L은 비워 둔다. M3의 두 집계 범위와 기준 숫자 확장은 규칙31을 따른다.
 - BCInput의 새 편집 발행 정의는 GDP/인구 표의 X열과 발전 이용률 표의 AO열까지 내부 table 경계를 포함하여 기존 수식의 변경 결과를 같은 rowId에 저장한다. 화면 `columns`/사용자 `fields`/수정 scopes는 각각 Q:V와 AK:AN을 유지한다. 발전량 표의 AG는 기존 Z:AI 내부 경계에 포함하되 사용자 필드에서 제외한다. domain 규칙58의 기존 AE:AF·저장값 Helper 보존과 신규 Helper 미생성은 유지한다. 기존 X/AG/AO4 수식의 선행 입력을 변경한 경우만 원본 수식을 부분 계산하며, Helper 값만 있는 셀을 수식으로 바꾸거나 새 행 Helper를 생성하지 않는다.
 - BCRegasification의 새 편집 발행 정의는 원본 readonly `Maximum capacity` R열까지 내부 table 경계에 포함한다. 화면 `columns`와 사용자 `fields`/수정 scopes는 기존 B:Q 입력 계약을 유지하며 MAX를 사용자 입력으로 열지 않는다. 연도 추가 시 MAX는 원본 `sourceColumnNumber:18`, `fieldKey:null`을 유지한 채 현재 위치만 이동한다(§6.9.1의 파생 열 이동 계약). 새로운 연도 열은 별도 fieldKey를 갖는다.
-- 연결 행 추가/삭제를 제공하는 새 정의는 A Helper까지 내부 경계 A:R에 포함한다. A는 표시/입력 필드가 아니며 같은 설비 행의 이동·신규 계산 결과를 rowId에 보관한다. 활성 설비 밖의 예약 Helper는 domain 규칙51대로 보존한다. Regas 국가 합계 블록은 연결 설비 증감 수만큼 header/body 경계를 함께 이동하며 기존 국가 rowId를 유지한다. 표시 행과 고정 원본 행의 대응은 §6.9.5의 위치 이력으로 복원한다.
+- 기존 master 입력의 연결 계산 또는 연결 행 추가/삭제를 제공하는 새 정의는 A Helper까지 내부 경계 A:R에 포함한다. A는 표시/입력 필드가 아니며 같은 설비 행의 이동·신규 계산 결과를 rowId에 보관한다. 내부 경계만으로 B:F/행 추가·삭제의 공개 정책을 READY로 바꾸지 않는다. 활성 설비 밖의 예약 Helper는 domain 규칙51대로 보존한다. Regas 국가 합계 블록은 연결 설비 증감 수만큼 header/body 경계를 함께 이동하며 기존 국가 rowId를 유지한다. 표시 행과 고정 원본 행의 대응은 §6.9.5의 위치 이력으로 복원한다.
 - BCRegasification 기존 B:Q 입력 변경은 같은 rowId의 A 연결키(E/F 변경 시)와 Maximum(기존 용량 변경 시), 연결 월 표의 해당 B:F/DM을 먼저 갱신한다. 현재 설비명에 대한 첫 MATCH 대상이 달라지거나 그 대상의 기존 연간 용량이 변경된 생존 행만 G·AF:DK·DN:DV를 계산하고 국가 합계에 반영한다. 같은 요청의 직접 월 변경/구조 이동 결과를 사용하며, 새 연도 추가만으로 기존 연결 월 계산을 갱신하지 않는 domain 규칙51의 보존 예외는 유지한다.
 - RegasAdjustment의 설비별 월 표는 같은 설비 행의 readonly 연간 합계 DM:DV까지 내부 경계를 포함하여 rowId별 계산 delta를 보관한다. 표시 `columns`는 기존 B:DK, 직접 수정 scopes는 H:AE를 유지한다. DL 간격은 변경 대상으로 삼지 않는다. 국가별 월 합계는 기존 별도 table/rowId를 유지한다. 이 경계 확장은 내부 계산 저장을 위한 것이며 숨긴 파생 열을 사용자 필드로 추가하지 않는다.
 - 이는 미발행 catalog 정의/정책과 v2 delta를 연결하는 표현 보완이며 물리 schema 변경은 없다. 기존 발행 catalog를 수정하지 않고 새 발행 묶음에 등록하며, 실제 DB/DML 적용과 지원 READY 판정은 실파일 검증 뒤 별도 수행한다. RegasAdjustment의 연도 추가 보존 예외는 domain 규칙51을 따른다.
@@ -847,6 +855,12 @@ DDL은 암묵 commit되므로 reset의 DELETE transaction을 검증·COMMIT/ROLL
 - TRADE MidstreamCapacityInput의 PNG Infrastructure(SUMMARY33)는 B/D/G와 기존 J:Q·새 연도 입력만 제공하며 본문은11행부터다. 4..10행 및 외부 E:F/H:I와 A R:S는 domain33/34의 원본 수식/저장값 보존 대상이다. C의 R&S 연결식은 보존값에 의존하므로 기존/예약 C식·cache는 유지하고 예약 밖 새 행에는 상대 C식과 서식을 생성해 보존 R/S 또는 확인된 빈 셀로 계산한다. 외부 신규 조회값을 추정하거나 링크를 갱신하지 않는다. 새 연도는 다른 표/Helper를 이동하지 않는 비연속 열에 만들고 header3/fields/scopes로 제공한다.
 
 <a id="incremental-upload-storage-20261019"></a>
+
+##### PMI 신규 연결 행 내부 저장 — 2026-10-23
+
+- 신규 v6에 DEMAND/PMILogicInput/Selected PMI Input (do not change) 내부 표(L7:O92, headerRows=[7,8], bodyRanges=[9..92], identityColumns=[14], navigationVisible=false)를 추가한다. 공개 입력/구조 capability는 NOT_ALLOWED이며 수정 scope는 없다. 기존 두 PMI 입력표의 columns/identity/upload 고정 제목을 유지한다. User rowAdd=Y/ADD_ROW=READY, country/intensity CREATE만 READY이며 Base rowAdd=N/ADD_ROW=NOT_ALLOWED이다.
+- 기존 v2 rows의 `derivedFromRowId`를 재사용한다. Base의 예약 clientRowKey는 `_pmi_base_<User UUID>`, Selected는 `_pmi_selected_<User UUID>`이다. 각 행은 별도 UUID를 갖고 같은 baseline/위치를 유지한다. 직접 ADD당 정확히 두 파생 생성과 일치하는 국가·빈 초기값·Selected 수식 결과를 검증한다. 공개 rowMappings에는 내부 key를 노출하지 않는다. 물리 schema/JSON 새 key는 추가하지 않는다.
+- 저장·복원 시 누락/고아/중복 연결·다른 표/위치/baseline·다른 부모 ID는 거부한다. 기존 source 행은 연결 metadata를 소급 생성하지 않는다. 업로드 baseline 교체 뒤에도 같은 새 baseline 안 연결만 허용한다. v5/ACTIVE/기존 Case·Draft 연결 및 원본 XLSM은 변경하지 않는다.
 
 ### 6.10 직접 업로드 초안 저장 확장 — 2026-10-19
 

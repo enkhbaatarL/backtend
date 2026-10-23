@@ -227,6 +227,7 @@ final class InputWorkbookXml {
 
     private static String rewriteRow(String original, int row, Map<Integer, Edit> changes, Map<Integer, String> raw) {
         Map<Integer, String> cells = cells(original);
+        Set<Integer> originalColumns = Set.copyOf(cells.keySet());
         raw.forEach((col, xml) -> { if (xml == null) cells.remove(col); else cells.put(col, xml); });
         for (var entry : changes.entrySet()) {
             int col = entry.getKey(); Edit edit = entry.getValue();
@@ -236,7 +237,9 @@ final class InputWorkbookXml {
             cells.put(col, valueCell(template, address(row, col), edit.value));
         }
         int openingEnd = original.indexOf('>') + 1;
-        String opening = original.substring(0, openingEnd).replaceAll("\\s+spans=(?:\"[^\"]*\"|'[^']*')", "");
+        String opening = original.substring(0, openingEnd);
+        // 값만 바꾼 기존 행은 사용 열 범위 metadata도 그대로 둔다.
+        if (!cells.keySet().equals(originalColumns)) opening = opening.replaceAll("\\s+spans=(?:\"[^\"]*\"|'[^']*')", "");
         if (opening.endsWith("/>")) opening = opening.substring(0, opening.length() - 2) + ">";
         String trailing = original.endsWith("/>") ? "" : CELL.matcher(original.substring(openingEnd, original.lastIndexOf("</row>"))).replaceAll("");
         return opening + String.join("", cells.values()) + trailing + "</row>";
