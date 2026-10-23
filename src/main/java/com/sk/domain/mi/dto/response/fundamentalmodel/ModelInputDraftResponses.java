@@ -66,7 +66,8 @@ public final class ModelInputDraftResponses {
     @Schema(requiredProperties={"rowId","values"})
     public record EditValue(String rowId,Map<String,Object> values) {}
     @Schema(requiredProperties={"capabilities","fields","rowBindings","editValues"})
-    public record Editing(@Schema(description="SET/CLEAR/ADD_ROW/DELETE_ROW/ADD_COLUMN/DELETE_COLUMN의 READY/INCOMPLETE/NOT_ALLOWED/UNSUPPORTED. READY만 호출 가능") Map<String,String> capabilities,List<JsonNode> fields,List<RowBinding> rowBindings,List<EditValue> editValues,
+    public record Editing(@Schema(description="SET/CLEAR/ADD_ROW/DELETE_ROW/ADD_COLUMN/DELETE_COLUMN의 READY/INCOMPLETE/NOT_ALLOWED/UNSUPPORTED. READY만 호출 가능") Map<String,String> capabilities,
+        @Schema(description="안정 fieldKey별 입력 정의. dataType은 INTEGER/DECIMAL/TEXT/DECIMAL_OR_TEXT. DECIMAL_OR_TEXT는 JSON number와 string을 원래 타입 그대로 주고받으며 실제 빈칸은 CLEAR로 처리. setConstraints.required=true인 TEXT는 빈 문자열·공백 입력 불가. CLEAR 허용 여부는 policyStatus.CLEAR로 표시") List<JsonNode> fields,List<RowBinding> rowBindings,List<EditValue> editValues,
         @com.fasterxml.jackson.annotation.JsonInclude(com.fasterxml.jackson.annotation.JsonInclude.Include.NON_NULL)
         @Schema(description="ADD_COLUMN READY일 때만 제공하는 headerValues/body 생성 정책") JsonNode columnCreation) {}
     @Schema(requiredProperties={"draftId","revision","sourceKey","sourceVersion","tableData","page","editing"})

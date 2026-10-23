@@ -15,6 +15,7 @@ final class InputWorkbookPolicy {
     enum Kind { VALUES, ROWS, COST, UPSTREAM, ALLOCATION, SHIPPING_COST, SHIPPING_DISRUPTION, SHIPPING_TECHNICAL, SHIPPING_ROUTE, MACRO, HYDROGEN, WEATHER_LOGIC, BCINPUT, BCPRODUCTION, PRODUCTION, HURRICANE, HURRICANE_ADJUSTMENT, ANNUAL, LNG, SECTOR, MONTHLY, LIQPROD, LIQUTIL, REGAS, REGAS_MONTHLY, UNSUPPORTED }
 
     static Kind kind(TableRef table) {
+        if (table.role().equals("DEMAND") && table.sheet().equals("PMILogicInput") && Set.of(2, 7).contains(table.startColumn())) return Kind.VALUES;
         if (table.role().equals("DEMAND") && table.sheet().equals("MacroParametersLogicInput") && table.startColumn() == 9) return Kind.MACRO;
         if (table.role().equals("TRADE") && Set.of("LNG_TradeRestrictionInput", "PNG_TradeRestrictionInput", "LNGExportRestictionInput").contains(table.sheet())) return Kind.ROWS;
         if (table.role().equals("TRADE") && table.sheet().equals("MidstreamCapacityInput")) {
@@ -86,6 +87,12 @@ final class InputWorkbookPolicy {
                 || table.scopes().isEmpty() && definition.columnCreation() == null) return false;
         Kind kind = kind(table);
         if (kind == Kind.UNSUPPORTED) return false;
+        if (table.role().equals("DEMAND") && table.sheet().equals("PMILogicInput")
+                && (table.startRow() != 7 || table.endRow() != 92 || table.endColumn() != table.startColumn() + 3
+                    || !definition.headerRows().equals(List.of(7, 8))
+                    || !definition.bodyRanges().equals(List.of(new InputReadDefinition.Range(9, 92)))
+                    || table.scopes().stream().anyMatch(s -> s.startRow() < 9 || s.endRow() > 92
+                        || s.startColumn() < table.endColumn() - 1 || s.endColumn() > table.endColumn()))) return false;
         if (infrastructure(table) && (table.startRow() != 1 || !definition.headerRows().equals(List.of(1, 2, 3))
                 || definition.bodyRanges().stream().anyMatch(r -> r.startRow() < 11)
                 || definition.columns().stream().anyMatch(c -> !infrastructureInput(c))
@@ -171,7 +178,7 @@ final class InputWorkbookPolicy {
         if (table.role().equals("TRADE") && table.sheet().equals("DemandAdjLogicInput") && table.startColumn() == 8
                 && (table.startRow() != 1 || table.endRow() != 7 || table.endColumn() != 10 || !definition.headerRows().equals(List.of(1, 2))
                     || !definition.bodyRanges().equals(List.of(new InputReadDefinition.Range(3, 7)))
-                    || table.scopes().stream().anyMatch(s -> s.startRow() < 3 || s.endRow() > 7 || s.startColumn() != s.endColumn() || !Set.of(8, 10).contains(s.startColumn())))) return false;
+                    || table.scopes().stream().anyMatch(s -> s.startRow() < 3 || s.endRow() > 7 || s.startColumn() < 8 || s.endColumn() > 10))) return false;
         if (kind == Kind.COST) {
             int inputLast = table.startColumn() + (table.startColumn() == 29 ? 4 : 3);
             if (table.startRow() != 1 || table.endColumn() != inputLast + (table.startColumn() == 37 ? 4 : 2) || !definition.headerRows().equals(List.of(1, 2))
@@ -415,11 +422,15 @@ final class InputWorkbookPolicy {
     }
     private static void value(JsonNode field, JsonNode value, JsonNode constraints, JsonNode command, InputDraftJson.ChangeRequest request, long revision) {
         String type = field.path("dataType").asText();
-        if (type.equals("TEXT") ? !value.isTextual() : !value.isNumber()) throw InputDraftException.invalid();
-        if (value.isTextual() && value.asText().isBlank() && field.path("create").path("required").asBoolean()) throw invalidField(field, command, request, revision, "REQUIRED");
+        if (type.equals("DECIMAL_OR_TEXT") ? !value.isTextual() && !value.isNumber()
+                : type.equals("TEXT") ? !value.isTextual() : !value.isNumber()) throw InputDraftException.invalid();
+        if (constraints.has("required") && !constraints.path("required").isBoolean()) throw InputDraftException.conflict("POLICY_INCOMPLETE", revision);
+        if (value.isTextual() && value.asText().isBlank()
+                && (field.path("create").path("required").asBoolean() || constraints.path("required").asBoolean()))
+            throw invalidField(field, command, request, revision, "REQUIRED");
         if (type.equals("INTEGER")) try { value.decimalValue().toBigIntegerExact(); } catch (ArithmeticException ex) { throw InputDraftException.invalid(); }
         if (!constraints.isObject()) throw InputDraftException.conflict("POLICY_INCOMPLETE", revision);
-        var keys = constraints.fieldNames(); while (keys.hasNext()) if (!Set.of("minimum", "maximum", "options").contains(keys.next())) throw InputDraftException.conflict("POLICY_UNSUPPORTED", revision);
+        var keys = constraints.fieldNames(); while (keys.hasNext()) if (!Set.of("minimum", "maximum", "options", "required").contains(keys.next())) throw InputDraftException.conflict("POLICY_UNSUPPORTED", revision);
         boolean valid = !constraints.has("minimum") || value.isNumber() && value.decimalValue().compareTo(constraints.path("minimum").decimalValue()) >= 0;
         valid &= !constraints.has("maximum") || value.isNumber() && value.decimalValue().compareTo(constraints.path("maximum").decimalValue()) <= 0;
         if (!valid) throw invalidField(field, command, request, revision, "OUT_OF_RANGE");

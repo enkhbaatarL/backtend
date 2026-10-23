@@ -64,7 +64,8 @@ final class InputWorkbookTradeAdjustments {
                 constants.put(new InputWorkbookCalculation.Address(sheet, "J" + row), null);
             }
         }
-        for (int row = 3; row <= 7; row++) if (patch.edits.getOrDefault(row, Map.of()).containsKey(8)) {
+        for (int row = 3; row <= 7; row++) if (patch.edits.getOrDefault(row, Map.of()).containsKey(8)
+                || patch.edits.getOrDefault(row, Map.of()).containsKey(9)) {
             String target = "K" + row;
             expected.put(target, "H" + row + "& \"" + (row == 7 ? " and " : " to ") + "\" &I" + row);
             changed.add(target);

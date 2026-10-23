@@ -263,7 +263,8 @@ final class InputDraftHistory {
                 require(cell!=null&&!cell.formula()&&json.sameValue(json.tree(cell.raw()),field.getValue()));
                 if(!field.getValue().isNull()) {
                     String type=definition.path("dataType").asText();
-                    require(type.equals("TEXT")?field.getValue().isTextual():field.getValue().isNumber());
+                    require(type.equals("DECIMAL_OR_TEXT") ? field.getValue().isTextual() || field.getValue().isNumber()
+                        : type.equals("TEXT") ? field.getValue().isTextual() : field.getValue().isNumber());
                     if(type.equals("INTEGER"))try {field.getValue().decimalValue().toBigIntegerExact();}catch(ArithmeticException ex){throw InputDraftException.internal();}
                 }
             }
