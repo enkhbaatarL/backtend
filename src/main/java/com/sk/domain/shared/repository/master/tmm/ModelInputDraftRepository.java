@@ -66,16 +66,6 @@ public class ModelInputDraftRepository {
             (rs,n)->rs.getString(1),id);
         if(types.size()!=1||!List.of("INDEPENDENT","MI_BASE").contains(types.get(0))) throw InputDraftException.missing();
     }
-    public void caseCompanyAccess(long caseId, int company) {
-        boolean owned=Boolean.TRUE.equals(jdbc.queryForObject("""
-            SELECT EXISTS (
-                SELECT 1 FROM tmd_mdl_scnrcasem c
-                JOIN tmd_usrm u ON u.usr_no=c.usr_no
-                WHERE c.case_id=? AND c.del_yn='N' AND u.cust_cpny_no=?
-            )
-            """,Boolean.class,caseId,company));
-        if(!owned)throw InputDraftException.missing();
-    }
     public boolean hasCompletedLatestRun(long caseId) {
         return Boolean.TRUE.equals(jdbc.queryForObject("""
             SELECT EXISTS (

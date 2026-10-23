@@ -158,7 +158,8 @@ public class ModelInputDraftService {
     }
     private Source source(Actor actor,long caseId,boolean lock) {
         if(caseId<1||caseId>Integer.MAX_VALUE)throw InputDraftException.missing();
-        store.caseAccess(caseId,lock);store.caseCompanyAccess(caseId,actor.company);Catalog catalog=store.catalog(caseId);
+        // 공유 원본 Case는 생성자의 회사와 비교하지 않는다. 개인 Draft는 owned()에서 회사+사용자로 제한한다.
+        store.caseAccess(caseId,lock);Catalog catalog=store.catalog(caseId);
         if(catalog.roles().size()!=4||!new HashSet<>(catalog.roles()).equals(new HashSet<>(ROLES)))throw InputDraftException.conflict("POLICY_INCOMPLETE",null);
         List<FileRef> registered=store.files(caseId);Map<String,FileRef> files=new LinkedHashMap<>();
         for(FileRef file:registered) {

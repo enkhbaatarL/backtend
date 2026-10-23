@@ -237,7 +237,7 @@ Case 목록에서 개인 Draft ID를 받은 경우 EDT-02로 바로 재조회해
 6. 성공하면 EDT-02/03을 새 revision으로 재조회하고 이전 페이지/좌표/화면 파생값을 폐기한다. 실패면 성공 revision을 유지하고 오류를 표시한다. 새 요청으로 재시도할 때 현재 Draft를 확인한다. 충돌이면 자동 재전송/덮어쓰기 없이 최신 Draft와 로컬 변경을 대조한다.
 7. 최종저장은 미저장 로컬 변경이 없고 진행 작업도 없을 때 EDT-06으로 현재 성공 revision을 제출한다. EDT-07을 조회해 SUCCEEDED일 때만 새 Case로 이동한다. RUN은 별도다. 화면을 다시 열면 EDT-02의 activeOperationEndpoint로 진행 작업을 재개하고 FINALIZED면 finalizedCaseId를 사용한다.
 
-모든 operation은 기존 USER/SKGAS_COMPANY_USER_ONLY, ADMIN/THIRD_PARTY_ADMIN_ONLY 권한 패턴과 인증된 tenant/user를 사용한다. source는 domain §5.4의 한 회사 기능 범위 안에서 접근 가능한 active `INDEPENDENT/MI_BASE`이며 업로더 본인일 필요는 없다. Draft는 **생성 사용자 개인 소유**이므로 source Case 수정 소유권과 구별한다. 다른 소유자/tenant의 Draft·작업은 404, 관리자도 이 API로 다른 사람 Draft에 접근하지 않는 안이다. 각 요청에서 source 접근 가능성도 확인한다. source 상태가 COMPLETED여야 한다는 새 조건이나 source Case 수정 권한은 추가하지 않는다.
+모든 operation은 기존 USER/SKGAS_COMPANY_USER_ONLY, ADMIN/THIRD_PARTY_ADMIN_ONLY 권한 패턴과 인증된 tenant/user를 사용한다. source는 domain §5.4의 한 회사 기능 범위 안에서 접근 가능한 active `INDEPENDENT/MI_BASE`이며 업로더 본인일 필요는 없다. 2026-10-23 사용자 확정에 따라 QRY-01 및 source 기반 Draft 생성·재개·후속 조회는 Case 생성자의 회사번호와 요청 회사번호를 비교하지 않는다. 타사 접근 ADMIN의 소속 회사가 달라도 기존 권한 조건을 통과하면 같은 공유 원본을 사용한다. Draft는 **생성 사용자 개인 소유**이므로 source Case 수정 소유권과 구별한다. 다른 소유자/tenant의 Draft·작업은 404, 관리자도 이 API로 다른 사람 Draft에 접근하지 않는 안이다. 각 요청에서 source 접근 가능성도 확인한다. source 상태가 COMPLETED여야 한다는 새 조건이나 source Case 수정 권한은 추가하지 않는다.
 
 worker는 접수 당시 서버가 확인한 actor/tenant/고정 기준을 전달받고 종료 때 context를 정리한다. 사용자/tenant/fileNo/bucket/object key/수식/저장 경로는 공개 요청으로 받지 않는다. payload·셀값·거부값·원문 예외는 HTTP/worker 로그와 오류에 남기지 않는다. 평문 작업사본/기존 암복호화는 domain 규칙63, 자원·비동기·전체120초 상한은 규칙64를 그대로 따른다. QRY JSON DRM 비적용의 기존 결정을 재심의하지 않는다.
 
