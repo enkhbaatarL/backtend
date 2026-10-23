@@ -128,7 +128,7 @@ public class ModelInputDraftController {
         String sourceVersion) {}
 
     @GetMapping("/cases/{caseId}/inputs/structure")
-    @Operation(summary = "원본 입력 구조 조회", description = "active INDEPENDENT 또는 MI_BASE Case의 등록 파일·연결 양식 기준 구조와 sourceVersion을 조회합니다. 양식은 해당 Case에 연결된 ACTIVE 또는 DEPRECATED 버전을 사용합니다. Case와 최근 Run이 모두 완료됐으면 파일을 다시 내려받아 시트를 검사하지 않으며, 완료 증거가 없으면 확인합니다. 실제 파일 판독은 표 조회 또는 초안 생성 시 수행합니다. 양식에서 탐색 표시를 허용한 표만 구조에 포함하며 내부 control 소유 표는 목록에서 제외해도 연결 control은 선택 표 응답에 제공합니다. 표 미선택 상태이므로 tableData는 null입니다. 회사 문맥은 인증 정보로 결정합니다.")
+    @Operation(summary = "원본 입력 구조 조회", description = "active INDEPENDENT 또는 MI_BASE Case의 등록 파일·연결 양식 기준 구조와 sourceVersion을 조회합니다. 양식은 해당 Case에 연결된 ACTIVE 또는 DEPRECATED 버전을 사용합니다. Case와 최근 Run이 모두 완료됐으면 파일을 다시 내려받아 시트를 검사하지 않으며, 완료 증거가 없으면 확인합니다. 실제 파일 판독은 표 조회 또는 초안 생성 시 수행합니다. 양식에서 탐색 표시를 허용한 표만 구조에 포함하며 내부 control 소유 표는 목록에서 제외해도 연결 control은 선택 표 응답에 제공합니다. 표 미선택 상태이므로 tableData는 null입니다. 회사 문맥은 인증 정보로 결정합니다. 기존 역할·권한 조건을 통과한 요청은 Case 생성자의 회사번호와 비교하지 않고 공유 원본을 조회합니다.")
     @ApiResponse(responseCode = "200", description = "DEMAND·SUPPLY·TRADE·OUTPUT 순서의 원본 구조", content = @Content(schema = @Schema(implementation = SourceEnvelope.class)))
     @ApiResponse(responseCode = "400", description = "REQ_INVALID_PARAMETER: 잘못된 Case ID", content = @Content(mediaType = MediaType.APPLICATION_JSON_VALUE, schema = @Schema(implementation = NullErrorEnvelope.class)))
     @ApiResponse(responseCode = "404", description = "RSC_NOT_FOUND: 사용 가능한 원본 Case가 없음", content = @Content(mediaType = MediaType.APPLICATION_JSON_VALUE, schema = @Schema(implementation = NullErrorEnvelope.class)))
@@ -144,7 +144,7 @@ public class ModelInputDraftController {
     }
 
     @PostMapping(value = "/cases/{caseId}/input-drafts", consumes = MediaType.APPLICATION_JSON_VALUE)
-    @Operation(summary = "개인 Draft 생성 또는 재개", description = "같은 회사·사용자·원본 Case의 편집 중 Draft가 있으면 재개합니다. 최초 생성 시 원본 네 파일과 행 ID를 하나의 DB 저장으로 고정합니다. 생성 여부는 created로 구분하며 두 경우 모두 200입니다. 표 값 수정과 최종저장은 이 API에 포함되지 않습니다.")
+    @Operation(summary = "개인 Draft 생성 또는 재개", description = "같은 회사·사용자·원본 Case의 편집 중 Draft가 있으면 재개합니다. 허용된 공유 원본은 Case 생성자의 회사번호와 비교하지 않으며 개인 Draft는 요청 회사와 로그인 사용자로 제한합니다. 최초 생성 시 원본 네 파일과 행 ID를 하나의 DB 저장으로 고정합니다. 생성 여부는 created로 구분하며 두 경우 모두 200입니다. 표 값 수정과 최종저장은 이 API에 포함되지 않습니다.")
     @io.swagger.v3.oas.annotations.parameters.RequestBody(required = true, content = @Content(schema = @Schema(implementation = CreateRequest.class)))
     @ApiResponse(responseCode = "200", description = "신규 생성 또는 기존 Draft 재개", content = @Content(schema = @Schema(implementation = CreatedEnvelope.class), examples = @ExampleObject(value = """
         {"status":true,"code":"SUC-000","message":"Success.","data":{"draftId":"aefb60dc-18b8-4ac2-beb4-a4d499950765","sourceCaseId":103,"sourceKey":"sc1_aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa","sourceVersion":"sv1_aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa","status":"DRAFT","statusLabel":"편집 중","revision":0,"activeOperationId":null,"activeOperationEndpoint":null,"finalizedCaseId":null,"draftEndpoint":"/api/v1/mi/fundamental-model/input-drafts/aefb60dc-18b8-4ac2-beb4-a4d499950765","created":true}}
