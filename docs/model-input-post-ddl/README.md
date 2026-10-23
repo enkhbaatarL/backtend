@@ -1,5 +1,7 @@
 # DDL 적용 후 실행 순서
 
+아래 번호순 묶음은 **v5 최초 설치용**이다. v6 직접 설치/기존 ACTIVE 교체는 [v6 개발계·운영계 적용 안내](../model-input-editor-v6-deployment-guide.md)의 별도 등록·발행 SQL을 사용한다. v6라는 이유로 기존 runner 초기화나 이 묶음의 v5 등록/발행을 반복하지 않는다.
+
 ## Document Control
 
 - status: Review / 수동 실행용
