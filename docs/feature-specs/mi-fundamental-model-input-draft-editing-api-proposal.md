@@ -310,6 +310,8 @@ EDT-03의 data는 `draftId/revision/sourceKey/sourceVersion/tableData/page/editi
 
 ### 3.3 `editing` — Draft 표 조회에만 붙이는 metadata
 
+**2026-10-23 Midstream 기존행 편집:** TRADE `MidstreamContractInput`의 PNG `A5:D1104` 및 LNG `Q5:U2918`은 신규 v6 정의에서 기존 rowId의 비어 있지 않은 `SET`만 제공한다. 필드 key/타입과 원본 행 식별은 기존 catalog를 유지한다. 입력 외 전체 보존은 업무 정본 규칙59를 따른다. `CLEAR`는 `INCOMPLETE`로 계속 닫고, 빈 문자열/공백 `SET`도409 `POLICY_INCOMPLETE`로 거부한다. 이는 모든 필드를 필수로 확정한 것이 아니며 U5의 확정 빈 값 금지/숫자0와 다른 행의 미결을 구분한다. `ADD_ROW`/삭제/열 변경은 미개방이다. 과거 지정 F-T-04의704행 생성은 별도 잔여 정책/구현 범위이며 기존행 SET으로 빈 슬롯을 활성화하지 않는다. 기존 비동기/revision/재전송 계약을 그대로 사용하며 접수만으로 성공으로 보지 않는다.
+
 | 필드 | 타입·의미 |
 | --- | --- |
 | `capabilities` | `SET/CLEAR/ADD_ROW/DELETE_ROW/ADD_COLUMN/DELETE_COLUMN` 각각 `READY/INCOMPLETE/NOT_ALLOWED/UNSUPPORTED`. 두 열 동작은 §1.1 채택·공통 DTO/파서 구현. 실제 처리기 미지원은 UNSUPPORTED로 노출. READY만 호출 가능. 미정과 업무 불허·제품 미지원 구분 |

@@ -795,6 +795,8 @@ DDL은 암묵 commit되므로 reset의 DELETE transaction을 검증·COMMIT/ROLL
 
 #### 6.9.5 검증·준비도
 
+- 2026-10-23 Midstream 기존행 편집: 업무 정본 규칙59의 일반 보존 결정을 신규 v6 DRAFT의 PNG/LNG 두 표 SET에 연결한다. 원본 열/본문/identity/uploadValidation은 유지하고 입력 scopes는 A5:D1104·Q5:U2918만 둔다. 계산 결과/외부 셀 delta를 생성하지 않으며 기존 셀 delta와 성공 이력 재생으로 입력만 복원한다. CLEAR/빈 문자열·생성/삭제 미결은 개방하지 않는다(편집 API §3.3). schema/기존 v5 설치 생성물·ACTIVE·Case 연결 변경은 없다. v6 전체 준비도는 별도 BCRegas2건 미해결 상태이며 SQL 생성/로컬 검사로 발행 준비 완료를 주장하지 않는다.
+
 ##### 실제 편집기 파생 열 위치 소유 — 2026-10-19
 
 - 2026-10-23 신규 편집 양식 초안은 `docs/model-input-editor-remaining-v6-policy.json`과 이를 읽어 생성하는 `docs/model-input-editor-remaining-v6-registration-draft.sql`을 따른다. 기존 v5 정의·ACTIVE·Case/Draft 연결은 수정하지 않는다. 표 내부 경계에 필요한 계산 열을 포함해도 공개 `columns`·`identityColumns`·업로드 고정 헤더는 기존 정의를 유지하며, 계산 열을 사용자 입력으로 열지 않는다. BCRegasification의 기존 G:Q 및 연도 추가 연결은 독립 검토에서 요청 검사 불일치2건이 확인돼 수정 합의 대기이며 적용할 수 없다. master B:F/행 추가·삭제는 일반 READY로 확대하지 않는다. PMI 두 표는 기존 D/I 국가 SET(필수 자유입력·CLEAR 금지)과 E/J 강도 SET/CLEAR를 연결한다. 대륙·지역과 Selected는 국가 변경으로 자동 갱신하지 않으며 행 추가는 미개방이다(domain §6.8). 기존 Weather User-Adjusted 두 표는 검증된 국가/강도 SET/CLEAR만 연결하고 행 추가는 유지 보류한다. 현재 준비도/검증은 안정 작업 노트에 기록하며 등록 SQL 생성 자체가 발행이나 배포를 뜻하지 않는다.

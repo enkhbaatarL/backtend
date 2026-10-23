@@ -3397,6 +3397,159 @@
           10
         ]
       ]
+    },
+    {
+      "key": [
+        "TRADE",
+        "MidstreamContractInput",
+        "Forecasted PNG Contract Volume (Imports)"
+      ],
+      "baselineSha256": "b501fcb6093fc12a55820b68902a368bb6e941af08a60b0e4ef8d4ed2c1e6d0e",
+      "geometry": {},
+      "definition": {
+        "fields": [
+          {
+            "fieldKey": "year",
+            "columnNumber": 1,
+            "dataType": "INTEGER",
+            "policyStatus": {
+              "CREATE": "INCOMPLETE",
+              "SET": "READY",
+              "CLEAR": "INCOMPLETE"
+            },
+            "setConstraints": {}
+          },
+          {
+            "fieldKey": "fromCountry",
+            "columnNumber": 2,
+            "dataType": "TEXT",
+            "policyStatus": {
+              "CREATE": "INCOMPLETE",
+              "SET": "READY",
+              "CLEAR": "INCOMPLETE"
+            },
+            "setConstraints": {}
+          },
+          {
+            "fieldKey": "toCountry",
+            "columnNumber": 3,
+            "dataType": "TEXT",
+            "policyStatus": {
+              "CREATE": "INCOMPLETE",
+              "SET": "READY",
+              "CLEAR": "INCOMPLETE"
+            },
+            "setConstraints": {}
+          },
+          {
+            "fieldKey": "unadjustedGrossGasImportMtLNG",
+            "columnNumber": 4,
+            "dataType": "DECIMAL",
+            "policyStatus": {
+              "CREATE": "INCOMPLETE",
+              "SET": "READY",
+              "CLEAR": "INCOMPLETE"
+            },
+            "setConstraints": {}
+          }
+        ],
+        "capabilities": {
+          "SET": "READY",
+          "CLEAR": "INCOMPLETE",
+          "ADD_ROW": "INCOMPLETE",
+          "DELETE_ROW": "INCOMPLETE"
+        }
+      },
+      "scopes": [
+        [
+          5,
+          1104,
+          1,
+          4
+        ]
+      ]
+    },
+    {
+      "key": [
+        "TRADE",
+        "MidstreamContractInput",
+        "LNG Contract Volumes"
+      ],
+      "baselineSha256": "2696381de530a51e450e62121125c3a08e63100ef4a72e423591c528d60b72ef",
+      "geometry": {},
+      "definition": {
+        "fields": [
+          {
+            "fieldKey": "year",
+            "columnNumber": 17,
+            "dataType": "DECIMAL",
+            "policyStatus": {
+              "CREATE": "INCOMPLETE",
+              "SET": "READY",
+              "CLEAR": "INCOMPLETE"
+            },
+            "setConstraints": {}
+          },
+          {
+            "fieldKey": "fromCountry",
+            "columnNumber": 18,
+            "dataType": "TEXT",
+            "policyStatus": {
+              "CREATE": "INCOMPLETE",
+              "SET": "READY",
+              "CLEAR": "INCOMPLETE"
+            },
+            "setConstraints": {}
+          },
+          {
+            "fieldKey": "fromLiquefactionTerminal",
+            "columnNumber": 19,
+            "dataType": "TEXT",
+            "policyStatus": {
+              "CREATE": "INCOMPLETE",
+              "SET": "READY",
+              "CLEAR": "INCOMPLETE"
+            },
+            "setConstraints": {}
+          },
+          {
+            "fieldKey": "toCountry",
+            "columnNumber": 20,
+            "dataType": "TEXT",
+            "policyStatus": {
+              "CREATE": "INCOMPLETE",
+              "SET": "READY",
+              "CLEAR": "INCOMPLETE"
+            },
+            "setConstraints": {}
+          },
+          {
+            "fieldKey": "grossGasImportMtLNG",
+            "columnNumber": 21,
+            "dataType": "DECIMAL",
+            "policyStatus": {
+              "CREATE": "INCOMPLETE",
+              "SET": "READY",
+              "CLEAR": "INCOMPLETE"
+            },
+            "setConstraints": {}
+          }
+        ],
+        "capabilities": {
+          "SET": "READY",
+          "CLEAR": "INCOMPLETE",
+          "ADD_ROW": "INCOMPLETE",
+          "DELETE_ROW": "INCOMPLETE"
+        }
+      },
+      "scopes": [
+        [
+          5,
+          2918,
+          17,
+          21
+        ]
+      ]
     }
   ]
 }

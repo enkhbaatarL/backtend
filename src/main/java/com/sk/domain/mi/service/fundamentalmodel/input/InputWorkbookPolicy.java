@@ -18,6 +18,7 @@ final class InputWorkbookPolicy {
         if (table.role().equals("DEMAND") && table.sheet().equals("PMILogicInput") && Set.of(2, 7).contains(table.startColumn())) return Kind.VALUES;
         if (table.role().equals("DEMAND") && table.sheet().equals("MacroParametersLogicInput") && table.startColumn() == 9) return Kind.MACRO;
         if (table.role().equals("TRADE") && Set.of("LNG_TradeRestrictionInput", "PNG_TradeRestrictionInput", "LNGExportRestictionInput").contains(table.sheet())) return Kind.ROWS;
+        if (midstreamContracts(table)) return Kind.VALUES;
         if (table.role().equals("TRADE") && table.sheet().equals("MidstreamCapacityInput")) {
             if (table.startColumn() == 128) return Kind.ALLOCATION;
             if (table.startColumn() == 158) return Kind.ROWS;
@@ -87,6 +88,15 @@ final class InputWorkbookPolicy {
                 || table.scopes().isEmpty() && definition.columnCreation() == null) return false;
         Kind kind = kind(table);
         if (kind == Kind.UNSUPPORTED) return false;
+        if (midstreamContracts(table)) {
+            int first = table.startColumn(), last = first == 1 ? 4 : 21, end = first == 1 ? 1104 : 2918;
+            if (table.startRow() != 2 || table.endRow() != end || table.endColumn() != last || table.dataStart() != 5
+                    || !definition.headerRows().equals(List.of(2, 3, 4))
+                    || !definition.bodyRanges().equals(List.of(new InputReadDefinition.Range(5, end)))
+                    || !definition.columns().equals(java.util.stream.IntStream.rangeClosed(first, last).boxed().toList())
+                    || table.scopes().stream().anyMatch(s -> s.startRow() < 5 || s.endRow() > end
+                        || s.startColumn() < first || s.endColumn() > last)) return false;
+        }
         if (table.role().equals("DEMAND") && table.sheet().equals("PMILogicInput")
                 && (table.startRow() != 7 || table.endRow() != 92 || table.endColumn() != table.startColumn() + 3
                     || !definition.headerRows().equals(List.of(7, 8))
@@ -349,6 +359,9 @@ final class InputWorkbookPolicy {
                         && (existing == null || existing >= s.startRow() && existing <= s.endRow()))) throw invalid(command, request, revision, "ACTION_NOT_ALLOWED");
             }
             JsonNode submitted = action.equals("CLEAR") ? null : command.get("value");
+            // 빈 값 정책은 미정이다. 기존행의 비어 있지 않은 입력만 열고 필수값 정책을 추론하지 않는다.
+            if (midstreamContracts(table) && submitted != null && submitted.isTextual() && submitted.asText().isBlank())
+                throw InputDraftException.conflict("POLICY_INCOMPLETE", revision);
             if (submitted != null) value(field, submitted, field.path("setConstraints"), command, request, revision);
             if (!client.isEmpty() && command.has("fieldKey")) newValues.get(client).put(command.path("fieldKey").asText(), submitted);
         }
@@ -378,6 +391,9 @@ final class InputWorkbookPolicy {
         return field;
     }
 
+    private static boolean midstreamContracts(TableRef table) {
+        return table.role().equals("TRADE") && table.sheet().equals("MidstreamContractInput") && Set.of(1, 17).contains(table.startColumn());
+    }
     static boolean infrastructure(TableRef table) { return table.role().equals("TRADE") && table.sheet().equals("MidstreamCapacityInput") && table.startColumn() == 2; }
     private static boolean infrastructureInput(int column) { return Set.of(2, 4, 7).contains(column) || column >= 10 && column <= 17 || column >= 170; }
     static boolean supportsHeader(TableRef table, int column) {
