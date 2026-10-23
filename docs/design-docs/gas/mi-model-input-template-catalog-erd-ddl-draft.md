@@ -14,7 +14,7 @@
   - `docs/conventions/db-term-dictionary-sheet2.csv`
 - supersedes:
   - 이 문서의 2026-09-04 `양식 → 테이블` 2단계 초안
-- last synced: 2026-10-21 (§6.12 Case 공유 초기 기준 설계; §6.11 A 실행기 상태 table 사용자 승인; §6.10 직접 업로드 저장 확장/증분 DDL 초안; §6.9 미배포 v2 단일 저장/복원 형식·Draft 초기화 SQL 확정; §6.8 감사 초 정밀도 정렬·증분 적용 준비; §6.3.4.1 성공값 좌표 이동·저장 이력 오류 처리 보완; 사용자 제공 midb 정의에 따른 §6.4 파일 metadata 매핑 정렬 유지; 나머지 DBA 후속은 §13)
+- last synced: 2026-10-23 — Demand Parameters/Bands 기존 값 수정 전용 결정 반영(업무 정본 §6.9, v6). 이전 동기화: 2026-10-21 (§6.12 Case 공유 초기 기준 설계; §6.11 A 실행기 상태 table 사용자 승인; §6.10 직접 업로드 저장 확장/증분 DDL 초안; §6.9 미배포 v2 단일 저장/복원 형식·Draft 초기화 SQL 확정; §6.8 감사 초 정밀도 정렬·증분 적용 준비; §6.3.4.1 성공값 좌표 이동·저장 이력 오류 처리 보완; 사용자 제공 midb 정의에 따른 §6.4 파일 metadata 매핑 정렬 유지; 나머지 DBA 후속은 §13)
 - open questions:
   - §6.11의 상태 table1개 추가는 2026-10-20 사용자 후속 승인됐다. 실제 DB 조회·DDL 적용/경합 검증은 별도이며 아직 수행하지 않았다.
   - 직접 업로드의 물리 설계/증분 SQL은 §6.10에 정리했다. 실제 환경 제약명·타입·수동 적용, MySQL 제약/동시성 및 새 저장 형식 reader/writer 검증은 미실행이며 이 확인 전에는 적용 준비 완료로 판정하지 않는다.
@@ -801,7 +801,7 @@ DDL은 암묵 commit되므로 reset의 DELETE transaction을 검증·COMMIT/ROLL
 
 - 2026-10-23 신규 편집 양식 초안은 `docs/model-input-editor-remaining-v6-policy.json`과 이를 읽어 생성하는 `docs/model-input-editor-remaining-v6-registration-draft.sql`을 따른다. 기존 v5 정의·ACTIVE·Case/Draft 연결은 수정하지 않는다. 표 내부 경계에 필요한 계산 열을 포함해도 공개 `columns`·`identityColumns`·업로드 고정 헤더는 기존 정의를 유지하며, 계산 열을 사용자 입력으로 열지 않는다. BCRegasification의 기존 G:Q 및 연도 추가 연결은 독립 검토에서 요청 검사 불일치2건이 확인돼 수정 합의 대기이며 적용할 수 없다. master B:F/행 추가·삭제는 일반 READY로 확대하지 않는다. PMI 두 표는 기존 D/I 국가 SET(필수 자유입력·CLEAR 금지)과 E/J 강도 SET/CLEAR를 연결한다. 대륙·지역과 Selected는 국가 변경으로 자동 갱신하지 않으며 행 추가는 미개방이다(domain §6.8). 기존 Weather User-Adjusted 두 표는 검증된 국가/강도 SET/CLEAR만 연결하고 행 추가는 유지 보류한다. 현재 준비도/검증은 안정 작업 노트에 기록하며 등록 SQL 생성 자체가 발행이나 배포를 뜻하지 않는다.
 
-- DemandAdjLogicInput의 기존 Parameters 표는 C1:F3 경계를 유지하고 D2:D3/F2:F3만 입력한다. Premium(2행) 변경은 원본 L3:L7, Non-premium(3행) 변경은 M3:M7 수식으로 계산하며 결과는 숨김 계산영역에 유지한다. Bands는 H1:J7 경계의 기존 H/J 숫자와 I 숫자/문자 혼합 입력을 제공한다. H/I 변경은 해당 K 연결식, J 변경은 해당 L/M만 갱신하며 중앙5행 L/M은 원본 D2/D3 직접 참조라 J5 변경의 계산 대상이 아니다. 계산에 필요한 L5/M5는 원본 수식으로 평가하되 D2/D3가 바뀌지 않았으면 저장 셀은 보존한다. C/E 라벨·나머지 원본은 보존한다. I의 숫자/문자 및 실제 빈칸을 구별하며 API 타입은 편집 API §3.3을 따른다. 이전 L/M cache를 계산 근거로 쓰지 않는다. 신규 유형/행은 별도 구현 준비도이며 기존 입력 지원을 전체 READY로 확대하지 않는다.
+- DemandAdjLogicInput의 기존 Parameters 표는 C1:F3 경계를 유지하고 D2:D3/F2:F3만 입력한다. Premium(2행) 변경은 원본 L3:L7, Non-premium(3행) 변경은 M3:M7 수식으로 계산하며 결과는 숨김 계산영역에 유지한다. Bands는 H1:J7 경계의 기존 H/J 숫자와 I 숫자/문자 혼합 입력을 제공한다. H/I 변경은 해당 K 연결식, J 변경은 해당 L/M만 갱신하며 중앙5행 L/M은 원본 D2/D3 직접 참조라 J5 변경의 계산 대상이 아니다. 계산에 필요한 L5/M5는 원본 수식으로 평가하되 D2/D3가 바뀌지 않았으면 저장 셀은 보존한다. C/E 라벨·나머지 원본은 보존한다. I의 숫자/문자 및 실제 빈칸을 구별하며 API 타입은 편집 API §3.3을 따른다. 이전 L/M cache를 계산 근거로 쓰지 않는다. 2026-10-23 업무 정본 §6.9에 따라 두 표는 기존 값 수정 전용으로 고정한다. 신규 v6 DRAFT는 rowAdd/columnAdd=N 및 ADD_ROW/DELETE_ROW/ADD_COLUMN/DELETE_COLUMN=NOT_ALLOWED, 필드 CREATE/DELETE_COLUMN=NOT_ALLOWED를 명시한다. 신규 유형/행을 잔여 구현으로 남기지 않으며 기존 v5/발행 양식은 유지한다.
 
 - ShippingCostInput 운임5표·운하중단2표는 원본 B:F 또는 B:D의 고정 헤더/기존 본문을 유지한다. 연속 배치된 다른 표를 이동하지 않고, 신규 논리 행은 고정 원본 B:F의 마지막 내용 행과 현재7표의 예약 행 뒤에 요청 순서로 배정한다. 기존 `bodyRanges`/scope를 비연속 범위로 확장하여 다른 표의 중간 행을 포함하지 않는다. 운임은 기존 C3 모드/현재 입력을 기준으로 E만 계산하고, Pacific/Atlantic의 새 C는 직전 논리 행 C×1.02로 생성한다. E의 직전 E/D 참조도 물리 인접 행이 아닌 같은 표의 직전 논리 행이다. 운하중단의 신규 D는 고정 D61/D72 참조로 생성한다. C3 공유 control SET은 운임5표에 반영하며 A 연간 운송비·기존 외부/다른 표는 보존한다. 표별 실제 준비도는 구현/검증을 마친 후 발행하며 이 선언만으로 READY가 되지 않는다.
 

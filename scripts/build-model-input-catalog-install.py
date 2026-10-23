@@ -530,7 +530,9 @@ def remaining_editor():
         assert digest(compact(row)) == patch['baselineSha256'], key
         query = json.loads(row[14])
         for field, value in patch.get('geometry', {}).items():
-            row[{'startRow': 4, 'endRow': 5, 'startColumn': 6, 'endColumn': 7}[field]] = value
+            if field in ('rowAdd', 'columnAdd'):
+                assert value in ('Y', 'N'), (key, field, value)
+            row[{'startRow': 4, 'endRow': 5, 'startColumn': 6, 'endColumn': 7, 'rowAdd': 11, 'columnAdd': 12}[field]] = value
         for field, value in patch['definition'].items():
             assert field in ('fields', 'capabilities', 'columnCreation'), field
             query[field] = value

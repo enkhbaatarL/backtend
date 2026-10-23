@@ -15,7 +15,7 @@
   - [Delivery Plan](../design-docs/gas/mi-model-input-editing-delivery-plan.md) §6A·§7·§9
   - [OpenAPI 규칙](../conventions/openapi-documentation-conventions.md), [보안 정책](../../SECURITY.md)
 - supersedes: 없음. QRY-01/02와 기존 조회/업로드 범위를 대체하지 않는다.
-- last synced: 2026-10-22 (EDT-05 상태 조회 비잠금/만료 정리 경합 정책 반영; 저장된 빈 ADDED 행 표시 §3.2 반영; 2026-10-20 모든 Draft 표의 마지막 데이터 행 표시 §3.2 반영; LiqProdAdjustment 신규 월 입력·입력 연월 기준 Period 계산·월 건너뛰기/중복 허용·새 열 fieldKey·임시 키/성공 대응 사용자 채택; 열 명령/기존 API 연결·headerValues 형식·LiqProd 월 삭제·같은 저장의 추가 후 삭제·성공 mapping 다섯 필드/상태·빈 배열 통일·삭제 키 미재사용/동일 요청 키 유지 채택; 열 동작 조회 metadata·LiqProd/LiqUtil 빈 본문/0 구분·editing.columnCreation 기존 표현 재사용·LNG Demand 새 연도 국가 입력·PMIInput·Base Case HDD/CDD/Temperature 새 연도 본문 빈칸/0 구분 채택; U1/U2 공통 정책 채택·사용자 필수 미결0건; FE 최종 JSON·구현 차이 §4~7/§10.2 반영; 열 저장 v2 단일 형식·Draft 초기화/배포 SQL은 DDL §6.9)
+- last synced: 2026-10-23 — Demand Parameters/Bands 기존 값 수정 전용 결정 반영(업무 정본 §6.9, v6). 이전 동기화: 2026-10-22 (EDT-05 상태 조회 비잠금/만료 정리 경합 정책 반영; 저장된 빈 ADDED 행 표시 §3.2 반영; 2026-10-20 모든 Draft 표의 마지막 데이터 행 표시 §3.2 반영; LiqProdAdjustment 신규 월 입력·입력 연월 기준 Period 계산·월 건너뛰기/중복 허용·새 열 fieldKey·임시 키/성공 대응 사용자 채택; 열 명령/기존 API 연결·headerValues 형식·LiqProd 월 삭제·같은 저장의 추가 후 삭제·성공 mapping 다섯 필드/상태·빈 배열 통일·삭제 키 미재사용/동일 요청 키 유지 채택; 열 동작 조회 metadata·LiqProd/LiqUtil 빈 본문/0 구분·editing.columnCreation 기존 표현 재사용·LNG Demand 새 연도 국가 입력·PMIInput·Base Case HDD/CDD/Temperature 새 연도 본문 빈칸/0 구분 채택; U1/U2 공통 정책 채택·사용자 필수 미결0건; FE 최종 JSON·구현 차이 §4~7/§10.2 반영; 열 저장 v2 단일 형식·Draft 초기화/배포 SQL은 DDL §6.9)
 - open questions: §10. 2026-10-16 공통 BE 채택과 이번 공통 저장·최종저장/복구 계약(§9) 마무리를 반영한다. 표별 정책·DBA 적용 준비/제품 검증은 별도 후속이며 PriceModel/Regas 추천은 미승인이다. 문서 전체는 Draft다.
 
 ## 1. 목표·이번 slice
@@ -309,6 +309,8 @@ EDT-03의 data는 `draftId/revision/sourceKey/sourceVersion/tableData/page/editi
 - 원본 Excel, catalog의 전체 입력 범위, 저장된 행 ID 및 ADD_ROW의 자리 배정은 바꾸지 않는다. 이 변경은 편집 capability를 READY로 바꾸지 않는다.
 
 ### 3.3 `editing` — Draft 표 조회에만 붙이는 metadata
+
+**2026-10-23 Demand 고정 구조:** 업무 정본 §6.9의 Parameters/Bands는 신규 v6에서 기존 입력의 SET/CLEAR만 READY다. `ADD_ROW/DELETE_ROW/ADD_COLUMN/DELETE_COLUMN`과 필드 `CREATE/DELETE_COLUMN`은 `NOT_ALLOWED`로 표시하고 구조 변경 요청은422 `ACTION_NOT_ALLOWED`로 거부한다. 카탈로그의 `rowAdd/columnAdd=false`에 따라 표 목록의 `rowPolicy/columnPolicy`는 모두 `"고정"`이며 FE는 구조 변경 버튼을 제공하지 않는다. I Upper Bound의 `DECIMAL_OR_TEXT`와 기존 SET/CLEAR는 유지한다. 같은 시트 Premium Market Countries 및 과거 양식에는 이 정책을 소급 적용하지 않는다.
 
 **2026-10-23 Midstream 기존행 편집:** TRADE `MidstreamContractInput`의 PNG `A5:D1104` 및 LNG `Q5:U2918`은 신규 v6 정의에서 기존 rowId의 비어 있지 않은 `SET`만 제공한다. 필드 key/타입과 원본 행 식별은 기존 catalog를 유지한다. 입력 외 전체 보존은 업무 정본 규칙59를 따른다. `CLEAR`는 `INCOMPLETE`로 계속 닫고, 빈 문자열/공백 `SET`도409 `POLICY_INCOMPLETE`로 거부한다. 이는 모든 필드를 필수로 확정한 것이 아니며 U5의 확정 빈 값 금지/숫자0와 다른 행의 미결을 구분한다. `ADD_ROW`/삭제/열 변경은 미개방이다. 과거 지정 F-T-04의704행 생성은 별도 잔여 정책/구현 범위이며 기존행 SET으로 빈 슬롯을 활성화하지 않는다. 기존 비동기/revision/재전송 계약을 그대로 사용하며 접수만으로 성공으로 보지 않는다.
 

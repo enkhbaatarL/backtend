@@ -8,7 +8,7 @@
 - source documents: [입력 제공 명세][be-provision], [편집 명세][be-edit-spec], [현재 Controller][be-controller], [현재 DTO][be-dto], [현재 Service][be-service]. FE 코드 비교는 §2에 명시한 과거 조사 기준이다.
 - depends on: [표별 업무 규칙][be-domain], [DBA 적용 계약][be-ddl]. 이 안내는 새 정책·API·배포를 승인하지 않는다.
 - supersedes: 이 문서의 2026-10-19 현재 상태 설명. 과거 실서버 시험 증거는 §1의 이력으로 유지한다.
-- last synced: 2026-10-21 — 저장된 빈 ADDED 행 조회 규칙 반영. 기존 편집기 중간 커밋 `842fe78f3` 기준의 순차 업로드·v2·모드/연도 헤더·자동 실행 안내는 유지
+- last synced: 2026-10-23 — Demand Parameters/Bands 기존 값 수정 전용 결정 반영(업무 정본 §6.9, v6). 이전 동기화: 2026-10-21 — 저장된 빈 ADDED 행 조회 규칙 반영. 기존 편집기 중간 커밋 `842fe78f3` 기준의 순차 업로드·v2·모드/연도 헤더·자동 실행 안내는 유지
 - open questions: 실제 카탈로그 연결·잔여 표 처리·Shipping 보류 결함2건과 PMI 표시 정책, 서버 배포·DBA 적용·FE 브라우저 통합 확인. 편집기 세션 종료를 전체 기능 완료로 간주하지 않는다.
 
 ## 1. 현재 인계 기준과 가능한 작업
@@ -497,7 +497,7 @@ QRY-01 원본 구조 오류는 **항상 `data:null`**이므로 `data.reason`을 
 | BCRegas→Regas | 연결 행·연도/MAX·월/합계와 공개 API/최종파일 검증. 이전3개 승인 결함은 수정/회귀·독립 검토 완료. FE가 파생 행·합계를 별도 저장하지 않음 |
 | BCInput·수요 조정/수소·선박연료·날씨 및 공급 기준/조정 표 | 표별 허용 입력/추가·계산·원본 보존 검증 기록. 비연속 본문/제외 영역을 server page로 표시. 실제 정책/수정 scope 발행은 별도 |
 | TRADE 비용·거래 제한·배분·거시 변수 등 | 각 표의 확정 범위 검증 기록. 일부 잔여 표와 카탈로그 연결이 남아 있어 전체 TRADE 지원으로 확대하지 않음 |
-| DemandAdjLogicInput | 기존 Parameters D/F·Bands H/J 숫자 입력과 영향 계산 검증. 혼합 I열/행 추가 지원으로 확대하지 않음 |
+| DemandAdjLogicInput | 신규 v6 Parameters/Bands는 기존 값 수정 전용(업무 정본 §6.9/편집 API §3.3). D/F·H/J 및 혼합 I SET/CLEAR·영향 계산은 유지하고 행/열 추가·삭제는 NOT_ALLOWED. A열 국가 목록은 별도 정책 |
 | Shipping 관련 경로 | 신규행 D91:D93 validation 충돌, 노선 AM232 실제 Excel 오류 타입 처리 결함2건은 사용자 보류. 해당 경로 완료/READY 발행 불가 |
 
 작업 기록의 상태는 전체 In Progress이며 `842fe78f3`는 현 진행 결과의 중간 커밋이다. 처리기가 검사에 통과해도 실제 카탈로그 readDefinition/field/scope·발행 양식/Case 연결이 준비돼야 UI에서 사용할 수 있다. FE는 서버가 준 표/필드만 렌더링하고 미지원 표를 mock으로 채우지 않는다.

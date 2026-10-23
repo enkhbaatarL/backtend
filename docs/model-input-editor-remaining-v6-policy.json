@@ -155,10 +155,97 @@
       "key": [
         "TRADE",
         "DemandAdjLogicInput",
+        "Demand Adjustment Parameters"
+      ],
+      "baselineSha256": "6d4bd450d68ba1798c0a167512cdd443d178697b4c4e6c43e38303005bfdc57b",
+      "geometry": {
+        "rowAdd": "N",
+        "columnAdd": "N"
+      },
+      "definition": {
+        "fields": [
+          {
+            "fieldKey": "demandAdjustment",
+            "columnNumber": 3,
+            "dataType": "TEXT",
+            "policyStatus": {
+              "CREATE": "NOT_ALLOWED",
+              "SET": "NOT_ALLOWED",
+              "CLEAR": "NOT_ALLOWED",
+              "DELETE_COLUMN": "NOT_ALLOWED"
+            }
+          },
+          {
+            "fieldKey": "columnD",
+            "columnNumber": 4,
+            "dataType": "DECIMAL",
+            "policyStatus": {
+              "CREATE": "NOT_ALLOWED",
+              "SET": "READY",
+              "CLEAR": "READY",
+              "DELETE_COLUMN": "NOT_ALLOWED"
+            },
+            "setConstraints": {}
+          },
+          {
+            "fieldKey": "columnE",
+            "columnNumber": 5,
+            "dataType": "TEXT",
+            "policyStatus": {
+              "CREATE": "NOT_ALLOWED",
+              "SET": "NOT_ALLOWED",
+              "CLEAR": "NOT_ALLOWED",
+              "DELETE_COLUMN": "NOT_ALLOWED"
+            }
+          },
+          {
+            "fieldKey": "columnF",
+            "columnNumber": 6,
+            "dataType": "DECIMAL",
+            "policyStatus": {
+              "CREATE": "NOT_ALLOWED",
+              "SET": "READY",
+              "CLEAR": "READY",
+              "DELETE_COLUMN": "NOT_ALLOWED"
+            },
+            "setConstraints": {}
+          }
+        ],
+        "capabilities": {
+          "SET": "READY",
+          "CLEAR": "READY",
+          "ADD_ROW": "NOT_ALLOWED",
+          "DELETE_ROW": "NOT_ALLOWED",
+          "ADD_COLUMN": "NOT_ALLOWED",
+          "DELETE_COLUMN": "NOT_ALLOWED"
+        }
+      },
+      "scopes": [
+        [
+          2,
+          3,
+          4,
+          4
+        ],
+        [
+          2,
+          3,
+          6,
+          6
+        ]
+      ]
+    },
+    {
+      "key": [
+        "TRADE",
+        "DemandAdjLogicInput",
         "Demand Adjustment Bands"
       ],
       "baselineSha256": "c1db23d374e71fe7b5708a82078d3128ec6df9d7ed0ac3f597f4f7685b187811",
-      "geometry": {},
+      "geometry": {
+        "rowAdd": "N",
+        "columnAdd": "N"
+      },
       "definition": {
         "fields": [
           {
@@ -166,9 +253,10 @@
             "columnNumber": 8,
             "dataType": "DECIMAL",
             "policyStatus": {
-              "CREATE": "INCOMPLETE",
+              "CREATE": "NOT_ALLOWED",
               "SET": "READY",
-              "CLEAR": "READY"
+              "CLEAR": "READY",
+              "DELETE_COLUMN": "NOT_ALLOWED"
             },
             "setConstraints": {}
           },
@@ -177,9 +265,10 @@
             "columnNumber": 10,
             "dataType": "DECIMAL",
             "policyStatus": {
-              "CREATE": "INCOMPLETE",
+              "CREATE": "NOT_ALLOWED",
               "SET": "READY",
-              "CLEAR": "READY"
+              "CLEAR": "READY",
+              "DELETE_COLUMN": "NOT_ALLOWED"
             },
             "setConstraints": {}
           },
@@ -188,9 +277,10 @@
             "columnNumber": 9,
             "dataType": "DECIMAL_OR_TEXT",
             "policyStatus": {
-              "CREATE": "INCOMPLETE",
+              "CREATE": "NOT_ALLOWED",
               "SET": "READY",
-              "CLEAR": "READY"
+              "CLEAR": "READY",
+              "DELETE_COLUMN": "NOT_ALLOWED"
             },
             "setConstraints": {}
           }
@@ -198,8 +288,10 @@
         "capabilities": {
           "SET": "READY",
           "CLEAR": "READY",
-          "ADD_ROW": "INCOMPLETE",
-          "DELETE_ROW": "INCOMPLETE"
+          "ADD_ROW": "NOT_ALLOWED",
+          "DELETE_ROW": "NOT_ALLOWED",
+          "ADD_COLUMN": "NOT_ALLOWED",
+          "DELETE_COLUMN": "NOT_ALLOWED"
         }
       },
       "scopes": [
