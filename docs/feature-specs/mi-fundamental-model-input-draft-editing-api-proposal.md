@@ -312,6 +312,8 @@ EDT-03의 data는 `draftId/revision/sourceKey/sourceVersion/tableData/page/editi
 
 **2026-10-23 Demand 고정 구조:** 업무 정본 §6.9의 Parameters/Bands는 신규 v6에서 기존 입력의 SET/CLEAR만 READY다. `ADD_ROW/DELETE_ROW/ADD_COLUMN/DELETE_COLUMN`과 필드 `CREATE/DELETE_COLUMN`은 `NOT_ALLOWED`로 표시하고 구조 변경 요청은422 `ACTION_NOT_ALLOWED`로 거부한다. 카탈로그의 `rowAdd/columnAdd=false`에 따라 표 목록의 `rowPolicy/columnPolicy`는 모두 `"고정"`이며 FE는 구조 변경 버튼을 제공하지 않는다. I Upper Bound의 `DECIMAL_OR_TEXT`와 기존 SET/CLEAR는 유지한다. 같은 시트 Premium Market Countries 및 과거 양식에는 이 정책을 소급 적용하지 않는다.
 
+**2026-10-23 Pipeline 표시 slice:** domain 규칙62 보완에 따라 v6의 읽기 표는 7행 제목/13행부터 본문을 제공한다(조회 API §1.1). 8..12행에는 rowBindings/rowId/inputCells를 제공하지 않고 H를 포함한 사용자 변경을 받지 않는다. 수정 scopes는 비워 두며 일반 SET/CLEAR·행/열 구조 정책은 INCOMPLETE를 유지한다. 미완비 정책의 요청은 기존409 POLICY_INCOMPLETE로 거부하고 operation/revision을 만들지 않는다. 원본 좌표/파일 보존 및 F-S-06의 별도 확정 계산 범위는 그대로이며 이번 표시 변경이 일반 편집/행 추가 READY를 의미하지 않는다.
+
 **2026-10-23 Midstream 기존행 편집:** TRADE `MidstreamContractInput`의 PNG `A5:D1104` 및 LNG `Q5:U2918`은 신규 v6 정의에서 기존 rowId의 비어 있지 않은 `SET`만 제공한다. 필드 key/타입과 원본 행 식별은 기존 catalog를 유지한다. 입력 외 전체 보존은 업무 정본 규칙59를 따른다. `CLEAR`는 `INCOMPLETE`로 계속 닫고, 빈 문자열/공백 `SET`도409 `POLICY_INCOMPLETE`로 거부한다. 이는 모든 필드를 필수로 확정한 것이 아니며 U5의 확정 빈 값 금지/숫자0와 다른 행의 미결을 구분한다. `ADD_ROW`/삭제/열 변경은 미개방이다. 과거 지정 F-T-04의704행 생성은 별도 잔여 정책/구현 범위이며 기존행 SET으로 빈 슬롯을 활성화하지 않는다. 기존 비동기/revision/재전송 계약을 그대로 사용하며 접수만으로 성공으로 보지 않는다.
 
 | 필드 | 타입·의미 |

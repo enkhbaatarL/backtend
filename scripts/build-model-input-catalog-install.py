@@ -157,7 +157,7 @@ SCOPE_OWNER = 'JOIN tmd_mdl_inpttbld b USING(inpt_tbl_id) ' + TABLE_OWNER
 NATURAL_TABLE = "BINARY f.mdl_file_cd=BINARY x.role AND BINARY s.sht_nm=BINARY x.sheet AND BINARY b.inpt_tbl_nm=BINARY x.name"
 
 
-def matches(publication, scope_count=146):
+def matches(publication, scope_count=146, table_count=94):
     query_match = 'SHA2(b.qry_json,256)=x.qry' if publication else 'BINARY b.qry_json=BINARY x.qry'
     return f"""-- Exact natural-key metadata and full qry bytes (or their SHA-256), not counts alone.
 SET @ci_files_count=(SELECT COUNT(*) FROM tmd_mdl_inptfiled WHERE tmplt_id=@ci_new);
@@ -189,9 +189,9 @@ SET @ci_scopes_match=(SELECT COUNT(*) FROM {jt('ci_scopes', SCOPES)}
  WHERE m.bgn_row_no=x.br AND m.end_row_no=x.er AND m.bgn_col_no=x.bc AND m.end_col_no=x.ec AND m.del_yn='N');
 SET @ci_verified=IF(@ci_ok=1 AND @ci_new IS NOT NULL
  AND @ci_files_count=4 AND @ci_files_match=4 AND @ci_sheets_count=70 AND @ci_sheets_match=70
- AND @ci_tables_count=94 AND @ci_tables_match=94 AND @ci_scopes_count={scope_count} AND @ci_scopes_match={scope_count},1,0);
+ AND @ci_tables_count={table_count} AND @ci_tables_match={table_count} AND @ci_scopes_count={scope_count} AND @ci_scopes_match={scope_count},1,0);
 SELECT @ci_new AS target_template_id,@ci_files_match AS files_must_be_4,
- @ci_sheets_match AS sheets_must_be_70,@ci_tables_match AS tables_must_be_94,
+ @ci_sheets_match AS sheets_must_be_70,@ci_tables_match AS tables_must_be_{table_count},
  @ci_scopes_match AS scopes_must_be_{scope_count},@ci_verified AS verified_must_be_1;
 """
 
@@ -282,6 +282,7 @@ SHOW CREATE TABLE tmd_mdl_inptmodscopd;
 
 def registration(payload, source, payload_digest, editor_version=False):
     scope_count = len(payload['scopes'])
+    table_count = len(payload['tables'])
     text = header(False, payload_digest, source)
     if editor_version:
         text = f"""-- Model Input editor v6 신규 DRAFT 정의 — 기존 ACTIVE/Case/Draft 불변
@@ -324,7 +325,7 @@ SET @ci_existing=(SELECT COUNT(*) FROM tmd_mdl_inpttmpltm WHERE mdl_spt_cd=@ci_m
 SET @ci_ok=IF({environment_guard()}
  AND {existing_guard} AND JSON_VALID(@ci_files) AND JSON_LENGTH(@ci_files)=4
  AND JSON_VALID(@ci_sheets) AND JSON_LENGTH(@ci_sheets)=70
- AND JSON_VALID(@ci_tables) AND JSON_LENGTH(@ci_tables)=94
+ AND JSON_VALID(@ci_tables) AND JSON_LENGTH(@ci_tables)={table_count}
  AND JSON_VALID(@ci_scopes) AND JSON_LENGTH(@ci_scopes)={scope_count},1,0);
 SELECT IF(@ci_ok=1,'PRECHECK_OK','STOP_AND_ROLLBACK') AS decision,@ci_existing AS existing_model_rows_must_be_0;
 INSERT INTO tmd_mdl_inpttmpltm(mdl_spt_cd,tmplt_ver_no,tmplt_ver_nm,tmplt_stat_cd,aply_bgn_dtm,tmplt_expn,crt_usr_logn_id,mod_usr_logn_id)
@@ -353,7 +354,7 @@ JOIN tmd_mdl_inpttbld b ON b.inpt_sht_id=s.inpt_sht_id AND BINARY b.inpt_tbl_nm=
 
 -- 3. 正確な階層内容を検証 (すべて同一 transaction)。
 """.replace('-- 3. 正確な階層内容を検証 (すべて同一 transaction)。', '-- 3. 같은 transaction에서 전체 계층의 정확한 내용을 검증한다.')
-    text += matches(False, scope_count)
+    text += matches(False, scope_count, table_count)
     text += """SET @ci_verified=IF(@ci_verified=1 AND (SELECT COUNT(*) FROM tmd_mdl_inpttmpltm
  WHERE tmplt_id=@ci_new AND BINARY mdl_spt_cd=BINARY @ci_model AND tmplt_ver_no=5
  AND tmplt_stat_cd='DRAFT' AND aply_bgn_dtm IS NULL AND BINARY tmplt_expn=BINARY @ci_marker
@@ -541,6 +542,17 @@ def remaining_editor():
         for ordinal, scope in enumerate(patch['scopes'], 1):
             payload['scopes'].append(list(key) + [ordinal] + scope)
     assert all(key[1] != 'ShippingCostInput' for key in changed)
+    # Read-only additions use the same complete table row as the installation payload.
+    for addition in policy.get('additionalTables', []):
+        row = copy.deepcopy(addition)
+        key = tuple(row[:3])
+        assert len(row) == 15 and key not in by_key, key
+        assert any(tuple(sheet[:2]) == key[:2] for sheet in payload['sheets']), key
+        assert not any(tuple(old[:2]) == key[:2] and old[3] == row[3] for old in payload['tables']), key
+        assert row[11:13] == ['N', 'N'] and all(value == 'INCOMPLETE' for value in row[14]['capabilities'].values()), key
+        row[14] = compact(row[14])
+        payload['tables'].append(row)
+        by_key[key] = row
     return payload, source
 
 
@@ -571,7 +583,7 @@ def main():
             path.write_text(content)
         print(f'{"CHECK" if args.check else "WRITE"} {name}: {len(content.encode())} bytes')
     ready = sum(json.loads(row[14])['capabilities']['SET'] == 'READY' for row in payload['tables'])
-    print(f"PASS: 4 files / 70 sheets / 94 tables / {len(payload['scopes'])} scopes / {ready} SET READY; payload sha256={payload_digest}")
+    print(f"PASS: 4 files / 70 sheets / {len(payload['tables'])} tables / {len(payload['scopes'])} scopes / {ready} SET READY; payload sha256={payload_digest}")
 
 
 if __name__ == '__main__':

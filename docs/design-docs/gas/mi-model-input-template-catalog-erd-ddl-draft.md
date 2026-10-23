@@ -795,6 +795,8 @@ DDL은 암묵 commit되므로 reset의 DELETE transaction을 검증·COMMIT/ROLL
 
 #### 6.9.5 검증·준비도
 
+- **Pipeline 표시 범위(v6 DRAFT):** domain 규칙62 보완을 기존 조회 JSON/metadata로 표현한다. 누락된 `SUPPLY/PipelineAdjustment/Monthly Pipeline Capacity Adjustment` 읽기 표1개를 기존 시트에 추가하여 v6는95표가 된다. 경계 B7:H200, headerRows=[7], dataStart=13, bodyRanges=[13..200], columns=[2,3,4,8], identityColumns=[2,3,4]이며 수정 scopes는0개다. 일반 편집/구조 capability 및 필드는 INCOMPLETE를 유지하고 rowAdd/columnAdd=N이다. uploadValidation에는 원본7행의 표시4열 고정 제목만 등록한다. 원본8..12행은 본문·rowId 생성·수정 scope에 포함하지 않으며, 기존94표와 파일/시트/Case 바인딩·물리 schema는 그대로다. 등록 SQL의 새 표 수만 검증하며 기존 v5 생성물은 바꾸지 않는다.
+
 - 2026-10-23 Midstream 기존행 편집: 업무 정본 규칙59의 일반 보존 결정을 신규 v6 DRAFT의 PNG/LNG 두 표 SET에 연결한다. 원본 열/본문/identity/uploadValidation은 유지하고 입력 scopes는 A5:D1104·Q5:U2918만 둔다. 계산 결과/외부 셀 delta를 생성하지 않으며 기존 셀 delta와 성공 이력 재생으로 입력만 복원한다. CLEAR/빈 문자열·생성/삭제 미결은 개방하지 않는다(편집 API §3.3). schema/기존 v5 설치 생성물·ACTIVE·Case 연결 변경은 없다. v6 전체 준비도는 별도 BCRegas2건 미해결 상태이며 SQL 생성/로컬 검사로 발행 준비 완료를 주장하지 않는다.
 
 ##### 실제 편집기 파생 열 위치 소유 — 2026-10-19
