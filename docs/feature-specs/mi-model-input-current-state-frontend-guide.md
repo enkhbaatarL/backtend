@@ -266,12 +266,12 @@ UP-02 추가/교체는 현재 Draft의 baseRevision이 필수다. 이미 같은 
 - EDT-02의 `uploadedKinds`, `missingKinds`, `canFinalize`는 요약 필드와 같은 data 깊이에 있다. readiness나 summary로 한 번 더 감싸지 않는다. Case 기반 응답에 이 세 키가 항상 있다고 요구하지 않는다.
 - 검증/연결 완료한 역할만 sections/uploadedKinds에 포함한다. 없는 파일의 tab은 미준비로 표시하고 표를 mock으로 채우지 않는다. canFinalize는 네 역할 완성 외에도 DRAFT·진행 작업 없음·최종저장 활성화가 필요하므로 파일 수만으로 FE가 true를 계산하지 않는다.
 - 같은 초안의 업로드·편집·최종저장은 한 번에 하나만 진행한다. 작업 중에는 새 변경을 보내지 않으며 EDT-02의 activeOperationEndpoint로 재진입한다. 최초 검증 중에는 UP-03의 operationId가 필요하다.
-- 같은 사용자는 직접 업로드 Case 하나만 작성한다. 새 requestId/탭으로 두 번째 작성을 만들지 않는다. 첫 요청의 operationId/requestId와 성공 후 draftId는 기존 화면 복원 방식으로 보관한다. 별도 현재 작성 목록/검색 API는 없다.
+- 같은 사용자는 직접 업로드 Case 하나만 작성한다. 새 최초 업로드를 명시적으로 시작하면 기존 미완료 Draft와 대기/실행 중 업로드 작업을 별도 취소 확인 없이 교체한다. 이전 작성을 계속하려면 보관한 `statusEndpoint`로 최초 검증 결과를 조회하고, Draft가 있으면 `draftEndpoint`로 현재 revision·진행 작업을 읽는다. 첫 요청의 operationId/requestId와 성공 후 draftId는 응답 유실·화면 복원용으로 보관한다.
 - 응답 유실 때 같은 requestId·동일 metadata·동일 파일로 재전송한다. 기존 SUCCEEDED/FAILED 결과는 당시 snapshot이며 이후 편집으로 다시 계산되지 않는다. 재개할 때 draftEndpoint로 현재 revision을 다시 받아 오래된 result를 덮어쓰지 않는다.
 - FAILED 재시도는 새 requestId를 만들고 후속 요청의 현재 baseRevision을 다시 받는다. 검증 불일치 시 새 Case나 파일 연결을 만들지 않으며 기존 역할 교체도 확정하지 않는다.
 - 업로드 처리 상한은 파일 전송 후 접수부터 대기열 포함600초다. `statusEndpoint`를2초 간격으로 조회하고 `SUCCEEDED` 또는 `FAILED`에서 멈춘다. TIMEOUT은 서버의 종료 결과로 확인하며 FE 대기시간만으로 실패를 확정하거나 새 작업을 만들지 않는다. 실제 대용량 성능 보장으로 해석하지 않는다.
 
-다른 실행건을 선택할 때 현재 Draft가 있으면 UP-04를 호출한다. 진행 중인 후속 파일 업로드도 `FAILED/DISCARDED_BY_USER`로 끝난다. 첫 파일 검증 중이라 `draftId`가 없으면 `POST /input-upload-requests/{operationId}/discard`를 본인 `operationId`로 호출한다(본문 없음). 성공200의 data는 `{operationId,draftId,discarded:true}`이고 draftId는 검증 성공과 경합해 초안이 생성된 경우에만 채워진다. 과거 operationId로 새 작성은 취소하지 않는다. 파일 전송 중 아직 operationId를 받지 못했다면 FE는 해당 전송을 중단하고, 접수 응답을 받았으면 그 operationId를 취소한다.
+새 최초 업로드는 UP-04를 먼저 호출하지 않는다. 기존 업로드 작업은 `FAILED/REPLACED_BY_NEW_UPLOAD`, 기존 Draft는 `DISCARDED`가 되고 새 요청은 `202`로 접수된다. 새 파일 검증 실패 시 이전 Draft는 복구되지 않는다. 편집 저장·최종저장이 진행 중이면 `409 DRAFT_BUSY`로 거절한다. 다른 실행건 선택 시 현재 Draft가 있으면 아래 UP-04를 호출한다. 진행 중인 후속 파일 업로드도 함께 `FAILED/DISCARDED_BY_USER`로 끝난다. 첫 파일 검증 중이라 `draftId`가 없으면 `POST /input-upload-requests/{operationId}/discard`를 본인 `operationId`로 호출한다(본문 없음). 성공200의 data는 `{operationId,draftId,discarded:true}`이고 draftId는 검증 성공과 경합해 초안이 생성된 경우에만 채워진다. 과거 operationId로 새 작성은 취소하지 않는다. 파일 전송 중 아직 operationId를 받지 못했다면 FE는 해당 전송을 중단하고, 접수 응답을 받았으면 그 operationId를 취소한다.
 
 ```json
 {
@@ -482,7 +482,7 @@ FE 제안의 `{code,message,details}` 대신 공통 envelope를 사용한다. �
 | `422 / BIZ-001` | `RESPONSE_TOO_LARGE` | BE에 표 조회 정의/응답 크기 확인 요청. 빈 성공으로 처리하지 않음 |
 | `500 / SYS-001` | `data:null` | 내부 오류. 쓰기 결과 불명 시 동일 requestId로 결과 확인. 내부 원문을 화면에 요구하지 않음 |
 
-업로드에서는409 `UPLOAD_IN_PROGRESS`(같은 사용자의 직접 작성 존재), `REPLACEMENT_NOT_CONFIRMED`(기존 역할 교체 미확인), 최종저장에서는409 `FILES_INCOMPLETE`(네 역할 미완성)도 구분한다. 해당 요청을 새 UUID로 반복해 우회하지 않는다. 접수 후 업로드 실패의 issues는 FILE/SHEET/TABLE/HEADER 위치이며 편집 명령의 commandId가 있다고 가정하지 않는다. 안전한 reason/issues만 표시하고 원본 값·내부 경로를 추정해 붙이지 않는다. [업로드 계약 §3.3][be-upload-contract]
+업로드에서는409 `DRAFT_BUSY`(기존 Draft의 편집 저장·최종저장 진행 중), `REPLACEMENT_NOT_CONFIRMED`(같은 Draft 안 기존 역할 교체 미확인), 최종저장에서는409 `FILES_INCOMPLETE`(네 역할 미완성)도 구분한다. 해당 요청을 새 UUID로 반복해 우회하지 않는다. 접수 후 업로드 실패의 issues는 FILE/SHEET/TABLE/HEADER 위치이며 편집 명령의 commandId가 있다고 가정하지 않는다. 안전한 reason/issues만 표시하고 원본 값·내부 경로를 추정해 붙이지 않는다. [업로드 계약 §3.3][be-upload-contract]
 
 QRY-01 원본 구조 오류는 **항상 `data:null`**이므로 `data.reason`을 전제로 파싱하지 않는다. 인증/권한 오류는 기존 공통 처리도 유지한다. 작업 조회의 업무 실패는 위 HTTP 오류와 달리 `200 / data.status=FAILED / data.failure`에 온다. [오류 생성][be-errors] · [응답 처리][be-controller]
 

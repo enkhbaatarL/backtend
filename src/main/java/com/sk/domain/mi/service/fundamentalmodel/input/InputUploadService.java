@@ -121,7 +121,24 @@ public class InputUploadService {
                     if(!Set.of("UPLOAD_CREATE","UPLOAD_FILE").contains(previous.type())||!json.sameValue(json.payload(previous.request()),payload))throw InputDraftException.conflict("IDEMPOTENCY_CONFLICT",draft==null?null:common.owned(draft,actor.company(),actor.user()).revision());
                     return previous;
                 }
-                if(draft==null) {if(slot.operation()!=null||slot.draft()!=null)throw InputDraftException.conflict("UPLOAD_IN_PROGRESS",null);}
+                if(draft==null) {
+                    if(slot.operation()!=null) {
+                        Operation active=uploads.ownedOperation(slot.operation(),actor.company(),actor.user());
+                        if(!active.type().equals("UPLOAD_CREATE")||active.draftId()!=null||active.terminal())throw InputDraftException.conflict("UPLOAD_IN_PROGRESS",null);
+                        uploads.fail(active,text(new Problem("REPLACED_BY_NEW_UPLOAD",null,List.of())));
+                    }
+                    if(slot.draft()!=null) {
+                        Draft current=common.lockOwned(slot.draft(),actor.company(),actor.user());
+                        if(!current.uploaded())throw InputDraftException.missing();
+                        if(!current.status().equals("DRAFT"))throw InputDraftException.conflict("DRAFT_NOT_EDITABLE",current.revision());
+                        if(current.activeOperation()!=null) {
+                            Operation active=common.workerOperation(current.activeOperation());
+                            if(!active.type().equals("UPLOAD_FILE")||!current.id().equals(active.draftId())||active.terminal())throw InputDraftException.conflict("DRAFT_BUSY",current.revision());
+                            uploads.fail(uploads.ownedOperation(active.id(),actor.company(),actor.user()),text(new Problem("REPLACED_BY_NEW_UPLOAD",current.revision(),List.of())));
+                        }
+                        uploads.discard(current);
+                    }
+                }
                 else {
                     Draft current=common.lockOwned(draft,actor.company(),actor.user());
                     if(!current.uploaded()||!draft.equals(slot.draft()))throw InputDraftException.missing();
