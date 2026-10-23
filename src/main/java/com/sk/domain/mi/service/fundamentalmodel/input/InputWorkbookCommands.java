@@ -563,7 +563,7 @@ final class InputWorkbookCommands {
             Set<Integer> calculatedRows = new HashSet<>();
             if (table.columnsChanged()) calculatedRows.addAll(table.rows.keySet());
             else values.keySet().stream().filter(cell -> cell.table == table.original.id() && cell.row >= 8 && cell.column >= 7).forEach(cell -> calculatedRows.add(cell.row));
-            InputWorkbookPeriods.regasMaximum(source, table.original.endColumn(), table.endColumn, calculatedRows, table == linkedMaster ? table.slots : null,
+            InputWorkbookPeriods.regasMaximum(source, table.original.endColumn(), table.endColumn, calculatedRows, table == linkedMaster && table.rowsChanged() ? table.slots : null,
                 sheets.get(table.original.sheet()), reader, checkpoint);
             for (int row : calculatedRows) readBack.add(new Cell(table.original.id(), table.rows.get(row), row, table.endColumn));
         }

@@ -230,6 +230,10 @@ final class InputWorkbookPolicy {
         }
         if (kind == Kind.REGAS && (table.startRow() != 7 || table.endColumn() < 18 || !definition.headerRows().equals(List.of(7))
                 || definition.columns().contains(table.endColumn()) || definition.bodyRanges().stream().anyMatch(r -> r.startRow() < 8))) return false;
+        // 기존 용량 READY는 A Helper를 포함하는 연결 계산 경계가 있어야 조회에도 지원으로 표시한다.
+        if (kind == Kind.REGAS && table.startColumn() != 1 && Set.of("SET", "CLEAR").contains(action))
+            for (JsonNode field : definition.fields()) if (field.path("columnNumber").asInt() < 18
+                    && field.path("policyStatus").path(action).asText().equals("READY")) return false;
         if (kind == Kind.REGAS_MONTHLY && (table.startRow() != 8 || table.endColumn() != 126 || !definition.headerRows().equals(List.of(8, 9, 10))
                 || definition.bodyRanges().stream().anyMatch(r -> r.startRow() < 11)
                 || table.scopes().stream().anyMatch(s -> s.startRow() < 11 || s.startColumn() < 8 || s.endColumn() > 31))) return false;

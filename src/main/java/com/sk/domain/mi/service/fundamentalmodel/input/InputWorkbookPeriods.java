@@ -294,8 +294,10 @@ final class InputWorkbookPeriods {
         var calculated = InputWorkbookCalculation.evaluate(inputs, formulas, ranges, checkpoint);
         for (var formula : formulas.entrySet()) {
             int row = new CellReference(formula.getKey().cell()).getRow() + 1;
-            String cell = InputWorkbookXml.valueCell(templates.get(row), formula.getKey().cell(), null)
-                .replace("</c>", "<f>" + InputWorkbookXml.escape(formula.getValue()) + "</f></c>");
+            // 위치/범위가 같은 MAX는 shared master/follower를 보존하고 저장값만 바꾼다.
+            String cell = previousMaximum == maximum && sourceRows == null ? templates.get(row)
+                : InputWorkbookXml.valueCell(templates.get(row), formula.getKey().cell(), null)
+                    .replace("</c>", "<f>" + InputWorkbookXml.escape(formula.getValue()) + "</f></c>");
             patch.raw(row, maximum, InputWorkbookCalculation.cache(cell, calculated.get(formula.getKey())));
         }
     }

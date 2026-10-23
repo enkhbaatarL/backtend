@@ -1094,7 +1094,8 @@
       ],
       "baselineSha256": "c4f33e252b4f07ce91e6e96b00ded18e749c2a484bbf294df89ac390fe201ef6",
       "geometry": {
-        "endColumn": 18
+        "endColumn": 18,
+        "startColumn": 1
       },
       "definition": {
         "fields": [
@@ -1293,9 +1294,10 @@
           "body": {
             "dataType": "DECIMAL",
             "create": {
-              "required": false,
+              "required": true,
               "initial": {
-                "kind": "EMPTY"
+                "kind": "VALUE",
+                "value": 0
               },
               "constraints": {}
             }
