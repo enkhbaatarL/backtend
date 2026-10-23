@@ -549,7 +549,8 @@ def remaining_editor():
         assert len(row) == 15 and key not in by_key, key
         assert any(tuple(sheet[:2]) == key[:2] for sheet in payload['sheets']), key
         assert not any(tuple(old[:2]) == key[:2] and old[3] == row[3] for old in payload['tables']), key
-        assert row[11:13] == ['N', 'N'] and all(value == 'INCOMPLETE' for value in row[14]['capabilities'].values()), key
+        assert row[11:13] == ['N', 'N'], key
+        assert all(value == ('NOT_ALLOWED' if row[14].get('navigationVisible') is False else 'INCOMPLETE') for value in row[14]['capabilities'].values()), key
         row[14] = compact(row[14])
         payload['tables'].append(row)
         by_key[key] = row

@@ -155,7 +155,7 @@ final class InputDraftHistory {
         relocateFixedCells(previousDefinitions,beforeColumns,delta.path("cells"));
         List<RowWrite> writes=new ArrayList<>();Map<String,JsonNode> additions=new LinkedHashMap<>();Set<String> changedRows=new HashSet<>();
         for(JsonNode change:delta.path("rows")) {
-            if(InputDraftRegasRows.derived(change))exact(change,"tableId","rowId","clientRowKey","rowNumber","derivedFromRowId");
+            if(change.has("derivedFromRowId"))exact(change,"tableId","rowId","clientRowKey","rowNumber","derivedFromRowId");
             else exact(change,"tableId","rowId","clientRowKey","rowNumber");
             TableRef table=table(change.path("tableId").asText());String id=text(change.get("rowId"));
             require(uuid(id)&&changedRows.add(id));Integer position=nullableRow(change.get("rowNumber"));
@@ -163,10 +163,13 @@ final class InputDraftHistory {
             String client=null;
             if(old==null) {
                 client=text(change.get("clientRowKey"));
-                if(InputDraftRegasRows.derived(change))InputDraftRegasRows.creation(change);
+                if(change.has("derivedFromRowId")) {
+                    if(InputDraftPmiRows.derived(change))InputDraftPmiRows.creation(change);
+                    else {require(InputDraftRegasRows.derived(change));InputDraftRegasRows.creation(change);}
+                }
                 else require(client.matches("[A-Za-z][A-Za-z0-9_-]{0,63}"));
                 require(additions.putIfAbsent(client,change)==null);
-            } else require(!InputDraftRegasRows.derived(change)&&old.table==table.id()&&old.position!=null&&change.path("clientRowKey").isNull());
+            } else require(!change.has("derivedFromRowId")&&old.table==table.id()&&old.position!=null&&change.path("clientRowKey").isNull());
             LogicalRow updated=old==null?new LogicalRow(table.id(),id,null,position,operation,client)
                 :new LogicalRow(old.table,old.id,old.original,position,old.operation,old.client);
             rows.put(id,updated);if(old==null)rowBaselines.put(id,tableBaselines.getOrDefault(table.id(),0L));
@@ -204,8 +207,10 @@ final class InputDraftHistory {
         Map<String,String> linkedRows=InputDraftRegasRows.validate(List.copyOf(tables.values()),originalDefinitions,
             rows.values().stream().map(row->new InputDraftRegasRows.Row(row.table,row.id,row.original,row.position,row.client,rowBaselines.getOrDefault(row.id,0L))).toList(),additions,request.operations(),delta.path("rows"));
         Map<String,JsonNode> directAdditions=new LinkedHashMap<>();
-        additions.forEach((key,value)->{if(!InputDraftRegasRows.derived(value))directAdditions.put(key,value);});
-        List<Map<String,Object>> mappings=validateCommands(request.operations(),before,directAdditions,columnAdditions,linkedRows);
+        additions.forEach((key,value)->{if(!value.has("derivedFromRowId"))directAdditions.put(key,value);});
+        Map<String,List<String>> pmiLinks=InputDraftPmiRows.validate(List.copyOf(tables.values()),
+            rows.values().stream().map(row->new InputDraftRegasRows.Row(row.table,row.id,row.original,row.position,row.client,rowBaselines.getOrDefault(row.id,0L))).toList(),additions,rowCells,json);
+        List<Map<String,Object>> mappings=validateCommands(request.operations(),before,directAdditions,columnAdditions,linkedRows,pmiLinks);
         validateCreatedValues(request.operations(),columnAdditions,directAdditions);
         Map<String,Object> result=new LinkedHashMap<>();result.put("resultRevision",revision);result.put("rowMappings",mappings);result.put("columnMappings",columnMappings);
         tables.values().stream().map(TableRef::key).filter(affected::contains).filter(key->request.operations().stream().noneMatch(c->key.equals(c.path("tableId").asText()))).sorted().forEach(key->{affected.remove(key);affected.add(key);});
@@ -213,7 +218,7 @@ final class InputDraftHistory {
         byte[] encoded=json.bytes(result);require(encoded.length<=InputDraftJson.BODY_LIMIT);
         return new Applied(json.deltaText(delta),new String(encoded,StandardCharsets.UTF_8),List.copyOf(writes));
     }
-    private List<Map<String,Object>> validateCommands(List<JsonNode> commands,Map<String,LogicalRow> before,Map<String,JsonNode> additions,Map<Long,Map<String,InputDraftColumns.Column>> columnAdditions,Map<String,String> linkedRows) {
+    private List<Map<String,Object>> validateCommands(List<JsonNode> commands,Map<String,LogicalRow> before,Map<String,JsonNode> additions,Map<Long,Map<String,InputDraftColumns.Column>> columnAdditions,Map<String,String> linkedRows,Map<String,List<String>> pmiLinks) {
         Set<String> live=new HashSet<>();before.values().stream().filter(row->row.position!=null).forEach(row->live.add(row.id));
         Map<String,Map<String,JsonNode>> expected=new LinkedHashMap<>();Map<CellLocation,JsonNode> expectedControls=new LinkedHashMap<>();Map<Long,Map<String,JsonNode>> expectedHeaders=new LinkedHashMap<>();List<Map<String,Object>> mappings=new ArrayList<>();Set<String> used=new HashSet<>();
         for(JsonNode command:commands) {
@@ -229,7 +234,7 @@ final class InputDraftHistory {
                 expectedHeaders.computeIfAbsent(table.id(),ignored->new LinkedHashMap<>()).put(field,command.get("value"));
             } else if(type.equals("ADD_ROW")) {
                 String client=command.path("clientRowKey").asText();JsonNode addition=additions.get(client);
-                require(addition!=null&&addition.path("tableId").asText().equals(table.key())&&used.add(client));id=addition.path("rowId").asText();live.add(id);if(linkedRows.containsKey(id))live.add(linkedRows.get(id));
+                require(addition!=null&&addition.path("tableId").asText().equals(table.key())&&used.add(client));id=addition.path("rowId").asText();live.add(id);live.addAll(pmiLinks.getOrDefault(id,List.of()));if(linkedRows.containsKey(id))live.add(linkedRows.get(id));
                 Map<String,Object> mapping=new LinkedHashMap<>();mapping.put("commandId",command.path("commandId").asText());mapping.put("clientRowKey",client);mapping.put("tableId",table.key());mapping.put("rowId",id);
                 mapping.put("rowState",rows.get(id).position==null?"DELETED":"ACTIVE");mappings.add(mapping);
                 var values=command.path("values").fields();while(values.hasNext()){var value=values.next();expected.computeIfAbsent(id,k->new LinkedHashMap<>()).put(value.getKey(),value.getValue());}

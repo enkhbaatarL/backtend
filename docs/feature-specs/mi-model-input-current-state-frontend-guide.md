@@ -9,7 +9,7 @@
 - depends on: [표별 업무 규칙][be-domain], [DBA 적용 계약][be-ddl]. 이 안내는 새 정책·API·배포를 승인하지 않는다.
 - supersedes: 이 문서의 2026-10-19 현재 상태 설명. 과거 실서버 시험 증거는 §1의 이력으로 유지한다.
 - last synced: 2026-10-23 — Demand Parameters/Bands 기존 값 수정 전용 결정 반영(업무 정본 §6.9, v6). 이전 동기화: 2026-10-21 — 저장된 빈 ADDED 행 조회 규칙 반영. 기존 편집기 중간 커밋 `842fe78f3` 기준의 순차 업로드·v2·모드/연도 헤더·자동 실행 안내는 유지
-- open questions: 실제 카탈로그 연결·잔여 표 처리·Shipping 보류 결함2건과 PMI 표시 정책, 서버 배포·DBA 적용·FE 브라우저 통합 확인. 편집기 세션 종료를 전체 기능 완료로 간주하지 않는다.
+- open questions: 실제 카탈로그 연결·잔여 표 처리·Shipping 보류 결함2건과 잔여 표 정책, 서버 배포·DBA 적용·FE 브라우저 통합 확인. 편집기 세션 종료를 전체 기능 완료로 간주하지 않는다.
 
 ## 1. 현재 인계 기준과 가능한 작업
 
@@ -492,7 +492,7 @@ QRY-01 원본 구조 오류는 **항상 `data:null`**이므로 `data.reason`을 
 
 | 범위 | 확인된 증거 / 인계 제한 |
 | --- | --- |
-| USCostofSupply, BCPrices, PMI 연도 | 다중 값/행/열과 이력 재생 및 일부 공개 API→복원→최종4파일 검증. PMI 표시 정책 미결과 실제 발행 연결은 별도 |
+| USCostofSupply, BCPrices, PMI 연도 | 다중 값/행/열과 이력 재생 및 일부 공개 API→복원→최종4파일 검증. PMI 국가/지리 표시·연결 행 추가는 신규 v6 로컬 검증 범위이며 실제 발행 연결은 별도 |
 | Sector/Monthly, LNG Demand, LiqUtil/LiqProd | 값/행·기간 추가/삭제·보존 및 일부 공개 통합. 월0개 후 첫 월 재시작, 모드/연도 헤더도 검증 기록 존재. 전체 표의 모든 조합 검증을 뜻하지 않음 |
 | BCRegas→Regas | 연결 행·연도/MAX·월/합계와 공개 API/최종파일 검증. 이전3개 승인 결함은 수정/회귀·독립 검토 완료. FE가 파생 행·합계를 별도 저장하지 않음 |
 | BCInput·수요 조정/수소·선박연료·날씨 및 공급 기준/조정 표 | 표별 허용 입력/추가·계산·원본 보존 검증 기록. 비연속 본문/제외 영역을 server page로 표시. 실제 정책/수정 scope 발행은 별도 |
@@ -590,3 +590,7 @@ v2 수동 전환으로 기존 Draft/작업/키를 초기화하는 경우 FE도 �
 [be-upload-note]: ../work-notes/2026/2026-10-19-model-input-incremental-upload.md
 [be-row-json]: mi-fundamental-model-input-draft-editing-api-proposal.md#fe-change-cases-20261019
 [be-column-json]: mi-fundamental-model-input-draft-editing-api-proposal.md#fe-final-column-json-20261019
+
+### 신규 v6 PMI 연결 행 추가 (로컬 구현 범위)
+
+User-Adjusted PMI Intensity Parameter만 ADD_ROW를 제공한다. `values.country`는 필수 자유입력, intensity는 선택이며 미입력은 빈칸이다. 한 번의 성공으로 Base/Selected 대응 행도 생성하고 affectedTableIds에 포함한다. rowMappings에는 직접 요청 행만 반환한다. Base 직접 추가는 불허하며 Selected는 숨김 내부 표다. 기존 국가 수정은 다른 표에 자동 전파하지 않는다. 계약은 편집 API §3.3/업무 정본 §6.8을 따른다. v6 등록·발행·배포 전 기존 양식의 동작으로 간주하지 않는다.

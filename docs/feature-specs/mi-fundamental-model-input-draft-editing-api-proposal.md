@@ -15,7 +15,7 @@
   - [Delivery Plan](../design-docs/gas/mi-model-input-editing-delivery-plan.md) §6A·§7·§9
   - [OpenAPI 규칙](../conventions/openapi-documentation-conventions.md), [보안 정책](../../SECURITY.md)
 - supersedes: 없음. QRY-01/02와 기존 조회/업로드 범위를 대체하지 않는다.
-- last synced: 2026-10-23 — Demand Parameters/Bands 기존 값 수정 전용 결정 반영(업무 정본 §6.9, v6). 이전 동기화: 2026-10-22 (EDT-05 상태 조회 비잠금/만료 정리 경합 정책 반영; 저장된 빈 ADDED 행 표시 §3.2 반영; 2026-10-20 모든 Draft 표의 마지막 데이터 행 표시 §3.2 반영; LiqProdAdjustment 신규 월 입력·입력 연월 기준 Period 계산·월 건너뛰기/중복 허용·새 열 fieldKey·임시 키/성공 대응 사용자 채택; 열 명령/기존 API 연결·headerValues 형식·LiqProd 월 삭제·같은 저장의 추가 후 삭제·성공 mapping 다섯 필드/상태·빈 배열 통일·삭제 키 미재사용/동일 요청 키 유지 채택; 열 동작 조회 metadata·LiqProd/LiqUtil 빈 본문/0 구분·editing.columnCreation 기존 표현 재사용·LNG Demand 새 연도 국가 입력·PMIInput·Base Case HDD/CDD/Temperature 새 연도 본문 빈칸/0 구분 채택; U1/U2 공통 정책 채택·사용자 필수 미결0건; FE 최종 JSON·구현 차이 §4~7/§10.2 반영; 열 저장 v2 단일 형식·Draft 초기화/배포 SQL은 DDL §6.9)
+- last synced: 2026-10-23 — PMI 연결 행 추가·Base 직접 추가 금지/Selected 내부 표(업무 §6.8) 반영; Demand Parameters/Bands 기존 값 수정 전용 결정 반영(업무 정본 §6.9, v6). 이전 동기화: 2026-10-22 (EDT-05 상태 조회 비잠금/만료 정리 경합 정책 반영; 저장된 빈 ADDED 행 표시 §3.2 반영; 2026-10-20 모든 Draft 표의 마지막 데이터 행 표시 §3.2 반영; LiqProdAdjustment 신규 월 입력·입력 연월 기준 Period 계산·월 건너뛰기/중복 허용·새 열 fieldKey·임시 키/성공 대응 사용자 채택; 열 명령/기존 API 연결·headerValues 형식·LiqProd 월 삭제·같은 저장의 추가 후 삭제·성공 mapping 다섯 필드/상태·빈 배열 통일·삭제 키 미재사용/동일 요청 키 유지 채택; 열 동작 조회 metadata·LiqProd/LiqUtil 빈 본문/0 구분·editing.columnCreation 기존 표현 재사용·LNG Demand 새 연도 국가 입력·PMIInput·Base Case HDD/CDD/Temperature 새 연도 본문 빈칸/0 구분 채택; U1/U2 공통 정책 채택·사용자 필수 미결0건; FE 최종 JSON·구현 차이 §4~7/§10.2 반영; 열 저장 v2 단일 형식·Draft 초기화/배포 SQL은 DDL §6.9)
 - open questions: §10. 2026-10-16 공통 BE 채택과 이번 공통 저장·최종저장/복구 계약(§9) 마무리를 반영한다. 표별 정책·DBA 적용 준비/제품 검증은 별도 후속이며 PriceModel/Regas 추천은 미승인이다. 문서 전체는 Draft다.
 
 ## 1. 목표·이번 slice
@@ -336,7 +336,9 @@ capabilities는 표/동작 공통 구조·계산/보존 정책의 준비도, fie
 
 FE는 표시값을 숫자로 재해석해 전체 행을 되보내지 않는다. `editValues`와 사용자가 실제 변경한 값만 delta(변경분)로 보낸다. 서버도 생략된 기존 값을 유지한다. 숫자는 JSON number, 연도는 정수, 가격은 유한 10진수이며 숫자 문자열·null·수식은 허용하지 않는다. Decimal은 exponent 없는 JSON number로 채택했으며 FE는 손실 없는 10진 입력 처리를 준비한다. IEEE-754 변환으로 자릿수가 손실되는 값을 조용히 변환해 보내지 않는다. 서버는 10진 값을 보존하고 임의 반올림하지 않는다. BCPrices는 별도 업무 소수 자릿수 제한/저장 반올림을 추가하지 않는 것으로 채택했다. 숫자 정확도·전송/저장 표현 상한의 제품 검증은 §10의 BE 후속이다.
 
-PMILogicInput의 기존 국가 D/I는 `TEXT`, `setConstraints:{required:true}`로 제공하고 `SET=READY`, `CLEAR=NOT_ALLOWED`로 연결한다. 국가 목록 options는 제공하지 않으며 비어 있지 않은 국가명은 그대로 저장한다. 국가 SET을 생략하면 기존 값을 유지한다. 대륙·지역 및 Selected 표는 국가 변경으로 자동 조회·갱신·비우기하지 않는다(domain §6.8). 행 추가 준비도와 기존 강도 E/J의 SET/CLEAR 정책은 별도다.
+PMILogicInput의 기존 국가 D/I는 `TEXT`, `setConstraints:{required:true}`로 제공하고 `SET=READY`, `CLEAR=NOT_ALLOWED`로 연결한다. 국가 목록 options는 제공하지 않으며 비어 있지 않은 국가명은 그대로 저장한다. 국가 SET을 생략하면 기존 값을 유지한다. 대륙·지역 및 Selected 표는 국가 변경으로 자동 조회·갱신·비우기하지 않는다(domain §6.8). 기존 강도 E/J의 SET/CLEAR 정책은 유지한다.
+
+신규 v6의 User-Adjusted `ADD_ROW`는 `values.country` 필수 자유입력, `values.intensity` 선택 입력이다. 같은 요청의 후속 SET을 반영한 새 국가를 Base/Selected에도 저장하며 세 표의 대응 행·범위를 원자 생성한다. 미입력 강도/지리 정보는 빈칸이다(domain §6.8). Base 직접 `ADD_ROW`는 `422 VALIDATION_FAILED`/`ACTION_NOT_ALLOWED`이며 Selected는 `navigationVisible:false` 내부 표로 입력·구조 동작을 제공하지 않는다. 성공 `rowMappings`는 직접 요청한 User 행만 반환하고 `affectedTableIds`에는 세 표를 포함한다. Base/Selected의 별도 rowId와 master 연결은 내부 이력으로 보관한다(DDL §6.9.5). 성공 후 최신 revision으로 조회한다.
 
 Sector 국가/하위부문은 domain 규칙45의 필수 자유입력 TEXT다. `create.required:true`, `initial:{kind:"EMPTY"}`로 표현하고 CREATE/SET의 constraints에 options를 제공하지 않는다. 별도 열거값 제약은 없으므로 해당 constraints는 `{}`이며 §4의 공통 TEXT 타입/크기 제한과 §4.1의 필수 검증은 유지한다. 목록/seed 부재로 CREATE/SET을 INCOMPLETE로 만들거나 POLICY_INCOMPLETE를 반환하지 않는다. 실제 동작의 준비도는 다른 필수 구조/계산·보존 정책을 별도로 따른다. 모델의 명칭 인식 제약은 §10의 후속 확인이며 임의 명칭의 모델 반영 성공을 보장하지 않는다. 기존 QRY-01/02 응답은 변경하지 않는다.
 

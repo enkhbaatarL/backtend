@@ -98,10 +98,10 @@ final class InputWorkbookPolicy {
                         || s.startColumn() < first || s.endColumn() > last)) return false;
         }
         if (table.role().equals("DEMAND") && table.sheet().equals("PMILogicInput")
-                && (table.startRow() != 7 || table.endRow() != 92 || table.endColumn() != table.startColumn() + 3
+                && (table.startRow() != 7 || table.endRow() < 92 || table.endColumn() != table.startColumn() + 3
                     || !definition.headerRows().equals(List.of(7, 8))
-                    || !definition.bodyRanges().equals(List.of(new InputReadDefinition.Range(9, 92)))
-                    || table.scopes().stream().anyMatch(s -> s.startRow() < 9 || s.endRow() > 92
+                    || !definition.bodyRanges().equals(List.of(new InputReadDefinition.Range(9, table.endRow())))
+                    || table.scopes().stream().anyMatch(s -> s.startRow() < 9 || s.endRow() > table.endRow()
                         || s.startColumn() < table.endColumn() - 1 || s.endColumn() > table.endColumn()))) return false;
         if (infrastructure(table) && (table.startRow() != 1 || !definition.headerRows().equals(List.of(1, 2, 3))
                 || definition.bodyRanges().stream().anyMatch(r -> r.startRow() < 11)
@@ -249,7 +249,7 @@ final class InputWorkbookPolicy {
         return switch (action) {
             case "SET", "CLEAR" -> true;
             case "ADD_ROW" -> (Set.of(Kind.ROWS, Kind.COST, Kind.MACRO, Kind.SHIPPING_COST, Kind.SHIPPING_DISRUPTION, Kind.SHIPPING_ROUTE, Kind.ALLOCATION, Kind.HYDROGEN, Kind.BCINPUT, Kind.BCPRODUCTION, Kind.PRODUCTION, Kind.HURRICANE_ADJUSTMENT, Kind.ANNUAL, Kind.SECTOR, Kind.MONTHLY, Kind.LIQPROD, Kind.LIQUTIL).contains(kind)
-                || kind == Kind.UPSTREAM && table.startColumn() == 20 || kind == Kind.WEATHER_LOGIC && table.startColumn() >= 12 || kind == Kind.REGAS && table.startColumn() == 1) && table.rowAdd();
+                || InputDraftPmiRows.user(table) || kind == Kind.UPSTREAM && table.startColumn() == 20 || kind == Kind.WEATHER_LOGIC && table.startColumn() >= 12 || kind == Kind.REGAS && table.startColumn() == 1) && table.rowAdd();
             case "ADD_COLUMN" -> (kind == Kind.ANNUAL || kind == Kind.LNG || kind == Kind.REGAS || months(table)) && table.columnAdd();
             case "DELETE_ROW" -> infrastructure(table) || kind == Kind.SECTOR || kind == Kind.MONTHLY || kind == Kind.LIQUTIL || kind == Kind.REGAS && table.startColumn() == 1;
             case "DELETE_COLUMN" -> infrastructure(table) || months(table);

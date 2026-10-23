@@ -16,7 +16,9 @@
         "User-Adjusted PMI Intensity Parameter"
       ],
       "baselineSha256": "ea60a3add6e7094c16880062e7e81fed650746d0ab2e4db4d8c8084a07990cfc",
-      "geometry": {},
+      "geometry": {
+        "rowAdd": "Y"
+      },
       "definition": {
         "fields": [
           {
@@ -44,12 +46,19 @@
             "columnNumber": 4,
             "dataType": "TEXT",
             "policyStatus": {
-              "CREATE": "INCOMPLETE",
+              "CREATE": "READY",
               "SET": "READY",
               "CLEAR": "NOT_ALLOWED"
             },
             "setConstraints": {
               "required": true
+            },
+            "create": {
+              "required": true,
+              "initial": {
+                "kind": "EMPTY"
+              },
+              "constraints": {}
             }
           },
           {
@@ -57,17 +66,24 @@
             "columnNumber": 5,
             "dataType": "DECIMAL",
             "policyStatus": {
-              "CREATE": "INCOMPLETE",
+              "CREATE": "READY",
               "SET": "READY",
               "CLEAR": "READY"
             },
-            "setConstraints": {}
+            "setConstraints": {},
+            "create": {
+              "required": false,
+              "initial": {
+                "kind": "EMPTY"
+              },
+              "constraints": {}
+            }
           }
         ],
         "capabilities": {
           "SET": "READY",
           "CLEAR": "READY",
-          "ADD_ROW": "INCOMPLETE",
+          "ADD_ROW": "READY",
           "DELETE_ROW": "INCOMPLETE"
         }
       },
@@ -87,7 +103,9 @@
         "Base Case PMI Intensity Parameter"
       ],
       "baselineSha256": "c0fc83f4cba6a73dc6e9d47ec3e3de943fea52968edc2c1afbe23d0ad7eb2bd4",
-      "geometry": {},
+      "geometry": {
+        "rowAdd": "N"
+      },
       "definition": {
         "fields": [
           {
@@ -138,7 +156,7 @@
         "capabilities": {
           "SET": "READY",
           "CLEAR": "READY",
-          "ADD_ROW": "INCOMPLETE",
+          "ADD_ROW": "NOT_ALLOWED",
           "DELETE_ROW": "INCOMPLETE"
         }
       },
@@ -3759,6 +3777,87 @@
               "rowNumber": 7,
               "columnNumber": 8,
               "value": "User adjusted capacity (Mt/y)"
+            }
+          ]
+        }
+      }
+    ],
+    [
+      "DEMAND",
+      "PMILogicInput",
+      "Selected PMI Input (do not change)",
+      3,
+      7,
+      92,
+      12,
+      15,
+      7,
+      8,
+      9,
+      "N",
+      "N",
+      "PMI 내부 선택표; User-Adjusted 신규 행에만 연결",
+      {
+        "schemaVersion": 1,
+        "columns": [
+          12,
+          13,
+          14,
+          15
+        ],
+        "headerRows": [
+          7,
+          8
+        ],
+        "bodyRanges": [
+          {
+            "startRow": 9,
+            "endRow": 92
+          }
+        ],
+        "identityColumns": [
+          14
+        ],
+        "fields": [],
+        "capabilities": {
+          "SET": "NOT_ALLOWED",
+          "CLEAR": "NOT_ALLOWED",
+          "ADD_ROW": "NOT_ALLOWED",
+          "DELETE_ROW": "NOT_ALLOWED",
+          "ADD_COLUMN": "NOT_ALLOWED",
+          "DELETE_COLUMN": "NOT_ALLOWED"
+        },
+        "inputGuideRules": [],
+        "controls": [],
+        "displayUpdateRules": [],
+        "navigationVisible": false,
+        "uploadValidation": {
+          "schemaVersion": 1,
+          "headerCells": [
+            {
+              "rowNumber": 7,
+              "columnNumber": 12,
+              "value": "Selected PMI Input (do not change)"
+            },
+            {
+              "rowNumber": 8,
+              "columnNumber": 12,
+              "value": "Continent"
+            },
+            {
+              "rowNumber": 8,
+              "columnNumber": 13,
+              "value": "Region"
+            },
+            {
+              "rowNumber": 8,
+              "columnNumber": 14,
+              "value": "Country"
+            },
+            {
+              "rowNumber": 8,
+              "columnNumber": 15,
+              "value": "Intensity"
             }
           ]
         }

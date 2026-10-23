@@ -180,6 +180,21 @@ final class InputWorkbookCommands {
                         String key = field.path("fieldKey").asText(); JsonNode value = command.path("values").has(key) ? command.path("values").get(key) : InputWorkbookPolicy.initial(field.path("create"));
                         submittedValues.put(new Cell(ref.id(), id, row, table.fieldTokens.get(key)), scalar(value));
                     }
+                    if (InputDraftPmiRows.user(ref)) {
+                        List<TableRef> children = history.catalog().tables().stream().filter(InputDraftPmiRows::child).toList();
+                        if (children.size() != 2 || children.stream().map(TableRef::startColumn).distinct().count() != 2) throw invalid();
+                        for (TableRef childRef : children) {
+                            Table childTable = tables.computeIfAbsent(childRef.id(), ignored -> new Table(childRef, history, json));
+                            String childClient = InputDraftPmiRows.prefix(childRef) + id;
+                            String child = identity(expected, "rows", "clientRowKey", childClient, "rowId", "");
+                            if (childTable.rows.containsKey(row) || childTable.rows.isEmpty() || childTable.rows.lastKey() != row - 1) throw invalid();
+                            childTable.rows.put(row, child); childTable.addedRows.put(childClient, child); childTable.slots.put(row, null);
+                            extendRows(childTable, row);
+                            for (int column = childRef.startColumn(); column <= childRef.endColumn(); column++)
+                                if (column != 15) submittedValues.put(new Cell(childRef.id(), child, row, column), null);
+                        }
+                        for (int column : List.of(2, 3)) submittedValues.put(new Cell(ref.id(), id, row, column), null);
+                    }
                     if (duplicateColumns(table).size() > 0) table.changedYears.put(id, command);
                     if (table == linkedMaster) {
                         String childClient = InputDraftRegasRows.PREFIX + id;
@@ -266,6 +281,11 @@ final class InputWorkbookCommands {
             List<TableRef> impacts = history.catalog().tables().stream().filter(table -> InputWorkbookPolicy.kind(table) == InputWorkbookPolicy.Kind.HURRICANE).toList();
             if (impacts.size() != 2 || impacts.stream().map(TableRef::dataStart).collect(java.util.stream.Collectors.toSet()).size() != 2) throw invalid();
             for (TableRef table : impacts) tables.computeIfAbsent(table.id(), ignored -> new Table(table, history, json));
+        }
+        for (Table user : tables.values()) if (InputDraftPmiRows.user(user.original)) for (String id : user.addedRows.values()) {
+            int row = user.row(id); Object country = submittedValues.get(new Cell(user.original.id(), id, row, 4));
+            for (Table child : tables.values()) if (InputDraftPmiRows.child(child.original))
+                submittedValues.put(new Cell(child.original.id(), child.rows.get(row), row, child.original.startColumn() + 2), country);
         }
         Map<Cell, Object> finalValues = new LinkedHashMap<>();
         submittedValues.forEach((cell, value) -> {
@@ -361,11 +381,15 @@ final class InputWorkbookCommands {
                 Map<Integer, Map<Integer, Object>> appended = new LinkedHashMap<>();
                 for (String id : table.addedRows.values()) {
                     Integer row = table.position(id); if (row == null) continue;
-                    for (JsonNode field : table.current().fields()) if (field.path("policyStatus").path("CREATE").asText().equals("READY")) {
+                    for (JsonNode field : table.current().fields()) if (field.path("policyStatus").path("CREATE").asText().equals("READY")
+                            && !InputDraftPmiRows.user(table.original) && !InputDraftPmiRows.child(table.original)) {
                         int column = field.path("columnNumber").asInt(), from = table.liveColumns().stream().anyMatch(c -> table.column(c) == column) ? table.templateColumn() : table.fieldTokens.get(field.path("fieldKey").asText());
                         ruleCopies.computeIfAbsent(table.original.sheet(), ignored -> new ArrayList<>()).add(new InputWorkbookMetadata.Copy(
                             new InputWorkbookStructure.Area(table.styleRow, table.styleRow, from, from), row - table.styleRow, column - from));
                     }
+                    if (InputDraftPmiRows.user(table.original) || InputDraftPmiRows.child(table.original))
+                        ruleCopies.computeIfAbsent(table.original.sheet(), ignored -> new ArrayList<>()).add(new InputWorkbookMetadata.Copy(
+                            new InputWorkbookStructure.Area(table.styleRow, table.styleRow, table.original.startColumn(), table.original.endColumn()), row - table.styleRow, 0));
                     Map<Integer, Object> rowValues = new HashMap<>();
                     values.forEach((cell, value) -> { if (cell.table == table.original.id() && cell.row == row) rowValues.put(cell.column, value); });
                     appended.put(row, rowValues);
@@ -381,6 +405,13 @@ final class InputWorkbookCommands {
             var old = sheet.edits.getOrDefault(cell.row, Map.of()).get(cell.column);
             sheet.put(cell.row, cell.column, new InputWorkbookXml.Edit(value, old == null ? null : old.template(), false));
         });
+        for (Table selected : tables.values()) if (InputDraftPmiRows.selected(selected.original) && !selected.addedRows.isEmpty()) {
+            Set<Integer> created = new HashSet<>(); selected.addedRows.values().forEach(id -> created.add(selected.row(id)));
+            InputWorkbookPmi.append(source, selected.styleRow, created, sheets.get(selected.original.sheet()), reader, checkpoint);
+            for (int row : created) readBack.add(new Cell(selected.original.id(), selected.rows.get(row), row, 15));
+            chainChanges.add(new InputWorkbookStructure.ChainChange(InputWorkbookStructure.sheetId(source, selected.original.sheet()), Map.of(), Set.of(),
+                created.stream().sorted().map(row -> "O" + row).toList()));
+        }
         if (linkedMaster != null) {
             Set<Integer> created = new HashSet<>();
             for (String id : linkedMaster.addedRows.values()) { Integer row = linkedMaster.position(id); if (row != null) created.add(row); }
@@ -700,6 +731,8 @@ final class InputWorkbookCommands {
             table.addedRows.forEach((client, id) -> {
                 ObjectNode added = delta.withArray("rows").addObject().put("tableId", table.original.key()).put("rowId", id).put("clientRowKey", client);
                 added.set("rowNumber", json.tree(table.position(id)));
+                if (client.startsWith(InputDraftPmiRows.BASE) || client.startsWith(InputDraftPmiRows.SELECTED))
+                    added.put("derivedFromRowId", client.substring(client.startsWith(InputDraftPmiRows.BASE) ? InputDraftPmiRows.BASE.length() : InputDraftPmiRows.SELECTED.length()));
                 if (client.startsWith(InputDraftRegasRows.PREFIX)) added.put("derivedFromRowId", client.substring(InputDraftRegasRows.PREFIX.length()));
             });
             Map<String, Integer> finalPositions = new HashMap<>();
