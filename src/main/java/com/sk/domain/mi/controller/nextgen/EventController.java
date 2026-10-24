@@ -219,7 +219,7 @@ public class EventController {
             - `dimensionColumns`: 동적 표 헤더 — 시나리오 그룹 목록/상세와 동일 구조
               - `key` / `label`: 분기항목 키/명 · `description` / `rationale`: 분기항목 설명/선정 근거 (헤더 ⓘ, v4 전용. v1은 null)
             - `scenarios[]`: `scenarioId`, `scenarioName`, `baseCase`,
-              `scenarioRole` / `scenarioRoleLabel`(시나리오명 앞 역할 배지 — `ceiling` 상단 / `floor` 하단 / `mixed` 혼합, 역할 없으면 null),
+              `scenarioRole` / `scenarioRoleLabel`(시나리오명 앞 역할 배지 — `ceiling` 상단 / `floor` 하단, 혼합·역할 없으면 null),
               `probability`(원본 0~100),
               `adjustedProbability`(재분배 확률 — 폐기 제외 비례 재분배로 활성 합 100, 폐기=0, 폐기 없으면 probability와 동일),
               `status` / `statusLabel`(대기/실현/폐기)

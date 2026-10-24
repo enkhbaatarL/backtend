@@ -254,7 +254,7 @@ public class ScenarioDesignController {
             - **분기값** (헤더별 선택 가능한 값 전체): `dimensionValueOptions{key}` — 드롭다운 데이터 (`valueId`/`label`/`rationale`)
             - **분기기준** (시나리오 행별 현재 값): `table.scenarios[].dimensions[]` — `value`(표시 label)와
               선택 상태 매칭용 `valueId`, 셀 (i) 아이콘용 `rationale`
-            - **배지**: `table.scenarios[].scenarioRole`(floor/ceiling/mixed) + `pressureBand`(5단계) — 라벨 필드 동봉, v1 legacy는 null
+            - **배지**: `table.scenarios[].scenarioRole`(floor/ceiling, 혼합은 null) + `pressureBand`(5단계) — 라벨 필드 동봉, v1 legacy는 null
             - **근거 마크다운**: `evidence.eventAnalysisMarkdown`(Event 분석), `evidence.roleSelectionMarkdown`(대표 시나리오 선정 근거) — sanitize 후 렌더
             - **진행/실패 상태**: `creationState` — `operationStatus`(+라벨) / `currentPhase`(+라벨). Agent가 새 어휘를 추가하면 null.
               terminal 여부는 SSE로 알 수 있으므로 이 API는 폴링 용도가 아니라 표시 용도입니다.
