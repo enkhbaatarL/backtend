@@ -159,6 +159,8 @@ public class ModelInputDraftService {
         tx.setIsolationLevel(TransactionDefinition.ISOLATION_READ_COMMITTED);
         return tx.execute(ignored->action.get());
     }
+    // Only the durable registration job supplies this actor; no public request parameter selects its tenant.
+    Source snapshotSource(Actor actor,long caseId) { return tx(true,()->source(actor,caseId,false)); }
     private Source source(Actor actor,long caseId,boolean lock) {
         if(caseId<1||caseId>Integer.MAX_VALUE)throw InputDraftException.missing();
         // 공유 원본 Case는 생성자의 회사와 비교하지 않는다. 개인 Draft는 owned()에서 회사+사용자로 제한한다.

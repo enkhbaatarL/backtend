@@ -259,6 +259,7 @@ public class FundamentalModelCaseServiceImpl implements FundamentalModelCaseServ
                 uploadedFileNos
             );
             modelInputDraftRepository.bindCaseTemplate(savedCase.getCaseId(), templateId, actorLoginId);
+            modelInputDraftRepository.queueTableSnapshots(authorizationService.getCompanyNoWithPriority(), actorUserNo, companyCd, savedCase.getCaseId(), actorLoginId);
 
             return new FundamentalModelCaseCreateRes(
                 savedCase.getCaseId(),

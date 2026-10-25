@@ -191,6 +191,7 @@ final class InputDraftFinalizationRepository {
         }
         sql.update("INSERT INTO tmd_mdl_scnrcasetmpltd(case_id,tmplt_id,crt_usr_logn_id,mod_usr_logn_id) VALUES(?,?,?,?)",
                 caseId, live.draft().templateId(), live.operation().actor(), live.operation().actor());
+        common.queueTableSnapshots(live.owner().company(),live.owner().user(),live.owner().companyCode(),caseId,live.operation().actor());
         Result result = new Result(caseId, List.copyOf(saved));
         one(sql.update("""
                 UPDATE tmd_mdl_inptdrftprcsl SET prcs_stat_cd='SUCCEEDED',rslt_json=?,end_dtm=CURRENT_TIMESTAMP(6),mod_dtm=CURRENT_TIMESTAMP,mod_usr_logn_id=?

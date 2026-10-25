@@ -23,6 +23,12 @@ public class ModelInputDraftRepository {
     private static final int ORIGINAL_ROW_INSERT_SIZE = 500;
     private final JdbcTemplate jdbc;
     public ModelInputDraftRepository(@Qualifier("masterDataSource") DataSource master) { jdbc=new JdbcTemplate(master); }
+    private ModelInputTableSnapshotRepository snapshots;
+    @org.springframework.beans.factory.annotation.Autowired(required=false)
+    void snapshots(ModelInputTableSnapshotRepository snapshots) { this.snapshots=snapshots; }
+    public void queueTableSnapshots(int company,int user,String companyCode,long caseId,String actor) {
+        if(snapshots!=null)snapshots.enqueue(company,user,companyCode,caseId,actor);
+    }
     public record FileRef(String role,Long fileNo,String name,String location,long baseline,String sha256,Long size) {
         public FileRef(String role,long fileNo,String name,String location){this(role,fileNo,name,location,0,null,null);}
     }

@@ -355,6 +355,16 @@ Q1~Q6은 트랙 A의 우선 조사 목록이다. P1은 write·구조·보존 경
 - JSON part를 순차 판독해 한 행씩 전달한다. part 64MiB, 전체 512MiB/1024part, 행 8MiB, 문자열 1MiB의 내부 판독 상한을 적용하고 `raw` 숫자는 BigDecimal로 읽는다. 이 상한은 공개 응답의 2MiB/2000행 규칙이나 일반 InputDraftJson 제한을 바꾸지 않는다. 큰 표의 부분 조회 기능을 뜻하지 않는다.
 - Snapshot 부재·식별 불일치·decoder/part/checksum 실패는 **같은 고정 원본 SAX로 한 번** 돌아간다. callback 뒤 실패해도 전체 렌더의 행 값·budget·cutoff·끝행·오류 집합을 새로 만든다. 기존 callback/권한/revision 오류는 Snapshot miss로 감싸지 않는다. 실패 복귀와 최종 전후 검증을 통과한 전체 응답만 반환한다.
 
+#### MySQL 조회 Snapshot 및 신규 Case 자동 생성 — 2026-10-25
+
+- 원본/최종 workbook의 객체 저장소와 개인 Draft의 operation/revision 저장 계약은 유지한다. 공개 GET 응답도 유지하며 원본 셀 공급만 MySQL로 선택할 수 있다. `mi.model-input.table-snapshot.mysql.enabled=false`가 기본이며, enabled 시 새 Case 생성 요청을 기록하고 백그라운드 소비자를 동작시킨다. GET 적용에는 기존 `table-snapshot.enabled=true`도 필요하다. MySQL 선택 시 파일 pin 목록은 사용하지 않는다.
+- 지원 표는 기존 파일 PoC의 두 표로 한정한다. 회사·Case·builder version별 생성 요청을 Case 등록/최종저장 새 Case의 같은 master transaction에 기록한다. 등록 rollback 시 요청도 없다. HTTP 요청 중 Excel 추출은 수행하지 않는다. 기본 OFF의 호환 배포에서는 새 테이블을 조회하지 않는다.
+- 요청 상태는 QUEUED→BUILDING→READY 또는 FAILED다. 한 소비자 스레드가 한 요청씩 처리하며 claim token과 DB 시각 기준120초 기한을 사용한다. 부분 결과는 BUILDING에 저장하고 전체 manifest/part 판독 검증 및 현재 원본/양식 재확인 후 token/기한이 유효할 때만 READY로 공개한다. 실패/만료는 FAILED로 남기고 자동 재시도하지 않는다. 만료 token의 추가 쓰기·공개는 차단한다. 동일 요청을 자동 재claim하지 않으므로 구 worker 종료 추정에 의존하지 않는다.
+- 신규 Case는 영속 생성 요청으로 자동 처리한다. 기존 Case의 적재/실패 재실행은 운영자가 명시적으로 결정한다. READY 내용은 수정하지 않고, 새 원본/정의는 identity가 다르면 기존 SAX를 사용한다. 원본 불변의 §3.2 및 공통 파일 보호를 재사용하며 원본 bytes를 GET마다 다시 해시하지 않는다.
+- 생성은 기존 SAX를 재사용해 원본 좌표의 raw/display/formula/오류 열을 bounded JSON part로 적재한다. 최소1개 part, 목표1MiB, 단일 행8MiB 상한에 따른 최대 part8MiB+2, 전체512MiB/1024part 상한을 둔다. MySQL part는4개 단위의 bounded batch로 읽고 셀별/행별 SQL을 실행하지 않는다. 기존 decoder의 BigDecimal·checksum 및 부분 실패 시 새로운 렌더 상태로 SAX 재시작 계약을 유지한다. 모든 part 순회는 실제 페이지 부분 조회 최적화가 아니다.
+- sourceVersion/정의/파일/회사·코드/변환기 identity를 GET 전에 대조하고, 기존 소유·접근·revision 전후 검증과 validatedLocation 검사를 유지한다. 생성 요청의 회사·사용자·회사 코드는 신뢰된 Case 등록/최종저장 context에서만 기록한다. 일반 요청으로 임의 회사/DB/Case 생성 작업을 예약하는 endpoint를 추가하지 않는다.
+- 기존 편집 계산·Excel 보존 검증과 최종 Excel 생성 경로는 바꾸지 않는다. DB schema/키/제약/수동 DBA rollout은 `docs/model-input-table-snapshot-ddl-draft.sql`이 소유한다. 실제 MySQL/API 부하 검증과 환경 활성화는 코드 완료와 구분한다.
+
 ### 3.3 Q2 양식·catalog 발행 묶음과 Case 연결 — 2026-10-15 구체화
 
 이 절은 확정된 원본 불변식·API 식별자 계약을 유지하면서 기존 규칙 1~3·10~11과 Case-template 관계를 구체화한 최소 연결안이다. 물리 보관/키/등록·검증 SQL은 DDL §6.2·§10B, 내부 식별자 문자열 구성은 조회 상세 §4.6이 소유한다. 제품 코드·DBA 적용/seed·제품 검증 완료는 아니다.

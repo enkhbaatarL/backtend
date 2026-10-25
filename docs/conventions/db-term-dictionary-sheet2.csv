@@ -385,3 +385,4 @@ No,단어종류,표준단어명,표준영문명,영문의미,설명,참고사항
 383,단일단어,제안,PRPSL,PROPOSAL,검토와 확정을 위해 제시하는 값 또는 안,Agent 모델 파라미터 제안 agnt_prpsl_id 명명용,Claude,등록
 384,단일단어,에이전트,AGNT,AGENT,특정 작업을 자율 수행하는 외부 시스템 주체,MI 파라미터 제안 Agent 참조 컬럼 명명용,Claude,등록
 385,단일단어,시트,SHT,SHEET,스프레드시트 파일 안에서 행과 열로 구성된 작업 단위,모델 입력 Excel 시트 메타데이터 명명용,Codex,등록
+386,단일단어,스냅샷,SNAP,SNAPSHOT,고정 원본의 특정 버전에서 추출한 조회용 사본,Excel Table MySQL Snapshot 명명용,Codex,등록

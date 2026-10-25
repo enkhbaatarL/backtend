@@ -33,7 +33,7 @@ class InputTableSnapshotReader {
     static final long PART_LIMIT = 64L * 1024 * 1024;
     static final long TOTAL_LIMIT = 512L * 1024 * 1024;
     static final long ROW_LIMIT = 8L * 1024 * 1024;
-    private static final Set<String> TABLES = Set.of("TRADE/ShippingCostInput/Technical Parameters",
+    static final Set<String> TABLES = Set.of("TRADE/ShippingCostInput/Technical Parameters",
         "DEMAND/BCInput/RE Base Case GDP and Population Data");
     private static final JsonFactory FACTORY = JsonFactory.builder().streamReadConstraints(
         StreamReadConstraints.builder().maxNestingDepth(12).maxStringLength(1_048_576).maxNumberLength(10000).build()).build();
@@ -46,7 +46,13 @@ class InputTableSnapshotReader {
         int templateVersion,FileRef file,String tableKey,String definitionSha256) {}
     record Part(String name,long bytes,String sha256) {}
     record Manifest(int schema,String extractor,Identity identity,String sourceSha256,String sheet,List<Part> parts) {}
-    record Selection(Path directory,Manifest manifest) {}
+    record Selection(Path directory,Manifest manifest,String databaseId,long tableId) {
+        Selection(Path directory,Manifest manifest) { this(directory,manifest,null,0); }
+    }
+    private com.sk.domain.shared.repository.master.tmm.ModelInputTableSnapshotRepository mysql;
+    @org.springframework.beans.factory.annotation.Autowired(required=false)
+    void mysql(com.sk.domain.shared.repository.master.tmm.ModelInputTableSnapshotRepository repository) { mysql=repository; }
+
     /** Decoder 소유 실패만 이 형식으로 전달한다. callback/권한/revision 오류는 감싸지 않는다. */
     static final class Unavailable extends RuntimeException {
         Unavailable() { super("Snapshot unavailable",null,false,false); }
@@ -62,6 +68,20 @@ class InputTableSnapshotReader {
     Selection select(ModelInputDraftService.Actor actor,ModelInputDraftService.Source source,TableRef original,FileRef file) {
         if(!enabled||!TABLES.contains(original.key())||file.baseline()!=0)return null;
         Identity expected=identity(actor,source,original,file);
+        if(mysql!=null) {
+            if(source.caseId()==null)return null;
+            try {
+                var stored=mysql.find(actor.company(),source.caseId(),source.version(),original.id());
+                if(stored==null||stored.manifest()==null)return null;
+                byte[] bytes=stored.manifest().getBytes(java.nio.charset.StandardCharsets.UTF_8);
+                if(bytes.length>1_048_576||!sha256(bytes).equals(stored.hash()))return null;
+                Manifest manifest=METADATA.readValue(bytes,Manifest.class);validate(manifest);
+                if(!expected.equals(manifest.identity())||!Objects.equals(original.sheet(),manifest.sheet()))return null;
+                if(file.sha256()!=null&&!file.sha256().equals(manifest.sourceSha256()))return null;
+                return new Selection(null,manifest,stored.id(),original.id());
+            } catch(IOException|org.springframework.dao.DataAccessException|Unavailable ex) { return null; }
+        }
+
         // 이 명시적 pin은 고정 시험 객체의 내용/존재를 시험 기간 동안 유지한다는 서버 운영자의 선언이다.
         // 일반 fileNo/path만으로 불변성을 추정하는 자동 매핑은 없다.
         for(String fixed:fixedInputs) {
@@ -88,13 +108,12 @@ class InputTableSnapshotReader {
         if(windows.stream().anyMatch(w->!manifest.sheet().equals(w.sheet())))throw new Unavailable();
         InputDraftDiagnostics.timed(InputDraftDiagnostics.Stage.TABLE_SNAPSHOT_READ,manifest.identity().file().role(),()->{
             int previous=0;int lastRow=windows.stream().mapToInt(InputWorkbookReader.Window::lastRow).max().orElse(Integer.MAX_VALUE);
-            for(Part part:manifest.parts()) {
-                Path path=selection.directory().resolve(part.name());
+            PartInputs inputs=new PartInputs(selection);
+            for(int index=0;index<manifest.parts().size();index++) {
+                Part part=manifest.parts().get(index);
                 try {
-                    // part 명은 생성기가 발급한 basename만 허용하고 symlink 외부 탈출도 거절한다.
-                    if(!path.toRealPath().getParent().equals(selection.directory().toRealPath())||Files.size(path)!=part.bytes())throw new IOException();
                     MessageDigest digest=digest();
-                    try(var input=new LimitedInput(Files.newInputStream(path),part.bytes());
+                    try(var input=new LimitedInput(inputs.open(index,part),part.bytes());
                         var hashed=new DigestInputStream(input,digest);var parser=FACTORY.createParser(hashed)) {
                         parser.enable(JsonParser.Feature.STRICT_DUPLICATE_DETECTION);
                         require(parser.nextToken()==JsonToken.START_ARRAY);
@@ -131,6 +150,31 @@ class InputTableSnapshotReader {
             }
             return null;
         });
+    }
+
+    private final class PartInputs {
+        private final Selection selection;
+        private Map<Integer,byte[]> batch=Map.of();
+        PartInputs(Selection selection) { this.selection=selection; }
+        InputStream open(int ordinal,Part part)throws IOException {
+            if(selection.databaseId()==null) {
+                Path path=selection.directory().resolve(part.name());
+                if(!path.toRealPath().getParent().equals(selection.directory().toRealPath())||Files.size(path)!=part.bytes())throw new IOException();
+                return Files.newInputStream(path);
+            }
+            if(mysql==null||part.bytes()>com.sk.domain.shared.repository.master.tmm.ModelInputTableSnapshotRepository.PART_LIMIT
+                    ||!part.name().equals(String.format(java.util.Locale.ROOT,"part-%05d.json",ordinal)))throw new IOException();
+            if(!batch.containsKey(ordinal)) {
+                try {
+                    Map<Integer,byte[]> next=new HashMap<>();
+                    for(var row:mysql.parts(selection.databaseId(),selection.tableId(),ordinal))next.put(row.ordinal(),row.bytes());
+                    batch=next;
+                } catch(org.springframework.dao.DataAccessException|IllegalStateException ex) { throw new IOException(); }
+            }
+            byte[] payload=batch.get(ordinal);
+            if(payload==null||payload.length!=part.bytes())throw new IOException();
+            return new java.io.ByteArrayInputStream(payload);
+        }
     }
 
     private static void validate(Manifest manifest) {
