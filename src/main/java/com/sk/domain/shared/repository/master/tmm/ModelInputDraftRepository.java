@@ -595,10 +595,11 @@ public class ModelInputDraftRepository {
             filter=" AND inpt_tbl_id=? AND org_row_no BETWEEN ? AND ?";
             Collections.addAll(args,table,first,last);
         }
+        var ids=new ModelInputBaselineRows.Ids(draft.id(),base.id());
         List<RowIdentity> rows=jdbc.query("SELECT inpt_tbl_id,org_row_no,del_yn FROM tmd_mdl_inptbaserowd WHERE base_id=?"+filter+" ORDER BY inpt_tbl_id,org_row_no",(rs,n)->{
             if(!"N".equals(rs.getString(3)))throw InputDraftException.internal();
             long t=rs.getLong(1);int row=rs.getInt(2);
-            return new RowIdentity(t,ModelInputBaselineRows.id(draft.id(),base.id(),t,row),row,null,null);
+            return new RowIdentity(t,ids.id(t,row),row,null,null);
         },args.toArray());
         if(table==null&&rows.size()!=base.rowCount())throw InputDraftException.internal();
         return rows;

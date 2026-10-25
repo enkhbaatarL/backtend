@@ -43,6 +43,9 @@ public class ModelInputDraftService {
     @org.springframework.lang.Nullable private final AuthorizationService authorization;
     private final InputWorkbookReader reader;
     private final InputDraftJson json;
+    private InputTableSnapshotReader tableSnapshots;
+    @org.springframework.beans.factory.annotation.Autowired
+    void tableSnapshots(InputTableSnapshotReader snapshots){this.tableSnapshots=snapshots;}
     private InputUploadRepository uploads;
     @org.springframework.beans.factory.annotation.Autowired
     void uploads(InputUploadRepository uploads){this.uploads=uploads;}
@@ -698,7 +701,7 @@ public class ModelInputDraftService {
             TableRef selected=source.catalog.tables().stream().filter(t->t.key().equals(key)).findFirst().orElseThrow(InputDraftException::missing);
             return draft.revision()==0?initialRead(draft,source,selected,first):restore(draft,source);
         }));
-        Table result=InputDraftDiagnostics.timed(InputDraftDiagnostics.Stage.TABLE_RENDER,null,()->renderTable(actor,state,key,first));
+        Table result=InputDraftDiagnostics.timed(InputDraftDiagnostics.Stage.TABLE_RENDER,null,()->renderGetTable(actor,state,key,first));
         // 행·이력·파일을 바꾸는 모든 저장은 revision을 올리므로, 같은 revision·원본 기준·파일이면 렌더 기준과 같다.
         // 전체 행 복원을 반복하지 않고 소유/원본 접근·고정 파일과 이 값들만 다시 확인한다.
         InputDraftDiagnostics.timed(InputDraftDiagnostics.Stage.TABLE_STATE_AFTER,null,()->tx(false,()->{
@@ -711,6 +714,22 @@ public class ModelInputDraftService {
     }
     private Table renderTable(Actor actor,State state,String key,Integer first) {return renderTable(actor,state,key,first,InputDraftJson.RESPONSE_LIMIT);}
     private Table renderTable(Actor actor,State state,String key,Integer first,int limit) {
+        return renderTable(actor,state,key,first,limit,null);
+    }
+    private Table renderGetTable(Actor actor,State state,String key,Integer first) {
+        TableRef table=state.source.catalog.tables().stream().filter(t->t.key().equals(key)).findFirst().orElseThrow(InputDraftException::missing);
+        FileRef file=state.source.files.stream().filter(f->f.role().equals(table.role())).findFirst().orElseThrow(InputDraftException::internal);
+        var snapshot=tableSnapshots==null?null:tableSnapshots.select(actor,state.source,state.history.originalTable(table.id()),file);
+        if(snapshot!=null) {
+            reader.validatedLocation(file,actor.companyCode);
+            try{return renderTable(actor,state,key,first,InputDraftJson.RESPONSE_LIMIT,snapshot);}
+            catch(InputTableSnapshotReader.Unavailable ex) {
+                // 부분 callback이 바꾼 rows/budget/cutoff/끝행/오류 집합은 모두 버린다.
+            }
+        }
+        return renderTable(actor,state,key,first);
+    }
+    private Table renderTable(Actor actor,State state,String key,Integer first,int limit,InputTableSnapshotReader.Selection snapshot) {
         TableRef table=state.source.catalog.tables().stream().filter(t->t.key().equals(key)).findFirst().orElseThrow(InputDraftException::missing);
         InputReadDefinition def=state.source.definitions.get(table.id());List<Integer> candidate=def.page(first,2000),headers=def.headerRows();
         Map<Integer,String> identities=state.history.bindings(table.id());
@@ -758,7 +777,8 @@ public class ModelInputDraftService {
             windows.add(new Window(table.sheet(),row->row==sourceRow,Set.of(sourceCol),
                 (row,values)->{if(values.containsKey(sourceCol))rows.computeIfAbsent(boundRow,k->new HashMap<>()).put(boundColumn,values.get(sourceCol));},invalidControls::add,sourceRow));
         }
-        reader.read(file,actor.companyCode,windows);
+        if(snapshot==null)reader.read(file,actor.companyCode,windows);
+        else tableSnapshots.read(snapshot,windows);
         if(!invalidRows.isEmpty())throw InputDraftException.internal();
         InputReadDefinition displayDef=trimBody(def,lastVisibleRow[0]);
         List<Integer> displayCandidate=displayDef.page(first,2000);
