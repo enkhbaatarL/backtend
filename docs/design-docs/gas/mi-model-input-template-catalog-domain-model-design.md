@@ -72,7 +72,7 @@
   - `docs/conventions/db-term-dictionary-sheet2.csv`
 - supersedes:
   - 없음
-- last synced: 2026-10-23 — PMI User-Adjusted→Base/Selected 원자 행 추가·Base 직접 추가 금지/Selected 내부 표 결정(§6.8) 반영; Demand Parameters/Bands 기존 값 수정 전용 결정 반영(업무 정본 §6.9, v6). 이전 동기화: 2026-10-21 (§5.7 Case 초기 기준 행 공유 설계; §5.5.3 A 실행기 계약·상태 table 승인·운영 복구 절차, 규칙64 실행 위치 대체; 2026-10-19 반영: §5.5.3 worker 비분리 방향·처리기 요구사항, 규칙64 120초 성격; 개발 시트 포함 파일 수용은 규칙39~40; 감사 이름·정밀도 사용자 채택은 DDL §6.8 참조; LiqProd 중복 허용·입력 제한 근거 원칙·새 열 식별·임시 키 연결/성공 대응·기존 저장 API 열 명령 연결·headerValues 형식·LiqProd 월 삭제·같은 저장의 열 추가 후 삭제·삭제된 새 열의 성공 식별 대응 유지·삭제 키 미재사용·LiqProd/LiqUtil 새 월 본문 빈칸/0 구분 사용자 채택)
+- last synced: 2026-10-24 — §3.2 고정 시험 입력 파일 Snapshot PoC의 선택·실패 경계 반영. 이전 동기화: 2026-10-23 — PMI User-Adjusted→Base/Selected 원자 행 추가·Base 직접 추가 금지/Selected 내부 표 결정(§6.8) 반영; Demand Parameters/Bands 기존 값 수정 전용 결정 반영(업무 정본 §6.9, v6). 이전 동기화: 2026-10-21 (§5.7 Case 초기 기준 행 공유 설계; §5.5.3 A 실행기 계약·상태 table 승인·운영 복구 절차, 규칙64 실행 위치 대체; 2026-10-19 반영: §5.5.3 worker 비분리 방향·처리기 요구사항, 규칙64 120초 성격; 개발 시트 포함 파일 수용은 규칙39~40; 감사 이름·정밀도 사용자 채택은 DDL §6.8 참조; LiqProd 중복 허용·입력 제한 근거 원칙·새 열 식별·임시 키 연결/성공 대응·기존 저장 API 열 명령 연결·headerValues 형식·LiqProd 월 삭제·같은 저장의 열 추가 후 삭제·삭제된 새 열의 성공 식별 대응 유지·삭제 키 미재사용·LiqProd/LiqUtil 새 월 본문 빈칸/0 구분 사용자 채택)
 - open questions:
   - A 실행기의 인계 정책은 정상 종료 증거에 따른 자동 인계·비정상 종료의 운영자 확인 후 수동 복구로 확정했다(§5.5.3). 2026-10-20 저장소 DDL/코드 확인에서 기존 구조는 소비자의 claim 전/idle 수명과 종료/승인 증거를 표현하지 못했다. 전용 상태 table1개(ERD §6.11)는 2026-10-20 사용자 후속으로 승인됐으며 아래 최초 활성화/인계 순서로 구현한다.
   - 순차 업로드의 생성 시점·첫 ACTIVE 버전 고정·교체/실패 보존·부분 편집·형식 유지와 동일 사용자당 한 번에 Case 하나 작성은 규칙67을 따른다. 원본 Case 없는 초안의 소유·보존/파일 기준점 복원은 §5.6, 물리 연결은 DDL §6.10에 구체화했다. 실제 저장/경합·형식 보존 검증과 동작별 필요 역할 연결은 기술 후속이다. 기존 sourceCase 기반 Draft 계약을 부분 파일에 그대로 적용하지 않는다.
@@ -328,6 +328,7 @@ Q1~Q6은 트랙 A의 우선 조사 목록이다. P1은 write·구조·보존 경
 - 사용자는 **업로드마다 새 `tcm_filel` row를 INSERT하고, 등록된 원본의 저장 경로와 같은 경로의 내용도 변경되지 않는다**고 확인했다. 각 업로드는 현재 코드대로 새 UUID 객체를 사용한다. 이 불변식을 이번 조회 설계의 확정 전제로 사용하며 같은 사실을 다시 승인받지 않는다.
 - 따라서 **파일 등록 한 건이 불변 내용 버전 한 건**이다. 서버가 확인한 file_no와 정확한 객체 참조의 대응을 사용한다. 파일명·크기·시각·UUID만 보고 불변이라고 추측하는 것과, 확인된 등록 lifecycle을 사용하는 것은 구별한다.
 - 일반 FileService의 TEMP/null relation 이동 분기는 아직 확정 원본이 아닌 임시 파일 처리다. 등록된 SCNRCASE 파일은 경로를 유지하고 Case 수정도 title/description만 바꾼다. 이 임시 경로를 조회 대상 원본의 변경 경로로 확대하지 않는다.
+- 확정 Case 원본은 공통 파일 API에서 삭제하거나 관계/유효기간을 변경할 수 없고, 일반 파일을 이 API로 Case 원본 관계에 연결할 수도 없다. 내부 Case 생성·staged 확정은 기존 전용 경계를 사용한다. 업로드 실패 시 이번 요청에서 새로 생성한 파일을 정리하는 내부 보상은 유지한다.
 - 앞서 제안한 서버 SHA-256 **내용 해시**와 등록 시각의 추가 보관·기존 파일 재해시/재등록 필수안은 철회한다. 외부 입력 `file_hash_val`과 catalog 구조 hash의 의미는 유지한다. 확정된 sourceVersion/sourceKey/inputId의 SHA-256 조합 생성 규칙은 그대로다.
 
 #### 등록 시점·기존 파일 처리
@@ -344,6 +345,25 @@ Q1~Q6은 트랙 A의 우선 조사 목록이다. P1은 write·구조·보존 경
 - **2026-10-20 사용자 후속 결정 — 기존 실행 완료 Case:** QRY-01의 구조/버전 진입에서는 Case와 그 `last_run_id`의 Run이 모두 `COMPLETED`로 확인되면 네 등록 파일을 다시 내려받아 시트 구조를 검사하지 않는다. 실행 완료 증거가 없는 Case는 기존의 객체·시트 검사를 유지한다. 어느 경우에도 Case 접근, 네 역할의 등록 파일·객체 참조, 연결된 발행 양식/catalog와 sourceVersion의 확인을 생략하지 않는다. 완료 Run은 현재 파일 내용과 양식의 재검증 결과를 뜻하지 않으며, 신규 Case 업로드/초안 직접 업로드의 양식 검증을 대체하지 않는다.
 - 선택 표 응답의 실제 객체 읽기·저장값 판독과 기존 삭제/접근 검사는 유지한다. 완료 Case의 QRY-01은 객체 존재를 다시 확인하지 않으므로 이후 표 조회/초안 생성에서 객체 누락이 드러날 수 있다. 별도 전체 내용 재해시, ETag 조건부 읽기, 버킷 버전 관리/잠금이나 새 snapshot/cache/worker를 필수조건으로 추가하지 않는다.
 - 후속 제품 검증은 반복 업로드의 새 file_no/객체 생성과 이전 참조 유지, 직접/staged Case 성공 경계, 역할/연결·catalog 변경 시 버전 대조, 누락/읽기 실패를 확인한다. 사용자 확인 불변식과 코드 근거를 운영 장애/전체 제품 시험 완료로 확대하지 않는다. template/catalog 연결안은 §3.3·DDL §6.2/§10B에 구체화했고 실제 등록/제품 구현·검증은 남는다.
+
+#### 고정 시험 입력의 파일 Snapshot PoC — 2026-10-24
+
+- EDT-03 GET의 원본 셀 공급만 시험용 파일 Snapshot으로 바꿀 수 있다. `mi.model-input.table-snapshot.enabled=false`가 기본이며, `fixed-inputs`에는 서버가 검증한 manifest의 **절대 경로#SHA-256**만 명시한다. pin 등록은 해당 원본 객체의 내용·존재를 시험 동안 동결하고 manifest의 원본 SHA-256과 대조했다는 운영자 선언이다. 일반 Case의 fileNo/경로만으로 이 선언을 자동 생성하지 않으며 운영 활성화·자동 생성/갱신은 이번 범위 밖이다.
+- 초기 선택은 `TRADE/ShippingCostInput/Technical Parameters`, `DEMAND/BCInput/RE Base Case GDP and Population Data`의 정확한 고정 입력만 허용한다. 인증 회사/코드·sourceKey·sourceVersion·template/version·원본 FileRef 전체·편집 전 TableRef 전체의 SHA-256·extractor/schema가 맞아야 한다. 공개 sourceVersion 형식과 업로드의 null은 유지한다. 원본 내용 hash가 FileRef에 있으면 manifest와도 대조한다. 양식/정의·원본 파일 baseline이 바뀌거나 pin이 없으면 기존 SAX를 사용한다.
+- 기존 Draft 소유/Case/고정 파일·전후 revision 검증과 Reader의 host/bucket/SCNRCASE 범위 검사를 유지한다. Snapshot hit는 객체 GET을 생략하므로 객체 존재·내용 불변을 새로 검증한 결과로 표현하지 않는다. 시험 원본 동결을 보장할 수 없는 입력은 pin을 등록하지 않는다.
+- 생성은 기존 `InputWorkbookReader.readLocal()`의 저장값 변환과 원본 header/body/control 좌표를 재사용한다. 현재 revision의 행·열·control 이동은 기존 History/Window와 projection에서 적용한다. GET 중 생성하지 않으며 업로드 preview는 기존 SAX를 사용한다.
+- JSON part를 순차 판독해 한 행씩 전달한다. part 64MiB, 전체 512MiB/1024part, 행 8MiB, 문자열 1MiB의 내부 판독 상한을 적용하고 `raw` 숫자는 BigDecimal로 읽는다. 이 상한은 공개 응답의 2MiB/2000행 규칙이나 일반 InputDraftJson 제한을 바꾸지 않는다. 큰 표의 부분 조회 기능을 뜻하지 않는다.
+- Snapshot 부재·식별 불일치·decoder/part/checksum 실패는 **같은 고정 원본 SAX로 한 번** 돌아간다. callback 뒤 실패해도 전체 렌더의 행 값·budget·cutoff·끝행·오류 집합을 새로 만든다. 기존 callback/권한/revision 오류는 Snapshot miss로 감싸지 않는다. 실패 복귀와 최종 전후 검증을 통과한 전체 응답만 반환한다.
+
+#### MySQL 조회 Snapshot 및 신규 Case 자동 생성 — 2026-10-25
+
+- 원본/최종 workbook의 객체 저장소와 개인 Draft의 operation/revision 저장 계약은 유지한다. 공개 GET 응답도 유지하며 원본 셀 공급만 MySQL로 선택할 수 있다. `mi.model-input.table-snapshot.mysql.enabled=false`가 기본이며, enabled 시 새 Case 생성 요청을 기록하고 백그라운드 소비자를 동작시킨다. GET 적용에는 기존 `table-snapshot.enabled=true`도 필요하다. MySQL 선택 시 파일 pin 목록은 사용하지 않는다.
+- 지원 표는 기존 파일 PoC의 두 표로 한정한다. 회사·Case·builder version별 생성 요청을 Case 등록/최종저장 새 Case의 같은 master transaction에 기록한다. 등록 rollback 시 요청도 없다. HTTP 요청 중 Excel 추출은 수행하지 않는다. 기본 OFF의 호환 배포에서는 새 테이블을 조회하지 않는다.
+- 요청 상태는 QUEUED→BUILDING→READY 또는 FAILED다. 한 소비자 스레드가 한 요청씩 처리하며 claim token과 DB 시각 기준120초 기한을 사용한다. 부분 결과는 BUILDING에 저장하고 전체 manifest/part 판독 검증 및 현재 원본/양식 재확인 후 token/기한이 유효할 때만 READY로 공개한다. 실패/만료는 FAILED로 남기고 자동 재시도하지 않는다. 만료 token의 추가 쓰기·공개는 차단한다. 동일 요청을 자동 재claim하지 않으므로 구 worker 종료 추정에 의존하지 않는다.
+- 신규 Case는 영속 생성 요청으로 자동 처리한다. 기존 Case의 적재/실패 재실행은 운영자가 명시적으로 결정한다. READY 내용은 수정하지 않고, 새 원본/정의는 identity가 다르면 기존 SAX를 사용한다. 원본 불변의 §3.2 및 공통 파일 보호를 재사용하며 원본 bytes를 GET마다 다시 해시하지 않는다.
+- 생성은 기존 SAX를 재사용해 원본 좌표의 raw/display/formula/오류 열을 bounded JSON part로 적재한다. 최소1개 part, 목표1MiB, 단일 행8MiB 상한에 따른 최대 part8MiB+2, 전체512MiB/1024part 상한을 둔다. MySQL part는4개 단위의 bounded batch로 읽고 셀별/행별 SQL을 실행하지 않는다. 기존 decoder의 BigDecimal·checksum 및 부분 실패 시 새로운 렌더 상태로 SAX 재시작 계약을 유지한다. 모든 part 순회는 실제 페이지 부분 조회 최적화가 아니다.
+- sourceVersion/정의/파일/회사·코드/변환기 identity를 GET 전에 대조하고, 기존 소유·접근·revision 전후 검증과 validatedLocation 검사를 유지한다. 생성 요청의 회사·사용자·회사 코드는 신뢰된 Case 등록/최종저장 context에서만 기록한다. 일반 요청으로 임의 회사/DB/Case 생성 작업을 예약하는 endpoint를 추가하지 않는다.
+- 기존 편집 계산·Excel 보존 검증과 최종 Excel 생성 경로는 바꾸지 않는다. DB schema/키/제약/수동 DBA rollout은 `docs/model-input-table-snapshot-ddl-draft.sql`이 소유한다. 실제 MySQL/API 부하 검증과 환경 활성화는 코드 완료와 구분한다.
 
 ### 3.3 Q2 양식·catalog 발행 묶음과 Case 연결 — 2026-10-15 구체화
 

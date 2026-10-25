@@ -1073,6 +1073,16 @@ DB FK만으로 확인할 수 없는 것은 같은 master transaction의 생성/�
 - Open Questions: 이 slice의 미해결 업무/스키마 선택 없음. 환경별 실제 제약/권한/운영 한도는 pre-check 증거 항목이며 이미 확인한 값으로 주장하지 않는다.
 - implementation readiness: `ready` — 내부 persistence/복원 slice의 구현 입력. 실행 DDL 작성/DBA 적용 승인·운영 활성화는 별도다.
 
+### 6.13 MySQL Table Snapshot — 2026-10-25
+
+- **구현 입력:** 새 master 테이블 `tmd_mdl_inptsnapm`(회사/Case별 생성 요청·준비 상태), `tmd_mdl_inptsnapd`(표별 manifest), `tmd_mdl_inptsnapjsond`(순서가 있는 bounded 원본 JSON part)를 추가한다. 기존 Case/파일/Draft 테이블은 ALTER하지 않는다. 물리 컬럼·키·제약·수동 적용/검증/보존 rollback은 [증분 DDL](../../model-input-table-snapshot-ddl-draft.sql)이 정본이다.
+- **수명·소유권:** 도메인 설계 §3.2의 MySQL 절을 따른다. 회사/Case/builder version unique로 동일 생성 의도를 중복 등록하지 않는다. 새 Case와 같은 master transaction의 intent만 예약하며, 파일 추출 중에는 Case transaction/row lock을 유지하지 않는다. 실패·만료 상태와 READY 데이터를 섞지 않는다.
+- **관계:** header는 기존 회사/Case/사용자를 RESTRICT 참조한다. table detail은 header와 발행 표를 참조하고, JSON part는 해당 detail을 복합 FK로 참조한다. 공유 Case와 개인 Draft의 권한 의미는 바꾸지 않는다.
+- **정규화/인덱스:** part JSON은 기존 raw/display/formula 직렬화와 bounded 판독을 재사용하기 위한 의도적 비정규화다. cell별 SQL 검색 인덱스를 만들지 않는다. unique 회사/Case/version, 상태·생성 순서 queue index 및 snapshot/table/part 순서 PK가 실제 조회를 지원한다. 대형 part를 매 페이지 모두 읽는 비용은 별도 측정하며 파일 분할을 페이지 최적화로 표현하지 않는다.
+- **호환/DBA:** 기본 OFF면 신규 테이블에 접근하지 않는다. 새 빈 테이블3개를 수동 검증한 뒤 기능 설정을 켠다. 기존 자료 자동 backfill은 없으며, rollback은 기능 OFF와 데이터 보존이다. 실제 환경의 parent unsigned type, CHECK enforcement, packet/연결·디스크·backup 용량은 DBA가 확인한다.
+- **용어:** 사전의 SNAP 한 항목만 추가하며 나머지는 기존 MDL/INPT/JSON/HASH/ORD/PRCS/TOKN/EXPR 토큰을 재사용한다.
+- **판정:** ready (제품 코드/격리 검증용 입력). 실제 testdb DDL 적용·활성화와 서버 API 부하 검증은 별도다.
+
 ## 7. ERD review
 
 아래 기존 검토표는 catalog6개 범위다. 공통 Draft7개는 §6.3에서 복합 PK/개인 tenant 소유·성공/요청/행 대응 제약을 별도로 정의했으며 해당 표에 이 기존 판정을 그대로 적용하지 않는다.

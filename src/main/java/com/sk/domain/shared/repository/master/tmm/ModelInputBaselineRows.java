@@ -13,28 +13,55 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.regex.Pattern;
 import com.sk.domain.shared.repository.master.tmm.ModelInputDraftRepository.*;
 
 /** 공유 원본의 개인 행 ID. 파일 내용 해시나 접근 권한으로 사용하지 않는다. */
 public final class ModelInputBaselineRows {
+    private static final Pattern UUID_PATTERN = Pattern.compile(
+        "[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}");
+
     private ModelInputBaselineRows() {}
 
     public static String id(String draft, String baseline, long table, int original) {
-        if (table <= 0 || original < 1 || original > 1048576) throw InputDraftException.internal();
-        UUID namespace = uuid(draft);
-        uuid(baseline);
-        try {
-            MessageDigest sha = MessageDigest.getInstance("SHA-1");
-            sha.update(ByteBuffer.allocate(16).putLong(namespace.getMostSignificantBits())
-                .putLong(namespace.getLeastSignificantBits()).array());
-            byte[] bytes = sha.digest(("mi-input-row/v1/" + baseline + "/" + table + "/" + original)
-                .getBytes(StandardCharsets.UTF_8));
+        return new Ids(draft, baseline).id(table, original);
+    }
+
+    /** 한 행 목록의 순차 처리에만 사용한다. 요청/스레드 간 공유하지 않는다. */
+    static final class Ids {
+        private final String draft;
+        private final String baseline;
+        private byte[] prefix;
+        private MessageDigest sha;
+
+        Ids(String draft, String baseline) {
+            this.draft = draft;
+            this.baseline = baseline;
+        }
+
+        String id(long table, int original) {
+            if (table <= 0 || original < 1 || original > 1048576) throw InputDraftException.internal();
+            // 빈 목록에서는 UUID를 검사하지 않던 동작과 행 번호 검사 순서를 유지한다.
+            if (sha == null) initialize();
+            sha.update(prefix);
+            byte[] bytes = sha.digest((table + "/" + original).getBytes(StandardCharsets.UTF_8));
             bytes[6] = (byte) ((bytes[6] & 0x0f) | 0x50);
             bytes[8] = (byte) ((bytes[8] & 0x3f) | 0x80);
             ByteBuffer value = ByteBuffer.wrap(bytes);
             return new UUID(value.getLong(), value.getLong()).toString();
-        } catch (NoSuchAlgorithmException ex) {
-            throw InputDraftException.internal();
+        }
+
+        private void initialize() {
+            UUID namespace = uuid(draft);
+            uuid(baseline);
+            byte[] name = ("mi-input-row/v1/" + baseline + "/").getBytes(StandardCharsets.UTF_8);
+            prefix = ByteBuffer.allocate(16 + name.length).putLong(namespace.getMostSignificantBits())
+                .putLong(namespace.getLeastSignificantBits()).put(name).array();
+            try {
+                sha = MessageDigest.getInstance("SHA-1");
+            } catch (NoSuchAlgorithmException ex) {
+                throw InputDraftException.internal();
+            }
         }
     }
 
@@ -46,9 +73,10 @@ public final class ModelInputBaselineRows {
     public static Snapshot merge(Draft draft,List<RowIdentity> originals,List<RowIdentity> stored,List<RowPosition> positions) {
         require(draft.baselineId()!=null&&!draft.uploaded());
         Map<String,RowIdentity> logical=new LinkedHashMap<>();
+        Ids ids=new Ids(draft.id(),draft.baselineId());
         for(RowIdentity row:originals) {
             require(row.original()!=null&&row.operation()==null&&row.client()==null&&row.baseline()==0
-                &&row.id().equals(id(draft.id(),draft.baselineId(),row.table(),row.original())));
+                &&row.id().equals(ids.id(row.table(),row.original())));
             require(logical.putIfAbsent(row.id(),row)==null);
         }
         Map<String,RowIdentity> physical=new LinkedHashMap<>();
@@ -91,7 +119,7 @@ public final class ModelInputBaselineRows {
     private static void require(boolean valid) { if(!valid)throw InputDraftException.internal(); }
 
     private static UUID uuid(String value) {
-        if (value == null || !value.matches("[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}"))
+        if (value == null || !UUID_PATTERN.matcher(value).matches())
             throw InputDraftException.internal();
         return UUID.fromString(value);
     }

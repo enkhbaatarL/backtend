@@ -61,6 +61,12 @@ public class InputWorkbookReader {
         public Window(String sheet,IntPredicate rows,Set<Integer> columns,BiConsumer<Integer,Map<Integer,Cell>> accept,IntConsumer invalidRow) {
             this(sheet,rows,columns,accept,invalidRow,Integer.MAX_VALUE);
         }
+        void deliverRow(int row,Map<Integer,Cell> cells,Set<Integer> invalidColumns) {
+            if(!invalidColumns.isEmpty()&&columns.stream().anyMatch(invalidColumns::contains))invalidRow.accept(row);
+            Map<Integer,Cell> values=new HashMap<>();
+            for(int column:columns)if(cells.containsKey(column))values.put(column,cells.get(column));
+            accept.accept(row,Map.copyOf(values));
+        }
     }
     public void read(FileRef file,String company,List<Window> windows) {
         withLocal(file,company,path->InputDraftDiagnostics.timed(InputDraftDiagnostics.Stage.WORKBOOK_PARSE,file.role(),()->{
@@ -79,23 +85,21 @@ public class InputWorkbookReader {
     }
     /** 저장소 원본은 공통 업로드 복호화 후 저장된 객체다. 임시 사본만 읽고 항상 제거한다. */
     <T>T withLocal(FileRef file,String company,java.util.function.Function<Path,T> action) {
-        InputTempFiles.checkpoint();
+        return withLocal(file,company,action,InputTempFiles::checkpoint);
+    }
+    <T>T withLocal(FileRef file,String company,java.util.function.Function<Path,T> action,Runnable checkpoint) {
+        checkpoint.run();
         Path temp=null;
         try {
             long downloadStarted=System.nanoTime();
             boolean downloaded=false;
             try {
-            URI location=URI.create(file.location()),server=URI.create(endpoint);
-            if(!Set.of("http","https").contains(location.getScheme())||!location.getAuthority().equals(server.getAuthority())
-                ||location.getRawQuery()!=null||location.getFragment()!=null) throw InputDraftException.internal();
-            String path=location.getPath();String[] parts=path.split("/",3);
-            if(parts.length!=3||(!parts[1].equals(commonBucket)&&!parts[1].equals(bucketPrefix+company.toLowerCase(Locale.ROOT)))
-                ||!parts[2].startsWith("SCNRCASE/")||parts[2].contains("..")||parts[2].contains("\\")) throw InputDraftException.missing();
+            String[] parts=validatedLocation(file,company);
             temp=tempFiles.create();
             try(var object=storage.getObject(parts[1],parts[2]);InputStream stream=object.getObjectContent();var out=Files.newOutputStream(temp)) {
                 byte[] buffer=new byte[65536];long size=0;int len;
                 var digest=java.security.MessageDigest.getInstance("SHA-256");
-                while((len=stream.read(buffer))!=-1) { InputTempFiles.checkpoint();size+=len;if(size>300L*1024*1024||(file.size()!=null&&size>file.size()))throw InputDraftException.internal();digest.update(buffer,0,len);out.write(buffer,0,len); }
+                while((len=stream.read(buffer))!=-1) { checkpoint.run();size+=len;if(size>300L*1024*1024||(file.size()!=null&&size>file.size()))throw InputDraftException.internal();digest.update(buffer,0,len);out.write(buffer,0,len); }
                 if(file.size()!=null&&size!=file.size())throw InputDraftException.internal();
                 if(file.sha256()!=null&&!java.util.HexFormat.of().formatHex(digest.digest()).equals(file.sha256()))throw InputDraftException.internal();
             }
@@ -109,10 +113,20 @@ public class InputWorkbookReader {
             } catch(InputDraftException ex) {throw ex;}
             catch(Exception ex) {InputDraftDiagnostics.failure(InputDraftDiagnostics.Stage.WORKBOOK_DOWNLOAD,file.role(),ex);throw InputDraftException.internal();}
             finally {InputDraftDiagnostics.elapsed(InputDraftDiagnostics.Stage.WORKBOOK_DOWNLOAD,file.role(),downloadStarted,downloaded);}
-            InputTempFiles.checkpoint();
+            checkpoint.run();
             return action.apply(temp);
         }
         finally { if(temp!=null)try { Files.deleteIfExists(temp); }catch(IOException ex) {throw InputDraftException.internal();} }
+    }
+    /** Snapshot hit에도 원본 Reader와 같은 저장소/회사 범위를 검사한다. 객체 IO는 하지 않는다. */
+    String[] validatedLocation(FileRef file,String company) {
+        URI location=URI.create(file.location()),server=URI.create(endpoint);
+        if(!Set.of("http","https").contains(location.getScheme())||!location.getAuthority().equals(server.getAuthority())
+            ||location.getRawQuery()!=null||location.getFragment()!=null) throw InputDraftException.internal();
+        String[] parts=location.getPath().split("/",3);
+        if(parts.length!=3||(!parts[1].equals(commonBucket)&&!parts[1].equals(bucketPrefix+company.toLowerCase(Locale.ROOT)))
+            ||!parts[2].startsWith("SCNRCASE/")||parts[2].contains("..")||parts[2].contains("\\")) throw InputDraftException.missing();
+        return parts;
     }
     void readLocal(Path file,List<Window> windows)throws Exception {
         checkArchive(file);
@@ -194,9 +208,10 @@ public class InputWorkbookReader {
                 selected=windows.stream().filter(w->w.rows().test(row)).toList();cells=new HashMap<>();invalidColumns.clear();
             }
             if("c".equals(local)) {
-                CellReference ref=new CellReference(a.getValue("r"));col=ref.getCol()+1;
-                if(ref.getRow()+1!=row)throw InputDraftException.internal();
-                wanted=selected.stream().anyMatch(w->w.columns().contains(col));formula=false;hasValue=false;type=a.getValue("t");style=a.getValue("s")==null?0:Integer.parseInt(a.getValue("s"));value.setLength(0);inline.setLength(0);
+                col=column(a.getValue("r"));
+                wanted=false;
+                for(Window window:selected)if(window.columns().contains(col)){wanted=true;break;}
+                formula=false;hasValue=false;type=a.getValue("t");style=a.getValue("s")==null?0:Integer.parseInt(a.getValue("s"));value.setLength(0);inline.setLength(0);
             }
             if(wanted&&"f".equals(local))formula=true;
             if(wanted&&"v".equals(local))hasValue=true;
@@ -217,13 +232,38 @@ public class InputWorkbookReader {
                     invalidColumns.add(col);
                 }
             }
-            if("row".equals(local))for(Window window:selected) {
-                if(window.columns().stream().anyMatch(invalidColumns::contains))window.invalidRow().accept(row);
-                Map<Integer,Cell> values=new HashMap<>();
-                for(int column:window.columns())if(cells.containsKey(column))values.put(column,cells.get(column));
-                window.accept().accept(row,Map.copyOf(values));
-            }
+            if("row".equals(local))for(Window window:selected)window.deliverRow(row,cells,invalidColumns);
             element=null;
+        }
+        private int column(String reference) {
+            // 일반 XLSX 좌표만 직접 해석한다. 특수/범위 밖 표기는 기존 POI 처리와 오류 동작을 유지한다.
+            if(reference!=null&&reference.length()>=2&&reference.length()<=10) {
+                int index=0,column=0;
+                while(index<reference.length()) {
+                    char letter=reference.charAt(index);
+                    if(letter<'A'||letter>'Z')break;
+                    column=column*26+letter-'A'+1;index++;
+                    if(column>16_384)break;
+                }
+                if(column>0&&column<=16_384&&index<reference.length()
+                        &&reference.charAt(index)>='1'&&reference.charAt(index)<='9') {
+                    int addressRow=0;
+                    while(index<reference.length()) {
+                        char digit=reference.charAt(index);
+                        if(digit<'0'||digit>'9')break;
+                        addressRow=addressRow*10+digit-'0';
+                        if(addressRow>1_048_576)break;
+                        index++;
+                    }
+                    if(index==reference.length()) {
+                        if(addressRow!=row)throw InputDraftException.internal();
+                        return column;
+                    }
+                }
+            }
+            CellReference parsed=new CellReference(reference);
+            if(parsed.getRow()+1!=row)throw InputDraftException.internal();
+            return parsed.getCol()+1;
         }
         private Cell storedCell() {
                 Object raw=null,display=null;String text=value.toString();

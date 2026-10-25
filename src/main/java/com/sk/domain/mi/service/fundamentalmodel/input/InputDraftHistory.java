@@ -12,9 +12,13 @@ import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.regex.Pattern;
 
 /** 고정 발행/원본 행과 성공 delta만 합성한다. workbook 계산이나 영속 cache는 만들지 않는다. */
 final class InputDraftHistory {
+    private static final Pattern UUID_PATTERN = Pattern.compile(
+        "[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}");
+
     private final InputDraftJson json;
     private final InputDraftColumns columns;
     private final Catalog basis;
@@ -204,12 +208,13 @@ final class InputDraftHistory {
             affected.add(table.key());
         }
         List<Map<String,Object>> columnMappings=columns.commands(request.operations(),beforeColumns,tables,columnAdditions);
+        List<InputDraftRegasRows.Row> validationRows=rows.values().stream().map(row->new InputDraftRegasRows.Row(row.table,row.id,row.original,row.position,row.client,rowBaselines.getOrDefault(row.id,0L))).toList();
         Map<String,String> linkedRows=InputDraftRegasRows.validate(List.copyOf(tables.values()),originalDefinitions,
-            rows.values().stream().map(row->new InputDraftRegasRows.Row(row.table,row.id,row.original,row.position,row.client,rowBaselines.getOrDefault(row.id,0L))).toList(),additions,request.operations(),delta.path("rows"));
+            validationRows,additions,request.operations(),delta.path("rows"));
         Map<String,JsonNode> directAdditions=new LinkedHashMap<>();
         additions.forEach((key,value)->{if(!value.has("derivedFromRowId"))directAdditions.put(key,value);});
         Map<String,List<String>> pmiLinks=InputDraftPmiRows.validate(List.copyOf(tables.values()),
-            rows.values().stream().map(row->new InputDraftRegasRows.Row(row.table,row.id,row.original,row.position,row.client,rowBaselines.getOrDefault(row.id,0L))).toList(),additions,rowCells,json);
+            validationRows,additions,rowCells,json);
         List<Map<String,Object>> mappings=validateCommands(request.operations(),before,directAdditions,columnAdditions,linkedRows,pmiLinks);
         validateCreatedValues(request.operations(),columnAdditions,directAdditions);
         Map<String,Object> result=new LinkedHashMap<>();result.put("resultRevision",revision);result.put("rowMappings",mappings);result.put("columnMappings",columnMappings);
@@ -446,10 +451,11 @@ final class InputDraftHistory {
     InputWorkbookReader.Cell control(String table,int row,int col) {return fixedCells.getOrDefault(table(table).id(),Map.of()).getOrDefault(row,Map.of()).get(col);}
     JsonNode originalControl(long table,String id) {for(JsonNode control:originalDefinitions.get(table).controls())if(control.path("id").asText().equals(id))return control;throw InputDraftException.internal();}
     Catalog catalog() {return new Catalog(basis.templateId(),basis.version(),basis.roles(),List.copyOf(tables.values()));}
+    TableRef originalTable(long id) {return basis.tables().stream().filter(table->table.id()==id).findFirst().orElseThrow(InputDraftException::internal);}
     Map<Long,InputReadDefinition> definitions() {return Map.copyOf(definitions);}
     private TableRef table(String key) {return tables.values().stream().filter(table->table.key().equals(key)).findFirst().orElseThrow(InputDraftException::internal);}
     private TableRef table(long id) {TableRef table=tables.get(id);require(table!=null);return table;}
-    private static boolean uuid(String id) {return id!=null&&id.matches("[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}");}
+    private static boolean uuid(String id) {return id!=null&&UUID_PATTERN.matcher(id).matches();}
     private static void exact(JsonNode node,String... fields) {
         require(node!=null&&node.isObject()&&node.size()==fields.length);Set<String> allowed=Set.of(fields);
         node.fieldNames().forEachRemaining(field->require(allowed.contains(field)));

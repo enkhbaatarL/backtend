@@ -21,6 +21,9 @@ public class P6SpyFormatter implements MessageFormattingStrategy {
 
     @Override
     public String formatMessage(int connectionId, String now, long elapsed, String category, String prepared, String sql, String url) {
+        if (prepared != null && prepared.toLowerCase(Locale.ROOT).matches("(?s).*\\btmd_mdl_inptsnap(?:m|d|jsond)\\b.*")) {
+            return String.format("[%s] | %d ms | Table Snapshot SQL [parameters redacted]", category, elapsed);
+        }
         sql = formatSql(category, sql);
 
         if (sql != null && sql.length() > SQL_SHOW_LIMIT_LENGTH) {

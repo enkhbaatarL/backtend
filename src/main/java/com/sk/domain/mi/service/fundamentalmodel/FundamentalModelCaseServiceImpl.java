@@ -259,6 +259,7 @@ public class FundamentalModelCaseServiceImpl implements FundamentalModelCaseServ
                 uploadedFileNos
             );
             modelInputDraftRepository.bindCaseTemplate(savedCase.getCaseId(), templateId, actorLoginId);
+            modelInputDraftRepository.queueTableSnapshots(authorizationService.getCompanyNoWithPriority(), actorUserNo, companyCd, savedCase.getCaseId(), actorLoginId);
 
             return new FundamentalModelCaseCreateRes(
                 savedCase.getCaseId(),
@@ -2528,7 +2529,7 @@ public class FundamentalModelCaseServiceImpl implements FundamentalModelCaseServ
     private void compensateUploadedFiles(List<Long> uploadedFileNos) {
         for (Long fileNo : uploadedFileNos) {
             try {
-                fileService.deleteFile(fileNo);
+                fileService.deleteFileAfterFailedUpload(fileNo);
             } catch (RuntimeException compensationException) {
                 log.warn("Failed to compensate scenario case uploaded file. fileNo={}", fileNo, compensationException);
             }
