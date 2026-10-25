@@ -236,14 +236,14 @@ mi:
       mysql:
         enabled: false
     upload:
-      enabled: ${MODEL_TIMEOUT_DRAFT_ENABLED:false}
+      enabled: ${MODEL_INPUT_DRAFT_ENABLED:false}
       source-key: DRAFT_C_STRUCTURE_V1
       model-code: DRAFT_C_STRUCTURE
     shared-baseline:
-      enabled: ${MODEL_TIMEOUT_DRAFT_ENABLED:false}
+      enabled: ${MODEL_INPUT_DRAFT_ENABLED:false}
     web-runner:
-      enabled: ${MODEL_TIMEOUT_DRAFT_ENABLED:false}
+      enabled: ${MODEL_INPUT_DRAFT_ENABLED:false}
     change-worker:
-      enabled: ${MODEL_TIMEOUT_DRAFT_ENABLED:false}
+      enabled: ${MODEL_INPUT_DRAFT_ENABLED:false}
     finalization:
-      enabled: ${MODEL_TIMEOUT_DRAFT_ENABLED:false}
+      enabled: ${MODEL_INPUT_DRAFT_ENABLED:false}

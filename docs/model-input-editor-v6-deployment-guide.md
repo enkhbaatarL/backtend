@@ -111,7 +111,7 @@ v6의 실제 ID/marker가 발행 입력과 같고 ACTIVE가1개여야 한다. UP
 
 ## 5. 기능 활성화·보존·실패 처리
 
-최근 dev/prod 설정은 `upload`, `shared-baseline`, `web-runner`, `change-worker`, `finalization`이 모두 `${MODEL_TIMEOUT_DRAFT_ENABLED:false}`를 사용한다. 값이 없으면 기능은 OFF다. SQL 발행과 별개로 담당자가 해당 환경의 실효 설정을 확인하고, DB/코드 준비와 작업 종료 확인 후 **`MODEL_TIMEOUT_DRAFT_ENABLED=true`**로 활성화한다. 다른 설정 경로의 override도 확인한다. source-key `DRAFT_C_STRUCTURE_V1`은 template version 숫자와 별개이므로 v6라는 이유로 바꾸지 않는다.
+최근 dev/prod 설정은 `upload`, `shared-baseline`, `web-runner`, `change-worker`, `finalization`이 모두 `${MODEL_INPUT_DRAFT_ENABLED:false}`를 사용한다. 값이 없으면 기능은 OFF다. SQL 발행과 별개로 담당자가 해당 환경의 실효 설정을 확인하고, DB/코드 준비와 작업 종료 확인 후 **`MODEL_INPUT_DRAFT_ENABLED=true`**로 활성화한다. 다른 설정 경로의 override도 확인한다. source-key `DRAFT_C_STRUCTURE_V1`은 template version 숫자와 별개이므로 v6라는 이유로 바꾸지 않는다.
 
 격리된 시험 데이터로 새 Case/새 업로드의 v6 선택·구조 조회·승인된 변경·최종저장을 확인한다. CHANGE/FINALIZE는 202 수신만으로 성공으로 판단하지 않고 terminal `SUCCEEDED`/결과 revision 및 파일 재조회를 확인한다. PMI 연결 행, BCRegas 기존 용량 수정과 연도 추가의 서로 다른 계산/보존 범위를 확인한다. 보류/INCOMPLETE 정책과 native Excel/외부 모델 실행의 별도 검증 한계는 유지한다.
 
