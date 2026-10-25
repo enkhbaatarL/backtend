@@ -1,0 +1,33 @@
+{
+  "documentControl": {
+    "status": "Draft",
+    "canonicalFor": "Schema rollout - v7 Regas row policy",
+    "owner": "BE",
+    "date": "2026-10-25",
+    "source": "v6 catalog; existing linked Regas row implementation",
+    "manualBoundary": "New DRAFT only; preserve published v6 and existing references"
+  },
+  "key": [
+    "SUPPLY",
+    "BCRegasification",
+    "Annual Regas Capacity Baseline"
+  ],
+  "baselineSha256": "986f36fed932609c0eab1712135d6d9a2fe6113d6512811dfcee5cea5af9f7b3",
+  "identityCreate": {
+    "required": true,
+    "initial": {
+      "kind": "EMPTY"
+    },
+    "constraints": {
+      "required": true
+    }
+  },
+  "capacityCreate": {
+    "required": true,
+    "initial": {
+      "kind": "VALUE",
+      "value": 0
+    },
+    "constraints": {}
+  }
+}

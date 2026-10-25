@@ -1424,3 +1424,9 @@ LiqProd Period 산식과 월 건너뛰기/중복 허용은 [domain 규칙65](../
 | DB | 기존 JSON 저장/관계형 행 이력 재사용. 새 열 테이블 없음. CHECK2 수동 SQL 준비 | 실제 개발/운영 DB 미적용. 승인7table 초기화·CHECK2·전체 v2 코드 교체 순서와 구 코드 혼합 금지는 DDL §6.9/전용 SQL 참조 |
 
 **준비도:** 위 표의 2026-10-19 판정은 당시 기록이다. FE는 조회 응답의 READY만 호출하며 현재 작업 폴더의 PNG 삭제 구현·신규 양식 SQL 초안은 실제 DB 발행이나 실서버 배포 증거가 아니다. 미배포 v1 이중 reader/변환은 제공하지 않는다.
+
+### BCRegasification 행 편집 개방 (v7, 2026-10-25)
+
+v7 카탈로그에서 `SUPPLY/BCRegasification/Annual Regas Capacity Baseline`의 `ADD_ROW`/`DELETE_ROW`를 허용한다. 추가 시 `continent`, `region`, `country`, `regasificationPlant`, `lifeCycleCategory`는 필수 입력이며 연간 용량 필드는 생략하면 숫자 0으로 생성한다. 기존 식별값의 SET/CLEAR 정책은 변경하지 않는다. `RegasAdjustment` 대응 행 생성·삭제와 국가별 월 합계 갱신은 기존 연결 규칙대로 서버가 처리하며, 해당 시트의 직접 행 추가·삭제는 허용하지 않는다.
+
+이미 발행된 v6 및 기존 Case/Draft의 연결은 변경하지 않는다. 새 정책 적용은 `docs/model-input-regas-rows-v7-deployment-guide.md`의 새 버전 등록·발행 절차를 따른다.
