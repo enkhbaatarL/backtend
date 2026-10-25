@@ -208,12 +208,13 @@ final class InputDraftHistory {
             affected.add(table.key());
         }
         List<Map<String,Object>> columnMappings=columns.commands(request.operations(),beforeColumns,tables,columnAdditions);
+        List<InputDraftRegasRows.Row> validationRows=rows.values().stream().map(row->new InputDraftRegasRows.Row(row.table,row.id,row.original,row.position,row.client,rowBaselines.getOrDefault(row.id,0L))).toList();
         Map<String,String> linkedRows=InputDraftRegasRows.validate(List.copyOf(tables.values()),originalDefinitions,
-            rows.values().stream().map(row->new InputDraftRegasRows.Row(row.table,row.id,row.original,row.position,row.client,rowBaselines.getOrDefault(row.id,0L))).toList(),additions,request.operations(),delta.path("rows"));
+            validationRows,additions,request.operations(),delta.path("rows"));
         Map<String,JsonNode> directAdditions=new LinkedHashMap<>();
         additions.forEach((key,value)->{if(!value.has("derivedFromRowId"))directAdditions.put(key,value);});
         Map<String,List<String>> pmiLinks=InputDraftPmiRows.validate(List.copyOf(tables.values()),
-            rows.values().stream().map(row->new InputDraftRegasRows.Row(row.table,row.id,row.original,row.position,row.client,rowBaselines.getOrDefault(row.id,0L))).toList(),additions,rowCells,json);
+            validationRows,additions,rowCells,json);
         List<Map<String,Object>> mappings=validateCommands(request.operations(),before,directAdditions,columnAdditions,linkedRows,pmiLinks);
         validateCreatedValues(request.operations(),columnAdditions,directAdditions);
         Map<String,Object> result=new LinkedHashMap<>();result.put("resultRevision",revision);result.put("rowMappings",mappings);result.put("columnMappings",columnMappings);

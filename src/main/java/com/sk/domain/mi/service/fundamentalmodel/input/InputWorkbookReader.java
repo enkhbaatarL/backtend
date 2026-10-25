@@ -61,6 +61,12 @@ public class InputWorkbookReader {
         public Window(String sheet,IntPredicate rows,Set<Integer> columns,BiConsumer<Integer,Map<Integer,Cell>> accept,IntConsumer invalidRow) {
             this(sheet,rows,columns,accept,invalidRow,Integer.MAX_VALUE);
         }
+        void deliverRow(int row,Map<Integer,Cell> cells,Set<Integer> invalidColumns) {
+            if(!invalidColumns.isEmpty()&&columns.stream().anyMatch(invalidColumns::contains))invalidRow.accept(row);
+            Map<Integer,Cell> values=new HashMap<>();
+            for(int column:columns)if(cells.containsKey(column))values.put(column,cells.get(column));
+            accept.accept(row,Map.copyOf(values));
+        }
     }
     public void read(FileRef file,String company,List<Window> windows) {
         withLocal(file,company,path->InputDraftDiagnostics.timed(InputDraftDiagnostics.Stage.WORKBOOK_PARSE,file.role(),()->{
@@ -223,12 +229,7 @@ public class InputWorkbookReader {
                     invalidColumns.add(col);
                 }
             }
-            if("row".equals(local))for(Window window:selected) {
-                if(!invalidColumns.isEmpty()&&window.columns().stream().anyMatch(invalidColumns::contains))window.invalidRow().accept(row);
-                Map<Integer,Cell> values=new HashMap<>();
-                for(int column:window.columns())if(cells.containsKey(column))values.put(column,cells.get(column));
-                window.accept().accept(row,Map.copyOf(values));
-            }
+            if("row".equals(local))for(Window window:selected)window.deliverRow(row,cells,invalidColumns);
             element=null;
         }
         private int column(String reference) {

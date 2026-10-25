@@ -122,12 +122,7 @@ class InputTableSnapshotReader {
                             require(parser.nextToken()==JsonToken.END_OBJECT);
                             require(parser.currentLocation().getByteOffset()-begin<=ROW_LIMIT);
                             // callback 밖 IOException만 아래에서 변환하므로 기존 렌더 오류를 fallback으로 삼지 않는다.
-                            for(var window:windows)if(row<=lastRow&&window.rows().test(row)) {
-                                if(window.columns().stream().anyMatch(invalid::contains))window.invalidRow().accept(row);
-                                Map<Integer,InputWorkbookReader.Cell> values=new HashMap<>();
-                                for(int column:window.columns())if(cells.containsKey(column))values.put(column,cells.get(column));
-                                window.accept().accept(row,Map.copyOf(values));
-                            }
+                            for(var window:windows)if(row<=lastRow&&window.rows().test(row))window.deliverRow(row,cells,invalid);
                         }
                         require(parser.nextToken()==null&&input.count==part.bytes());
                     }
