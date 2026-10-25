@@ -82,6 +82,7 @@ public final class InputDraftWorkerMain {
     @ConditionalOnProperty(name="mi.model-input.worker-process",havingValue="true")
     @EnableConfigurationProperties(DataSourceProperties.class)
     @Import({ModelInputDraftRepository.class,ModelInputDraftService.class,InputDraftJson.class,InputWorkbookReader.class,
+        InputTableSnapshotReader.class,
         InputTempFiles.class,ObjectStorageService.class,InputDraftFinalizationConfiguration.class,WorkerCryptoConfiguration.class,
         InputUploadRepository.class,InputUploadObjects.class,InputUploadValidation.class,InputUploadService.class})
     static class WorkerConfiguration {
