@@ -238,6 +238,10 @@ kubernetes:
 
 mi:
   model-input:
+    table-snapshot:
+      enabled: false
+      mysql:
+        enabled: false
     upload:
       enabled: ${MODEL_TIMEOUT_DRAFT_ENABLED:false}
       source-key: DRAFT_C_STRUCTURE_V1
