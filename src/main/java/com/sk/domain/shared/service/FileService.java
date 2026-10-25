@@ -53,7 +53,7 @@ import org.springframework.web.multipart.MultipartFile;
 public class FileService {
     private static final String TEMP_DIR = "TEMP";
     private static final int STAGED_RELATIONSHIP_NO = 0;
-    private static final String INTERNAL_STAGED_FINAL_RELATIONSHIP_CODE = "SCNRCASE";
+    private static final String CASE_RELATIONSHIP_CODE = "SCNRCASE";
     private static final String FILE_NO_MESSAGE_FORMAT = "file no: %d";
     private static final String FILE_DOWNLOAD_ERROR_MESSAGE = "파일 다운로드 중 오류가 발생했습니다.";
     private static final String FILE_URL_ERROR_MESSAGE = "파일 URL 생성 중 오류가 발생했습니다.";
@@ -637,9 +637,18 @@ public class FileService {
     */
     @Transactional
     public UploadedFile deleteFile(Long fileNo) {
-        UploadedFile uploadedFile = uploadedFileRepository.findByFileNo(fileNo)
-                .orElseThrow(
-                        () -> AppErrorException.of(ResultCode.Error.RSC_NOT_FOUND, FILE_NO_MESSAGE_FORMAT.formatted(fileNo)));
+        UploadedFile uploadedFile = getFile(fileNo);
+        ensureNotCaseSource(uploadedFile.getFileRelationshipObjectSeparateCd());
+        return deleteUploadedFile(uploadedFile);
+    }
+
+    /** Case 생성 실패 시 이번 요청에서 신규 업로드한 파일만 정리하는 내부 보상 경계. */
+    @Transactional
+    public UploadedFile deleteFileAfterFailedUpload(Long fileNo) {
+        return deleteUploadedFile(getFile(fileNo));
+    }
+
+    private UploadedFile deleteUploadedFile(UploadedFile uploadedFile) {
         ensureNotInternalStagedFile(uploadedFile);
         // 26.07.28 취약점 진단 검토, '누락된 널 값 검사-102124,102125,102126', 오탐 -> uploadedFile은 orElseThrow()로 not null 보장됨.
         try {
@@ -702,6 +711,8 @@ public class FileService {
                                 ResultCode.Error.RSC_NOT_FOUND,
                                 FILE_NO_MESSAGE_FORMAT.formatted(fileNo)));
         ensureNotInternalStagedFile(uploadedFile);
+        ensureNotCaseSource(uploadedFile.getFileRelationshipObjectSeparateCd());
+        ensureNotCaseSource(fileRelationshipObjectSeparateCode);
 
         // 26.07.28 취약점 진단 검토, '누락된 널 값 검사-102119,102120,102121,102122,102123', 오탐 -> uploadedFile은 orElseThrow()로 not null 보장됨.
         if (uploadedFile.getFileRelationshipObjectSeparateCd() == null || uploadedFile.getFileRelationshipObjectSeparateCd().equals(TEMP_DIR)) {
@@ -906,8 +917,16 @@ public class FileService {
         }
     }
 
+    private void ensureNotCaseSource(String relationshipCode) {
+        // DB 코드 비교의 대소문자/후행 공백 차이로 원본 보호를 우회하지 못하게 한다.
+        if (relationshipCode != null && CASE_RELATIONSHIP_CODE.equalsIgnoreCase(relationshipCode.strip())) {
+            throw AppErrorException.of(ResultCode.Error.BIZ_RULE_VIOLATION,
+                    "Case 원본 파일은 공통 파일 API에서 삭제하거나 연결·유효기간을 변경할 수 없습니다.");
+        }
+    }
+
     private void ensureNotInternalStagedFile(UploadedFile uploadedFile) {
-        if (isInternalStagedFile(uploadedFile, INTERNAL_STAGED_FINAL_RELATIONSHIP_CODE)) {
+        if (isInternalStagedFile(uploadedFile, CASE_RELATIONSHIP_CODE)) {
             throw AppErrorException.of(
                     ResultCode.Error.RSC_NOT_FOUND,
                     FILE_NO_MESSAGE_FORMAT.formatted(uploadedFile.getFileNo()));

@@ -17,6 +17,9 @@ import com.sk.domain.shared.service.permissions.AuthorizationService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.Parameters;
+import io.swagger.v3.oas.annotations.media.Content;
+import io.swagger.v3.oas.annotations.media.ExampleObject;
+import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
@@ -150,8 +153,13 @@ public class FileDedicatedController {
     }
 
     @ApiOrder(5)
-    @Operation(summary = "파일 삭제", description = "파일을 삭제합니다.")
-    @ApiResponse(responseCode = "200", description = "HTTP Status Code is 200")
+    @Operation(summary = "파일 삭제", description = "일반 파일의 등록 정보와 저장된 파일을 삭제합니다. Case 원본 파일은 삭제할 수 없습니다.")
+    @ApiResponse(responseCode = "200", description = "파일 삭제 완료",
+            content = @Content(mediaType = MediaType.APPLICATION_JSON_VALUE, schema = @Schema(implementation = BaseResponse.class),
+                    examples = @ExampleObject(value = "{\"status\":true,\"code\":\"SUC-000\",\"data\":\"success\"}")))
+    @ApiResponse(responseCode = "400", description = "BIZ_RULE_VIOLATION: Case 원본 파일 삭제 불가",
+            content = @Content(mediaType = MediaType.APPLICATION_JSON_VALUE, schema = @Schema(implementation = BaseResponse.class),
+                    examples = @ExampleObject(name = "BIZ_RULE_VIOLATION", value = "{\"status\":false,\"code\":\"BIZ-001\",\"message\":\"The operation violates a business rule.\",\"data\":null}")))
     @DeleteMapping("/{fileNo}")
     @RequiredPermission(roles = {Role.ADMIN, Role.OPERATOR, Role.USER})
     public BaseResponse<String> deleteFile(
@@ -163,8 +171,16 @@ public class FileDedicatedController {
     }
 
     @ApiOrder(6)
-    @Operation(summary = "파일 수정", description = "파일을 수정합니다.")
-    @ApiResponse(responseCode = "200", description = "HTTP Status Code is 200")
+    @Operation(summary = "파일 수정", description = "일반 파일의 연결 대상과 유효기간을 변경합니다. Case 원본 파일의 변경과 일반 파일을 Case 원본 관계로 연결하는 요청은 허용하지 않습니다.")
+    @ApiResponse(responseCode = "200", description = "파일 연결 정보와 유효기간 변경 완료",
+            content = @Content(mediaType = MediaType.APPLICATION_JSON_VALUE, schema = @Schema(implementation = BaseResponse.class),
+                    examples = @ExampleObject(value = "{\"status\":true,\"code\":\"SUC-000\",\"data\":\"success\"}")))
+    @ApiResponse(responseCode = "400", description = "BIZ_RULE_VIOLATION: Case 원본 변경 또는 Case 원본 관계로 연결 불가; REQ_INVALID_PARAMETER: 관계 코드에 허용되지 않은 문자 포함",
+            content = @Content(mediaType = MediaType.APPLICATION_JSON_VALUE, schema = @Schema(implementation = BaseResponse.class),
+                    examples = {
+                            @ExampleObject(name = "BIZ_RULE_VIOLATION", value = "{\"status\":false,\"code\":\"BIZ-001\",\"message\":\"The operation violates a business rule.\",\"data\":null}"),
+                            @ExampleObject(name = "REQ_INVALID_PARAMETER", value = "{\"status\":false,\"code\":\"REQ-003\",\"data\":null}")
+                    }))
     @PatchMapping("/{fileNo}")
     @RequiredPermission(roles = {Role.ADMIN, Role.OPERATOR, Role.USER})
     public BaseResponse<String> updateFile(
