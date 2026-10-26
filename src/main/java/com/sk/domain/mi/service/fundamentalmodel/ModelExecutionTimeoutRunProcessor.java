@@ -18,7 +18,7 @@ public class ModelExecutionTimeoutRunProcessor {
 
     private static final String SYSTEM_ACTOR = "SYSTEM";
     private static final String TIMEOUT_FAILURE_REASON = "TIMEOUT";
-    private static final String TIMEOUT_ERROR_MESSAGE = "Model execution timed out after 10 minutes.";
+    private static final String TIMEOUT_ERROR_MESSAGE = "Model execution timed out after 15 minutes.";
 
     private final ScenarioCaseRunHistoryRepository scenarioCaseRunHistoryRepository;
     private final ScenarioCaseRepository scenarioCaseRepository;

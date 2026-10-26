@@ -20,7 +20,7 @@ public interface ScenarioCaseRunHistoryRepository extends JpaRepository<Scenario
           JOIN tmd_mdl_scnrcasem c
             ON c.case_id = h.case_id
          WHERE h.exec_stat_cd = 'RUNNING'
-           AND h.exec_bgn_dtm < NOW() - INTERVAL 10 MINUTE
+           AND h.exec_bgn_dtm < NOW() - INTERVAL 15 MINUTE
            AND c.exec_type_cd IN ('SCENARIO', 'INDEPENDENT')
          ORDER BY h.exec_bgn_dtm ASC, h.case_id ASC
          LIMIT 100
