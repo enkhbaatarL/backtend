@@ -1933,7 +1933,7 @@ callback endpoint는 현재 별도 permission annotation 없이 dedicated deploy
 - Volumes/Trade Flows/Price 결과 데이터는 [mi-fundamental-model-output-result-persistence-design.md](../design-docs/gas/mi-fundamental-model-output-result-persistence-design.md)의 table/key/index 계약을 따른다.
 - Volumes 필터 Save 토글은 현재 제외한다. 후속 구현 시 user preference API/schema 설계가 필요하다.
 - 삭제는 case active-resource 제외를 위한 soft delete다. 보존 기간, audit 조회, 복구 정책은 후속 정책 범위다.
-- timeout scheduler는 구현됐고 15분 임계값/30초 polling을 사용한다. 운영 활성화 조건은 workflow design의 feature flag와 DBA index 검증 상태를 따른다.
+- timeout scheduler는 구현됐고 60분 임계값/30초 polling을 사용한다. 운영 활성화 조건은 workflow design의 feature flag와 DBA index 검증 상태를 따른다.
 - 운영 입력 파일명에는 `DEMAND`/`SUPPLY`/`TRADE`/`OUTPUT` 키워드가 각각 포함되어야 하며, backend는 `SCNRCASE + caseId` 파일 목록에서 역할을 매핑한다. 모델 이미지는 네 번째 입력을 `--output-excel-path`로 받아야 한다.
 - `caseId` 접근 정책은 mutation의 `usr_no` ownership과 shared result read를 구분한다.
 - update/delete predicate는 `case_id + usr_no ownership + del_yn = 'N'`을 포함한다.
@@ -1972,7 +1972,7 @@ Region/Country 필터 확장 implementation readiness: `ready`.
 아직 안정적이지 않은 항목:
 
 - callback 운영 인증/서명 세부 정책 (재시도 정책은 no-retry로 확정됨, 2026-06-21)
-- timeout scheduler 운영 활성화 (구현은 2026-06-22 완료, 2026-10-26 임계값 15분으로 변경 — 15분 임계값/30초 polling, `SCENARIO`/`INDEPENDENT` 공통 적용. DBA index 검증 전까지 feature flag 기본 비활성. 상세는 `mi-scenario-model-execution-workflow-design.md` Open Questions 참고)
+- timeout scheduler 운영 활성화 (구현은 2026-06-22 완료, 2026-10-26 임계값 60분으로 변경 — 60분 임계값/30초 polling, `SCENARIO`/`INDEPENDENT` 공통 적용. DBA index 검증 전까지 feature flag 기본 비활성. 상세는 `mi-scenario-model-execution-workflow-design.md` Open Questions 참고)
 - Volumes 필터 Save 기능 (user preference 저장)
 
 ### Input for `erd-change-review`

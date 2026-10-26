@@ -675,7 +675,7 @@ FROM tmd_mdl_scnrcaseh h
 JOIN tmd_mdl_scnrcasem c
   ON c.case_id = h.case_id
 WHERE h.exec_stat_cd = 'RUNNING'
-  AND h.exec_bgn_dtm < NOW() - INTERVAL 15 MINUTE
+  AND h.exec_bgn_dtm < NOW() - INTERVAL 60 MINUTE
   AND c.exec_type_cd IN ('SCENARIO', 'INDEPENDENT')
 ORDER BY h.exec_bgn_dtm ASC, h.case_id ASC
 LIMIT 100;
@@ -707,7 +707,7 @@ Expected future checks:
 - Verify `SCNRCASEHTF + run_seq` file lookup (Trade Flow result files). 같은 `run_seq`로 조회했을 때 output(`SCNRCASEH`), intermediate(`SCNRCASEHI`), tradeOutput(`SCNRCASEHTF`)이 서로 섞이지 않아야 한다.
 - Verify `last_run_id` invariant: for every `tmd_mdl_scnrcasem` row with `last_run_id IS NOT NULL`, the referenced `tmd_mdl_scnrcaseh` row exists and its `exec_stat_cd` matches `case_stat_cd` in the terminal/RUNNING semantics defined by the workflow draft.
 - Run `EXPLAIN` for callback latest-case sync SQL (`WHERE last_run_id = :run_id AND del_yn = 'N'`) and confirm `key = tmd_mdl_scnrcasem_ix03`.
-- `tmd_mdl_scnrcaseh_ix01 (exec_stat_cd, exec_bgn_dtm, case_id)` supports the timeout scheduler. The scheduler queries `exec_stat_cd = 'RUNNING' AND exec_bgn_dtm < NOW() - INTERVAL 15 MINUTE`, joins the case row to limit `exec_type_cd IN ('SCENARIO', 'INDEPENDENT')`, and uses `case_id` as the join/covering tail; `MI_BASE` is excluded. Before production rollout, run `EXPLAIN` against the actual limited query and confirm `key = tmd_mdl_scnrcaseh_ix01`.
+- `tmd_mdl_scnrcaseh_ix01 (exec_stat_cd, exec_bgn_dtm, case_id)` supports the timeout scheduler. The scheduler queries `exec_stat_cd = 'RUNNING' AND exec_bgn_dtm < NOW() - INTERVAL 60 MINUTE`, joins the case row to limit `exec_type_cd IN ('SCENARIO', 'INDEPENDENT')`, and uses `case_id` as the join/covering tail; `MI_BASE` is excluded. Before production rollout, run `EXPLAIN` against the actual limited query and confirm `key = tmd_mdl_scnrcaseh_ix01`.
 - Run `EXPLAIN` for canonical list SQL (`WHERE del_yn = 'N' ORDER BY crt_dtm DESC`) and confirm `key = tmd_mdl_scnrcasem_ix01` usage.
 - Verify DB-backed update/delete affect only active owned case rows via `case_id + usr_no + del_yn = 'N'` predicate.
 - After `ASSIGNEE_NAME` search SQL is implemented, run `EXPLAIN` against the JOIN query resolving `usr_no` to uploader name and confirm index usage on both sides of the JOIN.
