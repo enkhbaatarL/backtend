@@ -216,8 +216,8 @@ WHERE case_id = :case_id
 
 ### 6. timeout 처리
 
-- timeout scheduler 대상은 `tmd_mdl_scnrcasem.exec_type_cd IN ('SCENARIO', 'INDEPENDENT')` 의 `RUNNING` execution이다 (2026-06-22). `MI_BASE` 는 이번 timeout scheduler 범위에서 제외한다.
-- timeout 판정은 DB 시각 기준 `exec_bgn_dtm < NOW() - INTERVAL 10 MINUTE` 이다 (2026-06-22). `exec_bgn_dtm`은 DB `CURRENT_TIMESTAMP` default로 생성하며 application server 시각은 시작·판정 기준으로 사용하지 않는다.
+- timeout scheduler 대상은 `tmd_mdl_scnrcasem.exec_type_cd IN ('SCENARIO', 'INDEPENDENT')` 의 `RUNNING` execution이다 (2026-10-26: 기존 10분에서 15분으로 변경). `MI_BASE` 는 이번 timeout scheduler 범위에서 제외한다.
+- timeout 판정은 DB 시각 기준 `exec_bgn_dtm < NOW() - INTERVAL 15 MINUTE` 이다 (2026-10-26: 기존 10분에서 15분으로 변경). `exec_bgn_dtm`은 DB `CURRENT_TIMESTAMP` default로 생성하며 application server 시각은 시작·판정 기준으로 사용하지 않는다.
 - scheduler는 `fixedDelay = 30초`로 실행한다 (2026-06-22).
 - timeout scheduler는 SKGAS dedicated Backend 인스턴스에만 `MODEL_EXECUTION_TIMEOUT_SCHEDULER_ENABLED=true`를 설정해 등록한다 (2026-06-22). 이 환경변수는 `features.scheduling.model-execution-timeout.enabled`에 매핑되며, 모든 다른 Backend 인스턴스와 dedicated Backend Deployment의 기본값은 `false`다.
 - 지정 namespace에는 Backend replica가 정확히 1개여야 한다. 이 정책은 Pod 이름이 아니라 Deployment/namespace configuration을 기준으로 하므로 Pod 재생성으로 이름이 바뀌어도 유지된다. 해당 Deployment의 replica 수를 늘리거나 HPA를 적용하면 scheduler가 중복 등록되므로 금지한다.
@@ -381,7 +381,7 @@ endpoint, 응답 DTO, 권한, 대표 오류는 [MI Fundamental Model MI Base 지
 
 ### Stage 5. timeout 정리
 
-1. scheduler-enabled dedicated namespace의 단일 Backend replica가 30초 `fixedDelay`로 `exec_type_cd IN ('SCENARIO', 'INDEPENDENT')`, `exec_stat_cd = 'RUNNING'`, `exec_bgn_dtm < DB NOW() - 10분` 인 execution을 조회한다. `MI_BASE` 는 조회 대상이 아니다.
+1. scheduler-enabled dedicated namespace의 단일 Backend replica가 30초 `fixedDelay`로 `exec_type_cd IN ('SCENARIO', 'INDEPENDENT')`, `exec_stat_cd = 'RUNNING'`, `exec_bgn_dtm < DB NOW() - 15분` 인 execution을 조회한다. `MI_BASE` 는 조회 대상이 아니다.
 2. 임계치 초과 건은 execution을 `FAILED` 로 전환한다.
 3. `fail_rsn_cd = TIMEOUT` 과 `exec_end_dtm` 을 함께 기록한다.
 4. `tmd_mdl_scnrcasem.case_stat_cd` 를 `FAILED` 로 동기화한다. `SCENARIO` case는 `actv_scnr_id` generated column 이 자동으로 NULL 로 풀려 active 점유가 해제되므로 helper 를 따로 해제할 필요가 없다. `INDEPENDENT` case는 `scnr_id = NULL` 이므로 scenario active-run helper에 영향을 주지 않는다. `last_run_id` 는 그대로 두어 어떤 run이 timeout 되었는지 추적할 수 있게 한다. case update 는 callback 흐름과 동일하게 `last_run_id = :run_id` 조건을 사용해, 사용자가 이미 실패 run을 재시도한 경우에는 case 최신 상태를 덮어쓰지 않는다.
@@ -505,7 +505,7 @@ sequenceDiagram
 
 ```mermaid
 flowchart TD
-    A["@Scheduled\n30초 fixedDelay 실행"] --> B["RUNNING 상태이며\nexec_bgn_dtm < DB NOW - 10분\n레코드 조회"]
+    A["@Scheduled\n30초 fixedDelay 실행"] --> B["RUNNING 상태이며\nexec_bgn_dtm < DB NOW - 15분\n레코드 조회"]
     B --> C{대상 존재?}
     C -- 없음 --> Z[종료]
     C -- 있음 --> D["execution UPDATE\nFAILED + TIMEOUT"]

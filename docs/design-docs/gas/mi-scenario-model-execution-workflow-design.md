@@ -433,7 +433,7 @@ DB unique는 동시성의 최후 방어선이라는 아이디어만 유지한다
 
 ## Open Questions
 
-- ~~timeout 임계 시간과 scheduler 주기~~ → 2026-06-22 구현 완료: 10분 RUNNING 임계값, `@Scheduled(fixedDelay = 30000)` 30초 polling, `features.scheduling.model-execution-timeout.enabled` feature flag(기본 `false`)로 SKGAS dedicated 단일 인스턴스에서만 활성화. DBA가 `tmd_mdl_scnrcaseh_ix01` `SHOW INDEX`/`EXPLAIN` pre-check를 확인하기 전까지는 운영 활성화를 보류한다(`docs/work-notes/2026/2026-06-22-model-execution-timeout-scheduler-implementation.md` 참고).
+- ~~timeout 임계 시간과 scheduler 주기~~ → 2026-06-22 구현 완료(2026-10-26 임계값을 10분에서 15분으로 변경): 15분 RUNNING 임계값, `@Scheduled(fixedDelay = 30000)` 30초 polling, `features.scheduling.model-execution-timeout.enabled` feature flag(기본 `false`)로 SKGAS dedicated 단일 인스턴스에서만 활성화. DBA가 `tmd_mdl_scnrcaseh_ix01` `SHOW INDEX`/`EXPLAIN` pre-check를 확인하기 전까지는 운영 활성화를 보류한다(`docs/work-notes/2026/2026-06-22-model-execution-timeout-scheduler-implementation.md` 참고).
 - ~~scenario 상세조회 결과 데이터의 physical owner와 저장 시점~~ → 2026-06-10 확정, Volumes table은 2026-06-17 `tmd_mdl_scnrcasevolrgnl`로 변경 확정. 결과 테이블 4개(`tmd_mdl_scnrcasevolrgnl`/`tmd_mdl_scnrcasetrdehdrl`/`tmd_mdl_scnrcasetrdeflwl`/`tmd_mdl_scnrcaseprcl`)에 모델 측이 `run_seq` 기준으로 적재한다("Source-Of-Truth Rule §3" 참고). execution 쪽 DDL에는 결과 readiness/materialization 컬럼을 추가하지 않는다.
 
 ## Recommended Next Step
