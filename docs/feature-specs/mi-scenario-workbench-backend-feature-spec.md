@@ -1216,7 +1216,7 @@ Dispatch accept response:
 
 ## 7.9 Risks / Open Questions
 
-- timeout 정책은 workflow canonical source를 따른다: DB `NOW()` 기준 15분, 30초 `fixedDelay`, `SCENARIO`/`INDEPENDENT` 대상. scheduler는 지정 dedicated namespace의 단일 Backend Deployment에만 enable property로 등록한다. 상세 운영 규칙은 [scenario-case-execution-workflow-design-draft.md](../design-docs/gas/scenario-case-execution-workflow-design-draft.md) §6을 따른다.
+- timeout 정책은 workflow canonical source를 따른다: DB `NOW()` 기준 60분, 30초 `fixedDelay`, `SCENARIO`/`INDEPENDENT` 대상. scheduler는 지정 dedicated namespace의 단일 Backend Deployment에만 enable property로 등록한다. 상세 운영 규칙은 [scenario-case-execution-workflow-design-draft.md](../design-docs/gas/scenario-case-execution-workflow-design-draft.md) §6을 따른다.
 - Job dispatch 실패 시 transaction 경계와 파일 보상 범위
 - callback 완료 전 결과 row 존재를 backend가 검증할지 여부
 - scenario lifecycle cancellation과 model execution submit이 동시에 발생할 때 신규 RUNNING case가 cancellation 대상 밖에 생성되지 않도록 scenario row lock 또는 동등한 serialization 규칙이 필요하다.
