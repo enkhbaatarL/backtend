@@ -189,10 +189,6 @@ api:
     url: http://40.82.137.178:8003
     connection-timeout: 1s
     read-timeout: 60s
-  event-generation-agent:
-    url: http://40.82.137.178:8004
-    connection-timeout: 1s
-    read-timeout: 1200s # [MCP Event Generate] 생성 서버는 최대 15분 걸린다 (백그라운드 호출)
 
 mail:
   except-company-no: 2020
@@ -254,10 +250,10 @@ features:
     prohibited-word:
       refresh-rate: 3600000 # 1 hour (1h * 1000ms * 60s * 60m)
     event-keyword-alert-scan: # 키워드 알림 스캔
-      enabled: true
+      enabled: false
       fixed-delay-ms: 60000 # 1분
     event-keyword-alert-dispatch: # 키워드 알림 발송
-      enabled: true # 켜면 실제 메일 발송
+      enabled: false # 켜면 실제 메일 발송
       fixed-delay-ms: 30000 # 30초
       batch-size: 100
       max-attempts: 3
@@ -293,15 +289,11 @@ kubernetes:
 
 mi:
   model-input:
-    change-worker:
+    table-snapshot:
       enabled: true
-    finalization:
-      enabled: true
+      mysql:
+        enabled: true
     upload:
       enabled: true
       source-key: DRAFT_C_STRUCTURE_V1
       model-code: DRAFT_C_STRUCTURE
-    shared-baseline:
-      enabled: true
-    web-runner:
-      enabled: true
