@@ -29,7 +29,7 @@ public record DesignScenarioRow(
     @Schema(description = "BC(Base Case) 여부", example = "false")
     boolean baseCase,
 
-    @Schema(description = "시나리오 상대 역할 (floor/ceiling/mixed 배지, v4 전용. 없으면 null)", example = "ceiling", nullable = true)
+    @Schema(description = "시나리오 상대 역할 (floor/ceiling 배지, v4 전용. 혼합(mixed)·없으면 null)", example = "ceiling", nullable = true)
     ScenarioRole scenarioRole,
 
     @Schema(description = "시나리오 상대 역할 라벨", example = "상단", nullable = true)

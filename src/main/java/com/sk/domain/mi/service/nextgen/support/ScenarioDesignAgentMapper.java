@@ -115,7 +115,8 @@ public final class ScenarioDesignAgentMapper {
         List<DesignScenarioRow> rows = overlay.scenarios().stream()
             .map(row -> {
                 Row agentRow = row.scenarioId() == null ? null : agentRowsByScenarioId.get(row.scenarioId());
-                ScenarioRole role = row.scenarioRole() != null ? row.scenarioRole() : agentRow == null ? null : ScenarioRole.fromNullable(agentRow.scenarioRole());
+                ScenarioRole role = ScenarioRole.forBadge(
+                    row.scenarioRole() != null ? row.scenarioRole() : agentRow == null ? null : ScenarioRole.fromNullable(agentRow.scenarioRole()));
                 GlobalPressureBand pressureBand = row.pressureBand() != null ? row.pressureBand() : agentRow == null ? null : GlobalPressureBand.fromNullable(agentRow.pressureBand());
                 String pressureRationale = row.pressureRationale() != null ? row.pressureRationale() : agentRow == null ? null : agentRow.pressureRationale();
                 boolean baseCase = row.baseCase() || (agentRow != null && "Y".equalsIgnoreCase(agentRow.baselineYn()));
@@ -310,7 +311,7 @@ public final class ScenarioDesignAgentMapper {
             row.displayOrder(),
             row.title(),
             "Y".equalsIgnoreCase(row.baselineYn()),
-            ScenarioRole.fromNullable(row.scenarioRole()),
+            ScenarioRole.forBadge(row.scenarioRole()),
             GlobalPressureBand.fromNullable(row.pressureBand()),
             row.pressureRationale(),
             dimensions,

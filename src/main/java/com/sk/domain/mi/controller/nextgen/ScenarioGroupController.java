@@ -74,7 +74,7 @@ public class ScenarioGroupController {
             - `scenarioCount`: 시나리오 수
             - `eventCount`: 그룹을 구성한 이벤트 수 (활성 매핑 기준, v1 단일 이벤트 그룹은 1)
             - `dimensionColumns`: 그룹별 동적 표 헤더 (key, label + description/rationale)
-            - `scenarios`: 그룹 내 시나리오 표 본문 (scenarioId, scenarioName, baseCase, scenarioRole/scenarioRoleLabel[역할 배지 - ceiling 상단/floor 하단/mixed 혼합, 없으면 null], dimensions, probability, adjustedProbability, status, statusLabel[대기/실현/폐기])
+            - `scenarios`: 그룹 내 시나리오 표 본문 (scenarioId, scenarioName, baseCase, scenarioRole/scenarioRoleLabel[역할 배지 - ceiling 상단/floor 하단, 혼합·없으면 null], dimensions, probability, adjustedProbability, status, statusLabel[대기/실현/폐기])
             """
     )
     @Parameter(name = "sort", description = "정렬 기준 (`latest` / `oldest`, 대소문자 무관). 기본값 `latest`")
@@ -113,7 +113,7 @@ public class ScenarioGroupController {
             <br><br>
             ### content 항목 필드
             - `scenarioId`, `scenarioName`, `baseCase`
-            - `scenarioRole` / `scenarioRoleLabel`: 역할 배지 (`ceiling` 상단 / `floor` 하단 / `mixed` 혼합, 없으면 null)
+            - `scenarioRole` / `scenarioRoleLabel`: 역할 배지 (`ceiling` 상단 / `floor` 하단, 혼합·없으면 null)
             - `createdAt`: 시나리오 생성일시 (최신순 정렬·기간 필터 기준)
             - `updatedAt`: 시나리오 수정일시
             - `group`: 부모 그룹 (scenarioGroupId, groupName, createdAt)
@@ -227,7 +227,7 @@ public class ScenarioGroupController {
             - `summary`: 시나리오 그룹 설명 (`description` 값을 `summary` 필드로 반환) — 요약 탭
             - `scenarioCount`: 시나리오 수
             - `dimensionColumns`: 가정 표 동적 헤더 (key, label + description/rationale[분기항목 설명/근거 - 헤더 ⓘ, v4 전용])
-            - `scenarios`: 가정 및 실행 가능성 표 행 (scenarioRole/scenarioRoleLabel[역할 배지 - ceiling 상단/floor 하단/mixed 혼합, 없으면 null], dimensions, probability, adjustedProbability, status, statusLabel[대기/실현/폐기])
+            - `scenarios`: 가정 및 실행 가능성 표 행 (scenarioRole/scenarioRoleLabel[역할 배지 - ceiling 상단/floor 하단, 혼합·없으면 null], dimensions, probability, adjustedProbability, status, statusLabel[대기/실현/폐기])
             - `scenarios[].adjustedProbability`: 재분배 확률 — 폐기 제외 비례 재분배(활성 합 100, 폐기=0). 조회 시점 계산값(비영속)
             """
     )
@@ -252,7 +252,7 @@ public class ScenarioGroupController {
             <br><br>
             ### 상위(top-level) 필드
             - `scenarioId`, `scenarioGroupId`, `scenarioName`, `baseCase`
-            - `scenarioRole` / `scenarioRoleLabel`: 역할 배지 (`ceiling` 상단 / `floor` 하단 / `mixed` 혼합, 없으면 null)
+            - `scenarioRole` / `scenarioRoleLabel`: 역할 배지 (`ceiling` 상단 / `floor` 하단, 혼합·없으면 null)
             - `displayOrder`: 표시 순서 (목록과 동일한 시나리오 정렬 순서)
             - `createdAt` / `updatedAt`: 시나리오 생성/수정일시
             - `narrative`: 시나리오 내러티브

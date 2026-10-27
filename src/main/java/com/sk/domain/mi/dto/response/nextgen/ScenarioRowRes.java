@@ -21,10 +21,10 @@ public record ScenarioRowRes(
     @Schema(description = "BC(Base Case) 여부", example = "false")
     boolean baseCase,
 
-    @Schema(description = "시나리오 상대 역할 (ceiling/floor/mixed)", example = "ceiling", nullable = true)
+    @Schema(description = "시나리오 상대 역할 (ceiling/floor). 혼합(mixed)·역할 없음은 null", example = "ceiling", nullable = true)
     ScenarioRole scenarioRole,
 
-    @Schema(description = "시나리오 상대 역할 라벨 (상단/하단/혼합)", example = "상단", nullable = true)
+    @Schema(description = "시나리오 상대 역할 라벨 (상단/하단)", example = "상단", nullable = true)
     String scenarioRoleLabel,
 
     @Schema(description = "표시 순서", example = "1")
@@ -50,7 +50,7 @@ public record ScenarioRowRes(
     /** dimension 셀은 template 병합이 필요해 외부에서 조립한 값을 받는다. */
     public static ScenarioRowRes of(ScenarioBaseRow row, List<ScenarioDimensionRes> dimensions, Integer adjustedProbability) {
         ScenarioDisplayStatus status = ScenarioDisplayStatus.from(row.status());
-        ScenarioRole scenarioRole = ScenarioRole.fromNullable(row.scenarioRole());
+        ScenarioRole scenarioRole = ScenarioRole.forBadge(row.scenarioRole());
         return new ScenarioRowRes(
             row.scenarioId(),
             row.title(),

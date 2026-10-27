@@ -34,4 +34,14 @@ public enum ScenarioRole {
             .orElse(null);
     }
 
+    /** 응답 배지용 역할. 혼합(MIXED)은 배지를 표시하지 않으므로 null (DB 값은 유지). */
+    public static ScenarioRole forBadge(String value) {
+        return forBadge(fromNullable(value));
+    }
+
+    /** 응답 배지용 역할. 혼합(MIXED)은 배지를 표시하지 않으므로 null (DB 값은 유지). */
+    public static ScenarioRole forBadge(ScenarioRole role) {
+        return role == MIXED ? null : role;
+    }
+
 }

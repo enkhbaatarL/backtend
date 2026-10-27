@@ -51,7 +51,7 @@ public class SwaggerConfig {
     private static final String MCP_SECURITY_SCHEME = "McpBasicAuth";
 
     // note: 안정화 후 투머치 문서 모두 삭제예정
-    private static final String SW_VERSION_BASE = "v1.3.5";
+    private static final String SW_VERSION_BASE = "v1.3.6";
     private static final DateTimeFormatter SW_DEPLOY_DATE_FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
 
     // [MCP 인증] mcp.default-id 가 설정되어 있으면 X-User-Id 헤더를 선택으로 문서화
@@ -152,6 +152,16 @@ public class SwaggerConfig {
 
   ## 수정사항
   <details open>
+    <summary><strong>v1.3.6 (2026-10-24)</strong></summary>
+
+  - [Scenario Group] / [Scenario Design] / [Event]
+    - 시나리오 역할 배지: 혼합(`mixed`) 역할은 더 이상 응답하지 않음 — `scenarioRole`/`scenarioRoleLabel` 이 `null` (MX 배지 미표시)
+      - 대상: 그룹 목록 / 개별 목록 / 그룹 상세 / 시나리오 상세 / 설계 화면 데이터 조회(`table.scenarios[]`) / 이벤트 상세(`relatedEventScenarios`)
+      - `ceiling`(상단) / `floor`(하단)은 그대로. 필드 타입·nullable 변경 없음 (저장된 역할 값은 유지)
+
+  </details>
+
+  <details>
     <summary><strong>v1.3.5 (2026-10-22)</strong></summary>
 
   - [Model Parameter Proposal]
