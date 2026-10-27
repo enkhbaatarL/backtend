@@ -189,10 +189,6 @@ api:
     url: http://40.82.137.178:8003
     connection-timeout: 1s
     read-timeout: 60s
-  event-generation-agent:
-    url: http://40.82.137.178:8004
-    connection-timeout: 1s
-    read-timeout: 1200s # [MCP Event Generate] 생성 서버는 최대 15분 걸린다 (백그라운드 호출)
 
 mail:
   except-company-no: 2020
@@ -293,15 +289,19 @@ kubernetes:
 
 mi:
   model-input:
+    table-snapshot:
+      enabled: true
+      mysql:
+        enabled: true
     upload:
-      enabled: ${MODEL_TIMEOUT_DRAFT_ENABLED:false}
+      enabled: ${MODEL_INPUT_DRAFT_ENABLED:false}
       source-key: DRAFT_C_STRUCTURE_V1
       model-code: DRAFT_C_STRUCTURE
     shared-baseline:
-      enabled: ${MODEL_TIMEOUT_DRAFT_ENABLED:false}
+      enabled: ${MODEL_INPUT_DRAFT_ENABLED:false}
     web-runner:
-      enabled: ${MODEL_TIMEOUT_DRAFT_ENABLED:false}
+      enabled: ${MODEL_INPUT_DRAFT_ENABLED:false}
     change-worker:
-      enabled: ${MODEL_TIMEOUT_DRAFT_ENABLED:false}
+      enabled: ${MODEL_INPUT_DRAFT_ENABLED:false}
     finalization:
-      enabled: ${MODEL_TIMEOUT_DRAFT_ENABLED:false}
+      enabled: ${MODEL_INPUT_DRAFT_ENABLED:false}

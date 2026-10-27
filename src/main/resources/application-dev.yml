@@ -239,9 +239,9 @@ kubernetes:
 mi:
   model-input:
     table-snapshot:
-      enabled: false
+      enabled: true
       mysql:
-        enabled: false
+        enabled: true
     upload:
       enabled: ${MODEL_INPUT_DRAFT_ENABLED:false}
       source-key: DRAFT_C_STRUCTURE_V1

@@ -9,6 +9,7 @@ import com.sk.domain.shared.repository.master.tmm.ModelInputDraftRepository.Work
 import com.sk.domain.shared.service.FileEncryptionPolicy;
 import com.sk.domain.shared.service.ObjectStorageService;
 import java.io.ByteArrayInputStream;
+import java.io.FileInputStream;
 import java.io.InputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -57,7 +58,7 @@ final class InputDraftFinalizationStorage implements ObjectsStore {
                 }
             } finally { java.util.Arrays.fill(plain, (byte) 0); }
         } else {
-            try (InputStream input = Files.newInputStream(generated)) {
+            try (InputStream input = new FileInputStream(generated.toFile())) {
                 storage.uploadFile(input, ref.bucket(), ref.key(), false, ref.mime(), Files.size(generated));
             }
         }
