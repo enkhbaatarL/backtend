@@ -19,11 +19,17 @@ import com.amazonaws.services.s3.model.S3ObjectSummary;
 import com.amazonaws.util.IOUtils;
 import com.sk.common.utils.PathUtil;
 import java.io.ByteArrayInputStream;
+import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.InterruptedIOException;
+import java.io.OutputStream;
 import java.net.URL;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.nio.file.attribute.FileAttribute;
+import java.nio.file.attribute.PosixFilePermissions;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.LinkedHashMap;
@@ -149,38 +155,9 @@ public class ObjectStorageService {
     * @return String 접근할 수 있는 URL 리턴
     */
     public String uploadFile(MultipartFile file, String bucketName, String fileName, boolean isPublic) throws IOException {
-
-        Path path = Paths.get(fileName);
-        String directoryPath = PathUtil.IncludeTrailingPathDelimiter(path.getParent().toString().replace("\\", "/"));
-
-        // create bucket
-        if (!objectStorageClient.doesBucketExistV2(bucketName)) {
-            objectStorageClient.createBucket(bucketName);
+        try (InputStream input = file.getInputStream()) {
+            return uploadFile(input, bucketName, fileName, isPublic, file.getContentType(), file.getSize());
         }
-
-        // create directory
-        if (!objectStorageClient.doesObjectExist(bucketName, directoryPath)) {
-            ObjectMetadata objectMetadata = new ObjectMetadata();
-            objectMetadata.setContentLength(0L);
-            objectMetadata.setContentType("application/x-directory");
-
-            objectStorageClient.putObject(bucketName, directoryPath, new ByteArrayInputStream(new byte[0]), objectMetadata);
-        }
-
-        // create file
-        ObjectMetadata objectMetadata = new ObjectMetadata();
-        objectMetadata.setContentType(file.getContentType());
-        objectMetadata.setContentLength(file.getSize());
-
-        PutObjectRequest putObjectRequest = new PutObjectRequest(bucketName, fileName, file.getInputStream(), objectMetadata);
-        objectStorageClient.putObject(putObjectRequest);
-
-        if (isPublic) {
-            this.setACL(bucketName, fileName);
-            return PathUtil.IncludeTrailingPathDelimiter(endPoint) + PathUtil.IncludeTrailingPathDelimiter(bucketName) + fileName;
-        }
-
-        return "";// this.getPresignedUrl(bucketName, fileName);
     }
 
     /**
@@ -219,8 +196,7 @@ public class ObjectStorageService {
         objectMetadata.setContentType(contentType);
         objectMetadata.setContentLength(contentLength);
 
-        PutObjectRequest putObjectRequest = new PutObjectRequest(bucketName, fileName, file, objectMetadata);
-        objectStorageClient.putObject(putObjectRequest);
+        putRepeatableObject(file, bucketName, fileName, objectMetadata, contentLength);
 
         if (isPublic) {
             this.setACL(bucketName, fileName);
@@ -228,6 +204,44 @@ public class ObjectStorageService {
         }
 
         return "";// this.getPresignedUrl(bucketName, fileName);
+    }
+
+    /** SDK가 이미 전송한 양과 관계없이 다시 읽을 수 있는 입력만 PUT에 전달한다. */
+    private void putRepeatableObject(InputStream input, String bucketName, String fileName,
+            ObjectMetadata metadata, long contentLength) throws IOException {
+        // FileInputStream은 SDK가 ResettableInputStream으로 감싼다. 바이트 배열은 전체 reset이 가능하다.
+        if (input instanceof FileInputStream || input instanceof ByteArrayInputStream) {
+            objectStorageClient.putObject(new PutObjectRequest(bucketName, fileName, input, metadata));
+            return;
+        }
+        if (contentLength < 0) throw new IllegalArgumentException("upload content length must not be negative");
+        Path directory = Path.of(System.getProperty("java.io.tmpdir"));
+        // Windows 등 비POSIX 파일 시스템에서는 관리된 임시 디렉터리의 기본 ACL을 상속한다.
+        FileAttribute<?>[] attributes = Files.getFileStore(directory).supportsFileAttributeView("posix")
+                ? new FileAttribute<?>[] {PosixFilePermissions.asFileAttribute(
+                        PosixFilePermissions.fromString("rw-------"))}
+                : new FileAttribute<?>[0];
+        Path temporary = Files.createTempFile(directory, "mi-storage-upload-", ".tmp", attributes);
+        try {
+            // 임의 스트림은 선언된 크기까지만 디스크에 저장한다. 원본 스트림은 호출자가 닫는다.
+            try (OutputStream output = Files.newOutputStream(temporary)) {
+                byte[] buffer = new byte[65536];
+                long remaining = contentLength;
+                while (remaining > 0) {
+                    if (Thread.currentThread().isInterrupted()) throw new InterruptedIOException("upload copy interrupted");
+                    int read = input.read(buffer, 0, (int) Math.min(buffer.length, remaining));
+                    if (read == -1) throw new IOException("upload content shorter than declared length");
+                    output.write(buffer, 0, read);
+                    remaining -= read;
+                }
+                if (input.read() != -1) throw new IOException("upload content exceeds declared length");
+            }
+            try (FileInputStream repeatable = new FileInputStream(temporary.toFile())) {
+                objectStorageClient.putObject(new PutObjectRequest(bucketName, fileName, repeatable, metadata));
+            }
+        } finally {
+            Files.deleteIfExists(temporary);
+        }
     }
 
     /**
