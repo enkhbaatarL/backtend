@@ -294,6 +294,14 @@ mi:
       mysql:
         enabled: true
     upload:
-      enabled: true
+      enabled: ${MODEL_INPUT_DRAFT_ENABLED:false}
       source-key: DRAFT_C_STRUCTURE_V1
       model-code: DRAFT_C_STRUCTURE
+    shared-baseline:
+      enabled: ${MODEL_INPUT_DRAFT_ENABLED:false}
+    web-runner:
+      enabled: ${MODEL_INPUT_DRAFT_ENABLED:false}
+    change-worker:
+      enabled: ${MODEL_INPUT_DRAFT_ENABLED:false}
+    finalization:
+      enabled: ${MODEL_INPUT_DRAFT_ENABLED:false}
