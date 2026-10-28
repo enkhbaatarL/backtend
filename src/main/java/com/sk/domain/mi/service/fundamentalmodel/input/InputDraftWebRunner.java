@@ -271,7 +271,8 @@ final class InputDraftWebRunner implements SmartLifecycle {
         synchronized (control) {
             onStop = callback; stopping = true;
             if (!running) { callback.run(); return; }
-            worker.interrupt();
+            // 본문 중단에만 사용한다. 선택/결과 확정/STOPPED 기록 중 DB 접근은 중단하지 않는다.
+            if (active != null) worker.interrupt();
         }
     }
 
