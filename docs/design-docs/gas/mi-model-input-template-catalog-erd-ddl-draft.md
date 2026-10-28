@@ -398,7 +398,7 @@ Draft 존속 중 기준 참조/성공 chain/행이력/종료 요청·중복 키�
 기존 LONGTEXT/관계형 컬럼 안의 내부 형식이며 새 DDL은 없다. 공개 요청을 저장 결과로 간주하지 않고, 후속 표별 처리기가 검증한 **변경된 결과만** 내부 성공 확정에 전달한다. top-level은 정확히 `policyTemplateId`(고정 tmplt_id), `commands`(저장 요청의 순서 있는 operations와 같은 의미), `tables`, `rows`, `cells`다. schemaVersion은 기존 json_rvsn_no=1이며 payload 안에 중복 저장하지 않는다. 각 배열은 빈 경우에도 필수다.
 
 - `tables`: 바뀐 표만 `{tableId,startRow,endRow,dataStart,definition,scopes}`. definition은 §6.5의 조회 형식이며 승인 fields/capabilities/열·identity/화면 규칙과 control 의미는 유지하고 header/body·control binding 좌표만 처리 결과로 이동할 수 있다. scopes는 현재 표 안의 `{startRow,endRow,startColumn,endColumn}` 배열이다. 기존 column bounds/행·열 추가 정책을 바꾸거나 발행 catalog를 UPDATE하지 않는다.
-- `rows`: 이번 성공에서 추가/이동/삭제된 행의 최종 대응만 `{tableId,rowId,clientRowKey,rowNumber}`. 원본/이전 성공 행은 clientRowKey:null, 신규는 같은 요청 ADD_ROW 임시키이며 rowId는 서버 UUID다. rowNumber:null은 삭제 tombstone이다. ADD 후 DELETE도 신규 identity와 tombstone을 남긴다. 기존 삭제 identity를 되살리거나 새 ID로 재사용하지 않는다. 위치 변경 전체의 이전 구간을 먼저 닫고 새 구간을 추가한다.
+- `rows`: 이번 성공에서 추가/이동/삭제된 행의 최종 대응만 `{tableId,rowId,clientRowKey,rowNumber}`. 원본/이전 성공 행은 clientRowKey:null, 신규는 같은 요청 ADD_ROW 임시키이며 rowId는 서버 UUID다. rowNumber:null은 삭제 tombstone이다. ADD 후 DELETE도 신규 identity와 tombstone을 남긴다. 기존 schemaVersion1에서는 삭제 identity를 되살리거나 새 ID로 재사용하지 않는다. 새 명시적 원본 복원 설계의 예외는 §6.14를 따르며 기존 형식에 소급하지 않는다. 위치 변경 전체의 이전 구간을 먼저 닫고 새 구간을 추가한다.
 - `cells`: 바뀐 사용자/승인 파생·계산 저장값만 `{tableId,rowId,rowNumber,columnNumber,raw,display,formula}`. 논리 행은 rowId만, header/control/미활성 슬롯은 rowNumber만 사용한다(다른 쪽은 null). raw/display는 정확한 JSON number·string·boolean 또는 null, formula는 boolean이다. CLEAR는 raw/display:null·formula:false다. raw와 표시를 서로 변환하지 않고, 계산 셀은 검증된 cached raw/display와 formula:true만 복원한다. 수식 계산/수식 원문 생성은 조회에서 하지 않는다. 같은 좌표의 배열 순서는 적용 순서이며 최종 사용자 값은 commands의 마지막 SET/CLEAR/ADD 값과 일치해야 한다.
 
 허용된 tables 좌표 이동에서는 기존 성공 fixed 값도 header 순서/control ID의 대응에 따라 이동한다. 공유 control은 같은 owner 좌표 값을 한 번의 이전 상태로 읽고 출발 좌표를 비운 뒤 목적지에 배치하므로 좌표 교환에서도 값을 잃지 않는다. 이번 revision의 cells(명시 null 포함)가 이동된 이전 값보다 나중에 적용된다. 서로 다른 이전 고정값이 같은 새 좌표로 모이는 경우 이번 cells의 명시 값이 없으면 저장 실패로 차단한다. 저장 delta 안의 definition 형식/버전 오류도 저장 이력 해석 실패이며, 원본 발행 정의의 정책409와 구분해 기존 안전한500/data:null을 반환한다.
@@ -532,7 +532,7 @@ ERD/code 영향은 감사 정밀도와 접수 기준의 연계 수정에 한정�
 1. Draft revision0에서 표 경계의 원본 열 대응을 고정 catalog로부터 구성한다. 기존 편집 field는 catalog fieldKey를 그대로 쓰고 sourceColumnNumber는 원본 Excel1-based 열 번호다. 편집 field가 없는 읽기 전용 원본 열은 fieldKey:null이며 sourceColumnNumber로 내부에서 식별한다. 이는 새 공개 columnId를 추가한 것이 아니다. 전체 표시/고정 열을 포함하되 각 표의 경계 밖 값까지 소유하지 않는다.
 2. 신규 열은 서버의 새 fieldKey(공개 key 형식)를 가지며 sourceColumnNumber:null, clientColumnKey는 해당 ADD_COLUMN의 임시키다. 기존 열의 변경은 clientColumnKey:null이며 sourceColumnNumber/fieldKey는 불변이다. sourceColumnNumber와 fieldKey가 둘 다null인 열은 금지한다.
 3. columnNumber는 최종 Excel1-based 위치(1~16384) 또는 삭제표시 null이다. sourceColumnNumber가 있는 열은 그 원본 열 identity로, 신규 열은 fieldKey로 이전 상태를 찾는다. fieldKey가 있는 기존 열도 기존 source 대응을 함께 검증한다. 동일 표의 source 번호/nonnull fieldKey는 유일하며 삭제 상태까지 충돌 검사를 유지한다. 활성 columnNumber는 서로 달라야 한다.
-4. 삭제한 키는 다시 활성화/재사용하지 않는다. 같은 연월 재추가는 sourceColumnNumber:null인 새 fieldKey다. ADD→DELETE는 columns에 새 키/clientColumnKey/columnNumber:null을 남기고 rslt_json의 columnMappings에 DELETED를 남긴다. fieldKey:null인 원본 읽기 전용 열은 공개 SET/DELETE_COLUMN 대상이 아니다.
+4. 기존 schemaVersion2에서는 삭제한 키를 다시 활성화/재사용하지 않는다. 새 명시적 원본 복원 설계의 예외는 §6.14를 따르며 기존 형식에 소급하지 않는다. 같은 연월 재추가는 sourceColumnNumber:null인 새 fieldKey다. ADD→DELETE는 columns에 새 키/clientColumnKey/columnNumber:null을 남기고 rslt_json의 columnMappings에 DELETED를 남긴다. fieldKey:null인 원본 읽기 전용 열은 공개 SET/DELETE_COLUMN 대상이 아니다.
 5. 생존 열의 이동도 columns에 기록한다. 전체 적용 후 definition.columns/fields.columnNumber·scopes·bounds·control binding이 최종 활성 위치와 맞아야 한다. 표시에서 제외된 빈 꼬리 슬롯을 원본 열 identity로 다시 활성화하지 않는다. 물리 파일의 남는 서식/빈 슬롯 보존은 각 표의 승인 STRUCT 처리기가 담당한다.
 6. 원본 catalog는 불변이다. 새 fieldKey/현재 위치·삭제 표시는 해당 Draft의 delta chain에만 남긴다. readonly MAX 등 파생 열의 이동은 원본 source identity를 유지한다. FE의 명령만 보고 고정 열/다른 표의 정책을 새로 허용하지 않는다.
 
@@ -1082,6 +1082,33 @@ DB FK만으로 확인할 수 없는 것은 같은 master transaction의 생성/�
 - **호환/DBA:** 기본 OFF면 신규 테이블에 접근하지 않는다. 새 빈 테이블3개를 수동 검증한 뒤 기능 설정을 켠다. 기존 자료 자동 backfill은 없으며, rollback은 기능 OFF와 데이터 보존이다. 실제 환경의 parent unsigned type, CHECK enforcement, packet/연결·디스크·backup 용량은 DBA가 확인한다.
 - **용어:** 사전의 SNAP 한 항목만 추가하며 나머지는 기존 MDL/INPT/JSON/HASH/ORD/PRCS/TOKN/EXPR 토큰을 재사용한다.
 - **판정:** ready (제품 코드/격리 검증용 입력). 실제 testdb DDL 적용·활성화와 서버 API 부하 검증은 별도다.
+
+<a id="draft-restore-storage-design-20261027"></a>
+### 6.14 원본 행·열 명시적 복원 저장 영향 — 2026-10-27 설계 초안
+
+**상태: 검토 중, SQL/배포 미승인.** [domain §5.6A](mi-model-input-template-catalog-domain-model-design.md#draft-baseline-comparison-rules-20261027)의 같은 원본 identity 복원 및 [편집 API §11](../../feature-specs/mi-fundamental-model-input-draft-editing-api-proposal.md#draft-baseline-comparison-restore-proposal-20261027)의 명령 설계에 따른 저장 영향이다. 복원 명령을 포함한 CHANGE에 한해 JSON version 3을 사용한다. 실제 배포 SQL은 DBA 검토·검증 전 초안이다.
+
+- 기존 `tmd_mdl_inptdrftrowh`는 `(row_id,bgn_rvsn_no)` PK, 하나의 열린 row identity 및 표/위치 유일성, revision FK를 사용한다. tombstone도 열린 구간이다. 제안은 복원 성공 revision에서 해당 tombstone을 닫고 같은 원본 row_id의 새 위치 구간을 여는 것이다. 인접/겹침 없는 구간과 같은 Draft·표·현재 파일 원본의 identity, 활성 위치 유일성을 트랜잭션 안에서 검증한다. 기존 추가 row나 이전 교체 파일의 identity에는 적용하지 않는다. 기존 행 위치 제약은 모델상 이 전이를 표현할 수 있지만 실제 MySQL 제약·경합·writer 검증은 필수다.
+- 원본 column의 sourceColumnNumber/fieldKey는 기존 이력에서 식별되고 삭제 위치는 null이다. 명시적 복원에서만 동일 원본 열의 tombstone→활성 전이를 허용하는 새 이력 형식을 검토한다. ADD로 다른 항목에 key를 다시 쓰거나 과거 payload를 수정하지 않는다. 행·열·셀·연결표 결과와 사용자의 복원 명령을 동일 성공 revision에 저장한다.
+- 현 프로세스 테이블의 `tmd_mdl_inptdrftprcsl_ck03`은 `json_rvsn_no=2`를 강제한다. 이 제약 때문에 새 포맷을 저장하려면 수동 DBA DDL이 실제로 필요하다. 배포 전 `SHOW CREATE TABLE`로 이름·정의를 확인하고 해당 제약을 제거한 뒤 `CHECK(json_rvsn_no IN (2,3) AND (json_rvsn_no<>3 OR prcs_type_cd='CHANGE') AND (base_rvsn_no IS NULL OR base_rvsn_no<=9007199254740991))`로 같은 제약명에 재생성하는 변경을 초안으로 제안한다. 증분 SQL과 pre-check/verify/rollback은 §6.14.1을 따른다. 실제 적용은 MySQL 버전·락·데이터 검사와 DBA 검토 후 수행한다. 기존 2 행은 변경하지 않으며 물리 backfill은 없다.
+- operation과 결과 revision은 복원 명령을 포함한 CHANGE만 version 3, 다른 작업은 version 2다. revision 0은 기존 null delta/version 2로 유지한다. v3 `req_json`은 기존 요청 object에 복원 type을 허용하고 `dlta_json`은 v2의 `{policyTemplateId,commands,tables,rows,columns,cells}` 닫힌 key와 기존 각 항목 구조를 유지한다. v3에 한해 검증된 현재 파일 기준 원본의 삭제 identity를 명시 RESTORE의 결과로만 재활성화한다. rows/columns에 최종 위치, cells에 기준값·추가 교차값의 성공 결과와 파생 결과를 기록하고 논리 identity/관계형 위치 구간을 양방향 대조한다. 삭제→복원을 같은 요청에 허용하지 않아 하나의 identity가 같은 revision에 여러 번 바뀌지 않는다. 요청/결과 1 MiB 및 delta 16 MiB 기존 상한을 유지하며 초과는 실패 원자성을 지킨다.
+- 이 변경 이전의 `InputDraftHistory`와 `InputWorkbookEditor`는 모든 revision/operation schema=2와 정확한 JSON key를 요구했다. 새 v3 reader/parser/writer·최종파일 replay는 operation과 revision 양쪽 버전 및 형식을 검사하고 version 불일치/미지정 키·실패 불일치를 거부한다. v2의 의미와 과거 요청 parser는 고정한다. `2→3→2→3` 혼합 chain과 파일 교체를 허용하며 version 3의 변경을 실행할 때 해당 version의 검증기/구조 처리기로 결정적으로 재생하고 기록된 tables/rows/columns/cells와 대조한다. 이전 데이터는 재작성하지 않는다. row history는 열린 tombstone을 먼저 닫고 같은 revision에 새 구간을 INSERT해 UK 충돌을 피한다.
+- 예측 및 실제 저장에서 최근 삭제 직전 성공 revision을 동일 역할 현재 파일 기준점 이후로 제한해 이력과 workbook을 재생한다. 추가 축 교차값은 해당 이력에 존재한 경우에만 보존하며 나중에 생성된 축의 교차는 승인된 생성 정책으로 처리한다. 업로드 교체 이전 파일과 다른 역할의 revision을 현재 역할의 원본으로 결합하지 않는다. 원본과 성공 이력을 하나의 임의 시점으로 섞지 않고 역할별 기준·revision을 검증한다.
+- 정규화/색인: 현 행 identity와 위치 구간은 각각 기존 소유 키에 종속되고 FK/활성 유일성은 유지한다. 기존 delta JSON은 성공 재생을 위한 의도적 비정규화다. 신규 테이블/열/인덱스는 제안하지 않는다. 실제 조회 계획·성능, 연관 identity와 MySQL의 NULL 유일성은 실데이터/EXPLAIN으로 검증하며 필요성이 입증되면 별도 물리 설계를 한다. DB 명명 규칙과 사전에서 원본 ORG, 컬럼 COLM을 확인했고 이번 초안에 새 DB 명칭이 없어 사전을 수정하지 않았다.
+- 배포 후보: 과거 형식과 신규 형식을 모두 읽는 앱을 먼저 배포·검증하고 복원 writer는 기본 비활성으로 둔다. 그 다음 표별 재생·연결·최종파일 검증을 통과한 범위에서만 활성화한다. 새 형식이 한 번이라도 쓰인 후에는 새 형식을 모르는 구버전으로 롤백하지 않고 이를 읽는 마지막 정상 버전으로 되돌린다. DBA 사전 확인·CHECK apply·backfill 없음·검증·rollback SQL 초안은 §6.14.1을 따른다. 이 문서 수정은 실제 SQL 실행 승인이 아니다.
+- **구현 조건:** 실제 MySQL 키/경합과 기존 Draft·공유 baseline·직접 업로드 교체 이력, 추가 구조 교차값, 혼합 버전 reader/writer·최종저장, 수식/연결 표 구조, MySQL 성능을 확인한다. 조건을 만족하지 못한 표는 복원 미지원이다. **구현 준비도: ready for implementation**; 물리 SQL/운영 배포는 DBA 검증과 별도 승인 전 미완료다.
+
+#### 6.14.1 DBA 증분 DDL 초안 — 실행 전 검토 필요
+
+SQL 정본은 [별도 v3 증분 DDL](../../model-input-draft-restore-v3-ddl-draft.sql)이다. 전체 install DDL을 재실행하지 않는다. 실제 schema/MySQL CHECK 강제 여부와 제약명이 예상과 다르면 중단한다. 이 작업에서 SQL은 실행하지 않는다.
+
+1. 모든 web/worker에 v2/v3 reader/parser/finalizer를 writer OFF로 먼저 배포한다.
+2. SQL 정본의 pre-check에서 기존 지원 형식 2와 현 제약·rowh 키를 확인한 뒤 CHECK 한 개를 확대한다. 데이터·열·인덱스·FK 변경과 backfill은 없다. MySQL DDL implicit commit 및 락 시간은 DBA가 확인한다.
+3. verify와 격리 MySQL 회귀에서 v2 허용, v3 CHANGE 허용, v3 다른 작업 거부 및 원본 row tombstone 구간 종료/재활성화 원자성을 확인한다.
+4. 검증한 표에서만 preview/복원 writer를 활성화한다. DDL 적용만으로 기능을 켜지 않는다.
+5. rollback은 writer OFF 및 작업 종료 후 v3 operation/revision이 모두 0일 때만 옛 CHECK 복구를 검토한다. 그 외에는 CHECK와 v3 reader를 유지하고 새 이력을 지우거나 version을 바꾸지 않는다.
+
+제품 코드의 로컬 격리 검증은 [작업 노트](../../work-notes/2026/2026-10-27-draft-comparison-restore-api-design.md)에 기록한다. 실제 MySQL·부하와 DDL 적용은 별도 배포 조건이며 이 SQL 초안 작성과 구분한다.
 
 ## 7. ERD review
 

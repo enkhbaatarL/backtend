@@ -7,6 +7,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Set;
 import java.util.Map;
 import java.util.UUID;
 import java.time.LocalDateTime;
@@ -223,6 +224,10 @@ public class ModelInputDraftRepository {
             """,this::operation);
     }
     public Operation enqueueChange(Draft draft,String requestId,long baseRevision,String request,String role,String actor) {
+        return enqueueChange(draft,requestId,baseRevision,request,role,actor,2);
+    }
+    public Operation enqueueChange(Draft draft,String requestId,long baseRevision,String request,String role,String actor,int version) {
+        if(version!=2&&version!=3)throw InputDraftException.internal();
         Draft current=lockDraft(draft.id());
         if(!current.status().equals("DRAFT"))throw InputDraftException.conflict("DRAFT_NOT_EDITABLE",current.revision());
         if(current.activeOperation()!=null)throw InputDraftException.conflict("DRAFT_BUSY",current.revision());
@@ -231,8 +236,8 @@ public class ModelInputDraftRepository {
         LocalDateTime now=databaseTime().withNano(0);String id=UUID.randomUUID().toString();
         jdbc.update("""
             INSERT INTO tmd_mdl_inptdrftprcsl(prcs_id,cust_cpny_no,usr_no,drft_id,req_id,prcs_type_cd,usr_role_cd,base_rvsn_no,prcs_stat_cd,json_rvsn_no,req_json,expr_dtm,crt_dtm,mod_dtm,crt_usr_logn_id,mod_usr_logn_id)
-            VALUES(?,?,?,?,?,'CHANGE',?,?,'QUEUED',2,?,?,?,?,?,?)
-            """,id,current.company(),current.user(),current.id(),requestId,role,baseRevision,request,now.plusSeconds(120),now,now,actor,actor);
+            VALUES(?,?,?,?,?,'CHANGE',?,?,'QUEUED',?,?,?,?,?,?,?)
+            """,id,current.company(),current.user(),current.id(),requestId,role,baseRevision,version,request,now.plusSeconds(120),now,now,actor,actor);
         int changed=jdbc.update("UPDATE tmd_mdl_inptdrftm SET actv_prcs_id=?,mod_usr_logn_id=?,mod_dtm=? WHERE drft_id=? AND actv_prcs_id IS NULL AND rvsn_no=? AND drft_stat_cd='DRAFT'",id,actor,now,current.id(),baseRevision);
         if(changed!=1)throw InputDraftException.internal();
         return operation(current.id(),id,false);
@@ -297,7 +302,7 @@ public class ModelInputDraftRepository {
     public Operation claimChange(String draftId,String operationId,String token) {
         if(token==null||!UUID.fromString(token).toString().equals(token))throw InputDraftException.internal();
         Draft draft=lockDraft(draftId);Operation op=operation(draftId,operationId,true);
-        if(op.schemaVersion()!=2||!op.type().equals("CHANGE"))throw InputDraftException.internal();
+        if(!Set.of(2,3).contains(op.schemaVersion())||!op.type().equals("CHANGE"))throw InputDraftException.internal();
         if(!op.status().equals("QUEUED")||!draft.status().equals("DRAFT")||!operationId.equals(draft.activeOperation())
             ||draft.revision()!=op.baseRevision()||!databaseTime().isBefore(op.expires()))return null;
         int changed=jdbc.update("UPDATE tmd_mdl_inptdrftprcsl SET prcs_stat_cd='RUNNING',try_tokn=?,bgn_dtm=CURRENT_TIMESTAMP(6),mod_dtm=CURRENT_TIMESTAMP WHERE drft_id=? AND prcs_id=? AND prcs_stat_cd='QUEUED' AND expr_dtm>CURRENT_TIMESTAMP(6)",token,draftId,operationId);
@@ -320,7 +325,7 @@ public class ModelInputDraftRepository {
     /** 성공 기록도 이 잠금/기준 아래 같은 transaction에서 delta·행·revision과 함께 확정해야 한다. */
     public Operation lockRunningChange(String draftId,String operationId,String token) {
         Draft draft=lockDraft(draftId);Operation op=operation(draftId,operationId,true);
-        return op.schemaVersion()==2&&op.type().equals("CHANGE")&&op.status().equals("RUNNING")&&token!=null&&token.equals(op.token())
+        return Set.of(2,3).contains(op.schemaVersion())&&op.type().equals("CHANGE")&&op.status().equals("RUNNING")&&token!=null&&token.equals(op.token())
             &&draft.status().equals("DRAFT")&&operationId.equals(draft.activeOperation())&&draft.revision()==op.baseRevision()
             &&databaseTime().isBefore(op.expires())?op:null;
     }
@@ -435,8 +440,8 @@ public class ModelInputDraftRepository {
         if(next>9007199254740991L)throw InputDraftException.internal();
         jdbc.update("""
             INSERT INTO tmd_mdl_inptdrftrvsnl(drft_id,rvsn_no,json_rvsn_no,base_rvsn_no,prcs_id,dlta_json,crt_usr_logn_id,mod_usr_logn_id)
-            VALUES(?,?,2,?,?,?,?,?)
-            """,draftId,next,op.baseRevision(),op.id(),delta,op.actor(),op.actor());
+            VALUES(?,?,?,?,?,?,?,?)
+            """,draftId,next,op.schemaVersion(),op.baseRevision(),op.id(),delta,op.actor(),op.actor());
         for(RowWrite row:rows)if(row.added())jdbc.update("""
             INSERT INTO tmd_mdl_inptdrftrowm(row_id,drft_id,inpt_tbl_id,prcs_id,clnt_row_id,crt_usr_logn_id,mod_usr_logn_id)
             VALUES(?,?,?,?,?,?,?)

@@ -33,6 +33,7 @@ final class InputDraftColumns {
     Column field(long table,String key) {
         return tables.get(table).values().stream().filter(c->key.equals(c.field)).findFirst().orElse(null);
     }
+    List<Column> all(long table) {return List.copyOf(tables.get(table).values());}
     private void index(long table) {
         Map<Integer,String> current=new HashMap<>();tables.get(table).forEach((key,column)->{if(column.position!=null)require(current.putIfAbsent(column.position,key)==null);});positions.put(table,current);
     }
@@ -43,7 +44,8 @@ final class InputDraftColumns {
     Integer moved(long table,int previous,InputDraftColumns before) {
         String key=before.positions.get(table).get(previous);return key==null?null:tables.get(table).get(key).position;
     }
-    Map<String,Column> apply(TableRef table,JsonNode changes,Set<String> touched) {
+    Map<String,Column> apply(TableRef table,JsonNode changes,Set<String> touched) {return apply(table,changes,touched,Set.of());}
+    Map<String,Column> apply(TableRef table,JsonNode changes,Set<String> touched,Set<String> restored) {
         Map<String,Column> added=new LinkedHashMap<>(),columns=tables.get(table.id());
         for(JsonNode change:changes)if(table.key().equals(change.path("tableId").asText())) {
             exact(change,"tableId","fieldKey","sourceColumnNumber","columnNumber","clientColumnKey");
@@ -53,7 +55,7 @@ final class InputDraftColumns {
             String identity=source==null?"f"+field:"s"+source;
             require(touched.add(table.id()+"/"+identity));Column previous=columns.get(identity);
             if(previous!=null) {
-                require(previous.position!=null&&java.util.Objects.equals(field,previous.field)&&client==null);
+                require((previous.position!=null||previous.source!=null&&position!=null&&restored.contains(table.key()+"/"+field))&&java.util.Objects.equals(field,previous.field)&&client==null);
             } else {
                 require(source==null&&client!=null&&client.matches("[A-Za-z][A-Za-z0-9_-]{0,63}")&&field(table.id(),field)==null);
             }
@@ -85,7 +87,10 @@ final class InputDraftColumns {
         for(JsonNode command:commands) {
             TableRef table=tables.values().stream().filter(t->t.key().equals(command.path("tableId").asText())).findFirst().orElseThrow(InputDraftException::internal);
             String type=command.path("type").asText();
-            if(type.equals("ADD_COLUMN")) {
+            if(type.equals("RESTORE_COLUMN")) {
+                String field=command.path("fieldKey").asText();Column previous=before.field(table.id(),field),current=field(table.id(),field);
+                require(previous!=null&&previous.source!=null&&previous.position==null&&current!=null&&current.position!=null);live.get(table.id()).add(field);
+            } else if(type.equals("ADD_COLUMN")) {
                 String client=command.path("clientColumnKey").asText();Column added=additions.getOrDefault(table.id(),Map.of()).get(client);
                 require(added!=null&&used.add(client));clients.put(client,added.field);live.get(table.id()).add(added.field);
                 mappings.add(Map.of("commandId",command.path("commandId").asText(),"clientColumnKey",client,"tableId",table.key(),"fieldKey",added.field,"columnState",added.position==null?"DELETED":"ACTIVE"));

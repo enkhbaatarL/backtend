@@ -56,7 +56,6 @@ public class ModelInputDraftController {
     @Schema(requiredProperties={"status","code","message","data"})
     public record DiscardOperationEnvelope(boolean status,String code,String message,InputUploadService.DiscardedOperation data) {}
 
-
     @PostMapping(value="/input-upload-drafts",consumes=MediaType.MULTIPART_FORM_DATA_VALUE)
     @Operation(summary="입력 파일 묶음의 업로드 검증 접수",description="기존 Case 없이 xlsx/xlsm 1~4개를 같은 file part로 반복 전송하고 metadata는 application/json으로 한 번 보냅니다. 역할 중복은 실패하며 모든 파일의 검증/파싱이 성공한 경우에만 초안 하나를 revision0으로 생성합니다. 하나라도 실패하면 전체 실패로 초안을 만들지 않습니다. 같은 회사·사용자의 미완료 직접 업로드 Draft와 대기·실행 중 업로드 작업은 별도 취소 확인 없이 새 최초 요청으로 교체합니다. 기존 작업은 FAILED/REPLACED_BY_NEW_UPLOAD, 기존 Draft는 DISCARDED로 확정합니다. 진행 중인 편집 저장·최종저장은 DRAFT_BUSY로 거절합니다. 같은 requestId/동일 파일 집합은 순서가 달라도 기존 작업을 반환합니다. 파일당50MiB, 접수 후 전체 처리 기한600초입니다. statusEndpoint를2초 간격 조회하며 SUCCEEDED/FAILED에서 종료합니다. 성공 result.structure는 모든 성공 역할을, kind/selection은 DEMAND→SUPPLY→TRADE→OUTPUT 순서 중 업로드한 첫 역할/첫 표를 제공합니다. 성공 뒤 공통 Draft 조회/편집 API를 사용합니다.")
     @io.swagger.v3.oas.annotations.parameters.RequestBody(required=true,content=@Content(schema=@Schema(implementation=UploadCreateRequest.class),encoding=@io.swagger.v3.oas.annotations.media.Encoding(name="metadata",contentType=MediaType.APPLICATION_JSON_VALUE)))
@@ -205,13 +204,57 @@ public class ModelInputDraftController {
         return success(service.table(uuid(draftId), rev, tableId, first == null ? null : first.intValue()));
     }
 
+    @GetMapping("/input-drafts/{draftId}/changes")
+    @Operation(summary="Draft 원본 대비 변경 조회",description="본인 Draft의 현재 성공 revision과 역할별 고정 원본의 차이를 조회합니다. 임시저장마다 기준이 바뀌지 않으며 파일 교체 성공 시 해당 역할만 새 원본을 기준으로 합니다. 삭제된 원본과 활성 추가 행·열, 셀·헤더·control 변경을 반환합니다. items.restoreStatus가 READY일 때만 되돌릴 수 있습니다. 최대 2,000항목/2MiB이며 nextCursor를 같은 revision으로 제출합니다. 오래된 revision은 409입니다.")
+    @ApiResponse(responseCode="200",description="현재 차이. 없으면 items:[], nextCursor:null",content=@Content(schema=@Schema(implementation=ChangesEnvelope.class)))
+    @ApiResponse(responseCode="400",description="REQ-003: 파라미터 또는 커서 오류",content=@Content(schema=@Schema(implementation=ProblemEnvelope.class)))
+    @ApiResponse(responseCode="404",description="RSC-001: 본인 Draft/표 없음",content=@Content(schema=@Schema(implementation=ProblemEnvelope.class)))
+    @ApiResponse(responseCode="409",description="BIZ-001: REVISION_CONFLICT, SOURCE_CHANGED, POLICY_UNSUPPORTED",content=@Content(schema=@Schema(implementation=ProblemEnvelope.class)))
+    @ApiResponse(responseCode="422",description="BIZ-001: RESPONSE_TOO_LARGE, CHANGE_QUERY_UNAVAILABLE",content=@Content(schema=@Schema(implementation=ProblemEnvelope.class)))
+    @ApiResponse(responseCode="429",description="BIZ-001: CHANGE_QUERY_BUSY. Retry-After:2",content=@Content(schema=@Schema(implementation=ProblemEnvelope.class)))
+    @ApiResponse(responseCode="500",description="SYS-001: 원본/이력 판독 오류. data:null",content=@Content(schema=@Schema(implementation=ProblemEnvelope.class)))
+    @RequiredPermissionRules(rules={@PermissionRule(role=Role.USER,conditions={PermissionCondition.SKGAS_COMPANY_USER_ONLY}),@PermissionRule(role=Role.ADMIN,conditions={PermissionCondition.THIRD_PARTY_ADMIN_ONLY})})
+    public ResponseEntity<byte[]> changes(@PathVariable String draftId,
+        @Parameter(required=true,schema=@Schema(type="integer",minimum="0",maximum="9007199254740991")) @RequestParam(required=false) String revision,
+        @Parameter(required=true,description="공개 표 ID") @RequestParam(required=false) String tableId,
+        @Parameter(description="직전 nextCursor. 첫 요청 생략",schema=@Schema(maxLength=4096)) @RequestParam(required=false) String cursor) {
+        long rev=nonnegative(revision);if(rev>9007199254740991L||tableId==null||tableId.isBlank()||tableId.length()>1000)throw InputDraftException.invalid();
+        return success(service.changes(uuid(draftId),rev,tableId,cursor));
+    }
+
+    @GetMapping("/input-drafts/{draftId}/restore-preview")
+    @Operation(summary="삭제된 원본 구조의 복원 예상 표 조회",description="현재 성공 revision의 삭제된 원본 행 또는 열 하나를 복원한 예상 표 전체를 조회합니다. 값·수식 표시와 편집 metadata는 표 조회와 같은 형태이며 preview:true는 저장 확정이 아닙니다. 실제 저장은 기존 change-requests에 복원 명령을 제출합니다. 작업/DB/원본 파일을 변경하지 않으며 기본 비활성입니다. 같은 revision/대상의 nextStartRow를 사용합니다. 자원 초과는 422, 동시 실행 슬롯 부족은 429와 Retry-After:2입니다.")
+    @ApiResponse(responseCode="200",description="preview:true인 저장 전 예상 표",content=@Content(schema=@Schema(implementation=RestorePreviewEnvelope.class)))
+    @ApiResponse(responseCode="400",description="REQ-003: 잘못된 대상·이미 활성·추가 항목·다른 파일 기준",content=@Content(schema=@Schema(implementation=ProblemEnvelope.class)))
+    @ApiResponse(responseCode="404",description="RSC-001: 본인 Draft/표 없음",content=@Content(schema=@Schema(implementation=ProblemEnvelope.class)))
+    @ApiResponse(responseCode="409",description="BIZ-001: REVISION_CONFLICT, SOURCE_CHANGED, POLICY_UNSUPPORTED/POLICY_INCOMPLETE",content=@Content(schema=@Schema(implementation=ProblemEnvelope.class)))
+    @ApiResponse(responseCode="422",description="BIZ-001: ACTION_NOT_ALLOWED, RESPONSE_TOO_LARGE, RESTORE_PREVIEW_UNAVAILABLE",content=@Content(schema=@Schema(implementation=ProblemEnvelope.class)))
+    @ApiResponse(responseCode="429",description="BIZ-001: RESTORE_PREVIEW_BUSY. Retry-After:2",content=@Content(schema=@Schema(implementation=ProblemEnvelope.class)))
+    @ApiResponse(responseCode="500",description="SYS-001: 원본/이력/정리 실패. data:null",content=@Content(schema=@Schema(implementation=ProblemEnvelope.class)))
+    @RequiredPermissionRules(rules={@PermissionRule(role=Role.USER,conditions={PermissionCondition.SKGAS_COMPANY_USER_ONLY}),@PermissionRule(role=Role.ADMIN,conditions={PermissionCondition.THIRD_PARTY_ADMIN_ONLY})})
+    public ResponseEntity<byte[]> restorePreview(@PathVariable String draftId,
+        @Parameter(required=true,schema=@Schema(type="integer",minimum="0",maximum="9007199254740991")) @RequestParam(required=false) String revision,
+        @Parameter(required=true) @RequestParam(required=false) String tableId,
+        @Parameter(required=true,schema=@Schema(allowableValues={"ROW","COLUMN"})) @RequestParam(required=false) String kind,
+        @Parameter(required=true,description="ROW는 rowId UUID, COLUMN은 fieldKey") @RequestParam(required=false) String targetId,
+        @Parameter(schema=@Schema(type="integer",minimum="1",maximum="1048576")) @RequestParam(required=false) String startRow) {
+        long rev=nonnegative(revision);if(rev>9007199254740991L||tableId==null||tableId.isBlank()||tableId.length()>1000)throw InputDraftException.invalid();
+        Long first=startRow==null?null:positive(startRow);if(first!=null&&first>1048576)throw InputDraftException.invalid();
+        return success(service.restorePreview(uuid(draftId),rev,tableId,kind,targetId,first==null?null:first.intValue()));
+    }
+
+    @Schema(requiredProperties={"type","commandId","tableId","rowId"},additionalProperties=Schema.AdditionalPropertiesValue.FALSE)
+    public record RestoreRowCommand(@Schema(allowableValues={"RESTORE_ROW"}) String type,String commandId,String tableId,@Schema(format="uuid") String rowId) {}
+    @Schema(requiredProperties={"type","commandId","tableId","fieldKey"},additionalProperties=Schema.AdditionalPropertiesValue.FALSE)
+    public record RestoreColumnCommand(@Schema(allowableValues={"RESTORE_COLUMN"}) String type,String commandId,String tableId,@Schema(pattern="^[A-Za-z][A-Za-z0-9_-]{0,63}$") String fieldKey) {}
+
     @Schema(requiredProperties={"requestId","baseRevision","operations"},additionalProperties=Schema.AdditionalPropertiesValue.FALSE)
     public record ChangeRequestSchema(
         @Schema(description="새 저장마다 생성하는 소문자 UUID. 응답 유실은 동일 body와 함께 재전송",format="uuid",
             pattern="^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$") String requestId,
         @Schema(description="EDT-02/03의 성공 저장 번호",minimum="0",maximum="9007199254740991",type="integer",format="int64") long baseRevision,
         @io.swagger.v3.oas.annotations.media.ArraySchema(minItems=1,maxItems=500,
-            schema=@Schema(oneOf={AddRowCommand.class,SetControlCommand.class,SetHeaderCommand.class,SetAddedHeaderCommand.class,SetCommand.class,ClearCommand.class,DeleteRowCommand.class,AddColumnCommand.class,DeleteColumnCommand.class,SetAddedColumnCommand.class,ClearAddedColumnCommand.class,DeleteAddedColumnCommand.class}))
+            schema=@Schema(oneOf={RestoreRowCommand.class,RestoreColumnCommand.class,AddRowCommand.class,SetControlCommand.class,SetHeaderCommand.class,SetAddedHeaderCommand.class,SetCommand.class,ClearCommand.class,DeleteRowCommand.class,AddColumnCommand.class,DeleteColumnCommand.class,SetAddedColumnCommand.class,ClearAddedColumnCommand.class,DeleteAddedColumnCommand.class}))
         List<Object> operations) {}
     @Schema(requiredProperties={"type","commandId","tableId","clientRowKey","values"},additionalProperties=Schema.AdditionalPropertiesValue.FALSE)
     public record AddRowCommand(@Schema(allowableValues={"ADD_ROW"}) String type,
@@ -277,7 +320,7 @@ public class ModelInputDraftController {
         @Schema(pattern="^[A-Za-z][A-Za-z0-9_-]{0,63}$",description="같은 표의 앞선 ADD_ROW 임시키") String clientRowKey) {}
 
     @PostMapping(value="/input-drafts/{draftId}/change-requests",consumes=MediaType.APPLICATION_JSON_VALUE)
-    @Operation(summary="Draft 변경 임시저장 접수",description="EDT-02/03의 성공 revision과 순서 있는 SET/CLEAR/ADD_ROW/DELETE_ROW/ADD_COLUMN/DELETE_COLUMN 명령을 제출합니다. 부속 control은 rowRef/열 참조 대신 controlId와 options[].value로 SET합니다. SET_HEADER가 READY인 연도 열은 rowRef 대신 headerKey:year와 열 참조로 제목을 수정합니다. 열 참조는 fieldKey 또는 앞선 ADD_COLUMN의 clientColumnKey 중 하나이며 성공 신규 열의 키는 columnMappings로 반환합니다. 같은 requestId의 같은 의미 요청은 기존 작업을 반환하며 숫자3.20과3.2는 같습니다. 진행 중202, 종료 후 재전송200입니다. 202는 저장 성공이 아니며 statusEndpoint로 결과를 조회합니다. PNG Infrastructure의 저장된 추가 행·연도 열 삭제는 새 정책 양식에 묶인 Draft에서만 허용하며 원본 행·열은 삭제할 수 없습니다. MidstreamContractInput의 PNG·LNG는 새 v6 정책에서 기존 행의 비어 있지 않은 SET만 저장하고 입력 밖 수식·저장된 계산값은 유지합니다. CLEAR·빈 문자열은 POLICY_INCOMPLETE로 거부하며 행 추가/삭제는 미개방입니다. 신규 v6의 PMILogicInput User-Adjusted ADD_ROW는 필수 country와 선택 intensity를 받아 Base/Selected 대응 행도 원자 생성합니다. 미입력 강도·지리 정보는 빈칸이며 Base 직접 추가는 불허하고 Selected는 내부 표입니다. rowMappings에는 직접 요청 행만, affectedTableIds에는 세 표를 반환합니다. 기존 국가 수정은 대응 표에 자동 전파하지 않습니다. 다른 동작도 고정 양식의 정책과 처리기 지원 상태에 따라 검증합니다. 본문은 UTF-8 1MiB, 깊이8, ADD_ROW 최대100개입니다. 회사·사용자는 인증 문맥에서 결정합니다.")
+    @Operation(summary="Draft 변경 임시저장 접수",description="EDT-02/03의 성공 revision과 순서 있는 SET/CLEAR/ADD_ROW/DELETE_ROW/ADD_COLUMN/DELETE_COLUMN 명령을 제출합니다. 삭제된 원본은 RESTORE_ROW/RESTORE_COLUMN으로 같은 ID와 원본값을 복원하며 변경 목록 restoreStatus가 READY인 대상만 허용합니다. 부속 control은 rowRef/열 참조 대신 controlId와 options[].value로 SET합니다. SET_HEADER가 READY인 연도 열은 rowRef 대신 headerKey:year와 열 참조로 제목을 수정합니다. 열 참조는 fieldKey 또는 앞선 ADD_COLUMN의 clientColumnKey 중 하나이며 성공 신규 열의 키는 columnMappings로 반환합니다. 같은 requestId의 같은 의미 요청은 기존 작업을 반환하며 숫자3.20과3.2는 같습니다. 진행 중202, 종료 후 재전송200입니다. 202는 저장 성공이 아니며 statusEndpoint로 결과를 조회합니다. PNG Infrastructure의 저장된 추가 행·연도 열 삭제는 새 정책 양식에 묶인 Draft에서만 허용하며 원본 행·열은 삭제할 수 없습니다. MidstreamContractInput의 PNG·LNG는 새 v6 정책에서 기존 행의 비어 있지 않은 SET만 저장하고 입력 밖 수식·저장된 계산값은 유지합니다. CLEAR·빈 문자열은 POLICY_INCOMPLETE로 거부하며 행 추가/삭제는 미개방입니다. 신규 v6의 PMILogicInput User-Adjusted ADD_ROW는 필수 country와 선택 intensity를 받아 Base/Selected 대응 행도 원자 생성합니다. 미입력 강도·지리 정보는 빈칸이며 Base 직접 추가는 불허하고 Selected는 내부 표입니다. rowMappings에는 직접 요청 행만, affectedTableIds에는 세 표를 반환합니다. 기존 국가 수정은 대응 표에 자동 전파하지 않습니다. 신규 v8에서는 행 추가 가능 표의 행 삭제도 허용하며 명시된 삭제 제한은 유지합니다. PMI User-Adjusted 행 삭제는 Base/Selected도 함께 삭제합니다. 호출 전 editing.capabilities.DELETE_ROW의 READY 여부를 확인합니다. 다른 동작도 고정 양식의 정책과 처리기 지원 상태에 따라 검증합니다. 본문은 UTF-8 1MiB, 깊이8, ADD_ROW 최대100개입니다. 회사·사용자는 인증 문맥에서 결정합니다.")
     @io.swagger.v3.oas.annotations.parameters.RequestBody(required=true,content=@Content(schema=@Schema(implementation=ChangeRequestSchema.class)))
     @ApiResponse(responseCode="202",description="SUC-000: 신규 또는 진행 중 동일 요청 접수. 실제 임시저장 성공 아님",content=@Content(schema=@Schema(implementation=OperationEnvelope.class)))
     @ApiResponse(responseCode="200",description="SUC-000: 종료된 동일 요청의 기존 결과",content=@Content(schema=@Schema(implementation=OperationEnvelope.class)))
@@ -366,7 +409,7 @@ public class ModelInputDraftController {
     public ResponseEntity<byte[]> failure(InputDraftException ex, HttpServletRequest request) {
         Object data = ex.getReason() == null || request.getRequestURI().endsWith("/inputs/structure")
             ? null : new Problem(ex.getReason(), ex.getRevision(), ex.getIssues());
-        return ResponseEntity.status(ex.getStatus()).contentType(MediaType.APPLICATION_JSON)
+        return ResponseEntity.status(ex.getStatus()).headers(headers->{if(ex.getStatus().value()==429)headers.set("Retry-After","2");}).contentType(MediaType.APPLICATION_JSON)
             .body(json.bytes(BaseResponseFactory.create(ex.getCode(), data)));
     }
 

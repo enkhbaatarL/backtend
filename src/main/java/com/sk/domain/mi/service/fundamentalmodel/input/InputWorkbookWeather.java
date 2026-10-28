@@ -15,7 +15,7 @@ final class InputWorkbookWeather {
     record Result(Set<String> calculated, List<String> added) {}
     private static final String SHEET = "WeatherLogicInput";
 
-    static Result geography(Path source, int firstColumn, int end, int styleRow, Set<Integer> created,
+    static Result geography(Path source, Path baseline, int firstColumn, int end, int styleRow, Set<Integer> created,
             InputWorkbookXml.SheetPatch patch, InputWorkbookReader reader, InputWorkbookXml.Checkpoint checkpoint) throws Exception {
         int countryColumn = firstColumn + 2; Set<Integer> rows = new HashSet<>(created);
         patch.edits.forEach((row, cells) -> { if (row >= 9 && row <= end && cells.containsKey(countryColumn)) rows.add(row); });
@@ -26,6 +26,7 @@ final class InputWorkbookWeather {
             for (int row : rows) targets.add(InputWorkbookXml.address(row, column));
         }
         Map<String, String> sourceFormulas = InputWorkbookStructure.formulas(source, SHEET, a -> targets.contains(a) || bases.contains(a), checkpoint);
+        Map<String, String> baseFormulas = InputWorkbookStructure.formulas(baseline, SHEET, bases::contains, checkpoint);
         Map<String, String> raw = new HashMap<>();
         InputWorkbookXml.rows(source, InputWorkbookXml.sheetParts(source).get(SHEET), checkpoint, row -> {
             if (!rows.contains(row.number()) && row.number() != styleRow) return;
@@ -39,12 +40,13 @@ final class InputWorkbookWeather {
             var ref = new CellReference(target); int row = ref.getRow() + 1, column = ref.getCol() + 1;
             String base = InputWorkbookXml.address(9, column), lookup = column == firstColumn ? "F" : "G";
             String expected = "INDEX(General!$" + lookup + "$3:$" + lookup + "$86,MATCH(" + InputWorkbookXml.address(9, countryColumn) + ",General!$H$3:$H$86,0))";
-            if (!expected.equals(sourceFormulas.get(base))) throw invalid();
+            if (!expected.equals(baseFormulas.get(base))) throw invalid();
             expected = InputWorkbookFormula.translate(expected, row - 9, 0);
             String formula = sourceFormulas.get(target), template = raw.get(target);
             if (created.contains(row)) {
                 if (formula != null || template != null && java.util.regex.Pattern.compile("<(?:f|v|is)(?=\\s|/?>)").matcher(template).find()) throw invalid();
                 if (template == null) template = raw.get(InputWorkbookXml.address(styleRow, column));
+                if (template == null) template = InputWorkbookRows.template(baseline, SHEET, 9, checkpoint).get(column);
                 if (template == null) throw invalid();
                 template = InputWorkbookXml.valueCell(template, target, null).replace("</c>", "<f>" + InputWorkbookXml.escape(expected) + "</f><v>0</v></c>");
                 added.add(target); formula = expected;

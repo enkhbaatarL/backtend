@@ -31,9 +31,9 @@ final class InputWorkbookTradeAdjustments {
         return calculate(source, SHEET, expected, expected, expected.keySet(), constants, patch, reader, checkpoint);
     }
 
-    static Set<String> countries(Path source, int previousEnd, int end, InputWorkbookXml.SheetPatch patch,
+    static Set<String> countries(Path source, int previousEnd, int end, boolean rowsDeleted, InputWorkbookXml.SheetPatch patch,
             InputWorkbookReader reader, InputWorkbookXml.Checkpoint checkpoint) throws Exception {
-        if (patch.edits.entrySet().stream().noneMatch(e -> e.getKey() >= 4 && e.getKey() <= end && e.getValue().containsKey(20))) return Set.of();
+        if (!rowsDeleted && patch.edits.entrySet().stream().noneMatch(e -> e.getKey() >= 4 && e.getKey() <= end && e.getValue().containsKey(20))) return Set.of();
         Map<InputWorkbookCalculation.Address, Object> constants = new LinkedHashMap<>();
         for (int row = 3; row <= Math.max(100, end); row++) constants.put(address(row, 20), null);
         return calculate(source, SHEET, Map.of("U2", "COUNTA(T3:T" + Math.max(100, previousEnd) + ")"),

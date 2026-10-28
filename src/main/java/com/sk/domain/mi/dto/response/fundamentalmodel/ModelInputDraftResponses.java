@@ -74,6 +74,39 @@ public final class ModelInputDraftResponses {
     public record Table(@Schema(format="uuid") String draftId,
         @Schema(description="조회한 성공 저장 번호",minimum="0",maximum="9007199254740991") long revision,
         String sourceKey,@Schema(description="Case 원본 기준. 직접 업로드는 null",nullable=true,types={"string","null"}) String sourceVersion,TableData tableData,Page page,Editing editing) {}
+    @Schema(requiredProperties={"draftId","tableId","revision","items","nextCursor"})
+    public record Changes(String draftId,String tableId,long revision,
+        @io.swagger.v3.oas.annotations.media.ArraySchema(schema=@Schema(oneOf={CellChange.class,RowChange.class,ColumnChange.class,HeaderChange.class,ControlChange.class},discriminatorProperty="kind")) List<JsonNode> items,
+        @Schema(nullable=true,types={"string","null"},description="마지막 페이지 null. 후속 조회에 그대로 제출") String nextCursor) {}
+    @Schema(requiredProperties={"kind"},additionalProperties=Schema.AdditionalPropertiesValue.FALSE)
+    public record EmptyComparisonValue(@Schema(allowableValues={"EMPTY"}) String kind) {}
+    @Schema(requiredProperties={"kind","value"},additionalProperties=Schema.AdditionalPropertiesValue.FALSE)
+    public record TypedComparisonValue(@Schema(allowableValues={"VALUE"}) String kind,@Schema(types={"number","string"}) Object value) {}
+    @Schema(requiredProperties={"kind","change","rowId","fieldKey","baseline","current","restoreStatus","restoreReason"},additionalProperties=Schema.AdditionalPropertiesValue.FALSE)
+    public record CellChange(@Schema(allowableValues={"CELL"}) String kind,@Schema(allowableValues={"MODIFIED"}) String change,String rowId,String fieldKey,
+        @Schema(oneOf={EmptyComparisonValue.class,TypedComparisonValue.class}) JsonNode baseline,@Schema(oneOf={EmptyComparisonValue.class,TypedComparisonValue.class}) JsonNode current,
+        @Schema(allowableValues={"READY","INCOMPLETE","NOT_ALLOWED","UNSUPPORTED"}) String restoreStatus,@Schema(nullable=true,types={"string","null"}) String restoreReason) {}
+    @Schema(requiredProperties={"kind","change","rowId","origin","originalRowNumber","restoreStatus","restoreReason"},additionalProperties=Schema.AdditionalPropertiesValue.FALSE)
+    public record RowChange(@Schema(allowableValues={"ROW"}) String kind,@Schema(allowableValues={"ADDED","DELETED"}) String change,String rowId,String origin,
+        @Schema(nullable=true,types={"integer","null"}) Integer originalRowNumber,@Schema(allowableValues={"READY","INCOMPLETE","NOT_ALLOWED","UNSUPPORTED"}) String restoreStatus,@Schema(nullable=true,types={"string","null"}) String restoreReason) {}
+    @Schema(requiredProperties={"kind","change","fieldKey","origin","originalColumnNumber","restoreStatus","restoreReason"},additionalProperties=Schema.AdditionalPropertiesValue.FALSE)
+    public record ColumnChange(@Schema(allowableValues={"COLUMN"}) String kind,@Schema(allowableValues={"ADDED","DELETED"}) String change,String fieldKey,String origin,
+        @Schema(nullable=true,types={"integer","null"}) Integer originalColumnNumber,@Schema(allowableValues={"READY","INCOMPLETE","NOT_ALLOWED","UNSUPPORTED"}) String restoreStatus,@Schema(nullable=true,types={"string","null"}) String restoreReason) {}
+    @Schema(requiredProperties={"kind","change","fieldKey","headerKey","baseline","current","restoreStatus","restoreReason"},additionalProperties=Schema.AdditionalPropertiesValue.FALSE)
+    public record HeaderChange(@Schema(allowableValues={"HEADER"}) String kind,@Schema(allowableValues={"MODIFIED"}) String change,String fieldKey,String headerKey,
+        @Schema(oneOf={EmptyComparisonValue.class,TypedComparisonValue.class}) JsonNode baseline,@Schema(oneOf={EmptyComparisonValue.class,TypedComparisonValue.class}) JsonNode current,
+        @Schema(allowableValues={"READY","INCOMPLETE","NOT_ALLOWED","UNSUPPORTED"}) String restoreStatus,@Schema(nullable=true,types={"string","null"}) String restoreReason) {}
+    @Schema(requiredProperties={"kind","change","controlId","sourceTableId","sourceControlId","baseline","current","restoreStatus","restoreReason"},additionalProperties=Schema.AdditionalPropertiesValue.FALSE)
+    public record ControlChange(@Schema(allowableValues={"CONTROL"}) String kind,@Schema(allowableValues={"MODIFIED"}) String change,String controlId,String sourceTableId,String sourceControlId,
+        @Schema(oneOf={EmptyComparisonValue.class,TypedComparisonValue.class}) JsonNode baseline,@Schema(oneOf={EmptyComparisonValue.class,TypedComparisonValue.class}) JsonNode current,
+        @Schema(allowableValues={"READY","INCOMPLETE","NOT_ALLOWED","UNSUPPORTED"}) String restoreStatus,@Schema(nullable=true,types={"string","null"}) String restoreReason) {}
+    @Schema(requiredProperties={"draftId","tableId","revision","kind","targetId","preview","tableData","page","editing"})
+    public record RestorePreview(String draftId,String tableId,long revision,String kind,String targetId,
+        @Schema(description="항상 true. 성공 저장 전 예상 표이며 revision은 현재 성공 번호",_const="true") boolean preview,TableData tableData,Page page,Editing editing) {}
+    @Schema(requiredProperties={"status","code","message","data"})
+    public record ChangesEnvelope(boolean status,String code,String message,Changes data) {}
+    @Schema(requiredProperties={"status","code","message","data"})
+    public record RestorePreviewEnvelope(boolean status,String code,String message,RestorePreview data) {}
     @Schema(requiredProperties={"reason","currentRevision","issues"})
     public record Problem(@Schema(description="클라이언트 분기용 오류 사유") String reason,
         @Schema(description="현재 성공 저장 번호. 판단할 수 없으면 null",nullable=true,types={"integer","null"},minimum="0",maximum="9007199254740991") Long currentRevision,

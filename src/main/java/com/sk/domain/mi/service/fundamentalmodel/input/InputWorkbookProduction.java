@@ -17,7 +17,7 @@ final class InputWorkbookProduction {
     private static final Map<Integer, Set<Integer>> INPUTS = Map.of(8, Set.of(9, 10, 11), 14, Set.of(13), 15, Set.of(9, 10, 11, 13));
 
     /** 기준 생산량의 A 순번/B 연간 개월수/G 연결키만 처리한다. N:T 참조표/피벗은 보존한다. */
-    static Result baseline(Path source, int styleRow, int end, Set<Integer> created,
+    static Result baseline(Path source, Path baseline, int styleRow, int end, Set<Integer> created,
             InputWorkbookXml.SheetPatch patch, InputWorkbookReader reader, InputWorkbookXml.Checkpoint checkpoint) throws Exception {
         String sheet = "BCProduction";
         Map<Integer, Set<Integer>> inputs = Map.of(2, Set.of(3), 7, Set.of(5, 6));
@@ -33,8 +33,9 @@ final class InputWorkbookProduction {
         Set<String> bases = Set.of("A9", "B8", "G8");
         Map<String, String> sourceFormulas = InputWorkbookStructure.formulas(source, sheet,
             address -> targets.contains(address) || bases.contains(address), checkpoint);
-        if (!"A8+1".equals(sourceFormulas.get("A9")) || !"IF(C8=2017,1,IF(C8=2050,1,12))".equals(sourceFormulas.get("B8"))
-                || !"LEFT(F8,LEN(F8)-4)&\", \"&E8".equals(sourceFormulas.get("G8"))) throw invalid();
+        var baseFormulas = InputWorkbookStructure.formulas(baseline, sheet, bases::contains, checkpoint);
+        if (!"A8+1".equals(baseFormulas.get("A9")) || !"IF(C8=2017,1,IF(C8=2050,1,12))".equals(baseFormulas.get("B8"))
+                || !"LEFT(F8,LEN(F8)-4)&\", \"&E8".equals(baseFormulas.get("G8"))) throw invalid();
         Map<String, String> raw = new HashMap<>();
         InputWorkbookXml.rows(source, InputWorkbookXml.sheetParts(source).get(sheet), checkpoint, row -> InputWorkbookXml.cells(row.xml()).forEach((column, cell) -> {
             String address = InputWorkbookXml.address(row.number(), column);
@@ -48,8 +49,14 @@ final class InputWorkbookProduction {
             if (created.contains(row)) {
                 if (formula != null || template != null && java.util.regex.Pattern.compile("<(?:f|v|is)(?=\\s|/?>)").matcher(template).find()) throw invalid();
                 String base = column == 1 ? "A9" : column == 2 ? "B8" : "G8";
-                formula = InputWorkbookFormula.translate(sourceFormulas.get(base), row - (column == 1 ? 9 : 8), 0);
-                template = formulaCell(template == null ? raw.get(InputWorkbookXml.address(styleRow, column)) : template, address, formula); added.add(address);
+                if (column == 1 && row == 8) {
+                    patch.raw(row, column, InputWorkbookXml.valueCell(InputWorkbookRows.template(baseline, sheet, 8, checkpoint).get(1), address, 1));
+                    continue;
+                }
+                formula = InputWorkbookFormula.translate(baseFormulas.get(base), row - (column == 1 ? 9 : 8), 0);
+                if (template == null) template = raw.get(InputWorkbookXml.address(styleRow, column));
+                if (template == null) template = InputWorkbookRows.template(baseline, sheet, 8, checkpoint).get(column);
+                template = formulaCell(template, address, formula); added.add(address);
             }
             if (formula == null || template == null) throw invalid();
             formulas.put(new InputWorkbookCalculation.Address(sheet, address), formula); patch.raw(row, column, template);
@@ -67,6 +74,7 @@ final class InputWorkbookProduction {
             var address = new InputWorkbookCalculation.Address(sheet, InputWorkbookXml.address(row, column));
             if (constants.containsKey(address)) constants.put(address, edit.value());
         }));
+        if (created.contains(8)) constants.put(new InputWorkbookCalculation.Address(sheet, "A8"), 1);
         InputWorkbookCalculation.evaluate(constants, formulas, checkpoint).forEach((address, value) -> {
             var ref = new CellReference(address.cell()); int row = ref.getRow() + 1, column = ref.getCol() + 1;
             patch.raw(row, column, InputWorkbookCalculation.cache(patch.raw.get(row).get(column), value));
@@ -74,7 +82,23 @@ final class InputWorkbookProduction {
         return new Result(Set.copyOf(targets), List.copyOf(added));
     }
 
-    static Result adjustment(Path source, int previousEnd, int end, Set<Integer> created,
+    static Result reindex(Path baseline, Set<Integer> active, InputWorkbookXml.SheetPatch patch,
+            InputWorkbookXml.Checkpoint checkpoint) throws Exception {
+        String first = InputWorkbookRows.template(baseline, "BCProduction", 8, checkpoint).get(1);
+        String next = InputWorkbookRows.template(baseline, "BCProduction", 9, checkpoint).get(1);
+        Set<String> calculated = new HashSet<>(); int number = 0;
+        for (int row : new java.util.TreeSet<>(active)) {
+            String address = "A" + row; number++; calculated.add(address);
+            if (number == 1) patch.raw(row, 1, InputWorkbookXml.valueCell(first, address, 1));
+            else {
+                String cell = formulaCell(next, address, "A" + (row - 1) + "+1");
+                patch.raw(row, 1, InputWorkbookCalculation.cache(cell, java.math.BigDecimal.valueOf(number)));
+            }
+        }
+        return new Result(Set.copyOf(calculated), List.of());
+    }
+
+    static Result adjustment(Path source, Path baseline, int previousEnd, int end, boolean rowsDeleted, Set<Integer> created,
             InputWorkbookXml.SheetPatch patch, InputWorkbookReader reader, InputWorkbookXml.Checkpoint checkpoint) throws Exception {
         Set<String> targets = new HashSet<>();
         patch.edits.forEach((row, cells) -> {
@@ -83,11 +107,12 @@ final class InputWorkbookProduction {
                 if (created.contains(row) || inputs.stream().anyMatch(cells::containsKey)) targets.add(InputWorkbookXml.address(row, column));
             });
         });
-        if (targets.isEmpty()) return new Result(Set.of(), List.of());
-        boolean total = !created.isEmpty() || targets.stream().anyMatch(address -> address.startsWith("O"));
+        if (targets.isEmpty() && !rowsDeleted && previousEnd == end) return new Result(Set.of(), List.of());
+        boolean total = rowsDeleted || previousEnd != end || !created.isEmpty() || targets.stream().anyMatch(address -> address.startsWith("O"));
         if (total) targets.add("M3");
         Map<String, String> sourceFormulas = InputWorkbookStructure.formulas(source, SHEET,
             address -> targets.contains(address) || Set.of("H8", "N8", "O8").contains(address), checkpoint);
+        var baseFormulas = InputWorkbookStructure.formulas(baseline, SHEET, Set.of("H8", "N8", "O8")::contains, checkpoint);
         Map<String, String> raw = new HashMap<>();
         InputWorkbookXml.rows(source, InputWorkbookXml.sheetParts(source).get(SHEET), checkpoint, row -> InputWorkbookXml.cells(row.xml()).forEach((column, cell) -> {
             String address = InputWorkbookXml.address(row.number(), column);
@@ -108,12 +133,14 @@ final class InputWorkbookProduction {
                 }
             } else if (created.contains(row)) {
                 String base = InputWorkbookXml.address(8, column);
-                if (sourceFormulas.get(base) == null) throw invalid();
-                String expected = InputWorkbookFormula.translate(sourceFormulas.get(base), row - 8, 0);
+                if (baseFormulas.get(base) == null) throw invalid();
+                String expected = InputWorkbookFormula.translate(baseFormulas.get(base), row - 8, 0);
                 if (formula != null) { if (!expected.equals(formula)) throw invalid(); }
                 else {
                     if (template != null && java.util.regex.Pattern.compile("<(?:f|v|is)(?=\\s|/?>)").matcher(template).find()) throw invalid();
-                    template = formulaCell(template == null ? raw.get(base) : template, address, expected); added.add(address);
+                    if (template == null) template = raw.get(base);
+                    if (template == null) template = InputWorkbookRows.template(baseline, SHEET, 8, checkpoint).get(column);
+                    template = formulaCell(template, address, expected); added.add(address);
                 }
                 formula = expected;
             }

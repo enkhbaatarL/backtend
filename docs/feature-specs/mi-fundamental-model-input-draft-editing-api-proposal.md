@@ -310,9 +310,11 @@ EDT-03의 data는 `draftId/revision/sourceKey/sourceVersion/tableData/page/editi
 
 ### 3.3 `editing` — Draft 표 조회에만 붙이는 metadata
 
-**2026-10-23 Demand 고정 구조:** 업무 정본 §6.9의 Parameters/Bands는 신규 v6에서 기존 입력의 SET/CLEAR만 READY다. `ADD_ROW/DELETE_ROW/ADD_COLUMN/DELETE_COLUMN`과 필드 `CREATE/DELETE_COLUMN`은 `NOT_ALLOWED`로 표시하고 구조 변경 요청은422 `ACTION_NOT_ALLOWED`로 거부한다. 카탈로그의 `rowAdd/columnAdd=false`에 따라 표 목록의 `rowPolicy/columnPolicy`는 모두 `"고정"`이며 FE는 구조 변경 버튼을 제공하지 않는다. I Upper Bound의 `DECIMAL_OR_TEXT`와 기존 SET/CLEAR는 유지한다. 같은 시트 Premium Market Countries 및 과거 양식에는 이 정책을 소급 적용하지 않는다.
-
 **2026-10-23 Pipeline 표시 slice:** domain 규칙62 보완에 따라 v6의 읽기 표는 7행 제목/13행부터 본문을 제공한다(조회 API §1.1). 8..12행에는 rowBindings/rowId/inputCells를 제공하지 않고 H를 포함한 사용자 변경을 받지 않는다. 수정 scopes는 비워 두며 일반 SET/CLEAR·행/열 구조 정책은 INCOMPLETE를 유지한다. 미완비 정책의 요청은 기존409 POLICY_INCOMPLETE로 거부하고 operation/revision을 만들지 않는다. 원본 좌표/파일 보존 및 F-S-06의 별도 확정 계산 범위는 그대로이며 이번 표시 변경이 일반 편집/행 추가 READY를 의미하지 않는다.
+
+**2026-10-26 기본 행 삭제(v8):** 업무 정본 §6.8A에 따라 행 추가 가능 표의 `DELETE_ROW`도 `READY`로 제공한다. 기존 rowId 및 앞선 ADD_ROW의 clientRowKey를 지원하며 추가 후 같은 요청에서 삭제한 행은 rowMappings의 DELETED로 반환한다. 원본/추가 데이터 행 모두 대상이며 헤더는 대상이 아니다. PMI User-Adjusted 삭제 성공의 affectedTableIds에는 Base/Selected도 포함한다. PNG 원본 행·내부 표 직접 삭제와 고정 구조 예외는 유지한다. 과거 발행에 고정된 Draft는 기존 capabilities를 유지하므로 FE는 ADD_ROW에서 삭제 허용을 추론하지 않고 `editing.capabilities.DELETE_ROW`가 READY인지 확인한다. 등록·발행 및 기존 참조 보존 절차는 [v8 적용 가이드](../model-input-row-delete-v8-deployment-guide.md)를 따른다.
+
+**2026-10-23 Demand 고정 구조:** 업무 정본 §6.9의 Parameters/Bands는 신규 v6에서 기존 입력의 SET/CLEAR만 READY다. `ADD_ROW/DELETE_ROW/ADD_COLUMN/DELETE_COLUMN`과 필드 `CREATE/DELETE_COLUMN`은 `NOT_ALLOWED`로 표시하고 구조 변경 요청은422 `ACTION_NOT_ALLOWED`로 거부한다. 카탈로그의 `rowAdd/columnAdd=false`에 따라 표 목록의 `rowPolicy/columnPolicy`는 모두 `"고정"`이며 FE는 구조 변경 버튼을 제공하지 않는다. I Upper Bound의 `DECIMAL_OR_TEXT`와 기존 SET/CLEAR는 유지한다. 같은 시트 Premium Market Countries 및 과거 양식에는 이 정책을 소급 적용하지 않는다.
 
 **2026-10-23 Midstream 기존행 편집:** TRADE `MidstreamContractInput`의 PNG `A5:D1104` 및 LNG `Q5:U2918`은 신규 v6 정의에서 기존 rowId의 비어 있지 않은 `SET`만 제공한다. 필드 key/타입과 원본 행 식별은 기존 catalog를 유지한다. 입력 외 전체 보존은 업무 정본 규칙59를 따른다. `CLEAR`는 `INCOMPLETE`로 계속 닫고, 빈 문자열/공백 `SET`도409 `POLICY_INCOMPLETE`로 거부한다. 이는 모든 필드를 필수로 확정한 것이 아니며 U5의 확정 빈 값 금지/숫자0와 다른 행의 미결을 구분한다. `ADD_ROW`/삭제/열 변경은 미개방이다. 과거 지정 F-T-04의704행 생성은 별도 잔여 정책/구현 범위이며 기존행 SET으로 빈 슬롯을 활성화하지 않는다. 기존 비동기/revision/재전송 계약을 그대로 사용하며 접수만으로 성공으로 보지 않는다.
 
@@ -1430,3 +1432,239 @@ LiqProd Period 산식과 월 건너뛰기/중복 허용은 [domain 규칙65](../
 v7 카탈로그에서 `SUPPLY/BCRegasification/Annual Regas Capacity Baseline`의 `ADD_ROW`/`DELETE_ROW`를 허용한다. 추가 시 `continent`, `region`, `country`, `regasificationPlant`, `lifeCycleCategory`는 필수 입력이며 연간 용량 필드는 생략하면 숫자 0으로 생성한다. 기존 식별값의 SET/CLEAR 정책은 변경하지 않는다. `RegasAdjustment` 대응 행 생성·삭제와 국가별 월 합계 갱신은 기존 연결 규칙대로 서버가 처리하며, 해당 시트의 직접 행 추가·삭제는 허용하지 않는다.
 
 이미 발행된 v6 및 기존 Case/Draft의 연결은 변경하지 않는다. 새 정책 적용은 `docs/model-input-regas-rows-v7-deployment-guide.md`의 새 버전 등록·발행 절차를 따른다.
+
+---
+
+<a id="draft-baseline-comparison-restore-proposal-20261027"></a>
+## 11. 원본 비교·되돌리기 API 설계 — 2026-10-27
+
+**상태: 제품 코드 구현, 기본 비활성; DB 적용·배포 미수행.** 사용자 확정 업무 기준은 [domain §5.6A](../design-docs/gas/mi-model-input-template-catalog-domain-model-design.md#draft-baseline-comparison-rules-20261027)에 있다. 아래 경로·DTO·오류·제한은 그 기준을 실현하는 계약이다. 기존 §3~7의 배포 상태를 덮어쓰지 않는다. §11은 새 기능의 계약 정본이고 §3~7의 미확장 6명령 계약은 기존 클라이언트/저장 version 2의 기준이다. 이 절의 확장 명령을 포함한 CHANGE만 version 3으로 분기한다. 모든 표의 READY를 승인하는 뜻은 아니다. 물리 저장·하위 호환은 [DDL §6.14](../design-docs/gas/mi-model-input-template-catalog-erd-ddl-draft.md#draft-restore-storage-design-20261027)을 따른다. 실행 증거와 검증 한계는 [안정 작업 노트](../work-notes/2026/2026-10-27-draft-comparison-restore-api-design.md)에 기록한다.
+
+### 11.1 설계 경계와 공통 규칙
+
+- 변경 목록 조회, 삭제된 원본의 화면 preview 조회, 기존 EDT-04의 복원 명령을 제공한다. 모두 Draft의 회사·사용자 소유와 원본 접근을 검사한다. 내부 표 또는 다른 소유자 대상은 공개하지 않는다. 원본 파일 경로·DB ID·수식 원문은 응답하지 않는다.
+- 비교는 해당 역할의 현재 고정 원본과 **현재 성공 revision** 사이의 최종 차이다. 중간에 바꾸었다가 원본과 같아진 셀 및 추가 후 삭제한 항목은 차이가 아니다. FE의 미저장 변경은 서버 결과 위에 별도 표시한다. 현재 revision과 다른 요청은 409 `REVISION_CONFLICT`; 처리 중에는 직전 성공 상태를 읽는다. 렌더 전후 revision·원본/파일을 재검사하여 혼합 응답을 방지한다.
+- 값은 `{"kind":"EMPTY"}` 또는 `{"kind":"VALUE","value":scalar}`로 표현한다. VALUE는 null 불가, number/string을 보존한다. 숫자는 정확한 10진 값으로 비교해 `3.20`과 `3.2`를 동일하게 취급하고 문자열은 공백·대소문자를 보존한다. EMPTY, 숫자 0, 문자열 `"0"`은 서로 다르다. 값의 범위·정밀도는 기존 편집 계약을 따른다.
+- 아래 새 조회의 전체 응답은 기존 표 조회와 같이 최대 2 MiB다. 변경 목록은 한 페이지 최대 2,000 항목이며 bytes 상한이 먼저 오면 항목 경계에서 끊는다. preview는 EDT-03의 본문 최대 2,000행 규칙을 적용한다. 단일 필수 항목도 들어가지 않으면 422 `RESPONSE_TOO_LARGE`; 일부만 성공한 것으로 반환하지 않는다.
+
+### 11.2 변경 목록 조회
+
+`GET /api/v1/mi/fundamental-model/input-drafts/{draftId}/changes?revision={revision}&tableId={tableId}&cursor={cursor}`
+
+`draftId` UUID, `revision` 0 이상 정수, `tableId` 공개 표 ID는 필수다. `cursor`는 첫 호출에 생략, 이후 직전 응답의 `nextCursor`를 사용한다. `data`는 `{draftId,tableId,revision,items,nextCursor}`이고 items는 빈 배열 가능, 마지막 nextCursor는 null이다. 소유/표 404, 형식·커서 오류 400, `REVISION_CONFLICT`/`SOURCE_CHANGED` 409, 복원 불가 원본/저장 이력 오류 500을 적용한다. 오류 본문은 기존 Problem envelope를 사용한다. preview와 같은 JVM 실행 슬롯·처리 기한·임시 용량을 공유하며, 비교 원본 셀은 요청당 최대 250,000개다. 슬롯 부족은 429 `CHANGE_QUERY_BUSY`와 `Retry-After: 2`, 기한·용량·셀 상한 초과는 422 `CHANGE_QUERY_UNAVAILABLE`이다. 부분 목록을 성공으로 반환하지 않는다.
+
+- 커서는 서버 발급의 변조 방지된 불투명 문자열이다. Draft·표·revision·역할 기준 파일·정렬 위치와 API 버전을 묶고, 형식/서명/대상 불일치는 400이다. 유효한 이전 revision 커서는 현재 revision 검사에서 409다. 최대 길이 4096 ASCII 문자; 첫 페이지에 빈 문자열은 유효한 커서가 아니다. 동일 revision의 데이터는 순서와 페이지 경계가 결정적이며 누락·중복이 없다.
+- 정렬은 `ROW`, `COLUMN`, `CELL`, `HEADER`, `CONTROL` 순이다. 같은 종류 안에서 ROW는 rowId, COLUMN/HEADER는 fieldKey(HEADER는 다음으로 headerKey), CELL은 rowId 다음 fieldKey, CONTROL은 controlId의 Unicode 코드 포인트 순이다. 값·표시 좌표를 정렬 키로 사용하지 않는다. cursor는 마지막 완전 반환 항목을 가리킨다.
+- 각 항목의 공통 필드는 `kind`, `change`, `restoreStatus`, `restoreReason`이다. status는 `READY`, `INCOMPLETE`, `NOT_ALLOWED`, `UNSUPPORTED` 중 하나이며 READY인 경우 reason은 null, 나머지는 안정된 코드 문자열이다. 기존 표·필드 정책과 구현·안전성 검증 모두 충족해야 READY다. 기능 비활성/미구현은 UNSUPPORTED로 반환하며 구현이 없는데 READY를 추론하지 않는다.
+- FE 되돌리기 버튼의 권위는 변경 목록 항목의 `restoreStatus`다. 이 계약은 기존 `editing.capabilities`에 RESTORE 키를 추가하지 않는다. 항목에 READY가 없거나 기능 미배포로 조회가 제공되지 않으면 복원을 활성화하지 않는다. 기존 클라이언트의 6명령과 DTO는 유지하고 새 클라이언트만 새 조회·복원 type을 사용한다.
+- 이 기능은 새 발행 정책 key를 요구하지 않는다. 원본 행 복원은 고정 표의 원본 행 삭제 정책이 허용하고 `capabilities.DELETE_ROW=READY`인 범위에서만 제공한다. 원본 열 복원은 고정 표의 `DELETE_COLUMN` 및 복원할 원본 필드의 `policyStatus.DELETE_COLUMN`이 모두 READY인 범위다. 이는 복원 처리기 지원을 뜻하지 않으며 지원·구조·값 검증을 추가로 거친다. 정책 미완비/업무 불허/처리기 부재는 각각 INCOMPLETE/NOT_ALLOWED/UNSUPPORTED다. 복원하는 편집 가능 값은 기존 SET/CLEAR·타입·필수/옵션 제약을 통과해야 하고, 수식·읽기 전용 구조에는 쓰기 권한을 추가하지 않는다.
+- `restoreReason`은 READY면 null, 미완비는 `POLICY_INCOMPLETE`, 업무 불허는 `ACTION_NOT_ALLOWED`, 기준값의 현 제약 불일치는 `BASELINE_VALUE_NOT_ALLOWED`, 처리기 부재/기능 OFF는 `POLICY_UNSUPPORTED`, 안전하게 변환할 수 없는 구조는 `STRUCTURE_UNSUPPORTED`다. 기준값 제약 불일치는 NOT_ALLOWED, 안전 구조 미지원은 UNSUPPORTED와 조합한다. 원본/이력 손상은 항목 상태로 숨기지 않고 조회 전체를 500으로 실패시킨다.
+
+
+| kind | 필수 추가 필드 | 포함 조건 |
+| --- | --- | --- |
+| CELL | `rowId`, `fieldKey`, `baseline`, `current` | 활성 원본 행×활성 원본 열의 편집 가능 값이 서로 다른 경우. 원본과 현재 모두 빈칸이면 생략. |
+| ROW | `rowId`, `origin`, `originalRowNumber` | 삭제된 SOURCE(`change:DELETED`) 또는 활성 ADDED(`change:ADDED`). SOURCE는 기준 1-based 행 번호, ADDED는 null. 빈 추가 행도 포함. |
+| COLUMN | `fieldKey`, `origin`, `originalColumnNumber` | 삭제된 SOURCE 또는 활성 ADDED. SOURCE는 기준 1-based 열 번호, ADDED는 null. |
+| HEADER | `fieldKey`, `headerKey`, `baseline`, `current` | 활성 원본 열의 편집 가능 헤더가 다를 때. |
+| CONTROL | `controlId`, `sourceTableId`, `sourceControlId`, `baseline`, `current` | 편집 가능 control의 실제 값이 다를 때. 공유 control은 소유 표와 control ID를 함께 제공한다. |
+
+삭제/추가 구조 내부의 셀은 CELL로 중복 나열하지 않는다. FE는 활성 ADDED 행·열 전체에 추가 표시를 그린다. 삭제된 추가 행/열은 목록에 포함하지 않는다. 원본 구조 셀과 추가 구조 셀이 교차하면 구조 표시만 한다. 삭제된 SOURCE의 `restoreStatus`는 preview 가능 여부와 달리 실제 저장 가능성까지 나타낸다. 아직 저장하지 않은 FE 입력에 대해서는 FE가 같은 값 비교 규칙과 대기 명령을 이용한다.
+
+예: `data.items`에 `{"kind":"CELL","change":"MODIFIED","rowId":"a0000000-0000-4000-8000-000000000008","fieldKey":"price","baseline":{"kind":"EMPTY"},"current":{"kind":"VALUE","value":0},"restoreStatus":"READY","restoreReason":null}`를 포함한다. 전체 응답은 `BaseResponse`로 감싼다.
+
+### 11.3 삭제 원본 구조 preview
+
+`GET /api/v1/mi/fundamental-model/input-drafts/{draftId}/restore-preview?revision={revision}&tableId={tableId}&kind={ROW|COLUMN}&targetId={rowId 또는 fieldKey}&startRow={startRow}`
+
+- 표 소유권과 현재 역할 기준점에 속하는 삭제된 SOURCE만 허용한다. 현재 활성 대상, ADDED, 이전 교체 파일 대상, 대상 종류/ID 형식 불일치는 400 `INVALID_REQUEST`; 소유하지 않은 Draft/표는 404다. revision·source 불일치와 읽기 실패는 §11.2와 같다. 미지원 또는 미완비 표는 409 `POLICY_UNSUPPORTED`/`POLICY_INCOMPLETE`, 정책 불허는 422 `ACTION_NOT_ALLOWED`다.
+- 서버는 현재 성공 workbook의 임시 복사본에 **§11.5와 동일한 복원 처리·검증**을 적용하고, 그 결과 표를 기존 EDT-03과 같은 표시/편집 projection으로 읽는다. 변경 접수·revision 증가·영속 파일/DB 변경은 없다. 다른 작업을 시작하거나 진행 포인터를 점유하지 않는다. 반환 전 revision·원본 파일을 다시 확인한다. 일시 파일을 제거하고 실제 저장·최종저장 파일로 사용하지 않는다.
+- 성공 `BaseResponse.data`는 `{draftId,tableId,revision,kind,targetId,preview:true,tableData,page,editing}`이다. `tableData/page/editing` 구조와 `startRow`/`page.nextStartRow`·행 및 2 MiB 상한은 기존 EDT-03을 그대로 따르며, 조회 대상은 **복원 예상 표 전체**다. 복원 후 표시 행·읽기 전용 및 수식 표시 셀, 추가 행·열과 그 교차값, control과 편집 가능 typed 값도 같은 projection에 포함한다. 기존 표시 범위 규칙이 적용된다. preview의 rowNumber/columnField는 예상 좌표이고 수정 요청의 안정 식별자가 아니다. `revision`은 현재 성공 revision이며 예상 표는 새 revision이 아니다.
+- 같은 revision·대상으로 `nextStartRow`가 null이 될 때까지 재조회한다. 표를 변경하는 작업이 성공하면 남은 페이지는 409이며 처음부터 다시 읽는다. 일부 항목만 보였는데 전체 preview로 취급하지 않는다. 미저장 FE 변경은 요청에 포함되지 않으므로 FE가 자신의 대기 변경을 별도로 다시 겹치고 충돌 시 사용자에게 알린다.
+- `preview:true`는 **저장 전 예상 상태**를 뜻한다. 숫자와 수식 계산 표시값을 최종 확정으로 취급하지 않는다. 저장 시 같은 baseRevision·원본·정책·대상이라도 처리 실패가 가능하다. 저장 성공 후 결과 revision으로 EDT-03을 재조회해 확정한다. 예측 처리와 저장 처리의 불일치 또는 미검증 연결/계산은 READY가 아니다. 작업 중 실패/리소스 초과는 부분 성공으로 돌리지 않는다. 서버가 처리를 중단하거나 예상 파일을 검증하지 못하면 422 `RESTORE_PREVIEW_UNAVAILABLE`로 기존 Problem envelope를 반환한다. 기존 원본/이력 무결성 오류는 500이다.
+
+
+#### 11.3.1 preview 자원 제한
+
+- 새 preview는 `mi.model-input.restore-preview.enabled=false`를 초기값으로 시작한다. 활성화 시 웹 JVM당 동시 실행 최대 1건, 큐 대기 없음, 접수부터 30초, 요청 소유 임시 파일의 실제 동시 사용량 합계 256 MiB를 초기 안전 상한으로 둔다. 이 수치는 현재 운영 성능을 입증한 값이 아니라 최초 배포 전 측정할 보수적 기본값이다. 양수 설정으로 조정하되 JVM/복제본 수와 디스크 용량을 함께 검증한다. 상한 0/음수 또는 무제한 설정은 허용하지 않는다.
+- 슬롯이 없으면 파일 다운로드·재생 전에 429 `RESTORE_PREVIEW_BUSY`(code `BIZ-001`)와 `Retry-After: 2`를 반환한다. 자동으로 대기열에 넣지 않는다. 기능 OFF는 409 `POLICY_UNSUPPORTED`다. 각 페이지도 별도 요청이므로 같은 제한을 적용한다. 응답 크기와 별도로 실행 시간/소유 파일 bytes를 검사한다. 원본 다운로드·복호화·재생·계산·렌더 전체가 하나의 deadline과 소유 scope 안에 있어야 한다.
+- deadline/bytes 상한 또는 안전 변환 실패는 422 `RESTORE_PREVIEW_UNAVAILABLE`, 클라이언트 연결 종료·서버 shutdown은 실행 중단 신호로 처리한다. 체크포인트는 파일 읽기/쓰기·재생 revision 경계·계산/렌더 안에서 확인한다. 파일 IO 자체에도 남은 기한을 적용하고 중단을 무시하는 blocking 호출로 상한을 무력화하지 않는다. 원본과 직전/다음 replay 파일 외 불필요한 임시 복사본은 즉시 제거하고 finally에서 요청 scope를 닫는다. 실제 실행 종료·정리 전에 슬롯을 반환하지 않는다. 정리 실패는 500이고 운영 로그로 남기며 소유 workspace의 기존 재시작 정리 규칙을 따른다.
+- 미리보기는 영속 Draft 작업을 점유하지 않는다. 실제 저장이 병행 성공하면 반환 직전 revision/원본 검증으로 409를 반환하고 임시 결과는 폐기한다. 실행 동안 DB transaction/row lock을 유지하지 않는다. 최대 역할 파일·긴 이력·동시 페이지·저장 경합에서 시간/디스크 경계와 정리를 확인한 뒤 활성화한다. 용량·시간 안에 처리할 수 없는 표는 안전하게 실패하고 지원한다고 공개하지 않는다.
+
+### 11.4 FE 적용 및 저장 명령
+
+1. EDT-03과 변경 목록을 같은 revision으로 읽고 FE는 로컬 변경을 겹친다. 되돌리기는 화면과 대기 명령만 변경한다. 미전송 추가를 되돌리면 ADD 및 그 임시키에 의존한 대기 명령을 제거한다. 미전송 삭제를 되돌리면 대기 DELETE를 취소하고 해당 로컬 값을 복구한다.
+2. 저장된 기존 셀은 원본 VALUE면 `SET`, EMPTY면 `CLEAR`; header/control은 기존 SET이다. 추가된 저장 행/열의 되돌리기는 기존 DELETE다. 기존 정책 및 validation이 허용한 대상만 READY다. 원본이 옵션 밖이거나 CLEAR가 불허면 우회하지 않고 NOT_ALLOWED/INCOMPLETE/UNSUPPORTED로 노출한다.
+3. 성공 저장된 원본 삭제는 `{"type":"RESTORE_ROW","commandId":"restoreRow","tableId":"...","rowId":"<UUID>"}` 또는 `{"type":"RESTORE_COLUMN","commandId":"restoreColumn","tableId":"...","fieldKey":"<key>"}`를 EDT-04의 `operations`에 넣는다. 다른 필드·클라이언트 값·좌표는 받지 않는다. commandId/fieldKey 형식은 기존 §4를 따른다. 복원은 같은 원본 ID를 재활성화하며 결과의 기존 `affectedTableIds`에 실제 영향 표를 모두 포함한다. 별도의 신규 ID mapping은 없다.
+4. 요청의 명령은 기존 순서와 전체 성공/실패를 따른다. 복원 대상은 직전 성공 revision에서 삭제되어 있어야 한다. 한 요청에서 같은 구조 ID를 복원·삭제하거나 두 번 복원하는 조합은 400 `INVALID_REQUEST`; 복원 후 같은 요청에서 그 행/열을 대상으로 SET/CLEAR/헤더 SET은 허용하되 유효한 활성 교차와 정책을 검증한다. 삭제된 다른 축에 쓰기, 복원 전 쓰기, 추가된/이미 활성/다른 기준점 대상 복원은 400이다. 소유권 404는 먼저 검사한다. §11.2의 복원 적용 정책이 미완비면 409 `POLICY_INCOMPLETE`, 처리기 미지원이면 409 `POLICY_UNSUPPORTED`, 불허면 422 `ACTION_NOT_ALLOWED`다.
+5. 같은 Draft는 한 작업만 진행한다. FE는 전송 중인 payload를 바꾸지 않고 전송 이후 변경을 별도 대기시킨다. 202는 저장 성공이 아니다. 성공 뒤 새 revision의 영향 표·목록을 재조회하고 이후 로컬 변경을 새 requestId/baseRevision으로 보낸다. 실패 시 대기 입력을 보존한다. `DRAFT_BUSY`는 완료 후 재조회, `REVISION_CONFLICT`/`SOURCE_CHANGED` 또는 파일 교체는 오래된 ID를 자동 재전송하지 않고 재조회·충돌을 표시한다. 동일 requestId/동일 요청 재전송은 기존 작업 결과를 재사용한다.
+
+### 11.5 행·열 복원 처리
+
+- 원본 순서 보존을 위해 서버는 해당 축에서 대상보다 뒤에 있는 첫 활성 원본의 바로 앞에 삽입한다. 그런 원본이 없으면 앞의 마지막 활성 원본 바로 뒤, 둘 다 없으면 현재 항목 뒤에 삽입한다. 기존 활성 항목끼리 상대 순서는 바꾸지 않으며 좌표 점유를 덮어쓰지 않는다. 내부 연결 행/열 이동과 수식 조정은 표별 구조 규칙에 의해 함께 검증한다.
+- 원본 행×원본 열 교차의 복원 대상 값·수식·표시 구조는 고정 원본 기준이다. 원본 행과 열이 둘 다 삭제된 상태에서 어느 쪽을 먼저 복원하더라도, 나중에 두 축이 활성화될 때 해당 교차값은 원본이다. 복원 명령 다음의 명시적 SET/CLEAR는 그 위에 적용한다. 대상 밖의 이미 활성 셀과 다른 표 변경은 유지한다.
+- 추가 구조와의 교차에는 원본이 없다. 삭제 직전의 저장된 값이 안전하게 식별·재현되면 보존하고, 존재하지 않았던 교차는 표별 승인된 생성 초기값/필수값을 따른다. 값의 존재·유형을 판단할 수 없거나 필수/수식/연결/구조 보존을 입증할 수 없으면 복원은 READY가 아니며 전체 요청을 실패시킨다. 조용히 빈칸/0을 채우거나 기존 추가 구조를 삭제하지 않는다.
+- 복원 대상의 가장 최근 성공 DELETE revision을 `d`, 해당 역할의 현재 성공 파일 기준 revision을 `b`로 본다. 서버는 `b < d ≤ 현재 revision` 및 해당 DELETE의 원본 ID·역할을 검증하고, `d-1`의 **동일 파일 기준** 이력과 workbook을 재생한다. 입력 추가 구조가 `d-1`에 활성인 교차는 그 시점의 typed 값과 구조를 읽는다. 이후 그 추가 구조가 삭제됐으면 복원하지 않는다. `d` 이후 생성된 추가 구조와의 교차는 표별 생성 정책이 근거다. 역사 이력이 없거나 baseline이 일치하지 않으면 실패한다. 클라이언트가 과거 revision이나 원본 파일을 선택하지 않는다.
+- 원본 수식은 해당 표의 고정 원본 좌표를 현재 활성 행·열 identity에 매핑해 참조를 검증·변환한다. 기존 구조 이동에서 shared formula를 재구성하고 calc chain을 갱신하는 범위를 유지하며 array/dataTable 수식이 영향을 받고 안전한 처리기가 없으면 거부한다. 읽기 전용 수식·서식·참조의 예상 결과와 저장 결과를 동일 처리기로 검증하고, 원본 수식 원문은 API로 노출하지 않는다.
+- Regas/PMI 등 연관 표는 공개 소유 대상 하나의 복원과 내부 대응 구조·값·수식의 변화 및 성공 결과를 같은 revision/transaction에서 확정한다. 기존 identity의 tombstone 구간을 닫고 동일 원본 identity의 새 위치 구간을 연다. 과거 delta와 이력은 수정하지 않는다. 구간·원본·소유·대응·유일성 검증 실패는 원자적 실패다.
+
+#### 11.5.1 연결 및 수식 검증 단위
+
+| 대상 | 복원 단위와 불변식 | 구현 시 대조 근거 |
+| --- | --- | --- |
+| Regas master 원본 행 | master와 같은 역할 기준점의 sourceRow+3 연결 행을 함께 복원. 현재 child 위치는 master+3, 둘의 활성/삭제 상태 일치. 국가 합계 블록·Helper·MAX 및 연도 열 범위를 함께 이동/계산 | `InputDraftRegasRows`, `InputWorkbookRegas`, `InputWorkbookPeriods`, 기존 Regas 네 파일 회귀 fixture |
+| PMI User-Adjusted 원본 행 | 같은 baseline/source 행 번호로 대응한 Base/Selected의 기존 원본 ID 두 개를 함께 복원. 세 행의 현재 위치/활성 상태 일치. Selected 계산열과 표시·국가·내부 연결을 같이 검증 | `InputDraftPmiRows`, `InputWorkbookPmi`, 기존 PMI 행 삭제·연결 fixture |
+| 기타 원본 행·기간 열 | 각 표가 이미 승인한 논리 영역에서 identity 기반 위치 매핑. 원본 헤더/기간·합계·제어 셀 및 표 범위·파생 결과를 함께 검증. 기존 ADD 초기값을 원본값으로 대신하지 않음 | `InputWorkbookCommands`의 해당 표 처리 경로 및 `InputWorkbookStructure`/`InputWorkbookFormula` |
+
+- 공통 이동만으로 처리할 수 있다고 가정하지 않는다. shared formula master/member 분할과 상대·절대참조, calcChain의 이동/삭제/추가를 확인한다. 원본 수식은 현재 identity mapping과 표별 기존 참조 규칙을 적용하며, 허용되지 않은 외부/다른 시트 영역을 변형하지 않는다. 부정확한 수식 변환·중복 목적지·범위 초과는 실패다.
+- 복원 값은 실제 변환 workbook을 다시 읽은 결과와 일치해야 한다. 명령 실행 결과로 만든 delta를 성공 transaction 전에 검증하고, 재시작/FINALIZE 시 같은 명령을 재생해 기록된 tables/rows/columns/cells와 대조한다. 최종 네 파일의 수정 대상 밖 ZIP part·매크로·형식 보존 및 승인 대상 수식 결과를 검증한다.
+- 각 표의 복원 지원은 필수 수용 테스트가 통과해야 공개한다. UNSUPPORTED는 미구현 범위를 명확히 알리는 상태이며, 지원 대상 표를 미구현으로 남긴 채 전체 복원 구현을 완료했다고 판정하지 않는다.
+
+### 11.6 구현 및 검증 경계
+
+- 현재 `InputDraftHistory.relocateRowCells`는 삭제된 열로 이동할 수 없는 셀 값을 현재 합성 상태에서 제거한다. 따라서 추가 행×삭제 원본 열의 값은 현재 상태만 읽어 복원할 수 있다고 가정하지 않는다. 삭제 직전 성공 이력 재생 가능성과 파일 기준점은 별도 검증한다.
+- `InputDraftHistory`/`InputDraftColumns`는 v2 tombstone의 임의 재활성화를 계속 거부하고, v3의 명시 RESTORE 결과에서만 검증된 원본 identity를 재활성화한다. 복원 명령이 들어간 CHANGE의 operation/revision JSON version은 3이며, 나머지 CHANGE·업로드·최종저장은 기존 2를 유지한다. 새 reader는 revision 0과 v2/v3 혼합 chain을 순서대로 읽고 v2 검증 의미를 바꾸지 않는다. v3의 payload와 데이터베이스 배포 순서는 DDL §6.14를 따른다. 구버전 앱은 v3 이력을 읽지 못하므로 reader 선배포·writer 제한 및 롤백 경계를 지킨다.
+- OpenAPI에는 각 조회의 권한·revision·cursor·크기·빈 목록과 union item 예시, preview 적용 한계, 두 명령의 400/404/409/422·비동기 202 및 operation 결과를 명시한다. feature spec이 계약 정본이고 생성 OpenAPI는 동기화 대상이다.
+- 의미 있는 테스트: 타입/빈값/0/정확도, 수정 후 원본값 복귀, 모든 페이지의 중복·누락 및 cursor 변조/교체/동시 저장, 큰 행·열·단일 항목 제한, 추가/삭제/빈 행, 동일 ID delete→restore→delete, 행/열 양쪽 순서와 추가 구조 교차, 연관 표·수식·최종파일, 정책 거부와 실패 원자성, 동일 requestId 재전송·재시작 replay·기존 Draft·다른 tenant/user. UI 자동저장 중 후속 편집·충돌도 검증한다.
+
+### 11.6.1 OpenAPI 동기화 지침과 예시
+
+- 두 조회의 summary는 `Draft 원본 대비 변경 조회`, `삭제된 원본 구조의 복원 예상 표 조회`다. description에는 호출 시점·소유권·현재 revision·baseline·pagination·실패·preview 비영속성과 자원 제한을 명시한다. `revision`은 0..9007199254740991, `startRow`는 EDT-03과 같은 Excel 행 범위, `kind`는 ROW/COLUMN enum, ID 타입과 공백/누락을 schema로 검증한다.
+- 변경 목록 item은 `kind` discriminator를 가진 oneOf union으로 문서화한다. CELL/HEADER/CONTROL의 `change`는 MODIFIED, ROW/COLUMN은 ADDED 또는 DELETED다. 각 variant에 §11.2의 필드만 허용하고 다른 variant 필드는 금지한다. `baseline/current`는 EMPTY/VALUE oneOf이며 EMPTY에 value를 넣거나 VALUE에 null을 넣을 수 없다. READY/reason:null과 나머지 status/reason 조합도 예시와 검증으로 고정한다.
+- preview 응답에는 `preview:true` const와 EDT-03 projection schema를 재사용한다. 200, 400, 404, 409, 422, 429 및 500을 operation별 `@ApiResponses`에 명시한다. 500은 기존 안전한 `data:null`; 나머지는 적용 가능한 기존 code와 Problem의 reason/currentRevision/issues로 표현한다. 구조 복원 SET 후속 예시는 EDT-04에 추가하고 SUCCEEDED 이전 mapping이 없음을 유지한다.
+
+preview 200 예시(가상 표이며 실제 발행 지원을 뜻하지 않음):
+
+```json
+{
+  "status": true,
+  "code": "SUC-000",
+  "message": "Success.",
+  "data": {
+    "draftId": "aefb60dc-18b8-4ac2-beb4-a4d499950765",
+    "tableId": "DEMAND/example",
+    "revision": 3,
+    "kind": "ROW",
+    "targetId": "a0000000-0000-4000-8000-000000000008",
+    "preview": true,
+    "tableData": {
+      "tableId": "DEMAND/example",
+      "columns": [
+        {
+          "field": "column1",
+          "headerName": "B"
+        }
+      ],
+      "rows": [
+        {
+          "id": 2,
+          "rowNumber": 3,
+          "column1": "Country"
+        },
+        {
+          "id": 3,
+          "rowNumber": 4,
+          "column1": "KR"
+        }
+      ],
+      "inputCells": [
+        65537
+      ],
+      "inputGuideRules": [],
+      "controls": [],
+      "displayUpdateRules": []
+    },
+    "page": {
+      "totalBodyRows": 1,
+      "returnedBodyRows": 1,
+      "startRow": 4,
+      "endRow": 4,
+      "hasNext": false,
+      "nextStartRow": null
+    },
+    "editing": {
+      "capabilities": {
+        "SET": "READY",
+        "CLEAR": "READY",
+        "ADD_ROW": "INCOMPLETE",
+        "DELETE_ROW": "READY",
+        "ADD_COLUMN": "NOT_ALLOWED",
+        "DELETE_COLUMN": "NOT_ALLOWED"
+      },
+      "fields": [
+        {
+          "fieldKey": "country",
+          "columnField": "column1",
+          "dataType": "TEXT",
+          "policyStatus": {
+            "CREATE": "INCOMPLETE",
+            "SET": "READY",
+            "CLEAR": "READY",
+            "DELETE_COLUMN": "NOT_ALLOWED"
+          },
+          "setConstraints": {}
+        }
+      ],
+      "rowBindings": [
+        {
+          "rowNumber": 4,
+          "rowId": "a0000000-0000-4000-8000-000000000008",
+          "origin": "SOURCE"
+        }
+      ],
+      "editValues": [
+        {
+          "rowId": "a0000000-0000-4000-8000-000000000008",
+          "values": {
+            "country": "KR"
+          }
+        }
+      ]
+    }
+  }
+}
+```
+
+preview 409(중간에 저장 성공):
+
+```json
+{"status":false,"code":"BIZ-001","message":"The operation violates a business rule.","data":{"reason":"REVISION_CONFLICT","currentRevision":4,"issues":[]}}
+```
+
+preview 429(`Retry-After: 2`; 파일 다운로드·작업 생성 없음):
+
+```json
+{"status":false,"code":"BIZ-001","message":"The operation violates a business rule.","data":{"reason":"RESTORE_PREVIEW_BUSY","currentRevision":3,"issues":[]}}
+```
+
+저장 요청 예시(두 축이 직전 성공 상태에서 삭제돼 있고 복원 정책이 허용된 가상 표):
+
+```json
+{"requestId":"b0000000-0000-4000-8000-000000000010","baseRevision":3,"operations":[{"type":"RESTORE_ROW","commandId":"restoreRow","tableId":"DEMAND/example","rowId":"a0000000-0000-4000-8000-000000000008"},{"type":"RESTORE_COLUMN","commandId":"restoreColumn","tableId":"DEMAND/example","fieldKey":"year2030"},{"type":"SET","commandId":"editRestoredIntersection","tableId":"DEMAND/example","rowRef":{"rowId":"a0000000-0000-4000-8000-000000000008"},"fieldKey":"year2030","value":0}]}
+```
+
+복원만 성공하면 기존 operation view의 resultRevision=baseRevision+1, rowMappings/columnMappings는 빈 배열, affectedTableIds는 복원한 표와 실제 연관 표다. 같은 요청에서 별도 ADD가 있으면 그 ADD의 mapping만 기존 규칙으로 반환한다.
+
+### 11.7 구현 준비도와 수용 기준
+
+**API 설계 및 제품 코드 반영 완료**, 단 환경별 feature 배포·READY 공개는 별도 검증이 필요하다. 원본 복원 대상 및 기존 정책의 사용자 결정은 완료됐고, 구체 처리·검증·기능 제한은 §11.3~11.6과 DDL §6.14를 따른다. 표별 처리기가 안전하게 지원하지 않거나 아래 검증을 통과하지 못한 표는 UNSUPPORTED여야 하며 이를 모든 표 지원 완료로 표현하지 않는다.
+
+- 최근 삭제 직전 성공 이력의 역할 파일 기준이 현재 기준과 같고 연속 이력이 유효할 때만 과거 교차값을 사용한다. 대상 축이 삭제된 동안 생긴 추가 축은 그 교차가 존재하지 않았으므로 승인된 생성 정책에 따른다. 근거 없는 기본값은 만들지 않는다. 복원 경계·값 출처 및 정책 검증에 실패하면 실패하고 사용자 데이터를 유지한다.
+- preview와 실제 저장은 같은 revision·파일·동일 복원 명령에서 같은 구조·입력값·읽기 전용 표시를 생성해야 한다. 시간 의존 계산 등으로 동일성을 보장할 수 없는 표는 UNSUPPORTED다. FE가 202·preview를 저장 확정으로 오인하지 않도록 성공 결과 revision을 재조회한다.
+- 원본 수식의 현재 좌표 변환, shared formula·calc chain 및 복원된 연결 행을 표별 규칙으로 처리하고 replay delta 검증과 네 파일 최종저장 검증을 통과한 표만 READY다. array/dataTable 등 안전한 변환이 없는 영역은 거부한다. 미지원 표도 읽기/기존 편집 기능은 유지한다.
+- 기존 v2와 v3가 섞인 이력의 무결성과 새 포맷을 지원하지 않는 구버전의 차단·rollback, 기존 사용자의 원본/파일 교체, DB unique·FK·동시 commit 및 큰 표의 제한·시간을 검증한다. 완전한 기술 계약과 검증 조건은 구현에 필요한 설계이며 현재 실행·운영 검증을 통과했다는 뜻은 아니다.
+
+### 11.8 설정과 수동 활성화
+
+| 환경 변수 | 초기값 | 적용 |
+| --- | --- | --- |
+| `MODEL_INPUT_RESTORE_ENABLED` | `false` | 새 RESTORE 명령과 해당 READY 판정 |
+| `MODEL_INPUT_RESTORE_PREVIEW_ENABLED` | `false` | preview 제공. RESTORE 접수도 함께 활성화되어야 함 |
+| `MODEL_INPUT_CHANGE_CURSOR_SECRET` | 빈값 | 변경 목록 커서 HMAC 서명키. 활성화 전에 UTF-8 기준 32바이트 이상 비밀값을 모든 웹 인스턴스에 동일하게 주입 |
+| `MODEL_INPUT_RESTORE_READ_MAX_CONCURRENT` | `1` | 변경 목록과 preview가 공유하는 JVM 동시 실행 상한 |
+| `MODEL_INPUT_RESTORE_READ_TIMEOUT_MS` | `30000` | 요청 전체 처리 기한(ms). object storage·복호화 HTTP 및 재시도에도 남은 기한 적용 |
+| `MODEL_INPUT_RESTORE_READ_SCRATCH_BYTES` | `268435456` | 요청별 임시 파일 합계 상한 |
+
+- 기존 `CHANGE` 활성화 설정도 필요하다. 커서 키가 없거나 너무 짧으면 변경 목록을 제공하지 않는다(409 `POLICY_UNSUPPORTED`). 커서 키를 응답·로그에 노출하지 않는다. 키 교체 시 이전 커서는 400이 되므로 첫 페이지부터 재조회한다.
+- 실제 작업 소비자가 모두 v2/v3 reader를 사용하도록 먼저 배포하고 복원 writer/preview는 OFF로 유지한다. 현재 웹 러너 구성은 모든 웹 서버를 선배포하며 별도 worker 프로세스 배포는 필요 없다. DBA가 [별도 증분 DDL](../model-input-draft-restore-v3-ddl-draft.sql)의 pre-check → ALTER → verify를 수행한 뒤, 기능을 켜고 격리 대상의 대표 표·부하/디스크를 검증한 후 사용 범위를 확대한다. testdb 웹 전용 실행 순서는 [배포·검증 절차](../model-input-draft-restore-testdb-runbook.md)를 따른다. 이 문서는 DB 적용이나 배포 완료의 증거가 아니다.
+- v3 이력이 하나라도 생성되면 v2 전용 앱 또는 CHECK로 원복하지 않는다. 정확한 rollback 조건은 위 SQL과 DDL §6.14가 정본이다.

@@ -74,6 +74,13 @@ public class ObjectStorageService {
     // }
     // }
 
+    public S3Object getObject(String bucketName,String fileName,int timeoutMillis) {
+        if(timeoutMillis<=0)throw new IllegalArgumentException("positive object read timeout required");
+        var request=new com.amazonaws.services.s3.model.GetObjectRequest(bucketName,fileName);
+        request.setSdkClientExecutionTimeout(timeoutMillis);request.setSdkRequestTimeout(timeoutMillis);
+        return objectStorageClient.getObject(request);
+    }
+
     public S3Object getObject(String bucketName, String fileName) {
         return objectStorageClient.getObject(bucketName, fileName);
     }

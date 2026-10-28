@@ -6,8 +6,9 @@ import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
-/** 신규 PMI 행만 User UUID에 연결한다. 기존 행의 국가/위치로 연결을 추정하지 않는다. */
+/** 신규 PMI 행은 UUID, 원본 행은 고정 source 행 번호로 대응시킨다. 국가명은 연결 기준이 아니다. */
 final class InputDraftPmiRows {
     static final String BASE = "_pmi_base_", SELECTED = "_pmi_selected_";
     static boolean user(TableRef table) { return pmi(table) && table.startColumn() == 2; }
@@ -43,7 +44,7 @@ final class InputDraftPmiRows {
             Map<Integer, String> children = links.getOrDefault(row.id(), Map.of());
             require(children.size() == 2 && children.containsKey(7) && children.containsKey(12));
             result.put(row.id(), List.of(children.get(7), children.get(12)));
-            if (!additions.containsKey(row.client())) continue;
+            if (!additions.containsKey(row.client()) || row.position() == null) continue;
             for (String child : result.get(row.id())) {
                 var linked = byId.get(child); JsonNode addition = additions.get(linked.client());
                 require(addition != null && derived(addition)); creation(addition);
@@ -66,6 +67,33 @@ final class InputDraftPmiRows {
             var parent = byId.get(master);
             require(parent != null && additions.containsKey(parent.client())
                 && result.getOrDefault(master, List.of()).contains(addition.path("rowId").asText()));
+        }
+        return Map.copyOf(result);
+    }
+    /** 과거 v2의 독립 원본 행 판독에는 새 대응 제약을 소급하지 않는다. */
+    static Map<String, List<String>> validate(List<TableRef> tables, List<InputDraftRegasRows.Row> rows,
+            Map<String, JsonNode> additions, Map<String, Map<Integer, InputWorkbookReader.Cell>> cells,
+            InputDraftJson json, Set<String> sourceParents) {
+        Map<String, List<String>> result = new LinkedHashMap<>(validate(tables, rows, additions, cells, json));
+        var originals = originalLinks(tables, rows, sourceParents);
+        require(originals.keySet().containsAll(sourceParents));
+        result.putAll(originals);
+        return Map.copyOf(result);
+    }
+    /** 명시적 원본 구조 변경 대상만 source/baseline과 child 역할·활성 위치로 대조한다. */
+    static Map<String, List<String>> originalLinks(List<TableRef> tables, List<InputDraftRegasRows.Row> rows, Set<String> targets) {
+        Map<Long, TableRef> byTable = new HashMap<>(); tables.forEach(table -> byTable.put(table.id(), table));
+        Map<String, List<String>> result = new LinkedHashMap<>();
+        for (var parent : rows) {
+            if (!targets.contains(parent.id()) || parent.source() == null || !user(byTable.get(parent.table()))) continue;
+            Map<Integer, String> children = new HashMap<>(); boolean valid = true;
+            for (var row : rows) if (child(byTable.get(row.table())) && parent.baseline() == row.baseline()
+                    && parent.source().equals(row.source())) {
+                if (!java.util.Objects.equals(parent.position(), row.position())
+                        || children.putIfAbsent(byTable.get(row.table()).startColumn(), row.id()) != null) valid = false;
+            }
+            if (valid && children.size() == 2 && children.containsKey(7) && children.containsKey(12))
+                result.put(parent.id(), List.of(children.get(7), children.get(12)));
         }
         return Map.copyOf(result);
     }

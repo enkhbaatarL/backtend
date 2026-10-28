@@ -20,17 +20,17 @@ final class InputWorkbookHurricanes {
     private static final Set<Integer> ROWS = Set.of(8, 9, 10, 11, 16, 17, 18, 19);
     private static final String EXTERNAL = "[1]LUT!$AH$14:$AI$17";
 
-    static Adjustment adjustment(Path source, int previousEnd, int end, Set<Integer> created,
+    static Adjustment adjustment(Path source, Path baseline, int previousEnd, int end, boolean rowsDeleted, Set<Integer> created,
             InputWorkbookXml.SheetPatch patch, InputWorkbookReader reader, InputWorkbookXml.Checkpoint checkpoint) throws Exception {
         String sheet = "{USA}Hurricanes";
         Set<Integer> affected = new java.util.TreeSet<>();
         patch.edits.forEach((row, cells) -> { if (row >= 13 && row <= end && (created.contains(row) || cells.containsKey(2) || cells.containsKey(4))) affected.add(row); });
-        if (affected.isEmpty()) return new Adjustment(Set.of(), List.of());
+        if (affected.isEmpty() && !rowsDeleted && previousEnd == end) return new Adjustment(Set.of(), List.of());
         Set<String> targets = new java.util.HashSet<>(Set.of("I3")); affected.forEach(row -> targets.add("E" + row));
         Map<String, String> selected = InputWorkbookStructure.formulas(source, sheet, address -> targets.contains(address) || address.equals("E13"), checkpoint);
         String check = "IF(AND(B13<>0,D13=0),\"Error - enter value\",\" \")";
         String total = (previousEnd - 7) + "-COUNTIFS($E$8:$E$" + previousEnd + ",\" \")";
-        if (!check.equals(selected.get("E13")) || !total.equals(selected.get("I3"))) throw failed();
+        if (!check.equals(InputWorkbookStructure.formulas(baseline, sheet, "E13"::equals, checkpoint).get("E13")) || !total.equals(selected.get("I3"))) throw failed();
         Map<String, String> raw = new HashMap<>();
         InputWorkbookXml.rows(source, InputWorkbookXml.sheetParts(source).get(sheet), checkpoint, row -> InputWorkbookXml.cells(row.xml()).forEach((column, cell) -> {
             String address = InputWorkbookXml.address(row.number(), column); if (targets.contains(address) || address.equals("E13")) raw.put(address, cell);
@@ -44,7 +44,9 @@ final class InputWorkbookHurricanes {
                 if (formula != null) { if (!expected.equals(formula)) throw failed(); }
                 else {
                     if (template != null && java.util.regex.Pattern.compile("<(?:f|v|is)(?=\\s|/?>)").matcher(template).find()) throw failed();
-                    template = formulaCell(template == null ? raw.get("E13") : template, address, expected); added.add(address);
+                    if (template == null) template = raw.get("E13");
+                    if (template == null) template = InputWorkbookRows.template(baseline, sheet, 13, checkpoint).get(5);
+                    template = formulaCell(template, address, expected); added.add(address);
                 }
                 formula = expected;
             }

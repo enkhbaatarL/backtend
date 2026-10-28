@@ -16,14 +16,14 @@ final class InputWorkbookCapacity {
     private static final String SHEET = "MidstreamCapacityInput";
     private static final String BASE = "IF(OR(DZ4=\"Austria\", DZ4=\"Czech Republic\"), INDEX($FL$4:$FM$11, MATCH(DX4, $FK$4:$FK$11, 0), MATCH(EA4, $FL$3:$FM$3, 0)), EB4)";
 
-    static Result shares(Path source, int end, int styleRow, Set<Integer> created, InputWorkbookXml.SheetPatch patch,
+    static Result shares(Path source, Path baseline, int end, int styleRow, Set<Integer> created, InputWorkbookXml.SheetPatch patch,
             InputWorkbookReader reader, InputWorkbookXml.Checkpoint checkpoint) throws Exception {
         Set<Integer> rows = new HashSet<>(created);
         patch.edits.forEach((row, cells) -> { if (row >= 4 && row <= end && Set.of(128, 130, 131, 132).stream().anyMatch(cells::containsKey)) rows.add(row); });
         if (rows.isEmpty()) return new Result(Set.of(), List.of());
         Set<String> targets = new HashSet<>(); rows.forEach(row -> targets.add("EC" + row));
         var originals = InputWorkbookStructure.formulas(source, SHEET, a -> a.equals("EC4") || targets.contains(a), checkpoint);
-        if (!BASE.equals(originals.get("EC4"))) throw invalid();
+        if (!BASE.equals(InputWorkbookStructure.formulas(baseline, SHEET, "EC4"::equals, checkpoint).get("EC4"))) throw invalid();
         Map<Integer, String> templates = new HashMap<>();
         InputWorkbookXml.rows(source, InputWorkbookXml.sheetParts(source).get(SHEET), checkpoint, row -> {
             if (rows.contains(row.number()) || row.number() == styleRow) {
@@ -37,6 +37,7 @@ final class InputWorkbookCapacity {
             if (created.contains(row)) {
                 if (originals.containsKey(target) || template != null && java.util.regex.Pattern.compile("<(?:f|v|is)(?=\\s|/?>)").matcher(template).find()) throw invalid();
                 if (template == null) template = templates.get(styleRow);
+                if (template == null) template = InputWorkbookRows.template(baseline, SHEET, 4, checkpoint).get(133);
                 if (template == null) throw invalid();
                 template = InputWorkbookXml.valueCell(template, target, null).replace("</c>", "<f>" + InputWorkbookXml.escape(expected) + "</f><v>0</v></c>"); added.add(target);
             } else if (!expected.equals(originals.get(target)) || template == null) throw invalid();
