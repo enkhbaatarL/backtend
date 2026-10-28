@@ -119,7 +119,7 @@ SET @ci_ok=IF(COALESCE(BINARY @ci_environment IN ('DEVELOPMENT','PRODUCTION'),0)
  AND COALESCE(BINARY @@GLOBAL.server_uuid=BINARY @ci_expected_server_uuid,0)=1
  AND COALESCE(BINARY DATABASE()=BINARY @ci_expected_schema,0)=1
  AND @@GLOBAL.read_only=0 AND @@GLOBAL.super_read_only=0 AND @@SESSION.foreign_key_checks=1
- AND @ci_actor IS NOT NULL AND REGEXP_LIKE(@ci_actor,'^[a-zA-Z0-9._@-]{1,50}$','c')
+ AND @ci_actor IS NOT NULL AND REGEXP_LIKE(CONVERT(@ci_actor USING utf8mb4) COLLATE utf8mb4_bin,_utf8mb4'^[a-zA-Z0-9._@-]{1,50}$','c')
  AND @ci_reader_ready=1 AND @ci_new IS NOT NULL AND @ci_expected_template_id IS NOT NULL
  AND (SELECT COUNT(*) FROM tmd_mdl_inpttmpltm WHERE mdl_spt_cd=@ci_model)=1
  AND NOT EXISTS(SELECT 1 FROM tmd_mdl_scnrcasetmpltd WHERE tmplt_id=@ci_new)

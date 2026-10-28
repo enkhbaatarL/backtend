@@ -52,6 +52,40 @@ SET @ci_actor='<실제 적용자 로그인 ID>';
 
 이미 ROLLBACK까지 실행한 뒤 COMMIT만 추가해도 저장되지 않는다. 실제 저장하려면 해당 파일을 다시 실행해야 한다. DB 클라이언트의 ‘오류 후 계속 실행’ 옵션은 끈다.
 
+### SET TRANSACTION에서 MySQL 1568이 발생한 경우
+
+`Transaction characteristics can't be changed while a transaction is in progress`는 같은 연결에 이미 transaction이 열려 있다는 뜻이다. 실패한 이전 실행이나 수동 커밋 모드의 조회가 원인일 수 있지만, 오류만으로 시작 경로는 확정할 수 없다.
+
+이 배포 작업 전용 연결에서 다음 문장만 먼저 실행한다. 아직 저장하지 않은 해당 연결의 변경은 취소된다.
+
+```sql
+ROLLBACK;
+```
+
+이어서 중간에 테이블 조회를 끼우지 않고 해당 01/02/03 파일을 처음부터 실행한다. 같은 연결의 `@ci_...` 입력값은 ROLLBACK으로 지워지지 않는다. `SET TRANSACTION` 줄을 삭제하거나 오류를 무시하고 다음 문장으로 진행하지 않는다.
+
+즉시 같은 오류가 반복되면 DB 도구가 매 실행 시 transaction을 자동으로 시작하는지 확인한다. 배포 전용 연결에서 먼저 ROLLBACK한 뒤 도구의 transaction 모드를 Auto로 설정하고 00부터 다시 준비한다. SQL의 명시적인 `START TRANSACTION`부터 마지막 `ROLLBACK`/`COMMIT`까지는 여전히 하나의 transaction으로 처리한다. 이미 저장된 초기화/등록 단계는 반복하지 않는다.
+
+### 적용자 검사에서 MySQL 3995가 발생한 경우
+
+이전 실행본은 적용자 변수가 `binary` 형식이면 `REGEXP_LIKE`에서 3995 오류가 발생할 수 있다. 수정본은 검사할 값을 `CONVERT(... USING utf8mb4)`로 변환한다. 서버/테이블 문자셋을 변경할 필요는 없다.
+
+같은 작업 연결에서 `ROLLBACK;` 후 중단하고 수정된 실행본을 사용한다. 다음 쿼리는 테이블을 읽거나 변경하지 않으며, binary 값·NULL 입력이 오류 없이 처리되는지 확인한다. 4개 결과 모두 1이어야 한다.
+
+```sql
+SELECT
+  REGEXP_LIKE(CONVERT(_binary'release.operator' USING utf8mb4) COLLATE utf8mb4_bin,
+              _utf8mb4'^[a-zA-Z0-9._@-]{1,50}$','c') AS binary_actor_must_be_1,
+  (REGEXP_LIKE(CONVERT(NULL USING utf8mb4) COLLATE utf8mb4_bin,
+               _utf8mb4'^[a-zA-Z0-9._@-]{1,50}$','c') IS NULL) AS null_actor_must_be_1,
+  (REGEXP_LIKE(CONVERT(_binary'' USING utf8mb4) COLLATE utf8mb4_bin,
+               _utf8mb4'^[a-zA-Z0-9._@-]{1,50}$','c')=0) AS empty_rejected_must_be_1,
+  (REGEXP_LIKE(CONVERT(_binary'invalid actor' USING utf8mb4) COLLATE utf8mb4_bin,
+               _utf8mb4'^[a-zA-Z0-9._@-]{1,50}$','c')=0) AS space_rejected_must_be_1;
+```
+
+00의 실제 입력값을 다시 지정해 `SESSION_READY`를 확인한다. 01 재실행 전 실행기 조회가 0행인지 확인하고, 이미 1행이 저장돼 있으면 초기화를 반복하지 않는다. 화면에 나온 SELECT 0행/검사 오류만으로 이후 저장 여부까지 확정하지 않는다. 02/03도 같은 검사를 사용하므로 수정본으로 교체한다.
+
 ## 01. 실행기 초기화
 
 `01-runner-initialize.sql`을 위 공통 방법으로 실행한다.

@@ -15,6 +15,6 @@ SELECT IF(COALESCE(BINARY @ci_environment IN ('DEVELOPMENT','PRODUCTION'),0)=1
  AND COALESCE(BINARY @@GLOBAL.server_uuid=BINARY @ci_expected_server_uuid,0)=1
  AND COALESCE(BINARY DATABASE()=BINARY @ci_expected_schema,0)=1
  AND @@GLOBAL.read_only=0 AND @@GLOBAL.super_read_only=0 AND @@SESSION.foreign_key_checks=1
- AND @ci_actor IS NOT NULL AND REGEXP_LIKE(@ci_actor,'^[a-zA-Z0-9._@-]{1,50}$','c'),'SESSION_READY','STOP') AS session_decision,
+ AND @ci_actor IS NOT NULL AND REGEXP_LIKE(CONVERT(@ci_actor USING utf8mb4) COLLATE utf8mb4_bin,_utf8mb4'^[a-zA-Z0-9._@-]{1,50}$','c'),'SESSION_READY','STOP') AS session_decision,
  @ci_environment AS environment,DATABASE() AS selected_schema,@@GLOBAL.server_uuid AS server_uuid;
 -- SESSION_READY일 때만 01 진행. 새 연결/재접속/환경 변경 시 이 파일을 다시 입력·실행한다.

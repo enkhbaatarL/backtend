@@ -770,7 +770,7 @@ WHERE COALESCE(BINARY @mi_install_environment IN ('DEVELOPMENT','PRODUCTION'),0)
   AND COALESCE(BINARY DATABASE()=BINARY @mi_install_expected_schema,0)=1
   AND @@GLOBAL.read_only=0 AND @@GLOBAL.super_read_only=0
   AND @mi_install_operator IS NOT NULL
-  AND REGEXP_LIKE(@mi_install_operator,'^[a-zA-Z0-9._@-]{1,50}$','c');
+  AND REGEXP_LIKE(CONVERT(@mi_install_operator USING utf8mb4) COLLATE utf8mb4_bin,_utf8mb4'^[a-zA-Z0-9._@-]{1,50}$','c');
 SELECT COUNT(*) AS runner_rows_must_be_1 FROM tmd_mdl_inptexecm;
 SELECT exec_no,exec_id,exec_stat_cd,bgn_dtm,end_dtm,prcs_id,try_tokn,
        aprv_exec_id,aprv_usr_logn_id,aprv_dtm FROM tmd_mdl_inptexecm;

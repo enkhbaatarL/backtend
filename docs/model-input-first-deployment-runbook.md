@@ -35,9 +35,9 @@ DDL 생성은 다른 담당자가 완료했다면 [DDL 후 번호순 실행 안�
 
 | 원본 파일 | SHA-256 |
 | --- | --- |
-| DDL | `60a2b43f77f0203776eee998f33325c3f818f6ff1cec65377be3bb1197fc255c` |
-| Catalog 등록 | `c7b4353629bf7d39804c07949c60120915707223f7ba24f9bd2730f588c65072` |
-| Catalog 발행 | `c054e3189f486223ef51ef6bff8d8702ccade623fc9104bc3070f6abe188999b` |
+| DDL | `3e65f915b4a1855216c2340d394a708f0bc5afe412b0f5592510585fca430edc` |
+| Catalog 등록 | `ce4f291b39d8205bd5804b8c47121353bdea682f9583ca4fc27081a7caeedbd0` |
+| Catalog 발행 | `4484fcf60297f03a83c90e62e861708dbd63c3ec46f1e79cb3960e7633f98804` |
 
 ### 적용 전 배포 담당자와 확인할 것
 
