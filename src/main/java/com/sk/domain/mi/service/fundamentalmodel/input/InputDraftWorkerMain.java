@@ -10,6 +10,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.sk.common.properties.DataSourceProperties;
 import com.sk.domain.shared.repository.master.tmm.ModelInputDraftRepository;
 import com.sk.domain.shared.service.ObjectStorageService;
+import com.sk.domain.shared.service.ObjectStorageUploadDiagnostics;
 import com.zaxxer.hikari.HikariDataSource;
 import java.nio.file.Path;
 import java.sql.Connection;
@@ -107,6 +108,7 @@ public final class InputDraftWorkerMain {
             return AmazonS3ClientBuilder.standard().withEndpointConfiguration(new AwsClientBuilder.EndpointConfiguration(
                 env.getRequiredProperty("ncp.storage.end-point"),env.getRequiredProperty("ncp.storage.region-name")))
                 .withCredentials(new AWSStaticCredentialsProvider(new BasicAWSCredentials(env.getRequiredProperty("ncp.storage.access-key"),env.getRequiredProperty("ncp.storage.secret-key"))))
+                .withRequestHandlers(new ObjectStorageUploadDiagnostics())
                 .withClientConfiguration(new ClientConfiguration().withConnectionTimeout(5000).withSocketTimeout(10000)
                     .withRequestTimeout(15000).withClientExecutionTimeout(20000).withMaxErrorRetry(0)).build();
         }

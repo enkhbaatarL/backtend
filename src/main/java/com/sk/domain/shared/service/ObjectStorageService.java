@@ -173,6 +173,15 @@ public class ObjectStorageService {
     */
     public String uploadFile(InputStream file, String bucketName, String fileName, boolean isPublic, String contentType, long contentLength)
             throws IOException {
+        try (var diagnostics = ObjectStorageUploadDiagnostics.begin(bucketName, fileName, contentLength)) {
+            String result = uploadFileInternal(file, bucketName, fileName, isPublic, contentType, contentLength);
+            diagnostics.succeeded();
+            return result;
+        }
+    }
+
+    private String uploadFileInternal(InputStream file, String bucketName, String fileName,
+            boolean isPublic, String contentType, long contentLength) throws IOException {
 
         Path path = Paths.get(fileName);
         String directoryPath = PathUtil.IncludeTrailingPathDelimiter(path.getParent().toString().replace("\\", "/"));
