@@ -163,6 +163,9 @@ final class InputDraftHistory {
         relocateRowCells(beforeColumns);
         relocateFixedCells(previousDefinitions,beforeColumns,delta.path("cells"));
         List<RowWrite> writes=new ArrayList<>();Map<String,JsonNode> additions=new LinkedHashMap<>();Set<String> changedRows=new HashSet<>();
+        Map<String,Integer> openPositions=new HashMap<>();
+        for(int n=0;n<positions.size();n++)if(positions.get(n).end()==null)
+            require(openPositions.putIfAbsent(positions.get(n).id(),n)==null);
         for(JsonNode change:delta.path("rows")) {
             if(change.has("derivedFromRowId"))exact(change,"tableId","rowId","clientRowKey","rowNumber","derivedFromRowId");
             else exact(change,"tableId","rowId","clientRowKey","rowNumber");
@@ -184,12 +187,9 @@ final class InputDraftHistory {
             rows.put(id,updated);if(old==null)rowBaselines.put(id,tableBaselines.getOrDefault(table.id(),0L));
             writes.add(new RowWrite(table.id(),id,client,position,old==null));affected.add(table.key());
             if(old!=null) {
-                boolean closed=false;
-                for(int n=0;n<positions.size();n++) {
-                    RowPosition p=positions.get(n);
-                    if(p.id().equals(id)&&p.end()==null){require(p.begin()<revision);positions.set(n,new RowPosition(p.table(),p.id(),p.begin(),revision,p.row()));closed=true;}
-                }
-                require(closed);
+                Integer index=openPositions.remove(id);require(index!=null);
+                RowPosition p=positions.get(index);require(p.begin()<revision);
+                positions.set(index,new RowPosition(p.table(),p.id(),p.begin(),revision,p.row()));
             }
             positions.add(new RowPosition(table.id(),id,revision,null,position));
         }
