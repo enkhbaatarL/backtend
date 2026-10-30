@@ -19,8 +19,12 @@ import org.springframework.stereotype.Component;
 /** 소유한 작업 디렉터리만 정리한다. 다른 살아 있는 JVM의 lock은 건드리지 않는다. */
 @Component
 public class InputTempFiles {
+    private static final ThreadLocal<Runnable> LOCAL_CHECKPOINT=new ThreadLocal<>();
+    private static final ThreadLocal<java.util.function.IntSupplier> READ_TIMEOUT=new ThreadLocal<>();
+    static int readTimeout(){var deadline=READ_TIMEOUT.get();return deadline==null?0:deadline.getAsInt();}
     static void checkpoint() {
         if (Thread.currentThread().isInterrupted()) throw new InputDraftPreserveChange.Failure("TIMEOUT");
+        var checkpoint=LOCAL_CHECKPOINT.get();if(checkpoint!=null)checkpoint.run();
     }
     private final ThreadLocal<Scope> taskScope = new ThreadLocal<>();
     private final java.util.Set<Scope> activeScopes = java.util.concurrent.ConcurrentHashMap.newKeySet();
@@ -30,13 +34,17 @@ public class InputTempFiles {
         private final Path directory;
         private Scope(Path directory) { this.directory = directory; }
         Path directory() { return directory; }
+        void checkpoint(Runnable check,java.util.function.IntSupplier remaining){LOCAL_CHECKPOINT.set(check);READ_TIMEOUT.set(remaining);}
+        long sizeBytes() throws IOException {
+            try(var files=Files.walk(directory)){long total=0;for(Path path:files.filter(Files::isRegularFile).toList())total=Math.addExact(total,Files.size(path));return total;}
+        }
         @Override public void close() throws IOException {
             if (taskScope.get() != this) throw new IllegalStateException("temporary scope owner mismatch");
             try {
                 deleteContents(directory);
                 Files.delete(directory);
                 activeScopes.remove(this);
-            } finally { taskScope.remove(); }
+            } finally { taskScope.remove();LOCAL_CHECKPOINT.remove();READ_TIMEOUT.remove(); }
         }
     }
 

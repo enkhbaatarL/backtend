@@ -88,7 +88,12 @@ public class InputWorkbookReader {
         return withLocal(file,company,action,InputTempFiles::checkpoint);
     }
     <T>T withLocal(FileRef file,String company,java.util.function.Function<Path,T> action,Runnable checkpoint) {
+        return withLocal(file,company,action,checkpoint,InputTempFiles.readTimeout());
+    }
+    private static final java.util.concurrent.ScheduledExecutorService READ_DEADLINES=java.util.concurrent.Executors.newSingleThreadScheduledExecutor(r->{Thread t=new Thread(r,"input-preview-read-deadline");t.setDaemon(true);return t;});
+    <T>T withLocal(FileRef file,String company,java.util.function.Function<Path,T> action,Runnable checkpoint,int timeoutMillis) {
         checkpoint.run();
+        final long readDeadline=timeoutMillis>0?System.nanoTime()+java.util.concurrent.TimeUnit.MILLISECONDS.toNanos(timeoutMillis):Long.MAX_VALUE;
         Path temp=null;
         try {
             long downloadStarted=System.nanoTime();
@@ -96,28 +101,32 @@ public class InputWorkbookReader {
             try {
             String[] parts=validatedLocation(file,company);
             temp=tempFiles.create();
-            try(var object=storage.getObject(parts[1],parts[2]);InputStream stream=object.getObjectContent();var out=Files.newOutputStream(temp)) {
+            try(var object=timeoutMillis>0?storage.getObject(parts[1],parts[2],timeoutMillis):storage.getObject(parts[1],parts[2]);InputStream stream=object.getObjectContent();var out=Files.newOutputStream(temp)) {
+                var abort=timeoutMillis>0?READ_DEADLINES.schedule(()->object.getObjectContent().abort(),Math.max(1,java.util.concurrent.TimeUnit.NANOSECONDS.toMillis(readDeadline-System.nanoTime())),java.util.concurrent.TimeUnit.MILLISECONDS):null;
+                try {
                 byte[] buffer=new byte[65536];long size=0;int len;
                 var digest=java.security.MessageDigest.getInstance("SHA-256");
                 while((len=stream.read(buffer))!=-1) { checkpoint.run();size+=len;if(size>300L*1024*1024||(file.size()!=null&&size>file.size()))throw InputDraftException.internal();digest.update(buffer,0,len);out.write(buffer,0,len); }
                 if(file.size()!=null&&size!=file.size())throw InputDraftException.internal();
                 if(file.sha256()!=null&&!java.util.HexFormat.of().formatHex(digest.digest()).equals(file.sha256()))throw InputDraftException.internal();
+                }finally{if(abort!=null)abort.cancel(false);}
             }
             if(file.fileNo()==null&&uploadProtection!=null&&uploadProtection.isEnabled(company,file.name())) {
                 if(uploadCrypto==null)throw InputDraftException.internal();
                 byte[] encrypted=Files.readAllBytes(temp),plain=null;
-                try {plain=uploadCrypto.decrypt(encrypted,file.name());if(plain.length>300L*1024*1024)throw InputDraftException.internal();Files.write(temp,plain);}
+                try {plain=timeoutMillis>0?uploadCrypto.decrypt(encrypted,file.name(),()->{checkpoint.run();return (int)Math.max(1,java.util.concurrent.TimeUnit.NANOSECONDS.toMillis(readDeadline-System.nanoTime()));},checkpoint):uploadCrypto.decrypt(encrypted,file.name());if(plain.length>300L*1024*1024)throw InputDraftException.internal();Files.write(temp,plain);}
                 finally {java.util.Arrays.fill(encrypted,(byte)0);if(plain!=null)java.util.Arrays.fill(plain,(byte)0);}
             }
             downloaded=true;
             } catch(InputDraftException ex) {throw ex;}
-            catch(Exception ex) {InputDraftDiagnostics.failure(InputDraftDiagnostics.Stage.WORKBOOK_DOWNLOAD,file.role(),ex);throw InputDraftException.internal();}
+            catch(Exception ex) {checkpoint.run();if(timeoutMillis>0&&timedOut(ex))throw new InputDraftPreserveChange.Failure("TIMEOUT");InputDraftDiagnostics.failure(InputDraftDiagnostics.Stage.WORKBOOK_DOWNLOAD,file.role(),ex);throw InputDraftException.internal();}
             finally {InputDraftDiagnostics.elapsed(InputDraftDiagnostics.Stage.WORKBOOK_DOWNLOAD,file.role(),downloadStarted,downloaded);}
             checkpoint.run();
             return action.apply(temp);
         }
         finally { if(temp!=null)try { Files.deleteIfExists(temp); }catch(IOException ex) {throw InputDraftException.internal();} }
     }
+    private static boolean timedOut(Throwable failure) {for(Throwable cause=failure;cause!=null;cause=cause.getCause())if(cause.getClass().getSimpleName().toLowerCase(java.util.Locale.ROOT).contains("timeout")||cause instanceof InterruptedException)return true;return false;}
     /** Snapshot hit에도 원본 Reader와 같은 저장소/회사 범위를 검사한다. 객체 IO는 하지 않는다. */
     String[] validatedLocation(FileRef file,String company) {
         URI location=URI.create(file.location()),server=URI.create(endpoint);
@@ -131,8 +140,12 @@ public class InputWorkbookReader {
     void readLocal(Path file,List<Window> windows)throws Exception {
         checkArchive(file);
         try(OPCPackage pkg=OPCPackage.open(file.toFile(),PackageAccess.READ)) {
-            XSSFReader reader=new XSSFReader(pkg);StylesTable styles=reader.getStylesTable();
-            ReadOnlySharedStringsTable strings=new ReadOnlySharedStringsTable(pkg);
+            InputTempFiles.checkpoint();XSSFReader reader=new XSSFReader(pkg);StylesTable styles;
+            try(InputStream data=reader.getStylesData()){styles=data==null?null:new StylesTable(checked(data));}
+            ReadOnlySharedStringsTable strings=new ReadOnlySharedStringsTable(pkg){
+                @Override public void readFrom(InputStream data)throws IOException,org.xml.sax.SAXException{super.readFrom(checked(data));}
+            };
+            InputTempFiles.checkpoint();
             Set<String> visible=new HashSet<>();boolean date1904=workbook(reader,visible);
             for(Window window:windows)if(!visible.contains(window.sheet()))throw InputDraftException.conflict("POLICY_INCOMPLETE",null);
             XSSFReader.SheetIterator sheets=(XSSFReader.SheetIterator)reader.getSheetsData();Set<String> found=new HashSet<>();
@@ -140,11 +153,19 @@ public class InputWorkbookReader {
                 String name=sheets.getSheetName();List<Window> selected=windows.stream().filter(w->w.sheet().equals(name)).toList();
                 if(selected.isEmpty())continue;found.add(name);
                 var parser=XMLHelper.newXMLReader();parser.setContentHandler(new SheetHandler(selected,styles,strings,date1904));
-                try {parser.parse(new InputSource(data));}
+                try {parser.parse(new InputSource(checked(data)));}
                 catch(org.xml.sax.SAXException ex){if(!(ex instanceof StopReading)&&!(ex.getException() instanceof StopReading))throw ex;}
             }
             if(windows.stream().anyMatch(w->!found.contains(w.sheet())))throw InputDraftException.conflict("POLICY_INCOMPLETE",null);
         }
+    }
+    /** POI 일괄 파싱도 입력 블록마다 동일 요청 기한을 검사한다. 전역 POI 설정은 바꾸지 않는다. */
+    static InputStream checked(InputStream input) {
+        return new java.io.FilterInputStream(input){
+            @Override public int read()throws IOException{InputTempFiles.checkpoint();return in.read();}
+            @Override public int read(byte[] bytes,int off,int len)throws IOException{InputTempFiles.checkpoint();return in.read(bytes,off,Math.min(len,8192));}
+            @Override public long skip(long bytes)throws IOException{InputTempFiles.checkpoint();return in.skip(Math.min(bytes,8192));}
+        };
     }
     void verifyLocal(Path file,Set<String> requested)throws Exception {
         checkArchive(file);
@@ -162,6 +183,7 @@ public class InputWorkbookReader {
             if (zip.size() > 10000) throw InputDraftException.internal();
             var entries = zip.entries();
             while (entries.hasMoreElements()) {
+                InputTempFiles.checkpoint();
                 var entry = entries.nextElement();
                 long maximum = entry.getName().equals("xl/sharedStrings.xml") ? 64L * 1024 * 1024
                     : entry.getName().equals("xl/styles.xml") ? 8L * 1024 * 1024 : 512L * 1024 * 1024;
@@ -174,10 +196,11 @@ public class InputWorkbookReader {
         boolean[] date1904={false};
         var xml=XMLHelper.newXMLReader();xml.setContentHandler(new DefaultHandler(){
             @Override public void startElement(String uri,String local,String name,Attributes a) {
+                InputTempFiles.checkpoint();
                 if("sheet".equals(local)&& (a.getValue("state")==null||"visible".equals(a.getValue("state")))) visible.add(a.getValue("name"));
                 if("workbookPr".equals(local)) date1904[0]="1".equals(a.getValue("date1904"))||"true".equals(a.getValue("date1904"));
             }});
-        try(InputStream workbook=reader.getWorkbookData()){xml.parse(new InputSource(workbook));}
+        try(InputStream workbook=reader.getWorkbookData()){xml.parse(new InputSource(checked(workbook)));}
         return date1904[0];
     }
     /** 필요한 마지막 행 뒤의 판독 중단 신호. 오류가 아니며 원문/스택을 만들지 않는다. */
@@ -196,6 +219,7 @@ public class InputWorkbookReader {
             stopAfter=windows.stream().mapToInt(Window::lastRow).max().orElse(Integer.MAX_VALUE);
         }
         @Override public void startElement(String uri,String local,String q,Attributes a)throws org.xml.sax.SAXException {
+            InputTempFiles.checkpoint();
             element=local;
             if("row".equals(local)){
                 row=Integer.parseInt(a.getValue("r"));

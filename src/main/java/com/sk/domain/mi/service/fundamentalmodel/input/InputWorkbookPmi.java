@@ -12,9 +12,13 @@ final class InputWorkbookPmi {
     private static final String SHEET = "PMILogicInput";
     static String formula(int row) { return "SUMIFS($E$9:$E$1048576,$D$9:$D$1048576,N" + row + ")"; }
 
-    static void append(Path source, int styleRow, Set<Integer> created, InputWorkbookXml.SheetPatch patch,
+    static void append(Path source, Path baseline, int styleRow, Set<Integer> created, InputWorkbookXml.SheetPatch patch,
             InputWorkbookReader reader, InputWorkbookXml.Checkpoint checkpoint) throws Exception {
-        var originals = InputWorkbookStructure.formulas(source, SHEET,
+        append(source,baseline,styleRow,created,patch,reader,checkpoint,Set.of());
+    }
+    static void append(Path source,Path baseline,int styleRow,Set<Integer> created,InputWorkbookXml.SheetPatch patch,
+            InputWorkbookReader reader,InputWorkbookXml.Checkpoint checkpoint,Set<Integer> restored) throws Exception {
+        var originals = InputWorkbookStructure.formulas(baseline, SHEET,
             address -> Set.of("O9", "O73", "O" + styleRow).contains(address), checkpoint);
         if (!formula(9).equals(originals.get("O9")) || !formula(73).equals(originals.get("O73"))
                 || !formula(styleRow).equals(originals.get("O" + styleRow))) throw invalid();
@@ -32,21 +36,26 @@ final class InputWorkbookPmi {
                 inputs.computeIfAbsent(row, ignored -> new HashMap<>()).put(column, edits.get(column).value()); last[0] = Math.max(last[0], row);
             }
         });
-        Map<Integer, String> templates = new HashMap<>(); String part = InputWorkbookXml.sheetParts(source).get(SHEET);
-        InputWorkbookXml.rows(source, part, checkpoint, row -> {
+        Map<Integer, String> templates = new HashMap<>();
+        InputWorkbookXml.rows(baseline, InputWorkbookXml.sheetParts(baseline).get(SHEET), checkpoint, row -> {
             if (row.number() == styleRow) templates.putAll(InputWorkbookXml.cells(row.xml()));
+        });
+        InputWorkbookXml.rows(source, InputWorkbookXml.sheetParts(source).get(SHEET), checkpoint, row -> {
             if (created.contains(row.number())) {
                 String existing = InputWorkbookXml.cells(row.xml()).get(15);
-                if (existing != null && java.util.regex.Pattern.compile("<(?:f|v|is)(?=\\s|/?>)").matcher(existing).find()) throw invalid();
+                if (patch.raw.getOrDefault(row.number(), Map.of()).containsKey(15)) existing = patch.raw.get(row.number()).get(15);
+                if (!restored.contains(row.number()) && existing != null && java.util.regex.Pattern.compile("<(?:f|v|is)(?=\\s|/?>)").matcher(existing).find()) throw invalid();
             }
         });
         if (templates.get(15) == null) throw invalid();
         Map<InputWorkbookCalculation.Address, Object> constants = new LinkedHashMap<>();
         inputs.forEach((row, cells) -> cells.forEach((col, value) -> constants.put(new InputWorkbookCalculation.Address(SHEET, InputWorkbookXml.address(row, col)), value)));
+        Map<Integer,Object> restoredCountries=new HashMap<>();
+        if(!restored.isEmpty())reader.readLocal(source,List.of(new InputWorkbookReader.Window(SHEET,restored::contains,Set.of(14),(row,cells)->{var cell=cells.get(14);if(cell!=null&&cell.raw()!=null)restoredCountries.put(row,cell.raw());})));
         Map<InputWorkbookCalculation.Address, String> formulas = new LinkedHashMap<>();
         for (int row : created) {
-            var country = patch.edits.getOrDefault(row, Map.of()).get(14); if (country == null) throw invalid();
-            constants.put(new InputWorkbookCalculation.Address(SHEET, "N" + row), country.value());
+            var country = patch.edits.getOrDefault(row, Map.of()).get(14);Object value=country==null?restoredCountries.get(row):country.value();if(value==null)throw invalid();
+            constants.put(new InputWorkbookCalculation.Address(SHEET, "N" + row), value);
             formulas.put(new InputWorkbookCalculation.Address(SHEET, "O" + row), formula(row).replace("1048576", Integer.toString(last[0])));
         }
         var values = InputWorkbookCalculation.evaluate(constants, formulas,

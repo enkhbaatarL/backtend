@@ -9,6 +9,33 @@ final class InputWorkbookFormula {
     private static final Pattern WHOLE_COLUMN = Pattern.compile("(?<![\\p{L}\\p{N}_.$])(?<a>\\$?[A-Za-z]{1,3}):(?<b>\\$?[A-Za-z]{1,3})(?![\\p{L}\\p{N}_.(!])");
     private static final Pattern WHOLE_ROW = Pattern.compile("(?<![\\p{L}\\p{N}_.$])(?<a>\\$?[1-9][0-9]{0,6}):(?<b>\\$?[1-9][0-9]{0,6})(?![\\p{L}\\p{N}_.(!])");
 
+    record Position(int row,int column) {}
+    interface ReferenceMapper { Position map(String sheet,int row,int column); }
+    private static final Pattern IDENTITY_REFERENCE=Pattern.compile("(?<![\\p{L}\\p{N}_.$])(?:(?<sheet>'(?:[^']|'')+'|[\\p{L}_][\\p{L}\\p{N}_.]*)!)?(?<ac>\\$?)(?<col>[A-Za-z]{1,3})(?<ar>\\$?)(?<row>[1-9][0-9]*)(?![\\p{L}\\p{N}_.(!])");
+    static String remap(String formula,String sheet,ReferenceMapper mapper) {
+        StringBuilder result=new StringBuilder();int begin=0;
+        for(int i=0;i<formula.length();i++)if(formula.charAt(i)=='"') {
+            result.append(remapReferences(formula.substring(begin,i),sheet,mapper));int end=i+1;
+            while(end<formula.length()){if(formula.charAt(end)=='"'){if(end+1<formula.length()&&formula.charAt(end+1)=='"'){end+=2;continue;}break;}end++;}
+            if(end==formula.length())throw invalid();result.append(formula,i,end+1);i=end;begin=end+1;
+        }
+        return result.append(remapReferences(formula.substring(begin),sheet,mapper)).toString();
+    }
+    private static String remapReferences(String formula,String sheet,ReferenceMapper mapper) {
+        if(formula.contains("[")||formula.contains("]")||WHOLE_COLUMN.matcher(formula).find()||WHOLE_ROW.matcher(formula).find())throw invalid();
+        var match=IDENTITY_REFERENCE.matcher(formula);StringBuilder result=new StringBuilder();int begin=0,previousEnd=-1;String previousOwner=null;
+        while(match.find()) {
+            int column=CellReference.convertColStringToIndex(match.group("col"))+1;if(match.group("row").length()>7)continue;long row=Long.parseLong(match.group("row"));if(column>16384||row>1048576)continue;
+            String prefix=match.group("sheet"),owner=prefix==null?sheet:prefix.startsWith("'")?prefix.substring(1,prefix.length()-1).replace("''","'"):prefix;
+            // Other!A1:B2의 두 번째 주소도 Other에 속한다. 다음 독립 참조에는 상속하지 않는다.
+            if(prefix==null&&previousEnd>=0&&formula.substring(previousEnd,match.start()).strip().equals(":"))owner=previousOwner;
+            Position mapped=mapper.map(owner,(int)row,column);if(mapped==null||mapped.row<1||mapped.row>1048576||mapped.column<1||mapped.column>16384)throw invalid();
+            result.append(formula,begin,match.start());if(prefix!=null)result.append(prefix).append('!');result.append(match.group("ac")).append(CellReference.convertNumToColString(mapped.column-1)).append(match.group("ar")).append(mapped.row);begin=match.end();
+            previousEnd=match.end();previousOwner=owner;
+        }
+        return result.append(formula.substring(begin)).toString();
+    }
+
     static String translate(String formula, int rows, int columns) {
         if (rows == 0 && columns == 0) return formula;
         StringBuilder result = new StringBuilder();

@@ -20,9 +20,13 @@ final class InputWorkbookEditor {
     private final InputTempFiles scratch;
     private final InputDraftJson json;
     private final InputWorkbookXml.Checkpoint checkpoint;
+    private final java.util.function.IntSupplier readTimeout;
 
     InputWorkbookEditor(InputWorkbookReader reader, InputTempFiles scratch, InputDraftJson json, InputWorkbookXml.Checkpoint checkpoint) {
-        this.reader = reader; this.scratch = scratch; this.json = json; this.checkpoint = checkpoint;
+        this(reader,scratch,json,checkpoint,()->0);
+    }
+    InputWorkbookEditor(InputWorkbookReader reader,InputTempFiles scratch,InputDraftJson json,InputWorkbookXml.Checkpoint checkpoint,java.util.function.IntSupplier readTimeout) {
+        this.reader = reader; this.scratch = scratch; this.json = json; this.checkpoint = checkpoint;this.readTimeout=readTimeout;
     }
 
     static boolean supports(TableRef table, InputReadDefinition definition, String action) {
@@ -31,6 +35,14 @@ final class InputWorkbookEditor {
 
     static void validate(ModelInputDraftService.Source source, InputDraftHistory history,
             InputDraftJson.ChangeRequest request, long revision) {
+        ValidationContext context = validationContext(source, history);
+        if(InputDraftJson.restores(request))InputDraftRestoreValidation.validate(source,history,request,revision);
+        else validate(source, context.bindings(), context.addedRows(), context.addedFields(), request, revision);
+    }
+
+    record ValidationContext(Map<Long, Map<Integer, String>> bindings, Set<String> addedRows, Set<String> addedFields) {}
+
+    static ValidationContext validationContext(ModelInputDraftService.Source source, InputDraftHistory history) {
         Map<Long, Map<Integer, String>> bindings = new HashMap<>();
         source.catalog().tables().forEach(table -> bindings.put(table.id(), history.bindings(table.id())));
         Set<String> addedRows = bindings.values().stream().flatMap(rows -> rows.values().stream()).filter(id -> history.origin(id).equals("ADDED"))
@@ -40,7 +52,7 @@ final class InputWorkbookEditor {
             int column = field.path("columnNumber").asInt();
             if (history.sourceColumn(table.id(), column) == null) addedFields.add(table.key() + "/" + field.path("fieldKey").asText());
         }));
-        validate(source, bindings, addedRows, addedFields, request, revision);
+        return new ValidationContext(bindings, addedRows, addedFields);
     }
 
     static void validate(ModelInputDraftService.Source source, Map<Long, Map<Integer, String>> bindings,
@@ -51,12 +63,13 @@ final class InputWorkbookEditor {
 
     static void validateHistory(ModelInputDraftService.Source source, List<Revision> revisions, InputDraftJson json) {
         for (Revision revision : revisions) {
-            if (revision.schema() != 2 || revision.number() > 0 && revision.operationSchema() != 2) throw InputDraftException.internal();
+            if (!Set.of(2,3).contains(revision.schema()) || revision.number() > 0 && revision.operationSchema() != revision.schema()) throw InputDraftException.internal();
             if (revision.number() == 0 || revision.type().equals("UPLOAD_FILE")) continue;
+            var stored=json.changeRequest(new ByteArrayInputStream(revision.request().getBytes(StandardCharsets.UTF_8)),revision.schema());
             JsonNode delta = json.delta(revision.delta());
             for (JsonNode command : delta.path("commands")) {
                 TableRef table = source.catalog().tables().stream().filter(t -> t.key().equals(command.path("tableId").asText())).findFirst().orElseThrow(InputDraftException::internal);
-                if (!supports(table, source.definitions().get(table.id()), command.path("type").asText())) throw InputDraftException.conflict("POLICY_UNSUPPORTED", revision.number());
+                if (!supports(table, source.definitions().get(table.id()), command.path("type").asText().replace("RESTORE_","DELETE_"))) throw InputDraftException.conflict("POLICY_UNSUPPORTED", revision.number());
             }
         }
     }
@@ -79,11 +92,11 @@ final class InputWorkbookEditor {
                         () -> replay(basis, file, original, owned));
                     Path saved = create(owned);
                     return InputDraftDiagnostics.timedChecked(InputDraftDiagnostics.Stage.CHANGE_TRANSFORM, role,
-                        () -> new InputWorkbookCommands(json, reader, checkpoint).transform(before, saved, current, request, role, null, original));
+                        () -> new InputWorkbookCommands(json, reader, checkpoint).transform(before, saved, current, request, role, null, original, (table,type,id)->past(basis,file,original,owned,table,type,id,request.baseRevision())));
                 } catch (InputDraftException | InputDraftPreserveChange.Failure ex) { throw ex; }
                 catch (Exception ex) { throw new InputDraftPreserveChange.Failure("PRESERVATION_FAILED"); }
                 finally { cleanup(owned); }
-            });
+            },checkpoint::check,readTimeout.getAsInt());
             for (String key : List.of("tables", "rows", "columns", "cells")) for (JsonNode item : result.path(key)) delta.withArray(key).add(item);
         }
         // 같은 v2 검증기를 통과하기 전에는 worker가 성공 transaction을 만들지 않는다.
@@ -103,17 +116,20 @@ final class InputWorkbookEditor {
     }
 
     private Path replay(InputDraftEditingBasis basis, FileRef file, Path original, List<Path> owned) throws Exception {
+        return replay(basis,file,original,owned,basis.draft().revision());
+    }
+    private Path replay(InputDraftEditingBasis basis, FileRef file, Path original, List<Path> owned,long until) throws Exception {
         try { InputDraftFinalizationFiles.validatePackage(original, checkpoint::check); }
         catch (InputDraftPreserveChange.Failure ex) { throw ex; }
         catch (Exception ex) { throw new InputDraftPreserveChange.Failure("SOURCE_CHANGED"); }
         Path current = original;
-        for (Revision revision : basis.revisions()) if (revision.number() > file.baseline() && revision.type().equals("CHANGE")) {
+        for (Revision revision : basis.revisions()) if (revision.number() <= until && revision.number() > file.baseline() && revision.type().equals("CHANGE")) {
             checkpoint.check(); var history = basis.history(revision.number() - 1, json);
-            var request = json.changeRequest(new ByteArrayInputStream(revision.request().getBytes(StandardCharsets.UTF_8)));
+            var request = json.changeRequest(new ByteArrayInputStream(revision.request().getBytes(StandardCharsets.UTF_8)),revision.schema());
             if (request.operations().stream().noneMatch(c -> table(history, c.path("tableId").asText()).role().equals(file.role()))) continue;
             JsonNode recorded = json.delta(revision.delta());
             Path saved = create(owned);
-            JsonNode actual = new InputWorkbookCommands(json, reader, checkpoint).transform(current, saved, history, request, file.role(), recorded, original);
+            JsonNode actual = new InputWorkbookCommands(json, reader, checkpoint).transform(current, saved, history, request, file.role(), recorded, original,(table,type,id)->past(basis,file,original,owned,table,type,id,request.baseRevision()));
             for (String kind : List.of("tables", "rows", "columns", "cells")) {
                 Map<String, JsonNode> expected = new HashMap<>();
                 for (JsonNode item : recorded.path(kind)) if (table(history, item.path("tableId").asText()).role().equals(file.role())) expected.put(key(kind, item), item);
@@ -123,6 +139,20 @@ final class InputWorkbookEditor {
             if (!current.equals(original)) Files.delete(current); current = saved;
         }
         return current;
+    }
+
+    private InputWorkbookRestoration.Snapshot past(InputDraftEditingBasis basis,FileRef file,Path original,List<Path> owned,String table,String type,String id,long limit) throws Exception {
+        long deleted=deletionRevision(basis,file,table,type,id,limit,json);
+        return new InputWorkbookRestoration.Snapshot(basis.history(deleted-1,json),replay(basis,file,original,owned,deleted-1));
+    }
+    static long deletionRevision(InputDraftEditingBasis basis,FileRef file,String table,String type,String id,long limit,InputDraftJson json) {
+        long deleted=-1;
+        for(Revision revision:basis.revisions())if(revision.number()<=limit&&revision.number()>file.baseline()&&revision.type().equals("CHANGE")) {
+            for(JsonNode item:json.delta(revision.delta()).path(type.equals("RESTORE_ROW")?"rows":"columns"))if(item.path("tableId").asText().equals(table)
+                &&item.path(type.equals("RESTORE_ROW")?"rowId":"fieldKey").asText().equals(id)&&item.path(type.equals("RESTORE_ROW")?"rowNumber":"columnNumber").isNull())deleted=revision.number();
+        }
+        if(deleted<=file.baseline())throw InputDraftException.invalid();
+        return deleted;
     }
 
     private Path create(List<Path> owned) throws java.io.IOException { Path path = scratch.create(); owned.add(path); return path; }

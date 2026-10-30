@@ -76,6 +76,14 @@ mcp:
     stale-after: 5m
 
 mi:
+  model-input:
+    restore:
+      enabled: true
+    restore-preview:
+      enabled: true
+      max-concurrent: ${MODEL_INPUT_RESTORE_READ_MAX_CONCURRENT:1}
+      timeout-ms: ${MODEL_INPUT_RESTORE_READ_TIMEOUT_MS:30000}
+      scratch-bytes: ${MODEL_INPUT_RESTORE_READ_SCRATCH_BYTES:268435456}
   autocomplete:
     initial-load:
       enabled: false

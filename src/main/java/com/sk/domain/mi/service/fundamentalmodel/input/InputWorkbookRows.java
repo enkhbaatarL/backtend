@@ -9,6 +9,15 @@ import java.util.regex.Pattern;
 final class InputWorkbookRows {
     private static final Pattern CONTENT = Pattern.compile("<(?:f|v|is)(?=\\s|/?>)");
 
+    static Map<Integer, String> template(Path baseline, String sheet, int number,
+            InputWorkbookXml.Checkpoint checkpoint) throws Exception {
+        Map<Integer, String> cells = new HashMap<>();
+        InputWorkbookXml.rows(baseline, InputWorkbookXml.sheetParts(baseline).get(sheet), checkpoint, row -> {
+            if (row.number() == number) cells.putAll(InputWorkbookXml.cells(row.xml()));
+        });
+        return cells;
+    }
+
     static int lastContentRow(Path source, String sheet, int afterRow, int firstColumn, int lastColumn,
             InputWorkbookXml.Checkpoint checkpoint) throws Exception {
         String part = InputWorkbookXml.sheetParts(source).get(sheet); if (part == null) throw invalid();

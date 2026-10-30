@@ -29,5 +29,9 @@ public final class InputDraftException extends RuntimeException {
     }
     public static InputDraftException large() { return new InputDraftException(HttpStatus.PAYLOAD_TOO_LARGE,ResultCode.Error.REQ_INVALID_PARAMETER,"PAYLOAD_TOO_LARGE",null); }
     public static InputDraftException responseLarge() { return new InputDraftException(HttpStatus.UNPROCESSABLE_ENTITY,ResultCode.Error.BIZ_RULE_VIOLATION,"RESPONSE_TOO_LARGE",null); }
+    static InputDraftException comparisonBusy(Long revision){return new InputDraftException(HttpStatus.TOO_MANY_REQUESTS,ResultCode.Error.BIZ_RULE_VIOLATION,"CHANGE_QUERY_BUSY",revision);}
+    static InputDraftException comparisonUnavailable(Long revision){return new InputDraftException(HttpStatus.UNPROCESSABLE_ENTITY,ResultCode.Error.BIZ_RULE_VIOLATION,"CHANGE_QUERY_UNAVAILABLE",revision);}
+    static InputDraftException previewBusy(Long revision){return new InputDraftException(HttpStatus.TOO_MANY_REQUESTS,ResultCode.Error.BIZ_RULE_VIOLATION,"RESTORE_PREVIEW_BUSY",revision);}
+    static InputDraftException previewUnavailable(Long revision){return new InputDraftException(HttpStatus.UNPROCESSABLE_ENTITY,ResultCode.Error.BIZ_RULE_VIOLATION,"RESTORE_PREVIEW_UNAVAILABLE",revision);}
     public static InputDraftException internal() { return new InputDraftException(HttpStatus.INTERNAL_SERVER_ERROR,ResultCode.Error.SYS_INTERNAL_ERROR,null,null); }
 }

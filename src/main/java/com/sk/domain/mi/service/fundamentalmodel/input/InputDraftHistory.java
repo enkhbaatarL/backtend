@@ -56,21 +56,23 @@ final class InputDraftHistory {
         require(revisions.size()==draft.revision()+1);
         long expected=0;
         for(Revision revision:revisions) {
-            require(revision.number()==expected++&&revision.schema()==2);
+            require(revision.number()==expected++&&Set.of(2,3).contains(revision.schema()));
             if(revision.number()==0) {
                 require(revision.base()==null&&revision.operation()==null&&revision.delta()==null);
                 continue;
             }
             require(revision.base()!=null&&revision.base()==revision.number()-1&&uuid(revision.operation())
-                &&Set.of("CHANGE","UPLOAD_FILE").contains(revision.type())&&"SUCCEEDED".equals(revision.status())&&revision.operationSchema()==2
+                &&Set.of("CHANGE","UPLOAD_FILE").contains(revision.type())&&"SUCCEEDED".equals(revision.status())&&revision.operationSchema()==revision.schema()
                 &&revision.base().equals(revision.operationBase()));
             if("UPLOAD_FILE".equals(revision.type())) {
+                require(revision.schema()==2);
                 JsonNode delta=json.payload(revision.delta());exact(delta,"policyTemplateId","uploadFileId","kind");
                 require(delta.path("policyTemplateId").asLong()==basis.templateId()&&uuid(delta.path("uploadFileId").asText())
                     &&Set.of("SUPPLY","DEMAND","TRADE","OUTPUT").contains(delta.path("kind").asText()));
                 history.resetFile(delta.path("kind").asText(),revision.number(),identities);
                 continue;
             }
+            json.changeRequest(new java.io.ByteArrayInputStream(revision.request().getBytes(StandardCharsets.UTF_8)),revision.schema());
             Applied applied=history.apply(json.delta(revision.delta()),revision.request(),revision.operation(),revision.number());
             require(json.sameValue(json.payload(revision.result()),json.payload(applied.result())));
         }
@@ -115,6 +117,9 @@ final class InputDraftHistory {
         require(request.baseRevision()==revision-1&&json.sameValue(json.tree(request.operations()),delta.path("commands")));
         InputDraftColumns beforeColumns=new InputDraftColumns(columns);
         Map<String,LogicalRow> before=new LinkedHashMap<>(rows);
+        Set<String> restoring=restoredRowIds(request.operations());
+        Set<String> restoringColumns=new HashSet<>();
+        request.operations().stream().filter(c->c.path("type").asText().equals("RESTORE_COLUMN")).forEach(c->restoringColumns.add(c.path("tableId").asText()+"/"+c.path("fieldKey").asText()));
         Map<Long,InputReadDefinition> previousDefinitions=new LinkedHashMap<>(definitions);
         Set<String> affected=new LinkedHashSet<>(),changedTables=new HashSet<>();
         for(JsonNode command:delta.path("commands"))affected.add(command.path("tableId").asText());
@@ -150,14 +155,17 @@ final class InputDraftHistory {
         Map<Long,Map<String,InputDraftColumns.Column>> columnAdditions=new HashMap<>();Set<String> touchedColumns=new HashSet<>();
         for(JsonNode change:delta.path("columns"))table(change.path("tableId").asText());
         for(TableRef table:tables.values()) {
-            columnAdditions.put(table.id(),columns.apply(table,delta.path("columns"),touchedColumns));
+            columnAdditions.put(table.id(),columns.apply(table,delta.path("columns"),touchedColumns,restoringColumns));
             columns.validate(table,definitions.get(table.id()));
         }
-        validateDefinitionChanges(previousDefinitions,beforeColumns,columnAdditions);
+        validateDefinitionChanges(previousDefinitions,beforeColumns,columnAdditions,restoringColumns);
         validateControls();
         relocateRowCells(beforeColumns);
         relocateFixedCells(previousDefinitions,beforeColumns,delta.path("cells"));
         List<RowWrite> writes=new ArrayList<>();Map<String,JsonNode> additions=new LinkedHashMap<>();Set<String> changedRows=new HashSet<>();
+        Map<String,Integer> openPositions=new HashMap<>();
+        for(int n=0;n<positions.size();n++)if(positions.get(n).end()==null)
+            require(openPositions.putIfAbsent(positions.get(n).id(),n)==null);
         for(JsonNode change:delta.path("rows")) {
             if(change.has("derivedFromRowId"))exact(change,"tableId","rowId","clientRowKey","rowNumber","derivedFromRowId");
             else exact(change,"tableId","rowId","clientRowKey","rowNumber");
@@ -173,18 +181,15 @@ final class InputDraftHistory {
                 }
                 else require(client.matches("[A-Za-z][A-Za-z0-9_-]{0,63}"));
                 require(additions.putIfAbsent(client,change)==null);
-            } else require(!change.has("derivedFromRowId")&&old.table==table.id()&&old.position!=null&&change.path("clientRowKey").isNull());
+            } else require(!change.has("derivedFromRowId")&&old.table==table.id()&&(old.position!=null||restoring.contains(id)&&old.original!=null&&position!=null)&&change.path("clientRowKey").isNull());
             LogicalRow updated=old==null?new LogicalRow(table.id(),id,null,position,operation,client)
                 :new LogicalRow(old.table,old.id,old.original,position,old.operation,old.client);
             rows.put(id,updated);if(old==null)rowBaselines.put(id,tableBaselines.getOrDefault(table.id(),0L));
             writes.add(new RowWrite(table.id(),id,client,position,old==null));affected.add(table.key());
             if(old!=null) {
-                boolean closed=false;
-                for(int n=0;n<positions.size();n++) {
-                    RowPosition p=positions.get(n);
-                    if(p.id().equals(id)&&p.end()==null){require(p.begin()<revision);positions.set(n,new RowPosition(p.table(),p.id(),p.begin(),revision,p.row()));closed=true;}
-                }
-                require(closed);
+                Integer index=openPositions.remove(id);require(index!=null);
+                RowPosition p=positions.get(index);require(p.begin()<revision);
+                positions.set(index,new RowPosition(p.table(),p.id(),p.begin(),revision,p.row()));
             }
             positions.add(new RowPosition(table.id(),id,revision,null,position));
         }
@@ -213,8 +218,14 @@ final class InputDraftHistory {
             validationRows,additions,request.operations(),delta.path("rows"));
         Map<String,JsonNode> directAdditions=new LinkedHashMap<>();
         additions.forEach((key,value)->{if(!value.has("derivedFromRowId"))directAdditions.put(key,value);});
+        Set<String> pmiSourceParents=new HashSet<>();
+        for(JsonNode command:request.operations()) {
+            String type=command.path("type").asText(),id=type.equals("RESTORE_ROW")?command.path("rowId").asText():type.equals("DELETE_ROW")?command.path("rowRef").path("rowId").asText():null;
+            LogicalRow parent=before.get(id);
+            if(parent!=null&&parent.original!=null&&InputDraftPmiRows.user(table(parent.table)))pmiSourceParents.add(id);
+        }
         Map<String,List<String>> pmiLinks=InputDraftPmiRows.validate(List.copyOf(tables.values()),
-            validationRows,additions,rowCells,json);
+            validationRows,additions,rowCells,json,pmiSourceParents);
         List<Map<String,Object>> mappings=validateCommands(request.operations(),before,directAdditions,columnAdditions,linkedRows,pmiLinks);
         validateCreatedValues(request.operations(),columnAdditions,directAdditions);
         Map<String,Object> result=new LinkedHashMap<>();result.put("resultRevision",revision);result.put("rowMappings",mappings);result.put("columnMappings",columnMappings);
@@ -237,17 +248,20 @@ final class InputDraftHistory {
                 String field=command.has("fieldKey")?command.path("fieldKey").asText():columnAdditions.get(table.id()).get(command.path("clientColumnKey").asText()).field();
                 require(type.equals("SET")&&command.path("headerKey").asText().equals("year")&&command.path("value").isIntegralNumber());
                 expectedHeaders.computeIfAbsent(table.id(),ignored->new LinkedHashMap<>()).put(field,command.get("value"));
+            } else if(type.equals("RESTORE_ROW")) {
+                id=command.path("rowId").asText();LogicalRow old=before.get(id);require(old!=null&&old.position==null&&old.original!=null&&rows.get(id).position!=null);
+                live.add(id);live.addAll(pmiLinks.getOrDefault(id,List.of()));if(linkedRows.containsKey(id))live.add(linkedRows.get(id));
             } else if(type.equals("ADD_ROW")) {
                 String client=command.path("clientRowKey").asText();JsonNode addition=additions.get(client);
                 require(addition!=null&&addition.path("tableId").asText().equals(table.key())&&used.add(client));id=addition.path("rowId").asText();live.add(id);live.addAll(pmiLinks.getOrDefault(id,List.of()));if(linkedRows.containsKey(id))live.add(linkedRows.get(id));
                 Map<String,Object> mapping=new LinkedHashMap<>();mapping.put("commandId",command.path("commandId").asText());mapping.put("clientRowKey",client);mapping.put("tableId",table.key());mapping.put("rowId",id);
                 mapping.put("rowState",rows.get(id).position==null?"DELETED":"ACTIVE");mappings.add(mapping);
                 var values=command.path("values").fields();while(values.hasNext()){var value=values.next();expected.computeIfAbsent(id,k->new LinkedHashMap<>()).put(value.getKey(),value.getValue());}
-            } else if(!type.equals("ADD_COLUMN")&&!type.equals("DELETE_COLUMN")) {
+            } else if(!type.equals("ADD_COLUMN")&&!type.equals("DELETE_COLUMN")&&!type.equals("RESTORE_COLUMN")) {
                 JsonNode ref=command.path("rowRef");JsonNode added=additions.get(ref.path("clientRowKey").asText());
                 id=ref.has("rowId")?ref.path("rowId").asText():added==null?null:added.path("rowId").asText();
                 LogicalRow row=rows.get(id);require(row!=null&&row.table==table.id()&&live.contains(id));
-                if(type.equals("DELETE_ROW")){live.remove(id);if(linkedRows.containsKey(id))live.remove(linkedRows.get(id));}
+                if(type.equals("DELETE_ROW")){live.remove(id);live.removeAll(pmiLinks.getOrDefault(id,List.of()));if(linkedRows.containsKey(id))live.remove(linkedRows.get(id));}
                 else expected.computeIfAbsent(id,k->new LinkedHashMap<>()).put(command.has("fieldKey")?command.path("fieldKey").asText():columnAdditions.get(table.id()).get(command.path("clientColumnKey").asText()).field(),type.equals("CLEAR")?json.tree(null):command.get("value"));
             }
         }
@@ -392,7 +406,7 @@ final class InputDraftHistory {
             entry.setValue(moved);
         }
     }
-    private void validateDefinitionChanges(Map<Long,InputReadDefinition> before,InputDraftColumns previous,Map<Long,Map<String,InputDraftColumns.Column>> additions) {
+    private void validateDefinitionChanges(Map<Long,InputReadDefinition> before,InputDraftColumns previous,Map<Long,Map<String,InputDraftColumns.Column>> additions,Set<String> restored) {
         for(TableRef table:tables.values()) {
             InputReadDefinition old=before.get(table.id()),current=definitions.get(table.id());
             for(JsonNode field:old.fields()) {
@@ -403,8 +417,16 @@ final class InputDraftHistory {
             }
             Set<Integer> visible=new java.util.TreeSet<>();for(int col:old.columns()){Integer moved=columns.moved(table.id(),col,previous);if(moved!=null)visible.add(moved);}
             for(var column:additions.get(table.id()).values())if(column.position()!=null)visible.add(column.position());
+            for(var column:columns.all(table.id()))if(column.field()!=null&&restored.contains(table.key()+"/"+column.field())) {
+                require(column.source()!=null&&column.position()!=null);
+                if(originalDefinitions.get(table.id()).columns().contains(column.source()))visible.add(column.position());
+                JsonNode expected=InputWorkbookPolicy.field(originalDefinitions.get(table.id()),column.field()).deepCopy();
+                JsonNode actual=InputWorkbookPolicy.field(current,column.field()).deepCopy();
+                ((ObjectNode)expected).remove("columnNumber");((ObjectNode)actual).remove("columnNumber");require(json.sameValue(expected,actual));
+            }
             require(current.columns().equals(List.copyOf(visible)));
             List<Integer> identity=new ArrayList<>();for(int col:old.identityColumns()){Integer moved=columns.moved(table.id(),col,previous);if(moved!=null)identity.add(moved);}
+            for(var column:columns.all(table.id()))if(column.field()!=null&&restored.contains(table.key()+"/"+column.field())&&originalDefinitions.get(table.id()).identityColumns().contains(column.source()))identity.add(column.position());
             require(current.identityColumns().equals(identity.stream().sorted().toList()));
             for(int n=0;n<old.controls().size();n++) {
                 JsonNode from=old.controls().get(n),to=current.controls().get(n);long owner=table(from.path("sourceTableId").asText()).id();
@@ -434,6 +456,26 @@ final class InputDraftHistory {
     Map<String,String> regasLinks() {
         return InputDraftRegasRows.links(List.copyOf(tables.values()),originalDefinitions,
             rows.values().stream().map(row->new InputDraftRegasRows.Row(row.table,row.id,row.original,row.position,row.client,rowBaselines.getOrDefault(row.id,0L))).toList());
+    }
+    record RowState(long table,String id,Integer original,Integer position,long baseline) {}
+    List<RowState> rowStates(long table) {return rows.values().stream().filter(r->r.table==table&&rowBaselines.getOrDefault(r.id,0L).equals(tableBaselines.getOrDefault(table,0L))).map(r->new RowState(r.table,r.id,r.original,r.position,rowBaselines.getOrDefault(r.id,0L))).toList();}
+    List<InputDraftColumns.Column> columnStates(long table) {return columns.all(table);}
+    InputReadDefinition originalDefinition(long table) {return originalDefinitions.get(table);}
+    Set<String> restoredRowIds(List<JsonNode> commands) {
+        Set<String> result=new HashSet<>();
+        for(JsonNode c:commands)if(c.path("type").asText().equals("RESTORE_ROW")) {
+            TableRef table=table(c.path("tableId").asText());String id=c.path("rowId").asText();LogicalRow row=rows.get(id);
+            if(row==null||row.table!=table.id()||row.original==null||row.position!=null||!rowBaselines.getOrDefault(id,0L).equals(tableBaselines.getOrDefault(table.id(),0L)))throw InputDraftException.invalid();
+            result.add(id);
+            if(InputWorkbookPolicy.kind(table)==InputWorkbookPolicy.Kind.REGAS) {String child=regasLinks().get(id);if(child!=null)result.add(child);}
+            if(InputDraftPmiRows.user(table)) {
+                var validationRows=rows.values().stream().map(value->new InputDraftRegasRows.Row(value.table,value.id,value.original,value.position,value.client,rowBaselines.getOrDefault(value.id,0L))).toList();
+                var children=InputDraftPmiRows.originalLinks(List.copyOf(tables.values()),validationRows,Set.of(id)).get(id);
+                if(children==null)throw InputDraftException.conflict("POLICY_UNSUPPORTED",null);
+                result.addAll(children);
+            }
+        }
+        return result;
     }
     String origin(String id) {LogicalRow row=rows.get(id);return row.original==null?"ADDED":"SOURCE";}
     Integer sourceRow(long table,int current) {

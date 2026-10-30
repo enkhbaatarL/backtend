@@ -212,6 +212,8 @@ EDT-03의 `data`는 `{draftId, revision, sourceKey, sourceVersion, tableData, pa
 
 Regas처럼 다른 표를 참조하는 화면은 그 표도 같은 Draft·revision으로 별도 조회한다. 선택 표 응답에 참조 시트 전체가 포함됐다고 가정하지 않는다. [조회 구현][be-service] · [기존 연결 시트 로더][fe-table]
 
+현재 페이지 원본 셀의 변경 표시·되돌리기는 `editing.cellRestores`를 사용한다. 값·상태·제외 대상 및 삭제 행·열의 기존 changes 사용은 [편집 API §11.2A](mi-fundamental-model-input-draft-editing-api-proposal.md#112a-표-페이지의-셀-복원-정보-2026-10-29)를 따른다. 서버의 current는 성공 저장값이므로 FE 미저장 입력은 별도로 반영한다.
+
 ### 4.4 파일 직접 업로드·교체·취소
 
 기존 Case 없이 파일 하나부터 시작한다. 지원 형식은 **.xlsx/.xlsm, 파일당50 MiB(52,428,800 bytes)**다. .xls는 지원하지 않는다. 서버는 파일명으로 DEMAND/SUPPLY/TRADE/OUTPUT을 판별하고 최초 성공 때 고정한 활성 양식 규칙으로 검증한다. FE가 임의 kind·Case ID를 만들어 보내지 않는다.

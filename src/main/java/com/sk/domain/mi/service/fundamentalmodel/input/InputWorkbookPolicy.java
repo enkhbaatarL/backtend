@@ -251,7 +251,7 @@ final class InputWorkbookPolicy {
             case "ADD_ROW" -> (Set.of(Kind.ROWS, Kind.COST, Kind.MACRO, Kind.SHIPPING_COST, Kind.SHIPPING_DISRUPTION, Kind.SHIPPING_ROUTE, Kind.ALLOCATION, Kind.HYDROGEN, Kind.BCINPUT, Kind.BCPRODUCTION, Kind.PRODUCTION, Kind.HURRICANE_ADJUSTMENT, Kind.ANNUAL, Kind.SECTOR, Kind.MONTHLY, Kind.LIQPROD, Kind.LIQUTIL).contains(kind)
                 || InputDraftPmiRows.user(table) || kind == Kind.UPSTREAM && table.startColumn() == 20 || kind == Kind.WEATHER_LOGIC && table.startColumn() >= 12 || kind == Kind.REGAS && table.startColumn() == 1) && table.rowAdd();
             case "ADD_COLUMN" -> (kind == Kind.ANNUAL || kind == Kind.LNG || kind == Kind.REGAS || months(table)) && table.columnAdd();
-            case "DELETE_ROW" -> infrastructure(table) || kind == Kind.SECTOR || kind == Kind.MONTHLY || kind == Kind.LIQUTIL || kind == Kind.REGAS && table.startColumn() == 1;
+            case "DELETE_ROW" -> supports(table, definition, "ADD_ROW") || infrastructure(table) || kind == Kind.SECTOR || kind == Kind.MONTHLY || kind == Kind.LIQUTIL || kind == Kind.REGAS && table.startColumn() == 1;
             case "DELETE_COLUMN" -> infrastructure(table) || months(table);
             default -> false;
         };
@@ -440,7 +440,7 @@ final class InputWorkbookPolicy {
         for (JsonNode field : definition.fields()) if (field.path("fieldKey").asText().equals(key)) return field;
         throw InputDraftException.invalid();
     }
-    private static void value(JsonNode field, JsonNode value, JsonNode constraints, JsonNode command, InputDraftJson.ChangeRequest request, long revision) {
+    static void value(JsonNode field, JsonNode value, JsonNode constraints, JsonNode command, InputDraftJson.ChangeRequest request, long revision) {
         String type = field.path("dataType").asText();
         if (type.equals("DECIMAL_OR_TEXT") ? !value.isTextual() && !value.isNumber()
                 : type.equals("TEXT") ? !value.isTextual() : !value.isNumber()) throw InputDraftException.invalid();
@@ -459,7 +459,7 @@ final class InputWorkbookPolicy {
             if (!found) throw invalidField(field, command, request, revision, "OPTION_NOT_ALLOWED");
         }
     }
-    private static void policy(String status, long revision, JsonNode command, InputDraftJson.ChangeRequest request, String reason) {
+    static void policy(String status, long revision, JsonNode command, InputDraftJson.ChangeRequest request, String reason) {
         if (status.equals("NOT_ALLOWED")) throw invalid(command, request, revision, reason);
         if (!status.equals("READY")) throw InputDraftException.conflict(status.equals("INCOMPLETE") ? "POLICY_INCOMPLETE" : "POLICY_UNSUPPORTED", revision);
     }

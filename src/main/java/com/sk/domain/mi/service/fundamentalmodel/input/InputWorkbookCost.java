@@ -15,18 +15,19 @@ final class InputWorkbookCost {
     record Result(Set<String> calculated, List<String> added) {}
     private static final String SHEET = "CostInput";
 
-    static Result ranking(Path source, int previousEnd, int end, int styleRow, Set<Integer> active, Set<Integer> created,
+    static Result ranking(Path source, Path baseline, int previousEnd, int end, int styleRow, Set<Integer> active, Set<Integer> created, Set<Object> removedYears,
             InputWorkbookXml.SheetPatch patch, InputWorkbookReader reader, InputWorkbookXml.Checkpoint checkpoint) throws Exception {
         Map<Integer, Map<Integer, Object>> values = new LinkedHashMap<>();
         int referenceEnd = Math.max(1000, end), previousReferenceEnd = Math.max(1000, previousEnd);
         reader.readLocal(source, List.of(new InputWorkbookReader.Window(SHEET, row -> row >= 3 && row <= referenceEnd, Set.of(37, 40, 41, 42, 43), (row, cells) -> {
             Map<Integer, Object> data = new HashMap<>(); cells.forEach((column, cell) -> data.put(column, cell.raw())); values.put(row, data);
         })));
-        Set<String> years = new HashSet<>(); Set<Integer> changed = new HashSet<>(created);
+        Set<String> years = new HashSet<>(); removedYears.forEach(value -> years.add(year(value)));
+        Set<Integer> changed = new HashSet<>(created);
         patch.edits.forEach((row, cells) -> {
             if (active.contains(row) && (cells.containsKey(37) || cells.containsKey(40))) changed.add(row);
         });
-        if (changed.isEmpty()) return new Result(Set.of(), List.of());
+        if (changed.isEmpty() && years.isEmpty() && referenceEnd == previousReferenceEnd) return new Result(Set.of(), List.of());
         for (int row : changed) {
             Map<Integer, Object> data = values.computeIfAbsent(row, ignored -> new HashMap<>()); years.add(year(data.get(37)));
             patch.edits.getOrDefault(row, Map.of()).forEach((column, edit) -> { if (column == 37 || column == 40) data.put(column, edit.value()); });
@@ -46,7 +47,12 @@ final class InputWorkbookCost {
                 if (column >= 41 && column <= 44) raw.put(InputWorkbookXml.address(row.number(), column), cell);
             });
         });
-        for (int column = 41; column <= 44; column++) if (!rankFormula(3, column, previousReferenceEnd).equals(original.get(InputWorkbookXml.address(3, column)))) throw invalid();
+        var baseFormulas = InputWorkbookStructure.formulas(baseline, SHEET, Set.of("AO3", "AP3", "AQ3", "AR3")::contains, checkpoint);
+        for (int column = 41; column <= 44; column++) {
+            String anchor = InputWorkbookXml.address(3, column);
+            if (original.containsKey(anchor) ? !rankFormula(3, column, previousReferenceEnd).equals(original.get(anchor))
+                    : !rankFormula(3, column, 1000).equals(baseFormulas.get(anchor))) throw invalid();
+        }
         Map<InputWorkbookCalculation.Address, String> formulas = new LinkedHashMap<>(); List<String> added = new ArrayList<>();
         for (String target : targets) {
             var ref = new CellReference(target); int row = ref.getRow() + 1, column = ref.getCol() + 1;
@@ -54,6 +60,7 @@ final class InputWorkbookCost {
             if (created.contains(row) && formula == null) {
                 if (template != null && java.util.regex.Pattern.compile("<(?:v|is)(?=\\s|/?>)").matcher(template).find()) throw invalid();
                 if (template == null) template = raw.get(InputWorkbookXml.address(styleRow, column));
+                if (template == null) template = InputWorkbookRows.template(baseline, SHEET, 3, checkpoint).get(column);
                 if (template == null) throw invalid();
                 template = InputWorkbookXml.valueCell(template, target, null).replace("</c>", "<f>" + InputWorkbookXml.escape(expected) + "</f><v>0</v></c>");
                 added.add(target);
@@ -91,7 +98,7 @@ final class InputWorkbookCost {
         };
     }
 
-    static Result inputs(Path source, int first, int inputLast, int end, int styleRow, Set<Integer> created,
+    static Result inputs(Path source, Path baseline, int first, int inputLast, int end, int styleRow, Set<Integer> created,
             InputWorkbookXml.SheetPatch patch, InputWorkbookReader reader, InputWorkbookXml.Checkpoint checkpoint) throws Exception {
         Set<String> targets = new HashSet<>();
         for (int row : created) for (int column = inputLast + 1; column <= inputLast + 2; column++) targets.add(InputWorkbookXml.address(row, column));
@@ -110,7 +117,8 @@ final class InputWorkbookCost {
         List<String> keys = new ArrayList<>();
         for (int column = first; column < inputLast - 1; column++) keys.add("$" + CellReference.convertNumToColString(column - 1) + "3");
         String helper = String.join("&", keys);
-        if (!selected.equals(original.get(selectedBase)) || !helper.equals(original.get(helperBase))) throw invalid();
+        var baseFormulas = InputWorkbookStructure.formulas(baseline, SHEET, a -> a.equals(selectedBase) || a.equals(helperBase), checkpoint);
+        if (!selected.equals(baseFormulas.get(selectedBase)) || !helper.equals(baseFormulas.get(helperBase))) throw invalid();
         Map<String, String> raw = new HashMap<>();
         InputWorkbookXml.rows(source, InputWorkbookXml.sheetParts(source).get(SHEET), checkpoint, row -> {
             if (!rows.contains(row.number()) && row.number() != styleRow) return;
@@ -127,6 +135,7 @@ final class InputWorkbookCost {
             if (created.contains(row) && formula == null) {
                 if (template != null && java.util.regex.Pattern.compile("<(?:v|is)(?=\\s|/?>)").matcher(template).find()) throw invalid();
                 if (template == null) template = raw.get(InputWorkbookXml.address(styleRow, column));
+                if (template == null) template = InputWorkbookRows.template(baseline, SHEET, 3, checkpoint).get(column);
                 if (template == null) throw invalid();
                 template = InputWorkbookXml.valueCell(template, target, null).replace("</c>", "<f>" + InputWorkbookXml.escape(expected) + "</f><v>0</v></c>");
                 added.add(target); formula = expected;

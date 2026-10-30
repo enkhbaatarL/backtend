@@ -98,6 +98,10 @@ final class InputWorkbookRegas {
     static Map<InputWorkbookCalculation.Address, Object> monthlyRows(Path source, Path baseline, Path current, TableRef previousCountries, int maximum,
             int styleRow, Set<Integer> rows, InputWorkbookXml.SheetPatch patch, InputWorkbookReader reader,
             InputWorkbookXml.Checkpoint checkpoint) throws Exception {
+        return monthlyRows(source,baseline,current,previousCountries,maximum,styleRow,rows,patch,reader,checkpoint,Set.of());
+    }
+    static Map<InputWorkbookCalculation.Address,Object> monthlyRows(Path source,Path baseline,Path current,TableRef previousCountries,int maximum,
+            int styleRow,Set<Integer> rows,InputWorkbookXml.SheetPatch patch,InputWorkbookReader reader,InputWorkbookXml.Checkpoint checkpoint,Set<Integer> restored) throws Exception {
         String sheet = "RegasAdjustment", master = "BCRegasification";
         Path templatesFrom = source; int templateRow = styleRow;
         Map<String, String> selected = rowFormulas(source, sheet, templateRow, checkpoint);
@@ -114,10 +118,13 @@ final class InputWorkbookRegas {
                 if (row == 9 && column <= 115 || row == 10 && column >= 118) constants.put(new InputWorkbookCalculation.Address(sheet, InputWorkbookXml.address(row, column)), cell.raw());
             }))));
         Map<InputWorkbookCalculation.Address, String> formulas = new LinkedHashMap<>();
+        Map<String,String> restoredLinks=restored.isEmpty()?Map.of():InputWorkbookStructure.formulas(current,sheet,a->{var ref=new CellReference(a);return restored.contains(ref.getRow()+1)&&(ref.getCol()+1>=2&&ref.getCol()+1<=6||ref.getCol()+1==117);},checkpoint);
         for (int row : rows) {
             boolean reclaimed = row >= previousCountries.startRow() && row <= previousCountries.endRow();
             for (int column = 8; column <= 31; column++) {
-                constants.put(new InputWorkbookCalculation.Address(sheet, InputWorkbookXml.address(row, column)), null);
+                var originalInput=patch.edits.getOrDefault(row,Map.of()).get(column);
+                if(restored.contains(row)&&originalInput==null)throw invalid();
+                constants.put(new InputWorkbookCalculation.Address(sheet, InputWorkbookXml.address(row, column)), restored.contains(row)?originalInput.value():null);
                 if (reclaimed) {
                     var edit = patch.edits.getOrDefault(row, Map.of()).get(column);
                     if (edit == null || templates.get(column) == null) throw invalid();
@@ -127,8 +134,9 @@ final class InputWorkbookRegas {
             for (var formula : selected.entrySet()) {
                 int column = new CellReference(formula.getKey()).getCol() + 1; String address = InputWorkbookXml.address(row, column);
                 String destination = patch.raw.getOrDefault(row, Map.of()).getOrDefault(column, destinations.getOrDefault(row, Map.of()).get(column));
-                if (destination != null && java.util.regex.Pattern.compile("<(?:f|v|is)(?=\\s|/?>)").matcher(destination).find()) throw invalid();
                 String text = InputWorkbookFormula.translate(formula.getValue(), row - templateRow, 0);
+                if (destination != null && java.util.regex.Pattern.compile("<(?:f|v|is)(?=\\s|/?>)").matcher(destination).find()
+                    && !(restored.contains(row)&&(column>=2&&column<=6||column==117)&&text.equals(restoredLinks.get(address)))) throw invalid();
                 formulas.put(new InputWorkbookCalculation.Address(sheet, address), text);
                 patch.raw(row, column, formulaCell(destination == null || reclaimed && column >= 7 && column <= 115 ? templates.get(column) : destination, address, text));
             }

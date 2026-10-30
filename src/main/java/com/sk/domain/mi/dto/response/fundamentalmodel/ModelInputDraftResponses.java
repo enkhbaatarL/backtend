@@ -65,15 +65,59 @@ public final class ModelInputDraftResponses {
         @Schema(description="원본 행·추가 행·빈 슬롯 구분",allowableValues={"SOURCE","ADDED","EMPTY_SLOT"}) String origin) {}
     @Schema(requiredProperties={"rowId","values"})
     public record EditValue(String rowId,Map<String,Object> values) {}
-    @Schema(requiredProperties={"capabilities","fields","rowBindings","editValues"})
+    @Schema(requiredProperties={"rowId","fieldKey","baseline","current","restoreStatus","restoreReason"})
+    public record CellRestore(String rowId,String fieldKey,
+        @Schema(oneOf={EmptyComparisonValue.class,TypedComparisonValue.class}) JsonNode baseline,
+        @Schema(oneOf={EmptyComparisonValue.class,TypedComparisonValue.class}) JsonNode current,
+        @Schema(allowableValues={"READY","INCOMPLETE","NOT_ALLOWED","UNSUPPORTED"}) String restoreStatus,
+        @Schema(nullable=true,types={"string","null"},description="READY이면 null. 미변경은 NO_CHANGE, 그 외 changes와 같은 사유 코드") String restoreReason) {}
+    @Schema(requiredProperties={"capabilities","fields","rowBindings","editValues","cellRestores"})
     public record Editing(@Schema(description="SET/CLEAR/ADD_ROW/DELETE_ROW/ADD_COLUMN/DELETE_COLUMN의 READY/INCOMPLETE/NOT_ALLOWED/UNSUPPORTED. READY만 호출 가능") Map<String,String> capabilities,
         @Schema(description="안정 fieldKey별 입력 정의. dataType은 INTEGER/DECIMAL/TEXT/DECIMAL_OR_TEXT. DECIMAL_OR_TEXT는 JSON number와 string을 원래 타입 그대로 주고받으며 실제 빈칸은 CLEAR로 처리. setConstraints.required=true인 TEXT는 빈 문자열·공백 입력 불가. CLEAR 허용 여부는 policyStatus.CLEAR로 표시") List<JsonNode> fields,List<RowBinding> rowBindings,List<EditValue> editValues,
+        @Schema(description="현재 페이지의 편집 가능한 SOURCE 행×SOURCE 열 셀. 역할별 고정 파일 baseline과 성공 저장 current를 EMPTY/VALUE로 제공. 미변경은 NOT_ALLOWED/NO_CHANGE. READY만 SET/CLEAR로 복원 가능") List<CellRestore> cellRestores,
         @com.fasterxml.jackson.annotation.JsonInclude(com.fasterxml.jackson.annotation.JsonInclude.Include.NON_NULL)
-        @Schema(description="ADD_COLUMN READY일 때만 제공하는 headerValues/body 생성 정책") JsonNode columnCreation) {}
+        @Schema(description="ADD_COLUMN READY일 때만 제공하는 headerValues/body 생성 정책") JsonNode columnCreation) {
+        public Editing(Map<String,String> capabilities,List<JsonNode> fields,List<RowBinding> rowBindings,List<EditValue> editValues,JsonNode columnCreation) {
+            this(capabilities,fields,rowBindings,editValues,List.of(),columnCreation);
+        }
+    }
     @Schema(requiredProperties={"draftId","revision","sourceKey","sourceVersion","tableData","page","editing"})
     public record Table(@Schema(format="uuid") String draftId,
         @Schema(description="조회한 성공 저장 번호",minimum="0",maximum="9007199254740991") long revision,
         String sourceKey,@Schema(description="Case 원본 기준. 직접 업로드는 null",nullable=true,types={"string","null"}) String sourceVersion,TableData tableData,Page page,Editing editing) {}
+    @Schema(requiredProperties={"draftId","tableId","revision","items","nextCursor"})
+    public record Changes(String draftId,String tableId,long revision,
+        @io.swagger.v3.oas.annotations.media.ArraySchema(schema=@Schema(oneOf={CellChange.class,RowChange.class,ColumnChange.class,HeaderChange.class,ControlChange.class},discriminatorProperty="kind")) List<JsonNode> items,
+        @Schema(nullable=true,types={"string","null"},description="마지막 페이지 null. 후속 조회에 그대로 제출") String nextCursor) {}
+    @Schema(requiredProperties={"kind"},additionalProperties=Schema.AdditionalPropertiesValue.FALSE)
+    public record EmptyComparisonValue(@Schema(allowableValues={"EMPTY"}) String kind) {}
+    @Schema(requiredProperties={"kind","value"},additionalProperties=Schema.AdditionalPropertiesValue.FALSE)
+    public record TypedComparisonValue(@Schema(allowableValues={"VALUE"}) String kind,@Schema(types={"number","string"}) Object value) {}
+    @Schema(requiredProperties={"kind","change","rowId","fieldKey","baseline","current","restoreStatus","restoreReason"},additionalProperties=Schema.AdditionalPropertiesValue.FALSE)
+    public record CellChange(@Schema(allowableValues={"CELL"}) String kind,@Schema(allowableValues={"MODIFIED"}) String change,String rowId,String fieldKey,
+        @Schema(oneOf={EmptyComparisonValue.class,TypedComparisonValue.class}) JsonNode baseline,@Schema(oneOf={EmptyComparisonValue.class,TypedComparisonValue.class}) JsonNode current,
+        @Schema(allowableValues={"READY","INCOMPLETE","NOT_ALLOWED","UNSUPPORTED"}) String restoreStatus,@Schema(nullable=true,types={"string","null"}) String restoreReason) {}
+    @Schema(requiredProperties={"kind","change","rowId","origin","originalRowNumber","restoreStatus","restoreReason"},additionalProperties=Schema.AdditionalPropertiesValue.FALSE)
+    public record RowChange(@Schema(allowableValues={"ROW"}) String kind,@Schema(allowableValues={"ADDED","DELETED"}) String change,String rowId,String origin,
+        @Schema(nullable=true,types={"integer","null"}) Integer originalRowNumber,@Schema(allowableValues={"READY","INCOMPLETE","NOT_ALLOWED","UNSUPPORTED"}) String restoreStatus,@Schema(nullable=true,types={"string","null"}) String restoreReason) {}
+    @Schema(requiredProperties={"kind","change","fieldKey","origin","originalColumnNumber","restoreStatus","restoreReason"},additionalProperties=Schema.AdditionalPropertiesValue.FALSE)
+    public record ColumnChange(@Schema(allowableValues={"COLUMN"}) String kind,@Schema(allowableValues={"ADDED","DELETED"}) String change,String fieldKey,String origin,
+        @Schema(nullable=true,types={"integer","null"}) Integer originalColumnNumber,@Schema(allowableValues={"READY","INCOMPLETE","NOT_ALLOWED","UNSUPPORTED"}) String restoreStatus,@Schema(nullable=true,types={"string","null"}) String restoreReason) {}
+    @Schema(requiredProperties={"kind","change","fieldKey","headerKey","baseline","current","restoreStatus","restoreReason"},additionalProperties=Schema.AdditionalPropertiesValue.FALSE)
+    public record HeaderChange(@Schema(allowableValues={"HEADER"}) String kind,@Schema(allowableValues={"MODIFIED"}) String change,String fieldKey,String headerKey,
+        @Schema(oneOf={EmptyComparisonValue.class,TypedComparisonValue.class}) JsonNode baseline,@Schema(oneOf={EmptyComparisonValue.class,TypedComparisonValue.class}) JsonNode current,
+        @Schema(allowableValues={"READY","INCOMPLETE","NOT_ALLOWED","UNSUPPORTED"}) String restoreStatus,@Schema(nullable=true,types={"string","null"}) String restoreReason) {}
+    @Schema(requiredProperties={"kind","change","controlId","sourceTableId","sourceControlId","baseline","current","restoreStatus","restoreReason"},additionalProperties=Schema.AdditionalPropertiesValue.FALSE)
+    public record ControlChange(@Schema(allowableValues={"CONTROL"}) String kind,@Schema(allowableValues={"MODIFIED"}) String change,String controlId,String sourceTableId,String sourceControlId,
+        @Schema(oneOf={EmptyComparisonValue.class,TypedComparisonValue.class}) JsonNode baseline,@Schema(oneOf={EmptyComparisonValue.class,TypedComparisonValue.class}) JsonNode current,
+        @Schema(allowableValues={"READY","INCOMPLETE","NOT_ALLOWED","UNSUPPORTED"}) String restoreStatus,@Schema(nullable=true,types={"string","null"}) String restoreReason) {}
+    @Schema(requiredProperties={"draftId","tableId","revision","kind","targetId","preview","tableData","page","editing"})
+    public record RestorePreview(String draftId,String tableId,long revision,String kind,String targetId,
+        @Schema(description="항상 true. 성공 저장 전 예상 표이며 revision은 현재 성공 번호",_const="true") boolean preview,TableData tableData,Page page,Editing editing) {}
+    @Schema(requiredProperties={"status","code","message","data"})
+    public record ChangesEnvelope(boolean status,String code,String message,Changes data) {}
+    @Schema(requiredProperties={"status","code","message","data"})
+    public record RestorePreviewEnvelope(boolean status,String code,String message,RestorePreview data) {}
     @Schema(requiredProperties={"reason","currentRevision","issues"})
     public record Problem(@Schema(description="클라이언트 분기용 오류 사유") String reason,
         @Schema(description="현재 성공 저장 번호. 판단할 수 없으면 null",nullable=true,types={"integer","null"},minimum="0",maximum="9007199254740991") Long currentRevision,

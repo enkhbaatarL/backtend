@@ -38,6 +38,202 @@ import org.springframework.transaction.support.TransactionTemplate;
 @RequiredArgsConstructor
 @Transactional(readOnly=true)
 public class ModelInputDraftService {
+    @org.springframework.beans.factory.annotation.Value("${mi.model-input.restore-preview.enabled:false}")
+    private boolean restorePreviewEnabled;
+    private InputTempFiles restoreScratch;
+    @org.springframework.beans.factory.annotation.Autowired
+    void restoreScratch(InputTempFiles scratch){this.restoreScratch=scratch;}
+    private java.util.concurrent.Semaphore restorePreviewSlot=new java.util.concurrent.Semaphore(1);
+    private int previewTimeoutMillis=30_000;
+    private long previewScratchBytes=256L*1024*1024;
+    @org.springframework.beans.factory.annotation.Autowired
+    void previewLimits(@org.springframework.beans.factory.annotation.Value("${mi.model-input.restore-preview.max-concurrent:1}") int concurrent,
+            @org.springframework.beans.factory.annotation.Value("${mi.model-input.restore-preview.timeout-ms:30000}") int timeout,
+            @org.springframework.beans.factory.annotation.Value("${mi.model-input.restore-preview.scratch-bytes:268435456}") long bytes) {
+        if(concurrent<=0||timeout<=0||bytes<=0)throw new IllegalArgumentException("positive preview limits required");
+        restorePreviewSlot=new java.util.concurrent.Semaphore(concurrent);previewTimeoutMillis=timeout;previewScratchBytes=bytes;
+    }
+    @Transactional(propagation=Propagation.NOT_SUPPORTED)
+    public RestorePreview restorePreview(String id,long revision,String tableId,String kind,String target,Integer first) {
+        long started=System.nanoTime();Actor actor=actor();var basis=comparisonBasis(actor,id,revision,tableId);
+        if(kind==null||!Set.of("ROW","COLUMN").contains(kind)||target==null||!(kind.equals("ROW")?target.matches("[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}"):target.matches("[A-Za-z][A-Za-z0-9_-]{0,63}")))throw InputDraftException.invalid();
+        if(!restorePreviewEnabled||!restoresEnabled||!changesEnabled||restoreScratch==null)throw InputDraftException.conflict("POLICY_UNSUPPORTED",revision);
+        if(!restorePreviewSlot.tryAcquire())throw InputDraftException.previewBusy(revision);
+        try(var scope=restoreScratch.beginTask()) {
+            long deadline=started+java.util.concurrent.TimeUnit.MILLISECONDS.toNanos(previewTimeoutMillis);
+            Runnable check=readBudget(scope,deadline,revision,true);
+            java.util.function.IntSupplier remaining=()->{check.run();return (int)Math.max(1,java.util.concurrent.TimeUnit.NANOSECONDS.toMillis(deadline-System.nanoTime()));};
+            scope.checkpoint(check,remaining);check.run();
+            ObjectNode command=(ObjectNode)json.tree(Map.of("type","RESTORE_"+kind,"commandId","preview","tableId",tableId));command.put(kind.equals("ROW")?"rowId":"fieldKey",target);
+            var request=new InputDraftJson.ChangeRequest(UUID.randomUUID().toString(),revision,List.of(command));
+            JsonNode delta=new InputWorkbookEditor(reader,restoreScratch,json,check::run,remaining).execute(basis,actor.companyCode,request);
+            InputDraftHistory history=basis.history(revision,json);history.apply(delta,new String(json.changeBytes(request),StandardCharsets.UTF_8),UUID.randomUUID().toString(),revision+1);
+            Source old=basis.source();Source virtual=new Source(old.caseId,history.catalog(),old.files,old.key,old.version,old.inputIds,history.definitions());
+            Table result=renderTable(actor,new State(basis.draft().atRevision(revision+1),virtual,history),tableId,first,InputDraftJson.RESPONSE_LIMIT-256);check.run();verifyComparison(actor,basis);
+            return new RestorePreview(id,tableId,revision,kind,target,true,result.tableData(),result.page(),result.editing());
+        }catch(InputDraftException ex){throw ex;}
+        catch(InputDraftPreserveChange.Failure ex){throw InputDraftException.previewUnavailable(revision);}
+        catch(Exception ex){throw InputDraftException.internal();}
+        finally{restorePreviewSlot.release();}
+    }
+
+
+    private InputDraftEditingBasis comparisonBasis(Actor actor,String id,long revision,String table) {
+        return tx(false,()->{
+            Draft draft=lockSnapshot(actor,id);Source source=checkedSource(actor,draft);
+            if(draft.revision()!=revision)throw InputDraftException.conflict("REVISION_CONFLICT",draft.revision());
+            TableRef selected=source.catalog.tables().stream().filter(t->t.key().equals(table)).findFirst().orElseThrow(InputDraftException::missing);
+            if(!source.definitions.get(selected.id()).navigationVisible())throw InputDraftException.missing();
+            if(source.files.stream().noneMatch(file->file.role().equals(selected.role())))throw InputDraftException.conflict("FILES_INCOMPLETE",draft.revision());
+            return loadBasis(draft,source);
+        });
+    }
+    private void verifyComparison(Actor actor,InputDraftEditingBasis basis) {
+        tx(false,()->{Draft current=lockSnapshot(actor,basis.draft().id());Source source=checkedSource(actor,current);
+            if(current.revision()!=basis.draft().revision())throw InputDraftException.conflict("REVISION_CONFLICT",current.revision());
+            if(!source.files.equals(basis.source().files)||!java.util.Objects.equals(source.version,basis.source().version))throw InputDraftException.conflict("SOURCE_CHANGED",current.revision());return null;});
+    }
+    private record ComparisonValues(Map<String,Map<String,Object>> rows,Map<String,JsonNode> fields,Map<String,JsonNode> controls,Map<String,Object> headers) {}
+    private ComparisonValues comparisonValues(State state,TableRef selected,Map<Integer,Map<Integer,Cell>> sourceCells) {
+        Map<String,Map<String,Object>> rows=new HashMap<>();Map<String,JsonNode> fields=new LinkedHashMap<>(),controls=new LinkedHashMap<>();
+        var definition=state.history.definitions().get(selected.id());definition.fields().forEach(f->fields.put(f.path("fieldKey").asText(),f));
+        for(var binding:state.history.rowStates(selected.id()))if(binding.position()!=null) {
+            Integer source=state.history.sourceRow(selected.id(),binding.position());Map<Integer,Cell> cells=state.history.projectSource(selected.id(),source==null?Map.of():sourceCells.getOrDefault(source,Map.of()));state.history.overlay(selected.id(),binding.position(),cells);
+            Map<String,Object> values=new LinkedHashMap<>();
+            for(JsonNode field:definition.fields()) {
+                int col=field.path("columnNumber").asInt();Cell cell=cells.get(col);
+                if("READY".equals(field.path("policyStatus").path("SET").asText())&&selected.scopes().stream().anyMatch(scope->scope.contains(binding.position(),col))&&cell!=null&&!cell.formula()&&cell.raw()!=null)values.put(field.path("fieldKey").asText(),typed(field.path("dataType").asText(),cell.raw()));
+            }
+            rows.put(binding.id(),values);
+        }
+        for(JsonNode control:definition.controls())if(control.path("editable").asBoolean()&&InputWorkbookPolicy.supportsControl(selected,control)) {
+            var original=state.history.originalControl(selected.id(),control.path("id").asText());int col=control.path("binding").path("columnIndex").asInt()+1,row=control.path("binding").path("rowNumber").asInt();
+            Cell cell=state.history.control(control.path("sourceTableId").asText(),row,col);
+            if(cell==null)cell=sourceCells.getOrDefault(original.path("binding").path("rowNumber").asInt(),Map.of()).get(original.path("binding").path("columnIndex").asInt()+1);
+            ObjectNode value=control.deepCopy();value.set("value",json.tree(cell==null?null:cell.raw()));controls.put(control.path("id").asText(),value);
+        }
+        Map<String,Object> headers=new HashMap<>();Map<Integer,Cell> current=state.history.projectSource(selected.id(),sourceCells.getOrDefault(3,Map.of()));state.history.overlay(selected.id(),3,current);
+        for(JsonNode field:definition.fields())if(field.path("policyStatus").path("SET_HEADER").asText().equals("READY")) {
+            Cell cell=current.get(field.path("columnNumber").asInt());headers.put(field.path("fieldKey").asText(),cell==null?null:cell.raw());
+        }
+        return new ComparisonValues(rows,fields,controls,headers);
+    }
+    @Transactional(propagation=Propagation.NOT_SUPPORTED)
+    public Changes changes(String id,long revision,String tableId,String cursor) {
+        actor();if(restoreScratch==null)throw InputDraftException.conflict("POLICY_UNSUPPORTED",revision);
+        if(!restorePreviewSlot.tryAcquire())throw InputDraftException.comparisonBusy(revision);
+        try(var scope=restoreScratch.beginTask()) {
+            long deadline=System.nanoTime()+java.util.concurrent.TimeUnit.MILLISECONDS.toNanos(previewTimeoutMillis);
+            Runnable check=readBudget(scope,deadline,revision,false);scope.checkpoint(check,()->{check.run();return (int)Math.max(1,java.util.concurrent.TimeUnit.NANOSECONDS.toMillis(deadline-System.nanoTime()));});
+            return changesCurrent(id,revision,tableId,cursor);
+        }catch(InputDraftException ex){throw ex;}catch(InputDraftPreserveChange.Failure ex){throw InputDraftException.comparisonUnavailable(revision);}catch(Exception ex){throw InputDraftException.internal();}finally{restorePreviewSlot.release();}
+    }
+    private Runnable readBudget(InputTempFiles.Scope scope,long deadline,long revision,boolean preview) {
+        long[] diskCheck={0};return ()->{long now=System.nanoTime();if(Thread.currentThread().isInterrupted()||now>=deadline)throw preview?InputDraftException.previewUnavailable(revision):InputDraftException.comparisonUnavailable(revision);
+            if(now>=diskCheck[0])try {diskCheck[0]=now+10_000_000;if(scope.sizeBytes()>previewScratchBytes)throw preview?InputDraftException.previewUnavailable(revision):InputDraftException.comparisonUnavailable(revision);}catch(java.io.IOException ex){throw InputDraftException.internal();}};
+    }
+    private Changes changesCurrent(String id,long revision,String tableId,String cursor) {
+        Actor actor=actor();var basis=comparisonBasis(actor,id,revision,tableId);var tokens=new InputDraftChangeCursor();State current=restore(basis);
+        TableRef selected=current.source.catalog.tables().stream().filter(t->t.key().equals(tableId)).findFirst().orElseThrow(InputDraftException::missing);
+        FileRef file=basis.source().files.stream().filter(f->f.role().equals(selected.role())).findFirst().orElseThrow(InputDraftException::internal);
+        String scope=id+"\n"+tableId+"\n"+revision+"\n"+file.baseline()+"\n"+hash("cf_",file);int offset=tokens.decode(cursor,scope);
+        long baseline=file.baseline();InputDraftHistory original=basis.history(baseline,json);
+        Source source=new Source(basis.source().caseId,original.catalog(),basis.source().files,basis.source().key,basis.source().version,basis.source().inputIds,original.definitions());
+        Map<Integer,Map<Integer,Cell>> sourceCells=new HashMap<>();var originalDefinition=original.definitions().get(selected.id());Set<Integer> sourceColumns=new HashSet<>(originalDefinition.columns()),controlRows=new HashSet<>();
+        for(JsonNode control:originalDefinition.controls()){controlRows.add(control.path("binding").path("rowNumber").asInt());sourceColumns.add(control.path("binding").path("columnIndex").asInt()+1);}
+        int last=Math.max(original.catalog().tables().stream().filter(t->t.id()==selected.id()).findFirst().orElseThrow().endRow(),controlRows.stream().mapToInt(Integer::intValue).max().orElse(1));
+        long[] comparedCells={0};
+        reader.read(file,actor.companyCode,List.of(new Window(selected.sheet(),row->originalDefinition.body(row)||originalDefinition.headerRows().contains(row)||controlRows.contains(row),sourceColumns,(row,cells)->{InputTempFiles.checkpoint();sourceCells.put(row,cells);if((comparedCells[0]+=cells.size())>250000)throw InputDraftException.comparisonUnavailable(revision);},row->{throw InputDraftException.internal();},last)));
+        ComparisonValues before=comparisonValues(new State(basis.draft().atRevision(baseline),source,original),original.catalog().tables().stream().filter(t->t.id()==selected.id()).findFirst().orElseThrow(),sourceCells);
+        ComparisonValues after=comparisonValues(current,selected,sourceCells);List<JsonNode> items=new ArrayList<>();
+        Map<String,Map<String,String>> references=new HashMap<>();
+        boolean structural=current.history.rowStates(selected.id()).stream().anyMatch(r->r.original()!=null&&r.position()==null)||current.history.columnStates(selected.id()).stream().anyMatch(c->c.source()!=null&&c.position()==null&&c.field()!=null);
+        if(restoresEnabled&&restorePreviewEnabled&&structural)reader.withLocal(file,actor.companyCode,path->{
+            try {Set<String> sheets=new HashSet<>();for(TableRef related:current.history.catalog().tables())if(related.role().equals(file.role())&&(related.id()==selected.id()||InputDraftPmiRows.user(selected)&&InputDraftPmiRows.child(related)||InputWorkbookPolicy.kind(selected)==InputWorkbookPolicy.Kind.REGAS&&related.sheet().equals("RegasAdjustment")))sheets.add(related.sheet());
+                for(String sheet:sheets)references.put(sheet,InputWorkbookStructure.formulas(path,sheet,a->true,InputTempFiles::checkpoint));return null;
+            }catch(InputDraftException ex){throw ex;}catch(Exception ex){throw InputDraftException.internal();}});
+
+        for(var row:current.history.rowStates(selected.id())) {
+            String change=row.original()==null?(row.position()==null?null:"ADDED"):(row.position()==null?"DELETED":null);if(change==null)continue;
+            ObjectNode item=changeItem("ROW",change);item.put("rowId",row.id()).put("origin",row.original()==null?"ADDED":"SOURCE");item.set("originalRowNumber",json.tree(row.original()));
+            JsonNode command=row.original()==null?json.tree(Map.of("type","DELETE_ROW","commandId","revert","tableId",tableId,"rowRef",Map.of("rowId",row.id()))):json.tree(Map.of("type","RESTORE_ROW","commandId","revert","tableId",tableId,"rowId",row.id()));
+            structureRestorationStatus(item,current,command,before,references,basis,file);items.add(item);
+        }
+        for(var column:current.history.columnStates(selected.id()))if(column.field()!=null) {
+            String change=column.source()==null?(column.position()==null?null:"ADDED"):(column.position()==null?"DELETED":null);if(change==null)continue;
+            ObjectNode item=changeItem("COLUMN",change);item.put("fieldKey",column.field()).put("origin",column.source()==null?"ADDED":"SOURCE");item.set("originalColumnNumber",json.tree(column.source()));
+            JsonNode command=json.tree(Map.of("type",column.source()==null?"DELETE_COLUMN":"RESTORE_COLUMN","commandId","revert","tableId",tableId,"fieldKey",column.field()));
+            structureRestorationStatus(item,current,command,before,references,basis,file);items.add(item);
+        }
+        Set<String> sourceRows=new HashSet<>();current.history.rowStates(selected.id()).stream().filter(r->r.original()!=null&&r.position()!=null).forEach(r->sourceRows.add(r.id()));
+        Set<String> sourceFields=new HashSet<>();current.history.columnStates(selected.id()).stream().filter(c->c.source()!=null&&c.position()!=null&&c.field()!=null).forEach(c->sourceFields.add(c.field()));
+        for(String row:sourceRows)for(String field:sourceFields) {
+            InputTempFiles.checkpoint();
+            if(!after.fields.containsKey(field)||!before.fields.containsKey(field))continue;
+            Object old=before.rows.getOrDefault(row,Map.of()).get(field),now=after.rows.getOrDefault(row,Map.of()).get(field);
+            if(json.sameValue(json.tree(old),json.tree(now)))continue;
+            ObjectNode item=changeItem("CELL","MODIFIED");item.put("rowId",row).put("fieldKey",field);item.set("baseline",comparisonValue(old));item.set("current",comparisonValue(now));
+            ObjectNode command=(ObjectNode)json.tree(Map.of("type",old==null?"CLEAR":"SET","commandId","revert","tableId",tableId,"rowRef",Map.of("rowId",row),"fieldKey",field));if(old!=null)command.set("value",json.tree(old));
+            restorationStatus(item,current,command);items.add(item);
+        }
+        for(String field:sourceFields)if(after.headers.containsKey(field)||before.headers.containsKey(field)) {
+            Object old=before.headers.get(field),now=after.headers.get(field);if(json.sameValue(json.tree(old),json.tree(now)))continue;
+            ObjectNode item=changeItem("HEADER","MODIFIED");item.put("fieldKey",field).put("headerKey","year");item.set("baseline",comparisonValue(old));item.set("current",comparisonValue(now));
+            if(old==null)item.put("restoreStatus","NOT_ALLOWED").put("restoreReason","BASELINE_VALUE_NOT_ALLOWED");else restorationStatus(item,current,json.tree(Map.of("type","SET","commandId","revert","tableId",tableId,"fieldKey",field,"headerKey","year","value",old)));items.add(item);
+        }
+        for(var entry:after.controls.entrySet()) {
+            JsonNode old=before.controls.get(entry.getKey());if(old==null)throw InputDraftException.internal();
+            JsonNode now=entry.getValue().path("value");if(json.sameValue(old.path("value"),now))continue;
+            ObjectNode item=changeItem("CONTROL","MODIFIED");item.put("controlId",entry.getKey()).put("sourceTableId",entry.getValue().path("sourceTableId").asText()).put("sourceControlId",entry.getKey());
+            item.set("baseline",comparisonValue(json.scalarValue(old.path("value"))));item.set("current",comparisonValue(json.scalarValue(now)));
+            if(old.path("value").isNull())item.put("restoreStatus","NOT_ALLOWED").put("restoreReason","BASELINE_VALUE_NOT_ALLOWED");else restorationStatus(item,current,json.tree(Map.of("type","SET","commandId","revert","tableId",tableId,"controlId",entry.getKey(),"value",json.scalarValue(old.path("value")))));items.add(item);
+        }
+        List<String> order=List.of("ROW","COLUMN","CELL","HEADER","CONTROL");items.sort(java.util.Comparator.comparingInt((JsonNode item)->order.indexOf(item.path("kind").asText())).thenComparing(item->item.path("rowId").asText()).thenComparing(item->item.path("fieldKey").asText()).thenComparing(item->item.path("headerKey").asText()).thenComparing(item->item.path("controlId").asText()));
+        if(offset>items.size())throw InputDraftException.invalid();
+        List<JsonNode> page=new ArrayList<>();int next=offset;long bytes=json.bytes(BaseResponseFactory.create(new Changes(id,tableId,revision,List.of(),null))).length;
+        while(next<items.size()&&page.size()<2000) {InputTempFiles.checkpoint();JsonNode item=items.get(next);String tail=next+1<items.size()?tokens.encode(scope,next+1):null;
+            long added=json.bytes(item).length+(page.isEmpty()?0:1),cursorBytes=tail==null?0:json.bytes(tail).length-4;
+            if(bytes+added+cursorBytes>InputDraftJson.RESPONSE_LIMIT){if(page.isEmpty())throw InputDraftException.responseLarge();break;}bytes+=added;page.add(item);next++;}
+        Changes result=new Changes(id,tableId,revision,List.copyOf(page),next<items.size()?tokens.encode(scope,next):null);verifyComparison(actor,basis);return result;
+    }
+    private ObjectNode changeItem(String kind,String change){return ((ObjectNode)json.tree(Map.of("kind",kind,"change",change))).put("restoreStatus","UNSUPPORTED").put("restoreReason","POLICY_UNSUPPORTED");}
+    private JsonNode comparisonValue(Object value){ObjectNode result=(ObjectNode)json.tree(Map.of("kind",value==null?"EMPTY":"VALUE"));if(value!=null)result.set("value",json.tree(value));return result;}
+    private void structureRestorationStatus(ObjectNode item,State state,JsonNode command,ComparisonValues baseline,Map<String,Map<String,String>> references,InputDraftEditingBasis basis,FileRef file) {
+        restorationStatus(item,state,command);if(!item.path("restoreStatus").asText().equals("READY")||!command.path("type").asText().startsWith("RESTORE_"))return;
+        try {
+            if(!references.containsKey(state.source.catalog.tables().stream().filter(t->t.key().equals(command.path("tableId").asText())).findFirst().orElseThrow(InputDraftException::internal).sheet()))throw new InputDraftPreserveChange.Failure("POLICY_UNSUPPORTED");
+            InputWorkbookRestoration.verifyReferences(state.history,command,references,json);
+            InputWorkbookRestoration.verifyCrossings(state.history,command,table->{
+                boolean row=command.path("type").asText().equals("RESTORE_ROW");String target=row?command.path("rowId").asText():command.path("fieldKey").asText();
+                if(row&&!table.equals(command.path("tableId").asText())) {
+                    long tableId=state.history.catalog().tables().stream().filter(t->t.key().equals(table)).findFirst().orElseThrow(InputDraftException::internal).id();
+                    target=state.history.rowStates(tableId).stream().filter(r->state.history.restoredRowIds(List.of(command)).contains(r.id())).map(InputDraftHistory.RowState::id).findFirst().orElseThrow(InputDraftException::internal);
+                }
+                long deleted=InputWorkbookEditor.deletionRevision(basis,file,table,command.path("type").asText(),target,state.draft.revision(),json);return basis.history(deleted-1,json);
+            },json,state.draft.revision());
+            TableRef table=state.source.catalog.tables().stream().filter(t->t.key().equals(command.path("tableId").asText())).findFirst().orElseThrow(InputDraftException::internal);
+            var request=new InputDraftJson.ChangeRequest(UUID.randomUUID().toString(),state.draft.revision(),List.of(command));
+            for(var row:state.history.rowStates(table.id()))if(row.original()!=null&&(command.path("type").asText().equals("RESTORE_ROW")?row.id().equals(command.path("rowId").asText()):row.position()!=null))for(JsonNode field:state.history.originalDefinition(table.id()).fields()) {
+                String key=field.path("fieldKey").asText();if(!field.path("policyStatus").path("SET").asText().equals("READY"))continue;
+                if(command.path("type").asText().equals("RESTORE_COLUMN")&&!key.equals(command.path("fieldKey").asText()))continue;
+                if(command.path("type").asText().equals("RESTORE_ROW")&&state.history.columnStates(table.id()).stream().noneMatch(c->key.equals(c.field())&&c.position()!=null))continue;
+                int col=field.path("columnNumber").asInt();if(state.history.originalTable(table.id()).scopes().stream().noneMatch(scope->scope.contains(row.original(),col)))continue;
+                Object value=baseline.rows.getOrDefault(row.id(),Map.of()).get(key);
+                if(value==null)InputWorkbookPolicy.policy(field.path("policyStatus").path("CLEAR").asText(),state.draft.revision(),command,request,"CLEAR_NOT_ALLOWED");
+                else InputWorkbookPolicy.value(field,json.tree(value),field.path("setConstraints"),command,request,state.draft.revision());
+            }
+        }catch(InputDraftPreserveChange.Failure ex){item.put("restoreStatus","UNSUPPORTED").put("restoreReason","STRUCTURE_UNSUPPORTED");}
+        catch(InputDraftException ex){if(ex.getStatus().is5xxServerError())throw ex;item.put("restoreStatus",ex.getStatus().value()==422?"NOT_ALLOWED":"UNSUPPORTED").put("restoreReason",ex.getStatus().value()==422?"BASELINE_VALUE_NOT_ALLOWED":"STRUCTURE_UNSUPPORTED");}
+    }
+    private void restorationStatus(ObjectNode item,State state,JsonNode command) {
+        restorationStatus(item,state,command,request->InputWorkbookEditor.validate(state.source,state.history,request,state.draft.revision()));
+    }
+    private void restorationStatus(ObjectNode item,State state,JsonNode command,java.util.function.Consumer<InputDraftJson.ChangeRequest> validate) {
+        if(!changesEnabled||command.path("type").asText().startsWith("RESTORE_")&&(!restoresEnabled||!restorePreviewEnabled))return;
+        try {validate.accept(new InputDraftJson.ChangeRequest(UUID.randomUUID().toString(),state.draft.revision(),List.of(command)));item.put("restoreStatus","READY").putNull("restoreReason");}
+        catch(InputDraftException ex){if(ex.getStatus().is5xxServerError())throw ex;String reason=ex.getReason();item.put("restoreStatus","POLICY_INCOMPLETE".equals(reason)?"INCOMPLETE":ex.getStatus().value()==422?"NOT_ALLOWED":"UNSUPPORTED");item.put("restoreReason",reason==null?"ACTION_NOT_ALLOWED":reason);}
+    }
+
     private static final List<String> ROLES=List.of("DEMAND","SUPPLY","TRADE","OUTPUT");
     private final ModelInputDraftRepository store;
     @org.springframework.lang.Nullable private final AuthorizationService authorization;
@@ -53,6 +249,8 @@ public class ModelInputDraftService {
     private final PlatformTransactionManager transactionManager;
     @org.springframework.beans.factory.annotation.Value("${mi.model-input.change-worker.enabled:false}")
     private boolean changesEnabled;
+    @org.springframework.beans.factory.annotation.Value("${mi.model-input.restore.enabled:false}")
+    private boolean restoresEnabled;
     @org.springframework.beans.factory.annotation.Value("${mi.model-input.shared-baseline.enabled:false}")
     private boolean sharedBaselineEnabled;
     @org.springframework.beans.factory.annotation.Value("${mi.model-input.finalization.enabled:false}")
@@ -413,7 +611,7 @@ public class ModelInputDraftService {
                 Draft draft=InputDraftDiagnostics.timed(InputDraftDiagnostics.Stage.SNAPSHOT_LOCK,null,()->store.lockOwned(id,actor.company,actor.user));if(!draft.uploaded())store.caseAccess(draft.caseId(),false);
                 var previous=store.request(id,request.requestId());
                 if(previous!=null) {
-                    if(previous.schemaVersion()!=2)throw InputDraftException.internal();
+                    if(previous.schemaVersion()!=InputDraftJson.version(request))throw InputDraftException.conflict("IDEMPOTENCY_CONFLICT",draft.revision());
                     if(!previous.type().equals("CHANGE")||!json.sameRequest(previous.request(),request))throw InputDraftException.conflict("IDEMPOTENCY_CONFLICT",draft.revision());
                     return operationView(previous);
                 }
@@ -427,7 +625,7 @@ public class ModelInputDraftService {
                 validateChange(state.source,state.history,request,draft);
                 var role=authorization.getCurrentRole();
                 if(role!=com.sk.domain.shared.enums.Role.USER&&role!=com.sk.domain.shared.enums.Role.ADMIN)throw InputDraftException.missing();
-                var op=store.enqueueChange(draft,request.requestId(),request.baseRevision(),new String(json.changeBytes(request),StandardCharsets.UTF_8),role.name(),actor.login);
+                var op=store.enqueueChange(draft,request.requestId(),request.baseRevision(),new String(json.changeBytes(request),StandardCharsets.UTF_8),role.name(),actor.login,InputDraftJson.version(request));
                 return operationView(op);
             });
             log.info("Input Draft CHANGE submission completed operationId={}",accepted.operationId());
@@ -439,6 +637,13 @@ public class ModelInputDraftService {
         Map<String,TableRef> requested=new HashMap<>();
         for(JsonNode command:request.operations()) {
             String key=command.path("tableId").asText();requested.put(key,source.catalog.tables().stream().filter(t->t.key().equals(key)).findFirst().orElseThrow(InputDraftException::missing));
+        }
+        if(InputDraftJson.restores(request)) {
+            if(requested.values().stream().anyMatch(table->!source.definitions().get(table.id()).navigationVisible()))throw InputDraftException.missing();
+            if(!changesEnabled||!restoresEnabled||!restorePreviewEnabled)throw InputDraftException.conflict("POLICY_UNSUPPORTED",draft.revision());
+            InputWorkbookEditor.validate(source,history,request,draft.revision());
+            InputWorkbookEditor.validateHistory(source(actor(),draft),store.revisions(draft.id()),json);
+            return;
         }
         Map<String,JsonNode> newColumns=new HashMap<>();Set<String> deletedFields=new HashSet<>();
         for(JsonNode command:request.operations()) {
@@ -510,7 +715,7 @@ public class ModelInputDraftService {
             if(op==null)return null;
             Actor actor=workerActor(draft,op);
             var basis=loadBasis(draft,checkedSource(actor,draft));State current=restore(basis);
-            var request=json.changeRequest(new java.io.ByteArrayInputStream(op.request().getBytes(StandardCharsets.UTF_8)));
+            var request=json.changeRequest(new java.io.ByteArrayInputStream(op.request().getBytes(StandardCharsets.UTF_8)),op.schemaVersion());
             InputWorkbookEditor.validate(current.source,current.history,request,draft.revision());
             InputWorkbookEditor.validateHistory(basis.source(),basis.revisions(),json);
             TableRef table=current.source.catalog.tables().stream().filter(t->t.key().equals(request.operations().get(0).path("tableId").asText())).findFirst().orElseThrow(InputDraftException::internal);
@@ -591,7 +796,7 @@ public class ModelInputDraftService {
                     Actor actor=requestedActor==null?workerActor(draft,op):requestedActor;
                     var basis=loadBasis(draft,checkedSource(actor,draft));State state=restore(basis);
                     if(requestedActor==null) {
-                        var request=json.changeRequest(new java.io.ByteArrayInputStream(op.request().getBytes(StandardCharsets.UTF_8)));
+                        var request=json.changeRequest(new java.io.ByteArrayInputStream(op.request().getBytes(StandardCharsets.UTF_8)),op.schemaVersion());
                         InputWorkbookEditor.validate(state.source,state.history,request,draft.revision());
                         InputWorkbookEditor.validateHistory(basis.source(),basis.revisions(),json);
                     }
@@ -621,7 +826,7 @@ public class ModelInputDraftService {
         }));
     }
     private OperationView operationView(ModelInputDraftRepository.Operation op) {
-        if(op.schemaVersion()!=2)throw InputDraftException.internal();
+        if(!Set.of(2,3).contains(op.schemaVersion()))throw InputDraftException.internal();
         String label=switch(op.status()){case "QUEUED"->"대기 중";case "RUNNING"->"처리 중";case "SUCCEEDED"->"저장 완료";case "FAILED"->"저장 실패";default->throw InputDraftException.internal();};
         Long resultRevision=null;List<JsonNode> mappings=List.of(),columnMappings=List.of();List<String> affected=List.of();Problem failure=null;
         if(op.status().equals("SUCCEEDED")) {
@@ -738,7 +943,7 @@ public class ModelInputDraftService {
         // 저장된 추가 행은 값이 비어도 표시한다. 빈 원본 행과 미활성 슬롯은 기존 값 기준으로 자른다.
         int[] lastVisibleRow={identities.entrySet().stream().filter(entry->"ADDED".equals(state.history.origin(entry.getValue())))
             .mapToInt(Map.Entry::getKey).max().orElse(0)};
-        Map<Integer,Map<Integer,Cell>> rows=new HashMap<>();Set<Integer> wanted=new HashSet<>(candidate);wanted.addAll(headers);
+        Map<Integer,Map<Integer,Cell>> rows=new HashMap<>(),baselineRows=new HashMap<>();Set<Integer> wanted=new HashSet<>(candidate);wanted.addAll(headers);
         long[] budget={0};int[] cutoff={Integer.MAX_VALUE};
         Set<Integer> invalidRows=new HashSet<>(),invalidControls=new HashSet<>();
         FileRef file=state.source.files.stream().filter(f->f.role().equals(table.role())).findFirst().orElseThrow(InputDraftException::internal);
@@ -767,6 +972,7 @@ public class ModelInputDraftService {
                 }
                 if(!wanted.contains(row))continue;
                 if(!headers.contains(row)&&row>cutoff[0])continue;
+                baselineRows.put(row,values);
                 budget[0]+=json.bytes(currentValues).length;
                 if(budget[0]>InputDraftJson.RESPONSE_LIMIT&&!headers.contains(row)&&candidate.contains(row)&&!candidate.isEmpty()&&row!=candidate.get(0)){cutoff[0]=Math.min(cutoff[0],row-1);continue;}
                 rows.computeIfAbsent(row,k->new HashMap<>()).putAll(currentValues);
@@ -791,9 +997,17 @@ public class ModelInputDraftService {
             if(value!=null)rows.computeIfAbsent(row,k->new HashMap<>()).put(col,value);
         }
         List<Integer> page=new ArrayList<>(displayCandidate.stream().filter(row->row<=cutoff[0]).toList());
+        // 변경 셀과 페이지 크기 재조정 모두 같은 요청의 검증 자료를 재사용한다.
+        var cellValidation=new java.util.function.Consumer<InputDraftJson.ChangeRequest>() {
+            private InputWorkbookEditor.ValidationContext context;
+            @Override public void accept(InputDraftJson.ChangeRequest request) {
+                if(context==null)context=InputWorkbookEditor.validationContext(state.source,state.history);
+                InputWorkbookEditor.validate(state.source,context.bindings(),context.addedRows(),context.addedFields(),request,state.draft.revision());
+            }
+        };
         Table result;
         while(true) {
-            result=project(state,table,displayDef,page,rows,identities,invalidRows);
+            result=project(state,table,displayDef,page,rows,baselineRows,identities,invalidRows,cellValidation);
             if(json.bytes(BaseResponseFactory.create(result)).length<=limit)break;
             if(page.size()<=1)throw InputDraftException.responseLarge();page=new ArrayList<>(page.subList(0,Math.max(1,page.size()/2)));
         }
@@ -827,9 +1041,9 @@ public class ModelInputDraftService {
         Table selection=first==null?null:renderTable(actor,state,first.key(),null,budget);
         return new UploadResult(kind,draft.id(),draft.revision(),"/api/v1/mi/fundamental-model/input-drafts/"+draft.id(),structure,selection);
     }
-    private Table project(State state,TableRef table,InputReadDefinition def,List<Integer> page,Map<Integer,Map<Integer,Cell>> values,Map<Integer,String> ids,Set<Integer> invalidRows) {
+    private Table project(State state,TableRef table,InputReadDefinition def,List<Integer> page,Map<Integer,Map<Integer,Cell>> values,Map<Integer,Map<Integer,Cell>> baselineRows,Map<Integer,String> ids,Set<Integer> invalidRows,java.util.function.Consumer<InputDraftJson.ChangeRequest> cellValidation) {
         List<Column> columns=def.columns().stream().map(col->new Column("column"+(col-1),CellReference.convertNumToColString(col-1))).toList();
-        List<Map<String,Object>> grid=new ArrayList<>();List<Long> inputs=new ArrayList<>();List<RowBinding> bindings=new ArrayList<>();List<EditValue> edits=new ArrayList<>();
+        List<Map<String,Object>> grid=new ArrayList<>();List<Long> inputs=new ArrayList<>();List<RowBinding> bindings=new ArrayList<>();List<EditValue> edits=new ArrayList<>();List<CellRestore> cellRestores=new ArrayList<>();
         Set<Integer> returned=new java.util.TreeSet<>(def.headerRows());returned.addAll(page);
         for(int row:returned) {
             Map<Integer,Cell> cells=values.getOrDefault(row,Map.of());Map<String,Object> record=new LinkedHashMap<>();record.put("id",row-1);record.put("rowNumber",row);
@@ -844,6 +1058,22 @@ public class ModelInputDraftService {
                 int col=field.path("columnNumber").asInt();Cell value=cells.get(col);
                 boolean editable="READY".equals(field.path("policyStatus").path("SET").asText())&&table.scopes().stream().anyMatch(scope->scope.contains(row,col));
                 if(editable&&(value==null||!value.formula()))inputs.add((long)row*16384+(col-1));
+                if(editable&&rowId!=null&&"SOURCE".equals(state.history.origin(rowId))
+                    &&state.history.sourceColumn(table.id(),col)!=null&&(value==null||!value.formula())) {
+                    Cell baseline=baselineRows.getOrDefault(row,Map.of()).get(col);
+                    if(baseline==null||!baseline.formula())try {
+                        Object old=baseline==null||baseline.raw()==null?null:typed(field.path("dataType").asText(),baseline.raw());
+                        Object now=value==null||value.raw()==null?null:typed(field.path("dataType").asText(),value.raw());
+                        ObjectNode status=changeItem("CELL","MODIFIED");
+                        if(json.sameValue(json.tree(old),json.tree(now)))status.put("restoreStatus","NOT_ALLOWED").put("restoreReason","NO_CHANGE");
+                        else {
+                            ObjectNode command=(ObjectNode)json.tree(Map.of("type",old==null?"CLEAR":"SET","commandId","revert","tableId",table.key(),"rowRef",Map.of("rowId",rowId),"fieldKey",field.path("fieldKey").asText()));
+                            if(old!=null)command.set("value",json.tree(old));
+                            restorationStatus(status,state,command,cellValidation);
+                        }
+                        cellRestores.add(new CellRestore(rowId,field.path("fieldKey").asText(),comparisonValue(old),comparisonValue(now),status.path("restoreStatus").asText(),status.path("restoreReason").isNull()?null:status.path("restoreReason").asText()));
+                    }catch(InputDraftException ex){if(ex.getStatus().is5xxServerError())invalidRows.add(row);else throw ex;}
+                }
                 if(editable&&rowId!=null&&value!=null&&value.raw()!=null&&!value.formula()) {
                     try {typed.put(field.path("fieldKey").asText(),typed(field.path("dataType").asText(),value.raw()));}
                     catch(InputDraftException ex){invalidRows.add(row);}
@@ -861,7 +1091,7 @@ public class ModelInputDraftService {
         if(end!=null) {List<Integer> after=def.page(end,2);if(after.size()>1)next=after.get(1);}
         return new Table(state.draft.id(),state.draft.revision(),state.source.key,state.source.version,
             new TableData(table.key(),columns,grid,inputs,def.inputGuideRules(),controls,def.displayUpdateRules()),
-            new Page(def.totalRows(),page.size(),start,end,next!=null,next),new Editing(caps,fields,bindings,edits,caps.get("ADD_COLUMN").equals("READY")?def.columnCreation():null));
+            new Page(def.totalRows(),page.size(),start,end,next!=null,next),new Editing(caps,fields,bindings,edits,List.copyOf(cellRestores),caps.get("ADD_COLUMN").equals("READY")?def.columnCreation():null));
     }
     private Object typed(String type,Object value) {
         if("DECIMAL_OR_TEXT".equals(type)&&(value instanceof String||value instanceof BigDecimal))return value;

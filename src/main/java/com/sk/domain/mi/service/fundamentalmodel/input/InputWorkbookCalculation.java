@@ -25,6 +25,11 @@ final class InputWorkbookCalculation {
     // POI는 이 내장 함수들을 NameXPxg + external-function token으로 표현한다. 파일 외부 참조는 아니다.
     private static final Set<String> NAMED_FUNCTIONS = Set.of("SUMIFS", "COUNTIFS", "IFERROR");
 
+    static boolean supportsExpression(String expression) {
+        var calls=java.util.regex.Pattern.compile("([A-Za-z_][A-Za-z0-9_.]*)\\s*\\(").matcher(expression.replaceAll("\"(?:[^\"]|\"\")*\"",""));
+        while(calls.find())if(!FUNCTIONS.contains(calls.group(1).toUpperCase(java.util.Locale.ROOT)))return false;return true;
+    }
+
     /** constants에는 보존 cache를 포함할 수 있으나 targets의 이전 cache는 넣지 않는다. */
     static Map<Address, Object> evaluate(Map<Address, Object> constants, Map<Address, String> formulas,
             InputWorkbookXml.Checkpoint checkpoint) {

@@ -74,6 +74,13 @@ public class ObjectStorageService {
     // }
     // }
 
+    public S3Object getObject(String bucketName,String fileName,int timeoutMillis) {
+        if(timeoutMillis<=0)throw new IllegalArgumentException("positive object read timeout required");
+        var request=new com.amazonaws.services.s3.model.GetObjectRequest(bucketName,fileName);
+        request.setSdkClientExecutionTimeout(timeoutMillis);request.setSdkRequestTimeout(timeoutMillis);
+        return objectStorageClient.getObject(request);
+    }
+
     public S3Object getObject(String bucketName, String fileName) {
         return objectStorageClient.getObject(bucketName, fileName);
     }
@@ -173,6 +180,15 @@ public class ObjectStorageService {
     */
     public String uploadFile(InputStream file, String bucketName, String fileName, boolean isPublic, String contentType, long contentLength)
             throws IOException {
+        try (var diagnostics = ObjectStorageUploadDiagnostics.begin(bucketName, fileName, contentLength)) {
+            String result = uploadFileInternal(file, bucketName, fileName, isPublic, contentType, contentLength);
+            diagnostics.succeeded();
+            return result;
+        }
+    }
+
+    private String uploadFileInternal(InputStream file, String bucketName, String fileName,
+            boolean isPublic, String contentType, long contentLength) throws IOException {
 
         Path path = Paths.get(fileName);
         String directoryPath = PathUtil.IncludeTrailingPathDelimiter(path.getParent().toString().replace("\\", "/"));

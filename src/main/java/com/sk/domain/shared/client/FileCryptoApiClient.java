@@ -37,6 +37,33 @@ public class FileCryptoApiClient {
     private final RestClient restClient;
     private final FileCryptoApiProperties properties;
 
+    private static final java.util.concurrent.ScheduledExecutorService DEADLINES=java.util.concurrent.Executors.newSingleThreadScheduledExecutor(r->{Thread thread=new Thread(r,"file-crypto-read-deadline");thread.setDaemon(true);return thread;});
+    private final ThreadLocal<ReadBudget> readBudget=new ThreadLocal<>();
+    private static final class ReadBudget {
+        final java.util.function.IntSupplier remaining;
+        final Runnable checkpoint;
+        final java.util.List<java.util.concurrent.ScheduledFuture<?>> timers=new java.util.ArrayList<>();
+        ReadBudget(java.util.function.IntSupplier remaining,Runnable checkpoint){this.remaining=remaining;this.checkpoint=checkpoint;}
+        void finished(){timers.forEach(timer->timer.cancel(false));timers.clear();}
+    }
+    /** 읽기 호출 전체의 남은 기한을 모든 업로드/확인/복호화/다운로드와 재시도에 적용한다. */
+    public byte[] decrypt(byte[] encrypted,String name,java.util.function.IntSupplier remaining,Runnable checkpoint) {
+        if(readBudget.get()!=null)throw new IllegalStateException("nested crypto read budget");
+        var budget=new ReadBudget(remaining,checkpoint);readBudget.set(budget);
+        try {checkpoint.run();return decrypt(encrypted,name);}finally{budget.finished();readBudget.remove();}
+    }
+    private RestClient client() {
+        var budget=readBudget.get();if(budget==null)return restClient;budget.checkpoint.run();
+        var factory=new org.springframework.http.client.SimpleClientHttpRequestFactory(){
+            @Override protected void prepareConnection(java.net.HttpURLConnection connection,String method)throws java.io.IOException {
+                super.prepareConnection(connection,method);budget.checkpoint.run();int timeout=budget.remaining.getAsInt();if(timeout<=0)throw new java.net.SocketTimeoutException("crypto read deadline");
+                connection.setConnectTimeout(timeout);connection.setReadTimeout(timeout);
+                budget.timers.add(DEADLINES.schedule(connection::disconnect,timeout,java.util.concurrent.TimeUnit.MILLISECONDS));
+            }
+        };
+        return restClient.mutate().requestFactory(factory).build();
+    }
+
     public byte[] encrypt(byte[] plainBytes, String originalFileName) {
         log.info("File crypto encrypt flow started. inputBytes={}, fileExt={}",
                 plainBytes.length, extensionForLog(originalFileName));
@@ -94,7 +121,7 @@ public class FileCryptoApiClient {
             MultiValueMap<String, Object> multipart = new LinkedMultiValueMap<>();
             multipart.add("file", new NamedByteArrayResource(fileBytes, originalFileName));
 
-            FileCryptoUploadRes response = restClient.post()
+            FileCryptoUploadRes response = client().post()
                     .uri(cryptoUri(normalizePath(properties.getUploadPath()) + "/" + properties.getPid()))
                     .contentType(MediaType.MULTIPART_FORM_DATA)
                     .body(multipart)
@@ -113,7 +140,7 @@ public class FileCryptoApiClient {
 
     boolean isEncrypted(UUID fid, String pid) {
         return executeWithRetry("status", () -> {
-            FileCryptoStatusRes response = restClient.get()
+            FileCryptoStatusRes response = client().get()
                     .uri(cryptoUri(normalizePath(properties.getStatusPath()) + "/" + fid + "/" + pid))
                     .retrieve()
                     .body(FileCryptoStatusRes.class);
@@ -133,7 +160,7 @@ public class FileCryptoApiClient {
             log.info("File crypto API encrypt request prepared. fid={}, fields={}",
                     fidForLog(request.fid()), formData.keySet());
 
-            FileCryptoEncryptRes response = restClient.post()
+            FileCryptoEncryptRes response = client().post()
                     .uri(cryptoUri(properties.getEncryptPath()))
                     .contentType(MediaType.APPLICATION_FORM_URLENCODED)
                     .body(formData)
@@ -159,7 +186,7 @@ public class FileCryptoApiClient {
 
     FileCryptoDecryptRes decrypt(FileCryptoDecryptReq request) {
         return executeWithRetry("decrypt", () -> {
-            FileCryptoDecryptRes response = restClient.post()
+            FileCryptoDecryptRes response = client().post()
                     .uri(cryptoUri(properties.getDecryptPath()))
                     .contentType(MediaType.APPLICATION_FORM_URLENCODED)
                     .body(request.toFormData())
@@ -179,7 +206,7 @@ public class FileCryptoApiClient {
 
     byte[] download(String outputFilePath) {
         return executeWithRetry("download", () -> {
-            byte[] response = restClient.get()
+            byte[] response = client().get()
                     .uri(cryptoUri(outputFilePath))
                     .retrieve()
                     .body(byte[].class);
@@ -197,6 +224,7 @@ public class FileCryptoApiClient {
         RuntimeException lastException = null;
 
         for (int attempt = 1; attempt <= maxAttempts; attempt++) {
+            var budget=readBudget.get();if(budget!=null)budget.checkpoint.run();
             long startedAt = System.nanoTime();
             log.info("File crypto API {} request started. attempt={}/{}", operation, attempt, maxAttempts);
             try {
@@ -205,6 +233,7 @@ public class FileCryptoApiClient {
                         operation, attempt, maxAttempts, elapsedMs(startedAt));
                 return result;
             } catch (RuntimeException e) {
+                if(budget!=null)budget.finished();
                 lastException = e;
                 if (attempt >= maxAttempts || e instanceof AppErrorException) {
                     log.warn("File crypto API {} request failed. attempt={}/{}, elapsedMs={}, retryable=false, exception={}, detail={}",
@@ -214,7 +243,7 @@ public class FileCryptoApiClient {
                 log.warn("File crypto API {} request failed. attempt={}/{}, elapsedMs={}, retryable=true, exception={}, detail={}",
                         operation, attempt, maxAttempts, elapsedMs(startedAt), exceptionTypeForLog(e), errorDetailForLog(e));
                 sleepBeforeRetry();
-            }
+            }finally{if(budget!=null)budget.finished();}
         }
 
         throw lastException == null ? cryptoFailure(operation, null) : lastException;
@@ -222,7 +251,9 @@ public class FileCryptoApiClient {
 
     private void sleepBeforeRetry() {
         try {
-            Thread.sleep(properties.getRetryBackoffMs());
+            var budget=readBudget.get();if(budget!=null)budget.checkpoint.run();
+            long delay=properties.getRetryBackoffMs();if(budget!=null)delay=Math.min(delay,budget.remaining.getAsInt());Thread.sleep(Math.max(0,delay));
+            if(budget!=null)budget.checkpoint.run();
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
             throw AppErrorException.of(ResultCode.Error.SYS_INTERNAL_ERROR, "파일 암복호화 API 재시도 대기 중 오류가 발생했습니다.");

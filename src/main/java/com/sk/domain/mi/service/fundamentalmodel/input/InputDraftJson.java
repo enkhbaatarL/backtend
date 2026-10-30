@@ -108,6 +108,13 @@ public class InputDraftJson {
         catch(Exception ex){throw InputDraftException.json();}
     }
     public record ChangeRequest(String requestId,long baseRevision,List<JsonNode> operations) {}
+    static boolean restores(ChangeRequest request) { return request.operations().stream().anyMatch(op -> op.path("type").asText().startsWith("RESTORE_")); }
+    static int version(ChangeRequest request) { return restores(request) ? 3 : 2; }
+    ChangeRequest changeRequest(InputStream input, int version) {
+        ChangeRequest request = changeRequest(input);
+        if (version != version(request)) throw InputDraftException.internal();
+        return request;
+    }
     private static final String UUID_PATTERN="[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}";
     private static final String KEY_PATTERN="[A-Za-z][A-Za-z0-9_-]{0,63}";
     public ChangeRequest changeRequest(InputStream input) {
@@ -121,7 +128,7 @@ public class InputDraftJson {
                 ||!node.path("baseRevision").isIntegralNumber()||!node.path("baseRevision").canConvertToLong()
                 ||node.path("baseRevision").longValue()<0||node.path("baseRevision").longValue()>9007199254740991L
                 ||!node.path("operations").isArray()||node.path("operations").isEmpty()||node.path("operations").size()>500)throw InputDraftException.invalid();
-            Set<String> commands=new HashSet<>(),deletedRows=new HashSet<>(),deletedColumns=new HashSet<>();
+            Set<String> commands=new HashSet<>(),deletedRows=new HashSet<>(),deletedColumns=new HashSet<>(),restoredRows=new HashSet<>(),restoredColumns=new HashSet<>();
             Map<String,String> addedRows=new HashMap<>(),addedColumns=new HashMap<>();
             List<JsonNode> operations=new ArrayList<>();int adds=0;
             for(JsonNode op:node.path("operations")) {
@@ -132,6 +139,8 @@ public class InputDraftJson {
                     case "SET"->op.has("controlId")?Set.of("type","commandId","tableId","controlId","value"):op.has("headerKey")?Set.of("type","commandId","tableId",column,"headerKey","value"):Set.of("type","commandId","tableId","rowRef",column,"value");
                     case "CLEAR"->Set.of("type","commandId","tableId","rowRef",column);
                     case "DELETE_ROW"->Set.of("type","commandId","tableId","rowRef");
+                    case "RESTORE_ROW"->Set.of("type","commandId","tableId","rowId");
+                    case "RESTORE_COLUMN"->Set.of("type","commandId","tableId","fieldKey");
                     case "ADD_COLUMN"->Set.of("type","commandId","tableId","clientColumnKey","headerValues");
                     case "DELETE_COLUMN"->Set.of("type","commandId","tableId",column);
                     default->throw InputDraftException.invalid();
@@ -140,7 +149,13 @@ public class InputDraftJson {
                 if(op.size()!=fields.size()||!key(op.path("commandId"))||!commands.add(op.path("commandId").asText())
                     ||!op.path("tableId").isTextual()||op.path("tableId").asText().isBlank())throw InputDraftException.invalid();
                 String table=op.path("tableId").asText();
-                if(op.has("controlId")) {
+                if(type.equals("RESTORE_ROW")) {
+                    String id=op.path("rowId").asText();
+                    if(!op.path("rowId").isTextual()||!id.matches(UUID_PATTERN)||deletedRows.contains(table+"/id:"+id)||!restoredRows.add(table+"/id:"+id))throw InputDraftException.invalid();
+                } else if(type.equals("RESTORE_COLUMN")) {
+                    String id=op.path("fieldKey").asText();
+                    if(!key(op.path("fieldKey"))||deletedColumns.contains(table+"/id:"+id)||!restoredColumns.add(table+"/id:"+id))throw InputDraftException.invalid();
+                } else if(op.has("controlId")) {
                     if(!op.path("controlId").isTextual()||op.path("controlId").asText().isBlank())throw InputDraftException.invalid();
                     scalar(op.path("value"));
                 } else if(type.equals("ADD_ROW")) {
@@ -168,14 +183,14 @@ public class InputDraftJson {
                             row="key:"+ref.path("clientRowKey").asText();
                         }
                         if(deletedRows.contains(table+"/"+row))throw InputDraftException.invalid();
-                        if(type.equals("DELETE_ROW"))deletedRows.add(table+"/"+row);
+                        if(type.equals("DELETE_ROW")){if(restoredRows.contains(table+"/"+row))throw InputDraftException.invalid();deletedRows.add(table+"/"+row);}
                     }
                     if(!type.equals("DELETE_ROW")) {
                         if(!key(op.path(column)))throw InputDraftException.invalid();
                         String reference=(column.equals("fieldKey")?"id:":"key:")+op.path(column).asText();
                         if(column.equals("clientColumnKey")&&!table.equals(addedColumns.get(op.path(column).asText())))throw InputDraftException.invalid();
                         if(deletedColumns.contains(table+"/"+reference))throw InputDraftException.invalid();
-                        if(type.equals("DELETE_COLUMN"))deletedColumns.add(table+"/"+reference);
+                        if(type.equals("DELETE_COLUMN")){if(restoredColumns.contains(table+"/"+reference))throw InputDraftException.invalid();deletedColumns.add(table+"/"+reference);}
                         if(type.equals("SET")) {
                             scalar(op.path("value"));
                             if(op.has("headerKey")&&(!op.path("headerKey").isTextual()||!op.path("headerKey").asText().equals("year")||!op.path("value").isIntegralNumber()))throw InputDraftException.invalid();
@@ -206,6 +221,7 @@ public class InputDraftJson {
         long length=(long)number.precision()+Math.abs((long)number.scale())+2;
         if(length>BODY_LIMIT)throw InputDraftException.large();
     }
+    static Object scalarValue(JsonNode value) {return value==null||value.isNull()?null:value.isNumber()?value.decimalValue():value.isBoolean()?value.booleanValue():value.asText();}
     public boolean sameRequest(String persisted,ChangeRequest incoming) {
         return semantic(payload(persisted)).equals(semantic(tree(incoming)));
     }
