@@ -30,7 +30,7 @@
 -- 최초 설치에도 관련 web/runner/worker/외부 시험 writer를 중지하고 유지보수 중 새 요청을 차단한다.
 -- 이 SQL은 catalog 6 + 공유 기준 3 + Draft 5 + 요청 1 + 업로드 2 + 최종저장 준비 1 + 실행기 1을 생성한다.
 -- 현재 형식: 요청 json_rvsn_no=2, 감사 DATETIME(0), 실행/기한 DATETIME(6), 업로드 다중 파일,
---   UPLOAD 600초 허용(기존 120초도 허용), CHANGE/FINALIZE 120초, NULL base_id 호환.
+--   UPLOAD/FINALIZE 600초 허용(기존 120초도 허용), CHANGE 120초, NULL base_id 호환.
 -- 기존 tmm_mdlinpt... 제약/인덱스 이름은 정본과의 호환을 위해 그대로 보존한다.
 --
 -- 1. PRE-CHECK — 조회/세션 변수만 사용. 환경별 새 연결에서 입력값을 따로 지정한다.
@@ -479,7 +479,7 @@ CREATE TABLE tmd_mdl_inptdrftprcsl
     CONSTRAINT tmd_mdl_inptdrftprcsl_ck08 CHECK(del_yn='N'),
     CONSTRAINT tmd_mdl_inptdrftprcsl_ck09 CHECK(
         expr_dtm=TIMESTAMPADD(SECOND,120,crt_dtm)
-        OR (prcs_type_cd IN ('UPLOAD_CREATE','UPLOAD_FILE')
+        OR (prcs_type_cd IN ('UPLOAD_CREATE','UPLOAD_FILE','FINALIZE')
             AND expr_dtm=TIMESTAMPADD(SECOND,600,crt_dtm))),
     CONSTRAINT tmd_mdl_inptdrftprcsl_ux04 UNIQUE(cust_cpny_no,usr_no,crt_req_id),
     CONSTRAINT tmd_mdl_inptdrftprcsl_ux05 UNIQUE(cust_cpny_no,usr_no,prcs_id),
@@ -848,7 +848,7 @@ WHERE tc.constraint_schema=DATABASE() AND tc.table_name IN (
  'tmd_mdl_inptfnsvfiled',
  'tmd_mdl_inptexecm')
 ORDER BY tc.table_name,tc.constraint_name;
--- 모든 CHECK ENFORCED=YES. request ck03=2 / ck09=120초 또는 UPLOAD600초, table ck01은 header0/0 허용.
+-- 모든 CHECK ENFORCED=YES. request ck03=2 / ck09=120초 또는 UPLOAD/FINALIZE 600초, table ck01은 header0/0 허용.
 SELECT table_name,index_name,non_unique,seq_in_index,column_name,sub_part
 FROM information_schema.statistics WHERE table_schema=DATABASE() AND table_name IN (
  'tmd_mdl_inpttmpltm',

@@ -332,7 +332,7 @@ CREATE TABLE tmd_mdl_inptdrftprcsl
     CONSTRAINT tmd_mdl_inptdrftprcsl_ck08 CHECK(del_yn='N'),
     CONSTRAINT tmd_mdl_inptdrftprcsl_ck09 CHECK(
         expr_dtm=TIMESTAMPADD(SECOND,120,crt_dtm)
-        OR (prcs_type_cd IN ('UPLOAD_CREATE','UPLOAD_FILE')
+        OR (prcs_type_cd IN ('UPLOAD_CREATE','UPLOAD_FILE','FINALIZE')
             AND expr_dtm=TIMESTAMPADD(SECOND,600,crt_dtm))),
     CONSTRAINT tmd_mdl_inptdrftprcsl_ux04 UNIQUE(cust_cpny_no,usr_no,crt_req_id),
     CONSTRAINT tmd_mdl_inptdrftprcsl_ux05 UNIQUE(cust_cpny_no,usr_no,prcs_id),

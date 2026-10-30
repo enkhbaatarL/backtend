@@ -213,7 +213,7 @@ EDT-04/05는 §3~6의 요청 파싱·동일 requestId 의미 비교·DB 작업/�
 
 성공 확정/복원 공통 경로의 내부 저장 형식은 [DDL §6.3.4.1](../design-docs/gas/mi-model-input-template-catalog-erd-ddl-draft.md)이 소유한다. 이 경로는 검증된 처리 결과를 원자적으로 저장하는 내부 경계이며 실제 처리기·정책이 미준비인 신규 공개 요청의 차단을 해제하지 않는다. EDT-02/03은 재계산 없이 저장된 성공 값·구조·행 대응을 읽으며 revision0 응답 형식/페이지·정확 수치 구분을 유지한다.
 
-2026-10-19 감사 이름·시간 정밀도와 수동 증분 적용은 [DDL §6.8](../design-docs/gas/mi-model-input-template-catalog-erd-ddl-draft.md)을 따른다. 공개 endpoint/응답·숫자/페이지 계약과 작업120초 상한은 유지한다.
+2026-10-19 감사 이름·시간 정밀도와 수동 증분 적용은 [DDL §6.8](../design-docs/gas/mi-model-input-template-catalog-erd-ddl-draft.md)을 따른다. 공개 endpoint/응답·숫자/페이지 계약은 유지한다. 신규 FINALIZE의 기한은 600초, CHANGE는 120초다.
 
 #### 2026-10-19 첫 실제 처리 연결 — F-O-01 한정
 
@@ -223,7 +223,7 @@ EDT-04/05는 §3~6의 요청 파싱·동일 requestId 의미 비교·DB 작업/�
 
 #### 2026-10-19 EDT-06/07 공통 통합 경계
 
-EDT-06/07은 §9 정본 계약으로 연결한다. 신규 준비파일 DDL의 수동 적용/검증 뒤 웹과 같은 단일 worker에 `mi.model-input.finalization.enabled=true`를 함께 지정한다(기본 false). 비활성화 중에는 신규 FINALIZE 접수를409 POLICY_UNSUPPORTED로 차단하고 기존 기록 조회/동일 요청 재전송은 유지한다. CHANGE와 FINALIZE의 작업 이력·requestId·진행 슬롯·120초/marker 복구 경계는 하나다. revision0의 원본4개와 지원하는 전체 성공 변경을 대상으로 하며, 현재 nonzero 파일 재생성은 지정 F-O-01 보존 이력만 지원한다. 지원되지 않는 성공 이력을 무시해 최종저장하지 않는다. 사용자 시험에서 준비파일 DDL 적용·실제 최종저장과 새 Case 구조 재조회는 확인했다. 상세 증거와 중복·장애 복구 등 남은 실환경 검증은 위 실행 결과를 참조한다.
+EDT-06/07은 §9 정본 계약으로 연결한다. 신규 준비파일 DDL의 수동 적용/검증 뒤 웹과 같은 단일 worker에 `mi.model-input.finalization.enabled=true`를 함께 지정한다(기본 false). 비활성화 중에는 신규 FINALIZE 접수를409 POLICY_UNSUPPORTED로 차단하고 기존 기록 조회/동일 요청 재전송은 유지한다. CHANGE와 FINALIZE의 작업 이력·requestId·진행 슬롯·marker 복구 경계는 하나다. 기한은 CHANGE 120초, 신규 FINALIZE 600초다. revision0의 원본4개와 지원하는 전체 성공 변경을 대상으로 하며, 현재 nonzero 파일 재생성은 지정 F-O-01 보존 이력만 지원한다. 지원되지 않는 성공 이력을 무시해 최종저장하지 않는다. 사용자 시험에서 준비파일 DDL 적용·실제 최종저장과 새 Case 구조 재조회는 확인했다. 상세 증거와 중복·장애 복구 등 남은 실환경 검증은 위 실행 결과를 참조한다.
 
 ## 2. 호출 흐름·공통 접근 경계
 
@@ -239,7 +239,7 @@ Case 목록에서 개인 Draft ID를 받은 경우 EDT-02로 바로 재조회해
 
 모든 operation은 기존 USER/SKGAS_COMPANY_USER_ONLY, ADMIN/THIRD_PARTY_ADMIN_ONLY 권한 패턴과 인증된 tenant/user를 사용한다. source는 domain §5.4의 한 회사 기능 범위 안에서 접근 가능한 active `INDEPENDENT/MI_BASE`이며 업로더 본인일 필요는 없다. 2026-10-23 사용자 확정에 따라 QRY-01 및 source 기반 Draft 생성·재개·후속 조회는 Case 생성자의 회사번호와 요청 회사번호를 비교하지 않는다. 타사 접근 ADMIN의 소속 회사가 달라도 기존 권한 조건을 통과하면 같은 공유 원본을 사용한다. Draft는 **생성 사용자 개인 소유**이므로 source Case 수정 소유권과 구별한다. 다른 소유자/tenant의 Draft·작업은 404, 관리자도 이 API로 다른 사람 Draft에 접근하지 않는 안이다. 각 요청에서 source 접근 가능성도 확인한다. source 상태가 COMPLETED여야 한다는 새 조건이나 source Case 수정 권한은 추가하지 않는다.
 
-worker는 접수 당시 서버가 확인한 actor/tenant/고정 기준을 전달받고 종료 때 context를 정리한다. 사용자/tenant/fileNo/bucket/object key/수식/저장 경로는 공개 요청으로 받지 않는다. payload·셀값·거부값·원문 예외는 HTTP/worker 로그와 오류에 남기지 않는다. 평문 작업사본/기존 암복호화는 domain 규칙63, 자원·비동기·전체120초 상한은 규칙64를 그대로 따른다. QRY JSON DRM 비적용의 기존 결정을 재심의하지 않는다.
+worker는 접수 당시 서버가 확인한 actor/tenant/고정 기준을 전달받고 종료 때 context를 정리한다. 사용자/tenant/fileNo/bucket/object key/수식/저장 경로는 공개 요청으로 받지 않는다. payload·셀값·거부값·원문 예외는 HTTP/worker 로그와 오류에 남기지 않는다. 평문 작업사본/기존 암복호화는 domain 규칙63, 자원·비동기·작업 유형별 기한은 규칙64를 따른다. QRY JSON DRM 비적용의 기존 결정을 재심의하지 않는다.
 
 입력 양식 선택은 [조회 API §4.6](mi-fundamental-model-input-query-api-proposal.md)의 Case 연결 기준을 따른다. application model-code 설정으로 제한하지 않으며, 기존 Draft의 고정 양식·원본과 현재 Case 연결이 다르면 기존 충돌 오류를 유지한다.
 
@@ -1253,7 +1253,7 @@ SUCCEEDED는 새 INDEPENDENT Case/파일4개·고정 발행 연결·FINALIZED와
 | 계산/구조·보존 검증 실패 | 작업 FAILED, failure.reason은 CALCULATION_FAILED/STRUCTURE_VALIDATION_FAILED/PRESERVATION_FAILED/VALIDATION_FAILED 등 §6 enum. finalizedCaseId null/files[]/caseEndpoint null. EDT-02/03은 직전 성공 Draft 유지 |
 | 일부 업로드·파일/Case/양식 연결 실패 | FAILED/PERSISTENCE_FAILED. 성공한 일부 파일을 반환하지 않음. 서버가 전용 준비 기록으로 정리하며 FE가 파일 삭제를 호출하지 않음. 실패/정리 지연은 Case 성공이 아님 |
 | DB commit 응답 유실·서버 재시작 | 실제 DB 기록 확인 전 FAILED/완료 Case를 추정하지 않음. 같은 작업을 재조회. 성공 commit이면 같은 Case, rollback/실패가 확정되면 FAILED. QUEUED는 같은 요청으로 복구하고 종료된 RUNNING은 서버 실패 확정 후 새 ID로만 재시도(domain §5.3) |
-| timeout 확정 | FAILED/TIMEOUT, 직전 성공 Draft 유지. 접수부터 전체120초 상한/늦은worker 차단은 domain 규칙64·§5.3. FE timeout은 이 상태를 대신하지 못함 |
+| timeout 확정 | FAILED/TIMEOUT, 직전 성공 Draft 유지. 접수부터 CHANGE 120초, 신규 FINALIZE 600초 상한/늦은worker 차단은 domain 규칙64·§5.3. FE timeout은 이 상태를 대신하지 못함 |
 | FAILED 조회/같은 요청 재전송 | 저장된 실패 결과 반환, 자동 재실행 없음. EDT-02로 현재 revision 확인 후 사용자가 재시도할 때 새 requestId |
 | SUCCEEDED 조회/같은 요청 재전송 | 같은 operation/Case/최초 실행 연결 반환. FE는 별도 Run POST 없이 §9.2.1의 execution 상태를 조회. 실행 실패에도 저장 성공은 유지 |
 | 서버에서 아직 접수 여부도 확인 불가(5xx/통신 오류) | 안전한 공통 오류, 일부 Case ID/업로드 결과 미공개. 같은 요청을 나중에 확인하며 성공/실패 화면으로 단정하지 않음 |

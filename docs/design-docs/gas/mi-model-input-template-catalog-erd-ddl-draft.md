@@ -491,7 +491,7 @@ ERD 검토: 기존 승인 물리 정의를 재사용한다. 요청의 원자적 
 
 사용자는 실제 DB/코드의 `crt_usr_logn_id/crt_dtm/mod_usr_logn_id/mod_dtm/del_yn` 이름을 유지하고 기존 Case·파일·회사·사용자와 같은 **생성/수정 DATETIME(0)**을 채택했다. 이 방향은 catalog6개와 §6.3 Draft7개에 적용하며 아직 없는 최종준비파일은 후속 CREATE 때 적용한다. 기존 테이블을 재생성하지 않는다. 신규 단어·이름·관계·PK/FK/UK/정규화/인덱스·소유권 변경은 없다. audit DEFAULT/ON UPDATE는 CURRENT_TIMESTAMP(0), 적용/처리 시간 `aply_bgn_dtm/expr_dtm/bgn_dtm/end_dtm`은 DATETIME(6)을 유지한다.
 
-새 접수는 DB 현재 시각의 초 아래를 버린 같은 값을 crt_dtm/mod_dtm에 넣고 그 값+120초를 expr_dtm에 저장한다. 실제 접수 후 허용 시간은120초를 넘지 않으며 최대1초 미만 짧아질 수 있다. 만료/claim/성공 조건은 기존 마이크로초 DB 시계로 비교하고 Draft→요청 잠금·시도 토큰·원자 성공 경계를 유지한다. 감사 시각으로 revision 순서/worker 재시도 여부를 결정하지 않는다. 공개 endpoint·조회/숫자 계약·작업 정책 차단은 변경하지 않는다.
+새 접수는 DB 현재 시각의 초 아래를 버린 같은 값을 crt_dtm/mod_dtm에 넣고 CHANGE는 120초, FINALIZE와 업로드는 600초를 더한 값을 expr_dtm에 저장한다. 기존 이력의 기한은 유지하며 [최종저장 기한 증분 DDL](../../model-input-finalization-deadline-ddl-draft.sql)을 선행 적용한다. 실제 접수 후 허용 시간은 작업 유형별 기한을 넘지 않으며 최대 1초 미만 짧아질 수 있다. 만료/claim/성공 조건은 기존 마이크로초 DB 시계로 비교하고 Draft→요청 잠금·시도 토큰·원자 성공 경계를 유지한다. 감사 시각으로 revision 순서/worker 재시도 여부를 결정하지 않는다. 공개 endpoint·조회/숫자 계약·작업 정책 차단은 변경하지 않는다.
 
 증분 적용·사전/사후 조회의 정본은 [감사 시간 증분 SQL](../../model-input-audit-precision-ddl-draft.sql)이다. 모든 writer 중단·진행 작업0·PK별 백업과 손실 확인 뒤, 호환 코드 배포→기존 감사 소수점 명시 절삭(요청은 생성/만료를 같은 UPDATE로 정렬)→단계별 ALTER→정의/건수/기준 Case103·Draft/행ID 보존 확인 순서다. request crt_dtm의 ck09는 같은 ALTER에서 drop/re-add하여 MySQL의 CHECK 참조 컬럼 변경 규칙을 지킨다. 처리 시작/종료 시간은 보존하며 과거 종료 요청의 만료만 생성 소수점만큼 앞당겨 ck09를 유지한다. 손실은 타입 재확대로 복원되지 않으며 정확 복원은 백업이 필요하다. DDL은 자동 commit되므로 일괄 transaction rollback으로 간주하지 않는다. 생성/변경 SQL 파일은 빈 환경/누락 table용 최신 정의이며 기존 적용 DB에는 재실행하지 않는다.
 
@@ -877,7 +877,7 @@ DDL은 암묵 commit되므로 reset의 DELETE transaction을 검증·COMMIT/ROLL
 | 테이블 | 변경·소유 데이터 |
 | --- | --- |
 | `tmd_mdl_inptdrftm` | `src_spt_cd VARCHAR(20) ascii_bin NOT NULL DEFAULT 'CASE'` 추가. CASE는 기존 `org_case_id/org_rvsn_val` 필수, UPLOAD는 둘 다 NULL CHECK. template/owner/revision/state는 공통 사용. `org_case_id`와 `org_rvsn_val`만 NULL 허용으로 확장하며 최종 Case는 기존 fnsv_case_id 사용 |
-| `tmd_mdl_inptdrftprcsl` | CHANGE/FINALIZE에 UPLOAD_CREATE/UPLOAD_FILE 추가. 소유 회사/사용자 NOT NULL 추가(기존 요청은 Draft에서 backfill). 최초 요청은 base_rvsn_no=NULL, 성공 전 drft_id=NULL; 최초 성공 때만 생성된 drft_id 기록. 나머지 종류는 둘 다 필수. 상태·토큰·종료 결과·payload 한도는 기존 공통 구조 사용. 신규 업로드의 접수 후 기한은600초, 기존 이력과 CHANGE/FINALIZE는120초다. `ck09`의 호환 변경은 [업로드 기한 증분 DDL](../../model-input-upload-deadline-ddl-draft.sql)이 소유한다 |
+| `tmd_mdl_inptdrftprcsl` | CHANGE/FINALIZE에 UPLOAD_CREATE/UPLOAD_FILE 추가. 소유 회사/사용자 NOT NULL 추가(기존 요청은 Draft에서 backfill). 최초 요청은 base_rvsn_no=NULL, 성공 전 drft_id=NULL; 최초 성공 때만 생성된 drft_id 기록. 나머지 종류는 둘 다 필수. 상태·토큰·종료 결과·payload 한도는 기존 공통 구조 사용. 신규 업로드의 접수 후 기한은600초, 기존 120초 이력과 CHANGE는 120초, 신규 FINALIZE는 600초다. `ck09`의 호환 변경은 [업로드 기한 증분 DDL](../../model-input-upload-deadline-ddl-draft.sql)이 소유한다 |
 | 신규 `tmd_mdl_inptupldactvm` | PK `(cust_cpny_no,usr_no)`. 현재 최초 접수 prcs_id 또는 성공한 drft_id 중 하나만 보유하고 둘 다 NULL이면 비어 있음. 사용자별 잠금 기준이며 과거 초안 목록이 아님. 최초 접수 이전에도 행을 안전하게 생성/잠금해 경쟁을 직렬화 |
 | 신규 `tmd_mdl_inptupldfiled` | PK `upld_file_id UUID`. private 원본 객체의 서버 참조(최대16KiB JSON), 소유 회사/사용자, 원본 파일명300·확장자20·MIME100, 실제 수신 크기/내용 SHA-256, 요청·검증 양식·역할·성공 Draft/revision. 상태 PREPARED/RECEIVED/COMMITTED/CLEANUP_PENDING/CLEANED. 파일 바이트는 DB에 넣지 않음 |
 | `tmd_mdl_inptdrftfiled` | 기존 `(drft_id,mdl_file_cd)` PK 유지. file_no를 NULL 허용하고 upld_file_id UUID? 추가. 정확히 하나만 존재하는 XOR CHECK. CASE는 기존 tcm_filel, UPLOAD는 새 private 원본 참조 사용. 업로드 중/실패 후보는 여기에 넣지 않음 |

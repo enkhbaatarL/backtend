@@ -42,7 +42,7 @@ final class InputDraftFinalizationRepository {
         Draft draft = common.lockOwned(id, company, user);
         if (actor == null || actor.isBlank() || actor.length() > 50) throw InputDraftException.missing();
         Operation candidate = new Operation(UUID.randomUUID().toString(), id, request.requestId(), "FINALIZE", role,
-                request.baseRevision(), "QUEUED", 2, encode(request), null, common.databaseTime().withNano(0).plusSeconds(120), null, null, actor);
+                request.baseRevision(), "QUEUED", 2, encode(request), null, common.databaseTime().withNano(0).plusSeconds(600), null, null, actor);
         common.workerOwner(draft, candidate);
         if(!draft.uploaded())common.caseAccess(draft.caseId(), false);
         Operation existing = common.request(id, request.requestId());
@@ -64,7 +64,7 @@ final class InputDraftFinalizationRepository {
         verify(draft, candidate);
         if (draft.activeOperation() != null) throw InputDraftException.conflict("DRAFT_BUSY", draft.revision());
         if (draft.revision() != request.baseRevision()) throw InputDraftException.conflict("REVISION_CONFLICT", draft.revision());
-        LocalDateTime now = candidate.expires().minusSeconds(120);
+        LocalDateTime now = candidate.expires().minusSeconds(600);
         sql.update("""
                 INSERT INTO tmd_mdl_inptdrftprcsl(prcs_id,cust_cpny_no,usr_no,drft_id,req_id,prcs_type_cd,usr_role_cd,base_rvsn_no,
                     prcs_stat_cd,json_rvsn_no,req_json,expr_dtm,crt_dtm,mod_dtm,crt_usr_logn_id,mod_usr_logn_id)
