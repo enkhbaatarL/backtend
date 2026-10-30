@@ -65,11 +65,22 @@ public final class ModelInputDraftResponses {
         @Schema(description="원본 행·추가 행·빈 슬롯 구분",allowableValues={"SOURCE","ADDED","EMPTY_SLOT"}) String origin) {}
     @Schema(requiredProperties={"rowId","values"})
     public record EditValue(String rowId,Map<String,Object> values) {}
-    @Schema(requiredProperties={"capabilities","fields","rowBindings","editValues"})
+    @Schema(requiredProperties={"rowId","fieldKey","baseline","current","restoreStatus","restoreReason"})
+    public record CellRestore(String rowId,String fieldKey,
+        @Schema(oneOf={EmptyComparisonValue.class,TypedComparisonValue.class}) JsonNode baseline,
+        @Schema(oneOf={EmptyComparisonValue.class,TypedComparisonValue.class}) JsonNode current,
+        @Schema(allowableValues={"READY","INCOMPLETE","NOT_ALLOWED","UNSUPPORTED"}) String restoreStatus,
+        @Schema(nullable=true,types={"string","null"},description="READY이면 null. 미변경은 NO_CHANGE, 그 외 changes와 같은 사유 코드") String restoreReason) {}
+    @Schema(requiredProperties={"capabilities","fields","rowBindings","editValues","cellRestores"})
     public record Editing(@Schema(description="SET/CLEAR/ADD_ROW/DELETE_ROW/ADD_COLUMN/DELETE_COLUMN의 READY/INCOMPLETE/NOT_ALLOWED/UNSUPPORTED. READY만 호출 가능") Map<String,String> capabilities,
         @Schema(description="안정 fieldKey별 입력 정의. dataType은 INTEGER/DECIMAL/TEXT/DECIMAL_OR_TEXT. DECIMAL_OR_TEXT는 JSON number와 string을 원래 타입 그대로 주고받으며 실제 빈칸은 CLEAR로 처리. setConstraints.required=true인 TEXT는 빈 문자열·공백 입력 불가. CLEAR 허용 여부는 policyStatus.CLEAR로 표시") List<JsonNode> fields,List<RowBinding> rowBindings,List<EditValue> editValues,
+        @Schema(description="현재 페이지의 편집 가능한 SOURCE 행×SOURCE 열 셀. 역할별 고정 파일 baseline과 성공 저장 current를 EMPTY/VALUE로 제공. 미변경은 NOT_ALLOWED/NO_CHANGE. READY만 SET/CLEAR로 복원 가능") List<CellRestore> cellRestores,
         @com.fasterxml.jackson.annotation.JsonInclude(com.fasterxml.jackson.annotation.JsonInclude.Include.NON_NULL)
-        @Schema(description="ADD_COLUMN READY일 때만 제공하는 headerValues/body 생성 정책") JsonNode columnCreation) {}
+        @Schema(description="ADD_COLUMN READY일 때만 제공하는 headerValues/body 생성 정책") JsonNode columnCreation) {
+        public Editing(Map<String,String> capabilities,List<JsonNode> fields,List<RowBinding> rowBindings,List<EditValue> editValues,JsonNode columnCreation) {
+            this(capabilities,fields,rowBindings,editValues,List.of(),columnCreation);
+        }
+    }
     @Schema(requiredProperties={"draftId","revision","sourceKey","sourceVersion","tableData","page","editing"})
     public record Table(@Schema(format="uuid") String draftId,
         @Schema(description="조회한 성공 저장 번호",minimum="0",maximum="9007199254740991") long revision,

@@ -1473,6 +1473,14 @@ v7 카탈로그에서 `SUPPLY/BCRegasification/Annual Regas Capacity Baseline`�
 
 예: `data.items`에 `{"kind":"CELL","change":"MODIFIED","rowId":"a0000000-0000-4000-8000-000000000008","fieldKey":"price","baseline":{"kind":"EMPTY"},"current":{"kind":"VALUE","value":0},"restoreStatus":"READY","restoreReason":null}`를 포함한다. 전체 응답은 `BaseResponse`로 감싼다.
 
+### 11.2A 표 페이지의 셀 복원 정보 (2026-10-29)
+
+EDT-03 `table-data`의 `editing.cellRestores`는 현재 반환 본문 페이지의 편집 가능한 SOURCE 행 × SOURCE 열 셀 배열이다. 각 항목은 `{rowId,fieldKey,baseline,current,restoreStatus,restoreReason}`이며 값 표현과 복원 정책은 §11.1~11.2와 같다. 빈 값도 명시적으로 EMPTY로 반환한다. 원본은 현재 역할의 고정 파일 값이며 임시저장으로 바뀌지 않고, 파일 교체 성공 시 새 파일 기준으로 바뀐다. 현재 값은 응답 revision의 성공 저장값이다. FE의 미저장 입력은 포함하지 않는다.
+
+미변경 셀도 포함하며 `restoreStatus:NOT_ALLOWED, restoreReason:NO_CHANGE`다. 변경 셀은 기존 changes CELL과 같은 상태 판정을 사용한다. READY일 때만 원본 VALUE를 SET, EMPTY를 CLEAR로 제출한다. `rowId/fieldKey`가 안정 식별자이며 표시 좌표로 복원하지 않는다. 추가 행·열, EMPTY_SLOT, 수식/읽기 전용 셀은 배열에서 제외한다. 빈 배열도 허용한다. 복원 정보는 기존 2MiB 응답 제한에 포함하고 행 경계에서 페이지를 줄인다. Excel과 Snapshot 조회 모두 동일한 계약을 사용한다.
+
+현재 페이지 셀의 표시·복원에는 별도 changes 조회가 필요 없다. 삭제 원본 행·열 복원, 추가 구조 및 HEADER/CONTROL 변경은 기존 changes 계약을 유지한다. §11.2의 버튼 권위는 이 배열에 포함된 셀에 한해 해당 항목의 restoreStatus로도 제공된다. 기존 editValues는 유지한다. restore-preview 및 업로드 selection의 editing에도 같은 배열 형식을 사용하며 각 응답이 나타내는 상태를 current로 사용한다.
+
 ### 11.3 삭제 원본 구조 preview
 
 `GET /api/v1/mi/fundamental-model/input-drafts/{draftId}/restore-preview?revision={revision}&tableId={tableId}&kind={ROW|COLUMN}&targetId={rowId 또는 fieldKey}&startRow={startRow}`

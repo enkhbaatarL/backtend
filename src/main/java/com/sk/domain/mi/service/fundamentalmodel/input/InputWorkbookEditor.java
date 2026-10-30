@@ -35,6 +35,14 @@ final class InputWorkbookEditor {
 
     static void validate(ModelInputDraftService.Source source, InputDraftHistory history,
             InputDraftJson.ChangeRequest request, long revision) {
+        ValidationContext context = validationContext(source, history);
+        if(InputDraftJson.restores(request))InputDraftRestoreValidation.validate(source,history,request,revision);
+        else validate(source, context.bindings(), context.addedRows(), context.addedFields(), request, revision);
+    }
+
+    record ValidationContext(Map<Long, Map<Integer, String>> bindings, Set<String> addedRows, Set<String> addedFields) {}
+
+    static ValidationContext validationContext(ModelInputDraftService.Source source, InputDraftHistory history) {
         Map<Long, Map<Integer, String>> bindings = new HashMap<>();
         source.catalog().tables().forEach(table -> bindings.put(table.id(), history.bindings(table.id())));
         Set<String> addedRows = bindings.values().stream().flatMap(rows -> rows.values().stream()).filter(id -> history.origin(id).equals("ADDED"))
@@ -44,8 +52,7 @@ final class InputWorkbookEditor {
             int column = field.path("columnNumber").asInt();
             if (history.sourceColumn(table.id(), column) == null) addedFields.add(table.key() + "/" + field.path("fieldKey").asText());
         }));
-        if(InputDraftJson.restores(request))InputDraftRestoreValidation.validate(source,history,request,revision);
-        else validate(source, bindings, addedRows, addedFields, request, revision);
+        return new ValidationContext(bindings, addedRows, addedFields);
     }
 
     static void validate(ModelInputDraftService.Source source, Map<Long, Map<Integer, String>> bindings,

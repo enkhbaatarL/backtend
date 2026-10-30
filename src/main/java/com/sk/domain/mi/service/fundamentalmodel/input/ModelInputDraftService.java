@@ -228,8 +228,11 @@ public class ModelInputDraftService {
         catch(InputDraftException ex){if(ex.getStatus().is5xxServerError())throw ex;item.put("restoreStatus",ex.getStatus().value()==422?"NOT_ALLOWED":"UNSUPPORTED").put("restoreReason",ex.getStatus().value()==422?"BASELINE_VALUE_NOT_ALLOWED":"STRUCTURE_UNSUPPORTED");}
     }
     private void restorationStatus(ObjectNode item,State state,JsonNode command) {
+        restorationStatus(item,state,command,request->InputWorkbookEditor.validate(state.source,state.history,request,state.draft.revision()));
+    }
+    private void restorationStatus(ObjectNode item,State state,JsonNode command,java.util.function.Consumer<InputDraftJson.ChangeRequest> validate) {
         if(!changesEnabled||command.path("type").asText().startsWith("RESTORE_")&&(!restoresEnabled||!restorePreviewEnabled))return;
-        try {InputWorkbookEditor.validate(state.source,state.history,new InputDraftJson.ChangeRequest(UUID.randomUUID().toString(),state.draft.revision(),List.of(command)),state.draft.revision());item.put("restoreStatus","READY").putNull("restoreReason");}
+        try {validate.accept(new InputDraftJson.ChangeRequest(UUID.randomUUID().toString(),state.draft.revision(),List.of(command)));item.put("restoreStatus","READY").putNull("restoreReason");}
         catch(InputDraftException ex){if(ex.getStatus().is5xxServerError())throw ex;String reason=ex.getReason();item.put("restoreStatus","POLICY_INCOMPLETE".equals(reason)?"INCOMPLETE":ex.getStatus().value()==422?"NOT_ALLOWED":"UNSUPPORTED");item.put("restoreReason",reason==null?"ACTION_NOT_ALLOWED":reason);}
     }
 
@@ -942,7 +945,7 @@ public class ModelInputDraftService {
         // 저장된 추가 행은 값이 비어도 표시한다. 빈 원본 행과 미활성 슬롯은 기존 값 기준으로 자른다.
         int[] lastVisibleRow={identities.entrySet().stream().filter(entry->"ADDED".equals(state.history.origin(entry.getValue())))
             .mapToInt(Map.Entry::getKey).max().orElse(0)};
-        Map<Integer,Map<Integer,Cell>> rows=new HashMap<>();Set<Integer> wanted=new HashSet<>(candidate);wanted.addAll(headers);
+        Map<Integer,Map<Integer,Cell>> rows=new HashMap<>(),baselineRows=new HashMap<>();Set<Integer> wanted=new HashSet<>(candidate);wanted.addAll(headers);
         long[] budget={0};int[] cutoff={Integer.MAX_VALUE};
         Set<Integer> invalidRows=new HashSet<>(),invalidControls=new HashSet<>();
         FileRef file=state.source.files.stream().filter(f->f.role().equals(table.role())).findFirst().orElseThrow(InputDraftException::internal);
@@ -971,6 +974,7 @@ public class ModelInputDraftService {
                 }
                 if(!wanted.contains(row))continue;
                 if(!headers.contains(row)&&row>cutoff[0])continue;
+                baselineRows.put(row,values);
                 budget[0]+=json.bytes(currentValues).length;
                 if(budget[0]>InputDraftJson.RESPONSE_LIMIT&&!headers.contains(row)&&candidate.contains(row)&&!candidate.isEmpty()&&row!=candidate.get(0)){cutoff[0]=Math.min(cutoff[0],row-1);continue;}
                 rows.computeIfAbsent(row,k->new HashMap<>()).putAll(currentValues);
@@ -995,9 +999,17 @@ public class ModelInputDraftService {
             if(value!=null)rows.computeIfAbsent(row,k->new HashMap<>()).put(col,value);
         }
         List<Integer> page=new ArrayList<>(displayCandidate.stream().filter(row->row<=cutoff[0]).toList());
+        // 변경 셀과 페이지 크기 재조정 모두 같은 요청의 검증 자료를 재사용한다.
+        var cellValidation=new java.util.function.Consumer<InputDraftJson.ChangeRequest>() {
+            private InputWorkbookEditor.ValidationContext context;
+            @Override public void accept(InputDraftJson.ChangeRequest request) {
+                if(context==null)context=InputWorkbookEditor.validationContext(state.source,state.history);
+                InputWorkbookEditor.validate(state.source,context.bindings(),context.addedRows(),context.addedFields(),request,state.draft.revision());
+            }
+        };
         Table result;
         while(true) {
-            result=project(state,table,displayDef,page,rows,identities,invalidRows);
+            result=project(state,table,displayDef,page,rows,baselineRows,identities,invalidRows,cellValidation);
             if(json.bytes(BaseResponseFactory.create(result)).length<=limit)break;
             if(page.size()<=1)throw InputDraftException.responseLarge();page=new ArrayList<>(page.subList(0,Math.max(1,page.size()/2)));
         }
@@ -1031,9 +1043,9 @@ public class ModelInputDraftService {
         Table selection=first==null?null:renderTable(actor,state,first.key(),null,budget);
         return new UploadResult(kind,draft.id(),draft.revision(),"/api/v1/mi/fundamental-model/input-drafts/"+draft.id(),structure,selection);
     }
-    private Table project(State state,TableRef table,InputReadDefinition def,List<Integer> page,Map<Integer,Map<Integer,Cell>> values,Map<Integer,String> ids,Set<Integer> invalidRows) {
+    private Table project(State state,TableRef table,InputReadDefinition def,List<Integer> page,Map<Integer,Map<Integer,Cell>> values,Map<Integer,Map<Integer,Cell>> baselineRows,Map<Integer,String> ids,Set<Integer> invalidRows,java.util.function.Consumer<InputDraftJson.ChangeRequest> cellValidation) {
         List<Column> columns=def.columns().stream().map(col->new Column("column"+(col-1),CellReference.convertNumToColString(col-1))).toList();
-        List<Map<String,Object>> grid=new ArrayList<>();List<Long> inputs=new ArrayList<>();List<RowBinding> bindings=new ArrayList<>();List<EditValue> edits=new ArrayList<>();
+        List<Map<String,Object>> grid=new ArrayList<>();List<Long> inputs=new ArrayList<>();List<RowBinding> bindings=new ArrayList<>();List<EditValue> edits=new ArrayList<>();List<CellRestore> cellRestores=new ArrayList<>();
         Set<Integer> returned=new java.util.TreeSet<>(def.headerRows());returned.addAll(page);
         for(int row:returned) {
             Map<Integer,Cell> cells=values.getOrDefault(row,Map.of());Map<String,Object> record=new LinkedHashMap<>();record.put("id",row-1);record.put("rowNumber",row);
@@ -1048,6 +1060,22 @@ public class ModelInputDraftService {
                 int col=field.path("columnNumber").asInt();Cell value=cells.get(col);
                 boolean editable="READY".equals(field.path("policyStatus").path("SET").asText())&&table.scopes().stream().anyMatch(scope->scope.contains(row,col));
                 if(editable&&(value==null||!value.formula()))inputs.add((long)row*16384+(col-1));
+                if(editable&&rowId!=null&&"SOURCE".equals(state.history.origin(rowId))
+                    &&state.history.sourceColumn(table.id(),col)!=null&&(value==null||!value.formula())) {
+                    Cell baseline=baselineRows.getOrDefault(row,Map.of()).get(col);
+                    if(baseline==null||!baseline.formula())try {
+                        Object old=baseline==null||baseline.raw()==null?null:typed(field.path("dataType").asText(),baseline.raw());
+                        Object now=value==null||value.raw()==null?null:typed(field.path("dataType").asText(),value.raw());
+                        ObjectNode status=changeItem("CELL","MODIFIED");
+                        if(json.sameValue(json.tree(old),json.tree(now)))status.put("restoreStatus","NOT_ALLOWED").put("restoreReason","NO_CHANGE");
+                        else {
+                            ObjectNode command=(ObjectNode)json.tree(Map.of("type",old==null?"CLEAR":"SET","commandId","revert","tableId",table.key(),"rowRef",Map.of("rowId",rowId),"fieldKey",field.path("fieldKey").asText()));
+                            if(old!=null)command.set("value",json.tree(old));
+                            restorationStatus(status,state,command,cellValidation);
+                        }
+                        cellRestores.add(new CellRestore(rowId,field.path("fieldKey").asText(),comparisonValue(old),comparisonValue(now),status.path("restoreStatus").asText(),status.path("restoreReason").isNull()?null:status.path("restoreReason").asText()));
+                    }catch(InputDraftException ex){if(ex.getStatus().is5xxServerError())invalidRows.add(row);else throw ex;}
+                }
                 if(editable&&rowId!=null&&value!=null&&value.raw()!=null&&!value.formula()) {
                     try {typed.put(field.path("fieldKey").asText(),typed(field.path("dataType").asText(),value.raw()));}
                     catch(InputDraftException ex){invalidRows.add(row);}
@@ -1065,7 +1093,7 @@ public class ModelInputDraftService {
         if(end!=null) {List<Integer> after=def.page(end,2);if(after.size()>1)next=after.get(1);}
         return new Table(state.draft.id(),state.draft.revision(),state.source.key,state.source.version,
             new TableData(table.key(),columns,grid,inputs,def.inputGuideRules(),controls,def.displayUpdateRules()),
-            new Page(def.totalRows(),page.size(),start,end,next!=null,next),new Editing(caps,fields,bindings,edits,caps.get("ADD_COLUMN").equals("READY")?def.columnCreation():null));
+            new Page(def.totalRows(),page.size(),start,end,next!=null,next),new Editing(caps,fields,bindings,edits,List.copyOf(cellRestores),caps.get("ADD_COLUMN").equals("READY")?def.columnCreation():null));
     }
     private Object typed(String type,Object value) {
         if("DECIMAL_OR_TEXT".equals(type)&&(value instanceof String||value instanceof BigDecimal))return value;
