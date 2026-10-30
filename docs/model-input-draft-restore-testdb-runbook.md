@@ -17,7 +17,7 @@
 
 ## 1. 적용 범위와 순서
 
-**배포본 확정 → 복원 OFF로 모든 웹 서버 선배포 → DDL pre-check → ALTER → verify → 복원 ON으로 웹 서버 설정 반영 → API 테스트** 순서다.
+**배포본 확정 → 신규 접수·모든 writer 중단 및 기존 작업 종료 확인 → DDL pre-check → ALTER → verify → 모든 웹 서버를 호환 코드로 교체 → 접수 재개 → API 테스트** 순서다. 복원/미리보기 설정은 공통 파일에서 ON으로 고정되어 있어 혼합 버전 동안 새 요청을 받지 않는다.
 
 - 기존 Draft·웹 러너·최종저장용 schema가 설치되어 있고 v2 저장을 사용 중인 testdb의 증분 배포에 적용한다. 이전 schema라면 이 SQL로 건너뛰지 않는다.
 - 별도 worker 프로세스/Pod/supervisor는 시작하지 않는다. 웹 서버의 `InputDraftWebRunner`가 CHANGE·업로드·FINALIZE를 처리한다. worker 코드 삭제는 이번 범위가 아니다.
@@ -26,21 +26,22 @@
 
 ## 2. 환경변수
 
-설정 의미와 기본값의 정본은 [API §11.8](feature-specs/mi-fundamental-model-input-draft-editing-api-proposal.md#118-설정과-수동-활성화)이다. 아래는 이번 배포 단계별 값이다.
+설정 의미와 기본값의 정본은 [API §11.8](feature-specs/mi-fundamental-model-input-draft-editing-api-proposal.md#118-설정과-배포-활성화)이다. 아래는 이번 배포 단계별 값이다.
 
-| 환경변수 | 호환 코드 선배포 / DDL 적용 중 | DDL 검증 후 테스트 | 확인점 |
+| 설정/환경변수 | DDL 적용·웹 교체 중 | 교체 후 테스트 | 확인점 |
 | --- | --- | --- | --- |
 | `MODEL_INPUT_DRAFT_ENABLED` | `true` 유지 | `true` | 현재 dev/prod profile에서 upload/shared-baseline/web-runner/change-worker/finalization에 공통 적용 |
-| `MODEL_INPUT_RESTORE_ENABLED` | `false` | `true` | 새 RESTORE 명령 접수와 READY 판정 |
-| `MODEL_INPUT_RESTORE_PREVIEW_ENABLED` | `false` | `true` | preview 및 RESTORE 접수의 공통 전제 |
-| `MODEL_INPUT_CHANGE_CURSOR_SECRET` | Secret에서 주입 | 같은 값 유지 | UTF-8 32바이트 이상, 모든 웹 인스턴스에 동일한 값 |
+| `mi.model-input.restore.enabled` | `true` 고정 | `true` | 새 RESTORE 명령 접수와 READY 판정. 중간 단계는 요청 접수 중단 |
+| `mi.model-input.restore-preview.enabled` | `true` 고정 | `true` | preview 및 RESTORE 접수의 공통 전제. 중간 단계는 요청 접수 중단 |
 | `MODEL_INPUT_RESTORE_READ_MAX_CONCURRENT` | `1` | `1`로 시작 | 변경 조회/preview가 공유하는 JVM별 동시 실행 수 |
 | `MODEL_INPUT_RESTORE_READ_TIMEOUT_MS` | `30000` | `30000`으로 시작 | 조회/preview 처리 기한 |
 | `MODEL_INPUT_RESTORE_READ_SCRATCH_BYTES` | `268435456` | 같은 값으로 시작 | 요청별 임시파일 합계 256 MiB |
 
-`MODEL_INPUT_DRAFT_ENABLED=false`는 복원만 끄는 설정이 아니다. 이번 점검에서는 복원 두 변수만 OFF/ON으로 바꾼다. 표의 공통 변수 매핑은 실제 활성 profile의 effective property(최종 적용값)로 확인한다. 별도 override가 있다면 파일 기본값보다 그것을 우선 확인한다. testdb라는 이름의 Spring profile이 있다고 가정하지 않는다.
+두 복원 설정은 공통 설정 파일에서 `true`로 고정한다. DDL 적용과 전체 웹 교체가 끝나기 전에는 새 요청 접수를 중단한다.
 
-서명키 실제 값은 저장소·문서·API 응답·로그에 기록하지 않는다. 준비한 Secret의 참조/version과 모든 웹의 일치 여부만 확인한다. 키를 교체하면 기존 cursor는 무효이므로 첫 페이지부터 다시 조회한다.
+`MODEL_INPUT_DRAFT_ENABLED=false`는 복원만 끄는 설정이 아니라 Draft 전체를 끈다. 표의 공통 변수 매핑은 실제 활성 profile의 effective property(최종 적용값)로 확인한다. testdb라는 이름의 Spring profile이 있다고 가정하지 않는다.
+
+변경 목록 커서는 서명키 없이 사용한다. 구형 서명 커서가 400으로 거절되면 cursor를 생략하고 첫 페이지부터 다시 조회한다. 서버의 nextCursor를 해석하거나 수정하지 않는다.
 
 설정 변경은 웹 서버 재시작/재배포로 반영한다. 혼합 설정으로 요청 결과가 달라지지 않도록 전체 rollout 완료 후 테스트한다. 웹 실행에 `mi.model-input.worker-process=true`나 standalone worker 시작 명령을 추가하지 않는다.
 
@@ -53,13 +54,11 @@
 5. 일반 행, 삭제 가능한 원본 기간 열, PMI·Regas 연결 행의 표를 준비한다. `editing.capabilities.DELETE_ROW` 또는 표/필드의 `DELETE_COLUMN`이 READY인지 확인한다. catalog를 새로 발행해도 기존 Draft의 고정 정책은 자동 변경되지 않는다. 정책이 부족하면 해당 테스트를 중단하고 별도 catalog 절차로 해결한다.
 6. 실제 JVM 임시 디렉터리의 쓰기 권한·여유 공간을 확인한다. 256 MiB는 요청당 한도이고 JVM 기본 메모리/다른 작업/웹 복제본의 디스크 사용량을 포함한 총 용량이 아니다. gateway/client timeout도 새 조회의 30초 처리 기한과 실제 응답을 전달할 수 있는지 확인한다.
 
-## 4. 호환 코드 선배포 — 복원 OFF
+## 4. 접수 중단과 작업 종료 확인
 
-1. §2의 OFF 단계 설정을 적용하고 **모든 웹 서버**를 v2/v3 reader 지원 배포본으로 교체한다. 별도 worker 배포는 없다.
-2. 기존 Draft 구조·표 조회 및 일반 SET 저장이 동작하는지 확인한다. 저장은 202 접수 뒤 응답의 `statusEndpoint`로 종료 결과를 확인한다.
-3. 웹 로그의 `Model input consumer started`와 `operations=UPLOAD,CHANGE,FINALIZE`를 확인한다. 같은 DB 큐의 활성 소비자는 하나이고 다른 웹 인스턴스의 `QUEUE_LOCK_HELD` 대기는 가능하다. 로그의 database·host·instance와 배포 대상을 대조한다.
-4. `PREVIOUS_CONSUMER_NOT_STOPPED` 또는 `runner held`가 있으면 DDL/새 기능 활성화를 이어가지 않는다. 로그만 보고 DB 상태를 강제로 바꾸지 말고 기존 recovery 절차에서 실제 종료·잠금을 확인한다. [복구 정책 §5.5.3](design-docs/gas/mi-model-input-template-catalog-domain-model-design.md).
-5. 준비한 테스트 Draft에서 RESTORE와 preview가 OFF로 거절되는지 확인한다. 서명키가 유효하면 변경 조회는 가능하지만 원본 구조 복원 상태는 UNSUPPORTED다. 기존 v2 클라이언트 저장은 유지되어야 한다.
+1. 현재 웹 코드와 배포본의 v2/v3 reader 지원 여부를 확인한다. 구버전이 섞여 있는 동안 새 v3 요청이 들어오지 않도록 새 요청 접수를 중단한다.
+2. 기존 CHANGE·업로드·FINALIZE 작업이 모두 종료될 때까지 기다리고, 실제 작업 소비자와 DB의 QUEUED/RUNNING 상태를 확인한다. 기능 설정만으로 작업 종료를 추정하지 않는다.
+3. `PREVIOUS_CONSUMER_NOT_STOPPED` 또는 `runner held`가 있으면 DDL/교체를 이어가지 않는다. DB 상태를 강제로 바꾸지 말고 [복구 정책 §5.5.3](design-docs/gas/mi-model-input-template-catalog-domain-model-design.md)에 따라 실제 종료·잠금을 확인한다.
 
 ## 5. testdb 증분 DDL — DBA 수동 실행
 
@@ -75,11 +74,11 @@ SQL은 [model-input-draft-restore-v3-ddl-draft.sql](model-input-draft-restore-v3
 
 적용 시각·대상 schema·SQL 파일의 배포 버전·적용 전후 SHOW 결과·verify 결과를 남긴다. 이 절의 완료는 복원 기능 활성화 완료와 별개다.
 
-## 6. 복원 ON — 웹 설정 반영
+## 6. 전체 웹 교체 및 접수 재개
 
-1. DDL verify 후 `MODEL_INPUT_RESTORE_ENABLED=true`, `MODEL_INPUT_RESTORE_PREVIEW_ENABLED=true`로 변경한다. `MODEL_INPUT_DRAFT_ENABLED=true`와 공통 서명키·기본 조회 한계는 유지한다.
-2. 모든 웹 서버의 설정 반영과 rollout 종료를 확인한다. 새 기능을 켜면서 구버전 이미지를 섞지 않는다.
-3. 새 또는 기존 테스트 Draft에서 변경 조회가 200인지 확인한다. 삭제된 지원 원본의 항목에서 `restoreStatus=READY`가 보이는지 확인한다. INCOMPLETE/NOT_ALLOWED/UNSUPPORTED를 수동 우회하지 않는다.
+1. DDL verify 후 **모든 웹 서버**를 같은 v2/v3 호환 배포본으로 교체한다. 접수는 계속 중단하고 `MODEL_INPUT_DRAFT_ENABLED=true`와 기본 조회 한계가 반영됐는지 확인한다. 별도 worker 배포는 없다.
+2. 모든 웹의 배포본과 runner 시작·잠금 상태를 확인한다. `Model input consumer started`와 `operations=UPLOAD,CHANGE,FINALIZE` 로그를 확인하며, 다른 웹 인스턴스의 `QUEUE_LOCK_HELD` 대기는 가능하다. 이전 구버전 소비자가 남아 있으면 접수를 재개하지 않는다.
+3. 전체 교체 뒤 접수를 재개하고 기존 Draft 구조·일반 SET 저장을 확인한다. 저장 202 뒤 응답의 `statusEndpoint`에서 종료 결과를 확인한다. 새 또는 기존 테스트 Draft에서 변경 조회가 200이고 삭제된 지원 원본의 `restoreStatus=READY`가 보이는지 확인한다. INCOMPLETE/NOT_ALLOWED/UNSUPPORTED를 우회하지 않는다.
 
 ## 7. 배포 후 API 테스트
 
@@ -166,7 +165,7 @@ API 정본은 §11 및 기존 EDT-03/04/FINALIZE 계약이다. 아래 경로의 
 
 ### 7.6 오류·경합·용량
 
-- 다른 소유자/내부 표는 404, 오래된 revision은 409 `REVISION_CONFLICT`, cursor 변조/대상 불일치는 400인지 확인한다. 같은 requestId/동일 body 재전송은 기존 작업을 재사용하고, body 변경은 IDEMPOTENCY_CONFLICT다.
+- 다른 소유자/내부 표는 404, 오래된 revision은 409 `REVISION_CONFLICT`, cursor 형식/버전/대상/범위 불일치는 400인지 확인한다. 유효 범위 안의 위치 수정은 검출하지 않는다. 같은 requestId/동일 body 재전송은 기존 작업을 재사용하고, body 변경은 IDEMPOTENCY_CONFLICT다.
 - 이미 활성/ADDED/다른 파일 기준의 대상 복원, 복원과 같은 ID 삭제를 한 요청에 넣는 조합을 거절하고 revision/기존 값이 유지되는지 확인한다.
 - 진행 작업 중 별도 변경 접수는 DRAFT_BUSY이고, 진행 중 조회는 직전 성공 상태다. FE는 진행 요청과 이후 로컬 변경을 구분해 보존한다.
 - 동일 웹 JVM에서 두 느린 변경 조회/preview를 겹쳐 슬롯을 점유했을 때 429와 `Retry-After: 2`를 확인한다. 서로 다른 복제본에 분산된 요청은 JVM별 한도라 둘 다 처리될 수 있다. 대기 요청이 없으면 반드시 429가 나온다고 가정하지 않는다.
@@ -182,6 +181,6 @@ API 정본은 §11 및 기존 EDT-03/04/FINALIZE 계약이다. 아래 경로의 
 
 배포 commit/image, 웹 rollout 상태·profile/DB 식별, 변수의 비밀값 제외 적용 여부, DDL 전후 SHOW/verify, 테스트 draftId/tableId/requestId/operationId·성공 revision, 각 시나리오 실제 결과를 기록한다. preview 성공이나 202만으로 저장 성공을 판정하지 않는다. FE 미연결·미지원 정책·미수행 테스트를 통과로 표시하지 않는다.
 
-새 접수를 중단하려면 복원 두 변수를 false로 반영하되 v3 reader와 기존 Draft/web-runner 설정은 유지한다. OFF는 이미 접수한 작업을 취소하거나 이력을 지우지 않는다. 롤아웃/작업 정리는 기존 웹 러너 종료 규칙을 따른다.
+새 접수를 중단하려면 ingress/API 접수를 중지하고 진행 작업의 실제 종료를 확인한다. 복원 전용 ON/OFF 환경변수는 없다. 중단은 이미 접수한 작업을 취소하거나 이력을 지우지 않는다. 롤아웃/작업 정리는 기존 웹 러너 종료 규칙을 따른다.
 
-CHECK와 앱의 rollback은 [증분 DDL의 rollback 구간](model-input-draft-restore-v3-ddl-draft.sql)이 정본이다. 실패한 v3 접수도 operation에 남을 수 있다. v3 operation/revision 중 하나라도 남으면 v2 전용 앱·옛 CHECK로 되돌리지 않는다. 호환 코드를 유지한 채 기능 OFF로 대응하며, 이력을 삭제하거나 version을 바꾸어 rollback 조건을 맞추지 않는다.
+CHECK와 앱의 rollback은 [증분 DDL의 rollback 구간](model-input-draft-restore-v3-ddl-draft.sql)이 정본이다. 실패한 v3 접수도 operation에 남을 수 있다. v3 operation/revision 중 하나라도 남으면 v2 전용 앱·옛 CHECK로 되돌리지 않는다. 호환 코드를 유지하고 신규 접수를 중단해 대응하며, 이력을 삭제하거나 version을 바꾸어 rollback 조건을 맞추지 않는다.

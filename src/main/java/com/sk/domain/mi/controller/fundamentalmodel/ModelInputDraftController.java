@@ -217,7 +217,7 @@ public class ModelInputDraftController {
     public ResponseEntity<byte[]> changes(@PathVariable String draftId,
         @Parameter(required=true,schema=@Schema(type="integer",minimum="0",maximum="9007199254740991")) @RequestParam(required=false) String revision,
         @Parameter(required=true,description="공개 표 ID") @RequestParam(required=false) String tableId,
-        @Parameter(description="직전 nextCursor. 첫 요청 생략",schema=@Schema(maxLength=4096)) @RequestParam(required=false) String cursor) {
+        @Parameter(description="직전 nextCursor를 수정 없이 전달. 첫 요청은 생략합니다. 형식·버전·대상·위치 오류와 구형 서명 커서는 400이며, 이때 cursor를 생략하고 처음부터 다시 조회합니다.",schema=@Schema(maxLength=4096)) @RequestParam(required=false) String cursor) {
         long rev=nonnegative(revision);if(rev>9007199254740991L||tableId==null||tableId.isBlank()||tableId.length()>1000)throw InputDraftException.invalid();
         return success(service.changes(uuid(draftId),rev,tableId,cursor));
     }

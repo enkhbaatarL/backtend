@@ -1453,7 +1453,7 @@ v7 카탈로그에서 `SUPPLY/BCRegasification/Annual Regas Capacity Baseline`�
 
 `draftId` UUID, `revision` 0 이상 정수, `tableId` 공개 표 ID는 필수다. `cursor`는 첫 호출에 생략, 이후 직전 응답의 `nextCursor`를 사용한다. `data`는 `{draftId,tableId,revision,items,nextCursor}`이고 items는 빈 배열 가능, 마지막 nextCursor는 null이다. 소유/표 404, 형식·커서 오류 400, `REVISION_CONFLICT`/`SOURCE_CHANGED` 409, 복원 불가 원본/저장 이력 오류 500을 적용한다. 오류 본문은 기존 Problem envelope를 사용한다. preview와 같은 JVM 실행 슬롯·처리 기한·임시 용량을 공유하며, 비교 원본 셀은 요청당 최대 250,000개다. 슬롯 부족은 429 `CHANGE_QUERY_BUSY`와 `Retry-After: 2`, 기한·용량·셀 상한 초과는 422 `CHANGE_QUERY_UNAVAILABLE`이다. 부분 목록을 성공으로 반환하지 않는다.
 
-- 커서는 서버 발급의 변조 방지된 불투명 문자열이다. Draft·표·revision·역할 기준 파일·정렬 위치와 API 버전을 묶고, 형식/서명/대상 불일치는 400이다. 유효한 이전 revision 커서는 현재 revision 검사에서 409다. 최대 길이 4096 ASCII 문자; 첫 페이지에 빈 문자열은 유효한 커서가 아니다. 동일 revision의 데이터는 순서와 페이지 경계가 결정적이며 누락·중복이 없다.
+- 커서는 서버가 발급하는 페이지 위치 문자열이며 클라이언트는 내부 형식을 해석하거나 수정하지 않고 nextCursor를 그대로 사용한다. 무서명 v2 형식으로 Draft·표·revision·역할 기준 파일·정렬 위치를 묶고 형식/버전/대상 불일치, 음수·정수 범위 초과·목록 끝을 넘는 위치는 400이다. 유효한 범위 안의 위치 수정은 검출하지 않으며 커서는 접근 권한을 부여하지 않는다. 각 요청의 회사·사용자 소유권과 표 접근·revision·원본 파일 검증은 별도로 수행한다. 유효한 이전 revision 요청은 현재 revision 검사에서 409다. 최대 길이 4096 ASCII 문자; 첫 페이지에 빈 문자열은 유효한 커서가 아니다. 동일 revision의 데이터는 순서와 페이지 경계가 결정적이며 서버의 nextCursor를 순서대로 사용하면 누락·중복이 없다. 구형 서명 v1 커서는 400으로 거절하므로 cursor를 생략하고 첫 페이지부터 다시 조회한다.
 - 정렬은 `ROW`, `COLUMN`, `CELL`, `HEADER`, `CONTROL` 순이다. 같은 종류 안에서 ROW는 rowId, COLUMN/HEADER는 fieldKey(HEADER는 다음으로 headerKey), CELL은 rowId 다음 fieldKey, CONTROL은 controlId의 Unicode 코드 포인트 순이다. 값·표시 좌표를 정렬 키로 사용하지 않는다. cursor는 마지막 완전 반환 항목을 가리킨다.
 - 각 항목의 공통 필드는 `kind`, `change`, `restoreStatus`, `restoreReason`이다. status는 `READY`, `INCOMPLETE`, `NOT_ALLOWED`, `UNSUPPORTED` 중 하나이며 READY인 경우 reason은 null, 나머지는 안정된 코드 문자열이다. 기존 표·필드 정책과 구현·안전성 검증 모두 충족해야 READY다. 기능 비활성/미구현은 UNSUPPORTED로 반환하며 구현이 없는데 READY를 추론하지 않는다.
 - FE 되돌리기 버튼의 권위는 변경 목록 항목의 `restoreStatus`다. 이 계약은 기존 `editing.capabilities`에 RESTORE 키를 추가하지 않는다. 항목에 READY가 없거나 기능 미배포로 조회가 제공되지 않으면 복원을 활성화하지 않는다. 기존 클라이언트의 6명령과 DTO는 유지하고 새 클라이언트만 새 조회·복원 type을 사용한다.
@@ -1494,7 +1494,7 @@ EDT-03 `table-data`의 `editing.cellRestores`는 현재 반환 본문 페이지�
 
 #### 11.3.1 preview 자원 제한
 
-- 새 preview는 `mi.model-input.restore-preview.enabled=false`를 초기값으로 시작한다. 활성화 시 웹 JVM당 동시 실행 최대 1건, 큐 대기 없음, 접수부터 30초, 요청 소유 임시 파일의 실제 동시 사용량 합계 256 MiB를 초기 안전 상한으로 둔다. 이 수치는 현재 운영 성능을 입증한 값이 아니라 최초 배포 전 측정할 보수적 기본값이다. 양수 설정으로 조정하되 JVM/복제본 수와 디스크 용량을 함께 검증한다. 상한 0/음수 또는 무제한 설정은 허용하지 않는다.
+- 새 preview는 공통 설정에서 `mi.model-input.restore-preview.enabled=true`로 고정한다. DDL 검증과 전체 웹 교체가 끝나기 전에는 새 요청 접수를 중단한다. 웹 JVM당 동시 실행 최대 1건, 큐 대기 없음, 접수부터 30초, 요청 소유 임시 파일의 실제 동시 사용량 합계 256 MiB를 초기 안전 상한으로 둔다. 이 수치는 현재 운영 성능을 입증한 값이 아니라 최초 배포 전 측정할 보수적 기본값이다. 양수 설정으로 조정하되 JVM/복제본 수와 디스크 용량을 함께 검증한다. 상한 0/음수 또는 무제한 설정은 허용하지 않는다.
 - 슬롯이 없으면 파일 다운로드·재생 전에 429 `RESTORE_PREVIEW_BUSY`(code `BIZ-001`)와 `Retry-After: 2`를 반환한다. 자동으로 대기열에 넣지 않는다. 기능 OFF는 409 `POLICY_UNSUPPORTED`다. 각 페이지도 별도 요청이므로 같은 제한을 적용한다. 응답 크기와 별도로 실행 시간/소유 파일 bytes를 검사한다. 원본 다운로드·복호화·재생·계산·렌더 전체가 하나의 deadline과 소유 scope 안에 있어야 한다.
 - deadline/bytes 상한 또는 안전 변환 실패는 422 `RESTORE_PREVIEW_UNAVAILABLE`, 클라이언트 연결 종료·서버 shutdown은 실행 중단 신호로 처리한다. 체크포인트는 파일 읽기/쓰기·재생 revision 경계·계산/렌더 안에서 확인한다. 파일 IO 자체에도 남은 기한을 적용하고 중단을 무시하는 blocking 호출로 상한을 무력화하지 않는다. 원본과 직전/다음 replay 파일 외 불필요한 임시 복사본은 즉시 제거하고 finally에서 요청 scope를 닫는다. 실제 실행 종료·정리 전에 슬롯을 반환하지 않는다. 정리 실패는 500이고 운영 로그로 남기며 소유 workspace의 기존 재시작 정리 규칙을 따른다.
 - 미리보기는 영속 Draft 작업을 점유하지 않는다. 실제 저장이 병행 성공하면 반환 직전 revision/원본 검증으로 409를 반환하고 임시 결과는 폐기한다. 실행 동안 DB transaction/row lock을 유지하지 않는다. 최대 역할 파일·긴 이력·동시 페이지·저장 경합에서 시간/디스크 경계와 정리를 확인한 뒤 활성화한다. 용량·시간 안에 처리할 수 없는 표는 안전하게 실패하고 지원한다고 공개하지 않는다.
@@ -1533,7 +1533,7 @@ EDT-03 `table-data`의 `editing.cellRestores`는 현재 반환 본문 페이지�
 - 현재 `InputDraftHistory.relocateRowCells`는 삭제된 열로 이동할 수 없는 셀 값을 현재 합성 상태에서 제거한다. 따라서 추가 행×삭제 원본 열의 값은 현재 상태만 읽어 복원할 수 있다고 가정하지 않는다. 삭제 직전 성공 이력 재생 가능성과 파일 기준점은 별도 검증한다.
 - `InputDraftHistory`/`InputDraftColumns`는 v2 tombstone의 임의 재활성화를 계속 거부하고, v3의 명시 RESTORE 결과에서만 검증된 원본 identity를 재활성화한다. 복원 명령이 들어간 CHANGE의 operation/revision JSON version은 3이며, 나머지 CHANGE·업로드·최종저장은 기존 2를 유지한다. 새 reader는 revision 0과 v2/v3 혼합 chain을 순서대로 읽고 v2 검증 의미를 바꾸지 않는다. v3의 payload와 데이터베이스 배포 순서는 DDL §6.14를 따른다. 구버전 앱은 v3 이력을 읽지 못하므로 reader 선배포·writer 제한 및 롤백 경계를 지킨다.
 - OpenAPI에는 각 조회의 권한·revision·cursor·크기·빈 목록과 union item 예시, preview 적용 한계, 두 명령의 400/404/409/422·비동기 202 및 operation 결과를 명시한다. feature spec이 계약 정본이고 생성 OpenAPI는 동기화 대상이다.
-- 의미 있는 테스트: 타입/빈값/0/정확도, 수정 후 원본값 복귀, 모든 페이지의 중복·누락 및 cursor 변조/교체/동시 저장, 큰 행·열·단일 항목 제한, 추가/삭제/빈 행, 동일 ID delete→restore→delete, 행/열 양쪽 순서와 추가 구조 교차, 연관 표·수식·최종파일, 정책 거부와 실패 원자성, 동일 requestId 재전송·재시작 replay·기존 Draft·다른 tenant/user. UI 자동저장 중 후속 편집·충돌도 검증한다.
+- 의미 있는 테스트: 타입/빈값/0/정확도, 수정 후 원본값 복귀, 모든 페이지의 중복·누락 및 cursor 형식/문맥/범위 오류·구형 토큰 거부·동시 저장, 큰 행·열·단일 항목 제한, 추가/삭제/빈 행, 동일 ID delete→restore→delete, 행/열 양쪽 순서와 추가 구조 교차, 연관 표·수식·최종파일, 정책 거부와 실패 원자성, 동일 requestId 재전송·재시작 replay·기존 Draft·다른 tenant/user. UI 자동저장 중 후속 편집·충돌도 검증한다.
 
 ### 11.6.1 OpenAPI 동기화 지침과 예시
 
@@ -1662,17 +1662,16 @@ preview 429(`Retry-After: 2`; 파일 다운로드·작업 생성 없음):
 - 원본 수식의 현재 좌표 변환, shared formula·calc chain 및 복원된 연결 행을 표별 규칙으로 처리하고 replay delta 검증과 네 파일 최종저장 검증을 통과한 표만 READY다. array/dataTable 등 안전한 변환이 없는 영역은 거부한다. 미지원 표도 읽기/기존 편집 기능은 유지한다.
 - 기존 v2와 v3가 섞인 이력의 무결성과 새 포맷을 지원하지 않는 구버전의 차단·rollback, 기존 사용자의 원본/파일 교체, DB unique·FK·동시 commit 및 큰 표의 제한·시간을 검증한다. 완전한 기술 계약과 검증 조건은 구현에 필요한 설계이며 현재 실행·운영 검증을 통과했다는 뜻은 아니다.
 
-### 11.8 설정과 수동 활성화
+### 11.8 설정과 배포 활성화
 
-| 환경 변수 | 초기값 | 적용 |
+| 설정 | 값/기본값 | 적용 |
 | --- | --- | --- |
-| `MODEL_INPUT_RESTORE_ENABLED` | `false` | 새 RESTORE 명령과 해당 READY 판정 |
-| `MODEL_INPUT_RESTORE_PREVIEW_ENABLED` | `false` | preview 제공. RESTORE 접수도 함께 활성화되어야 함 |
-| `MODEL_INPUT_CHANGE_CURSOR_SECRET` | 빈값 | 변경 목록 커서 HMAC 서명키. 활성화 전에 UTF-8 기준 32바이트 이상 비밀값을 모든 웹 인스턴스에 동일하게 주입 |
+| `mi.model-input.restore.enabled` | `true` 고정 | 새 RESTORE 명령과 해당 READY 판정 |
+| `mi.model-input.restore-preview.enabled` | `true` 고정 | preview 제공. RESTORE 접수에도 필요 |
 | `MODEL_INPUT_RESTORE_READ_MAX_CONCURRENT` | `1` | 변경 목록과 preview가 공유하는 JVM 동시 실행 상한 |
 | `MODEL_INPUT_RESTORE_READ_TIMEOUT_MS` | `30000` | 요청 전체 처리 기한(ms). object storage·복호화 HTTP 및 재시도에도 남은 기한 적용 |
 | `MODEL_INPUT_RESTORE_READ_SCRATCH_BYTES` | `268435456` | 요청별 임시 파일 합계 상한 |
 
-- 기존 `CHANGE` 활성화 설정도 필요하다. 커서 키가 없거나 너무 짧으면 변경 목록을 제공하지 않는다(409 `POLICY_UNSUPPORTED`). 커서 키를 응답·로그에 노출하지 않는다. 키 교체 시 이전 커서는 400이 되므로 첫 페이지부터 재조회한다.
-- 실제 작업 소비자가 모두 v2/v3 reader를 사용하도록 먼저 배포하고 복원 writer/preview는 OFF로 유지한다. 현재 웹 러너 구성은 모든 웹 서버를 선배포하며 별도 worker 프로세스 배포는 필요 없다. DBA가 [별도 증분 DDL](../model-input-draft-restore-v3-ddl-draft.sql)의 pre-check → ALTER → verify를 수행한 뒤, 기능을 켜고 격리 대상의 대표 표·부하/디스크를 검증한 후 사용 범위를 확대한다. testdb 웹 전용 실행 순서는 [배포·검증 절차](../model-input-draft-restore-testdb-runbook.md)를 따른다. 이 문서는 DB 적용이나 배포 완료의 증거가 아니다.
+- 기존 `CHANGE` 활성화 설정도 필요하다. 변경 목록 커서는 서명키 설정 없이 제공한다. 구형 서명 커서는 §11.2의 전환 규칙에 따라 첫 페이지부터 재조회한다.
+- 복원 설정이 ON으로 고정되므로 접수와 모든 writer를 중단하고 기존 작업 종료를 확인한 뒤 DBA가 [별도 증분 DDL](../model-input-draft-restore-v3-ddl-draft.sql)의 pre-check → ALTER → verify를 수행한다. 전체 웹 서버를 v2/v3 reader가 포함된 동일 배포본으로 교체할 때까지 접수를 재개하지 않는다. 현재 웹 러너 구성에는 별도 worker 프로세스 배포가 필요 없다. 전체 교체 후 격리 대상의 대표 표·부하/디스크를 검증한다. testdb 웹 전용 실행 순서는 [배포·검증 절차](../model-input-draft-restore-testdb-runbook.md)를 따른다. 이 문서는 DB 적용이나 배포 완료의 증거가 아니다.
 - v3 이력이 하나라도 생성되면 v2 전용 앱 또는 CHECK로 원복하지 않는다. 정확한 rollback 조건은 위 SQL과 DDL §6.14가 정본이다.

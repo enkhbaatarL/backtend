@@ -1095,18 +1095,18 @@ DB FK만으로 확인할 수 없는 것은 같은 master transaction의 생성/�
 - 이 변경 이전의 `InputDraftHistory`와 `InputWorkbookEditor`는 모든 revision/operation schema=2와 정확한 JSON key를 요구했다. 새 v3 reader/parser/writer·최종파일 replay는 operation과 revision 양쪽 버전 및 형식을 검사하고 version 불일치/미지정 키·실패 불일치를 거부한다. v2의 의미와 과거 요청 parser는 고정한다. `2→3→2→3` 혼합 chain과 파일 교체를 허용하며 version 3의 변경을 실행할 때 해당 version의 검증기/구조 처리기로 결정적으로 재생하고 기록된 tables/rows/columns/cells와 대조한다. 이전 데이터는 재작성하지 않는다. row history는 열린 tombstone을 먼저 닫고 같은 revision에 새 구간을 INSERT해 UK 충돌을 피한다.
 - 예측 및 실제 저장에서 최근 삭제 직전 성공 revision을 동일 역할 현재 파일 기준점 이후로 제한해 이력과 workbook을 재생한다. 추가 축 교차값은 해당 이력에 존재한 경우에만 보존하며 나중에 생성된 축의 교차는 승인된 생성 정책으로 처리한다. 업로드 교체 이전 파일과 다른 역할의 revision을 현재 역할의 원본으로 결합하지 않는다. 원본과 성공 이력을 하나의 임의 시점으로 섞지 않고 역할별 기준·revision을 검증한다.
 - 정규화/색인: 현 행 identity와 위치 구간은 각각 기존 소유 키에 종속되고 FK/활성 유일성은 유지한다. 기존 delta JSON은 성공 재생을 위한 의도적 비정규화다. 신규 테이블/열/인덱스는 제안하지 않는다. 실제 조회 계획·성능, 연관 identity와 MySQL의 NULL 유일성은 실데이터/EXPLAIN으로 검증하며 필요성이 입증되면 별도 물리 설계를 한다. DB 명명 규칙과 사전에서 원본 ORG, 컬럼 COLM을 확인했고 이번 초안에 새 DB 명칭이 없어 사전을 수정하지 않았다.
-- 배포 후보: 과거 형식과 신규 형식을 모두 읽는 앱을 먼저 배포·검증하고 복원 writer는 기본 비활성으로 둔다. 그 다음 표별 재생·연결·최종파일 검증을 통과한 범위에서만 활성화한다. 새 형식이 한 번이라도 쓰인 후에는 새 형식을 모르는 구버전으로 롤백하지 않고 이를 읽는 마지막 정상 버전으로 되돌린다. DBA 사전 확인·CHECK apply·backfill 없음·검증·rollback SQL 초안은 §6.14.1을 따른다. 이 문서 수정은 실제 SQL 실행 승인이 아니다.
+- 배포 후보: 복원/preview 설정이 ON으로 고정되므로 신규 접수와 모든 writer를 중단하고 진행 작업 종료를 확인한 뒤 CHECK를 확대·검증한다. 모든 웹을 과거/신규 형식을 모두 읽는 배포본으로 교체한 뒤 접수를 재개하고 표별 재생·연결·최종파일을 검증한다. 새 형식이 한 번이라도 쓰인 후에는 새 형식을 모르는 구버전으로 롤백하지 않고 이를 읽는 마지막 정상 버전으로 되돌린다. DBA 사전 확인·CHECK apply·backfill 없음·검증·rollback SQL 초안은 §6.14.1을 따른다. 이 문서 수정은 실제 SQL 실행 승인이 아니다.
 - **구현 조건:** 실제 MySQL 키/경합과 기존 Draft·공유 baseline·직접 업로드 교체 이력, 추가 구조 교차값, 혼합 버전 reader/writer·최종저장, 수식/연결 표 구조, MySQL 성능을 확인한다. 조건을 만족하지 못한 표는 복원 미지원이다. **구현 준비도: ready for implementation**; 물리 SQL/운영 배포는 DBA 검증과 별도 승인 전 미완료다.
 
 #### 6.14.1 DBA 증분 DDL 초안 — 실행 전 검토 필요
 
 SQL 정본은 [별도 v3 증분 DDL](../../model-input-draft-restore-v3-ddl-draft.sql)이다. 전체 install DDL을 재실행하지 않는다. 실제 schema/MySQL CHECK 강제 여부와 제약명이 예상과 다르면 중단한다. 이 작업에서 SQL은 실행하지 않는다.
 
-1. 모든 web/worker에 v2/v3 reader/parser/finalizer를 writer OFF로 먼저 배포한다.
+1. 신규 접수와 모든 writer를 중단하고 진행 작업이 종료됐는지 확인한다.
 2. SQL 정본의 pre-check에서 기존 지원 형식 2와 현 제약·rowh 키를 확인한 뒤 CHECK 한 개를 확대한다. 데이터·열·인덱스·FK 변경과 backfill은 없다. MySQL DDL implicit commit 및 락 시간은 DBA가 확인한다.
-3. verify와 격리 MySQL 회귀에서 v2 허용, v3 CHANGE 허용, v3 다른 작업 거부 및 원본 row tombstone 구간 종료/재활성화 원자성을 확인한다.
-4. 검증한 표에서만 preview/복원 writer를 활성화한다. DDL 적용만으로 기능을 켜지 않는다.
-5. rollback은 writer OFF 및 작업 종료 후 v3 operation/revision이 모두 0일 때만 옛 CHECK 복구를 검토한다. 그 외에는 CHECK와 v3 reader를 유지하고 새 이력을 지우거나 version을 바꾸지 않는다.
+3. verify 후 모든 웹을 v2/v3 reader/parser/finalizer가 포함된 동일 배포본으로 교체한다. 구버전 소비자가 남아 있으면 접수를 재개하지 않는다.
+4. 전체 교체 뒤 접수를 재개하고 격리 MySQL 회귀에서 v2 허용, v3 CHANGE 허용, v3 다른 작업 거부 및 원본 row tombstone 구간 종료/재활성화 원자성을 검증한다. 표별 재생·연결·최종파일을 확인한다.
+5. rollback은 신규 접수/모든 writer 중단 및 작업 종료 후 v3 operation/revision이 모두 0일 때만 옛 CHECK 복구를 검토한다. 그 외에는 CHECK와 v3 reader를 유지하고 새 이력을 지우거나 version을 바꾸지 않는다.
 
 제품 코드의 로컬 격리 검증은 [작업 노트](../../work-notes/2026/2026-10-27-draft-comparison-restore-api-design.md)에 기록한다. 실제 MySQL·부하와 DDL 적용은 별도 배포 조건이며 이 SQL 초안 작성과 구분한다.
 

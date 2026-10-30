@@ -78,10 +78,9 @@ mcp:
 mi:
   model-input:
     restore:
-      enabled: ${MODEL_INPUT_RESTORE_ENABLED:false}
-      cursor-secret: ${MODEL_INPUT_CHANGE_CURSOR_SECRET:}
+      enabled: true
     restore-preview:
-      enabled: ${MODEL_INPUT_RESTORE_PREVIEW_ENABLED:false}
+      enabled: true
       max-concurrent: ${MODEL_INPUT_RESTORE_READ_MAX_CONCURRENT:1}
       timeout-ms: ${MODEL_INPUT_RESTORE_READ_TIMEOUT_MS:30000}
       scratch-bytes: ${MODEL_INPUT_RESTORE_READ_SCRATCH_BYTES:268435456}

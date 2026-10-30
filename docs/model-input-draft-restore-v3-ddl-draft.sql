@@ -5,8 +5,10 @@
 -- owner: BE / DBA
 -- date: 2026-10-27
 -- depends on: docs/design-docs/gas/mi-model-input-template-catalog-erd-ddl-draft.md §6.14
--- 기존 install DDL 재실행 금지. 실제 작업 소비자의 v2/v3 reader 선배포와 복원 writer OFF 확인.
--- 현재 웹 러너 구성은 모든 웹 서버를 선배포하며 별도 worker 프로세스는 배포하지 않는다.
+-- 기존 install DDL 재실행 금지. 신규 접수/모든 writer 중단과 진행 작업 종료 확인 후 적용한다.
+-- CHECK 검증 뒤 모든 웹 서버를 v2/v3 reader가 포함된 코드로 교체하고 접수를 재개한다.
+-- 복원/preview는 설정에서 ON으로 고정된다. 혼합 버전 중에는 새 요청을 받지 않는다.
+-- 현재 웹 러너 구성에는 별도 worker 프로세스를 배포하지 않는다.
 -- 웹 전용 적용 순서: docs/model-input-draft-restore-testdb-runbook.md
 -- 아래 SELECT/SHOW 결과와 제약명/정의가 예상과 다르면 중단한다.
 
@@ -38,7 +40,7 @@ WHERE json_rvsn_no NOT IN (2,3)
    OR (json_rvsn_no = 3 AND prcs_type_cd <> 'CHANGE')
    OR (base_rvsn_no IS NOT NULL AND base_rvsn_no > 9007199254740991);
 
--- 4. Rollback pre-check: writer OFF / 진행 작업 종료 후 두 값 모두 0인지 확인.
+-- 4. Rollback pre-check: 신규 접수/모든 writer 중단 및 진행 작업 종료 후 두 값 모두 0인지 확인.
 SELECT COUNT(*) AS v3_operations FROM tmd_mdl_inptdrftprcsl WHERE json_rvsn_no = 3;
 SELECT COUNT(*) AS v3_revisions FROM tmd_mdl_inptdrftrvsnl WHERE json_rvsn_no = 3;
 

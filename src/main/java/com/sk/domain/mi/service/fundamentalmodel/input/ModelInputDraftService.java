@@ -38,8 +38,6 @@ import org.springframework.transaction.support.TransactionTemplate;
 @RequiredArgsConstructor
 @Transactional(readOnly=true)
 public class ModelInputDraftService {
-    @org.springframework.beans.factory.annotation.Value("${mi.model-input.restore.cursor-secret:}")
-    private String changeCursorSecret="";
     @org.springframework.beans.factory.annotation.Value("${mi.model-input.restore-preview.enabled:false}")
     private boolean restorePreviewEnabled;
     private InputTempFiles restoreScratch;
@@ -135,7 +133,7 @@ public class ModelInputDraftService {
             if(now>=diskCheck[0])try {diskCheck[0]=now+10_000_000;if(scope.sizeBytes()>previewScratchBytes)throw preview?InputDraftException.previewUnavailable(revision):InputDraftException.comparisonUnavailable(revision);}catch(java.io.IOException ex){throw InputDraftException.internal();}};
     }
     private Changes changesCurrent(String id,long revision,String tableId,String cursor) {
-        Actor actor=actor();var basis=comparisonBasis(actor,id,revision,tableId);var tokens=new InputDraftChangeCursor(changeCursorSecret);State current=restore(basis);
+        Actor actor=actor();var basis=comparisonBasis(actor,id,revision,tableId);var tokens=new InputDraftChangeCursor();State current=restore(basis);
         TableRef selected=current.source.catalog.tables().stream().filter(t->t.key().equals(tableId)).findFirst().orElseThrow(InputDraftException::missing);
         FileRef file=basis.source().files.stream().filter(f->f.role().equals(selected.role())).findFirst().orElseThrow(InputDraftException::internal);
         String scope=id+"\n"+tableId+"\n"+revision+"\n"+file.baseline()+"\n"+hash("cf_",file);int offset=tokens.decode(cursor,scope);
