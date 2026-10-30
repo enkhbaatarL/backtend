@@ -20,7 +20,7 @@
 -- Case 전체 유형을 변경하므로 해당 Case의 모든 과거 Run이 함께 시나리오 소속이 된다.
 --
 -- 실행 방법:
---   A. 아래 3개 ID와 actor를 입력하고 1번의 사전 조회 결과를 확인한다.
+--   A. 0번 조회로 실행준비 이력을 확인한다. 1번에 3개 ID와 actor를 입력하고 사전 조회한다.
 --   B. 대상 시나리오/Case의 실행·편집·제안 요청 및 Agent 작업이 끝난 상태에서 2~5번을
 --      같은 connection으로 실행한다. 실행 중에는 해당 데이터에 대한 다른 쓰기를 중지한다.
 --      기존 transaction이 없는 전용 connection을 사용하고 대상 세 행의 원본을 별도로 보관한다.
@@ -32,6 +32,23 @@
 --      UPDATE를 단독 선택 실행하지 말 것. 기본 ROLLBACK을 삭제한 채 전체 실행하지 말 것.
 --   E. COMMIT 이후 이 SQL 재실행은 INDEPENDENT 사전조건에서 차단된다.
 --      COMMIT 후 복구는 원본 세 행과 현재 상태를 다시 검토하는 별도 작업이다.
+
+-- 0. exec_prep_id 찾기: 아래 NULL을 대상 scnr_id로 바꾸고 이 SELECT만 실행한다.
+-- 최신 미삭제 이력을 1로 표시한다. 제안 상태와 기존 case_id를 확인한 뒤 ID를 1번에 입력한다.
+-- 삭제된 이력도 확인할 수 있으나 연결 대상으로 선택할 수 없다. 자동 선택하지 않는다.
+SELECT p.scnr_id, p.exec_prep_id, p.exec_prep_stat_cd, p.case_id, p.del_yn,
+       p.agnt_prpsl_id, a.scenario_id AS proposal_scenario_id,
+       a.status AS proposal_status, a.del_yn AS proposal_del_yn,
+       JSON_TYPE(a.proposal_parameters) AS proposed_json_type,
+       JSON_TYPE(a.confirmation_parameters) AS confirmed_json_type,
+       (p.del_yn = 'N' AND p.exec_prep_id = (
+           SELECT MAX(p2.exec_prep_id) FROM tmd_mi_model_execpreph p2
+           WHERE p2.scnr_id = p.scnr_id AND p2.del_yn = 'N'
+       )) AS latest_active_prep_expect_1
+FROM tmd_mi_model_execpreph p
+LEFT JOIN tmm_mi_model_param_proposal_m a ON a.model_param_proposal_id = p.agnt_prpsl_id
+WHERE p.scnr_id = NULL -- 대상 scnr_id로 변경
+ORDER BY p.exec_prep_id DESC;
 
 -- 1. 입력 및 읽기 전용 사전 조회 (아직 transaction/UPDATE 없음).
 SET @rl_case_id = NULL;       -- 기존 독립 실행 Case ID
