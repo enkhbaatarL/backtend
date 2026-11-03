@@ -7,6 +7,9 @@ import com.sk.common.model.BaseResponse;
 import com.sk.common.model.BaseResponseFactory;
 import com.sk.common.model.PaginationRes;
 import com.sk.domain.mi.dto.request.nextgen.EventListReq;
+import com.sk.domain.mi.dto.request.nextgen.EventRecommendationReq;
+import com.sk.domain.mi.dto.response.nextgen.EventRecommendationRes;
+import com.sk.domain.mi.service.nextgen.EventRecommendationService;
 import com.sk.domain.mi.dto.response.nextgen.EventDetailRes;
 import com.sk.domain.mi.dto.response.nextgen.EventInstitutionOutlookRes;
 import com.sk.domain.mi.dto.response.nextgen.EventLinkedScenarioGroupRes;
@@ -30,6 +33,8 @@ import org.springdoc.core.annotations.ParameterObject;
 import org.springframework.context.annotation.Profile;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
@@ -43,6 +48,27 @@ import org.springframework.web.bind.annotation.RestController;
 public class EventController {
 
     private final EventService eventService;
+    private final EventRecommendationService eventRecommendationService;
+
+    @ApiOrder(7)
+    @Operation(summary = "선택한 Event와 함께 분석할 Event 추천",
+        description = "선택 ID 전체(1~5개)를 Agent에 보내 추천 0~2개를 data.items로 반환합니다. "
+            + "자동 선택/시나리오 생성은 수행하지 않습니다. UI는 선택 변경 시 이전 요청의 응답을 무시해야 합니다.")
+    @ApiResponse(responseCode = "200", description = "추천 완료 (빈 items도 정상)")
+    @ApiResponse(responseCode = "400", description = "입력값 검증 실패 또는 Agent 처리 조건 초과")
+    @ApiResponse(responseCode = "404", description = "선택 Event 없음/삭제/미게시. 목록 새로고침 필요")
+    @ApiResponse(responseCode = "422", description = "Agent 입력값 검증 실패")
+    @ApiResponse(responseCode = "500", description = "Agent 추천 처리 실패")
+    @ApiResponse(responseCode = "502", description = "Agent 연결 실패 또는 잘못된 응답")
+    @ApiResponse(responseCode = "504", description = "Agent 또는 Backend 대기시간 초과")
+    @PostMapping("/recommendations")
+    @RequiredPermissionRules(rules = {
+        @PermissionRule(role = Role.USER, conditions = {PermissionCondition.SKGAS_COMPANY_USER_ONLY}),
+        @PermissionRule(role = Role.ADMIN, conditions = {PermissionCondition.THIRD_PARTY_ADMIN_ONLY})
+    })
+    public BaseResponse<EventRecommendationRes> recommendEvents(@Valid @RequestBody EventRecommendationReq request) {
+        return BaseResponseFactory.create(eventRecommendationService.recommend(request));
+    }
 
     @ApiOrder(1)
     @Operation(

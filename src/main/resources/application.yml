@@ -60,6 +60,12 @@ springdoc:
 security:
   enabled: true
 
+api:
+  event-recommendation-agent:
+    url: ${EVENT_RECOMMENDATION_AGENT_URL:${api.scenario-design-agent.url:http://localhost:8000}}
+    connection-timeout: ${EVENT_RECOMMENDATION_AGENT_CONNECTION_TIMEOUT:1s}
+    read-timeout: ${EVENT_RECOMMENDATION_AGENT_READ_TIMEOUT:120s}
+
 mcp:
   auth:
     # [MCP 인증] mcp.read-only-api(개발용 인증 우회) 삭제. MCP Basic Auth 시크릿 PBKDF2 반복 횟수 (신규 발급·재발급에 적용, 기존 키는 키별로 저장된 값 사용). 최소 1000

@@ -49,6 +49,7 @@ bin/
 # Temp
 temp/
 test/
+!src/test/
 
 #
 AGENTS.md
