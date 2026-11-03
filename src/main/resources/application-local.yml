@@ -1,34 +1,37 @@
 spring:
   config:
+    import: "optional:file:./.env[.properties]"
     activate:
       on-profile: local
   datasource:
     type: com.zaxxer.hikari.HikariDataSource
     master:
       company-cd: master
-      jdbc-url: ${SKT_MI_DB_URL_MASTER:jdbc:mysql://localhost:3306/midb?useSSL=false&serverTimezone=Asia/Seoul&characterEncoding=UTF-8&allowPublicKeyRetrieval=true&autoReconnect=true}
+      jdbc-url: ${SKT_MI_DB_URL_MASTER:jdbc:${METADATA_DB_TYPE:mysql}://${METADATA_DB_HOST:localhost}:${METADATA_DB_PORT:3306}/${METADATA_DB_NAME:midb}?useSSL=false&serverTimezone=Asia/Seoul&characterEncoding=UTF-8&allowPublicKeyRetrieval=true&autoReconnect=true}
       driver-class-name: com.mysql.cj.jdbc.Driver
-      username: ${SKT_MI_DB_USERNAME_MASTER:min}
-      password: ${SKT_MI_DB_PASSWORD_MASTER:min}
+      username: ${SKT_MI_DB_USERNAME_MASTER:${METADATA_DB_USERNAME:min}}
+      password: ${SKT_MI_DB_PASSWORD_MASTER:${METADATA_DB_PASSWORD:min}}
       hikari:
         connection-timeout: 7s
         maximum-pool-size: 20
         idle-timeout: 10m
-        max-lifetime: 15m
+        max-lifetime: 5m
+        keepalive-time: 2m
         connection-test-query: SELECT 1
         validation-timeout: 3000
         minimum-idle: 10
     tenants:
       - company-cd: midb
-        jdbc-url: ${SKT_MI_DB_URL_MASTER:jdbc:mysql://localhost:3306/midb?useSSL=false&serverTimezone=Asia/Seoul&characterEncoding=UTF-8&allowPublicKeyRetrieval=true&autoReconnect=true}
+        jdbc-url: ${SKT_MI_DB_URL_MASTER:jdbc:${METADATA_DB_TYPE:mysql}://${METADATA_DB_HOST:localhost}:${METADATA_DB_PORT:3306}/${METADATA_DB_NAME:midb}?useSSL=false&serverTimezone=Asia/Seoul&characterEncoding=UTF-8&allowPublicKeyRetrieval=true&autoReconnect=true}
         driver-class-name: com.mysql.cj.jdbc.Driver
-        username: ${SKT_MI_DB_USERNAME_MASTER:min}
-        password: ${SKT_MI_DB_PASSWORD_MASTER:min}
+        username: ${SKT_MI_DB_USERNAME_MASTER:${METADATA_DB_USERNAME:min}}
+        password: ${SKT_MI_DB_PASSWORD_MASTER:${METADATA_DB_PASSWORD:min}}
         hikari:
           connection-timeout: 7s
           maximum-pool-size: 20
           idle-timeout: 10m
           max-lifetime: 15m
+          keepalive-time: 2m
           connection-test-query: SELECT 1
           validation-timeout: 3000
           minimum-idle: 10
@@ -126,7 +129,7 @@ api:
     connection-timeout: 1s
     read-timeout: 20s
   scenario-design-agent:
-    url: http://40.82.137.178:8001
+    url: http://localhost:8000
     connection-timeout: 1s
     read-timeout: 60s
   price-interpretation-agent:

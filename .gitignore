@@ -53,3 +53,8 @@ test/
 #
 AGENTS.md
 .codex/
+
+# Local connection settings
+.env
+.env.*
+!.env.example

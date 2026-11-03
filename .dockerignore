@@ -1,0 +1,4 @@
+# Keep local credentials out of the Docker build context.
+.env
+.env.*
+!.env.example
