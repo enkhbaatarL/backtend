@@ -5,6 +5,8 @@ import com.sk.common.exception.AppHttpStatusException;
 import com.sk.domain.mi.dto.request.nextgen.EventVerificationReq;
 import com.sk.domain.mi.dto.response.nextgen.EventVerificationRes;
 import com.sk.domain.shared.client.EventVerificationAgentApi;
+import com.sk.domain.shared.client.dto.request.EventVerificationAgentReq;
+import com.sk.domain.shared.service.permissions.AuthorizationService;
 import jakarta.validation.Validator;
 import java.net.SocketTimeoutException;
 import java.time.OffsetDateTime;
@@ -27,12 +29,14 @@ public class EventVerificationService {
     private final EventVerificationAgentApi agentApi;
     private final EventVerificationAccessService accessService;
     private final Validator validator;
+    private final AuthorizationService authorizationService;
 
     public EventVerificationRes verify(EventVerificationReq request) {
+        String actor = EventVerificationActor.require(authorizationService);
         accessService.checkAccessible(request.miEventIds());
         EventVerificationRes response;
         try {
-            response = agentApi.verify(request);
+            response = agentApi.verify(new EventVerificationAgentReq(request.miEventIds(), actor));
         } catch (RestClientResponseException ex) {
             log.warn("Event verification Agent HTTP error: {}", ex.getStatusCode().value());
             // 도메인 오류/422 detail/HTML 등 서로 다른 오류 본문은 상태 코드로 처리한다.
@@ -75,9 +79,18 @@ public class EventVerificationService {
         } catch (DateTimeParseException ex) {
             throw invalidResponse();
         }
+        if (response.items().stream().map(EventVerificationRes.Item::verificationId).distinct().count() != response.items().size()) {
+            throw invalidResponse();
+        }
         for (var item : response.items()) {
+            if (item.verificationId() == null || item.expiresAt() == null) throw invalidResponse();
+            try {
+                if (!OffsetDateTime.parse(item.expiresAt()).isAfter(OffsetDateTime.parse(response.checkedAt()))) throw invalidResponse();
+            } catch (DateTimeParseException ex) {
+                throw invalidResponse();
+            }
             String expectedStatus = switch (item.reasonCode()) {
-                case "verified" -> "pass";
+                case "verified", "no_contradiction" -> "pass";
                 case "contradicted", "outdated" -> "fail";
                 default -> "warning";
             };

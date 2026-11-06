@@ -32,7 +32,8 @@ public class EventVerificationController {
     @ApiOrder(8)
     @Operation(summary = "Event 웹 근거 검증", description = "게시·미삭제 Event 1~5개를 웹 근거와 비교합니다. "
         + "data.items는 요청 ID 순서이며 HTTP 200도 warning/fail을 포함합니다. "
-        + "checkedAt은 검증 기준 시각입니다. 이력 저장 및 시나리오 생성 차단은 수행하지 않습니다.")
+        + "Agent가 검증 결과와 근거를 저장하며 Event별 verificationId와 expiresAt을 반환합니다. "
+        + "actorUsrLognId는 로그인 사용자로 설정합니다. Event 본문 및 Snapshot은 변경하지 않습니다.")
     @ApiResponse(responseCode = "200", description = "Event별 판정 반환 (일부 검색·비교 실패도 warning 포함)")
     @ApiResponse(responseCode = "401", description = "로그인 필요")
     @ApiResponse(responseCode = "403", description = "Event 접근 권한 없음")

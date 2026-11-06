@@ -2,13 +2,15 @@ package com.sk.domain.mi.service.nextgen;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.node.MissingNode;
 import com.sk.common.enums.ResultCode;
 import com.sk.common.exception.AppHttpStatusException;
+import com.sk.common.exception.EventVerificationConflictException;
 import com.sk.domain.mi.dto.request.nextgen.EventVerificationUpdateReq;
 import com.sk.domain.mi.dto.response.nextgen.EventVerificationUpdateRes;
 import com.sk.domain.shared.client.EventVerificationUpdateAgentApi;
 import com.sk.domain.shared.client.dto.request.EventVerificationUpdateAgentReq;
-import com.sk.domain.shared.enums.Claim;
 import com.sk.domain.shared.service.permissions.AuthorizationService;
 import jakarta.validation.Validator;
 import java.net.SocketTimeoutException;
@@ -19,6 +21,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Objects;
 import java.util.Set;
+import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
@@ -42,29 +45,25 @@ public class EventVerificationUpdateService {
 
     // 긴 Agent 호출 동안 DB 트랜잭션을 유지하지 않는다. Snapshot/Event 쓰기는 Agent가 소유한다.
     public EventVerificationUpdateRes update(Long eventId, EventVerificationUpdateReq request) {
-        var jwt = authorizationService.getCurrentJwt();
-        // client_credentials 토큰의 subject는 사용자 ID가 아닌 client ID다.
-        if (jwt.getClaim(Claim.USER_NO.getCode()) == null) {
-            throw error(HttpStatus.FORBIDDEN, ResultCode.Error.AUTH_INSUFFICIENT_PERMISSIONS, "로그인 사용자 토큰으로 요청해 주세요.");
-        }
-        String actor = jwt.getSubject();
-        if (actor == null || actor.isBlank() || actor.length() > 100) {
-            throw error(HttpStatus.UNAUTHORIZED, ResultCode.Error.AUTH_INVALID_CREDENTIALS, "로그인 사용자 ID를 확인할 수 없습니다.");
-        }
+        String actor = EventVerificationActor.require(authorizationService);
         accessService.checkAccessible(List.of(eventId));
         EventVerificationUpdateRes response;
         try {
-            response = agentApi.update(eventId, new EventVerificationUpdateAgentReq(actor, request.expectedUpdatedAt()));
+            response = agentApi.update(eventId, new EventVerificationUpdateAgentReq(request.verificationId(), actor, request.expectedUpdatedAt()));
         } catch (RestClientResponseException ex) {
-            String errorName = errorName(ex);
+            JsonNode data = errorData(ex);
+            String errorName = data.path("error_name").asText("");
+            if (!errorName.matches("[A-Z_]{1,80}")) errorName = "UNKNOWN";
             log.warn("Event verification update Agent error: eventId={}, status={}, errorName={}", eventId, ex.getStatusCode().value(), errorName);
             throw switch (ex.getStatusCode().value()) {
-                case 404 -> error(HttpStatus.NOT_FOUND, ResultCode.Error.RSC_NOT_FOUND, "Event가 없거나 삭제·미게시 상태입니다.");
-                case 409 -> error(HttpStatus.CONFLICT, ResultCode.Error.BIZ_EVENT_UPDATE_STALE, "최신 Event를 다시 조회한 후 요청해 주세요.");
+                case 404 -> error(HttpStatus.NOT_FOUND, ResultCode.Error.RSC_NOT_FOUND, "Event 상태와 해당 Event의 검증 ID 연결을 확인해 주세요.");
+                case 409 -> conflict(errorName, data, request.verificationId());
                 case 422 -> error(HttpStatus.UNPROCESSABLE_ENTITY, ResultCode.Error.REQ_INVALID_PARAMETER, "Event 검증 업데이트 요청값을 확인해 주세요.");
-                case 500 -> "EVENT_UPDATE_SCHEMA_ERROR".equals(errorName)
-                    ? error(HttpStatus.INTERNAL_SERVER_ERROR, ResultCode.Error.API_EVENT_UPDATE_SCHEMA_ERROR, "EVENT_UPDATE_SCHEMA_ERROR")
-                    : error(HttpStatus.INTERNAL_SERVER_ERROR, ResultCode.Error.API_RESPONSE_ERROR, "Event 검증 업데이트 처리에 실패했습니다." + CHECK_SAVED);
+                case 500 -> switch (errorName) {
+                    case "EVENT_UPDATE_SCHEMA_ERROR" -> error(HttpStatus.INTERNAL_SERVER_ERROR, ResultCode.Error.API_EVENT_UPDATE_SCHEMA_ERROR, "EVENT_UPDATE_SCHEMA_ERROR");
+                    case "EVENT_VERIFICATION_INVALID" -> error(HttpStatus.INTERNAL_SERVER_ERROR, ResultCode.Error.API_EVENT_VERIFICATION_INVALID, "EVENT_VERIFICATION_INVALID");
+                    default -> error(HttpStatus.INTERNAL_SERVER_ERROR, ResultCode.Error.API_RESPONSE_ERROR, "Event 검증 업데이트 처리에 실패했습니다." + CHECK_SAVED);
+                };
                 case 503 -> error(HttpStatus.SERVICE_UNAVAILABLE, ResultCode.Error.API_SERVICE_UNAVAILABLE, "Event 검증 서비스를 사용할 수 없습니다." + CHECK_SAVED);
                 case 504 -> timeout();
                 default -> invalidResponse();
@@ -79,18 +78,23 @@ public class EventVerificationUpdateService {
             log.warn("Invalid Event verification update response: eventId={}", eventId);
             throw invalidResponse();
         }
-        validateResponse(eventId, response);
-        log.info("Event verification update completed: eventId={}, updateStatus={}, snapshotId={}",
-            eventId, response.updateStatus(), response.miEventSnapshotId());
+        validateResponse(eventId, request.verificationId(), response);
+        log.info("Event verification update request completed: eventId={}, verificationId={}, updateStatus={}, verificationStatus={}, postVerificationStatus={}, snapshotId={}",
+            eventId, response.verificationId(), response.updateStatus(), response.verification().status(),
+            response.postVerification() == null ? null : response.postVerification().status(), response.miEventSnapshotId());
         return response;
     }
 
-    private void validateResponse(Long eventId, EventVerificationUpdateRes response) {
+    private void validateResponse(Long eventId, UUID verificationId, EventVerificationUpdateRes response) {
         if (response == null || !validator.validate(response).isEmpty() || !eventId.equals(response.miEventId())
             || !eventId.equals(response.verification().miEventId())
+            || !verificationId.equals(response.verificationId())
+            || !verificationId.equals(response.verification().verificationId())
+            || response.verification().expiresAt() == null
             || (response.postVerification() != null && !eventId.equals(response.postVerification().miEventId()))) throw invalidResponse();
         try {
             if (!OffsetDateTime.parse(response.checkedAt()).getOffset().equals(ZoneOffset.UTC)) throw invalidResponse();
+            OffsetDateTime.parse(response.verification().expiresAt());
         } catch (DateTimeParseException ex) {
             throw invalidResponse();
         }
@@ -99,8 +103,9 @@ public class EventVerificationUpdateService {
         if (!FIELDS.containsAll(fields) || fields.size() != response.changedFields().size()
             || changeFields.size() != fields.size() || !fields.equals(new HashSet<>(changeFields))) throw invalidResponse();
         if ("updated".equals(response.updateStatus())) {
-            if (!"fail".equals(response.verification().status()) || response.postVerification() == null
-                || !"pass".equals(response.postVerification().status()) || response.miEventSnapshotId() == null
+            // 공개 검증 등급으로 Agent의 내부 저장 판단을 재구현하지 않는다.
+            // 조건부 저장의 주의 사항도 그대로 전달하고 저장 결과의 구조만 확인한다.
+            if (response.postVerification() == null || response.miEventSnapshotId() == null
                 || response.snapshotVersionNo() == null || response.updatedAt() == null || fields.isEmpty()
                 || response.changes().stream().anyMatch(c -> Objects.equals(c.before(), c.after()) || c.sourceUrls().isEmpty())) {
                 throw invalidResponse();
@@ -114,14 +119,32 @@ public class EventVerificationUpdateService {
         }
     }
 
-    private String errorName(RestClientResponseException ex) {
+    private JsonNode errorData(RestClientResponseException ex) {
         try {
             var body = objectMapper.readTree(ex.getResponseBodyAsString());
-            String name = body == null ? "" : body.path("data").path("error_name").asText("");
-            return name.matches("[A-Z_]{1,80}") ? name : "UNKNOWN";
+            return body == null ? MissingNode.getInstance() : body.path("data");
         } catch (JsonProcessingException exIgnored) {
-            return "UNKNOWN";
+            return MissingNode.getInstance();
         }
+    }
+
+    private RuntimeException conflict(String name, JsonNode data, UUID verificationId) {
+        return switch (name) {
+            case "EVENT_UPDATE_STALE" -> new EventVerificationConflictException(ResultCode.Error.BIZ_EVENT_UPDATE_STALE,
+                new EventVerificationConflictException.Data(-203, name, verificationId, null));
+            case "EVENT_VERIFICATION_EXPIRED" -> new EventVerificationConflictException(ResultCode.Error.BIZ_EVENT_VERIFICATION_EXPIRED,
+                new EventVerificationConflictException.Data(-205, name, verificationId, null));
+            case "EVENT_VERIFICATION_ALREADY_APPLIED" -> {
+                var snapshot = data.path("mi_event_snapshot_id");
+                if (!verificationId.toString().equalsIgnoreCase(data.path("verification_id").asText())
+                    || !snapshot.isIntegralNumber() || !snapshot.canConvertToLong() || snapshot.longValue() <= 0) {
+                    yield invalidResponse();
+                }
+                yield new EventVerificationConflictException(ResultCode.Error.BIZ_EVENT_VERIFICATION_ALREADY_APPLIED,
+                    new EventVerificationConflictException.Data(-206, name, verificationId, snapshot.longValue()));
+            }
+            default -> invalidResponse();
+        };
     }
 
     private static AppHttpStatusException timeout() {

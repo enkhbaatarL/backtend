@@ -8,14 +8,18 @@ import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Positive;
 import jakarta.validation.constraints.Size;
 import java.util.List;
+import java.util.UUID;
 
 public record EventVerificationUpdateRes(
     @NotNull @Positive Long miEventId,
+    @Schema(description = "이번 업데이트에 사용한 원본 검증 ID") @NotNull UUID verificationId,
     @NotNull String checkedAt,
-    @Schema(description = "updated만 저장 성공. unchanged/skipped는 DB 변경 없음")
+    @Schema(description = "저장 결과. 공개 검증 status와 별개이며 updated만 저장 성공. unchanged/skipped는 DB 변경 없음")
     @NotNull @Pattern(regexp = "updated|unchanged|skipped") String updateStatus,
     @NotNull String message,
+    @Schema(description = "변경 전 DB Event의 공개 검증 결과")
     @NotNull @Valid EventVerificationRes.Item verification,
+    @Schema(description = "저장 전 수정안 검증 결과. skipped이면 미저장 수정안이므로 현재 Event 검증 결과를 덮어쓰지 않음")
     @Valid EventVerificationRes.Item postVerification,
     @Schema(description = "변경 직전 상태를 저장한 Snapshot ID")
     @Positive Long miEventSnapshotId,

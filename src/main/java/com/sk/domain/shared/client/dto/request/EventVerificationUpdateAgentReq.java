@@ -1,3 +1,5 @@
 package com.sk.domain.shared.client.dto.request;
 
-public record EventVerificationUpdateAgentReq(String actorUsrLognId, String expectedUpdatedAt) {}
+import java.util.UUID;
+
+public record EventVerificationUpdateAgentReq(UUID verificationId, String actorUsrLognId, String expectedUpdatedAt) {}
