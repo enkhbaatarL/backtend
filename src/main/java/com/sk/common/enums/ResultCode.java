@@ -56,12 +56,14 @@ public class ResultCode {
         // BIZ_VALIDATION_FAILED("BIZ-004", "Business validation failed."),
         BIZ_DESIGN_OCCUPIED("BIZ-005", "The event is currently occupied for scenario design."), // 이벤트 설계 점유 충돌
         BIZ_PRICE_INTERP_OCCUPIED("BIZ-006", "The scenario group is currently occupied for price interpretation generation."), // 가격전망 해석 생성 점유 충돌
+        BIZ_EVENT_UPDATE_STALE("BIZ-007", "Event가 변경되었습니다. 최신 Event를 다시 조회해 주세요."),
 
         // API: 외부 시스템 및 서비스 관련 오류
         API_CALL_FAILED("API-001", "An external API call has failed."),
         API_TIMEOUT("API-002", "The external API call timed out."),
         API_SERVICE_UNAVAILABLE("API-003", "An external service is currently unavailable."),
         API_RESPONSE_ERROR("API-004", "Received an error response from external API."),
+        API_EVENT_UPDATE_SCHEMA_ERROR("API-005", "Event/Snapshot 저장 스키마를 확인해 주세요."),
 
         // DB: 데이터베이스 관련 오류
         DB_CONNECTION_ERROR("DB-001", "A database connection error has occurred."),

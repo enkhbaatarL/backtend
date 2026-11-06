@@ -19,6 +19,10 @@ import com.sk.domain.shared.repository.master.tmm.projection.KeywordAlertMailEve
 
 public interface MiEventRepository extends JpaRepository<MiEvent, Long>, CustomMiEventRepository {
 
+    /** 현재 Event 공유 접근 정책: 게시된 미삭제 Event만 검증 대상으로 허용한다. */
+    @Query("SELECT e.miEventId FROM MiEvent e WHERE e.miEventId IN :eventIds AND e.isDeleted = false AND e.publishStatus = 'PUBLISHED'")
+    List<Long> findPublishedIdsForVerification(@Param("eventIds") Collection<Long> eventIds);
+
     /**
      * 키워드 알림 스캔 체크포인트 초기값 (기존 이벤트 무시용)
      */
